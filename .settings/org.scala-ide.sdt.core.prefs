@@ -1,9 +1,9 @@
-#Mon Aug 29 23:47:48 BST 2011
+#Thu Sep 15 14:43:07 BST 2011
 Xcheck-null=false
 Xcheckinit=false
 Xdisable-assertions=false
 Xelide-below=-2147483648
-Xexperimental=true
+Xexperimental=false
 Xfatal-warnings=false
 Xfuture=false
 Xlog-implicits=false
@@ -27,9 +27,12 @@ Ywarn-dead-code=false
 buildmanager=refined
 deprecation=false
 eclipse.preferences.version=1
+explaintypes=false
 g=vars
 no-specialization=false
+nowarn=false
 optimise=false
+scala.compiler.additionalParams=-Ydependent-method-types
 scala.compiler.useProjectSettings=true
 target=jvm-1.5
 unchecked=false
