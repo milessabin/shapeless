@@ -23,25 +23,30 @@ object Functions {
   import HLists._
   import Tuples._
   
-  abstract class HListFn[F[_], T <: HList[F], R](val f : T#Fn[R]) extends (T => R) {
+  trait HListFn[F[_], T <: HList[F], R] extends (T => R) {
     type Tupled = T#Tupled => R
     type Fn = T#Fn[R]
+    type MappedT[G[_]] = T#Mapped[G]
+    type MappedR[G[_]] = G[R]
+    type MappedFn[G[_]] = HListFn[G, MappedT[G], MappedR[G]]
   }
-  implicit def fnToHListFn1[A, R](f : A => R) = new HListFn[Id, A :: HNil[Id], R](f) {
+  abstract class AbstractHListFn[F[_], T <: HList[F], R](val f : T#Fn[R]) extends HListFn[F, T, R]
+  
+  implicit def fnToHListFn1[A, R](f : A => R) = new AbstractHListFn[Id, A :: HNil[Id], R](f) {
     def apply(h : A :: HNil[Id]) = f(h.head)
   }
-  implicit def fnToHListFn2[A, B, R](f : (A, B) => R) = new HListFn[Id, A :: B :: HNil[Id], R](f) {
+  implicit def fnToHListFn2[A, B, R](f : (A, B) => R) = new AbstractHListFn[Id, A :: B :: HNil[Id], R](f) {
     def apply(h : A :: B :: HNil[Id]) = f.tupled(h.tupled)
   }
-  implicit def fnToHListFn3[A, B, C, R](f : (A, B, C) => R) = new HListFn[Id, A :: B :: C :: HNil[Id], R](f) {
+  implicit def fnToHListFn3[A, B, C, R](f : (A, B, C) => R) = new AbstractHListFn[Id, A :: B :: C :: HNil[Id], R](f) {
     def apply(h : A :: B :: C :: HNil[Id]) = f.tupled(h.tupled)
   }
-  implicit def fnToHListFn4[A, B, C, D, R](f : (A, B, C, D) => R) = new HListFn[Id, A :: B :: C :: D :: HNil[Id], R](f) {
+  implicit def fnToHListFn4[A, B, C, D, R](f : (A, B, C, D) => R) = new AbstractHListFn[Id, A :: B :: C :: D :: HNil[Id], R](f) {
     def apply(h : A :: B :: C :: D :: HNil[Id]) = f.tupled(h.tupled)
   }
   
-  implicit def hlistFnToFn1[A, T](hf : A :: HNil[Id] => T) = (a : A) => hf(a :: HNil[Id])
-  implicit def hlistFnToFn2[A, B, T](hf : A :: B :: HNil[Id] => T) = Function.untupled((t : (A, B)) => hf(t)) 
-  implicit def hlistFnToFn3[A, B, C, T](hf : A :: B :: C :: HNil[Id] => T) = Function.untupled((t : (A, B, C)) => hf(t))
-  implicit def hlistFnToFn4[A, B, C, D, T](hf : A :: B :: C :: D :: HNil[Id] => T) = Function.untupled((t : (A, B, C, D)) => hf(t))
+  implicit def hlistFnToFn1[F[_], A, T](hf : (A :: HNil[Id])#Mapped[F] => T) = (a : F[A]) => hf(a :: HNil[F])
+  implicit def hlistFnToFn2[F[_], A, B, T](hf : (A :: B :: HNil[Id])#Mapped[F] => T) = (a : F[A], b : F[B]) => hf(a :: b :: HNil[F])
+  implicit def hlistFnToFn3[F[_], A, B, C, T](hf : (A :: B :: C :: HNil[Id])#Mapped[F] => T) = (a : F[A], b : F[B], c : F[C]) => hf(a :: b :: c :: HNil[F])
+  implicit def hlistFnToFn4[F[_], A, B, C, D, T](hf : (A :: B :: C :: D :: HNil[Id])#Mapped[F] => T) = (a : F[A], b : F[B], c : F[C], d : F[D]) => hf(a :: b :: c :: d :: HNil[F])
 }
