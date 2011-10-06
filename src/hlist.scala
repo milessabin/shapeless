@@ -25,6 +25,8 @@ object HLists {
     def ::[T](v : T) = HCons(v, this)
     override def toString = head+" :: "+tail.toString
 
+    def map[F, Out <: HList](f : F)(implicit mapper : Mapper[F, H :: T, Out]) : Out = mapper.map(f)(this)
+    
     type Tupled = T#Tupled1[H]
     type Tupled1[A] = T#Tupled2[A, H]
     type Tupled2[A, B] = T#Tupled3[A, B, H]
@@ -47,6 +49,8 @@ object HLists {
   trait HNil extends HList {
     def ::[T](v : T) = HCons(v, this)
     override def toString = "HNil"
+
+    def map[F](f : F) : HNil = HNil
 
     type Tupled = Nothing
     type Tupled1[A] = Tuple1[A]
@@ -88,6 +92,10 @@ object HLists {
     def apply(t : F[T]) : T = f(t)
   }
 
+  implicit def applicator4[H <: Id ~> Id, T](f : H) : Applicator[H, T, T] = new Applicator[H, T, T] {
+    def apply(t : T) : T = f(t)
+  }
+
   trait Mapper[H, -In, +Out] {
     def map(f : H)(t : In) : Out
   }
@@ -99,8 +107,6 @@ object HLists {
   implicit def hlistMapper[H, InH, OutH, InT <: HList, OutT <: HList](implicit ap : H => Applicator[H, InH, OutH], mt : Mapper[H, InT, OutT]) = new Mapper[H, InH :: InT, OutH :: OutT] {
     def map(f : H)(l : InH :: InT) = HCons(ap(f)(l.head), mt.map(f)(l.tail))
   }
-
-  def map[H, In <: HList, Out <: HList](f : H)(in : In)(implicit mapper : Mapper[H, In, Out]) : Out = mapper.map(f)(in)
 }
 
 object TestHList {
@@ -116,13 +122,13 @@ object TestHList {
     type OIOS = Option[Int] :: Option[String] :: HNil
     
     val s1 = Set(1) :: HNil
-    val o1 : OI = map(choose)(s1)
+    val o1 : OI = s1 map choose
 
     println(s1)
     println(o1)
 
     val s2 = Set(1) :: Set("foo") :: HNil
-    val o2 : OIOS = map(choose)(s2)
+    val o2 : OIOS = s2 map choose
     
     println(s2)
     println(o2)
@@ -134,21 +140,24 @@ object TestHList {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
     println(l1)
     
-    val l2 : SISSSISI = map(singleton)(l1)
+    val l2 : SISSSISI = l1 map singleton
     println(l2)
 
-    val l3 : OIOSOIOI = map(option)(l1)
+    val l3 : OIOSOIOI = l1 map option
     println(l3)
 
     val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
     println(l4)
     
-    val l5 : ISII = map(get)(l4)
+    val l5 : ISII = l4 map get
     println(l5)
     
     val e51 : Int = l5.head
     val e52 : String = l5.tail.head
     val e53 : Int = l5.tail.tail.head
     val e54 : Int = l5.tail.tail.tail.head
+    
+    val l6 : ISII = l1 map identity
+    println(l6)
   }
 }

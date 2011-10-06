@@ -13,6 +13,10 @@ object Rank2Poly {
   // Use of dependent type h.λ[T] essential here
   implicit def univInst[F[_], G[_], T](h : F ~> G) : h.λ[T] = h.univInst
 
+  object identity extends (Id ~> Id) {
+    def apply[T](t : T) = t
+  }
+
   object singleton extends (Id ~> Set) {
     def apply[T](t : T) = Set(t)
   }
