@@ -1,61 +1,57 @@
 object MapFn {
-  import Rank2Poly._
   import HLists._  
+  import Rank2Poly._
 
-  type Trans = {
-    type λ[T, R] <: (T => R)
-  }
-  
-  trait TransCase[F, T, R] extends (T => R) {
-    val f : T => R
-    def apply(t : T) : R = f(t)
+  trait Applicator[H, T, R] {
+    def apply(t : T) : R
   }
 
-  trait TransDef[F0[_], G0[_]] {
-    trait Trans {
-      type λ[T, R] = TransCase[Trans, T, R]
-    }
-    
-    def apply[T](f0 : F0[T] => G0[T]) = new TransCase[Trans, F0[T], G0[T]] { val f = f0 } 
-  }
-  
-  object Choose extends TransDef[Set, Option]
-  type Choose = Choose.Trans
-  
-  implicit def chooseDflt[X] = Choose[X](choose)
-
-  
-  trait Mapper[T <: Trans, In, Out] {
-    def map(t : In) : Out
-  }
-  
-  implicit def hnilMapper[T <: Trans] = new Mapper[T, HNil, HNil] {
-    def map(l : HNil) = HNil
-  }
-  
-  implicit def hlistMapper[T <: Trans, InH, OutH, InT <: HList, OutT <: HList](implicit fh : T#λ[InH, OutH], mt : Mapper[T, InT, OutT]) = new Mapper[T, InH :: InT, OutH :: OutT] {
-    def map(l : InH :: InT) = HCons(fh(l.head), mt.map(l.tail))
+  implicit def applicator[F[_], G[_], H <: F ~> G, T](f : H) : Applicator[H, F[T], G[T]] = new Applicator[H, F[T], G[T]] {
+    def apply(t : F[T]) : G[T] = f(t)
   }
 
-  trait PartialMap[T <: Trans] {
-    def apply[In <: HList, Out <: HList](in : In)(implicit mapper : Mapper[T, In, Out]) : Out = mapper.map(in)
+  def siapp[T] = implicitly[choose.type => Applicator[choose.type, Set[T], Option[T]]]
+  val oi : Option[Int] = siapp(choose)(Set(23))
+  val os : Option[String] = siapp(choose)(Set("foo"))
+
+  trait Mapper[H, -In, +Out] {
+    def map(f : H)(t : In) : Out
   }
   
-  def map[T <: Trans] = new PartialMap[T] {}
+  implicit def hnilMapper[H] = new Mapper[H, HNil, HNil] {
+    def map(f : H)(l : HNil) = HNil
+  }
+  
+  implicit def hlistMapper[H, InH, OutH, InT <: HList, OutT <: HList](implicit ap : H => Applicator[H, InH, OutH], mt : Mapper[H, InT, OutT]) = new Mapper[H, InH :: InT, OutH :: OutT] {
+    def map(f : H)(l : InH :: InT) = HCons(ap(f)(l.head), mt.map(f)(l.tail))
+  }
+
+  def map[H, In <: HList, Out <: HList](f : H)(in : In)(implicit mapper : Mapper[H, In, Out]) : Out = mapper.map(f)(in)
 }
+
 
 object TestMapFn {
   import HLists._
   import MapFn._
+  import Rank2Poly._
 
   def main(args : Array[String]) {
+    type SI = Set[Int] :: HNil
+    type OI = Option[Int] :: HNil
+
     type SISS = Set[Int] :: Set[String] :: HNil
     type OIOS = Option[Int] :: Option[String] :: HNil
     
-    val l1 = Set(1) :: Set("foo") :: HNil
-    val l2 : OIOS = map[Choose](l1)
+    val s1 = Set(1) :: HNil
+    val o1 : OI = map(choose)(s1)
+
+    println(s1)
+    println(o1)
+
+    val s2 = Set(1) :: Set("foo") :: HNil
+    val o2 : OIOS = map(choose)(s2)
     
-    println(l1)
-    println(l2)
+    println(s2)
+    println(o2)
   }
 }
