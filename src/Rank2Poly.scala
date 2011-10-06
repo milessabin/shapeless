@@ -17,6 +17,10 @@ object Rank2Poly {
     def apply[T](t : T) = Set(t)
   }
 
+  object choose extends (Set ~> Option) {
+    def apply[T](s : Set[T]) = s.headOption
+  }
+
   object list extends (Id ~> List) {
     def apply[T](t : T) = List(t)
   }

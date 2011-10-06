@@ -1,3 +1,4 @@
+/*
 object LiftOFn {
   import Rank2Poly._
   import HLists._
@@ -76,3 +77,4 @@ object TestLiftOFn {
     println(p3)
   }
 }
+*/

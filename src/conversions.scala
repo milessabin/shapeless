@@ -1,3 +1,4 @@
+/*
 object Tuples {
   import Rank2Poly._
   import HLists._
@@ -50,3 +51,4 @@ object Functions {
   implicit def hlistFnToFn3[F[_], A, B, C, T](hf : (A :: B :: C :: HNil[Id])#Mapped[F] => T) = (a : F[A], b : F[B], c : F[C]) => hf(a :: b :: c :: HNil[F])
   implicit def hlistFnToFn4[F[_], A, B, C, D, T](hf : (A :: B :: C :: D :: HNil[Id])#Mapped[F] => T) = (a : F[A], b : F[B], c : F[C], d : F[D]) => hf(a :: b :: c :: d :: HNil[F])
 }
+*/
