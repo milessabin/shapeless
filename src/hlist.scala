@@ -71,63 +71,84 @@ object HLists {
   
   type ::[H, T <: HList] = HCons[H, T]
   val :: = HCons
+
+  trait Applicator[H, T, R] {
+    def apply(t : T) : R
+  }
+
+  implicit def applicator1[F[_], G[_], H <: F ~> G, T](f : H) : Applicator[H, F[T], G[T]] = new Applicator[H, F[T], G[T]] {
+    def apply(t : F[T]) : G[T] = f(t)
+  }
+
+  implicit def applicator2[G[_], H <: Id ~> G, T](f : H) : Applicator[H, T, G[T]] = new Applicator[H, T, G[T]] {
+    def apply(t : T) : G[T] = f(t)
+  }
+
+  implicit def applicator3[F[_], H <: F ~> Id, T](f : H) : Applicator[H, F[T], T] = new Applicator[H, F[T], T] {
+    def apply(t : F[T]) : T = f(t)
+  }
+
+  trait Mapper[H, -In, +Out] {
+    def map(f : H)(t : In) : Out
+  }
+  
+  implicit def hnilMapper[H] = new Mapper[H, HNil, HNil] {
+    def map(f : H)(l : HNil) = HNil
+  }
+  
+  implicit def hlistMapper[H, InH, OutH, InT <: HList, OutT <: HList](implicit ap : H => Applicator[H, InH, OutH], mt : Mapper[H, InT, OutT]) = new Mapper[H, InH :: InT, OutH :: OutT] {
+    def map(f : H)(l : InH :: InT) = HCons(ap(f)(l.head), mt.map(f)(l.tail))
+  }
+
+  def map[H, In <: HList, Out <: HList](f : H)(in : In)(implicit mapper : Mapper[H, In, Out]) : Out = mapper.map(f)(in)
 }
 
 object TestHList {
   import HLists._
-  import MapFn._
   import Rank2Poly._
   //import Tuples._
 
   def main(args : Array[String]) {
+    type SI = Set[Int] :: HNil
+    type OI = Option[Int] :: HNil
+
+    type SISS = Set[Int] :: Set[String] :: HNil
+    type OIOS = Option[Int] :: Option[String] :: HNil
     
+    val s1 = Set(1) :: HNil
+    val o1 : OI = map(choose)(s1)
+
+    println(s1)
+    println(o1)
+
+    val s2 = Set(1) :: Set("foo") :: HNil
+    val o2 : OIOS = map(choose)(s2)
+    
+    println(s2)
+    println(o2)
+
+    type ISII = Int :: String :: Int :: Int :: HNil
+    type OIOSOIOI = Option[Int] :: Option[String] :: Option[Int] :: Option[Int] :: HNil
+    type SISSSISI = Set[Int] :: Set[String] :: Set[Int] :: Set[Int] :: HNil
+
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
     println(l1)
     
-    val e11 : Int = l1.head
-    val e12 : String = l1.tail.head
-    val e13 : Int = l1.tail.tail.head
-    val e14 : Int = l1.tail.tail.tail.head
-    
-    //val l2 = map(singleton)(l1)
-    //println(l2)
+    val l2 : SISSSISI = map(singleton)(l1)
+    println(l2)
 
-    //val l3 = map(option)(l1)
-    //println(l3)
-    
-//    val e31 : Option[Int] = l3.head
-//    val e32 : Option[String] = l3.tail.head
-//    val e33 : Option[Int] = l3.tail.tail.head
-//    val e34 : Option[Int] = l3.tail.tail.tail.head
+    val l3 : OIOSOIOI = map(option)(l1)
+    println(l3)
 
-    val l4 = Option(1) :: Option("foo") :: None :: Option(3) :: HNil
+    val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
     println(l4)
     
-//    val l5 = l4 map get
-//    println(l5)
-//    val e51 : Int = l5.head
-//    val e52 : String = l5.tail.head
-//    val e53 : Int = l5.tail.tail.head
-//    val e54 : Int = l5.tail.tail.tail.head
-//    
-//    val l6 = l4 map get
+    val l5 : ISII = map(get)(l4)
+    println(l5)
     
-//    val b1 = l3.foldLeft(isDefined)(true)(_ & _)
-//    println(b1)
-//
-//    val b2 = l4.foldLeft(isDefined)(true)(_ & _)
-//    println(b2)
-//    
-//    val t6 = l1.tupled
-//    val e61 : Int = t6._1
-//    val e62 : String = t6._2
-//    val e63 : Int = t6._3
-//    val e64 : Int = t6._4
-    
-//    val l7 = t6.hlisted
-//    val e71 : Int = l7.head
-//    val e72 : String = l7.tail.head
-//    val e73 : Int = l7.tail.tail.head
-//    val e74 : Int = l7.tail.tail.tail.head
+    val e51 : Int = l5.head
+    val e52 : String = l5.tail.head
+    val e53 : Int = l5.tail.tail.head
+    val e54 : Int = l5.tail.tail.tail.head
   }
 }
