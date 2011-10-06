@@ -80,19 +80,19 @@ object HLists {
     def apply(t : T) : R
   }
 
-  implicit def applicator1[F[_], G[_], H <: F ~> G, T](f : H) : Applicator[H, F[T], G[T]] = new Applicator[H, F[T], G[T]] {
+  implicit def applicator1[F[_], G[_], H <: F ~> G, T](f : H) = new Applicator[H, F[T], G[T]] {
     def apply(t : F[T]) : G[T] = f(t)
   }
 
-  implicit def applicator2[G[_], H <: Id ~> G, T](f : H) : Applicator[H, T, G[T]] = new Applicator[H, T, G[T]] {
+  implicit def applicator2[G[_], H <: Id ~> G, T](f : H) = new Applicator[H, T, G[T]] {
     def apply(t : T) : G[T] = f(t)
   }
 
-  implicit def applicator3[F[_], H <: F ~> Id, T](f : H) : Applicator[H, F[T], T] = new Applicator[H, F[T], T] {
+  implicit def applicator3[F[_], H <: F ~> Id, T](f : H) = new Applicator[H, F[T], T] {
     def apply(t : F[T]) : T = f(t)
   }
 
-  implicit def applicator4[H <: Id ~> Id, T](f : H) : Applicator[H, T, T] = new Applicator[H, T, T] {
+  implicit def applicator4[H <: Id ~> Id, T](f : H) = new Applicator[H, T, T] {
     def apply(t : T) : T = f(t)
   }
 
@@ -107,6 +107,8 @@ object HLists {
   implicit def hlistMapper[H, InH, OutH, InT <: HList, OutT <: HList](implicit ap : H => Applicator[H, InH, OutH], mt : Mapper[H, InT, OutT]) = new Mapper[H, InH :: InT, OutH :: OutT] {
     def map(f : H)(l : InH :: InT) = HCons(ap(f)(l.head), mt.map(f)(l.tail))
   }
+  
+  //def map[F, In <: HList, Out <: HList](f : F)(in : In)(implicit mapper : Mapper[F, In, Out]) : Out = mapper.map(f)(in)
 }
 
 object TestHList {
@@ -149,7 +151,7 @@ object TestHList {
     val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
     println(l4)
     
-    val l5 : ISII = l4 map get
+    val l5 /*: ISII */ = l4 map get
     println(l5)
     
     val e51 : Int = l5.head
@@ -157,7 +159,7 @@ object TestHList {
     val e53 : Int = l5.tail.tail.head
     val e54 : Int = l5.tail.tail.tail.head
     
-    val l6 : ISII = l1 map identity
+    val l6 /*: ISII */ = l1 map identity
     println(l6)
   }
 }
