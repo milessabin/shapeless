@@ -1,40 +1,7 @@
 object HLists {
-  
   import Rank2Poly._
   
-  trait TCChecker[F[_], L <: HList]
-  
-  implicit def hnilTCChecker[F[_]] : TCChecker[F, HNil] = new TCChecker[F, HNil] {}
-  
-  implicit def hlistTCChecker[F[_], X, H, T <: HList](implicit ev1 : H <:< F[X], ev2 : TCChecker[F, T]) : TCChecker[F, H :: T] = new TCChecker[F, H :: T] {} 
-  
-  implicitly[TCChecker[Option, HNil]]
-  implicitly[TCChecker[Option, Option[Int] :: Option[String] :: HNil]]
-  //implicitly[TCChecker[Option, Int :: Option[String] :: HNil]]
-  //implicitly[TCChecker[Option, Option[Int] :: String :: HNil]]
-  
-  /*
-  trait TCStripper[F[_], L <: HList] {
-    type Stripped <: HList
-  }
-
-  implicit def hnilTCStripper[F[_]] :
-    TCStripper[F, HNil] { type Stripped = HNil } = new TCStripper[F, HNil] { type Stripped = HNil }
-
-  implicit def hlistTCStripper[F[_], X, H, T <: HList](implicit ev1 : H <:< F[X], ev2 : TCStripper[F, T]) :
-    TCStripper[F, H :: T] { type Stripped = X :: ev2.Stripped } = new TCStripper[F, H :: T] { type Stripped = X :: ev2.Stripped }
-
-  val tcs = implicitly[TCStripper[Option, Option[Int] :: Option[String] :: HNil]]
-  import tcs._
-
-  val hl : Stripped = 23 :: "foo" :: HNil
-  */
-
   sealed trait HList {
-    
-    type MappedTo[G[_]] <: HList
-    def mapTo[G[_]](f : Id ~> G) : MappedTo[G]
-    
     type Tupled
     type Tupled1[A]
     type Tupled2[A, B]
@@ -58,9 +25,6 @@ object HLists {
     def ::[T](v : T) = HCons(v, this)
     override def toString = head+" :: "+tail.toString
 
-    type MappedTo[G[_]] = G[H] :: T#MappedTo[G]
-    def mapTo[G[_]](f : Id ~> G) : MappedTo[G] = HCons(f(head), tail.mapTo(f))
-
     type Tupled = T#Tupled1[H]
     type Tupled1[A] = T#Tupled2[A, H]
     type Tupled2[A, B] = T#Tupled3[A, B, H]
@@ -83,9 +47,6 @@ object HLists {
   trait HNil extends HList {
     def ::[T](v : T) = HCons(v, this)
     override def toString = "HNil"
-
-    type MappedTo[G[_]] = HNil
-    def mapTo[G[_]](f : Id ~> G) : MappedTo[G] = HNil
 
     type Tupled = Nothing
     type Tupled1[A] = Tuple1[A]
@@ -114,6 +75,7 @@ object HLists {
 
 object TestHList {
   import HLists._
+  import MapFn._
   import Rank2Poly._
   //import Tuples._
 
@@ -127,16 +89,16 @@ object TestHList {
     val e13 : Int = l1.tail.tail.head
     val e14 : Int = l1.tail.tail.tail.head
     
-    val l2 = l1 mapTo singleton
-    println(l2)
+    //val l2 = map(singleton)(l1)
+    //println(l2)
 
-    val l3 = l1 mapTo option
-    println(l3)
+    //val l3 = map(option)(l1)
+    //println(l3)
     
-    val e31 : Option[Int] = l3.head
-    val e32 : Option[String] = l3.tail.head
-    val e33 : Option[Int] = l3.tail.tail.head
-    val e34 : Option[Int] = l3.tail.tail.tail.head
+//    val e31 : Option[Int] = l3.head
+//    val e32 : Option[String] = l3.tail.head
+//    val e33 : Option[Int] = l3.tail.tail.head
+//    val e34 : Option[Int] = l3.tail.tail.tail.head
 
     val l4 = Option(1) :: Option("foo") :: None :: Option(3) :: HNil
     println(l4)
