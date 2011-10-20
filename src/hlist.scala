@@ -79,17 +79,17 @@ object HLists {
 
   type Applicator[F[_], G[_], In, Out] = (F ~> G, In) => Out
 
-  implicit def applicator1[F[_], In, Out] : Applicator[F, Const[Out]#λ, F[In], Out] = (f : F ~> Const[Out]#λ, t : F[In]) => f(t)
-
+  implicit def applicator1[F[_], G[_], In] : Applicator[F, G, F[In], G[In]] = (f : F ~> G, t : F[In]) => f(t)
+  
   implicit def applicator2[G[_], In] : Applicator[Id, G, In, G[In]] = (f : Id ~> G, t : In) => f(t)
 
-  implicit def applicator3[F[_], G[_], In] : Applicator[F, G, F[In], G[In]] = (f : F ~> G, t : F[In]) => f(t)
-  
+  implicit def applicator3[F[_], In, Out] : Applicator[F, Const[Out]#λ, F[In], Out] = (f : F ~> Const[Out]#λ, t : F[In]) => f(t)
+
   trait Mapper[F[_], G[_], In <: HList, Out <: HList] {
     def apply(f : F ~> G, in: In) : Out
   }
 
-  implicit def hnilMapper[F[_], G[_]] = new Mapper[F, G, HNil, HNil] {
+  implicit def hnilMapper1[F[_], G[_]] = new Mapper[F, G, HNil, HNil] {
     def apply(f : F ~> G, l : HNil) = HNil
   }
   
@@ -97,7 +97,7 @@ object HLists {
     def apply(f : F ~> Const[Out]#λ, l : HNil) = HNil
   }
   
-  implicit def hlistMapper[F[_], G[_], InH, OutH, InT <: HList, OutT <: HList]
+  implicit def hlistMapper1[F[_], G[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, G, InH, OutH], mt : Mapper[F, G, InT, OutT]) = new Mapper[F, G, InH :: InT, OutH :: OutT] {
       def apply(f : F ~> G, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
