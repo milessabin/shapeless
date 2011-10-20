@@ -25,7 +25,7 @@ object HLists {
     def ::[T](v : T) = HCons(v, this)
     override def toString = head+" :: "+tail.toString
 
-    def map[F[_], G[_], Out <: HList](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
+    def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
     def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
     
     type Tupled = T#Tupled1[H]
@@ -77,15 +77,23 @@ object HLists {
   type ::[H, T <: HList] = HCons[H, T]
   val :: = HCons
 
-  type Applicator[F[_], G[_], In, Out] = (F ~> G, In) => Out
+  trait Applicator[F[_], G[_], In, Out] {
+    def apply(f : F ~> G, in : In) : Out
+  }
 
-  implicit def applicator1[F[_], G[_], In] : Applicator[F, G, F[In], G[In]] = (f : F ~> G, t : F[In]) => f(t)
+  implicit def applicator1[F[_], G[_], In] = new Applicator[F, G, F[In], G[In]] {
+    def apply(f : F ~> G, t : F[In]) = f(t)
+  }
   
-  implicit def applicator2[G[_], In] : Applicator[Id, G, In, G[In]] = (f : Id ~> G, t : In) => f(t)
+  implicit def applicator2[G[_], In] = new Applicator[Id, G, In, G[In]] {
+    def apply(f : Id ~> G, t : In) = f(t)
+  }
 
-  implicit def applicator3[F[_], In, Out] : Applicator[F, Const[Out]#λ, F[In], Out] = (f : F ~> Const[Out]#λ, t : F[In]) => f(t)
-
-  trait Mapper[F[_], G[_], In <: HList, Out <: HList] {
+  implicit def applicator3[F[_], In, Out] = new Applicator[F, Const[Out]#λ, F[In], Out] {
+    def apply(f : F ~> Const[Out]#λ, t : F[In]) = f(t)
+  }
+  
+  trait Mapper[F[_], G[_], In, Out] {
     def apply(f : F ~> G, in: In) : Out
   }
 
