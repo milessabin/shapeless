@@ -7,11 +7,10 @@ object Rank2Poly {
   trait ~>[F[_], G[_]] {
     type λ[T] = F[T] => G[T]
     def apply[T](x : F[T]) : G[T]
-    def univInst[T] : λ[T] = apply _ 
   }
 
   // Use of dependent type h.λ[T] essential here
-  implicit def univInst[F[_], G[_], T](h : F ~> G) : h.λ[T] = h.univInst
+  implicit def univInst[F[_], G[_], T](h : F ~> G) : h.λ[T] = h.apply _
 
   object identity extends (Id ~> Id) {
     def apply[T](t : T) = t
