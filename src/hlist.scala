@@ -52,7 +52,7 @@ object HLists {
     override def toString = "HNil"
 
     def map[F](f : F) : HNil = HNil
-
+    
     type Tupled = Nothing
     type Tupled1[A] = Tuple1[A]
     type Tupled2[A, B] = (A, B)
