@@ -10,6 +10,8 @@ object HLists {
     def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
     def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
     
+    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(this, z, f, op)
+
     def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
 
     def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
@@ -20,6 +22,8 @@ object HLists {
     override def toString = "HNil"
       
     def map[F](f : F) : HNil = HNil
+    
+    def foldLeft[F[_], G[_], R](f : F ~> G)(z : R)(op : (R, R) => R) : R = z
     
     def unify : HNil = HNil
     
@@ -67,6 +71,18 @@ object HLists {
   implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F, Const[OutH]#λ, InT, OutT]) = new Mapper[F, Const[OutH]#λ, InH :: InT, OutH :: OutT] {
       def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+  }
+  
+  trait LeftFolder[-L <: HList, R, F[_]] {
+    def apply(l : L, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) : R 
+  }
+  
+  implicit def hnilLeftFolder[R, F[_]] = new LeftFolder[HNil, R, F] {
+    def apply(l : HNil, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) = in
+  }
+  
+  implicit def hlistLeftFolder[H, T <: HList, R, F[_]](implicit ap : Applicator[F, Const[R]#λ, H, R], tf : LeftFolder[T, R, F]) = new LeftFolder[H :: T, R, F] {
+    def apply(l : H :: T, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) = tf(l.tail, op(in, ap(f, l.head)), f, op)
   }
   
   trait Lub[-A, -B, +Out] {
@@ -269,7 +285,14 @@ object TestHList {
     val tl1 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil 
     val tl2 = Option(1) :: Option("foo") :: None :: Option(3) :: HNil
     
-    assert((tl1 map isDefined).toList.foldLeft(true)(_ && _))
-    assert(!(tl2 map isDefined).toList.foldLeft(true)(_ && _))
+    val mlfl1 = (tl1 map isDefined).toList.foldLeft(true)(_ && _)
+    println(mlfl1)
+    val mlfl2 = (tl2 map isDefined).toList.foldLeft(true)(_ && _)
+    println(mlfl2)
+    
+    val fl1 = tl1.foldLeft(true)(isDefined)(_ && _)
+    println(fl1)
+    val fl2 = tl2.foldLeft(true)(isDefined)(_ && _)
+    println(fl2)
   }
 }
