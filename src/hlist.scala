@@ -1,5 +1,5 @@
 object HLists {
-  import Rank2Poly._
+  import PolyFun._
   
   sealed trait HList
   
@@ -106,7 +106,7 @@ object HLists {
 
 object TestHList {
   import HLists._
-  import Rank2Poly._
+  import PolyFun._
   //import Tuples._
 
   def main(args : Array[String]) {

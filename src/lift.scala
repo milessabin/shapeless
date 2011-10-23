@@ -1,6 +1,6 @@
 /*
 object LiftOFn {
-  import Rank2Poly._
+  import PolyFun._
   import HLists._
   import Tuples._
   import Functions._
@@ -19,7 +19,7 @@ object LiftOFn {
 }
 
 object TestLiftOFn {
-  import Rank2Poly._
+  import PolyFun._
   import HLists._
   import Tuples._
   import Functions._

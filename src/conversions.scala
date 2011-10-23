@@ -1,6 +1,6 @@
 /*
 object Tuples {
-  import Rank2Poly._
+  import PolyFun._
   import HLists._
   
 
@@ -20,7 +20,7 @@ object Tuples {
 }
 
 object Functions {
-  import Rank2Poly._
+  import PolyFun._
   import HLists._
   import Tuples._
   

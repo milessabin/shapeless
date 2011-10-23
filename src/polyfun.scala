@@ -1,4 +1,4 @@
-object Rank2Poly {
+object PolyFun {
   type Id[T] = T
   type Const[C] = {
     type λ[T] = C
