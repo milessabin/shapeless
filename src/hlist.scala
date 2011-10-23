@@ -88,11 +88,17 @@ object HLists {
     def right(b : T) : T = b
   }
   
-  trait Lub[-H, -T <: HList, +L]
+  trait Lub[-H, -T <: HList, +L] {
+    def head(h : H) : L
+  }
   
-  implicit def hsingleLub[T] = new Lub[T, HNil, T] {}
+  implicit def hsingleLub[T] = new Lub[T, HNil, T] {
+    def head(h : T) : T = h
+  }
   
-  implicit def hlistLub[H1, H2, L1, T <: HList, L2](implicit u : Unify2[H1, H2, L1], lt : Lub[L1, T, L2]) = new Lub[H1, H2 :: T, L2] {} 
+  implicit def hlistLub[H1, H2, L1, T <: HList, L2](implicit u : Unify2[H1, H2, L1], lt : Lub[L1, T, L2]) = new Lub[H1, H2 :: T, L2] {
+    def head(h : H1) : L2 = lt.head(u.left(h))
+  }
 
   trait Unifier[-In, +Out] {
     def unify(l : In) : Out
@@ -114,7 +120,7 @@ object HLists {
   }
   
   implicit def hlistToList[H, T <: HList, L](implicit lb : Lub[H, T, L], ttl : ToList[T, L]) = new ToList[H :: T, L] {
-    def toList(l : H :: T) = l.head.asInstanceOf[L] :: ttl.toList(l.tail)
+    def toList(l : H :: T) = lb.head(l.head) :: ttl.toList(l.tail)
   }
 }
 
