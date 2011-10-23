@@ -69,12 +69,12 @@ object HLists {
       def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
   
-  trait Unify2[-A, -B, +Out] {
+  trait Lub[-A, -B, +Out] {
     def left(a : A) : Out
     def right(b : B) : Out
   }
   
-  implicit def unify2[T] = new Unify2[T, T, T] {
+  implicit def lub[T] = new Lub[T, T, T] {
     def left(a : T) : T = a
     def right(b : T) : T = b
   }
@@ -87,7 +87,7 @@ object HLists {
     def unify(l : T :: HNil) = l
   }
   
-  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Unify2[H1, H2, L], lt : Unifier[L, T, L :: Out]) = new Unifier[H1, H2 :: T, L :: L :: Out] {
+  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Lub[H1, H2, L], lt : Unifier[L, T, L :: Out]) = new Unifier[H1, H2 :: T, L :: L :: Out] {
     def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
   }
 
@@ -99,7 +99,7 @@ object HLists {
     def toList(l : T :: HNil) = Nil
   }
   
-  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Unify2[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
+  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
     def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
   }
 }
@@ -165,29 +165,29 @@ object TestHList {
     val apbp : APBP = a :: p :: b :: p :: HNil
     val ffff : FFFF = apap
     
-    def unify[A, B, C](a : A, b : B)(implicit u : Unify2[A, B, C]) : (C, C) = (u.left(a), u.right(b))
+    def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
-    val u21 = unify(a, a)
-    val u22 = unify(a, p)
-    val u23 = unify(a, f)
-    val u24 = unify(p, a)
-    val u25 = unify(p, p)
-    val u26 = unify(f, f)
-    val u27 = unify(f, a)
-    val u28 = unify(f, p)
-    val u29 = unify(f, f)
+    val u21 = lub(a, a)
+    val u22 = lub(a, p)
+    val u23 = lub(a, f)
+    val u24 = lub(p, a)
+    val u25 = lub(p, p)
+    val u26 = lub(f, f)
+    val u27 = lub(f, a)
+    val u28 = lub(f, p)
+    val u29 = lub(f, f)
 
-    implicitly[Unify2[HNil, HNil, HNil]]
-    implicitly[Unify2[Apple :: HNil, Apple :: HNil, Apple :: HNil]]
-    implicitly[Unify2[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unify2[Apple :: Pear :: HNil, Pear :: Apple :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unify2[ISII, IIII, IYII]]
+    implicitly[Lub[HNil, HNil, HNil]]
+    implicitly[Lub[Apple :: HNil, Apple :: HNil, Apple :: HNil]]
+    implicitly[Lub[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Lub[Apple :: Pear :: HNil, Pear :: Apple :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Lub[ISII, IIII, IYII]]
     
-    val u31 = unify(HNil, HNil)
-    val u32 = unify(a :: HNil, a :: HNil)
-    val u33 = unify(f :: p :: HNil, f :: f :: HNil)
-    val u34 = unify(a :: p :: HNil, p :: a :: HNil)
-    val u35 = unify(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
+    val u31 = lub(HNil, HNil)
+    val u32 = lub(a :: HNil, a :: HNil)
+    val u33 = lub(f :: p :: HNil, f :: f :: HNil)
+    val u34 = lub(a :: p :: HNil, p :: a :: HNil)
+    val u35 = lub(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     
     implicitly[Unifier[Apple, HNil, Apple :: HNil]]
     implicitly[Unifier[Fruit, Pear :: HNil, Fruit :: Fruit :: HNil]]
