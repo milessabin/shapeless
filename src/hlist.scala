@@ -10,7 +10,7 @@ object HLists {
     def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
     def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
     
-    def toList[Lub](implicit l : Lubber[H :: T, Lub]) : List[Lub] = l.toList(this)
+    def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
     
     def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) = unifier.unify(this)
   }
@@ -66,18 +66,6 @@ object HLists {
       def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
   
-  trait Lubber[-L, +Lub] {
-    def toList(l : L) : List[Lub]
-  }
-  
-  implicit def hnilLubber : Lubber[HNil, Nothing] = new Lubber[HNil, Nothing] {
-    def toList(l : HNil) = Nil
-  }
-  
-  implicit def hlistLubber1[H, T <: HList, Out >: H](implicit tl : Lubber[T, Out]) : Lubber[H :: T, Out] = new Lubber[H :: T, Out] {
-    def toList(l : H :: T) = l.head :: tl.toList(l.tail)
-  }
-  
   trait Bounds[+B, -L]
   
   implicit def hnilBounds[X] = new Bounds[X, HNil] {}
@@ -116,6 +104,17 @@ object HLists {
   
   implicit def hlistUnifier[H, T <: HList, L, Out <: HList](implicit l : Lub[H, T, L], r : Repeats[H :: T, L, Out]) = new Unifier[H :: T, Out] {
     def unify(l : H :: T) : Out = l.asInstanceOf[Out]
+  }
+  trait ToList[-L, +Lub] {
+    def toList(l : L) : List[Lub]
+  }
+  
+  implicit def hnilToList : ToList[HNil, Nothing] = new ToList[HNil, Nothing] {
+    def toList(l : HNil) = Nil
+  }
+  
+  implicit def hlistToList[H, T <: HList, L](implicit lb : Lub[H, T, L], ttl : ToList[T, L]) = new ToList[H :: T, L] {
+    def toList(l : H :: T) = l.head.asInstanceOf[L] :: ttl.toList(l.tail)
   }
 }
 
@@ -239,6 +238,10 @@ object TestHList {
     val u9b : Unifier[AP, FF] = getUnifier(a :: p :: HNil)
     val u10 = getUnifier(apap)
     
+    val fruits = apap.toList
+    val stuff = l1.toList
+    val moreStuff = (a :: "foo" :: p :: HNil).toList
+    
     val l2 /*: SISSSISI */ = l1 map singleton
     val l2b : SISSSISI = l1 map singleton
     println(l2)
@@ -269,8 +272,8 @@ object TestHList {
     val l7b : BBBB = l4 map isDefined
     println(l7)
 
-    //val ll2 = l7.toList2
-    //val b : Boolean = ll2.head
+    val ll2 = l7.toList
+    val b : Boolean = ll2.head
 
     val ap2 = implicitly[Applicator[Option, Const[Boolean]#λ, Option[Int], Boolean]]
     val mn2 = implicitly[Mapper[Option, Const[Boolean]#λ, HNil, HNil]]
