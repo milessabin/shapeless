@@ -287,5 +287,11 @@ object TestHList {
 
     def blip3[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[Option, Const[Boolean]#λ, In, Out]) = ev
     val b3 = blip3(l4)
+    
+    val tl1 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil 
+    val tl2 = Option(1) :: Option("foo") :: None :: Option(3) :: HNil
+    
+    assert((tl1 map isDefined).toList.foldLeft(true)(_ && _))
+    assert(!(tl2 map isDefined).toList.foldLeft(true)(_ && _))
   }
 }
