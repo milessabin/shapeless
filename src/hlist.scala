@@ -1,6 +1,20 @@
 object HLists {
   import PolyFun._
   
+  // TODO zip/unzip
+  // TODO concat
+  // TODO init/last
+  // TODO reverse
+  // TODO zipper
+  // TODO hApply
+  // TODO Nat/type indexed get/put
+  // TODO Value/type contains
+  // TODO take/drop
+  // TODO Convert <=> case class/ProductN
+  // TODO Lenses
+  // TODO http://stackoverflow.com/questions/7606587
+  // TODO Checked conversion from Seq[T]
+  
   sealed trait HList
   
   final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
