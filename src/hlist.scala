@@ -12,7 +12,7 @@ object HLists {
     
     def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
 
-    def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
+    def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
   }
   
   trait HNil extends HList {
@@ -115,16 +115,16 @@ object HLists {
     def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
   }
 
-  trait ToList[-L, +Lub] {
-    def toList(l : L) : List[Lub]
+  trait ToList[-H, -T <: HList, +Lub] {
+    def toList(l : H :: T) : List[Lub]
   }
   
-  implicit def hnilToList : ToList[HNil, Nothing] = new ToList[HNil, Nothing] {
-    def toList(l : HNil) = Nil
+  implicit def hsingleToList[T] : ToList[T, HNil, T] = new ToList[T, HNil, T] {
+    def toList(l : T :: HNil) = Nil
   }
   
-  implicit def hlistToList[H, T <: HList, L](implicit lb : Lub[H, T, L], ttl : ToList[T, L]) = new ToList[H :: T, L] {
-    def toList(l : H :: T) = lb.head(l.head) :: ttl.toList(l.tail)
+  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Unify2[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
+    def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
   }
 }
 
@@ -171,6 +171,7 @@ object TestHList {
     trait Fruit
     trait Apple extends Fruit
     trait Pear extends Fruit
+    trait Banana extends Fruit
     
     type YYYY = Any :: Any :: Any :: Any :: HNil
     type FF = Fruit :: Fruit :: HNil
@@ -178,14 +179,17 @@ object TestHList {
     type AF = Apple :: Fruit :: HNil
     type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
     type APAP = Apple :: Pear :: Apple :: Pear :: HNil
+    type APBP = Apple :: Pear :: Banana :: Pear :: HNil
     
     implicitly[Bounds[Any, ISII]]
     implicitly[Bounds[Fruit, APAP]] 
     
     val a : Apple = new Apple {}
     val p : Pear = new Pear {}
+    val b : Banana = new Banana {}
     val f : Fruit = new Fruit {}
     val apap : APAP = a :: p :: a :: p :: HNil
+    val apbp : APBP = a :: p :: b :: p :: HNil
     val ffff : FFFF = apap
     
     def unify[A, B, C](a : A, b : B)(implicit u : Unify2[A, B, C]) : (C, C) = (u.left(a), u.right(b))
@@ -247,8 +251,10 @@ object TestHList {
     val u9a : Unifier[Apple, Fruit :: HNil, FF] = getUnifier(a :: f :: HNil)
     val u9b : Unifier[Apple, Pear :: HNil, FF] = getUnifier(a :: p :: HNil)
     val u10 = getUnifier(apap)
+    val u11 = getUnifier(apbp)
     
-    val fruits = apap.toList
+    val fruits1 = apap.toList
+    val fruits2 = apbp.toList
     val stuff = l1.toList
     val moreStuff = (a :: "foo" :: p :: HNil).toList
     
@@ -283,7 +289,7 @@ object TestHList {
     println(l7)
 
     val ll2 = l7.toList
-    val b : Boolean = ll2.head
+    val bh : Boolean = ll2.head
 
     val ap2 = implicitly[Applicator[Option, Const[Boolean]#λ, Option[Int], Boolean]]
     val mn2 = implicitly[Mapper[Option, Const[Boolean]#λ, HNil, HNil]]
