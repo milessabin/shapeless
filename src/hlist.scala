@@ -10,9 +10,9 @@ object HLists {
     def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
     def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
     
+    def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
+
     def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
-    
-    def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) = unifier.unify(this)
   }
   
   trait HNil extends HList {
@@ -20,6 +20,9 @@ object HLists {
     override def toString = "HNil"
       
     def map[F](f : F) : HNil = HNil
+    
+    def unify : HNil = HNil
+    
     def toList = Nil
   }
   
@@ -99,18 +102,19 @@ object HLists {
   implicit def hlistLub[H1, H2, L1, T <: HList, L2](implicit u : Unify2[H1, H2, L1], lt : Lub[L1, T, L2]) = new Lub[H1, H2 :: T, L2] {
     def head(h : H1) : L2 = lt.head(u.left(h))
   }
+  
+  trait Unifier[-H, -T <: HList, +Out <: HList] {
+    def unify(l : H :: T) : Out
+  }
+  
+  implicit def hsingleUnifier[T] = new Unifier[T, HNil, T :: HNil] {
+    def unify(l : T :: HNil) = l
+  }
+  
+  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Unify2[H1, H2, L], lt : Unifier[L, T, L :: Out]) = new Unifier[H1, H2 :: T, L :: L :: Out] {
+    def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
+  }
 
-  trait Unifier[-In, +Out] {
-    def unify(l : In) : Out
-  }
-  
-  implicit def hnilUnifier : Unifier[HNil, HNil] = new Unifier[HNil, HNil] {
-    def unify(l : HNil) = l
-  }
-  
-  implicit def hlistUnifier[H, T <: HList, L, Out <: HList](implicit l : Lub[H, T, L], r : Repeats[H :: T, L, Out]) = new Unifier[H :: T, Out] {
-    def unify(l : H :: T) : Out = l.asInstanceOf[Out]
-  }
   trait ToList[-L, +Lub] {
     def toList(l : L) : List[Lub]
   }
@@ -217,22 +221,22 @@ object TestHList {
     implicitly[Lub[Apple, Pear :: Apple :: Pear :: HNil, Fruit]]
     implicitly[Lub[Pear, Apple :: Pear :: Apple :: HNil, Fruit]]
 
-    implicitly[Unifier[HNil, HNil]]
-    implicitly[Unifier[Apple :: HNil, Apple :: HNil]]
-    implicitly[Unifier[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unifier[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    //implicitly[Unifier[HNil, HNil]]
+    implicitly[Unifier[Apple, HNil, Apple :: HNil]]
+    implicitly[Unifier[Fruit, Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier[Apple, Pear :: HNil, Fruit :: Fruit :: HNil]]
     
-    implicitly[Unifier[ISII, YYYY]]
-    val uapap = implicitly[Unifier[APAP, FFFF]]
+    implicitly[Unifier[Int, String :: Int :: Int :: HNil, YYYY]]
+    val uapap = implicitly[Unifier[Apple, Pear :: Apple :: Pear :: HNil, FFFF]]
     
     val unified1 = uapap.unify(apap)
     val unified2 : FFFF = uapap.unify(apap)
     val unified3 = apap.unify
     val unified4 : FFFF = apap.unify
 
-    def getUnifier[In <: HList, Out <: HList](l : In)(implicit u : Unifier[In, Out]) = u
+    def getUnifier[H, T <: HList, Out <: HList](l : H :: T)(implicit u : Unifier[H, T, Out]) = u
     
-    val u1 = getUnifier(HNil)
+    //val u1 = getUnifier(HNil)
     val u2 = getUnifier(a :: HNil)
     val u3 = getUnifier(a :: a :: HNil)
     val u4 = getUnifier(a :: a :: a :: HNil)
@@ -240,8 +244,8 @@ object TestHList {
     val u6 = getUnifier(a :: p :: HNil)
     val u7 = getUnifier(a :: f :: HNil)
     val u8 = getUnifier(f :: a :: HNil)
-    val u9a : Unifier[AF, FF] = getUnifier(a :: f :: HNil)
-    val u9b : Unifier[AP, FF] = getUnifier(a :: p :: HNil)
+    val u9a : Unifier[Apple, Fruit :: HNil, FF] = getUnifier(a :: f :: HNil)
+    val u9b : Unifier[Apple, Pear :: HNil, FF] = getUnifier(a :: p :: HNil)
     val u10 = getUnifier(apap)
     
     val fruits = apap.toList
