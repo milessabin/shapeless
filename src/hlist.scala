@@ -69,18 +69,6 @@ object HLists {
       def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
   
-  trait Bounds[+B, -L]
-  
-  implicit def hnilBounds[X] = new Bounds[X, HNil] {}
-  
-  implicit def hlistBounds[X, H, T <: HList](implicit ev : H <:< X, tb : Bounds[X, T]) = new Bounds[X, H :: T] {} 
-  
-  trait Repeats[L <: HList, X, Out <: HList]
-  
-  implicit def hnilRepeats[X] = new Repeats[HNil, X, HNil] {}
-  
-  implicit def hlistRepeats[H, T <: HList, X, OutT <: HList](implicit rep : Repeats[T, X, OutT]) = new Repeats[H :: T, X, X :: OutT] {}
-  
   trait Unify2[-A, -B, +Out] {
     def left(a : A) : Out
     def right(b : B) : Out
@@ -89,18 +77,6 @@ object HLists {
   implicit def unify2[T] = new Unify2[T, T, T] {
     def left(a : T) : T = a
     def right(b : T) : T = b
-  }
-  
-  trait Lub[-H, -T <: HList, +L] {
-    def head(h : H) : L
-  }
-  
-  implicit def hsingleLub[T] = new Lub[T, HNil, T] {
-    def head(h : T) : T = h
-  }
-  
-  implicit def hlistLub[H1, H2, L1, T <: HList, L2](implicit u : Unify2[H1, H2, L1], lt : Lub[L1, T, L2]) = new Lub[H1, H2 :: T, L2] {
-    def head(h : H1) : L2 = lt.head(u.left(h))
   }
   
   trait Unifier[-H, -T <: HList, +Out <: HList] {
@@ -181,9 +157,6 @@ object TestHList {
     type APAP = Apple :: Pear :: Apple :: Pear :: HNil
     type APBP = Apple :: Pear :: Banana :: Pear :: HNil
     
-    implicitly[Bounds[Any, ISII]]
-    implicitly[Bounds[Fruit, APAP]] 
-    
     val a : Apple = new Apple {}
     val p : Pear = new Pear {}
     val b : Banana = new Banana {}
@@ -216,16 +189,6 @@ object TestHList {
     val u34 = unify(a :: p :: HNil, p :: a :: HNil)
     val u35 = unify(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     
-    implicitly[Lub[Nothing, HNil, Nothing]]
-    implicitly[Lub[Apple, HNil, Apple]]
-    implicitly[Lub[Fruit, Pear :: HNil, Fruit]]
-    implicitly[Lub[Pear, Fruit :: HNil, Fruit]]
-    implicitly[Lub[Apple, Pear :: HNil, Fruit]]
-    implicitly[Lub[Pear, Apple :: HNil, Fruit]]
-    implicitly[Lub[Apple, Pear :: Apple :: Pear :: HNil, Fruit]]
-    implicitly[Lub[Pear, Apple :: Pear :: Apple :: HNil, Fruit]]
-
-    //implicitly[Unifier[HNil, HNil]]
     implicitly[Unifier[Apple, HNil, Apple :: HNil]]
     implicitly[Unifier[Fruit, Pear :: HNil, Fruit :: Fruit :: HNil]]
     implicitly[Unifier[Apple, Pear :: HNil, Fruit :: Fruit :: HNil]]
@@ -240,7 +203,6 @@ object TestHList {
 
     def getUnifier[H, T <: HList, Out <: HList](l : H :: T)(implicit u : Unifier[H, T, Out]) = u
     
-    //val u1 = getUnifier(HNil)
     val u2 = getUnifier(a :: HNil)
     val u3 = getUnifier(a :: a :: HNil)
     val u4 = getUnifier(a :: a :: a :: HNil)
