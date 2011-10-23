@@ -1,83 +1,34 @@
 object HLists {
   import Rank2Poly._
   
-  sealed trait HList {
-    type Tupled
-    type Tupled1[A]
-    type Tupled2[A, B]
-    type Tupled3[A, B, C]
-    type Tupled4[A, B, C, D]
-
-    def tupled : Tupled
-    def tupled1[A](a : A) : Tupled1[A]
-    def tupled2[A, B](a : A, b : B) : Tupled2[A, B]
-    def tupled3[A, B, C](a : A, b : B, c : C) : Tupled3[A, B, C]
-    def tupled4[A, B, C, D](a : A, b : B, c : C, d : D) : Tupled4[A, B, C, D]
-    
-    type Fn[R]
-    type Fn1[A, R]
-    type Fn2[A, B, R]
-    type Fn3[A, B, C, R]
-    type Fn4[A, B, C, D, R]
-  }
+  sealed trait HList
   
-  final case class HCons[H, T <: HList](head : H, tail : T) extends HList {
+  final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
     def ::[T](v : T) = HCons(v, this)
     override def toString = head+" :: "+tail.toString
-
+    
     def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
     def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
     
-    type Tupled = T#Tupled1[H]
-    type Tupled1[A] = T#Tupled2[A, H]
-    type Tupled2[A, B] = T#Tupled3[A, B, H]
-    type Tupled3[A, B, C] = T#Tupled4[A, B, C, H]
-    type Tupled4[A, B, C, D] = Nothing
-
-    def tupled : Tupled = tail.tupled1(head)
-    def tupled1[A](a : A) : Tupled1[A] = tail.tupled2(a, head)
-    def tupled2[A, B](a : A, b : B) : Tupled2[A, B] = tail.tupled3(a, b, head)
-    def tupled3[A, B, C](a : A, b : B, c : C) : Tupled3[A, B, C] = tail.tupled4(a, b, c, head)
-    def tupled4[A, B, C, D](a : A, b : B, c : C, d : D) : Tupled4[A, B, C, D] = sys.error("boom")
-
-    type Fn[R] = T#Fn1[H, R]
-    type Fn1[A, R] = T#Fn2[A, H, R]
-    type Fn2[A, B, R] = T#Fn3[A, B, H, R]
-    type Fn3[A, B, C, R] = T#Fn4[A, B, C, H, R]
-    type Fn4[A, B, C, D, R] = Nothing
+    def toList[Lub](implicit l : Lubber[H :: T, Lub]) : List[Lub] = l.toList(this)
+    
+    def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) = unifier.unify(this)
   }
-
+  
   trait HNil extends HList {
     def ::[T](v : T) = HCons(v, this)
     override def toString = "HNil"
-
+      
     def map[F](f : F) : HNil = HNil
-    
-    type Tupled = Nothing
-    type Tupled1[A] = Tuple1[A]
-    type Tupled2[A, B] = (A, B)
-    type Tupled3[A, B, C] = (A, B, C)
-    type Tupled4[A, B, C, D] = (A, B, C, D)
-
-    def tupled : Tupled = sys.error("boom")
-    def tupled1[A](a : A) : Tupled1[A] = Tuple1(a)
-    def tupled2[A, B](a : A, b : B) : Tupled2[A, B] = (a, b)
-    def tupled3[A, B, C](a : A, b : B, c : C) : Tupled3[A, B, C] = (a, b, c)
-    def tupled4[A, B, C, D](a : A, b : B, c : C, d : D) : Tupled4[A, B, C, D] = (a, b, c, d)
-
-    type Fn[R] = Nothing
-    type Fn1[A, R] = A => R
-    type Fn2[A, B, R] = (A, B) => R
-    type Fn3[A, B, C, R] = (A, B, C) => R
-    type Fn4[A, B, C, D, R] = (A, B, C, D) => R
+    def toList = Nil
   }
   
   case object HNil extends HNil
   
-  type ::[H, T <: HList] = HCons[H, T]
+  type ::[+H, +T <: HList] = HCons[H, T]
   val :: = HCons
-
-  trait Applicator[F[_], G[_], In, Out] {
+  
+  trait Applicator[F[_], G[_], -In, +Out] {
     def apply(f : F ~> G, in : In) : Out
   }
 
@@ -93,7 +44,7 @@ object HLists {
     def apply(f : F ~> Const[Out]#λ, t : F[In]) = f(t)
   }
   
-  trait Mapper[F[_], G[_], In, Out] {
+  trait Mapper[F[_], G[_], -In, +Out] {
     def apply(f : F ~> G, in: In) : Out
   }
 
@@ -113,6 +64,58 @@ object HLists {
   implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F, Const[OutH]#λ, InT, OutT]) = new Mapper[F, Const[OutH]#λ, InH :: InT, OutH :: OutT] {
       def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+  }
+  
+  trait Lubber[-L, +Lub] {
+    def toList(l : L) : List[Lub]
+  }
+  
+  implicit def hnilLubber : Lubber[HNil, Nothing] = new Lubber[HNil, Nothing] {
+    def toList(l : HNil) = Nil
+  }
+  
+  implicit def hlistLubber1[H, T <: HList, Out >: H](implicit tl : Lubber[T, Out]) : Lubber[H :: T, Out] = new Lubber[H :: T, Out] {
+    def toList(l : H :: T) = l.head :: tl.toList(l.tail)
+  }
+  
+  trait Bounds[+B, -L]
+  
+  implicit def hnilBounds[X] = new Bounds[X, HNil] {}
+  
+  implicit def hlistBounds[X, H, T <: HList](implicit ev : H <:< X, tb : Bounds[X, T]) = new Bounds[X, H :: T] {} 
+  
+  trait Repeats[L <: HList, X, Out <: HList]
+  
+  implicit def hnilRepeats[X] = new Repeats[HNil, X, HNil] {}
+  
+  implicit def hlistRepeats[H, T <: HList, X, OutT <: HList](implicit rep : Repeats[T, X, OutT]) = new Repeats[H :: T, X, X :: OutT] {}
+  
+  trait Unify2[-A, -B, +Out] {
+    def left(a : A) : Out
+    def right(b : B) : Out
+  }
+  
+  implicit def unify2[T] = new Unify2[T, T, T] {
+    def left(a : T) : T = a
+    def right(b : T) : T = b
+  }
+  
+  trait Lub[-H, -T <: HList, +L]
+  
+  implicit def hsingleLub[T] = new Lub[T, HNil, T] {}
+  
+  implicit def hlistLub[H1, H2, L1, T <: HList, L2](implicit u : Unify2[H1, H2, L1], lt : Lub[L1, T, L2]) = new Lub[H1, H2 :: T, L2] {} 
+
+  trait Unifier[-In, +Out] {
+    def unify(l : In) : Out
+  }
+  
+  implicit def hnilUnifier : Unifier[HNil, HNil] = new Unifier[HNil, HNil] {
+    def unify(l : HNil) = l
+  }
+  
+  implicit def hlistUnifier[H, T <: HList, L, Out <: HList](implicit l : Lub[H, T, L], r : Repeats[H :: T, L, Out]) = new Unifier[H :: T, Out] {
+    def unify(l : H :: T) : Out = l.asInstanceOf[Out]
   }
 }
 
@@ -147,11 +150,94 @@ object TestHList {
     println(o2)
 
     type ISII = Int :: String :: Int :: Int :: HNil
+    type IIII = Int :: Int :: Int :: Int :: HNil
+    type IYII = Int :: Any :: Int :: Int :: HNil
     type OIOSOIOI = Option[Int] :: Option[String] :: Option[Int] :: Option[Int] :: HNil
     type SISSSISI = Set[Int] :: Set[String] :: Set[Int] :: Set[Int] :: HNil
 
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
+    val l1b : Any :: AnyRef :: Any :: Any :: HNil = l1
     println(l1)
+
+    trait Fruit
+    trait Apple extends Fruit
+    trait Pear extends Fruit
+    
+    type YYYY = Any :: Any :: Any :: Any :: HNil
+    type FF = Fruit :: Fruit :: HNil
+    type AP = Apple :: Pear :: HNil
+    type AF = Apple :: Fruit :: HNil
+    type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
+    type APAP = Apple :: Pear :: Apple :: Pear :: HNil
+    
+    implicitly[Bounds[Any, ISII]]
+    implicitly[Bounds[Fruit, APAP]] 
+    
+    val a : Apple = new Apple {}
+    val p : Pear = new Pear {}
+    val f : Fruit = new Fruit {}
+    val apap : APAP = a :: p :: a :: p :: HNil
+    val ffff : FFFF = apap
+    
+    def unify[A, B, C](a : A, b : B)(implicit u : Unify2[A, B, C]) : (C, C) = (u.left(a), u.right(b))
+    
+    val u21 = unify(a, a)
+    val u22 = unify(a, p)
+    val u23 = unify(a, f)
+    val u24 = unify(p, a)
+    val u25 = unify(p, p)
+    val u26 = unify(f, f)
+    val u27 = unify(f, a)
+    val u28 = unify(f, p)
+    val u29 = unify(f, f)
+
+    implicitly[Unify2[HNil, HNil, HNil]]
+    implicitly[Unify2[Apple :: HNil, Apple :: HNil, Apple :: HNil]]
+    implicitly[Unify2[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unify2[Apple :: Pear :: HNil, Pear :: Apple :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unify2[ISII, IIII, IYII]]
+    
+    val u31 = unify(HNil, HNil)
+    val u32 = unify(a :: HNil, a :: HNil)
+    val u33 = unify(f :: p :: HNil, f :: f :: HNil)
+    val u34 = unify(a :: p :: HNil, p :: a :: HNil)
+    val u35 = unify(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
+    
+    implicitly[Lub[Nothing, HNil, Nothing]]
+    implicitly[Lub[Apple, HNil, Apple]]
+    implicitly[Lub[Fruit, Pear :: HNil, Fruit]]
+    implicitly[Lub[Pear, Fruit :: HNil, Fruit]]
+    implicitly[Lub[Apple, Pear :: HNil, Fruit]]
+    implicitly[Lub[Pear, Apple :: HNil, Fruit]]
+    implicitly[Lub[Apple, Pear :: Apple :: Pear :: HNil, Fruit]]
+    implicitly[Lub[Pear, Apple :: Pear :: Apple :: HNil, Fruit]]
+
+    implicitly[Unifier[HNil, HNil]]
+    implicitly[Unifier[Apple :: HNil, Apple :: HNil]]
+    implicitly[Unifier[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    
+    implicitly[Unifier[ISII, YYYY]]
+    val uapap = implicitly[Unifier[APAP, FFFF]]
+    
+    val unified1 = uapap.unify(apap)
+    val unified2 : FFFF = uapap.unify(apap)
+    val unified3 = apap.unify
+    val unified4 : FFFF = apap.unify
+
+    def getUnifier[In <: HList, Out <: HList](l : In)(implicit u : Unifier[In, Out]) = u
+    
+    val u1 = getUnifier(HNil)
+    val u2 = getUnifier(a :: HNil)
+    val u3 = getUnifier(a :: a :: HNil)
+    val u4 = getUnifier(a :: a :: a :: HNil)
+    val u5 = getUnifier(a :: a :: a :: a :: HNil)
+    val u6 = getUnifier(a :: p :: HNil)
+    val u7 = getUnifier(a :: f :: HNil)
+    val u8 = getUnifier(f :: a :: HNil)
+    val u9a : Unifier[AF, FF] = getUnifier(a :: f :: HNil)
+    val u9b : Unifier[AP, FF] = getUnifier(a :: p :: HNil)
+    val u10 = getUnifier(apap)
     
     val l2 /*: SISSSISI */ = l1 map singleton
     val l2b : SISSSISI = l1 map singleton
@@ -182,6 +268,9 @@ object TestHList {
     val l7 /*: BBBB */ = l4 map isDefined
     val l7b : BBBB = l4 map isDefined
     println(l7)
+
+    //val ll2 = l7.toList2
+    //val b : Boolean = ll2.head
 
     val ap2 = implicitly[Applicator[Option, Const[Boolean]#λ, Option[Int], Boolean]]
     val mn2 = implicitly[Mapper[Option, Const[Boolean]#λ, HNil, HNil]]
