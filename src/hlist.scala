@@ -1,4 +1,4 @@
-object HLists {
+trait LowPriorityHLists {
   import PolyFun._
   
   // TODO zip/unzip
@@ -15,9 +15,65 @@ object HLists {
   // TODO http://stackoverflow.com/questions/7606587
   // TODO Checked conversion from Seq[T]
   
-  sealed trait HList
+  /*
+  trait HListTypeOps {
+    type Mapped[G[_]] <: HList
+    
+    type Tupled
+    type Tupled1[+A]
+    type Tupled2[+A, +B]
+    type Tupled3[+A, +B, +C]
+    type Tupled4[+A, +B, +C, +D]
+
+    type Fn[+R]
+    type Fn1[-A, +R]
+    type Fn2[-A, -B, +R]
+    type Fn3[-A, -B, -C, +R]
+    type Fn4[-A, -B, -C, -D, +R]    
+  }
+  
+  trait HConsTypeOps[+H, +T <: HListTypeOps] extends HListTypeOps {
+    type Mapped[G[_]] <: G[H] :: T#Mapped[G]
+
+    type Tupled <: T#Tupled1[H]
+    type Tupled1[+A] <: T#Tupled2[A, H]
+    type Tupled2[+A, +B] <: T#Tupled3[A, B, H]
+    type Tupled3[+A, +B, +C] <: T#Tupled4[A, B, C, H]
+    type Tupled4[+A, +B, +C, +D] = Nothing
+
+    type Fn[+R] <: T#Fn1[H, R]
+    type Fn1[-A, +R] <: T#Fn2[A, H, R]
+    type Fn2[-A, -B, +R] <: T#Fn3[A, B, H, R]
+    type Fn3[-A, -B, -C, +R] <: T#Fn4[A, B, C, H, R]
+    type Fn4[-A, -B, -C, -D, +R] = Nothing    
+  }
+  
+  trait HNilTypeOps extends HListTypeOps {
+    type Mapped[G[_]] = HNil
+
+    type Tupled = Nothing
+    type Tupled1[+A] = Tuple1[A]
+    type Tupled2[+A, +B] = (A, B)
+    type Tupled3[+A, +B, +C] = (A, B, C)
+    type Tupled4[+A, +B, +C, +D] = (A, B, C, D)
+
+    type Fn[+R] = Nothing
+    type Fn1[-A, +R] = A => R
+    type Fn2[-A, -B, +R] = (A, B) => R
+    type Fn3[-A, -B, -C, +R] = (A, B, C) => R
+    type Fn4[-A, -B, -C, -D, +R] = (A, B, C, D) => R    
+  }
+  */
+  
+  sealed trait HList {
+    type Mapped[G[_]] <: HList
+    //type TypeOps <: HListTypeOps
+  }
   
   final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
+    type Mapped[G[+_]] <: G[H] :: T#Mapped[G]
+    //type TypeOps <: HConsTypeOps[H, T#TypeOps]
+    
     def ::[T](v : T) = HCons(v, this)
     override def toString = head+" :: "+tail.toString
     
@@ -32,6 +88,9 @@ object HLists {
   }
   
   trait HNil extends HList {
+    type Mapped[G[_]] = HNil
+    //type TypeOps = HNilTypeOps
+
     def ::[T](v : T) = HCons(v, this)
     override def toString = "HNil"
       
@@ -131,6 +190,23 @@ object HLists {
   
   implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
     def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
+  }
+}
+
+object HLists extends LowPriorityHLists {
+  import PolyFun._
+  
+  implicit def applicator4[F[_], In] = new Applicator[F, Id, F[In], In] {
+    def apply(f : F ~> Id, t : F[In]) = f(t)
+  }
+  
+  implicit def hnilMapper3[F[_], Out] = new Mapper[F, Id, HNil, HNil] {
+    def apply(f : F ~> Id, l : HNil) = HNil
+  }
+  
+  implicit def hlistMapper3[F[_], InH, OutH, InT <: HList, OutT <: HList]
+    (implicit ap : Applicator[F, Id, InH, OutH], mt : Mapper[F, Id, InT, OutT]) = new Mapper[F, Id, InH :: InT, OutH :: OutT] {
+      def apply(f : F ~> Id, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
 }
 
@@ -260,6 +336,8 @@ object TestHList {
 
     val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
     println(l4)
+    
+    implicitly[Mapper[Option, Id, Option[Int] :: Option[Int] :: HNil, Int :: Int :: HNil]]
     
     val l5 /*: ISII */ = l4 map get
     val l5b : ISII = l4 map get

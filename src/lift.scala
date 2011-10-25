@@ -1,21 +1,12 @@
-/*
 object LiftOFn {
   import PolyFun._
   import HLists._
   import Tuples._
   import Functions._
   
-  def liftO[T <: HList[Id], R](f : HListFn[Id, T, R]) : HListFn[Option, T#Mapped[Option], Option[R]] = {
-    new HListFn[Option, T#Mapped[Option], Option[R]] {
-      def apply(ot : T#Mapped[Option]) : Option[R] = {
-        if (ot.foldLeft(isDefined)(true)(_ & _)) {
-          val t = (ot map get).asInstanceOf[T]
-          Some(f(t))
-        }
-        else None
-      }
-    }
-  }
+  def liftO[H, T <: HList, R](f : (H :: T) => R)
+    (implicit mapper : Mapper[Option, Id, (H :: T)#Mapped[Option], H :: T], folder : LeftFolder[(H :: T)#Mapped[Option], Boolean, Option]) =
+      (ol : (H :: T)#Mapped[Option]) => if (ol.foldLeft(true)(isDefined)(_ && _)) Some(f(ol map get)) else None
 }
 
 object TestLiftOFn {
@@ -30,33 +21,15 @@ object TestLiftOFn {
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
     
-    val hlsum = fnToHListFn2(sum)
-    val hlprd = fnToHListFn3(prd)
+    val l1 = 2 :: 3 :: HNil
+    val l2 = 2 :: 3 :: 4 :: HNil
     
-    val l1 = 2 :: 3 :: HNil[Id]
-    val l2 = 2 :: 3 :: 4 :: HNil[Id]
-    
-    val s1 = hlsum(l1)
-    println(s1)
-    
-    val p1 = hlprd(l2)
-    println(p1)
-    
-    val l3 : (Int :: Int :: HNil[Id])#Mapped[Option] = Option(2) :: Option(3) :: HNil[Option]
-    if (l3.foldLeft(isDefined)(true)(_ & _)) {
-      val l3a = l3 map get
-      val s2 = hlsum(l3a)
-      println(s2)
-    }
-    val l4 : (Int :: Int :: Int :: HNil[Id])#Mapped[Option] = Option(2) :: Option(3) :: Option(4) :: HNil[Option]
-    if (l4.foldLeft(isDefined)(true)(_ & _)) {
-      val l4a = l4 map get
-      val p2 = hlprd(l4a)
-      println(p2)
-    }
-    
-    val sumO = hlistFnToFn2(liftO(hlsum))
-    val prdO = hlistFnToFn3(liftO(hlprd))
+//    val sumO = liftO(sum.hlisted)
+//    val prdO = liftO(prd.hlisted)
+/*
+    import Functions.Implicits._
+    val sumO = liftO(sum)
+    val prdO = liftO(prd)
 
     val s2 = sumO(Some(1), Some(2))
     println(s2)
@@ -75,6 +48,6 @@ object TestLiftOFn {
 
     val p3 = prdO(Some(2), None, Some(4))
     println(p3)
+  */
   }
 }
-*/
