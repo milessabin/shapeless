@@ -1,51 +1,53 @@
-object HLists {
-  import PolyFun._
-  
-  // TODO zip/unzip
-  // TODO concat
-  // TODO init/last
-  // TODO reverse
-  // TODO zipper
-  // TODO hApply
-  // TODO Nat/type indexed get/put
-  // TODO Value/type contains
-  // TODO take/drop
-  // TODO Convert <=> case class/ProductN
-  // TODO Lenses
-  // TODO http://stackoverflow.com/questions/7606587
-  // TODO Checked conversion from Seq[T]
-  
-  sealed trait HList
-  
-  final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
-    def ::[T](v : T) = HCons(v, this)
-    override def toString = head+" :: "+tail.toString
-    
-    def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
-    def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
-    
-    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(this, z, f, op)
+import PolyFun._
 
-    def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
+// TODO zip/unzip
+// TODO concat
+// TODO init/last
+// TODO reverse
+// TODO zipper
+// TODO hApply
+// TODO Nat/type indexed get/put
+// TODO Value/type contains
+// TODO take/drop
+// TODO Convert <=> case class/ProductN
+// TODO Lenses
+// TODO http://stackoverflow.com/questions/7606587
+// TODO Checked conversion from Seq[T]
 
-    def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
-  }
+sealed trait HList
+
+final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
+  import HList._
   
-  trait HNil extends HList {
-    def ::[T](v : T) = HCons(v, this)
-    override def toString = "HNil"
-      
-    def map[F](f : F) : HNil = HNil
-    
-    def foldLeft[F[_], G[_], R](f : F ~> G)(z : R)(op : (R, R) => R) : R = z
-    
-    def unify : HNil = HNil
-    
-    def toList = Nil
-  }
+  def ::[T](v : T) = HCons(v, this)
+  override def toString = head+" :: "+tail.toString
   
-  case object HNil extends HNil
+  def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
+  def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
   
+  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(this, z, f, op)
+
+  def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
+
+  def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
+}
+
+trait HNil extends HList {
+  def ::[T](v : T) = HCons(v, this)
+  override def toString = "HNil"
+    
+  def map[F](f : F) : HNil = HNil
+  
+  def foldLeft[F[_], G[_], R](f : F ~> G)(z : R)(op : (R, R) => R) : R = z
+  
+  def unify : HNil = HNil
+  
+  def toList = Nil
+}
+
+case object HNil extends HNil
+  
+trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
   val :: = HCons
   
@@ -57,14 +59,6 @@ object HLists {
     def apply(f : F ~> G, t : F[In]) = f(t)
   }
   
-  implicit def applicator2[G[_], In] = new Applicator[Id, G, In, G[In]] {
-    def apply(f : Id ~> G, t : In) = f(t)
-  }
-
-  implicit def applicator3[F[_], In, Out] = new Applicator[F, Const[Out]#λ, F[In], Out] {
-    def apply(f : F ~> Const[Out]#λ, t : F[In]) = f(t)
-  }
-  
   trait Mapper[F[_], G[_], -In, +Out] {
     def apply(f : F ~> G, in: In) : Out
   }
@@ -73,18 +67,9 @@ object HLists {
     def apply(f : F ~> G, l : HNil) = HNil
   }
   
-  implicit def hnilMapper2[F[_], Out] = new Mapper[F, Const[Out]#λ, HNil, HNil] {
-    def apply(f : F ~> Const[Out]#λ, l : HNil) = HNil
-  }
-  
   implicit def hlistMapper1[F[_], G[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, G, InH, OutH], mt : Mapper[F, G, InT, OutT]) = new Mapper[F, G, InH :: InT, OutH :: OutT] {
       def apply(f : F ~> G, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
-  }
-  
-  implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
-    (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F, Const[OutH]#λ, InT, OutT]) = new Mapper[F, Const[OutH]#λ, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
   
   trait LeftFolder[-L <: HList, R, F[_]] {
@@ -134,8 +119,42 @@ object HLists {
   }
 }
 
+object HList extends LowPriorityHList {
+  import PolyFun._
+
+  implicit def applicator2[G[_], In] = new Applicator[Id, G, In, G[In]] {
+    def apply(f : Id ~> G, t : In) = f(t)
+  }
+
+  implicit def applicator3[F[_], In, Out] = new Applicator[F, Const[Out]#λ, F[In], Out] {
+    def apply(f : F ~> Const[Out]#λ, t : F[In]) = f(t)
+  }
+  
+  implicit def applicator4[F[_], In] = new Applicator[F, Id, F[In], In] {
+    def apply(f : F ~> Id, t : F[In]) = f(t)
+  }
+  
+  implicit def hnilMapper2[F[_], Out] = new Mapper[F, Const[Out]#λ, HNil, HNil] {
+    def apply(f : F ~> Const[Out]#λ, l : HNil) = HNil
+  }
+  
+  implicit def hnilMapper3[F[_]] = new Mapper[F, Id, HNil, HNil] {
+    def apply(f : F ~> Id, l : HNil) = HNil
+  }
+  
+  implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
+    (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F, Const[OutH]#λ, InT, OutT]) = new Mapper[F, Const[OutH]#λ, InH :: InT, OutH :: OutT] {
+      def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+  }
+  
+  implicit def hlistMapper3[F[_], InH, OutH, InT <: HList, OutT <: HList]
+    (implicit ap : Applicator[F, Id, InH, OutH], mt : Mapper[F, Id, InT, OutT]) = new Mapper[F, Id, InH :: InT, OutH :: OutT] {
+      def apply(f : F ~> Id, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+  }
+}
+
 object TestHList {
-  import HLists._
+  import HList._
   import PolyFun._
   //import Tuples._
 

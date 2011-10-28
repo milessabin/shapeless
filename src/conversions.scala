@@ -1,5 +1,5 @@
 object Tuples {
-  import HLists._
+  import HList._
   
   object Implicits {
     implicit def hlistToTuple1[A](l : A :: HNil) = Tuple1(l.head)
@@ -36,7 +36,7 @@ object Tuples {
 
 object Functions {
   import PolyFun._
-  import HLists._
+  import HList._
   import Tuples._
   
   object Implicits {
