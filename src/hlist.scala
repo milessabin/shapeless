@@ -29,7 +29,7 @@ final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
 
   def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
 
-  def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
+  def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
 }
 
 trait HNil extends HList {
@@ -106,15 +106,15 @@ trait LowPriorityHList {
     def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
   }
 
-  trait ToList[-H, -T <: HList, +Lub] {
-    def toList(l : H :: T) : List[Lub]
+  trait ToList[-L <: HList, +Lub] {
+    def toList(l : L) : List[Lub]
   }
   
-  implicit def hsingleToList[T] : ToList[T, HNil, T] = new ToList[T, HNil, T] {
+  implicit def hsingleToList[T] : ToList[T :: HNil, T] = new ToList[T :: HNil, T] {
     def toList(l : T :: HNil) = Nil
   }
   
-  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
+  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
     def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
   }
 }
