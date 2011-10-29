@@ -27,9 +27,9 @@ final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
   
   def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(this, z, f, op)
 
-  def unify[Out <: HList](implicit unifier : Unifier[H, T, Out]) = unifier.unify(this)
+  def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) = unifier.unify(this)
 
-  def toList[Lub](implicit l : ToList[H, T, Lub]) : List[Lub] = l.toList(this)
+  def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
 }
 
 trait HNil extends HList {
@@ -94,27 +94,27 @@ trait LowPriorityHList {
     def right(b : T) : T = b
   }
   
-  trait Unifier[-H, -T <: HList, +Out <: HList] {
-    def unify(l : H :: T) : Out
+  trait Unifier[-L <: HList, +Out <: HList] {
+    def unify(l : L) : Out
   }
   
-  implicit def hsingleUnifier[T] = new Unifier[T, HNil, T :: HNil] {
+  implicit def hsingleUnifier[T] = new Unifier[T :: HNil, T :: HNil] {
     def unify(l : T :: HNil) = l
   }
   
-  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Lub[H1, H2, L], lt : Unifier[L, T, L :: Out]) = new Unifier[H1, H2 :: T, L :: L :: Out] {
+  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Lub[H1, H2, L], lt : Unifier[L :: T, L :: Out]) = new Unifier[H1 :: H2 :: T, L :: L :: Out] {
     def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
   }
 
-  trait ToList[-H, -T <: HList, +Lub] {
-    def toList(l : H :: T) : List[Lub]
+  trait ToList[-L <: HList, +Lub] {
+    def toList(l : L) : List[Lub]
   }
   
-  implicit def hsingleToList[T] : ToList[T, HNil, T] = new ToList[T, HNil, T] {
+  implicit def hsingleToList[T] : ToList[T :: HNil, T] = new ToList[T :: HNil, T] {
     def toList(l : T :: HNil) = Nil
   }
   
-  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2, T, L]) = new ToList[H1, H2 :: T, L] {
+  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
     def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
   }
 }
@@ -238,19 +238,19 @@ object TestHList {
     val u34 = lub(a :: p :: HNil, p :: a :: HNil)
     val u35 = lub(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     
-    implicitly[Unifier[Apple, HNil, Apple :: HNil]]
-    implicitly[Unifier[Fruit, Pear :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unifier[Apple, Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier[Apple :: HNil, Apple :: HNil]]
+    implicitly[Unifier[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
     
-    implicitly[Unifier[Int, String :: Int :: Int :: HNil, YYYY]]
-    val uapap = implicitly[Unifier[Apple, Pear :: Apple :: Pear :: HNil, FFFF]]
+    implicitly[Unifier[Int :: String :: Int :: Int :: HNil, YYYY]]
+    val uapap = implicitly[Unifier[Apple :: Pear :: Apple :: Pear :: HNil, FFFF]]
     
     val unified1 = uapap.unify(apap)
     val unified2 : FFFF = uapap.unify(apap)
     val unified3 = apap.unify
     val unified4 : FFFF = apap.unify
 
-    def getUnifier[H, T <: HList, Out <: HList](l : H :: T)(implicit u : Unifier[H, T, Out]) = u
+    def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : Unifier[L, Out]) = u
     
     val u2 = getUnifier(a :: HNil)
     val u3 = getUnifier(a :: a :: HNil)
@@ -259,8 +259,8 @@ object TestHList {
     val u6 = getUnifier(a :: p :: HNil)
     val u7 = getUnifier(a :: f :: HNil)
     val u8 = getUnifier(f :: a :: HNil)
-    val u9a : Unifier[Apple, Fruit :: HNil, FF] = getUnifier(a :: f :: HNil)
-    val u9b : Unifier[Apple, Pear :: HNil, FF] = getUnifier(a :: p :: HNil)
+    val u9a : Unifier[Apple :: Fruit :: HNil, FF] = getUnifier(a :: f :: HNil)
+    val u9b : Unifier[Apple :: Pear :: HNil, FF] = getUnifier(a :: p :: HNil)
     val u10 = getUnifier(apap)
     val u11 = getUnifier(apbp)
     
