@@ -21,15 +21,19 @@ final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
   
   def ::[T](v : T) = HCons(v, this)
   override def toString = head+" :: "+tail.toString
-  
-  def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, this)
-  def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, this)
-  
-  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(this, z, f, op)
+}
 
-  def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) = unifier.unify(this)
+trait InvariantHCons[H, T <: HList] {
+  import HList._
 
-  def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub] = l.toList(this)
+  def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out
+  def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT
+  
+  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R
+
+  def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) : Out
+  
+  def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub]
 }
 
 trait HNil extends HList {
@@ -51,7 +55,7 @@ trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
   val :: = HCons
   
-  trait Applicator[F[_], G[_], -In, +Out] {
+  trait Applicator[F[_], G[_], In, Out] {
     def apply(f : F ~> G, in : In) : Out
   }
 
@@ -59,7 +63,7 @@ trait LowPriorityHList {
     def apply(f : F ~> G, t : F[In]) = f(t)
   }
   
-  trait Mapper[F[_], G[_], -In, +Out] {
+  trait Mapper[F[_], G[_], In, Out] {
     def apply(f : F ~> G, in: In) : Out
   }
 
@@ -72,7 +76,7 @@ trait LowPriorityHList {
       def apply(f : F ~> G, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
   
-  trait LeftFolder[-L <: HList, R, F[_]] {
+  trait LeftFolder[L <: HList, R, F[_]] {
     def apply(l : L, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) : R 
   }
   
@@ -94,7 +98,7 @@ trait LowPriorityHList {
     def right(b : T) : T = b
   }
   
-  trait Unifier[-L <: HList, +Out <: HList] {
+  trait Unifier[L <: HList, Out <: HList] {
     def unify(l : L) : Out
   }
   
@@ -106,7 +110,7 @@ trait LowPriorityHList {
     def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
   }
 
-  trait ToList[-L <: HList, +Lub] {
+  trait ToList[L <: HList, +Lub] {
     def toList(l : L) : List[Lub]
   }
   
@@ -150,6 +154,17 @@ object HList extends LowPriorityHList {
   implicit def hlistMapper3[F[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, Id, InH, OutH], mt : Mapper[F, Id, InT, OutT]) = new Mapper[F, Id, InH :: InT, OutH :: OutT] {
       def apply(f : F ~> Id, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+  }
+
+  implicit def hlistInvariantOps[H, T <: HList](l : H :: T) = new InvariantHCons[H, T] {
+    def map[F[_], G[_], Out](f : F ~> G)(implicit mapper : Mapper[F, G, H :: T, Out]) : Out = mapper(f, l)
+    def map[F[_], OutH, OutT <: HList](f : F ~> Const[OutH]#λ)(implicit mapper : Mapper[F, Const[OutH]#λ, H :: T, OutH :: OutT]) : OutH :: OutT = mapper(f, l)
+    
+    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(l, z, f, op)
+
+    def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) : Out = unifier.unify(l)
+  
+    def toList[Lub](implicit ll : ToList[H :: T, Lub]) : List[Lub] = ll.toList(l)
   }
 }
 
@@ -316,7 +331,7 @@ object TestHList {
     val b3 = blip3(l4)
     
     val tl1 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil 
-    val tl2 = Option(1) :: Option("foo") :: None :: Option(3) :: HNil
+    val tl2 = Option(1) :: Option("foo") :: (None : Option[Int]) :: Option(3) :: HNil
     
     val mlfl1 = (tl1 map isDefined).toList.foldLeft(true)(_ && _)
     println(mlfl1)

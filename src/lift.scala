@@ -4,8 +4,9 @@ object LiftOFn {
   import Tuples._
   import Functions._
 
-  def liftO[In <: HList, Out <: HList, R](f :  In => R)(implicit maux : Mapper[Id, Option, In, Out], m : Mapper[Option, Id, Out, In], lf : LeftFolder[Out, Boolean, Option]) : Out => Option[R] = 
-    (o : Out) => if(lf(o, true, isDefined, _ && _)) Some(f(m(get, o))) else None 
+  def liftO[In <: HList, Out <: HList, R](f :  In => R)
+    (implicit m : Mapper[Option, Id, Out, In], lf : LeftFolder[Out, Boolean, Option]) : Out => Option[R] = 
+      (o : Out) => if(lf(o, true, isDefined, _ && _)) Some(f(m(get, o))) else None 
 }
 
 object TestLiftOFn {
@@ -61,6 +62,9 @@ object TestLiftOFn {
     val s5 = sumO(None, None)
     println(s5)
     
+    val s6 = List(Some(1), Some(2), Some(3), Some(4)).reduce(sumO)
+    println(s6)
+    
     val prdO = liftO(prd)
 
     val p2 = prdO(Some(2), Some(3), Some(4))
@@ -68,5 +72,8 @@ object TestLiftOFn {
 
     val p3 = prdO(Some(2), None, Some(4))
     println(p3)
+
+    val p4 = prdO(Some(2), Some(3), None)
+    println(p4)
   }
 }
