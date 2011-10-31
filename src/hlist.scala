@@ -13,6 +13,7 @@ import PolyFun._
 // TODO Lenses
 // TODO http://stackoverflow.com/questions/7606587
 // TODO Checked conversion from Seq[T]
+// TODO Type-specific cases
 
 sealed trait HList
 
