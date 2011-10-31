@@ -42,7 +42,7 @@ trait HNil extends HList {
     
   def map[F](f : F) : HNil = HNil
   
-  def foldLeft[F[_], G[_], R](f : F ~> G)(z : R)(op : (R, R) => R) : R = z
+  def foldLeft[R, F[_]](f : F ~> Const[R]#λ)(z : R)(op : (R, R) => R) : R = z
   
   def unify : HNil = HNil
   
