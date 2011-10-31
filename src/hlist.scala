@@ -33,6 +33,8 @@ case object HNil extends HNil
 trait HListOps[L <: HList] {
   import HList._
 
+  def last[Out](implicit last : Last[L, Out]) : Out
+  
   def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
   
   def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R
@@ -112,6 +114,18 @@ trait LowPriorityHList {
   implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
     def toList(l : H1 :: H2 :: T) = u.left(l.head) :: ttl.toList(l.tail)
   }
+  
+  trait Last[L <: HList, Out] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def hlistSingle[H, Out] = new Last[H :: HNil, H] {
+    def apply(l : H :: HNil) : H = l.head
+  }
+  
+  implicit def hlistLast[H, T <: HList, Out](implicit lt : Last[T, Out]) = new Last[H :: T, Out] {
+    def apply(l : H :: T) : Out = lt(l.tail) 
+  }
 }
 
 object HList extends LowPriorityHList {
@@ -148,6 +162,9 @@ object HList extends LowPriorityHList {
   }
 
   implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
+
+    def last[Out](implicit last : Last[L, Out]) : Out = last(l)
+    
     def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
     
     def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
@@ -218,6 +235,9 @@ object TestHList {
     val apap : APAP = a :: p :: a :: p :: HNil
     val apbp : APBP = a :: p :: b :: p :: HNil
     val ffff : FFFF = apap
+    
+    val lp = apbp.last
+    val lp2 : Pear = apbp.last
     
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
