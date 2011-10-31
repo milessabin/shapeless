@@ -40,7 +40,7 @@ trait HNil extends HList {
   def ::[T](v : T) = HCons(v, this)
   override def toString = "HNil"
     
-  def map[F](f : F) : HNil = HNil
+  def map[F[_], G[_]](f : F ~> G) : HNil = HNil
   
   def foldLeft[R, F[_]](f : F ~> Const[R]#λ)(z : R)(op : (R, R) => R) : R = z
   
