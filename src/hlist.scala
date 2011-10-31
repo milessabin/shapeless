@@ -2,7 +2,6 @@ import PolyFun._
 
 // TODO zip/unzip
 // TODO concat
-// TODO init/last
 // TODO reverse
 // TODO zipper
 // TODO hApply
@@ -34,6 +33,8 @@ trait HListOps[L <: HList] {
   import HList._
 
   def last[Out](implicit last : Last[L, Out]) : Out
+
+  def init[Out <: HList](implicit init : Init[L, Out]) : Out
   
   def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
   
@@ -119,12 +120,24 @@ trait LowPriorityHList {
     def apply(l : L) : Out
   }
   
-  implicit def hlistSingle[H, Out] = new Last[H :: HNil, H] {
+  implicit def hsingleLast[H] = new Last[H :: HNil, H] {
     def apply(l : H :: HNil) : H = l.head
   }
   
   implicit def hlistLast[H, T <: HList, Out](implicit lt : Last[T, Out]) = new Last[H :: T, Out] {
     def apply(l : H :: T) : Out = lt(l.tail) 
+  }
+
+  trait Init[L <: HList, Out <: HList] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def hsingleInit[H] = new Init[H :: HNil, HNil] {
+    def apply(l : H :: HNil) : HNil = HNil
+  }
+  
+  implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : Init[T, OutT]) = new Init[H :: T, H :: OutT] {
+    def apply(l : H :: T) : H :: OutT = HCons(l.head, it(l.tail)) 
   }
 }
 
@@ -164,6 +177,8 @@ object HList extends LowPriorityHList {
   implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
 
     def last[Out](implicit last : Last[L, Out]) : Out = last(l)
+
+    def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
     
     def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
     
@@ -227,6 +242,7 @@ object TestHList {
     type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
     type APAP = Apple :: Pear :: Apple :: Pear :: HNil
     type APBP = Apple :: Pear :: Banana :: Pear :: HNil
+    type APB = Apple :: Pear :: Banana :: HNil
     
     val a : Apple = new Apple {}
     val p : Pear = new Pear {}
@@ -238,6 +254,8 @@ object TestHList {
     
     val lp = apbp.last
     val lp2 : Pear = apbp.last
+    val iapb = apbp.init
+    val iapb2 : APB = apbp.init 
     
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
