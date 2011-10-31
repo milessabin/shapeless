@@ -1,4 +1,4 @@
-#Wed Oct 05 14:50:58 BST 2011
+#Mon Oct 31 13:41:41 GMT 2011
 Xcheck-null=false
 Xcheckinit=false
 Xdisable-assertions=false
@@ -25,14 +25,15 @@ Yself-in-annots=false
 Ystruct-dispatch=poly-cache
 Ywarn-dead-code=false
 buildmanager=sbt
-deprecation=false
+compileorder=Mixed
+deprecation=true
 eclipse.preferences.version=1
 explaintypes=false
 g=vars
 no-specialization=false
 nowarn=false
 optimise=false
-scala.compiler.additionalParams=-Ydependent-method-types
+scala.compiler.additionalParams=
 scala.compiler.useProjectSettings=true
 target=jvm-1.5
 unchecked=false
