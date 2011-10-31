@@ -5,7 +5,7 @@ object LiftOFn {
   import Functions._
 
   def liftO[In <: HList, Out <: HList, R](f :  In => R)
-    (implicit m : Mapper[Option, Id, Out, In], lf : LeftFolder[Out, Boolean, Option]) : Out => Option[R] = 
+    (implicit m : Mapper[Option ~> Id, Out, In], lf : LeftFolder[Out, Boolean, Option]) : Out => Option[R] = 
       (o : Out) => if(lf(o, true, isDefined, _ && _)) Some(f(m(get, o))) else None 
 }
 

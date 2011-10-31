@@ -4,7 +4,9 @@ object PolyFun {
     type λ[T] = C
   }
 
-  trait ~>[F[_], G[_]] {
+  trait HRFn
+  
+  trait ~>[F[_], G[_]] extends HRFn {
     type λ[T] = F[T] => G[T]
     def apply[T](x : F[T]) : G[T]
   }
