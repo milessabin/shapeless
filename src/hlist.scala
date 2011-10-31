@@ -17,39 +17,29 @@ import PolyFun._
 sealed trait HList
 
 final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
-  import HList._
-  
   def ::[T](v : T) = HCons(v, this)
   override def toString = head+" :: "+tail.toString
-}
-
-trait InvariantHCons[H, T <: HList] {
-  import HList._
-
-  def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, H :: T, Out]) : Out
-  
-  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R
-
-  def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) : Out
-  
-  def toList[Lub](implicit l : ToList[H :: T, Lub]) : List[Lub]
 }
 
 trait HNil extends HList {
   def ::[T](v : T) = HCons(v, this)
   override def toString = "HNil"
-    
-  def map[HF <: HRFn](f : HF) : HNil = HNil
-  
-  def foldLeft[R, F[_]](f : F ~> Const[R]#λ)(z : R)(op : (R, R) => R) : R = z
-  
-  def unify : HNil = HNil
-  
-  def toList = Nil
 }
 
 case object HNil extends HNil
+
+trait HListOps[L <: HList] {
+  import HList._
+
+  def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
   
+  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R
+
+  def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
+  
+  def toList[Lub](implicit l : ToList[L, Lub]) : List[Lub]
+}
+
 trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
   val :: = HCons
@@ -155,14 +145,14 @@ object HList extends LowPriorityHList {
       def apply(f : F ~> Id, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
   }
 
-  implicit def hlistInvariantOps[H, T <: HList](l : H :: T) = new InvariantHCons[H, T] {
-    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, H :: T, Out]) : Out = mapper(f, l)
+  implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
+    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
     
-    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[H :: T, R, F]) : R = folder(l, z, f, op)
+    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
 
-    def unify[Out <: HList](implicit unifier : Unifier[H :: T, Out]) : Out = unifier.unify(l)
+    def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out = unifier.unify(l)
   
-    def toList[Lub](implicit ll : ToList[H :: T, Lub]) : List[Lub] = ll.toList(l)
+    def toList[Lub](implicit ll : ToList[L, Lub]) : List[Lub] = ll.toList(l)
   }
 }
 
