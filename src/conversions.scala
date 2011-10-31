@@ -71,3 +71,20 @@ object Functions {
   implicit def hlistFn3Ops[A, B, C, T](hf : A :: B :: C :: HNil => T) = new HListFnOps[(A, B, C) => T] { def unhlisted = hf }
   implicit def hlistFn4Ops[A, B, C, D, T](hf : A :: B :: C :: D ::HNil => T) = new HListFnOps[(A, B, C, D) => T] { def unhlisted = hf }
 }
+
+object TestTuples {
+  import Tuples._
+  import Implicits._
+  
+  def main(arg : Array[String]) {
+    case class Foo(a : Int, b : String, c : Double)
+    
+    val f1 = Foo(23, "foo", 2.3)
+    println(f1)
+    val hf = f1.hlisted
+    val f2 = Foo.tupled(hf)
+    println(f2)
+    
+    println(f1 == f2)
+  }
+}
