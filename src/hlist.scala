@@ -14,6 +14,7 @@ import PolyFun._
 // TODO http://stackoverflow.com/questions/7606587
 // TODO Checked conversion from Seq[T]
 // TODO Type-specific cases
+// TODO http://stackoverflow.com/questions/7954591
 
 sealed trait HList
 
