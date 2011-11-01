@@ -2,7 +2,6 @@ import PolyFun._
 
 // TODO zip/unzip
 // TODO concat
-// TODO reverse
 // TODO zipper
 // TODO hApply
 // TODO Nat/type indexed get/put
@@ -35,6 +34,8 @@ trait HListOps[L <: HList] {
   def last[Out](implicit last : Last[L, Out]) : Out
 
   def init[Out <: HList](implicit init : Init[L, Out]) : Out
+  
+  def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
   
   def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
   
@@ -139,6 +140,18 @@ trait LowPriorityHList {
   implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : Init[T, OutT]) = new Init[H :: T, H :: OutT] {
     def apply(l : H :: T) : H :: OutT = HCons(l.head, it(l.tail)) 
   }
+  
+  trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
+    def apply(acc : Acc, l : L) : Out
+  }
+  
+  implicit def hnilReverse[Out <: HList] = new Reverse[Out, HNil, Out] {
+    def apply(acc : Out, l : HNil) : Out = acc
+  }
+  
+  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse[InH :: Acc, InT, Out]) = new Reverse[Acc, InH :: InT, Out] {
+    def apply(acc : Acc, l : InH :: InT) : Out = rt(HCons(l.head, acc), l.tail)
+  }
 }
 
 object HList extends LowPriorityHList {
@@ -180,6 +193,8 @@ object HList extends LowPriorityHList {
 
     def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
     
+    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
+
     def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
     
     def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
@@ -231,9 +246,9 @@ object TestHList {
     println(l1)
 
     trait Fruit
-    trait Apple extends Fruit
-    trait Pear extends Fruit
-    trait Banana extends Fruit
+    case class Apple() extends Fruit
+    case class Pear() extends Fruit
+    case class Banana() extends Fruit
     
     type YYYY = Any :: Any :: Any :: Any :: HNil
     type FF = Fruit :: Fruit :: HNil
@@ -243,10 +258,11 @@ object TestHList {
     type APAP = Apple :: Pear :: Apple :: Pear :: HNil
     type APBP = Apple :: Pear :: Banana :: Pear :: HNil
     type APB = Apple :: Pear :: Banana :: HNil
+    type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
     
-    val a : Apple = new Apple {}
-    val p : Pear = new Pear {}
-    val b : Banana = new Banana {}
+    val a : Apple = Apple()
+    val p : Pear = Pear()
+    val b : Banana = Banana()
     val f : Fruit = new Fruit {}
     val apap : APAP = a :: p :: a :: p :: HNil
     val apbp : APBP = a :: p :: b :: p :: HNil
@@ -255,7 +271,11 @@ object TestHList {
     val lp = apbp.last
     val lp2 : Pear = apbp.last
     val iapb = apbp.init
-    val iapb2 : APB = apbp.init 
+    val iapb2 : APB = apbp.init
+    
+    val pbpa = apbp.reverse
+    val pbpa2 : PBPA = apbp.reverse
+    println(pbpa)
     
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
