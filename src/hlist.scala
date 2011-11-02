@@ -1,7 +1,6 @@
 import PolyFun._
 
 // TODO zip/unzip
-// TODO concat
 // TODO zipper
 // TODO hApply
 // TODO Nat/type indexed get/put
@@ -31,6 +30,8 @@ case object HNil extends HNil
 trait HListOps[L <: HList] {
   import HList._
 
+  def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
+  
   def last[Out](implicit last : Last[L, Out]) : Out
 
   def init[Out <: HList](implicit init : Init[L, Out]) : Out
@@ -152,6 +153,18 @@ trait LowPriorityHList {
   implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse[InH :: Acc, InT, Out]) = new Reverse[Acc, InH :: InT, Out] {
     def apply(acc : Acc, l : InH :: InT) : Out = rt(HCons(l.head, acc), l.tail)
   }
+  
+  trait Prepend[P <: HList, S <: HList, Out <: HList] {
+    def apply(prefix : P, suffix : S) : Out
+  }
+  
+  implicit def hnilPrepend[S <: HList] = new Prepend[HNil, S, S] {
+    def apply(prefix : HNil, suffix : S) : S = suffix 
+  }
+  
+  implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : Prepend[PT, S, OutT]) = new Prepend[PH :: PT, S, PH :: OutT] {
+    def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = HCons(prefix.head, pt(prefix.tail, suffix)) 
+  }
 }
 
 object HList extends LowPriorityHList {
@@ -189,6 +202,8 @@ object HList extends LowPriorityHList {
 
   implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
 
+    def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out = prepend(prefix, l)
+
     def last[Out](implicit last : Last[L, Out]) : Out = last(l)
 
     def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
@@ -217,7 +232,7 @@ object TestHList {
     type SISS = Set[Int] :: Set[String] :: HNil
     type OIOS = Option[Int] :: Option[String] :: HNil
     
-    val ap = implicitly[Applicator[Set, Option, Set[Int], Option[Int]]]
+    val apl = implicitly[Applicator[Set, Option, Set[Int], Option[Int]]]
     val mn = implicitly[Mapper[Set ~> Option, HNil, HNil]]
     val m = implicitly[Mapper[Set ~> Option, Set[Int] :: HNil, Option[Int] :: HNil]]
     
@@ -253,6 +268,7 @@ object TestHList {
     type YYYY = Any :: Any :: Any :: Any :: HNil
     type FF = Fruit :: Fruit :: HNil
     type AP = Apple :: Pear :: HNil
+    type BP = Banana :: Pear :: HNil
     type AF = Apple :: Fruit :: HNil
     type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
     type APAP = Apple :: Pear :: Apple :: Pear :: HNil
@@ -264,6 +280,8 @@ object TestHList {
     val p : Pear = Pear()
     val b : Banana = Banana()
     val f : Fruit = new Fruit {}
+    val ap : AP = a :: p :: HNil
+    val bp : BP = b :: p :: HNil
     val apap : APAP = a :: p :: a :: p :: HNil
     val apbp : APBP = a :: p :: b :: p :: HNil
     val ffff : FFFF = apap
@@ -276,6 +294,15 @@ object TestHList {
     val pbpa = apbp.reverse
     val pbpa2 : PBPA = apbp.reverse
     println(pbpa)
+    
+    val apbp2 = ap ::: bp
+    val apbp3 : APBP = ap ::: bp
+    println(apbp2)
+    
+    val a1 : Apple = apbp2.head
+    val a2 : Pear = apbp2.tail.head
+    val a3 : Banana = apbp2.tail.tail.head
+    val a4 : Pear = apbp2.tail.tail.tail.head
     
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
