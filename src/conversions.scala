@@ -94,11 +94,11 @@ object Traversables {
   }
   
   trait TraversableOps[T] {
-    def hlisted[L <: HList](implicit fl : FromTraversable[T, L]) : Option[L]
+    def toHList[L <: HList](implicit fl : FromTraversable[T, L]) : Option[L]
   }
   
   implicit def traversableOps[T](l : Traversable[T]) = new TraversableOps[T] {
-    def hlisted[L <: HList](implicit fl : FromTraversable[T, L]) = fl(l) 
+    def toHList[L <: HList](implicit fl : FromTraversable[T, L]) = fl(l) 
   }
 }
 

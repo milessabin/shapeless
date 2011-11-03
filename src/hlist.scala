@@ -379,12 +379,12 @@ object TestHList {
     val fruits1 = apap.toList
     val fruits2 = apbp.toList
     println(fruits2)
-    val fruits3 = fruits2.hlisted[APBP]
+    val fruits3 = fruits2.toHList[APBP]
     println(fruits3)
     
     val stuff = l1.toList
     println(stuff)
-    val stuff2 = stuff.hlisted[ISII]
+    val stuff2 = stuff.toHList[ISII]
     println(stuff2)
     val moreStuff = (a :: "foo" :: p :: HNil).toList
     
