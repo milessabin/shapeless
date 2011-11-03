@@ -6,7 +6,6 @@ import PolyFun._
 // TODO Nat/type indexed get/put
 // TODO Value/type contains
 // TODO take/drop
-// TODO Convert <=> case class/ProductN
 // TODO Lenses
 // TODO http://stackoverflow.com/questions/7606587
 // TODO Checked conversion from Seq[T]
