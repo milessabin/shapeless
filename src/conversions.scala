@@ -72,6 +72,36 @@ object Functions {
   implicit def hlistFn4Ops[A, B, C, D, T](hf : A :: B :: C :: D ::HNil => T) = new HListFnOps[(A, B, C, D) => T] { def unhlisted = hf }
 }
 
+object Traversables {
+  import scala.collection.Traversable
+  
+  import HList._
+  import Cast._
+
+  trait FromTraversable[T, Out <: HList] {
+    def apply(l : Traversable[T]) : Option[Out]
+  }
+  
+  implicit def hnilFromTraversable[T] = new FromTraversable[T, HNil] {
+    def apply(l : Traversable[T]) = l match {
+      case Nil => Some(HNil)
+      case _ => None
+    }
+  }
+  
+  implicit def hlistFromTraversable[T, OutH, OutT <: HList](implicit bcm : BoxedClassManifest[OutH], flt : FromTraversable[T, OutT]) = new FromTraversable[T, OutH :: OutT] {
+    def apply(l : Traversable[T]) : Option[OutH :: OutT] = for(e <- l.headOption; h <- e.cast[OutH]; t <- flt(l.tail)) yield HCons(h, t)
+  }
+  
+  trait TraversableOps[T] {
+    def hlisted[L <: HList](implicit fl : FromTraversable[T, L]) : Option[L]
+  }
+  
+  implicit def traversableOps[T](l : Traversable[T]) = new TraversableOps[T] {
+    def hlisted[L <: HList](implicit fl : FromTraversable[T, L]) = fl(l) 
+  }
+}
+
 object TestTuples {
   import Tuples._
   import Implicits._

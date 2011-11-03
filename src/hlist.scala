@@ -1,4 +1,5 @@
 import PolyFun._
+import Cast._
 
 // TODO zip/unzip
 // TODO zipper
@@ -8,7 +9,6 @@ import PolyFun._
 // TODO take/drop
 // TODO Lenses
 // TODO http://stackoverflow.com/questions/7606587
-// TODO Checked conversion from Seq[T]
 // TODO Type-specific cases
 // TODO http://stackoverflow.com/questions/7954591
 
@@ -44,6 +44,8 @@ trait HListOps[L <: HList] {
   def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
   
   def toList[Lub](implicit l : ToList[L, Lub]) : List[Lub]
+  
+  def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M]
 }
 
 trait LowPriorityHList {
@@ -110,7 +112,7 @@ trait LowPriorityHList {
   }
   
   implicit def hsingleToList[T] : ToList[T :: HNil, T] = new ToList[T :: HNil, T] {
-    def toList(l : T :: HNil) = Nil
+    def toList(l : T :: HNil) = List(l.head)
   }
   
   implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
@@ -164,6 +166,18 @@ trait LowPriorityHList {
   implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : Prepend[PT, S, OutT]) = new Prepend[PH :: PT, S, PH :: OutT] {
     def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = HCons(prefix.head, pt(prefix.tail, suffix)) 
   }
+  
+  trait Cast[In <: HList, Out <: HList] {
+    def apply(in : In) : Option[Out] 
+  }
+  
+  implicit def hnilCast = new Cast[HNil, HNil] {
+    def apply(in : HNil) = Option(in)
+  }
+  
+  implicit def hlistCast[InH, InT <: HList, OutH, OutT <: HList](implicit bcm : BoxedClassManifest[OutH], ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
+    def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield HCons(h, t)
+  }
 }
 
 object HList extends LowPriorityHList {
@@ -216,13 +230,15 @@ object HList extends LowPriorityHList {
     def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out = unifier.unify(l)
   
     def toList[Lub](implicit ll : ToList[L, Lub]) : List[Lub] = ll.toList(l)
+
+    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
   }
 }
 
 object TestHList {
   import HList._
   import PolyFun._
-  //import Tuples._
+  import Traversables._
 
   def main(args : Array[String]) {
     type SI = Set[Int] :: HNil
@@ -338,6 +354,13 @@ object TestHList {
     val unified2 : FFFF = uapap.unify(apap)
     val unified3 = apap.unify
     val unified4 : FFFF = apap.unify
+    
+    val ununified1 = unified4.cast[APAP]
+    println(ununified1)
+    val ununified2 : Option[APAP] = unified4.cast[APAP]
+    println(ununified2)
+    val ununified3 = unified4.cast[APBP]
+    println(ununified3)
 
     def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : Unifier[L, Out]) = u
     
@@ -355,7 +378,14 @@ object TestHList {
     
     val fruits1 = apap.toList
     val fruits2 = apbp.toList
+    println(fruits2)
+    val fruits3 = fruits2.hlisted[APBP]
+    println(fruits3)
+    
     val stuff = l1.toList
+    println(stuff)
+    val stuff2 = stuff.hlisted[ISII]
+    println(stuff2)
     val moreStuff = (a :: "foo" :: p :: HNil).toList
     
     val l2 /*: SISSSISI */ = l1 map singleton
