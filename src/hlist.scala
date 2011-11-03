@@ -309,6 +309,9 @@ object TestHList {
     val pbpa = apbp.reverse
     val pbpa2 : PBPA = apbp.reverse
     println(pbpa)
+    val al = a :: HNil
+    val ral = al.reverse
+    val ral2 : Apple :: HNil = al.reverse
     
     val apbp2 = ap ::: bp
     val apbp3 : APBP = ap ::: bp
