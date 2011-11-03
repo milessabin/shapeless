@@ -2,7 +2,6 @@ import PolyFun._
 import Cast._
 
 // TODO zip/unzip
-// TODO zipper
 // TODO hApply
 // TODO Nat/type indexed get/put
 // TODO Value/type contains
