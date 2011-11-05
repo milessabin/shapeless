@@ -1,13 +1,13 @@
 import HList._
 
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
-  def first[Rev <: HList, Out <: HList](implicit r : Reverse[HNil, L, Rev], p : Prepend[Rev, R, Out]) = Zipper(HNil, prefix.reverse ::: suffix)
+  def first[Out <: HList](implicit rp : ReversePrepend[L, R, Out]) = Zipper(HNil, prefix reverse_::: suffix)
   
-  def last[Rev <: HList, Out <: HList](implicit r : Reverse[HNil, R, Rev], p : Prepend[Rev, L, Out]) = Zipper(suffix.reverse ::: prefix, HNil)
+  def last[Out <: HList](implicit rp : ReversePrepend[R, L, Out]) = Zipper(suffix reverse_::: prefix, HNil)
   
   def insert[E](e : E) = Zipper(HCons(e, prefix), suffix)
   
-  def toHList[Rev <: HList, Out <: HList](implicit r : Reverse[HNil, L, Rev], p : Prepend[Rev, R, Out]) = prefix.reverse ::: suffix
+  def toHList[Out <: HList](implicit rp : ReversePrepend[L, R, Out]) = prefix reverse_::: suffix
 }
 
 object Zipper {
