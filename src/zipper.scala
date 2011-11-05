@@ -1,6 +1,17 @@
 import HList._
 
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
+
+  def right[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) = Zipper(HCons(suffix.head, prefix), suffix.tail)
+
+  def left[LH, LT <: HList](implicit ev : L <:< HCons[LH, LT]) = Zipper(prefix.tail, HCons(prefix.head, suffix))
+  
+  def get[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) : RH = suffix.head
+
+  def put[E, L <: HList, RH, RT <: HList](e : E)(implicit ev : R <:< HCons[RH, RT]) = Zipper(prefix, HCons(e, suffix.tail))
+
+  def delete[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) = Zipper(prefix, suffix.tail)
+  
   def first[Out <: HList](implicit rp : ReversePrepend[L, R, Out]) = Zipper(HNil, prefix reverse_::: suffix)
   
   def last[Out <: HList](implicit rp : ReversePrepend[R, L, Out]) = Zipper(suffix reverse_::: prefix, HNil)
@@ -13,46 +24,6 @@ case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
 object Zipper {
   def apply[R <: HList](r : R) : Zipper[HNil, R] = Zipper(HNil, r)
   
-  trait ZipperRight[L <: HList, RH, RT <: HList] {
-    def right : Zipper[RH :: L, RT]
-  }
-  
-  implicit def zipperRight[L <: HList, RH, RT <: HList](z : Zipper[L, RH :: RT]) = new ZipperRight[L, RH, RT] {
-    def right = Zipper(HCons(z.suffix.head, z.prefix), z.suffix.tail)
-  }
-  
-  trait ZipperLeft[LH, LT <: HList, R <: HList] {
-    def left : Zipper[LT, LH :: R]
-  }
-  
-  implicit def zipperLeft[LH, LT <: HList, R <: HList](z : Zipper[LH :: LT, R]) = new ZipperLeft[LH, LT, R] {
-    def left = Zipper(z.prefix.tail, HCons(z.prefix.head, z.suffix))
-  }
-  
-  trait ZipperGet[L <: HList, RH, RT <: HList] {
-    def get : RH
-  }
-  
-  implicit def zipperGet[L <: HList, RH, RT <: HList](z : Zipper[L, RH :: RT]) = new ZipperGet[L, RH, RT] {
-    def get : RH = z.suffix.head
-  }
-  
-  trait ZipperPut[L <: HList, RH, RT <: HList] {
-    def put[E](e : E) : Zipper[L, E :: RT]
-  }
-  
-  implicit def zipperPut[L <: HList, RH, RT <: HList](z : Zipper[L, RH :: RT]) = new ZipperPut[L, RH, RT] {
-    def put[E](e : E) = Zipper(z.prefix, HCons(e, z.suffix.tail))
-  }
-  
-  trait ZipperDelete[L <: HList, RT <: HList] {
-    def delete : Zipper[L, RT]
-  }
-  
-  implicit def zipperDelete[L <: HList, RH, RT <: HList](z : Zipper[L, RH :: RT]) = new ZipperDelete[L, RT] {
-    def delete = Zipper(z.prefix, z.suffix.tail)
-  }
-  
   trait HListToZipper[L <: HList] {
     def toZipper : Zipper[HNil, L]
   }
@@ -61,6 +32,7 @@ object Zipper {
     def toZipper = Zipper(l)
   }
 }
+
 
 object TestZipper {
   import HList._
