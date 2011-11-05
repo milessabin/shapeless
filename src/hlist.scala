@@ -10,7 +10,6 @@ import Cast._
 // TODO http://stackoverflow.com/questions/7606587
 // TODO Type-specific cases
 // TODO http://stackoverflow.com/questions/7954591
-// TODO reverse prepend
 
 sealed trait HList
 
@@ -30,6 +29,8 @@ trait HListOps[L <: HList] {
   import HList._
 
   def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
+
+  def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out
   
   def last[Out](implicit last : Last[L, Out]) : Out
 
@@ -167,6 +168,18 @@ trait LowPriorityHList {
     def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = HCons(prefix.head, pt(prefix.tail, suffix)) 
   }
   
+  trait ReversePrepend[P <: HList, S <: HList, Out <: HList] {
+    def apply(prefix : P, suffix : S) : Out
+  }
+  
+  implicit def hnilReversePrepend[S <: HList] = new ReversePrepend[HNil, S, S] {
+    def apply(prefix : HNil, suffix : S) : S = suffix 
+  }
+  
+  implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList](implicit rpt : ReversePrepend[PT, PH :: S, Out]) = new ReversePrepend[PH :: PT, S, Out] {
+    def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, HCons(prefix.head, suffix)) 
+  }
+  
   trait Cast[In <: HList, Out <: HList] {
     def apply(in : In) : Option[Out] 
   }
@@ -216,6 +229,8 @@ object HList extends LowPriorityHList {
   implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
 
     def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out = prepend(prefix, l)
+
+    def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out = prepend(prefix, l)
 
     def last[Out](implicit last : Last[L, Out]) : Out = last(l)
 
@@ -290,6 +305,7 @@ object TestHList {
     type APBP = Apple :: Pear :: Banana :: Pear :: HNil
     type APB = Apple :: Pear :: Banana :: HNil
     type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
+    type PABP = Pear :: Apple :: Banana :: Pear :: HNil
     
     val a : Apple = Apple()
     val p : Pear = Pear()
@@ -316,6 +332,10 @@ object TestHList {
     val apbp2 = ap ::: bp
     val apbp3 : APBP = ap ::: bp
     println(apbp2)
+    
+    val pabp = ap reverse_::: bp
+    val pabp2 : PABP = ap reverse_::: bp
+    println(pabp)
     
     val a1 : Apple = apbp2.head
     val a2 : Pear = apbp2.tail.head
