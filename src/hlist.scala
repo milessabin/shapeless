@@ -7,7 +7,6 @@ import Cast._
 // TODO Value/type contains
 // TODO take/drop
 // TODO Lenses
-// TODO http://stackoverflow.com/questions/7606587
 // TODO Type-specific cases
 // TODO http://stackoverflow.com/questions/7954591
 
