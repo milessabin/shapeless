@@ -15,45 +15,69 @@ import Cast._
 sealed trait HList
 
 final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
-  def ::[T](v : T) = HCons(v, this)
   override def toString = head+" :: "+tail.toString
 }
 
 trait HNil extends HList {
-  def ::[T](v : T) = HCons(v, this)
+  def ::[H](h : H) = HCons(h, this)
   override def toString = "HNil"
 }
 
 case object HNil extends HNil
 
-trait HListOps[L <: HList] {
-  import HList._
-
-  def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
-
-  def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out
-  
-  def last[Out](implicit last : Last[L, Out]) : Out
-
-  def init[Out <: HList](implicit init : Init[L, Out]) : Out
-  
-  def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
-  
-  def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
-  
-  def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R
-
-  def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
-  
-  def toList[Lub](implicit l : ToList[L, Lub]) : List[Lub]
-  
-  def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M]
-}
-
 trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
-  val :: = HCons
+
+  trait Ops[L <: HList] {
   
+    def ::[H](h : H) : H :: L
+    
+    def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
+  
+    def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out
+    
+    def last[Out](implicit last : Last[L, Out]) : Out
+
+    def init[Out <: HList](implicit init : Init[L, Out]) : Out
+    
+    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
+    
+    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
+    
+    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R
+  
+    def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
+    
+    def toList[Lub](implicit l : ToList[L, Lub]) : List[Lub]
+    
+    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M]
+  }
+
+  implicit def hlistOps[L <: HList](l : L) : Ops[L] = new Ops[L] {
+
+    def ::[H](h : H) : H :: L = HCons(h, l)
+
+    def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out = prepend(prefix, l)
+
+    def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out = prepend(prefix, l)
+
+    def last[Out](implicit last : Last[L, Out]) : Out = last(l)
+
+    def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
+    
+    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
+
+    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
+    
+    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
+
+    def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out = unifier.unify(l)
+  
+    def toList[Lub](implicit ll : ToList[L, Lub]) : List[Lub] = ll.toList(l)
+
+    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
+  }
+
   trait Applicator[F[_], G[_], In, Out] {
     def apply(f : F ~> G, in : In) : Out
   }
@@ -72,7 +96,7 @@ trait LowPriorityHList {
   
   implicit def hlistMapper1[F[_], G[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, G, InH, OutH], mt : Mapper[F ~> G, InT, OutT]) = new Mapper[F ~> G, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> G, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+      def apply(f : F ~> G, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
   }
   
   trait LeftFolder[L <: HList, R, F[_]] {
@@ -106,7 +130,7 @@ trait LowPriorityHList {
   }
   
   implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Lub[H1, H2, L], lt : Unifier[L :: T, L :: Out]) = new Unifier[H1 :: H2 :: T, L :: L :: Out] {
-    def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(HCons(u.right(l.tail.head), l.tail.tail))
+    def unify(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt.unify(u.right(l.tail.head) :: l.tail.tail)
   }
 
   trait ToList[L <: HList, +Lub] {
@@ -142,7 +166,7 @@ trait LowPriorityHList {
   }
   
   implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : Init[T, OutT]) = new Init[H :: T, H :: OutT] {
-    def apply(l : H :: T) : H :: OutT = HCons(l.head, it(l.tail)) 
+    def apply(l : H :: T) : H :: OutT = l.head :: it(l.tail)
   }
   
   trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
@@ -154,7 +178,7 @@ trait LowPriorityHList {
   }
   
   implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse[InH :: Acc, InT, Out]) = new Reverse[Acc, InH :: InT, Out] {
-    def apply(acc : Acc, l : InH :: InT) : Out = rt(HCons(l.head, acc), l.tail)
+    def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
   }
   
   trait Prepend[P <: HList, S <: HList, Out <: HList] {
@@ -166,9 +190,9 @@ trait LowPriorityHList {
   }
   
   implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : Prepend[PT, S, OutT]) = new Prepend[PH :: PT, S, PH :: OutT] {
-    def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = HCons(prefix.head, pt(prefix.tail, suffix)) 
+    def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = prefix.head :: pt(prefix.tail, suffix)
   }
-  
+
   trait ReversePrepend[P <: HList, S <: HList, Out <: HList] {
     def apply(prefix : P, suffix : S) : Out
   }
@@ -178,7 +202,7 @@ trait LowPriorityHList {
   }
   
   implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList](implicit rpt : ReversePrepend[PT, PH :: S, Out]) = new ReversePrepend[PH :: PT, S, Out] {
-    def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, HCons(prefix.head, suffix)) 
+    def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
   }
   
   trait Cast[In <: HList, Out <: HList] {
@@ -190,7 +214,7 @@ trait LowPriorityHList {
   }
   
   implicit def hlistCast[InH, InT <: HList, OutH, OutT <: HList](implicit bcm : BoxedClassManifest[OutH], ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
-    def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield HCons(h, t)
+    def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield h :: t
   }
 }
 
@@ -219,35 +243,12 @@ object HList extends LowPriorityHList {
   
   implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F ~> Const[OutH]#λ, InT, OutT]) = new Mapper[F ~> Const[OutH]#λ, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
+      def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
   }
   
   implicit def hlistMapper3[F[_], InH, OutH, InT <: HList, OutT <: HList]
     (implicit ap : Applicator[F, Id, InH, OutH], mt : Mapper[F ~> Id, InT, OutT]) = new Mapper[F ~> Id, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> Id, l : InH :: InT) = HCons(ap(f, l.head), mt(f, l.tail))
-  }
-
-  implicit def hlistOps[L <: HList](l : L) = new HListOps[L] {
-
-    def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out = prepend(prefix, l)
-
-    def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out = prepend(prefix, l)
-
-    def last[Out](implicit last : Last[L, Out]) : Out = last(l)
-
-    def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
-    
-    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
-
-    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
-    
-    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
-
-    def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out = unifier.unify(l)
-  
-    def toList[Lub](implicit ll : ToList[L, Lub]) : List[Lub] = ll.toList(l)
-
-    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
+      def apply(f : F ~> Id, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
   }
 }
 
@@ -257,6 +258,9 @@ object TestHList {
   import Traversables._
 
   def main(args : Array[String]) {
+    val l = 1 :: "foo" :: 2.0 :: HNil
+    println(l)
+
     type SI = Set[Int] :: HNil
     type OI = Option[Int] :: HNil
 
