@@ -29,6 +29,10 @@ trait LowPriorityHList {
 
   trait Ops[L <: HList] {
   
+    def head(implicit c : IsHCons[L]) : c.H 
+
+    def tail(implicit c : IsHCons[L]) : c.T
+    
     def ::[H](h : H) : H :: L
     
     def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
@@ -54,6 +58,10 @@ trait LowPriorityHList {
 
   implicit def hlistOps[L <: HList](l : L) : Ops[L] = new Ops[L] {
 
+    def head(implicit c : IsHCons[L]) : c.H = c.head(l) 
+
+    def tail(implicit c : IsHCons[L]) : c.T = c.tail(l)
+    
     def ::[H](h : H) : H :: L = HCons(h, l)
 
     def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out = prepend(prefix, l)
@@ -76,7 +84,23 @@ trait LowPriorityHList {
 
     def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
   }
+  
+  trait IsHCons[L <: HList] {
+    type H
+    type T <: HList
+      
+    def head(l : L) : H
+    def tail(l : L) : T
+  }
 
+  implicit def hlistIsHCons[H0, T0 <: HList] = new IsHCons[H0 :: T0] {
+    type H = H0
+    type T = T0
+
+    def head(l : H0 :: T0) : H = l.head
+    def tail(l : H0 :: T0) : T = l.tail
+  }
+  
   trait Applicator[F[_], G[_], In, Out] {
     def apply(f : F ~> G, in : In) : Out
   }

@@ -2,15 +2,15 @@ import HList._
 
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
 
-  def right[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) = Zipper(suffix.head :: prefix, suffix.tail)
+  def right(implicit c : IsHCons[R]) = Zipper(suffix.head :: prefix, suffix.tail)
 
-  def left[LH, LT <: HList](implicit ev : L <:< HCons[LH, LT]) = Zipper(prefix.tail, prefix.head :: suffix)
+  def left(implicit c : IsHCons[L]) = Zipper(prefix.tail, prefix.head :: suffix)
   
-  def get[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) : RH = suffix.head
+  def get(implicit c : IsHCons[R]) = suffix.head
 
-  def put[E, L <: HList, RH, RT <: HList](e : E)(implicit ev : R <:< HCons[RH, RT]) = Zipper(prefix, e :: suffix.tail)
+  def put[E](e : E)(implicit c : IsHCons[R]) = Zipper(prefix, e :: suffix.tail)
 
-  def delete[RH, RT <: HList](implicit ev : R <:< HCons[RH, RT]) = Zipper(prefix, suffix.tail)
+  def delete(implicit c : IsHCons[R]) = Zipper(prefix, suffix.tail)
   
   def first[Out <: HList](implicit rp : ReversePrepend[L, R, Out]) = Zipper(HNil, prefix reverse_::: suffix)
   
