@@ -8,7 +8,6 @@ import Cast._
 // TODO take/drop
 // TODO Lenses
 // TODO Type-specific cases
-// TODO http://stackoverflow.com/questions/7954591
 
 sealed trait HList
 
