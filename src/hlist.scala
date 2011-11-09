@@ -41,6 +41,8 @@ trait LowPriorityHList {
 
     def init[Out <: HList](implicit init : Init[L, Out]) : Out
     
+    def select[U](implicit selector : Selector[L, U]) : U
+    
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
     
     def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
@@ -70,6 +72,8 @@ trait LowPriorityHList {
 
     def init[Out <: HList](implicit init : Init[L, Out]) : Out = init(l)
     
+    def select[U](implicit selector : Selector[L, U]) : U = selector(l)
+
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
 
     def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
@@ -190,6 +194,18 @@ trait LowPriorityHList {
     def apply(l : H :: T) : H :: OutT = l.head :: it(l.tail)
   }
   
+  trait Selector[L <: HList, U] {
+    def apply(l : L) : U
+  }
+
+  implicit def hlistSelect1[H, T <: HList] = new Selector[H :: T, H] {
+    def apply(l : H :: T) = l.head
+  }
+
+  implicit def hlistSelect[H, T <: HList, U](implicit st : Selector[T, U]) = new Selector[H :: T, U] {
+    def apply(l : H :: T) = st(l.tail)
+  }
+
   trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
     def apply(acc : Acc, l : L) : Out
   }
@@ -495,5 +511,18 @@ object TestHList {
     println(fl1)
     val fl2 = tl2.foldLeft(true)(isDefined)(_ && _)
     println(fl2)
+    
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+    val si = sl.select[Int]
+    println(si)
+    
+    val sb = sl.select[Boolean]
+    println(sb)
+
+    val ss = sl.select[String]
+    println(ss)
+
+    val sd = sl.select[Double]
+    println(sd)
   }
 }
