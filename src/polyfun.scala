@@ -4,13 +4,25 @@ object PolyFun {
     type λ[T] = C
   }
 
+  type Tagged[T] = { type Tag = T }
+  type @@[T, U] = T with Tagged[U]
+  
+  def tag[T] = new {
+    def apply[U](u : U) : U with Tagged[T] = u.asInstanceOf[U @@ T]
+  }
+  
   trait HRFn {
     type F[_]
     type G[_]
 
-    type λ[T] = F[T] => G[T]
+    type Case[T] = F[T] => G[T]
+    type λ[T] = Case[T] @@ this.type
+    def λ[T](c : Case[T]) = tag[this.type](c)
 
-    def apply[T](x : F[T]) : G[T]
+    def dflt[T] : λ[T] = λ[T](dflt(_))
+    def dflt[T](f : F[T]) : G[T]
+
+    def apply[T](f : F[T])(implicit c : λ[T] = dflt[T]) : G[T] = c(f)
   }
   
   trait ~>[F0[_], G0[_]] extends HRFn {
@@ -18,61 +30,76 @@ object PolyFun {
     type G[X] = G0[X]
   }
 
-  // Use of dependent type h.λ[T] essential here
-  implicit def univInst1[HF <: HRFn, T](h : HF) : h.λ[T] = h.apply(_)
-  //implicit def univInst2[F[_], Out, T](h : F ~> Const[Out]#λ) : h.λ[T] = h.apply _
-
-  trait HFn2[F1[_], F2[_], G[_]] {
-    type λ[T] = (F1[T], F2[T]) => G[T]
-    def apply[T](x : F1[T], y : F2[T]) : G[T]
-  }
-  
-  // Use of dependent type h.λ[T] essential here
-  implicit def univInst21[F1[_], F2[_], G[_], T](h : HFn2[F1, F2, G]) : h.λ[T] = h.apply _
-  implicit def univInst22[F1[_], F2[_], Out, T](h : HFn2[F1, F2, Const[Out]#λ]) : h.λ[T] = h.apply _
+  implicit def univInst[HF <: HRFn, T](h : HF)(implicit c : h.λ[T] = h.dflt[T]) : h.λ[T] = c
 
   object identity extends (Id ~> Id) {
-    def apply[T](t : T) = t
+    def dflt[T](t : T) = t
   }
 
   object singleton extends (Id ~> Set) {
-    def apply[T](t : T) = Set(t)
+    def dflt[T](t : T) = Set(t)
   }
 
   object choose extends (Set ~> Option) {
-    def apply[T](s : Set[T]) = s.headOption
+    def dflt[T](s : Set[T]) = s.headOption
   }
 
   object list extends (Id ~> List) {
-    def apply[T](t : T) = List(t)
+    def dflt[T](t : T) = List(t)
   }
   
   object headOption extends (List ~> Option) {
-    def apply[T](t : List[T]) = t.headOption
+    def dflt[T](t : List[T]) = t.headOption
   }
   
   object isDefined extends (Option ~> Const[Boolean]#λ) {
-    def apply[T](o : Option[T]) : Boolean = o.isDefined
+    def dflt[T](o : Option[T]) : Boolean = o.isDefined
   }
   
   object get extends (Option ~> Id) {
-    def apply[T](o : Option[T]) : T = o.get
+    def dflt[T](o : Option[T]) : T = o.get
   }
   
   object option extends (Id ~> Option) {
-    def apply[T](t : T) : Option[T] = Option(t)
+    def dflt[T](t : T) : Option[T] = Option(t)
   }
   
   object toInt extends (Id ~> Const[Int]#λ) {
-    def apply[T](t : T) : Int = t.toString.toInt
+    def dflt[T](t : T) : Int = t.toString.toInt
   }
   
-  object sum extends HFn2[Id, Id, Const[Int]#λ] {
-    def apply[T](x : T, y : T) : Int = toInt(x)+toInt(y)
+  object size extends (Id ~> Const[Int]#λ) {
+    def dflt[T](t : T) = 1
   }
+
+  implicit def sizeInt = size.λ[Int](x => 1)
+  implicit def sizeString = size.λ[String](s => s.length)
+  implicit def sizeList[T] = size.λ[List[T]](l => l.length)
+  implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+size(t.get))
+  implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
   
   def main(args : Array[String]) {
+    val si = size(23)
+    println(si)
     
+    val ss = size("foo")
+    println(ss)
+    
+    val sl = size(List(1, 2, 3))
+    println(sl)
+    
+    val so = size(Option(23))
+    println(so)
+
+    val st = size((23, "foo"))
+    println(st)
+    
+    val ls = List("foo", "bar", "baz")
+    val lss = ls map size
+    val lsi = ls map identity
+    
+    val is = identity("foo")
+
     // Direct application
     val s1 = singleton(23)
     println(s1)
@@ -80,7 +107,8 @@ object PolyFun {
     println(s2)
     
     def app[G[_]](f : Int => G[Int]) = f(23)
-    app(singleton)
+    val as = app(singleton)
+    val al = app(list)
     
     // Implicit conversion to monomorphic function values
     val l1 = List(1, 2, 3) map singleton
@@ -91,12 +119,20 @@ object PolyFun {
     println(l3)
 
     // Use as polymorphic function values
-    def pairApply[F[_]](f : Id ~> F) = (f(23), f("foo"))
+    def pairApply[G[_]](f : Id ~> G) = (f(23), f("foo"))
 
     val a1 = pairApply(singleton)
     println(a1)
     val a2 = pairApply(list)
     println(a2)
+    val a3 = pairApply[Const[Int]#λ](size)
+    println(a3)
+    
+    // Use as polymorphic function values with type-specific cases
+    def pairApply2[G[_]](f : Id ~> G)(implicit fi : f.λ[Int], fs : f.λ[String]) = (f(23), f("foo"))
+    
+    val a4 = pairApply2[Const[Int]#λ](size)
+    println(a4)
 
     def pairMap[F[_]](f : Id ~> F) = (List(1, 2, 3) map f, List("foo", "bar", "baz") map f)
   
@@ -104,16 +140,6 @@ object PolyFun {
     println(m1)
     val m2 = pairMap(list)
     println(m2)
-    
-    val l4 = List(1, 2, 3)
-    val sm1 = l4.foldLeft(0)(sum)
-    println(sm1)
-    
-    println(sum(23, 45))
-    println(sum("2", "5"))
-    
-    def combine(f : (Int, Int) => Int) = f(2, 3)
-    println(combine(sum))
     
     val l5 = List(1, 2, 3)
     val l6 = l5 map option
