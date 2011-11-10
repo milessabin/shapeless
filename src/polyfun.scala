@@ -4,16 +4,23 @@ object PolyFun {
     type λ[T] = C
   }
 
-  trait HRFn
-  
-  trait ~>[F[_], G[_]] extends HRFn {
+  trait HRFn {
+    type F[_]
+    type G[_]
+
     type λ[T] = F[T] => G[T]
+
     def apply[T](x : F[T]) : G[T]
+  }
+  
+  trait ~>[F0[_], G0[_]] extends HRFn {
+    type F[X] = F0[X]
+    type G[X] = G0[X]
   }
 
   // Use of dependent type h.λ[T] essential here
-  implicit def univInst1[F[_], G[_], T](h : F ~> G) : h.λ[T] = h.apply _
-  implicit def univInst2[F[_], Out, T](h : F ~> Const[Out]#λ) : h.λ[T] = h.apply _
+  implicit def univInst1[HF <: HRFn, T](h : HF) : h.λ[T] = h.apply(_)
+  //implicit def univInst2[F[_], Out, T](h : F ~> Const[Out]#λ) : h.λ[T] = h.apply _
 
   trait HFn2[F1[_], F2[_], G[_]] {
     type λ[T] = (F1[T], F2[T]) => G[T]
