@@ -1,4 +1,4 @@
-trait LowPriorityPolyFunCases {
+object PolyFunCases {
   import HList._
   
   type Id[T] = T
@@ -33,15 +33,7 @@ trait LowPriorityPolyFunCases {
   }
 
   implicit def univInst[HF <: HRFn, T](h : HF)(implicit c : h.λ[T] = h.dflt[T]) : h.λ[T] = c
-}
 
-object PolyFunCases extends LowPriorityPolyFunCases {
-}
-
-object TestPolyFunCases {
-  import HList._
-  import PolyFunCases._
-  
   object identity extends (Id ~> Id) {
     def dflt[T](t : T) = t
   }
