@@ -1,10 +1,10 @@
-object PolyFunCases {
+trait LowPriorityPolyFunCases {
+  import HList._
+  
   type Id[T] = T
   type Const[C] = {
     type λ[T] = C
   }
-
-  trait HRFn
 
   type Tagged[T] = { type Tag = T }
   type @@[T, U] = T with Tagged[U]
@@ -13,20 +13,29 @@ object PolyFunCases {
     def apply[U](u : U) : U with Tagged[T] = u.asInstanceOf[U @@ T]
   }
   
-  trait ~~>[F[_], G[_]] extends HRFn {
-    type Case[T] <: F[T] => G[T]
-    def apply[T](x : F[T])(implicit f : Case[T]) : G[T] = f(x) 
+  trait HRFn {
+    def apply[F, G](f : F)(implicit c : (F => G) @@ this.type) : G = c(f)
   }
+}
 
-  object size extends (Id ~~> Const[Int]#λ) {
-    type Case[T] = (T => Int) @@ size.type 
+object PolyFunCases extends LowPriorityPolyFunCases {
+}
+
+object TestPolyFunCases {
+  import HList._
+  import PolyFunCases._
+  
+  object size extends HRFn {
+    type Case[T] = (T => Int) @@ size.type
+    def apply[T](c : T => Int) = tag[size.type](c)
   }
   
-  implicit def sizeInt : size.Case[Int] = tag(x => 1)
-  implicit def sizeString : size.Case[String] = tag(s => s.length)
-  implicit def sizeList[T] : size.Case[List[T]] = tag(l => l.length)
-  implicit def sizeTuple[T, U](implicit sizeT : size.Case[T], sizeU : size.Case[U]) : size.Case[(T, U)] = tag(t => size(t._1)+size(t._2)) 
-
+  implicit def sizeInt = size[Int](x => 1)
+  implicit def sizeString = size[String](s => s.length)
+  implicit def sizeList[T] = size[List[T]](l => l.length)
+  implicit def sizeOption[T](implicit cases : size.Case[T]) = size[Option[T]](t => 1+size(t.get))
+  implicit def sizeTuple[T, U](implicit st : size.Case[T], su : size.Case[U]) = size[(T, U)](t => size(t._1)+size(t._2))
+  
   def main(args : Array[String]) {
     val si = size(23)
     println(si)
@@ -37,6 +46,9 @@ object PolyFunCases {
     val sl = size(List(1, 2, 3))
     println(sl)
     
+    val so = size(Option(23))
+    println(so)
+
     val st = size((23, "foo"))
     println(st)
   }
