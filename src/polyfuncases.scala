@@ -13,22 +13,26 @@ trait LowPriorityPolyFunCases {
     def apply[U](u : U) : U with Tagged[T] = u.asInstanceOf[U @@ T]
   }
   
-  trait HRFn
-  
-  trait ~>[F[_], G[_]] {
-    type λ[T] = (F[T] => G[T]) @@ this.type
-    def λ[T](c : F[T] => G[T]) = tag[this.type](c)
-    def taggedDflt[T] = λ[T](dflt)
-    
-    def apply[T](f : F[T])(implicit c : (F[T] => G[T]) @@ this.type = taggedDflt[T]) : G[T] = c(f)
+  trait HRFn {
+    type F[_]
+    type G[_]
+
+    type Case[T] = F[T] => G[T]
+    type λ[T] = Case[T] @@ this.type
+    def λ[T](c : Case[T]) = tag[this.type](c)
+
+    def dflt[T] : λ[T] = λ[T](dflt(_))
     def dflt[T](f : F[T]) : G[T]
+
+    def apply[T](f : F[T])(implicit c : λ[T] = dflt[T]) : G[T] = c(f)
+  }
+  
+  trait ~>[F0[_], G0[_]] extends HRFn {
+    type F[X] = F0[X]
+    type G[X] = G0[X]
   }
 
-  implicit def univInst1[F[_], G[_], T](h : F ~> G)
-    (implicit c : (F[T] => G[T]) @@ h.type = h.taggedDflt[T]) : h.λ[T] = c
-    
-  implicit def univInst2[F[_], G, T](h : F ~> Const[G]#λ)
-    (implicit c : (F[T] => G) @@ h.type = h.taggedDflt[T]) : h.λ[T] = c
+  implicit def univInst[HF <: HRFn, T](h : HF)(implicit c : h.λ[T] = h.dflt[T]) : h.λ[T] = c
 }
 
 object PolyFunCases extends LowPriorityPolyFunCases {
