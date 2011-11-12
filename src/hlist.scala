@@ -7,7 +7,6 @@ import Cast._
 // TODO Value/type contains
 // TODO take/drop
 // TODO Lenses
-// TODO Type-specific cases
 
 sealed trait HList
 
@@ -22,7 +21,7 @@ trait HNil extends HList {
 
 case object HNil extends HNil
 
-trait LowPriorityHList {
+object HList {
   type ::[+H, +T <: HList] = HCons[H, T]
 
   trait Ops[L <: HList] {
@@ -45,9 +44,9 @@ trait LowPriorityHList {
     
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
     
-    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
+    def map[HF <: HRFn, Out <: HList](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
     
-    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R
+    def foldLeft[R, HF <: HRFn](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R
   
     def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
     
@@ -76,9 +75,9 @@ trait LowPriorityHList {
 
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
 
-    def map[HF <: HRFn, Out](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(f, l)
+    def map[HF <: HRFn, Out <: HList](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(l)
     
-    def foldLeft[R, F[_]](z : R)(f : F ~> Const[R]#λ)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, F]) : R = folder(l, z, f, op)
+    def foldLeft[R, HF <: HRFn](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
 
     def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out = unifier.unify(l)
   
@@ -103,37 +102,29 @@ trait LowPriorityHList {
     def tail(l : H0 :: T0) : T = l.tail
   }
   
-  trait Applicator[F[_], G[_], In, Out] {
-    def apply(f : F ~> G, in : In) : Out
+  trait Mapper[HF <: HRFn, In <: HList, Out <: HList] {
+    def apply(in: In) : Out
   }
 
-  implicit def applicator1[F[_], G[_], In] = new Applicator[F, G, F[In], G[In]] {
-    def apply(f : F ~> G, t : F[In]) = f(t)
+  implicit def hnilMapper1[HF <: HRFn] = new Mapper[HF, HNil, HNil] {
+    def apply(l : HNil) = HNil
   }
   
-  trait Mapper[-HF <: HRFn, In, Out] {
-    def apply(f : HF, in: In) : Out
-  }
-
-  implicit def hnilMapper1[F[_], G[_]] = new Mapper[F ~> G, HNil, HNil] {
-    def apply(f : F ~> G, l : HNil) = HNil
+  implicit def hlistMapper1[HF <: HRFn, InH, OutH, InT <: HList, OutT <: HList]
+    (implicit hc : CaseBox[HF, InH => OutH], mt : Mapper[HF, InT, OutT]) = new Mapper[HF, InH :: InT, OutH :: OutT] {
+      def apply(l : InH :: InT) = hc.f(l.head) :: mt(l.tail)
   }
   
-  implicit def hlistMapper1[F[_], G[_], InH, OutH, InT <: HList, OutT <: HList]
-    (implicit ap : Applicator[F, G, InH, OutH], mt : Mapper[F ~> G, InT, OutT]) = new Mapper[F ~> G, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> G, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
+  trait LeftFolder[L <: HList, R, HF <: HRFn] {
+    def apply(l : L, in : R, op : (R, R) => R) : R 
   }
   
-  trait LeftFolder[L <: HList, R, F[_]] {
-    def apply(l : L, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) : R 
+  implicit def hnilLeftFolder[R, HF <: HRFn] = new LeftFolder[HNil, R, HF] {
+    def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hnilLeftFolder[R, F[_]] = new LeftFolder[HNil, R, F] {
-    def apply(l : HNil, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) = in
-  }
-  
-  implicit def hlistLeftFolder[H, T <: HList, R, F[_]](implicit ap : Applicator[F, Const[R]#λ, H, R], tf : LeftFolder[T, R, F]) = new LeftFolder[H :: T, R, F] {
-    def apply(l : H :: T, in : R, f : F ~> Const[R]#λ, op : (R, R) => R) = tf(l.tail, op(in, ap(f, l.head)), f, op)
+  implicit def hlistLeftFolder[H, T <: HList, R, HF <: HRFn](implicit hc : CaseBox[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
+    def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.f(l.head)), op)
   }
   
   trait Lub[-A, -B, +Out] {
@@ -255,40 +246,6 @@ trait LowPriorityHList {
   }
 }
 
-object HList extends LowPriorityHList {
-  import PolyFun._
-
-  implicit def applicator2[G[_], In] = new Applicator[Id, G, In, G[In]] {
-    def apply(f : Id ~> G, t : In) = f(t)
-  }
-
-  implicit def applicator3[F[_], In, Out] = new Applicator[F, Const[Out]#λ, F[In], Out] {
-    def apply(f : F ~> Const[Out]#λ, t : F[In]) = f(t)
-  }
-  
-  implicit def applicator4[F[_], In] = new Applicator[F, Id, F[In], In] {
-    def apply(f : F ~> Id, t : F[In]) = f(t)
-  }
-  
-  implicit def hnilMapper2[F[_], Out] = new Mapper[F ~> Const[Out]#λ, HNil, HNil] {
-    def apply(f : F ~> Const[Out]#λ, l : HNil) = HNil
-  }
-  
-  implicit def hnilMapper3[F[_]] = new Mapper[F ~> Id, HNil, HNil] {
-    def apply(f : F ~> Id, l : HNil) = HNil
-  }
-  
-  implicit def hlistMapper2[F[_], InH, OutH, InT <: HList, OutT <: HList]
-    (implicit ap : Applicator[F, Const[OutH]#λ, InH, OutH], mt : Mapper[F ~> Const[OutH]#λ, InT, OutT]) = new Mapper[F ~> Const[OutH]#λ, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> Const[OutH]#λ, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
-  }
-  
-  implicit def hlistMapper3[F[_], InH, OutH, InT <: HList, OutT <: HList]
-    (implicit ap : Applicator[F, Id, InH, OutH], mt : Mapper[F ~> Id, InT, OutT]) = new Mapper[F ~> Id, InH :: InT, OutH :: OutT] {
-      def apply(f : F ~> Id, l : InH :: InT) = ap(f, l.head) :: mt(f, l.tail)
-  }
-}
-
 object TestHList {
   import HList._
   import PolyFun._
@@ -304,9 +261,11 @@ object TestHList {
     type SISS = Set[Int] :: Set[String] :: HNil
     type OIOS = Option[Int] :: Option[String] :: HNil
     
-    val apl = implicitly[Applicator[Set, Option, Set[Int], Option[Int]]]
-    val mn = implicitly[Mapper[Set ~> Option, HNil, HNil]]
-    val m = implicitly[Mapper[Set ~> Option, Set[Int] :: HNil, Option[Int] :: HNil]]
+    //val apl = implicitly[Applicator[Set, Option, Set[Int], Option[Int]]]
+    val mn = implicitly[Mapper[choose.type, HNil, HNil]]
+    val fi = implicitly[CaseBox[choose.type, Set[Int] => Option[Int]]]
+    val fii = implicitly[choose.λ[Int]]
+    val m = implicitly[Mapper[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
     
     val s1 = Set(1) :: HNil
     val o1 = s1 map choose
@@ -486,17 +445,17 @@ object TestHList {
     val ll2 = l7.toList
     val bh : Boolean = ll2.head
 
-    val ap2 = implicitly[Applicator[Option, Const[Boolean]#λ, Option[Int], Boolean]]
-    val mn2 = implicitly[Mapper[Option ~> Const[Boolean]#λ, HNil, HNil]]
-    val m2 = implicitly[Mapper[Option ~> Const[Boolean]#λ, Option[Int] :: HNil, Boolean :: HNil]]
+    //val ap2 = implicitly[Applicator[Option, Const[Boolean]#λ, Option[Int], Boolean]]
+    val mn2 = implicitly[Mapper[isDefined.type, HNil, HNil]]
+    val m2 = implicitly[Mapper[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
     
-    def blip1[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[Option ~> Id, In, Out]) = ev
+    def blip1[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[get.type, In, Out]) = ev
     val b1 = blip1(l4)
     
-    def blip2[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[Id ~> Option, In, Out]) = ev
+    def blip2[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[option.type, In, Out]) = ev
     val b2 = blip2(l4)
 
-    def blip3[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[Option ~> Const[Boolean]#λ, In, Out]) = ev
+    def blip3[In <: HList, Out <: HList](in : In)(implicit ev : Mapper[isDefined.type, In, Out]) = ev
     val b3 = blip3(l4)
     
     val tl1 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil 
@@ -524,5 +483,9 @@ object TestHList {
 
     val sd = sl.select[Double]
     println(sd)
+
+    val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
+    val l9 = l8 map size
+    println(l9)
   }
 }
