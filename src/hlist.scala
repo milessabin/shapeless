@@ -24,39 +24,7 @@ case object HNil extends HNil
 object HList {
   type ::[+H, +T <: HList] = HCons[H, T]
 
-  trait Ops[L <: HList] {
-  
-    def head(implicit c : IsHCons[L]) : c.H 
-
-    def tail(implicit c : IsHCons[L]) : c.T
-    
-    def ::[H](h : H) : H :: L
-    
-    def :::[P <: HList, Out <: HList](prefix : P)(implicit prepend : Prepend[P, L, Out]) : Out
-  
-    def reverse_:::[P <: HList, Out <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L, Out]) : Out
-    
-    def last[Out](implicit last : Last[L, Out]) : Out
-
-    def init[Out <: HList](implicit init : Init[L, Out]) : Out
-    
-    def select[U](implicit selector : Selector[L, U]) : U
-    
-    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out
-    
-    def map[HF <: HRFn, Out <: HList](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out
-    
-    def foldLeft[R, HF <: HRFn](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R
-  
-    def unify[Out <: HList](implicit unifier : Unifier[L, Out]) : Out
-    
-    def toList[Lub](implicit l : ToList[L, Lub]) : List[Lub]
-    
-    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M]
-  }
-
-  implicit def hlistOps[L <: HList](l : L) : Ops[L] = new Ops[L] {
-
+  class Ops[L <: HList](l : L) {
     def head(implicit c : IsHCons[L]) : c.H = c.head(l) 
 
     def tail(implicit c : IsHCons[L]) : c.T = c.tail(l)
@@ -85,6 +53,8 @@ object HList {
 
     def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
   }
+
+  implicit def hlistOps[L <: HList](l : L) = new Ops(l)
   
   trait IsHCons[L <: HList] {
     type H
