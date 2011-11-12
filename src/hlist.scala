@@ -24,7 +24,7 @@ case object HNil extends HNil
 object HList {
   type ::[+H, +T <: HList] = HCons[H, T]
 
-  class Ops[L <: HList](l : L) {
+  final class Ops[L <: HList](l : L) {
     def head(implicit c : IsHCons[L]) : c.H = c.head(l) 
 
     def tail(implicit c : IsHCons[L]) : c.T = c.tail(l)
