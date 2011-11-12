@@ -81,7 +81,7 @@ object HList {
   }
   
   implicit def hlistMapper1[HF <: HRFn, InH, OutH, InT <: HList, OutT <: HList]
-    (implicit hc : CaseBox[HF, InH => OutH], mt : Mapper[HF, InT, OutT]) = new Mapper[HF, InH :: InT, OutH :: OutT] {
+    (implicit hc : Case[HF, InH => OutH], mt : Mapper[HF, InT, OutT]) = new Mapper[HF, InH :: InT, OutH :: OutT] {
       def apply(l : InH :: InT) = hc.f(l.head) :: mt(l.tail)
   }
   
@@ -93,7 +93,7 @@ object HList {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistLeftFolder[H, T <: HList, R, HF <: HRFn](implicit hc : CaseBox[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
+  implicit def hlistLeftFolder[H, T <: HList, R, HF <: HRFn](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
     def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.f(l.head)), op)
   }
   
@@ -233,7 +233,7 @@ object TestHList {
     
     //val apl = implicitly[Applicator[Set, Option, Set[Int], Option[Int]]]
     val mn = implicitly[Mapper[choose.type, HNil, HNil]]
-    val fi = implicitly[CaseBox[choose.type, Set[Int] => Option[Int]]]
+    val fi = implicitly[Case[choose.type, Set[Int] => Option[Int]]]
     val fii = implicitly[choose.λ[Int]]
     val m = implicitly[Mapper[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
     

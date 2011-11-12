@@ -4,16 +4,15 @@ object PolyFun {
     type λ[T] = C
   }
 
-  case class CaseBox[HF <: HRFn, F](f : F)
+  case class Case[HF <: HRFn, F](f : F)
   
   trait HRFn {
     type F[_]
     type G[_]
 
     type Fn[T] = F[T] => G[T]
-    type Case[T] = CaseBox[this.type , Fn[T]]
-    type λ[T] = Case[T]
-    def λ[T](c : F[T] => G[T]) = CaseBox[this.type, Fn[T]](c)
+    type λ[T] = Case[this.type , Fn[T]]
+    def λ[T](c : F[T] => G[T]) = Case[this.type, Fn[T]](c)
     
     def default[T](f : F[T]) : G[T]
     implicit def defaultCase[T] = λ[T](default)
@@ -75,18 +74,18 @@ object PolyFun {
   
   def main(args : Array[String]) {
     implicitly[choose.λ[Int]]
-    implicitly[CaseBox[choose.type, Set[Int] => Option[Int]]]
+    implicitly[Case[choose.type, Set[Int] => Option[Int]]]
     
     implicitly[size.λ[Int]]
-    implicitly[CaseBox[size.type, Option[Int] => Int]]
+    implicitly[Case[size.type, Option[Int] => Int]]
 
     implicitly[option.λ[Int]]
-    implicitly[CaseBox[option.type, Int => Option[Int]]]
-    implicitly[CaseBox[option.type, Id[Int] => Option[Int]]]
+    implicitly[Case[option.type, Int => Option[Int]]]
+    implicitly[Case[option.type, Id[Int] => Option[Int]]]
 
     implicitly[singleton.λ[Int]]
-    implicitly[CaseBox[singleton.type, Int => Set[Int]]]
-    implicitly[CaseBox[singleton.type, Id[Int] => Set[Int]]]
+    implicitly[Case[singleton.type, Int => Set[Int]]]
+    implicitly[Case[singleton.type, Id[Int] => Set[Int]]]
 
     val si = size(23)
     println(si)
