@@ -1,5 +1,5 @@
 import PolyFun._
-import Cast._
+import Castable._
 
 // TODO zip/unzip
 // TODO hApply
@@ -211,7 +211,7 @@ object HList {
     def apply(in : HNil) = Option(in)
   }
   
-  implicit def hlistCast[InH, InT <: HList, OutH, OutT <: HList](implicit bcm : BoxedClassManifest[OutH], ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
+  implicit def hlistCast[InH, InT <: HList, OutH : Castable, OutT <: HList](implicit ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
     def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield h :: t
   }
 }
