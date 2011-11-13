@@ -1,4 +1,4 @@
-trait Castable[U] {
+abstract class Castable[U] {
   val manifest : ClassManifest[_]
   def cast(t : Any) : Option[U] = {
     val mT = ClassManifest.fromClass(t.getClass)
