@@ -45,6 +45,10 @@ trait LowPriorityHList {
 
     def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[HNil, L, U]) : splitLeft.R = splitLeft(HNil, l)
 
+    def splitRight[U](implicit splitRight : SplitRight[L, HNil, HNil, U]) : splitRight.R = splitRight(l, HNil, HNil)
+
+    def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, HNil, HNil, U]) : splitRight.R = splitRight(l, HNil, HNil)
+
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
 
     def map[HF <: HRFn, Out <: HList](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(l)
@@ -178,10 +182,12 @@ trait LowPriorityHList {
     def apply(accP : AccP, accS : AccS) : R
   }
 
-  implicit def hlistSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U](implicit slt : SplitLeft[AccP, AccST, U]) = new SplitLeft[AccP, AccSH :: AccST, U] {
+  implicit def hlistSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U]
+    (implicit slt : SplitLeft[AccP, AccST, U]) = new SplitLeft[AccP, AccSH :: AccST, U] {
     type P = AccSH :: slt.P
     type S = slt.S
-    def apply(accP : AccP, accS : AccSH :: AccST) : R = slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+    def apply(accP : AccP, accS : AccSH :: AccST) : R =
+      slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
   }
 
   trait ReverseSplitLeft[AccP <: HList, AccS <: HList, U] {
@@ -191,10 +197,54 @@ trait LowPriorityHList {
     def apply(accP : AccP, accS : AccS) : R
   }
 
-  implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U](implicit slt : ReverseSplitLeft[AccSH :: AccP, AccST, U]) = new ReverseSplitLeft[AccP, AccSH :: AccST, U] {
+  implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U]
+    (implicit slt : ReverseSplitLeft[AccSH :: AccP, AccST, U]) = new ReverseSplitLeft[AccP, AccSH :: AccST, U] {
     type P = slt.P
     type S = slt.S
     def apply(accP : AccP, accS : AccSH :: AccST) : R = slt(accS.head :: accP, accS.tail)
+  }
+
+  trait SplitRight[Rev <: HList, AccP <: HList, AccS <: HList, U] {
+    type R = (P, S)
+    type P <: HList
+    type S <: HList
+    def apply(rev : Rev, accP : AccP, accS : AccS) : R
+  }
+
+  implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U]
+    (implicit srt : SplitRight[RevT, RevH :: AccP, HNil, U]) = new SplitRight[RevH :: RevT, AccP, HNil, U] {
+    type P = srt.P
+    type S = srt.S
+    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : R = srt(rev.tail, rev.head :: accP, accS)
+  }
+
+  implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U]
+    (implicit srt : SplitRight[HNil, AccPT, AccPH :: AccS, U]) = new SplitRight[HNil, AccPH :: AccPT, AccS, U] {
+    type P = srt.P
+    type S = srt.S
+    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : R = srt(rev, accP.tail, accP.head :: accS)
+  }
+  
+  trait ReverseSplitRight[Rev <: HList, AccP <: HList, AccS <: HList, U] {
+    type R = (P, S)
+    type P <: HList
+    type S <: HList
+    def apply(rev : Rev, accP : AccP, accS : AccS) : R
+  }
+  
+  implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U]
+    (implicit srt : ReverseSplitRight[RevT, RevH :: AccP, HNil, U]) = new ReverseSplitRight[RevH :: RevT, AccP, HNil, U] {
+    type P = srt.P
+    type S = srt.S
+    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : R = srt(rev.tail, rev.head :: accP, accS)
+  }
+  
+  implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U]
+    (implicit srt : ReverseSplitRight[HNil, AccPT, AccS, U]) = new ReverseSplitRight[HNil, AccPH :: AccPT, AccS, U] {
+    type P = srt.P
+    type S = AccPH :: srt.S
+    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : R =
+      srt(rev, accP.tail, accS) match { case (prefix, suffix) => (prefix, accP.head :: suffix) }
   }
 
   trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
@@ -257,6 +307,18 @@ object HList extends LowPriorityHList {
     type P = P0
     type S = SH :: ST
     def apply(accP : P, accS : SH :: ST) : R = (accP, accS)
+  }
+  
+  implicit def hlistSplitRight3[PH, PT <: HList, S0 <: HList, Out <: HList](implicit reverse : Reverse[HNil, PH :: PT, Out]) = new SplitRight[HNil, PH :: PT, S0, PH] {
+    type P = Out
+    type S = S0
+    def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP.reverse, accS)
+  }
+
+  implicit def hlistReverseSplitRight3[PH, PT <: HList, S0 <: HList, Out <: HList](implicit reverse : Reverse[HNil, PH :: PT, Out]) = new ReverseSplitRight[HNil, PH :: PT, S0, PH] {
+    type P = Out
+    type S = S0
+    def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP.reverse, accS)
   }
 }
 
@@ -498,7 +560,7 @@ object TestHList {
     val sd = sl.select[Double]
     println(sd)
     
-    val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: HNil
+    val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
     
     val (spp, sps) = sl.splitLeft[String]
     val sp = sl.splitLeft[String]
@@ -507,7 +569,7 @@ object TestHList {
 
     val (sli1, sli2) = sl2.splitLeft[String]
     val sli1a : Int :: Double :: HNil = sli1 
-    val sli2a : String :: Unit :: String :: HNil = sli2 
+    val sli2a : String :: Unit :: String :: Boolean :: Long :: HNil = sli2 
 
     val (rspp, rsps) = sl.reverse_splitLeft[String]
     val rsp = sl.reverse_splitLeft[String]
@@ -516,7 +578,25 @@ object TestHList {
 
     val (rsli1, rsli2) = sl2.reverse_splitLeft[String]
     val rsli1a : Double :: Int :: HNil = rsli1 
-    val rsli2a : String :: Unit :: String :: HNil = rsli2 
+    val rsli2a : String :: Unit :: String :: Boolean :: Long :: HNil = rsli2 
+
+    val (srpp, srps) = sl.splitRight[String]
+    val srp = sl.splitRight[String]
+    val srp1 = srp._1
+    val srp2 = srp._2
+
+    val (srli1, srli2) = sl2.splitRight[String]
+    val srli1a : Int :: Double :: String :: Unit :: String :: HNil = srli1 
+    val srli2a : Boolean :: Long :: HNil = srli2 
+
+    val (rsrpp, rsrps) = sl.reverse_splitRight[String]
+    val rsrp = sl.reverse_splitRight[String]
+    val rsrp1 = rsrp._1
+    val rsrp2 = rsrp._2
+
+    val (rsrli1, rsrli2) = sl2.reverse_splitRight[String]
+    val rsrli1a : Int :: Double :: String :: Unit :: String :: HNil = rsrli1 
+    val rsrli2a : Long :: Boolean :: HNil = rsrli2 
 
     val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
     val l9 = l8 map size
