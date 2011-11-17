@@ -21,7 +21,7 @@ trait HNil extends HList {
 
 case object HNil extends HNil
 
-object HList {
+trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
 
   final class Ops[L <: HList](l : L) {
@@ -178,12 +178,6 @@ object HList {
     def apply(accP : AccP, accS : AccS) : R
   }
 
-  implicit def hlistSplitLeft1[P0 <: HList, SH, ST <: HList] = new SplitLeft[P0, SH :: ST, SH] {
-    type P = P0
-    type S = SH :: ST
-    def apply(accP : P, accS : SH :: ST) : R = (accP, accS)
-  }
-
   implicit def hlistSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U](implicit slt : SplitLeft[AccP, AccST, U]) = new SplitLeft[AccP, AccSH :: AccST, U] {
     type P = AccSH :: slt.P
     type S = slt.S
@@ -195,12 +189,6 @@ object HList {
     type P <: HList
     type S <: HList
     def apply(accP : AccP, accS : AccS) : R
-  }
-
-  implicit def hlistReverseSplitLeft1[P0 <: HList, SH, ST <: HList] = new ReverseSplitLeft[P0, SH :: ST, SH] {
-    type P = P0
-    type S = SH :: ST
-    def apply(accP : P, accS : SH :: ST) : R = (accP, accS)
   }
 
   implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U](implicit slt : ReverseSplitLeft[AccSH :: AccP, AccST, U]) = new ReverseSplitLeft[AccP, AccSH :: AccST, U] {
@@ -255,6 +243,20 @@ object HList {
   
   implicit def hlistCast[InH, InT <: HList, OutH : Castable, OutT <: HList](implicit ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
     def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield h :: t
+  }
+}
+
+object HList extends LowPriorityHList {
+  implicit def hlistSplitLeft1[P0 <: HList, SH, ST <: HList] = new SplitLeft[P0, SH :: ST, SH] {
+    type P = P0
+    type S = SH :: ST
+    def apply(accP : P, accS : SH :: ST) : R = (accP, accS)
+  }
+
+  implicit def hlistReverseSplitLeft1[P0 <: HList, SH, ST <: HList] = new ReverseSplitLeft[P0, SH :: ST, SH] {
+    type P = P0
+    type S = SH :: ST
+    def apply(accP : P, accS : SH :: ST) : R = (accP, accS)
   }
 }
 
@@ -496,21 +498,25 @@ object TestHList {
     val sd = sl.select[Double]
     println(sd)
     
-    val rsli = implicitly[SplitLeft[HNil, Int :: Double :: String :: Unit :: HNil, String]]
-    val (rsli1, rsli2) : rsli.R = (23 :: 3.0 :: HNil, "foo" :: () :: HNil) 
+    val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: HNil
     
     val (spp, sps) = sl.splitLeft[String]
     val sp = sl.splitLeft[String]
     val sp1 = sp._1
     val sp2 = sp._2
 
-    val sli = implicitly[ReverseSplitLeft[HNil, Int :: Double :: String :: Unit :: HNil, String]]
-    val (sli1, sli2) : sli.R = (3.0 :: 23 :: HNil, "foo" :: () :: HNil) 
-    
+    val (sli1, sli2) = sl2.splitLeft[String]
+    val sli1a : Int :: Double :: HNil = sli1 
+    val sli2a : String :: Unit :: String :: HNil = sli2 
+
     val (rspp, rsps) = sl.reverse_splitLeft[String]
     val rsp = sl.reverse_splitLeft[String]
     val rsp1 = rsp._1
     val rsp2 = rsp._2
+
+    val (rsli1, rsli2) = sl2.reverse_splitLeft[String]
+    val rsli1a : Double :: Int :: HNil = rsli1 
+    val rsli2a : String :: Unit :: String :: HNil = rsli2 
 
     val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
     val l9 = l8 map size
