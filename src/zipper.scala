@@ -1,10 +1,15 @@
 import HList._
 
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
+  import Zipper._
 
   def right(implicit c : IsHCons[R]) = Zipper(suffix.head :: prefix, suffix.tail)
 
   def left(implicit c : IsHCons[L]) = Zipper(prefix.tail, prefix.head :: suffix)
+  
+  def rightTo[T](implicit r : RightTo[T, L, R]) = r(prefix, suffix)
+
+  def leftTo[T](implicit l : LeftTo[T, L, R]) = l(prefix, suffix)
   
   def get(implicit c : IsHCons[R]) = suffix.head
 
@@ -31,6 +36,40 @@ object Zipper {
   implicit def hlistToZipper[L <: HList](l : L) = new HListToZipper[L] {
     def toZipper = Zipper(l)
   }
+
+  trait RightTo[T, ZL <: HList, ZR <: HList] {
+    type L <: HList
+    type R <: HList
+    def apply(prefix : ZL, suffix : ZR) : Zipper[L, R]
+  }
+  
+  implicit def rightTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
+    (implicit split : SplitLeft[HNil, ZR, T, P, S], reverse : ReversePrepend[P, ZL, Out]) =
+      new RightTo[T, ZL, ZR] {
+        type L = Out 
+        type R = S
+        def apply(prefix : ZL, suffix : ZR) : Zipper[L, R] = {
+          val (p, s) = suffix.splitLeft[T]
+          Zipper(p reverse_::: prefix, s)
+        }
+      }
+
+  trait LeftTo[T, ZL <: HList, ZR <: HList] {
+    type L <: HList
+    type R <: HList
+    def apply(prefix : ZL, suffix : ZR) : Zipper[L, R]
+  }
+
+  implicit def leftTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
+    (implicit split : SplitLeft[HNil, ZL, T, P, S], reverse : ReversePrepend[P, ZR, Out], cons : IsHCons[S]) =
+      new LeftTo[T, ZL, ZR] {
+        type L = cons.T
+        type R = cons.H :: Out
+        def apply(prefix : ZL, suffix : ZR) : Zipper[L, R] = {
+          val (p, s) = prefix.splitLeft[T]
+          Zipper(s.tail, s.head :: (p reverse_::: suffix))
+        }
+      }
 }
 
 object TestZipper {
@@ -60,5 +99,13 @@ object TestZipper {
 
     val l5 = l.toZipper.right.right.right.insert("bar").toHList
     println(l5)
+    
+    val l6 = l.toZipper.rightTo[Double]
+    val d6 = l6.get
+    println(l6)
+
+    val l7 = l.toZipper.last.leftTo[Int]
+    val i7 = l7.get
+    println(l7)
   }
 }
