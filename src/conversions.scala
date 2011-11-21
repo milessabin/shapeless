@@ -109,7 +109,7 @@ object TestTuples {
   def main(arg : Array[String]) {
     case class Foo(a : Int, b : String, c : Double)
     
-    val f1 = Foo(23, "foo", 2.3)
+    val f1 = (23, "foo", 2.3)
     println(f1)
     val hf = f1.hlisted
     val f2 = Foo.tupled(hf)
