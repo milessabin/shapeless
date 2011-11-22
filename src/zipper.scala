@@ -37,35 +37,35 @@ object Zipper {
     def toZipper = Zipper(l)
   }
 
-  trait RightTo[T, ZL <: HList, ZR <: HList] {
-    type L <: HList
-    type R <: HList
-    def apply(prefix : ZL, suffix : ZR) : Zipper[L, R]
+  trait RightTo[T, L <: HList, R <: HList] {
+    type L1 <: HList
+    type R1 <: HList
+    def apply(prefix : L, suffix : R) : Zipper[L1, R1]
   }
   
-  implicit def rightTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
-    (implicit split : SplitLeftAux[ZR, T, P, S], reverse : ReversePrepend[P, ZL, Out]) =
-      new RightTo[T, ZL, ZR] {
-        type L = Out 
-        type R = S
-        def apply(prefix : ZL, suffix : ZR) : Zipper[L, R] = {
+  implicit def rightTo[T, L <: HList, R <: HList, LP <: HList, R10 <: HList, L10 <: HList]
+    (implicit split : SplitLeftAux[R, T, LP, R10], reverse : ReversePrepend[LP, L, L10]) =
+      new RightTo[T, L, R] {
+        type L1 = L10
+        type R1 = R10
+        def apply(prefix : L, suffix : R) : Zipper[L1, R1] = {
           val (p, s) = suffix.splitLeft[T]
           Zipper(p reverse_::: prefix, s)
         }
       }
 
-  trait LeftTo[T, ZL <: HList, ZR <: HList] {
-    type L <: HList
-    type R <: HList
-    def apply(prefix : ZL, suffix : ZR) : Zipper[L, R]
+  trait LeftTo[T, L <: HList, R <: HList] {
+    type L1 <: HList
+    type R1 <: HList
+    def apply(prefix : L, suffix : R) : Zipper[L1, R1]
   }
 
-  implicit def leftTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
-    (implicit split : SplitLeftAux[ZL, T, P, S], reverse : ReversePrepend[P, ZR, Out], cons : IsHCons[S]) =
-      new LeftTo[T, ZL, ZR] {
-        type L = cons.T
-        type R = cons.H :: Out
-        def apply(prefix : ZL, suffix : ZR) : Zipper[L, R] = {
+  implicit def leftTo[T, L <: HList, R <: HList, RP <: HList, R0 <: HList, R1T <: HList]
+    (implicit split : SplitLeftAux[L, T, RP, R0], reverse : ReversePrepend[RP, R, R1T], cons : IsHCons[R0]) =
+      new LeftTo[T, L, R] {
+        type L1 = cons.T
+        type R1 = cons.H :: R1T
+        def apply(prefix : L, suffix : R) : Zipper[L1, R1] = {
           val (p, s) = prefix.splitLeft[T]
           Zipper(s.tail, s.head :: (p reverse_::: suffix))
         }
