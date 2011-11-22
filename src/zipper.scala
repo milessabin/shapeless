@@ -44,7 +44,7 @@ object Zipper {
   }
   
   implicit def rightTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
-    (implicit split : SplitLeft[HNil, ZR, T, P, S], reverse : ReversePrepend[P, ZL, Out]) =
+    (implicit split : SplitLeftAux[ZR, T, P, S], reverse : ReversePrepend[P, ZL, Out]) =
       new RightTo[T, ZL, ZR] {
         type L = Out 
         type R = S
@@ -61,7 +61,7 @@ object Zipper {
   }
 
   implicit def leftTo[T, ZL <: HList, ZR <: HList, P <: HList, S <: HList, Out <: HList]
-    (implicit split : SplitLeft[HNil, ZL, T, P, S], reverse : ReversePrepend[P, ZR, Out], cons : IsHCons[S]) =
+    (implicit split : SplitLeftAux[ZL, T, P, S], reverse : ReversePrepend[P, ZR, Out], cons : IsHCons[S]) =
       new LeftTo[T, ZL, ZR] {
         type L = cons.T
         type R = cons.H :: Out

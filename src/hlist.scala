@@ -41,13 +41,13 @@ trait LowPriorityHList {
     
     def select[U](implicit selector : Selector[L, U]) : U = selector(l)
 
-    def splitLeft[U](implicit splitLeft : DepSplitLeft[HNil, L, U]) : splitLeft.R = splitLeft(HNil, l)
+    def splitLeft[U](implicit splitLeft : SplitLeft[L, U]) : splitLeft.R = splitLeft(l)
 
-    def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[HNil, L, U]) : splitLeft.R = splitLeft(HNil, l)
+    def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[L, U]) : splitLeft.R = splitLeft(l)
 
-    def splitRight[U](implicit splitRight : SplitRight[L, HNil, HNil, U]) : splitRight.R = splitRight(l, HNil, HNil)
+    def splitRight[U](implicit splitRight : SplitRight[L, U]) : splitRight.R = splitRight(l)
 
-    def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, HNil, HNil, U]) : splitRight.R = splitRight(l, HNil, HNil)
+    def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.R = splitRight(l)
 
     def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
 
@@ -175,84 +175,115 @@ trait LowPriorityHList {
     def apply(l : H :: T) = st(l.tail)
   }
   
-  trait DepSplitLeft[AccP <: HList, AccS <: HList, U] {
+  trait SplitLeft[L <: HList, U] {
     type R = (P, S)
     type P <: HList
     type S <: HList
-    def apply(accP : AccP, accS : AccS) : R
+    def apply(l : L) : R
   } 
   
-  implicit def depSplitLeft[AccP <: HList, AccS <: HList, U, P0 <: HList, S0 <: HList]
-    (implicit splitLeft : SplitLeft[AccP, AccS, U, P0, S0]) = new DepSplitLeft[AccP, AccS, U] {
+  implicit def splitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
+    (implicit splitLeft : SplitLeft0[HNil, L, U, P0, S0]) = new SplitLeft[L, U] {
     type P = P0
     type S = S0
-    def apply(accP : AccP, accS : AccS) : R = splitLeft(accP, accS)
+    def apply(l : L) : R = splitLeft(HNil, l)
   }
-
-  trait SplitLeft[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
+  
+  type SplitLeftAux[L <: HList, U, P <: HList, S <: HList] = SplitLeft0[HNil, L, U, P, S]
+  
+  trait SplitLeft0[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
     def apply(accP : AccP, accS : AccS) : (P, S)
   }
 
   implicit def hlistSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U, P <: HList, S <: HList]
-    (implicit slt : SplitLeft[AccP, AccST, U, P, S]) = new SplitLeft[AccP, AccSH :: AccST, U, AccSH :: P, S] {
+    (implicit slt : SplitLeft0[AccP, AccST, U, P, S]) = new SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] {
     def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
       slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
   }
 
-  trait ReverseSplitLeft[AccP <: HList, AccS <: HList, U] {
+  trait ReverseSplitLeft[L <: HList, U] {
     type R = (P, S)
     type P <: HList
     type S <: HList
-    def apply(accP : AccP, accS : AccS) : R
+    def apply(l : L) : R
+  } 
+  
+  implicit def reverseSplitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
+    (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P0, S0]) = new ReverseSplitLeft[L, U] {
+    type P = P0
+    type S = S0
+    def apply(l : L) : R = splitLeft(HNil, l)
+  }
+  
+  type ReverseSplitLeftAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitLeft0[HNil, L, U, P, S]
+  
+  trait ReverseSplitLeft0[AccP <: HList, AccS <: HList, U, P, S] {
+    def apply(accP : AccP, accS : AccS) : (P, S)
   }
 
-  implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U]
-    (implicit slt : ReverseSplitLeft[AccSH :: AccP, AccST, U]) = new ReverseSplitLeft[AccP, AccSH :: AccST, U] {
-    type P = slt.P
-    type S = slt.S
-    def apply(accP : AccP, accS : AccSH :: AccST) : R = slt(accS.head :: accP, accS.tail)
+  implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U, P, S]
+    (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]) = new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
+    def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = slt(accS.head :: accP, accS.tail)
   }
 
-  trait SplitRight[Rev <: HList, AccP <: HList, AccS <: HList, U] {
+  trait SplitRight[L <: HList, U] {
     type R = (P, S)
     type P <: HList
     type S <: HList
-    def apply(rev : Rev, accP : AccP, accS : AccS) : R
-  }
-
-  implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U]
-    (implicit srt : SplitRight[RevT, RevH :: AccP, HNil, U]) = new SplitRight[RevH :: RevT, AccP, HNil, U] {
-    type P = srt.P
-    type S = srt.S
-    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : R = srt(rev.tail, rev.head :: accP, accS)
-  }
-
-  implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U]
-    (implicit srt : SplitRight[HNil, AccPT, AccPH :: AccS, U]) = new SplitRight[HNil, AccPH :: AccPT, AccS, U] {
-    type P = srt.P
-    type S = srt.S
-    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : R = srt(rev, accP.tail, accP.head :: accS)
+    def apply(l : L) : R
+  } 
+  
+  implicit def splitRight[L <: HList, U, P0 <: HList, S0 <: HList]
+    (implicit splitRight : SplitRight0[L, HNil, HNil, U, P0, S0]) = new SplitRight[L, U] {
+    type P = P0
+    type S = S0
+    def apply(l : L) : R = splitRight(l, HNil, HNil)
   }
   
-  trait ReverseSplitRight[Rev <: HList, AccP <: HList, AccS <: HList, U] {
+  type SplitRightAux[L <: HList, U, P <: HList, S <: HList] = SplitRight0[L, HNil, HNil, U, P, S]
+  
+  trait SplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
+    def apply(rev : Rev, accP : AccP, accS : AccS) : (P, S)
+  }
+
+  implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
+    (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) = new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
+  }
+
+  implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
+    (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) = new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
+  }
+  
+  trait ReverseSplitRight[L <: HList, U] {
     type R = (P, S)
     type P <: HList
     type S <: HList
-    def apply(rev : Rev, accP : AccP, accS : AccS) : R
+    def apply(l : L) : R
+  } 
+  
+  implicit def reverseSplitRight[L <: HList, U, P0 <: HList, S0 <: HList]
+    (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P0, S0]) = new ReverseSplitRight[L, U] {
+    type P = P0
+    type S = S0
+    def apply(l : L) : R = splitRight(l, HNil, HNil)
   }
   
-  implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U]
-    (implicit srt : ReverseSplitRight[RevT, RevH :: AccP, HNil, U]) = new ReverseSplitRight[RevH :: RevT, AccP, HNil, U] {
-    type P = srt.P
-    type S = srt.S
-    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : R = srt(rev.tail, rev.head :: accP, accS)
+  type ReverseSplitRightAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitRight0[L, HNil, HNil, U, P, S]
+  
+  trait ReverseSplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P, S] {
+    def apply(rev : Rev, accP : AccP, accS : AccS) : (P, S)
   }
   
-  implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U]
-    (implicit srt : ReverseSplitRight[HNil, AccPT, AccPH :: AccS, U]) = new ReverseSplitRight[HNil, AccPH :: AccPT, AccS, U] {
-    type P = srt.P
-    type S = srt.S
-    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : R = srt(rev, accP.tail, accP.head :: accS)
+  implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
+    (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) = new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
+  }
+  
+  implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
+    (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) = new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
   }
 
   trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
@@ -305,26 +336,20 @@ trait LowPriorityHList {
 }
 
 object HList extends LowPriorityHList {
-  implicit def hlistSplitLeft1[P <: HList, SH, ST <: HList] = new SplitLeft[P, SH :: ST, SH, P, SH :: ST] {
+  implicit def hlistSplitLeft1[P <: HList, SH, ST <: HList] = new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
     def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
   }
 
-  implicit def hlistReverseSplitLeft1[P0 <: HList, SH, ST <: HList] = new ReverseSplitLeft[P0, SH :: ST, SH] {
-    type P = P0
-    type S = SH :: ST
-    def apply(accP : P0, accS : SH :: ST) : R = (accP, accS)
+  implicit def hlistReverseSplitLeft1[P <: HList, SH, ST <: HList] = new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
+    def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
   }
   
-  implicit def hlistSplitRight3[PH, PT <: HList, S0 <: HList, Out <: HList](implicit reverse : Reverse[HNil, PH :: PT, Out]) = new SplitRight[HNil, PH :: PT, S0, PH] {
-    type P = Out
-    type S = S0
-    def apply(rev : HNil, accP : PH :: PT, accS : S0) = (accP.reverse, accS)
+  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList, Out <: HList](implicit reverse : Reverse[HNil, PH :: PT, Out]) = new SplitRight0[HNil, PH :: PT, S, PH, Out, S] {
+    def apply(rev : HNil, accP : PH :: PT, accS : S) : (Out, S) = (accP.reverse, accS)
   }
 
-  implicit def hlistReverseSplitRight3[PH, PT <: HList, S0 <: HList] = new ReverseSplitRight[HNil, PH :: PT, S0, PH] {
-    type P = PH :: PT
-    type S = S0
-    def apply(rev : HNil, accP : PH :: PT, accS : S0) = (accP, accS)
+  implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList] = new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
+    def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP, accS)
   }
 }
 
