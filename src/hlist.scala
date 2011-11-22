@@ -1,5 +1,6 @@
 import PolyFun._
 import Castable._
+import Nat._
 
 // TODO zip/unzip
 // TODO hApply
@@ -33,7 +34,7 @@ trait LowPriorityHList {
     def ::[H](h : H) : H :: L = HCons(h, l)
 
     def :::[P <: HList](prefix : P)(implicit prepend : Prepend[P, L]) : prepend.Out = prepend(prefix, l)
-
+    
     def reverse_:::[P <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L]) : prepend.Out = prepend(prefix, l)
 
     def last(implicit last : Last[L]) : last.Out = last(l)
@@ -41,6 +42,10 @@ trait LowPriorityHList {
     def init(implicit init : Init[L]) : init.Out = init(l)
     
     def select[U](implicit selector : Selector[L, U]) : U = selector(l)
+    
+    def split[N <: Nat](n : N)(implicit split : Split[L, N]) : split.R = split(l)
+
+    def reverse_split[N <: Nat](n : N)(implicit split : ReverseSplit[L, N]) : split.R = split(l)
 
     def splitLeft[U](implicit splitLeft : SplitLeft[L, U]) : splitLeft.R = splitLeft(l)
 
@@ -224,6 +229,65 @@ trait LowPriorityHList {
     def apply(l : H :: T) = st(l.tail)
   }
   
+  trait Split[L <: HList, N <: Nat] {
+    type R = (P, S)
+    type P <: HList
+    type S <: HList
+    def apply(l : L) : R
+  } 
+  
+  implicit def split[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
+    (implicit split : Split0[HNil, L, N, P0, S0]) = new Split[L, N] {
+    type P = P0
+    type S = S0
+    def apply(l : L) : R = split(HNil, l)
+  }
+  
+  type SplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = Split0[HNil, L, N, P, S]
+  
+  trait Split0[AccP <: HList, AccS <: HList, N <: Nat, P <: HList, S <: HList] {
+    def apply(accP : AccP, accS : AccS) : (P, S)
+  }
+
+  implicit def hlistSplit1[P <: HList, S <: HList] = new Split0[P, S, _0, P, S] {
+    def apply(accP : P, accS : S) : (P, S) = (accP, accS)
+  }
+
+  implicit def hlistSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P <: HList, S <: HList]
+    (implicit st : Split0[AccP, AccST, N, P, S]) = new Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] {
+    def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
+      st(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+  }
+
+  trait ReverseSplit[L <: HList, N <: Nat] {
+    type R = (P, S)
+    type P <: HList
+    type S <: HList
+    def apply(l : L) : R
+  } 
+  
+  implicit def reverseSplit[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
+    (implicit split : ReverseSplit0[HNil, L, N, P0, S0]) = new ReverseSplit[L, N] {
+    type P = P0
+    type S = S0
+    def apply(l : L) : R = split(HNil, l)
+  }
+  
+  type ReverseSplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = ReverseSplit0[HNil, L, N, P, S]
+  
+  trait ReverseSplit0[AccP <: HList, AccS <: HList, N <: Nat, P, S] {
+    def apply(accP : AccP, accS : AccS) : (P, S)
+  }
+
+  implicit def hlistReverseSplit1[P <: HList, S <: HList] = new ReverseSplit0[P, S, _0, P, S] {
+    def apply(accP : P, accS : S) : (P, S) = (accP, accS)
+  }
+  
+  implicit def hlistReverseSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P, S]
+    (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]) = new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
+    def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = st(accS.head :: accP, accS.tail)
+  }
+
   trait SplitLeft[L <: HList, U] {
     type R = (P, S)
     type P <: HList
@@ -663,6 +727,25 @@ object TestHList {
     val fl2 = tl2.foldLeft(true)(isDefined)(_ && _)
     println(fl2)
     
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    val sni0 = sn1.split(_0)
+    val sni1 = sn1.split(_1)
+    val sni2 = sn1.split(_2)
+    val sni3 = sn1.split(_3)
+    val sni4 = sn1.split(_4)
+    val sni5 = sn1.split(_5)
+    val sni6 = sn1.split(_6)
+    val sni7 = sn1.split(_7)
+    
+    val snri0 = sn1.reverse_split(_0)
+    val snri1 = sn1.reverse_split(_1)
+    val snri2 = sn1.reverse_split(_2)
+    val snri3 = sn1.reverse_split(_3)
+    val snri4 = sn1.reverse_split(_4)
+    val snri5 = sn1.reverse_split(_5)
+    val snri6 = sn1.reverse_split(_6)
+    val snri7 = sn1.reverse_split(_7)
+
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     val si = sl.select[Int]
     println(si)
