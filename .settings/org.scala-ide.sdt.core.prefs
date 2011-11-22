@@ -1,4 +1,4 @@
-#Mon Oct 31 13:41:41 GMT 2011
+#Tue Nov 22 09:44:49 GMT 2011
 Xcheck-null=false
 Xcheckinit=false
 Xdisable-assertions=false
@@ -36,5 +36,5 @@ optimise=false
 scala.compiler.additionalParams=
 scala.compiler.useProjectSettings=true
 target=jvm-1.5
-unchecked=false
+unchecked=true
 verbose=false
