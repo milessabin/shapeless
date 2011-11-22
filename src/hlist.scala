@@ -35,6 +35,8 @@ trait LowPriorityHList {
 
     def :::[P <: HList](prefix : P)(implicit prepend : Prepend[P, L]) : prepend.Out = prepend(prefix, l)
     
+    def apply[N <: Nat](n : N)(implicit at : At[L, N]) : at.Out = at(l)
+    
     def reverse_:::[P <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L]) : prepend.Out = prepend(prefix, l)
 
     def last(implicit last : Last[L]) : last.Out = last(l)
@@ -227,6 +229,30 @@ trait LowPriorityHList {
 
   implicit def hlistSelect[H, T <: HList, U](implicit st : Selector[T, U]) = new Selector[H :: T, U] {
     def apply(l : H :: T) = st(l.tail)
+  }
+  
+  trait At[L <: HList, N <: Nat] {
+    type Out
+    def apply(l : L) : Out 
+  }
+  
+  implicit def at[L <: HList, N <: Nat, Out0](implicit at : At0[L, N, Out0]) = new At[L, N] {
+    type Out = Out0
+    def apply(l : L) : Out = at(l)
+  }
+  
+  type AtAux[L <: HList, N <: Nat, Out] = At0[L, N, Out]
+  
+  trait At0[L <: HList, N <: Nat, Out] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def hlistAtZero[H, T <: HList] = new At0[H :: T, _0, H] {
+    def apply(l : H :: T) : H = l.head
+  }
+  
+  implicit def hlistAtN[H, T <: HList, N <: Nat, Out](implicit att : At0[T, N, Out]) = new At0[H :: T, Succ[N], Out] {
+    def apply(l : H :: T) : Out = att(l.tail) 
   }
   
   trait Split[L <: HList, N <: Nat] {
@@ -728,6 +754,15 @@ object TestHList {
     println(fl2)
     
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    
+    val at0 = sn1(_0)
+    val at1 = sn1(_1)
+    val at2 = sn1(_2)
+    val at3 = sn1(_3)
+    val at4 = sn1(_4)
+    val at5 = sn1(_5)
+    val at6 = sn1(_6)
+
     val sni0 = sn1.split(_0)
     val sni1 = sn1.split(_1)
     val sni2 = sn1.split(_2)
