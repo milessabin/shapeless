@@ -4,7 +4,6 @@ import Nat._
 
 // TODO zip/unzip
 // TODO hApply
-// TODO Nat/type indexed get/put
 // TODO Value/type contains
 // TODO take/drop
 // TODO Lenses
