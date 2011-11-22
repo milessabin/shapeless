@@ -1,4 +1,5 @@
 import HList._
+import Nat._
 
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
   import Zipper._
@@ -7,6 +8,14 @@ case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
 
   def left(implicit c : IsHCons[L]) = Zipper(prefix.tail, prefix.head :: suffix)
   
+  def rightBy[N <: Nat](implicit r : RightBy[N, L, R]) = r(prefix, suffix)
+
+  def rightBy[N <: Nat](n : N)(implicit r : RightBy[N, L, R]) = r(prefix, suffix)
+
+  def leftBy[N <: Nat](implicit l : LeftBy[N, L, R]) = l(prefix, suffix)
+
+  def leftBy[N <: Nat](n : N)(implicit l : LeftBy[N, L, R]) = l(prefix, suffix)
+
   def rightTo[T](implicit r : RightTo[T, L, R]) = r(prefix, suffix)
 
   def leftTo[T](implicit l : LeftTo[T, L, R]) = l(prefix, suffix)
@@ -36,6 +45,40 @@ object Zipper {
   implicit def hlistToZipper[L <: HList](l : L) = new HListToZipper[L] {
     def toZipper = Zipper(l)
   }
+
+  trait RightBy[N <: Nat, L <: HList, R <: HList] {
+    type L1 <: HList
+    type R1 <: HList
+    def apply(prefix : L, suffix : R) : Zipper[L1, R1]
+  }
+  
+  implicit def rightBy[N <: Nat, L <: HList, R <: HList, LP <: HList, R10 <: HList]
+    (implicit split : SplitAux[R, N, LP, R10], reverse : ReversePrepend[LP, L]) =
+      new RightBy[N, L, R] {
+        type L1 = reverse.Out
+        type R1 = R10
+        def apply(prefix : L, suffix : R) : Zipper[L1, R1] = {
+          val (p, s) = suffix.split[N]
+          Zipper(p reverse_::: prefix, s)
+        }
+      }
+
+  trait LeftBy[N <: Nat, L <: HList, R <: HList] {
+    type L1 <: HList
+    type R1 <: HList
+    def apply(prefix : L, suffix : R) : Zipper[L1, R1]
+  }
+
+  implicit def leftBy[N <: Nat, L <: HList, R <: HList, RP <: HList, L10 <: HList]
+    (implicit split : SplitAux[L, N, RP, L10], reverse : ReversePrepend[RP, R]) =
+      new LeftBy[N, L, R] {
+        type L1 = L10
+        type R1 = reverse.Out
+        def apply(prefix : L, suffix : R) : Zipper[L1, R1] = {
+          val (p, s) = prefix.split[N]
+          Zipper(s, p reverse_::: suffix)
+        }
+      }
 
   trait RightTo[T, L <: HList, R <: HList] {
     type L1 <: HList
@@ -74,6 +117,7 @@ object Zipper {
 
 object TestZipper {
   import HList._
+  import Nat._
   import Zipper._
   
   def main(args : Array[String]) {
@@ -107,5 +151,13 @@ object TestZipper {
     val l7 = l.toZipper.last.leftTo[Int]
     val i7 = l7.get
     println(l7)
+    
+    val l8 = l.toZipper.rightBy(_2)
+    val d8 = l8.get
+    val d8a : Double = l8.get
+    
+    val l9 = l8.leftBy(_1)
+    val s9 = l9.get
+    val s9a : String = l9.get
   }
 }
