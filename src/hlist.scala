@@ -35,6 +35,8 @@ trait LowPriorityHList {
 
     def :::[P <: HList](prefix : P)(implicit prepend : Prepend[P, L]) : prepend.Out = prepend(prefix, l)
     
+    def apply[N <: Nat](implicit at : At[L, N]) : at.Out = at(l)
+
     def apply[N <: Nat](n : N)(implicit at : At[L, N]) : at.Out = at(l)
     
     def reverse_:::[P <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L]) : prepend.Out = prepend(prefix, l)
@@ -45,7 +47,11 @@ trait LowPriorityHList {
     
     def select[U](implicit selector : Selector[L, U]) : U = selector(l)
     
+    def split[N <: Nat](implicit split : Split[L, N]) : split.R = split(l)
+
     def split[N <: Nat](n : N)(implicit split : Split[L, N]) : split.R = split(l)
+
+    def reverse_split[N <: Nat](implicit split : ReverseSplit[L, N]) : split.R = split(l)
 
     def reverse_split[N <: Nat](n : N)(implicit split : ReverseSplit[L, N]) : split.R = split(l)
 
