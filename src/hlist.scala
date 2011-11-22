@@ -49,7 +49,7 @@ trait LowPriorityHList {
 
     def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.R = splitRight(l)
 
-    def reverse[Out <: HList](implicit reverse : Reverse[HNil, L, Out]) : Out = reverse(HNil, l)
+    def reverse[Out <: HList](implicit reverse : Reverse[L, Out]) : Out = reverse(l)
 
     def map[HF <: HRFn, Out <: HList](f : HF)(implicit mapper : Mapper[HF, L, Out]) : Out = mapper(l)
     
@@ -286,15 +286,23 @@ trait LowPriorityHList {
     def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
   }
 
-  trait Reverse[Acc <: HList, L <: HList, Out <: HList] {
+  trait Reverse[L <: HList, Out <: HList] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def reverse[L <: HList, Out <: HList](implicit reverse : Reverse0[HNil, L, Out]) = new Reverse[L, Out] {
+    def apply(l : L) : Out = reverse(HNil, l)
+  }
+  
+  trait Reverse0[Acc <: HList, L <: HList, Out <: HList] {
     def apply(acc : Acc, l : L) : Out
   }
   
-  implicit def hnilReverse[Out <: HList] = new Reverse[Out, HNil, Out] {
+  implicit def hnilReverse[Out <: HList] = new Reverse0[Out, HNil, Out] {
     def apply(acc : Out, l : HNil) : Out = acc
   }
   
-  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse[InH :: Acc, InT, Out]) = new Reverse[Acc, InH :: InT, Out] {
+  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse0[InH :: Acc, InT, Out]) = new Reverse0[Acc, InH :: InT, Out] {
     def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
   }
   
@@ -344,7 +352,7 @@ object HList extends LowPriorityHList {
     def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
   }
   
-  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList, Out <: HList](implicit reverse : Reverse[HNil, PH :: PT, Out]) = new SplitRight0[HNil, PH :: PT, S, PH, Out, S] {
+  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList, Out <: HList](implicit reverse : Reverse[PH :: PT, Out]) = new SplitRight0[HNil, PH :: PT, S, PH, Out, S] {
     def apply(rev : HNil, accP : PH :: PT, accS : S) : (Out, S) = (accP.reverse, accS)
   }
 
