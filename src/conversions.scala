@@ -76,7 +76,7 @@ object Traversables {
   import scala.collection.Traversable
   
   import HList._
-  import Cast._
+  import Castable._
 
   trait FromTraversable[T, Out <: HList] {
     def apply(l : Traversable[T]) : Option[Out]
@@ -89,7 +89,7 @@ object Traversables {
     }
   }
   
-  implicit def hlistFromTraversable[T, OutH, OutT <: HList](implicit bcm : BoxedClassManifest[OutH], flt : FromTraversable[T, OutT]) = new FromTraversable[T, OutH :: OutT] {
+  implicit def hlistFromTraversable[T, OutH : Castable, OutT <: HList](implicit flt : FromTraversable[T, OutT]) = new FromTraversable[T, OutH :: OutT] {
     def apply(l : Traversable[T]) : Option[OutH :: OutT] = for(e <- l.headOption; h <- e.cast[OutH]; t <- flt(l.tail)) yield h :: t
   }
   
@@ -109,7 +109,7 @@ object TestTuples {
   def main(arg : Array[String]) {
     case class Foo(a : Int, b : String, c : Double)
     
-    val f1 = Foo(23, "foo", 2.3)
+    val f1 = (23, "foo", 2.3)
     println(f1)
     val hf = f1.hlisted
     val f2 = Foo.tupled(hf)
