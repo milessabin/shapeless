@@ -1,4 +1,6 @@
 .cache
-bin
-.scala_dependencies
-
+.target
+.classpath
+.project
+target/
+*.swp
