@@ -25,7 +25,7 @@ object Castable extends LowPriorityCastable {
   implicit val floatBCM = mkCastable[Float, jl.Float]
   implicit val doubleBCM = mkCastable[Double, jl.Double]
   implicit val booleanBCM = mkCastable[Boolean, jl.Boolean]
-  implicit val unitBCM = mkCastable[Unit, jl.Void]
+  implicit val unitBCM = mkCastable[Unit, runtime.BoxedUnit]
   
   class CastFrom(t : Any) {
     def cast[U](implicit mU : Castable[U]) = mU.cast(t)
