@@ -510,7 +510,7 @@ trait LowPriorityHList {
     def apply(in : HNil) = Option(in)
   }
   
-  implicit def hlistCast[InH, InT <: HList, OutH : Castable, OutT <: HList](implicit ct : Cast[InT, OutT]) = new Cast[InH :: InT, OutH :: OutT] {
+  implicit def hlistCast[InH, InT <: HList, OutH, OutT <: HList](implicit ct : Cast[InT, OutT], oc : Castable[OutH]) = new Cast[InH :: InT, OutH :: OutT] {
     def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield h :: t
   }
 }
