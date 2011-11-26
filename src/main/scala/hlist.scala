@@ -8,6 +8,7 @@ import Nat._
 // TODO take/drop
 // TODO Lenses
 // TODO Unified comprehensions
+// TODO http://stackoverflow.com/questions/8270526
 
 sealed trait HList
 
