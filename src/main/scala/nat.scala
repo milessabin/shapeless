@@ -61,15 +61,3 @@ object Nat {
   implicit def prod1[B <: Nat] = new Prod[_0, B, _0] {}
   implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat](implicit ev1 : Prod[A, B, C], ev2 : Sum[B, C, D]) = new Prod[Succ[A], B, D] {}
 }
-
-object TestNat {
-  import Nat._
-  
-  implicitly[Succ[_1] =:= _2]
-  implicitly[Sum[_2, _3, _5]]
-  
-  implicitly[Pred[_19, _18]]
-  
-  implicitly[Prod[_2, _3, _6]]
-  implicitly[Prod[_4, _5, _20]]
-}
