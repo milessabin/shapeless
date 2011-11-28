@@ -72,8 +72,6 @@ trait LowPriorityHList {
     def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
   
     def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
-
-    def cast[M <: HList](implicit cast : Cast[L, M]) : Option[M] = cast(l)
   }
 
   implicit def hlistOps[L <: HList](l : L) = new Ops(l)
@@ -501,18 +499,6 @@ trait LowPriorityHList {
   
   implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList](implicit rpt : ReversePrepend0[PT, PH :: S, Out]) = new ReversePrepend0[PH :: PT, S, Out] {
     def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
-  }
-  
-  trait Cast[In <: HList, Out <: HList] {
-    def apply(in : In) : Option[Out] 
-  }
-  
-  implicit def hnilCast = new Cast[HNil, HNil] {
-    def apply(in : HNil) = Option(in)
-  }
-  
-  implicit def hlistCast[InH, InT <: HList, OutH, OutT <: HList](implicit ct : Cast[InT, OutT], oc : Castable[OutH]) = new Cast[InH :: InT, OutH :: OutT] {
-    def apply(in : InH :: InT) : Option[OutH :: OutT] = for(h <- in.head.cast[OutH]; t <- ct(in.tail)) yield h :: t
   }
 }
 

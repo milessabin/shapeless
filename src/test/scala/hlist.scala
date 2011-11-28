@@ -3,6 +3,7 @@ import org.junit.Assert._
 
 class HListTest {
   import HList._
+  import Castable._
   import PolyFun._
   import Traversables._
   import Nat._
