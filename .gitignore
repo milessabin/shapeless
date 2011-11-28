@@ -2,5 +2,6 @@
 .target
 .classpath
 .project
+.history
 target/
 *.swp
