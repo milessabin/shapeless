@@ -101,20 +101,3 @@ object Traversables {
     def toHList[L <: HList](implicit fl : FromTraversable[T, L]) = fl(l) 
   }
 }
-
-object TestTuples {
-  import Tuples._
-  import Implicits._
-  
-  def main(arg : Array[String]) {
-    case class Foo(a : Int, b : String, c : Double)
-    
-    val f1 = (23, "foo", 2.3)
-    println(f1)
-    val hf = f1.hlisted
-    val f2 = Foo.tupled(hf)
-    println(f2)
-    
-    println(f1 == f2)
-  }
-}
