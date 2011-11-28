@@ -1,4 +1,4 @@
-class CastableTest {
+class CastableTests {
   import java.{ lang => jl }
   
   import org.junit.Test

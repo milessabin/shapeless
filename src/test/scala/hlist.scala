@@ -1,7 +1,7 @@
 import org.junit.Test
 import org.junit.Assert._
 
-class HListTest {
+class HListTests {
   import HList._
   import Typeable._
   import PolyFun._
