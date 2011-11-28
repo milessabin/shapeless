@@ -4,7 +4,7 @@ class CastableTest {
   import org.junit.Test
   import org.junit.Assert._
 
-  import Castable._
+  import Typeable._
   
   @Test
   def testPrimitives {

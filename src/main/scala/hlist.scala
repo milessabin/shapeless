@@ -1,5 +1,4 @@
 import PolyFun._
-import Castable._
 import Nat._
 
 // TODO zip/unzip
