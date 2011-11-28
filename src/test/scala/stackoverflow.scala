@@ -1,4 +1,7 @@
-object StackOverflow {
+import org.junit.Test
+import org.junit.Assert._
+
+class StackOverflow {
   // http://stackoverflow.com/questions/7606587
 
   import HList._
@@ -17,15 +20,18 @@ object StackOverflow {
   
   def foldCurry[L <: HList, F, Out](l : L, f : F)(implicit fc : FoldCurry[L, F, Out]) : Out = fc(l, f)
   
-  def main(args : Array[String]) {
+  def typed[T](t : => T) {}
+
+  @Test
+  def testFoldCurry {
     val f1 = (i : Int, j : Int, k : Int, l : Int) => i+j+k+l
     val f1c = f1.curried
     
     val l1 = 1 :: 2 :: 3 :: 4 :: HNil
 
     val r1 = foldCurry(l1, f1c)
-    assert(r1 == 10)
-    println(r1)
+    typed[Int](r1)
+    assertEquals(10, r1)
     
     val f2 = (i : Int, s : String, d : Double) => (i+1, s.length, d*2)
     val f2c = f2.curried
@@ -33,7 +39,7 @@ object StackOverflow {
     val l2 = 23 :: "foo" :: 2.0 :: HNil
     
     val r2 = foldCurry(l2, f2c)
-    assert(r2 == (24, 3, 4.0))
-    println(r2)
+    typed[(Int, Int, Double)](r2)
+    assertEquals((24, 3, 4.0), r2)
   }
 }

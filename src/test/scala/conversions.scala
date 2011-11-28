@@ -13,6 +13,6 @@ class ConversionTests {
     val t1 = Foo.unapply(f1).get
     val hf = t1.hlisted
     val f2 = Foo.tupled(hf)
-    assertTrue(f1 == f2)
+    assertEquals(f1, f2)
   }
 }

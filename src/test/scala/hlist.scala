@@ -367,7 +367,7 @@ class HListTests {
     val (srli1, srli2) = sl2.splitRight[String]
     typed[Int :: Double :: String :: Unit :: String :: HNil](srli1) 
     typed[Boolean :: Long :: HNil](srli2)
-    assert((srli1 ::: srli2) == sl2)
+    assertEquals(sl2, srli1 ::: srli2)
 
     val (rsrp1, rsrp2) = sl.reverse_splitRight[String]
     typed[String :: Boolean :: Int :: HNil](rsrp1)
@@ -378,9 +378,5 @@ class HListTests {
     typed[String :: Unit :: String :: Double :: Int :: HNil](rsrli1) 
     typed[Boolean :: Long :: HNil](rsrli2)
     assertEquals((rsrli1 reverse_::: rsrli2), sl2)
-
-    val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
-    val l9 = l8 map size
-    assertEquals(1 :: 3 :: 4 :: 4 :: 4 :: 1 :: HNil, l9)
   }
 }
