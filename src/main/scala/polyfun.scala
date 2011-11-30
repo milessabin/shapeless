@@ -11,7 +11,7 @@ object PolyFun {
     type G[_]
 
     type Fn[T] = F[T] => G[T]
-    type λ[T] = Case[this.type , Fn[T]]
+    type λ[T] = Case[this.type, Fn[T]]
     def λ[T](c : F[T] => G[T]) = Case[this.type, Fn[T]](c)
     
     def default[T](f : F[T]) : G[T]
@@ -23,6 +23,10 @@ object PolyFun {
   trait ~>[F0[_], G0[_]] extends HRFn {
     type F[X] = F0[X]
     type G[X] = G0[X]
+  }
+  
+  trait NoDefault extends HRFn {
+    def default[T](f : F[T]) : G[T] = sys.error("No default case")
   }
 
   implicit def univInst[HF <: HRFn, T](h : HF)(implicit c : h.λ[T] = h.defaultCase[T]) : h.Fn[T] = c.f
