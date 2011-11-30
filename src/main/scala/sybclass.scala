@@ -1,30 +1,30 @@
 object Data  {
   import PolyFun._
   
-  trait Data[HF <: HRFn, R, T] {
+  trait Data[HF <: HRFn, T, R] {
     def gmapQ(t : T) : List[R]
   }
 
-  implicit def dfltData[HF <: HRFn, R, T] = new Data[HF, R, T] {
+  implicit def dfltData[HF <: HRFn, T, R] = new Data[HF, T, R] {
     def gmapQ(t : T) : List[R] = Nil
   }
 
-  implicit def pairData[HF <: HRFn, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, R, (T, U)] {
+  implicit def pairData[HF <: HRFn, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, (T, U), R] {
     def gmapQ(t : (T, U)) = List(qt.f(t._1), qu.f(t._2))
   }
 
-  implicit def eitherData[HF <: HRFn, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, R, Either[T, U]] {
+  implicit def eitherData[HF <: HRFn, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, Either[T, U], R] {
     def gmapQ(t : Either[T, U]) = t match {
       case Left(t) => List(qt.f(t))
       case Right(u) => List(qu.f(u))
     }
   }
 
-  implicit def optionData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, R, Option[T]] {
+  implicit def optionData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, Option[T], R] {
     def gmapQ(t : Option[T]) = t.map(qt.f).toList
   }
 
-  implicit def listData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, R, List[T]] {
+  implicit def listData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt.f)
   }
 }
@@ -33,14 +33,14 @@ object Everything {
   import Data._
   import PolyFun._
 
-  case class Everything[HF <: HRFn, R, T](data : Data[HF, R, T], fT : Case[HF, T => R]) {
+  case class Everything[HF <: HRFn, T, R](data : Data[HF, T, R], fT : Case[HF, T => R]) {
     def apply(k : (R, R) => R)(t : T) : R = (fT.f(t) /: data.gmapQ(t))(k) 
   }
   
-  implicit def everythingDflt[HF <: HRFn, R, T](implicit data : Data[HF, R, T], fT : Case[HF, T => R]) = Everything(data, fT)
+  implicit def everythingDflt[HF <: HRFn, R, T](implicit data : Data[HF, T, R], fT : Case[HF, T => R]) = Everything(data, fT)
   
   def everything[HF <: HRFn](f : HF) = new {
-    def apply[T, R](k : (R, R) => R)(t : T)(implicit eT : Everything[HF, R, T]) = eT(k)(t)
+    def apply[T, R](k : (R, R) => R)(t : T)(implicit eT : Everything[HF, T, R]) = eT(k)(t)
   }
 }
 
@@ -97,7 +97,7 @@ object GSizeAll {
 
   object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
   implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
-  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, Int, T]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
+  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
 }
 
 object GSizeAll2 {
@@ -109,7 +109,7 @@ object GSizeAll2 {
   }
   implicit def gsizeString = gsize.λ[String](s => s.length)
   
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, Int, T]) : Int = everything(gsize)((_ : Int)+(_ : Int))(t) 
+  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)((_ : Int)+(_ : Int))(t) 
 }
 
 object IncAll {
