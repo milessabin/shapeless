@@ -1,4 +1,4 @@
-object Data  {
+object SybClass {
   import PolyFun._
   
   trait Data[HF <: HRFn, T, R] {
@@ -27,25 +27,6 @@ object Data  {
   implicit def listData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt.f)
   }
-}
-
-object Everything {
-  import Data._
-  import PolyFun._
-
-  case class Everything[HF <: HRFn, T, R](data : Data[HF, T, R], fT : Case[HF, T => R]) {
-    def apply(k : (R, R) => R)(t : T) : R = (fT.f(t) /: data.gmapQ(t))(k) 
-  }
-  
-  implicit def everythingDflt[HF <: HRFn, R, T](implicit data : Data[HF, T, R], fT : Case[HF, T => R]) = Everything(data, fT)
-  
-  def everything[HF <: HRFn](f : HF) = new {
-    def apply[T, R](k : (R, R) => R)(t : T)(implicit eT : Everything[HF, T, R]) = eT(k)(t)
-  }
-}
-
-object Trans {
-  import PolyFun._
 
   trait DataT[HF <: HRFn, T] {
     def gmapT(t : T) : T
@@ -73,12 +54,17 @@ object Trans {
   implicit def listDataT[HF <: HRFn, T](implicit ft : Case[HF, T => T]) = new DataT[HF, List[T]] {
     def gmapT(t : List[T]) = t.map(ft.f)
   }
-}
 
-object Everywhere {
-  import Trans._
-  import PolyFun._
+  case class Everything[HF <: HRFn, T, R](data : Data[HF, T, R], fT : Case[HF, T => R]) {
+    def apply(k : (R, R) => R)(t : T) : R = (fT.f(t) /: data.gmapQ(t))(k) 
+  }
   
+  implicit def everythingDflt[HF <: HRFn, R, T](implicit data : Data[HF, T, R], fT : Case[HF, T => R]) = Everything(data, fT)
+  
+  def everything[HF <: HRFn](f : HF) = new {
+    def apply[T, R](k : (R, R) => R)(t : T)(implicit eT : Everything[HF, T, R]) = eT(k)(t)
+  }
+
   type Everywhere[HF <: HRFn, T] = Case[Everywhere0[HF], T => T]
   
   trait Everywhere0[HF <: HRFn] extends (Id ~> Id) with NoDefault
@@ -89,48 +75,4 @@ object Everywhere {
   def everywhere[HF <: HRFn](f : HF) = new {
     def apply[T](t : T)(implicit eT : Everywhere[HF, T]) = eT.f(t)
   }
-}
-
-object GSizeAll {
-  import Data._
-  import PolyFun._
-
-  object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
-  implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
-  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
-}
-
-object GSizeAll2 {
-  import Everything._
-  import PolyFun._
-
-  object gsize extends (Id ~> Const[Int]#λ) {
-    def default[T](t : T) = 1
-  }
-  implicit def gsizeString = gsize.λ[String](s => s.length)
-  
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)((_ : Int)+(_ : Int))(t) 
-}
-
-object IncAll {
-  import Trans._
-  import PolyFun._
-
-  object incAll extends (Id ~> Id) with NoDefault
-  implicit def incAllInt = incAll.λ[Int](_+1)
-  implicit def incAllString = incAll.λ[String](_+"*")
-  implicit def incAllDflt[T](implicit data : DataT[incAll.type, T]) = incAll.λ[T](data.gmapT)
-}
-
-object IncAll2 {
-  import PolyFun._
-  import Everywhere._
-
-  object inc extends (Id ~> Id) {
-    def default[T](t : T) = t
-  }
-  implicit def incInt = inc.λ[Int](_+1)
-  implicit def incString = inc.λ[String](_+"*")
-
-  def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) : T = everywhere(inc)(t)
 }

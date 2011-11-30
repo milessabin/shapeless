@@ -2,15 +2,34 @@ class SybClassTests {
   import org.junit.{ Ignore, Test }
   import org.junit.Assert._
 
-  import Data._
-  import Trans._
-  import GSizeAll._
-  import GSizeAll2._
-  import Everything._
-  import IncAll._
-  import IncAll2._
-  import Everywhere._
+  import SybClass._
+  import PolyFun._
 
+
+  object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
+  implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
+  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
+
+  object gsize extends (Id ~> Const[Int]#λ) {
+    def default[T](t : T) = 1
+  }
+  implicit def gsizeString = gsize.λ[String](s => s.length)
+  
+  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)((_ : Int)+(_ : Int))(t) 
+
+  object incAll extends (Id ~> Id) with NoDefault
+  implicit def incAllInt = incAll.λ[Int](_+1)
+  implicit def incAllString = incAll.λ[String](_+"*")
+  implicit def incAllDflt[T](implicit data : DataT[incAll.type, T]) = incAll.λ[T](data.gmapT)
+
+  object inc extends (Id ~> Id) {
+    def default[T](t : T) = t
+  }
+  implicit def incInt = inc.λ[Int](_+1)
+  implicit def incString = inc.λ[String](_+"*")
+
+  def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) : T = everywhere(inc)(t)
+  
   @Test
   def testGMapQ {
     val p = (23, "foo")
