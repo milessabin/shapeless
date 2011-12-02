@@ -5,7 +5,6 @@ class SybClassTests {
   import SybClass._
   import PolyFun._
 
-
   object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
   implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
   implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
@@ -13,10 +12,9 @@ class SybClassTests {
   object gsize extends (Id ~> Const[Int]#λ) {
     def default[T](t : T) = 1
   }
+  implicit def gsizeInt = gsize.λ[Int](i => i*2)
   implicit def gsizeString = gsize.λ[String](s => s.length)
   
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)((_ : Int)+(_ : Int))(t) 
-
   object incAll extends (Id ~> Id) with NoDefault
   implicit def incAllInt = incAll.λ[Int](_+1)
   implicit def incAllString = incAll.λ[String](_+"*")
@@ -64,19 +62,67 @@ class SybClassTests {
     assertEquals(List(Some(2), None, Some(3)), loi)
   }
 
-  @Ignore @Test
+  @Test
   def testEverything {
-    val p = (23, "foo")
-    val ps = gsizeAll2(p)
-    assertEquals(5, ps)
+    println(gmapQ(gsize)(23))
+    println(gmapQ(gsize)("foo"))
+    println(gmapQ(gsize)((23, "foo")))
+    println(gmapQ(gsize)(List(1, 2, 3, 4)))
+    
+    
+//    val e1 = everything(gsize)
+//    val e2 = e1(_+_)
+//  
+//    e2(23)
+//    e2("foo")
+//    e2((23, "foo"))
+  
+  //  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, Int, T]) : Int = {
+//    val sum : (Int, Int) => Int = _+_ 
+//    val eg = everything(gsize)
+//    eg(sum, t)
+//  }
 
-    val l = List(1, 2, 3) 
-    val ls = gsizeAll2(l)
-    assertEquals(4, ls)
-
-    val lp = List(("foo", 23), ("bar", 24))
-    val lps = gsizeAll2(lp)
-    assertEquals(11, lps)
+//    val ci = implicitly[Everything[gsize.type, Int, Int]]
+//    implicitly[Case[gsize.type, Int => Int]]
+//    implicitly[Data[Everything0[gsize.type, Int], Int, Int]]
+//    
+//    val xx = ci.f(_+_, 23)
+//    println("xx: ", xx)
+//    
+//    val cs = implicitly[Everything[gsize.type, Int, String]]
+//    val xx2 = cs.f(_+_, "foo")
+//    println("xx2: ", xx2)
+//
+//    val cp = implicitly[Everything[gsize.type, Int, (Int, String)]]
+//    implicitly[Case[gsize.type, ((Int, String)) => Int]]
+//
+//    val xx3 = cp.f(_+_, (23, "foo"))
+//    println("xx3: ", xx3)
+//
+//    val deg = implicitly[Data[Everything0[gsize.type, Int], (Int, String), Int]]
+//    val xx4 = deg.gmapQ((23, "foo"))
+//    println("xx4: ", xx4)
+//
+//    val i = 23
+//    val is = gsizeAll2(i)
+//    assertEquals(1, is)
+//
+//    val s = "foo"
+//    val ss = gsizeAll2(s)
+//    assertEquals(3, ss)
+//
+//    val p = (23, "foo")
+//    val ps = gsizeAll2(p)
+//    assertEquals(5, ps)
+//
+//    val l = List(1, 2, 3) 
+//    val ls = gsizeAll2(l)
+//    assertEquals(4, ls)
+//
+//    val lp = List(("foo", 23), ("bar", 24))
+//    val lps = gsizeAll2(lp)
+//    assertEquals(11, lps)
   }
 
   @Test
@@ -96,6 +142,8 @@ class SybClassTests {
     val lo = List(Some(1), None, Some(2))
     val loi = incAll2(lo)
     assertEquals(List(Some(2), None, Some(3)), loi)
+
+    val eei = everywhere(inc)
 
     val e1 = everywhere(inc)(23)
     assertEquals(24, e1)

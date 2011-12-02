@@ -4,6 +4,8 @@ object SybClass {
   trait Data[HF <: HRFn, T, R] {
     def gmapQ(t : T) : List[R]
   }
+  
+  def gmapQ[T, HF <: HRFn, R](f : HF)(t : T)(implicit data : Data[HF, T, R]) = data.gmapQ(t)
 
   implicit def dfltData[HF <: HRFn, T, R] = new Data[HF, T, R] {
     def gmapQ(t : T) : List[R] = Nil
@@ -27,7 +29,7 @@ object SybClass {
   implicit def listData[HF <: HRFn, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt.f)
   }
-
+  
   trait DataT[HF <: HRFn, T] {
     def gmapT(t : T) : T
   }
@@ -55,24 +57,12 @@ object SybClass {
     def gmapT(t : List[T]) = t.map(ft.f)
   }
 
-  case class Everything[HF <: HRFn, T, R](data : Data[HF, T, R], fT : Case[HF, T => R]) {
-    def apply(k : (R, R) => R)(t : T) : R = (fT.f(t) /: data.gmapQ(t))(k) 
-  }
+  type Everywhere[HF <: Id ~> Id, T] = Case[Everywhere0[HF], T => T]
+    
+  trait Everywhere0[HF <: Id ~> Id] extends (Id ~> Id) with NoDefault
+    
+  def everywhere[HF <: Id ~> Id](f : HF) = new Everywhere0[f.type] {}
   
-  implicit def everythingDflt[HF <: HRFn, R, T](implicit data : Data[HF, T, R], fT : Case[HF, T => R]) = Everything(data, fT)
-  
-  def everything[HF <: HRFn](f : HF) = new {
-    def apply[T, R](k : (R, R) => R)(t : T)(implicit eT : Everything[HF, T, R]) = eT(k)(t)
-  }
-
-  type Everywhere[HF <: HRFn, T] = Case[Everywhere0[HF], T => T]
-  
-  trait Everywhere0[HF <: HRFn] extends (Id ~> Id) with NoDefault
-  
-  implicit def everywhere0Dflt[HF <: HRFn, T](implicit data : DataT[Everywhere0[HF], T], fT : Case[HF, T => T]) =
-    Case[Everywhere0[HF], T => T](t => fT.f(data.gmapT(t)))
-
-  def everywhere[HF <: HRFn](f : HF) = new {
-    def apply[T](t : T)(implicit eT : Everywhere[HF, T]) = eT.f(t)
-  }
+  implicit def everywhereDflt[HF <: Id ~> Id, T](implicit data : DataT[Everywhere0[HF], T], fT : Case[HF, T => T]) =
+    new Case[Everywhere0[HF], T => T](t => fT.f(data.gmapT(t)))
 }

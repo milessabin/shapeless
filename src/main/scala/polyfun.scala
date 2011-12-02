@@ -4,7 +4,7 @@ object PolyFun {
     type λ[T] = C
   }
 
-  case class Case[HF <: HRFn, F](f : F)
+  case class Case[-HF <: HRFn, F](f : F)
   
   trait HRFn {
     type F[_]
@@ -26,7 +26,9 @@ object PolyFun {
   }
   
   trait NoDefault extends HRFn {
-    def default[T](f : F[T]) : G[T] = sys.error("No default case")
+    def default[T](f : F[T]) : G[T] = {
+      sys.error("No default case for: "+getClass.getName+"@"+f.getClass.getName)
+    }
   }
 
   implicit def univInst[HF <: HRFn, T](h : HF)(implicit c : h.λ[T] = h.defaultCase[T]) : h.Fn[T] = c.f
