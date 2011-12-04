@@ -84,69 +84,75 @@ class SybClassTests {
     typed[Int](e4)
     assertEquals(5, e4)
     
-    val i = 23
-    val is = gsizeAll2(i)
+    val is = gsizeAll2(23)
+    typed[Int](is)
     assertEquals(1, is)
 
-    val s = "foo"
-    val ss = gsizeAll2(s)
+    val ss = gsizeAll2("foo")
+    typed[Int](ss)
     assertEquals(3, ss)
 
-    val p = (23, "foo")
-    val ps = gsizeAll2(p)
+    val ps = gsizeAll2(23, "foo")
+    typed[Int](ps)
     assertEquals(5, ps)
 
-    val l = List(1, 2, 3, 4) 
-    val ls = gsizeAll2(l)
+    val ls = gsizeAll2(List(1, 2, 3, 4))
+    typed[Int](ls)
     assertEquals(5, ls)
 
-    val lp = List(("foo", 23), ("bar", 24))
-    val lps = gsizeAll2(lp)
+    val lps = gsizeAll2(List(("foo", 23), ("bar", 24)))
+    typed[Int](lps)
     assertEquals(11, lps)
   }
 
   @Test
   def testEverywhere {
-    val p = (23, "foo")
-    val pi = incAll2(p)
+    val pi = incAll2((23, "foo"))
+    typed[(Int, String)](pi)
     assertEquals((24, "foo*"), pi)
 
-    val o = Option(23)
-    val oi = incAll2(o)
+    val oi = incAll2(Option(23))
+    typed[Option[Int]](oi)
     assertEquals(Some(24), oi)
 
-    val e : Either[String, Int] = Right(23)
-    val ei = incAll2(e)
+    val ei = incAll2(Right(23) : Either[String, Int])
+    typed[Either[String, Int]](ei)
     assertEquals(Right(24), ei)
 
-    val lo = List(Some(1), None, Some(2))
-    val loi = incAll2(lo)
+    val loi = incAll2(List(Some(1), None, Some(2)))
+    typed[List[Option[Int]]](loi)
     assertEquals(List(Some(2), None, Some(3)), loi)
 
-    val eei = everywhere(inc)
-
     val e1 = everywhere(inc)(23)
+    typed[Int](e1)
     assertEquals(24, e1)
 
     val e2 = everywhere(inc)(Option(23))
+    typed[Option[Int]](e2)
     assertEquals(Option(24), e2)
       
     val e3 = everywhere(inc)(List(23))
+    typed[List[Int]](e3)
     assertEquals(List(24), e3)
         
     val e4 = everywhere(inc)(List(Option(23)))
+    typed[List[Option[Int]]](e4)
     assertEquals(List(Option(24)), e4)
           
     val e5 = everywhere(inc)(Option(List(23)))
+    typed[Option[List[Int]]](e5)
     assertEquals(Option(List(24)), e5)
 
     val e6 = everywhere(inc)(List(List(List(23))))
+    typed[List[List[List[Int]]]](e6)
     assertEquals(List(List(List(24))), e6)
 
     val e7 = everywhere(inc)(Option(Option(Option(23))))
+    typed[Option[Option[Option[Int]]]](e7)
     assertEquals(Option(Option(Option(24))), e7)
 
     val e8 = everywhere(inc)(List(Option(List(Option(List(Option(23)))))))
+    typed[List[Option[List[Option[List[Option[Int]]]]]]](e8)
     assertEquals(List(Option(List(Option(List(Option(24)))))), e8)
   }
 }
