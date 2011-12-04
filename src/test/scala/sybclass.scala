@@ -9,7 +9,7 @@ class SybClassTests {
   
   object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
   implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
-  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
+  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
 
   object gsize extends (Id ~> Const[Int]#λ) {
     def default[T](t : T) = 1

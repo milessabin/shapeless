@@ -1,32 +1,32 @@
 object SybClass {
   import PolyFun._
   
-  trait Data[HF, T, R] {
-    def gmapQ(t : T) : List[R]
+  trait Data[HF <: HRFn, T] {
+    def gmapQ(t : T) : List[HF#G[_]]
   }
   
-  def gmapQ[T, HF, R](f : HF)(t : T)(implicit data : Data[HF, T, R]) = data.gmapQ(t)
+  def gmapQ[HF <: HRFn, T](f : HF)(t : T)(implicit data : Data[HF, T]) = data.gmapQ(t)
 
-  implicit def dfltData[HF, T, R] = new Data[HF, T, R] {
-    def gmapQ(t : T) : List[R] = Nil
+  implicit def dfltData[HF <: HRFn, T] = new Data[HF, T] {
+    def gmapQ(t : T) : List[HF#G[_]] = Nil
   }
 
-  implicit def pairData[HF, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, (T, U), R] {
+  implicit def pairData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) = new Data[HF, (T, U)] {
     def gmapQ(t : (T, U)) = List(qt(t._1), qu(t._2))
   }
 
-  implicit def eitherData[HF, R, T, U](implicit qt : Case[HF, T => R], qu : Case[HF, U => R]) = new Data[HF, Either[T, U], R] {
+  implicit def eitherData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) = new Data[HF, Either[T, U]] {
     def gmapQ(t : Either[T, U]) = t match {
       case Left(t) => List(qt(t))
       case Right(u) => List(qu(u))
     }
   }
 
-  implicit def optionData[HF, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, Option[T], R] {
+  implicit def optionData[HF <: HRFn, T](implicit qt : Case[HF, T => HF#G[_]]) = new Data[HF, Option[T]] {
     def gmapQ(t : Option[T]) = t.map(qt.value).toList
   }
 
-  implicit def listData[HF, R, T](implicit qt : Case[HF, T => R]) = new Data[HF, List[T], R] {
+  implicit def listData[HF <: HRFn, T](implicit qt : Case[HF, T => HF#G[_]]) = new Data[HF, List[T]] {
     def gmapQ(t : List[T]) = t.map(qt.value)
   }
   
@@ -34,7 +34,7 @@ object SybClass {
     def gmapT(t : T) : T
   }
 
-  def gmapT[T, HF](f : HF)(t : T)(implicit data : DataT[HF, T]) = data.gmapT(t)
+  def gmapT[HF, T](f : HF)(t : T)(implicit data : DataT[HF, T]) = data.gmapT(t)
 
   implicit def dfltDataT[HF, T] : DataT[HF, T] = new DataT[HF, T] {
     def gmapT(t : T) = t
@@ -65,13 +65,13 @@ object SybClass {
   
   type Everything[HF <: HRFn, T] = Case[Everything0[HF], T => Node[HF#G[_]]]
 
-  trait Everything0[HF]
+  trait Everything0[HF <: HRFn] extends (Id ~> Const[Node[HF#G[_]]]#λ) with NoDefault
   
   def everything[HF <: HRFn, T](f : HF)(k : (HF#G[_], HF#G[_]) => HF#G[_])(t : T) 
     (implicit c : Case[Everything0[HF], T => Node[HF#G[_]]]) : HF#G[_] = c(t).fold(k)
     
-  implicit def everythingDflt[HF, R, T](implicit data : Data[Everything0[HF], T, Node[R]], fT : Case[HF, T => R]) =
-    new Case[Everything0[HF], T => Node[R]](t => Node(fT(t), data.gmapQ(t)))
+  implicit def everythingDflt[HF <: HRFn, T](implicit data : Data[Everything0[HF], T], fT : Case[HF, T => HF#G[_]]) =
+    new Case[Everything0[HF], T => Node[HF#G[_]]](t => Node(fT(t), data.gmapQ(t)))
 
   type Everywhere[HF, T] = Case[Everywhere0[HF], T => T]
     
