@@ -5,16 +5,12 @@ class SybClassTests {
   import SybClass._
   import PolyFun._
 
+  def typed[T](t : => T) {}
+  
   object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
   implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
   implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
 
-  object gsize extends (Id ~> Const[Int]#λ) {
-    def default[T](t : T) = 1
-  }
-  implicit def gsizeInt = gsize.λ[Int](i => i*2)
-  implicit def gsizeString = gsize.λ[String](s => s.length)
-  
   object incAll extends (Id ~> Id) with NoDefault
   implicit def incAllInt = incAll.λ[Int](_+1)
   implicit def incAllString = incAll.λ[String](_+"*")
@@ -64,16 +60,63 @@ class SybClassTests {
 
   @Test
   def testEverything {
+    import PolyFun._
+    
+    object gsize extends (Id ~> Const[Int]#λ) {
+      def default[T](t : T) = 1
+    }
+    implicit def gsizeInt = gsize.λ[Int](i => 1)
+    implicit def gsizeString = gsize.λ[String](s => s.length)
+  
+    gsize(23)
+    gsize("foo")
+    gsize((23, "foo"))
+    gsize(List(1, 2, 3, 4))
+    
+    import gsize._
+  
+    case class Node[T](t : T, c : List[Node[T]] = Nil) {
+      def fold(f : (T, T) => T) : T = c.map(_.fold(f)).foldLeft(t)(f)
+    }
+    
+    trait Everything0[HF]
+    
+    def everything[HF <: HRFn, T](f : HF)(t : T) 
+      (implicit c : Case[Everything0[HF], T => Node[f.G[T]]]) : Node[f.G[T]] = c(t)
+      
+    implicit def everythingDflt[HF, R, T](implicit data : Data[Everything0[HF], T, Node[R]], fT : Case[HF, T => R]) =
+      new Case[Everything0[HF], T => Node[R]](t => Node(fT(t), data.gmapQ(t)))
+
     println(gmapQ(gsize)(23))
     println(gmapQ(gsize)("foo"))
     println(gmapQ(gsize)((23, "foo")))
     println(gmapQ(gsize)(List(1, 2, 3, 4)))
     
+    implicitly[Case[Everything0[gsize.type], (Int) => Node[Int]]]
     
-//    val e1 = everything(gsize)
-//    val e2 = e1(_+_)
-//  
-//    e2(23)
+    implicitly[Case[gsize.type, (Int) => Int]]
+    implicitly[Case[gsize.type, ((Int, String)) => Int]]
+    implicitly[Case[gsize.type, List[Int] => Int]]
+
+    implicitly[Case[Everything0[gsize.type], ((Int, String)) => Node[Int]]]
+    
+    val e1 = everything(gsize)(23)
+    typed[Node[Int]](e1)
+    assertEquals(Node(1), e1)
+    
+    val e2 = everything(gsize)("foo")
+    typed[Node[Int]](e2)
+    assertEquals(Node(3), e2)
+    
+    val e3 = everything(gsize)((23, "foo"))
+    typed[Node[Int]](e3)
+    assertEquals(Node(1, List(Node(1), Node(3))), e3)
+
+    val e4 = everything(gsize)(List(1, 2, 3, 4))
+    typed[Node[Int]](e4)
+    assertEquals(Node(1, List(Node(1), Node(1), Node(1), Node(1))), e4)
+    
+    //    e2(23)
 //    e2("foo")
 //    e2((23, "foo"))
   
