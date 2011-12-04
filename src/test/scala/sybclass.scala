@@ -17,7 +17,7 @@ class SybClassTests {
   implicit def gsizeInt = gsize.λ[Int](i => 1)
   implicit def gsizeString = gsize.λ[String](s => s.length)
   
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)(_+_)(t) 
+  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T]) : Int = everything(gsize)(_+_)(t) 
 
   object incAll extends (Id ~> Id) with NoDefault
   implicit def incAllInt = incAll.λ[Int](_+1)
