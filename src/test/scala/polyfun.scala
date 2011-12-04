@@ -156,4 +156,33 @@ class PolyFunTests {
     typed[Int :: Int :: Int :: Int :: Int :: Int :: HNil](l9)
     assertEquals(1 :: 3 :: 4 :: 4 :: 4 :: 1 :: HNil, l9)
   }
+  
+  @Test
+  def testPolyVal {
+    import PolyFun._
+
+    val i1 = zero[Int]
+    typed[Int](i1)
+    assertEquals(0, i1)
+    
+    val i2 = 23+zero[Int]
+    typed[Int](i2)
+    assertEquals(23, i2)
+    
+    val s1 = zero[String]
+    typed[String](s1)
+    assertEquals("", s1)
+    
+    val s2 = "foo"+zero[String]
+    typed[String](s2)
+    assertEquals("foo", s2)
+    
+    val l1 = zero[List[Int]]
+    typed[List[Int]](l1)
+    assertEquals(Nil, l1)
+
+    val l2 = List(23)++zero[List[Int]]
+    typed[List[Int]](l2)
+    assertEquals(List(23), l2)
+  }
 }

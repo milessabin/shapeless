@@ -64,9 +64,9 @@ trait LowPriorityHList {
 
     def reverse(implicit reverse : Reverse[L]) : reverse.Out = reverse(l)
 
-    def map[HF <: HRFn](f : HF)(implicit mapper : Mapper[HF, L]) : mapper.Out = mapper(l)
+    def map[HF](f : HF)(implicit mapper : Mapper[HF, L]) : mapper.Out = mapper(l)
     
-    def foldLeft[R, HF <: HRFn](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
+    def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
 
     def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
   
@@ -91,41 +91,41 @@ trait LowPriorityHList {
     def tail(l : H0 :: T0) : T = l.tail
   }
 
-  trait Mapper[HF <: HRFn, In <: HList] {
+  trait Mapper[HF, In <: HList] {
     type Out <: HList
     def apply(in: In) : Out
   }
 
-  implicit def mapper[HF <: HRFn, In <: HList, Out0 <: HList](implicit mapper : Mapper0[HF, In, Out0]) = new Mapper[HF, In] {
+  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : Mapper0[HF, In, Out0]) = new Mapper[HF, In] {
     type Out = Out0
     def apply(in: In) : Out = mapper(in)
   }
 
-  type MapperAux[HF <: HRFn, In <: HList, Out <: HList] = Mapper0[HF, In, Out]
+  type MapperAux[HF, In <: HList, Out <: HList] = Mapper0[HF, In, Out]
   
-  trait Mapper0[HF <: HRFn, In <: HList, Out <: HList] {
+  trait Mapper0[HF, In <: HList, Out <: HList] {
     def apply(in: In) : Out
   }
 
-  implicit def hnilMapper1[HF <: HRFn] = new Mapper0[HF, HNil, HNil] {
+  implicit def hnilMapper1[HF] = new Mapper0[HF, HNil, HNil] {
     def apply(l : HNil) = HNil
   }
   
-  implicit def hlistMapper1[HF <: HRFn, InH, OutH, InT <: HList, OutT <: HList]
+  implicit def hlistMapper1[HF, InH, OutH, InT <: HList, OutT <: HList]
     (implicit hc : Case[HF, InH => OutH], mt : Mapper0[HF, InT, OutT]) = new Mapper0[HF, InH :: InT, OutH :: OutT] {
-      def apply(l : InH :: InT) = hc.f(l.head) :: mt(l.tail)
+      def apply(l : InH :: InT) = hc(l.head) :: mt(l.tail)
   }
   
-  trait LeftFolder[L <: HList, R, HF <: HRFn] {
+  trait LeftFolder[L <: HList, R, HF] {
     def apply(l : L, in : R, op : (R, R) => R) : R 
   }
   
-  implicit def hnilLeftFolder[R, HF <: HRFn] = new LeftFolder[HNil, R, HF] {
+  implicit def hnilLeftFolder[R, HF] = new LeftFolder[HNil, R, HF] {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistLeftFolder[H, T <: HList, R, HF <: HRFn](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
-    def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.f(l.head)), op)
+  implicit def hlistLeftFolder[H, T <: HList, R, HF](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
+    def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
   }
   
   trait Lub[-A, -B, +Out] {
