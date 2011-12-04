@@ -1,5 +1,6 @@
 object SybClass {
   import PolyFun._
+  import HList._
   
   trait Data[HF <: HRFn, T] {
     def gmapQ(t : T) : List[HF#G[_]]
@@ -30,6 +31,10 @@ object SybClass {
     def gmapQ(t : List[T]) = t.map(qt.value)
   }
   
+  implicit def hlistData[HF <: HRFn, H, T <: HList](implicit qh : Case[HF, H => HF#G[_]], ct : Data[HF, T]) = new Data[HF, H :: T] {
+    def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
+  }
+  
   trait DataT[HF, T] {
     def gmapT(t : T) : T
   }
@@ -57,6 +62,10 @@ object SybClass {
 
   implicit def listDataT[HF, T](implicit ft : Case[HF, T => T]) = new DataT[HF, List[T]] {
     def gmapT(t : List[T]) = t.map(ft.value)
+  }
+  
+  implicit def hlistDataT[HF <: HRFn, H, T <: HList](implicit fh : Case[HF, H => H], ct : DataT[HF, T]) = new DataT[HF, H :: T] {
+    def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
   }
 
   case class Node[T](t : T, c : List[Node[T]] = Nil) {

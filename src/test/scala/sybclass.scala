@@ -4,6 +4,7 @@ class SybClassTests {
 
   import SybClass._
   import PolyFun._
+  import HList._
 
   def typed[T](t : => T) {}
   
@@ -154,5 +155,18 @@ class SybClassTests {
     val e8 = everywhere(inc)(List(Option(List(Option(List(Option(23)))))))
     typed[List[Option[List[Option[List[Option[Int]]]]]]](e8)
     assertEquals(List(Option(List(Option(List(Option(24)))))), e8)
+  }
+  
+  @Test
+  def testHList {
+    val l = 23 :: "foo" :: true :: 2.0 :: HNil
+    
+    val li = everywhere(inc)(l)
+    typed[Int :: String :: Boolean :: Double :: HNil](li)
+    assertEquals(24 :: "foo*" :: true :: 2.0 :: HNil, li)
+    
+    val ls = everything(gsize)(_+_)(l)
+    typed[Int](ls)
+    assertEquals(7, ls)
   }
 }
