@@ -11,6 +11,14 @@ class SybClassTests {
   implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
   implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T, Int]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
 
+  object gsize extends (Id ~> Const[Int]#λ) {
+    def default[T](t : T) = 1
+  }
+  implicit def gsizeInt = gsize.λ[Int](i => 1)
+  implicit def gsizeString = gsize.λ[String](s => s.length)
+  
+  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T, Int]) : Int = everything(gsize)(_+_)(t) 
+
   object incAll extends (Id ~> Id) with NoDefault
   implicit def incAllInt = incAll.λ[Int](_+1)
   implicit def incAllString = incAll.λ[String](_+"*")
@@ -60,112 +68,41 @@ class SybClassTests {
 
   @Test
   def testEverything {
-    import PolyFun._
+    val e1 = everything(gsize)(_+_)(23)
+    typed[Int](e1)
+    assertEquals(1, e1)
     
-    object gsize extends (Id ~> Const[Int]#λ) {
-      def default[T](t : T) = 1
-    }
-    implicit def gsizeInt = gsize.λ[Int](i => 1)
-    implicit def gsizeString = gsize.λ[String](s => s.length)
-  
-    gsize(23)
-    gsize("foo")
-    gsize((23, "foo"))
-    gsize(List(1, 2, 3, 4))
+    val e2 = everything(gsize)(_+_)("foo")
+    typed[Int](e2)
+    assertEquals(3, e2)
     
-    import gsize._
-  
-    case class Node[T](t : T, c : List[Node[T]] = Nil) {
-      def fold(f : (T, T) => T) : T = c.map(_.fold(f)).foldLeft(t)(f)
-    }
-    
-    trait Everything0[HF]
-    
-    def everything[HF <: HRFn, T](f : HF)(t : T) 
-      (implicit c : Case[Everything0[HF], T => Node[f.G[T]]]) : Node[f.G[T]] = c(t)
-      
-    implicit def everythingDflt[HF, R, T](implicit data : Data[Everything0[HF], T, Node[R]], fT : Case[HF, T => R]) =
-      new Case[Everything0[HF], T => Node[R]](t => Node(fT(t), data.gmapQ(t)))
+    val e3 = everything(gsize)(_+_)((23, "foo"))
+    typed[Int](e3)
+    assertEquals(5, e3)
 
-    println(gmapQ(gsize)(23))
-    println(gmapQ(gsize)("foo"))
-    println(gmapQ(gsize)((23, "foo")))
-    println(gmapQ(gsize)(List(1, 2, 3, 4)))
+    val e4 = everything(gsize)(_+_)(List(1, 2, 3, 4))
+    typed[Int](e4)
+    assertEquals(5, e4)
     
-    implicitly[Case[Everything0[gsize.type], (Int) => Node[Int]]]
-    
-    implicitly[Case[gsize.type, (Int) => Int]]
-    implicitly[Case[gsize.type, ((Int, String)) => Int]]
-    implicitly[Case[gsize.type, List[Int] => Int]]
+    val i = 23
+    val is = gsizeAll2(i)
+    assertEquals(1, is)
 
-    implicitly[Case[Everything0[gsize.type], ((Int, String)) => Node[Int]]]
-    
-    val e1 = everything(gsize)(23)
-    typed[Node[Int]](e1)
-    assertEquals(Node(1), e1)
-    
-    val e2 = everything(gsize)("foo")
-    typed[Node[Int]](e2)
-    assertEquals(Node(3), e2)
-    
-    val e3 = everything(gsize)((23, "foo"))
-    typed[Node[Int]](e3)
-    assertEquals(Node(1, List(Node(1), Node(3))), e3)
+    val s = "foo"
+    val ss = gsizeAll2(s)
+    assertEquals(3, ss)
 
-    val e4 = everything(gsize)(List(1, 2, 3, 4))
-    typed[Node[Int]](e4)
-    assertEquals(Node(1, List(Node(1), Node(1), Node(1), Node(1))), e4)
-    
-    //    e2(23)
-//    e2("foo")
-//    e2((23, "foo"))
-  
-  //  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, Int, T]) : Int = {
-//    val sum : (Int, Int) => Int = _+_ 
-//    val eg = everything(gsize)
-//    eg(sum, t)
-//  }
+    val p = (23, "foo")
+    val ps = gsizeAll2(p)
+    assertEquals(5, ps)
 
-//    val ci = implicitly[Everything[gsize.type, Int, Int]]
-//    implicitly[Case[gsize.type, Int => Int]]
-//    implicitly[Data[Everything0[gsize.type, Int], Int, Int]]
-//    
-//    val xx = ci.f(_+_, 23)
-//    println("xx: ", xx)
-//    
-//    val cs = implicitly[Everything[gsize.type, Int, String]]
-//    val xx2 = cs.f(_+_, "foo")
-//    println("xx2: ", xx2)
-//
-//    val cp = implicitly[Everything[gsize.type, Int, (Int, String)]]
-//    implicitly[Case[gsize.type, ((Int, String)) => Int]]
-//
-//    val xx3 = cp.f(_+_, (23, "foo"))
-//    println("xx3: ", xx3)
-//
-//    val deg = implicitly[Data[Everything0[gsize.type, Int], (Int, String), Int]]
-//    val xx4 = deg.gmapQ((23, "foo"))
-//    println("xx4: ", xx4)
-//
-//    val i = 23
-//    val is = gsizeAll2(i)
-//    assertEquals(1, is)
-//
-//    val s = "foo"
-//    val ss = gsizeAll2(s)
-//    assertEquals(3, ss)
-//
-//    val p = (23, "foo")
-//    val ps = gsizeAll2(p)
-//    assertEquals(5, ps)
-//
-//    val l = List(1, 2, 3) 
-//    val ls = gsizeAll2(l)
-//    assertEquals(4, ls)
-//
-//    val lp = List(("foo", 23), ("bar", 24))
-//    val lps = gsizeAll2(lp)
-//    assertEquals(11, lps)
+    val l = List(1, 2, 3, 4) 
+    val ls = gsizeAll2(l)
+    assertEquals(5, ls)
+
+    val lp = List(("foo", 23), ("bar", 24))
+    val lps = gsizeAll2(lp)
+    assertEquals(11, lps)
   }
 
   @Test

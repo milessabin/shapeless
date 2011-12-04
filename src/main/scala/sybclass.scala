@@ -59,6 +59,20 @@ object SybClass {
     def gmapT(t : List[T]) = t.map(ft.value)
   }
 
+  case class Node[T](t : T, c : List[Node[T]] = Nil) {
+    def fold(f : (T, T) => T) : T = c.map(_.fold(f)).foldLeft(t)(f)
+  }
+  
+  type Everything[HF, T, R] = Case[Everything0[HF], T => Node[R]]
+
+  trait Everything0[HF]
+  
+  def everything[HF <: HRFn, T](f : HF)(k : (f.G[_], f.G[_]) => f.G[_])(t : T) 
+    (implicit c : Case[Everything0[HF], T => Node[f.G[_]]]) : f.G[_] = c(t).fold(k)
+    
+  implicit def everythingDflt[HF, R, T](implicit data : Data[Everything0[HF], T, Node[R]], fT : Case[HF, T => R]) =
+    new Case[Everything0[HF], T => Node[R]](t => Node(fT(t), data.gmapQ(t)))
+
   type Everywhere[HF, T] = Case[Everywhere0[HF], T => T]
     
   trait Everywhere0[HF] extends (Id ~> Id) with NoDefault
