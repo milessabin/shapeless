@@ -3,5 +3,6 @@
 .classpath
 .project
 .history
+.lib
 target/
 *.swp
