@@ -4,7 +4,6 @@ import Nat._
 // TODO zip/unzip
 // TODO hApply
 // TODO Value/type contains
-// TODO take/drop
 // TODO Lenses
 // TODO Unified comprehensions
 // TODO http://stackoverflow.com/questions/8270526
@@ -45,6 +44,14 @@ trait LowPriorityHList {
     def init(implicit init : Init[L]) : init.Out = init(l)
     
     def select[U](implicit selector : Selector[L, U]) : U = selector(l)
+    
+    def take[N <: Nat](implicit take : Take[L, N]) : take.R = take(l)
+
+    def take[N <: Nat](n : N)(implicit take : Take[L, N]) : take.R = take(l)
+    
+    def drop[N <: Nat](implicit drop : Drop[L, N]) : drop.R = drop(l)
+
+    def drop[N <: Nat](n : N)(implicit drop : Drop[L, N]) : drop.R = drop(l)
     
     def split[N <: Nat](implicit split : Split[L, N]) : split.R = split(l)
 
@@ -256,6 +263,57 @@ trait LowPriorityHList {
   
   implicit def hlistAtN[H, T <: HList, N <: Nat, Out](implicit att : At0[T, N, Out]) = new At0[H :: T, Succ[N], Out] {
     def apply(l : H :: T) : Out = att(l.tail) 
+  }
+  
+  trait Drop[L <: HList, N <: Nat] {
+    type R <: HList
+    def apply(l : L) : R
+  }
+  
+  implicit def drop[L <: HList, N <: Nat, R0 <: HList]
+    (implicit drop : Drop0[L, N, R0]) = new Drop[L, N] {
+    type R = R0
+    def apply(l : L) : R = drop(l)
+  }
+  
+  type DropAux[L <: HList, N <: Nat, R <: HList] = Drop0[L, N, R]
+  
+  trait Drop0[L <: HList, N <: Nat, R <: HList] {
+    def apply(l : L) : R
+  }
+  
+  implicit def hlistDrop1[L <: HList] = new Drop0[L, _0, L] {
+    def apply(l : L) : L = l
+  }
+  
+  implicit def hlistDrop2[H, T <: HList, N <: Nat, R <: HList](implicit dt : Drop0[T, N, R]) = new Drop0[H :: T, Succ[N], R] {
+    def apply(l : H :: T) : R = dt(l.tail)
+  }
+  
+
+  trait Take[L <: HList, N <: Nat] {
+    type R <: HList
+    def apply(l : L) : R
+  }
+  
+  implicit def take[L <: HList, N <: Nat, R0 <: HList]
+    (implicit take : Take0[L, N, R0]) = new Take[L, N] {
+    type R = R0
+    def apply(l : L) : R = take(l)
+  }
+  
+  type TakeAux[L <: HList, N <: Nat, R <: HList] = Take0[L, N, R]
+  
+  trait Take0[L <: HList, N <: Nat, R <: HList] {
+    def apply(l : L) : R
+  }
+  
+  implicit def hlistTake1[L <: HList] = new Take0[L, _0, HNil] {
+    def apply(l : L) : HNil = HNil
+  }
+  
+  implicit def hlistTake2[H, T <: HList, N <: Nat, R <: HList](implicit tt : Take0[T, N, R]) = new Take0[H :: T, Succ[N], H :: R] {
+    def apply(l : H :: T) : H :: R = l.head :: tt(l.tail)
   }
   
   trait Split[L <: HList, N <: Nat] {

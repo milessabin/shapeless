@@ -268,7 +268,10 @@ class HListTests {
     assertTrue(fl1)
     val fl2 = tl2.foldLeft(true)(isDefined)(_ && _)
     assertFalse(fl2)
-    
+  }
+  
+  @Test
+  def testAt {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
     
     val at0 = sn1(_0)
@@ -285,6 +288,40 @@ class HListTests {
     typed[Boolean](at5)
     val at6 = sn1(_6)
     typed[Long](at6)
+  }
+  
+  @Test
+  def testTakeDrop {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    
+    val t0 = sn1.take(_0)
+    typed[HNil](t0)
+    assertEquals(HNil, t0)
+    
+    val d0 = sn1.drop(_0)
+    typed[Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil](d0)
+    assertEquals(23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil, d0)
+
+    val t2 = sn1.take(_2)
+    typed[Int :: Double :: HNil](t2)
+    assertEquals(23 :: 3.0 :: HNil, t2)
+    
+    val d2 = sn1.drop(_2)
+    typed[String :: Unit :: String :: Boolean :: Long :: HNil](d2)
+    assertEquals("foo" :: () :: "bar" :: true :: 5L :: HNil, d2)
+
+    val t7 = sn1.take(_7)
+    typed[Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil](t7)
+    assertEquals(23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil, t7)
+    
+    val d7 = sn1.drop(_7)
+    typed[HNil](d7)
+    assertEquals(HNil, d7)
+  }
+  
+  @Test
+  def testSplit {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.split(_0)
     typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni0)
@@ -319,7 +356,10 @@ class HListTests {
     typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil, Long :: HNil)](snri6)
     val snri7 = sn1.reverse_split(_7)
     typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil, HNil)](snri7)
-
+  }
+  
+  @Test
+  def testSelect {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     val si = sl.select[Int]
     typed[Int](si)
@@ -336,7 +376,11 @@ class HListTests {
     val sd = sl.select[Double]
     typed[Double](sd)
     assertEquals(2.0, sd, Double.MinPositiveValue)
-    
+  }
+  
+  @Test
+  def testSplitLeft {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
     
     val (sp1, sp2) = sl.splitLeft[String]
@@ -358,6 +402,13 @@ class HListTests {
     typed[Double :: Int :: HNil](rsli1) 
     typed[String :: Unit :: String :: Boolean :: Long :: HNil](rsli2)
     assertEquals((rsli1 reverse_::: rsli2), sl2)
+
+  }
+  
+  @Test
+  def testSplitRight {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+    val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val (srp1, srp2) = sl.splitRight[String]
     typed[Int :: Boolean :: String :: HNil](srp1)
