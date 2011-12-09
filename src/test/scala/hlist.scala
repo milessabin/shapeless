@@ -430,4 +430,45 @@ class HListTests {
     typed[Boolean :: Long :: HNil](rsrli2)
     assertEquals((rsrli1 reverse_::: rsrli2), sl2)
   }
+  
+  @Test
+  def testTranspose {
+    val l1 = 1 :: HNil
+    val l2 = ("a" :: HNil) :: HNil
+    
+    val z1 = l1.zipOne(l2)
+    typed[(Int :: String :: HNil) :: HNil](z1)
+    assertEquals((1 :: "a" :: HNil) :: HNil, z1)
+    
+    val mc1 = l1.mapConst(HNil)
+    typed[HNil :: HNil](mc1)
+    assertEquals(HNil :: HNil, mc1)
+    
+    val t1 = (l1 :: HNil).transpose
+    typed[(Int :: HNil) :: HNil](t1)
+    assertEquals((1 :: HNil) :: HNil, t1)
+
+    val l3 = 1 :: 2 :: 3 :: HNil
+    val l4 = ("a" :: 1.0 :: HNil) :: ("b" :: 2.0 :: HNil) :: ("c" :: 3.0 :: HNil) :: HNil
+    
+    val z2 = l3.zipOne(l4)
+    typed[(Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: HNil](z2)
+    assertEquals((1 :: "a" :: 1.0 :: HNil) :: (2 :: "b" :: 2.0 :: HNil) :: (3 :: "c" :: 3.0 :: HNil) :: HNil, z2)
+    
+    val mc2 = l3.mapConst(HNil)
+    typed[HNil :: HNil :: HNil :: HNil](mc2)
+    assertEquals(HNil :: HNil :: HNil :: HNil, mc2)
+    
+    val t2 = l4.transpose
+    typed[(String :: String :: String :: HNil) :: (Double :: Double :: Double :: HNil) :: HNil](t2)
+    assertEquals(("a" :: "b" :: "c" :: HNil) :: (1.0 :: 2.0 :: 3.0 :: HNil) :: HNil, t2)
+    
+    val t3 = z2.transpose
+    typed[(Int :: Int :: Int :: HNil) :: (String :: String :: String :: HNil) :: (Double :: Double :: Double :: HNil) :: HNil](t3)
+    assertEquals((1 :: 2 :: 3 :: HNil) :: ("a" :: "b" :: "c" :: HNil) :: (1.0 :: 2.0 :: 3.0 :: HNil) :: HNil, t3)
+    
+    val t4 = t3.transpose
+    typed[(Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: HNil](t4)
+    assertEquals(z2, t4)
+  }
 }

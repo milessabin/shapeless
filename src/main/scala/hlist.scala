@@ -72,8 +72,14 @@ trait LowPriorityHList {
     def reverse(implicit reverse : Reverse[L]) : reverse.Out = reverse(l)
 
     def map[HF](f : HF)(implicit mapper : Mapper[HF, L]) : mapper.Out = mapper(l)
+
+    def mapConst[C](c : C)(implicit mapper : ConstMapper[C, L]) : mapper.Out = mapper(c, l)
     
     def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
+    
+    def zipOne[T <: HList](t : T)(implicit zipOne : ZipOne[L, T]) : zipOne.Out = zipOne(l, t)
+    
+    def transpose(implicit transpose : Transposer[L]) : transpose.Out = transpose(l)
 
     def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
   
@@ -556,6 +562,91 @@ trait LowPriorityHList {
   
   implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList](implicit rpt : ReversePrepend0[PT, PH :: S, Out]) = new ReversePrepend0[PH :: PT, S, Out] {
     def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
+  }
+  
+  trait ConstMapper[C, L <: HList] {
+    type Out <: HList
+    def apply(c : C, l : L) : Out
+  }
+  
+  implicit def constMapper[L <: HList, C, Out0 <: HList](implicit mc : ConstMapper0[C, L, Out0]) = new ConstMapper[C, L] {
+    type Out = Out0
+    def apply(c : C, l : L) : Out = mc(c, l)
+  } 
+  
+  type ConstMapperAux[C, L <: HList, Out <: HList] = ConstMapper0[C, L, Out]
+  
+  trait ConstMapper0[C, L <: HList, Out <: HList] {
+    def apply(c : C, l : L) : Out
+  }
+  
+  implicit def hnilConstMapper[C] = new ConstMapper0[C, HNil, HNil] {
+    def apply(c : C, l : HNil) = l 
+  }
+  
+  implicit def hlistConstMapper[H, T <: HList, C, OutT <: HList](implicit mct : ConstMapper0[C, T, OutT]) = new ConstMapper0[C, H :: T, C :: OutT] {
+    def apply(c : C, l : H :: T) : C :: OutT = c :: mct(c, l.tail)  
+  }
+  
+  trait ZipOne[H <: HList, T <: HList] {
+    type Out <: HList
+    def apply(h : H, t : T) : Out
+  }
+  
+  implicit def zipOne[H <: HList, T <: HList, Out0 <: HList](implicit zipOne : ZipOne0[H, T, Out0]) = new ZipOne[H, T] {
+    type Out = Out0
+    def apply(h : H, t : T) : Out = zipOne(h, t)
+  }
+  
+  type ZipOneAux[H <: HList, T <: HList, Out <: HList] = ZipOne0[H, T, Out]
+  
+  trait ZipOne0[H <: HList, T <: HList, Out <: HList] {
+    def apply(h : H, t : T) : Out
+  }
+  
+  implicit def zipOne1[H <: HList] = new ZipOne0[H, HNil, HNil] {
+    def apply(h : H, t : HNil) : HNil = HNil 
+  }
+  
+  implicit def zipOne2[T <: HList] = new ZipOne0[HNil, T, HNil] {
+    def apply(h : HNil, t : T) : HNil = HNil 
+  }
+
+  implicit def zipOne3[H, T <: HList] = new ZipOne0[H :: HNil, T :: HNil, (H :: T) :: HNil] {
+    def apply(h : H :: HNil, t : T :: HNil) : (H :: T) :: HNil = (h.head :: t.head) :: HNil 
+  }
+  
+  implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, OutT <: HList](implicit zot : ZipOne0[HT, TT, OutT]) =
+    new ZipOne0[HH :: HT, TH :: TT, (HH :: TH) :: OutT] {
+    def apply(h : HH :: HT, t : TH :: TT) : (HH :: TH) :: OutT = (h.head :: t.head) :: zot(h.tail, t.tail)
+  }
+  
+  trait Transposer[L <: HList] {
+    type Out <: HList
+    def apply(l : L) : Out
+  }
+  
+  implicit def tranposer[L <: HList, Out0 <: HList](implicit transposer : Transposer0[L, Out0]) = new Transposer[L] {
+    type Out = Out0
+    def apply(l : L) : Out = transposer(l)
+  }
+  
+  type TransposerAux[L <: HList, Out <: HList] = Transposer0[L, Out] 
+  
+  trait Transposer0[L <: HList, Out <: HList] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def hnilTransposer = new Transposer0[HNil, HNil] {
+    def apply(l : HNil) = l 
+  }
+  
+  implicit def hlistTransposer1[H <: HList, MC <: HList, Out <: HList](implicit mc : ConstMapperAux[HNil, H, MC], zo : ZipOneAux[H, MC, Out]) = new Transposer0[H :: HNil, Out] {
+    def apply(l : H :: HNil) : Out = zo(l.head, mc(HNil, l.head))
+  }
+  
+  implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out <: HList](implicit tt : Transposer0[T, OutT], zo : ZipOne0[H, OutT, Out]) = new Transposer0[H :: T, Out] {
+    def apply(l : H :: T) : Out = zo(l.head, tt(l.tail))
   }
 }
 
