@@ -483,6 +483,19 @@ class HListTests {
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z1)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z1)
     
+    def zip[L <: HList, OutT <: HList, OutM <: HList](l : L)
+      (implicit
+        transposer : TransposerAux[L, OutT],
+        mapper : MapperAux[tupled.type, OutT, OutM]) = l.transpose.map(tupled)
+    
+    val z2 = zip(l1 :: l2 :: HNil)
+    typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z2)
+    assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z2)
+
+    val z3 = (l1 :: l2 :: HNil).zipped
+    typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z3)
+    assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z3)
+    
     val t2 = z1.map(hlisted).transpose
     val u1 = t2.tupled
     typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u1)
@@ -492,6 +505,18 @@ class HListTests {
       (implicit
         mapper : MapperAux[hlisted.type, L, OutM],
         transposer : TransposerAux[OutM, OutT],
-        tupler : Tupler[OutT]) = l.map(hlisted).transpose.tupled 
+        tupler : Tupler[OutT]) = l.map(hlisted).transpose.tupled
+        
+    val u2 = unzip(z1)
+    typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u2)
+    assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u2)
+    
+    val u3 = z1.unzipped
+    typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u3)
+    assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u3)
+    
+    val z4 = l1 zip l2
+    typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z4)
+    assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z4)
   }
 }

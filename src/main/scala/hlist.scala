@@ -2,7 +2,6 @@ import PolyFun._
 import Nat._
 import Tuples._
 
-// TODO zip/unzip
 // TODO hApply
 // TODO Value/type contains
 // TODO Lenses
@@ -78,7 +77,11 @@ trait LowPriorityHList {
     
     def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
     
-    //def unzip(implicit mapper : Mapper[hlisted.type, L]) = map(hlisted).transpose.tupled 
+    def zip[R <: HList](r : R)(implicit zipper : Zipper[L :: R :: HNil]) : zipper.Out = zipper(HCons(l, HCons(r, HNil))) 
+
+    def zipped(implicit zipper : Zipper[L]) : zipper.Out = zipper(l)
+
+    def unzipped(implicit unzipper : Unzipper[L]) : unzipper.Out = unzipper(l)
     
     def zipOne[T <: HList](t : T)(implicit zipOne : ZipOne[L, T]) : zipOne.Out = zipOne(l, t)
     
@@ -680,6 +683,33 @@ trait LowPriorityHList {
   
   implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out <: HList](implicit tt : Transposer0[T, OutT], zo : ZipOne0[H, OutT, Out]) = new Transposer0[H :: T, Out] {
     def apply(l : H :: T) : Out = zo(l.head, tt(l.tail))
+  }
+  
+  trait Zipper[L <: HList] {
+    type Out <: HList
+    def apply(l : L) : Out
+  }
+  
+  implicit def zipper[L <: HList, OutT <: HList, OutM <: HList]
+    (implicit
+      transposer : TransposerAux[L, OutT],
+      mapper : MapperAux[tupled.type, OutT, OutM]) = new Zipper[L] {
+    type Out = OutM
+    def apply(l : L) = mapper(l.transpose)
+  }
+
+  trait Unzipper[L <: HList] {
+    type Out <: Product
+    def apply(l : L) : Out
+  }
+
+  implicit def unzipper[L <: HList, OutM <: HList, OutT <: HList]
+    (implicit
+      mapper : MapperAux[hlisted.type, L, OutM],
+      transposer : TransposerAux[OutM, OutT],
+      tupler : Tupler[OutT]) = new Unzipper[L] {
+    type Out = tupler.Out
+    def apply(l : L) = mapper(l).transpose.tupled
   }
 }
 
