@@ -7,6 +7,7 @@ class HListTests {
   import PolyFun._
   import Traversables._
   import Nat._
+  import Tuples._
 
   def typed[T](t : => T) {}
   
@@ -470,5 +471,27 @@ class HListTests {
     val t4 = t3.transpose
     typed[(Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: (Int :: String :: Double :: HNil) :: HNil](t4)
     assertEquals(z2, t4)
+  }
+  
+  @Test
+  def testZipUnzip {
+    val l1 = 1 :: "a" :: 1.0 :: HNil
+    val l2 = 2 :: "b" :: 2.0 :: HNil
+    
+    val t1 = (l1 :: l2 :: HNil).transpose
+    val z1 = t1.map(tupled)
+    typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z1)
+    assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z1)
+    
+    val t2 = z1.map(hlisted).transpose
+    val u1 = t2.tupled
+    typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u1)
+    assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u1)
+
+    def unzip[L <: HList, OutM <: HList, OutT <: HList](l : L)
+      (implicit
+        mapper : MapperAux[hlisted.type, L, OutM],
+        transposer : TransposerAux[OutM, OutT],
+        tupler : Tupler[OutT]) = l.map(hlisted).transpose.tupled 
   }
 }

@@ -1,37 +1,60 @@
 object Tuples {
   import HList._
+  import PolyFun._
   
-  object Implicits {
-    implicit def hlistToTuple1[A](l : A :: HNil) = Tuple1(l.head)
-    implicit def hlistToTuple2[A, B](l : A :: B :: HNil) = (l.head, l.tail.head)
-    implicit def hlistToTuple3[A, B, C](l : A :: B :: C :: HNil) = (l.head, l.tail.head, l.tail.tail.head)
-    implicit def hlistToTuple4[A, B, C, D](l : A :: B :: C :: D :: HNil) = (l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
-    
-    implicit def tuple1ToHList[A](t : Product1[A]) = t._1 :: HNil
-    implicit def tuple2ToHList[A, B](t : Product2[A, B]) = t._1 :: t._2 :: HNil
-    implicit def tuple3ToHList[A, B, C](t : Product3[A, B, C]) = t._1 :: t._2 :: t._3 :: HNil
-    implicit def tuple4ToHList[A, B, C, D](t : Product4[A, B, C, D]) = t._1 :: t._2 :: t._3 :: t._4 :: HNil
+  trait HLister[-T <: Product] {
+    type Out <: HList
+    def apply(t : T) : Out
+  }
+  
+  implicit def hlister[T <: Product, Out0 <: HList](implicit hlister : HLister0[T, Out0]) = new HLister[T] {
+    type Out = Out0
+    def apply(t : T) : Out = hlister(t)
+  }
+  
+  type HListerAux[-T <: Product, Out <: HList] = HLister0[T, Out]
+  
+  trait HLister0[-T <: Product, Out <: HList] {
+    def apply(t : T) : Out
+  }
+  
+  implicit def tupleHLister1[A] = new HLister0[Product1[A], A :: HNil] {
+    def apply(t : Product1[A]) = t._1 :: HNil
+  }
+  
+  implicit def tupleHLister2[A, B] = new HLister0[Product2[A, B], A :: B :: HNil] {
+    def apply(t : Product2[A, B]) = t._1 :: t._2 :: HNil
+  }
+  
+  implicit def tupleHLister3[A, B, C] = new HLister0[Product3[A, B, C], A :: B :: C :: HNil] {
+    def apply(t : Product3[A, B, C]) = t._1 :: t._2 :: t._3 :: HNil
   }
 
-  import Implicits._
+  implicit def tupleHLister4[A, B, C, D] = new HLister0[Product4[A, B, C, D], A :: B :: C :: D :: HNil] {
+    def apply(t : Product4[A, B, C, D]) = t._1 :: t._2 :: t._3 :: t._4 :: HNil
+  }
   
   trait TupleOps[L <: HList] {
     def hlisted : L
   }
   
-  implicit def tuple1Ops[A](t : Product1[A]) = new TupleOps[A :: HNil] { def hlisted = t } 
-  implicit def tuple2Ops[A, B](t : Product2[A, B]) = new TupleOps[A :: B ::HNil] { def hlisted = t }
-  implicit def tuple3Ops[A, B, C](t : Product3[A, B, C]) = new TupleOps[A :: B :: C :: HNil] { def hlisted = t }
-  implicit def tuple4Ops[A, B, C, D](t : Product4[A, B, C, D]) = new TupleOps[A :: B :: C :: D :: HNil] { def hlisted = t }
-  
-  trait HListOps[T] {
-    def tupled : T
+  implicit def tupleOps[T <: Product](t : T)(implicit hlister : HLister[T]) = new TupleOps[hlister.Out] {
+    def hlisted = hlister(t)
   }
   
-  implicit def hlist1Ops[A](l : A :: HNil) = new HListOps[Tuple1[A]] { def tupled = l }
-  implicit def hlist2Ops[A, B](l : A :: B :: HNil) = new HListOps[(A, B)] { def tupled = l }
-  implicit def hlist3Ops[A, B, C](l : A :: B :: C :: HNil) = new HListOps[(A, B, C)] { def tupled = l }
-  implicit def hlist4Ops[A, B, C, D](l : A :: B :: C :: D :: HNil) = new HListOps[(A, B, C, D)] { def tupled = l }
+  object hlisted {
+    def apply[T <: Product](t : T)(implicit hlister : HLister[T]) : hlister.Out = hlister(t)
+  }
+  implicit def hlisted1[T <: Product](implicit hlister : HLister[T]) = new Case[hlisted.type, T => hlister.Out](hlister.apply(_))
+
+  implicit def univInstHListed[F, G](h : hlisted.type)(implicit c : Case[hlisted.type, F => G]) : F => G = c.value
+  
+  object tupled {
+    def apply[L <: HList](l : L)(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
+  }
+  implicit def tupled1[L <: HList](implicit tupler : Tupler[L]) = new Case[tupled.type, L => tupler.Out](tupler.apply(_))
+  
+  implicit def univInstTupled[F, G](t : tupled.type)(implicit c : Case[tupled.type, F => G]) : F => G = c.value
 }
 
 object Functions {

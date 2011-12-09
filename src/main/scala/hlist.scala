@@ -1,5 +1,6 @@
 import PolyFun._
 import Nat._
+import Tuples._
 
 // TODO zip/unzip
 // TODO hApply
@@ -77,12 +78,16 @@ trait LowPriorityHList {
     
     def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
     
+    //def unzip(implicit mapper : Mapper[hlisted.type, L]) = map(hlisted).transpose.tupled 
+    
     def zipOne[T <: HList](t : T)(implicit zipOne : ZipOne[L, T]) : zipOne.Out = zipOne(l, t)
     
     def transpose(implicit transpose : Transposer[L]) : transpose.Out = transpose(l)
 
     def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
   
+    def tupled(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
+    
     def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
   }
 
@@ -185,6 +190,35 @@ trait LowPriorityHList {
   
   implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
     def apply(l : H1 :: H2 :: T) = u.left(l.head) :: ttl(l.tail)
+  }
+  
+  trait Tupler[L <: HList] {
+    type Out <: Product
+    def apply(l : L) : Out
+  }
+  
+  implicit def tupler[L <: HList, Out0 <: Product](implicit tupler : Tupler0[L, Out0]) = new Tupler[L] {
+    type Out = Out0
+    def apply(l : L) : Out = tupler(l)
+  }
+  
+  type TuplerAux[L <: HList, Out <: Product] = Tupler0[L, Out]
+  
+  trait Tupler0[L <: HList, Out <: Product] {
+    def apply(l : L) : Out
+  }
+  
+  implicit def hlistTupler1[A] = new Tupler0[A :: HNil, Tuple1[A]] {
+    def apply(l : A :: HNil) = Tuple1(l.head)
+  }
+  implicit def hlistTupler2[A, B] = new Tupler0[A :: B :: HNil, (A, B)] {
+    def apply(l : A :: B :: HNil) = (l.head, l.tail.head)
+  }
+  implicit def hlistTupler3[A, B, C] = new Tupler0[A :: B :: C :: HNil, (A, B, C)] {
+    def apply(l : A :: B :: C :: HNil) = (l.head, l.tail.head, l.tail.tail.head)
+  }
+  implicit def hlistTupler4[A, B, C, D] = new Tupler0[A :: B :: C :: D :: HNil, (A, B, C, D)] {
+    def apply(l : A :: B :: C :: D :: HNil) = (l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
   }
   
   trait Last[L <: HList] {
@@ -295,7 +329,6 @@ trait LowPriorityHList {
   implicit def hlistDrop2[H, T <: HList, N <: Nat, R <: HList](implicit dt : Drop0[T, N, R]) = new Drop0[H :: T, Succ[N], R] {
     def apply(l : H :: T) : R = dt(l.tail)
   }
-  
 
   trait Take[L <: HList, N <: Nat] {
     type R <: HList
