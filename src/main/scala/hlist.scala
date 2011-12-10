@@ -5,7 +5,6 @@ import Tuples._
 // TODO Value/type contains
 // TODO Lenses
 // TODO Unified comprehensions
-// TODO http://stackoverflow.com/questions/8270526
 
 sealed trait HList
 

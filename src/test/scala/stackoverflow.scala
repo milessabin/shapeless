@@ -1,7 +1,7 @@
 import org.junit.Test
 import org.junit.Assert._
 
-class StackOverflow {
+class StackOverflow1 {
   // http://stackoverflow.com/questions/7606587
 
   import HList._
@@ -42,4 +42,31 @@ class StackOverflow {
     typed[(Int, Int, Double)](r2)
     assertEquals((24, 3, 4.0), r2)
   }
+}
+
+class StackOverflow2 {
+  // http://stackoverflow.com/questions/8270526
+  
+  import HList._
+  import Functions._
+  import Traversables._
+  
+  sealed abstract class A { def eval() : A }
+  case class A0 () extends A { def eval() = this }
+  case class A1 ( a : A ) extends A  { def eval() = this }
+  case class A2 ( a : A, b : A ) extends A  { def eval() = this }
+  
+  case class ApplyA[C, L <: HList](c : C, l : L)(implicit hl : FnHListerAux[C, L => A]) extends A {
+    def eval () : A = hl(c)(l)
+  }
+
+  val c0 : () => A = A0
+  val c1 : A => A = A1
+  val c2 : (A, A) => A = A2
+  
+  val a : A = A0()
+  
+  val a0 = ApplyA(c0, HNil : HNil)
+  val a1 = ApplyA(c1, a :: HNil)
+  val a2 = ApplyA(c2, a :: a :: HNil)
 }
