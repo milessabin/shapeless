@@ -3,6 +3,7 @@ import org.junit.Assert._
 
 class ConversionTests {
   import Tuples._
+  import Functions._
   import HList._
 
   def typed[T](t : => T) {}
@@ -28,6 +29,34 @@ class ConversionTests {
     val t4 = tupled(l2)
     typed[(Int, String, Double, Boolean)](t4)
     assertEquals((23, "foo", 2.0, true), t4)
+  }
+  
+  @Test
+  def testFunctions {
+    val sum : (Int, Int) => Int = _+_
+    val prd : (Int, Int, Int) => Int = _*_*_
+    
+    val hlsum = sum.hlisted
+    typed[(Int :: Int :: HNil) => Int](hlsum)
+    
+    val hlprd = prd.hlisted
+    typed[(Int :: Int :: Int :: HNil) => Int](hlprd)
+    
+    trait A
+    trait B extends A
+    trait C extends A
+    
+    val a = new A {}
+    val b = new B {}
+    
+    val ab : A => B = (a : A) => b
+    
+    val hlab = ab.hlisted
+    typed[(A :: HNil) => B](hlab)
+    
+    def foo[F, L <: HList, R, HF](f : F, l : L)(implicit hl : FnHListerAux[F, HF], ev : HF <:< (L => R)) = hl(f)(l)
+    val s2 = foo(sum, 2 :: 3 :: HNil)
+    val ab2 = foo(ab, b :: HNil)
   }
   
   @Test

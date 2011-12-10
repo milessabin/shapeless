@@ -56,17 +56,13 @@ class StackOverflow2 {
   case class A1 ( a : A ) extends A  { def eval() = this }
   case class A2 ( a : A, b : A ) extends A  { def eval() = this }
   
-  case class ApplyA[C, L <: HList](c : C, l : L)(implicit hl : FnHListerAux[C, L => A]) extends A {
+  case class ApplyA[C, L <: HList, HF](c : C, l : L)(implicit hl : FnHListerAux[C, HF], ev : HF <:< (L => A)) extends A {
     def eval () : A = hl(c)(l)
   }
 
-  val c0 : () => A = A0
-  val c1 : A => A = A1
-  val c2 : (A, A) => A = A2
-  
   val a : A = A0()
   
-  val a0 = ApplyA(c0, HNil : HNil)
-  val a1 = ApplyA(c1, a :: HNil)
-  val a2 = ApplyA(c2, a :: a :: HNil)
+  val a0 = ApplyA(A0.apply _, HNil)
+  val a1 = ApplyA(A1.apply _, a :: HNil)
+  val a2 = ApplyA(A2.apply _, a :: a :: HNil)
 }
