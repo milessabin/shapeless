@@ -62,37 +62,85 @@ object Functions {
   import HList._
   import Tuples._
   
-  object Implicits {
-    implicit def hlistFnToFn1[A, T](hf : A :: HNil => T) = (a : A) => hf(a :: HNil)
-    implicit def hlistFnToFn2[A, B, T](hf : A :: B :: HNil => T) = (a : A, b : B) => hf(a :: b :: HNil)
-    implicit def hlistFnToFn3[A, B, C, T](hf : A :: B :: C :: HNil => T) = (a : A, b : B, c : C) => hf(a :: b :: c :: HNil)
-    implicit def hlistFnToFn4[A, B, C, D, T](hf : A :: B :: C :: D :: HNil => T) = (a : A, b : B, c : C, d : D) => hf(a :: b :: c :: d :: HNil)
-    
-    implicit def fn1ToHListFn[A, T](f : A => T) = (l : A :: HNil) => f(l.head)
-    implicit def fn2ToHListFn[A, B, T](f : (A, B) => T) = (l : A :: B :: HNil) => f.tupled(l.tupled)
-    implicit def fn3ToHListFn[A, B, C, T](f : (A, B, C) => T) = (l : A :: B :: C :: HNil) => f.tupled(l.tupled)
-    implicit def fn4ToHListFn[A, B, C, D, T](f : (A, B, C, D) => T) = (l : A :: B :: C :: D :: HNil) => f.tupled(l.tupled)
+  trait FnHLister[F] {
+    type Out
+    def apply(f : F) : Out
   }
   
-  import Implicits._
-  
-  trait FnHListOps[L <: HList, T] {
-    def hlisted : L => T
+  implicit def fnHLister[F, Out0](implicit fnHLister : FnHLister0[F, Out0]) = new FnHLister[F] {
+    type Out = Out0
+    def apply(f : F) : Out = fnHLister(f)
   }
   
-  implicit def fn1Ops[A, T](t : A => T) = new FnHListOps[A :: HNil, T] { def hlisted = t } 
-  implicit def fn2Ops[A, B, T](t : (A, B) => T) = new FnHListOps[A :: B ::HNil, T] { def hlisted = t }
-  implicit def fn3Ops[A, B, C, T](t : (A, B, C) => T) = new FnHListOps[A :: B :: C :: HNil, T] { def hlisted = t }
-  implicit def fn4Ops[A, B, C, D, T](t : (A, B, C, D) => T) = new FnHListOps[A :: B :: C :: D :: HNil, T] { def hlisted = t }
+  type FnHListerAux[F, Out] = FnHLister0[F, Out] 
+  
+  trait FnHLister0[F, Out] {
+    def apply(f : F) : Out
+  }
+  
+  implicit def fnHLister1[A, R] = new FnHLister0[A => R, (A :: HNil) => R] {
+    def apply(f : A => R) = (l : A :: HNil) => f(l.head)
+  }
+  
+  implicit def fnHLister2[A, B, R] = new FnHLister0[(A, B) => R, (A :: B :: HNil) => R] {
+    def apply(f : (A, B) => R) = (l : A :: B :: HNil) => f(l.head, l.tail.head)
+  }
+  
+  implicit def fnHLister3[A, B, C, R] = new FnHLister0[(A, B, C) => R, (A :: B :: C :: HNil) => R] {
+    def apply(f : (A, B, C) => R) = (l : A :: B :: C :: HNil) => f(l.head, l.tail.head, l.tail.tail.head)
+  }
+  
+  implicit def fnHLister4[A, B, C, D, R] = new FnHLister0[(A, B, C, D) => R, (A :: B :: C :: D :: HNil) => R] {
+    def apply(f : (A, B, C, D) => R) = (l : A :: B :: C :: D :: HNil) => f(l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
+  }
+  
+  trait FnHListOps[HLFn] {
+    def hlisted : HLFn
+  }
+  
+  implicit def fnHListOps[F](t : F)(implicit fnHLister : FnHLister[F]) = new FnHListOps[fnHLister.Out] {
+    def hlisted = fnHLister(t)
+  }
 
-  trait HListFnOps[F] {
+  trait FnUnHLister[F] {
+    type Out
+    def apply(f : F) : Out
+  }
+  
+  implicit def fnUnHLister[F, Out0](implicit fnUnHLister : FnUnHLister0[F, Out0]) = new FnHLister[F] {
+    type Out = Out0
+    def apply(f : F) : Out = fnUnHLister(f)
+  }
+  
+  type FnUnHListerAux[F, Out] = FnUnHLister0[F, Out] 
+  
+  trait FnUnHLister0[F, Out] {
+    def apply(f : F) : Out
+  }
+  
+  implicit def fnUnHLister1[A, R] = new FnUnHLister0[(A :: HNil) => R, A => R] {
+    def apply(f : (A :: HNil) => R) = (a : A) => f(a :: HNil)
+  }
+  
+  implicit def fnUnHLister2[A, B, R] = new FnUnHLister0[(A :: B :: HNil) => R, (A, B) => R] {
+    def apply(f : (A :: B :: HNil) => R) = (a : A, b : B) => f(a :: b :: HNil)
+  }
+
+  implicit def fnUnHLister3[A, B, C, R] = new FnUnHLister0[(A :: B :: C :: HNil) => R, (A, B, C) => R] {
+    def apply(f : (A :: B :: C :: HNil) => R) = (a : A, b : B, c : C) => f(a :: b :: c :: HNil)
+  }
+
+  implicit def fnUnHLister4[A, B, C, D, R] = new FnUnHLister0[(A :: B :: C :: D :: HNil) => R, (A, B, C, D) => R] {
+    def apply(f : (A :: B :: C :: D :: HNil) => R) = (a : A, b : B, c : C, d : D) => f(a :: b :: c :: d :: HNil)
+  }
+  
+  trait FnUnHListOps[F] {
     def unhlisted : F
   }
-  
-  implicit def hlistFn1Ops[A, T](hf : A :: HNil => T) = new HListFnOps[A => T] { def unhlisted = hf }
-  implicit def hlistFn2Ops[A, B, T](hf : A :: B :: HNil => T) = new HListFnOps[(A, B) => T] { def unhlisted = hf }
-  implicit def hlistFn3Ops[A, B, C, T](hf : A :: B :: C :: HNil => T) = new HListFnOps[(A, B, C) => T] { def unhlisted = hf }
-  implicit def hlistFn4Ops[A, B, C, D, T](hf : A :: B :: C :: D ::HNil => T) = new HListFnOps[(A, B, C, D) => T] { def unhlisted = hf }
+
+  implicit def fnUnHListOps[F](t : F)(implicit fnUnHLister : FnUnHLister[F]) = new FnUnHListOps[fnUnHLister.Out] {
+    def unhlisted = fnUnHLister(t)
+  }
 }
 
 object Traversables {

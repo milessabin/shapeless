@@ -1,10 +1,20 @@
 object LiftOFn {
   import PolyFun._
   import HList._
-  import Tuples._
   import Functions._
 
-  def liftO[In <: HList, Out <: HList, R](f :  In => R)
-    (implicit m : MapperAux[get.type, Out, In], lf : LeftFolder[Out, Boolean, isDefined.type]) : Out => Option[R] = 
-      (o : Out) => if(o.foldLeft(true)(isDefined)(_ && _)) Some(f(o map get)) else None 
+  def liftO[InF, InL <: HList, R, OInL <: HList, OutF](f :  InF)
+    (implicit
+      hlister   : FnHListerAux[InF, InL => R],
+      mapper    : MapperAux[get.type, OInL, InL],
+      folder    : LeftFolder[OInL, Boolean, isDefined.type],
+      unhlister : FnUnHListerAux[OInL => Option[R], OutF]
+    ) : OutF = {
+    val hf = f.hlisted
+    val lifted =
+      (o : OInL) =>
+        if(o.foldLeft(true)(isDefined)(_ && _)) Some(hf(o map get))
+        else None
+    unhlister(lifted)
+  }
 }

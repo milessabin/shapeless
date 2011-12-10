@@ -39,15 +39,12 @@ class LiftOFnTests {
     val l4a = l4 map get
     val p2a = hlprd(l4a)
     assertEquals(24, p2a)
-    
-    import Functions.Implicits._
-    
+
     val sumO = liftO(sum)
 
     val s2 = sumO(Some(1), Some(2))
     assertTrue(s2.isDefined)
     assertEquals(3, s2.get)
-    
 
     val s3 = sumO(Some(1), None)
     assertTrue(s3.isEmpty)
