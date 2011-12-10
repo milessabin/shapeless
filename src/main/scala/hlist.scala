@@ -2,7 +2,6 @@ import PolyFun._
 import Nat._
 import Tuples._
 
-// TODO hApply
 // TODO Value/type contains
 // TODO Lenses
 // TODO Unified comprehensions
@@ -77,7 +76,9 @@ trait LowPriorityHList {
     
     def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
     
-    def zip[R <: HList](r : R)(implicit zipper : Zipper[L :: R :: HNil]) : zipper.Out = zipper(HCons(l, HCons(r, HNil))) 
+    def zip[R <: HList](r : R)(implicit zipper : Zipper[L :: R :: HNil]) : zipper.Out = zipper(HCons(l, HCons(r, HNil)))
+    
+    def zipApply[A <: HList](a : A)(implicit zipper : ZipApply[L, A]) : zipper.Out = zipper(l, a)
 
     def zipped(implicit zipper : Zipper[L]) : zipper.Out = zipper(l)
 
@@ -710,6 +711,30 @@ trait LowPriorityHList {
       tupler : Tupler[OutT]) = new Unzipper[L] {
     type Out = tupler.Out
     def apply(l : L) = mapper(l).transpose.tupled
+  }
+  
+  trait ZipApply[FL <: HList, AL <: HList] {
+    type Out <: HList
+    def apply(fl : FL, al : AL) : Out
+  }
+  
+  implicit def zipApply[FL <: HList, AL <: HList, Out0 <: HList](implicit zap : ZipApply0[FL, AL, Out0]) = new ZipApply[FL, AL] {
+    type Out = Out0
+    def apply(fl : FL, al : AL) : Out = zap(fl, al)
+  }
+  
+  type ZipApplyAux[FL <: HList, AL <: HList, Out <: HList] = ZipApply0[FL, AL, Out]
+  
+  trait ZipApply0[FL <: HList, AL <: HList, Out <: HList] {
+    def apply(fl : FL, al : AL) : Out
+  }
+  
+  implicit def hnilZipApply = new ZipApply0[HNil, HNil, HNil] {
+    def apply(fl : HNil, al : HNil) : HNil = HNil
+  }
+  
+  implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList, OutT <: HList](implicit ztt : ZipApply0[FLT, ALT, OutT]) = new ZipApply0[(T => R) :: FLT, T :: ALT, R :: OutT] {
+    def apply(fl : (T => R) :: FLT, al : T :: ALT) : R :: OutT = fl.head(al.head) :: ztt(fl.tail, al.tail) 
   }
 }
 

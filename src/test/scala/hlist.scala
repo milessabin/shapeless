@@ -518,5 +518,15 @@ class HListTests {
     val z4 = l1 zip l2
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z4)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z4)
+
+    val intInc : Int => Int = _+1
+    val stringInc : String => String = _+"*"
+    val doubleInc : Double => Int = _.toInt+1
+    
+    val l3 = intInc :: stringInc :: doubleInc :: HNil
+    
+    val z5 = l3 zipApply l1
+    typed[Int :: String :: Int :: HNil](z5)
+    assertEquals(2 :: "a*" :: 2 :: HNil, z5)
   }
 }
