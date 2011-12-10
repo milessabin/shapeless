@@ -44,29 +44,29 @@ trait LowPriorityHList {
     
     def select[U](implicit selector : Selector[L, U]) : U = selector(l)
     
-    def take[N <: Nat](implicit take : Take[L, N]) : take.R = take(l)
+    def take[N <: Nat](implicit take : Take[L, N]) : take.Out = take(l)
 
-    def take[N <: Nat](n : N)(implicit take : Take[L, N]) : take.R = take(l)
+    def take[N <: Nat](n : N)(implicit take : Take[L, N]) : take.Out = take(l)
     
-    def drop[N <: Nat](implicit drop : Drop[L, N]) : drop.R = drop(l)
+    def drop[N <: Nat](implicit drop : Drop[L, N]) : drop.Out = drop(l)
 
-    def drop[N <: Nat](n : N)(implicit drop : Drop[L, N]) : drop.R = drop(l)
+    def drop[N <: Nat](n : N)(implicit drop : Drop[L, N]) : drop.Out = drop(l)
     
-    def split[N <: Nat](implicit split : Split[L, N]) : split.R = split(l)
+    def split[N <: Nat](implicit split : Split[L, N]) : split.Out = split(l)
 
-    def split[N <: Nat](n : N)(implicit split : Split[L, N]) : split.R = split(l)
+    def split[N <: Nat](n : N)(implicit split : Split[L, N]) : split.Out = split(l)
 
-    def reverse_split[N <: Nat](implicit split : ReverseSplit[L, N]) : split.R = split(l)
+    def reverse_split[N <: Nat](implicit split : ReverseSplit[L, N]) : split.Out = split(l)
 
-    def reverse_split[N <: Nat](n : N)(implicit split : ReverseSplit[L, N]) : split.R = split(l)
+    def reverse_split[N <: Nat](n : N)(implicit split : ReverseSplit[L, N]) : split.Out = split(l)
 
-    def splitLeft[U](implicit splitLeft : SplitLeft[L, U]) : splitLeft.R = splitLeft(l)
+    def splitLeft[U](implicit splitLeft : SplitLeft[L, U]) : splitLeft.Out = splitLeft(l)
 
-    def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[L, U]) : splitLeft.R = splitLeft(l)
+    def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[L, U]) : splitLeft.Out = splitLeft(l)
 
-    def splitRight[U](implicit splitRight : SplitRight[L, U]) : splitRight.R = splitRight(l)
+    def splitRight[U](implicit splitRight : SplitRight[L, U]) : splitRight.Out = splitRight(l)
 
-    def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.R = splitRight(l)
+    def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.Out = splitRight(l)
 
     def reverse(implicit reverse : Reverse[L]) : reverse.Out = reverse(l)
 
@@ -310,67 +310,67 @@ trait LowPriorityHList {
   }
   
   trait Drop[L <: HList, N <: Nat] {
-    type R <: HList
-    def apply(l : L) : R
+    type Out <: HList
+    def apply(l : L) : Out
   }
   
-  implicit def drop[L <: HList, N <: Nat, R0 <: HList]
-    (implicit drop : Drop0[L, N, R0]) = new Drop[L, N] {
-    type R = R0
-    def apply(l : L) : R = drop(l)
+  implicit def drop[L <: HList, N <: Nat, Out0 <: HList]
+    (implicit drop : Drop0[L, N, Out0]) = new Drop[L, N] {
+    type Out = Out0
+    def apply(l : L) : Out = drop(l)
   }
   
-  type DropAux[L <: HList, N <: Nat, R <: HList] = Drop0[L, N, R]
+  type DropAux[L <: HList, N <: Nat, Out <: HList] = Drop0[L, N, Out]
   
-  trait Drop0[L <: HList, N <: Nat, R <: HList] {
-    def apply(l : L) : R
+  trait Drop0[L <: HList, N <: Nat, Out <: HList] {
+    def apply(l : L) : Out
   }
   
   implicit def hlistDrop1[L <: HList] = new Drop0[L, _0, L] {
     def apply(l : L) : L = l
   }
   
-  implicit def hlistDrop2[H, T <: HList, N <: Nat, R <: HList](implicit dt : Drop0[T, N, R]) = new Drop0[H :: T, Succ[N], R] {
-    def apply(l : H :: T) : R = dt(l.tail)
+  implicit def hlistDrop2[H, T <: HList, N <: Nat, Out <: HList](implicit dt : Drop0[T, N, Out]) = new Drop0[H :: T, Succ[N], Out] {
+    def apply(l : H :: T) : Out = dt(l.tail)
   }
 
   trait Take[L <: HList, N <: Nat] {
-    type R <: HList
-    def apply(l : L) : R
+    type Out <: HList
+    def apply(l : L) : Out
   }
   
-  implicit def take[L <: HList, N <: Nat, R0 <: HList]
-    (implicit take : Take0[L, N, R0]) = new Take[L, N] {
-    type R = R0
-    def apply(l : L) : R = take(l)
+  implicit def take[L <: HList, N <: Nat, Out0 <: HList]
+    (implicit take : Take0[L, N, Out0]) = new Take[L, N] {
+    type Out = Out0
+    def apply(l : L) : Out = take(l)
   }
   
-  type TakeAux[L <: HList, N <: Nat, R <: HList] = Take0[L, N, R]
+  type TakeAux[L <: HList, N <: Nat, Out <: HList] = Take0[L, N, Out]
   
-  trait Take0[L <: HList, N <: Nat, R <: HList] {
-    def apply(l : L) : R
+  trait Take0[L <: HList, N <: Nat, Out <: HList] {
+    def apply(l : L) : Out
   }
   
   implicit def hlistTake1[L <: HList] = new Take0[L, _0, HNil] {
     def apply(l : L) : HNil = HNil
   }
   
-  implicit def hlistTake2[H, T <: HList, N <: Nat, R <: HList](implicit tt : Take0[T, N, R]) = new Take0[H :: T, Succ[N], H :: R] {
-    def apply(l : H :: T) : H :: R = l.head :: tt(l.tail)
+  implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList](implicit tt : Take0[T, N, Out]) = new Take0[H :: T, Succ[N], H :: Out] {
+    def apply(l : H :: T) : H :: Out = l.head :: tt(l.tail)
   }
   
   trait Split[L <: HList, N <: Nat] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def split[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
     (implicit split : Split0[HNil, L, N, P0, S0]) = new Split[L, N] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = split(HNil, l)
+    def apply(l : L) : Out = split(HNil, l)
   }
   
   type SplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = Split0[HNil, L, N, P, S]
@@ -390,17 +390,17 @@ trait LowPriorityHList {
   }
 
   trait ReverseSplit[L <: HList, N <: Nat] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def reverseSplit[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
     (implicit split : ReverseSplit0[HNil, L, N, P0, S0]) = new ReverseSplit[L, N] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = split(HNil, l)
+    def apply(l : L) : Out = split(HNil, l)
   }
   
   type ReverseSplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = ReverseSplit0[HNil, L, N, P, S]
@@ -419,17 +419,17 @@ trait LowPriorityHList {
   }
 
   trait SplitLeft[L <: HList, U] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def splitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
     (implicit splitLeft : SplitLeft0[HNil, L, U, P0, S0]) = new SplitLeft[L, U] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = splitLeft(HNil, l)
+    def apply(l : L) : Out = splitLeft(HNil, l)
   }
   
   type SplitLeftAux[L <: HList, U, P <: HList, S <: HList] = SplitLeft0[HNil, L, U, P, S]
@@ -445,17 +445,17 @@ trait LowPriorityHList {
   }
 
   trait ReverseSplitLeft[L <: HList, U] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def reverseSplitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
     (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P0, S0]) = new ReverseSplitLeft[L, U] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = splitLeft(HNil, l)
+    def apply(l : L) : Out = splitLeft(HNil, l)
   }
   
   type ReverseSplitLeftAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitLeft0[HNil, L, U, P, S]
@@ -470,17 +470,17 @@ trait LowPriorityHList {
   }
 
   trait SplitRight[L <: HList, U] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def splitRight[L <: HList, U, P0 <: HList, S0 <: HList]
     (implicit splitRight : SplitRight0[L, HNil, HNil, U, P0, S0]) = new SplitRight[L, U] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = splitRight(l, HNil, HNil)
+    def apply(l : L) : Out = splitRight(l, HNil, HNil)
   }
   
   type SplitRightAux[L <: HList, U, P <: HList, S <: HList] = SplitRight0[L, HNil, HNil, U, P, S]
@@ -500,17 +500,17 @@ trait LowPriorityHList {
   }
   
   trait ReverseSplitRight[L <: HList, U] {
-    type R = (P, S)
+    type Out = (P, S)
     type P <: HList
     type S <: HList
-    def apply(l : L) : R
+    def apply(l : L) : Out
   } 
   
   implicit def reverseSplitRight[L <: HList, U, P0 <: HList, S0 <: HList]
     (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P0, S0]) = new ReverseSplitRight[L, U] {
     type P = P0
     type S = S0
-    def apply(l : L) : R = splitRight(l, HNil, HNil)
+    def apply(l : L) : Out = splitRight(l, HNil, HNil)
   }
   
   type ReverseSplitRightAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitRight0[L, HNil, HNil, U, P, S]
