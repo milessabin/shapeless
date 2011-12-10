@@ -8,6 +8,8 @@ class LiftOFnTests {
   import Functions._
   import LiftOFn._
   
+  def typed[T](t : => T) {}
+
   @Test
   def testLiftO {
     
@@ -15,7 +17,10 @@ class LiftOFnTests {
     val prd : (Int, Int, Int) => Int = _ * _ * _
     
     val hlsum = sum.hlisted
+    typed[Int :: Int :: HNil => Int](hlsum)
+    
     val hlprd = prd.hlisted
+    typed[Int :: Int :: Int :: HNil => Int](hlprd)
     
     val l1 = 2 :: 3 :: HNil
     val l2 = 2 :: 3 :: 4 :: HNil
@@ -41,6 +46,7 @@ class LiftOFnTests {
     assertEquals(24, p2a)
 
     val sumO = liftO(sum)
+    typed[(Option[Int], Option[Int]) => Option[Int]](sumO)
 
     val s2 = sumO(Some(1), Some(2))
     assertTrue(s2.isDefined)
@@ -60,6 +66,7 @@ class LiftOFnTests {
     assertEquals(10, s6.get)
     
     val prdO = liftO(prd)
+    typed[(Option[Int], Option[Int], Option[Int]) => Option[Int]](prdO)
 
     val p2 = prdO(Some(2), Some(3), Some(4))
     assertTrue(p2.isDefined)
