@@ -78,6 +78,10 @@ object Functions {
     def apply(f : F) : Out
   }
   
+  implicit def fnHLister0[R] = new FnHLister0[() => R, HNil => R] {
+    def apply(f : () => R) = (l : HNil) => f()
+  }
+  
   implicit def fnHLister1[A, R] = new FnHLister0[A => R, (A :: HNil) => R] {
     def apply(f : A => R) = (l : A :: HNil) => f(l.head)
   }
@@ -116,6 +120,10 @@ object Functions {
   
   trait FnUnHLister0[F, Out] {
     def apply(f : F) : Out
+  }
+  
+  implicit def fnUnHLister0[R] = new FnUnHLister0[HNil => R, () => R] {
+    def apply(f : HNil => R) = () => f(HNil)
   }
   
   implicit def fnUnHLister1[A, R] = new FnUnHLister0[(A :: HNil) => R, A => R] {
