@@ -28,11 +28,8 @@ object LiftOFn {
       folder    : LeftFolder[OInL, Boolean, isDefined.type],
       unhlister : FnUnHListerAux[OInL => Option[R], OutF]
     ) : OutF = {
-    val hf = f.hlisted
-    val lifted =
       (o : OInL) =>
-        if(o.foldLeft(true)(isDefined)(_ && _)) Some(hf(o map get))
+        if(o.foldLeft(true)(isDefined)(_ && _)) Some(f.hlisted(o map get))
         else None
-    unhlister(lifted)
-  }
+    }.unhlisted
 }

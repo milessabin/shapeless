@@ -129,7 +129,7 @@ object Functions {
     def apply(f : F) : Out
   }
   
-  implicit def fnUnHLister[F, Out0](implicit fnUnHLister : FnUnHLister0[F, Out0]) = new FnHLister[F] {
+  implicit def fnUnHLister[F, Out0](implicit fnUnHLister : FnUnHLister0[F, Out0]) = new FnUnHLister[F] {
     type Out = Out0
     def apply(f : F) : Out = fnUnHLister(f)
   }
