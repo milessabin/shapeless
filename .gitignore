@@ -4,5 +4,6 @@
 .project
 .history
 .lib
+.settings
 target/
 *.swp
