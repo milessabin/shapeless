@@ -1,4 +1,4 @@
-name := "rank-n-poly"
+name := "shapeless"
 
 version := "1.0"
 
