@@ -547,4 +547,44 @@ class HListTests {
     typed[Int :: String :: Int :: HNil](z5)
     assertEquals(2 :: "a*" :: 2 :: HNil, z5)
   }
+  
+  @Test
+  def testUnapply {
+    val l = 1 :: true :: "foo" :: 2.0 :: HNil
+    val l2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    
+    val is = l match {
+      case i :: true :: s :: 2.0 :: HNil => (i, s) 
+    }
+    
+    typed[(Int, String)](is)
+    assertEquals(1, is._1)
+    assertEquals("foo", is._2)
+
+    val is2 = (l : Any) match {
+      case (i : Int) :: true :: (s : String) :: 2.0 :: HNil => (i, s)
+      case _ => sys.error("Not matched")
+    }
+
+    typed[(Int, String)](is2)
+    assertEquals(1, is2._1)
+    assertEquals("foo", is2._2)
+    
+    val tl = l2 match {
+      case 23 :: 3.0 :: s :: xs => (s, xs)
+    }
+    
+    typed[(String, Unit :: String :: Boolean :: Long :: HNil)](tl)
+    assertEquals("foo", tl._1)
+    assertEquals(() :: "bar" :: true :: 5L :: HNil, tl._2)
+
+    val tl2 = (l2 : Any) match {
+      case 23 :: 3.0 :: (s : String) :: xs => (s, xs)
+      case _ => sys.error("Not matched")
+    }
+    
+    typed[(String, HList)](tl2)
+    assertEquals("foo", tl2._1)
+    assertEquals(() :: "bar" :: true :: 5L :: HNil, tl2._2)
+  }
 }

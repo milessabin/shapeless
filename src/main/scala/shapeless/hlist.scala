@@ -39,6 +39,7 @@ case object HNil extends HNil
 
 trait LowPriorityHList {
   type ::[+H, +T <: HList] = HCons[H, T]
+  val :: = HCons
 
   final class Ops[L <: HList](l : L) {
     def head(implicit c : IsHCons[L]) : c.H = c.head(l) 
