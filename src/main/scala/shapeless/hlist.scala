@@ -16,10 +16,6 @@
 
 package shapeless
 
-import PolyFun._
-import Nat._
-import Tuples._
-
 // TODO Value/type contains
 // TODO Lenses
 // TODO Unified comprehensions
@@ -38,6 +34,10 @@ trait HNil extends HList {
 case object HNil extends HNil
 
 trait LowPriorityHList {
+  import Poly._
+  import Nat._
+  import Tuples._
+
   type ::[+H, +T <: HList] = HCons[H, T]
   val :: = HCons
   

@@ -17,7 +17,8 @@
 package shapeless
 
 object SybClass {
-  import PolyFun._
+  import TypeOperators._
+  import Poly._
   import HList._
   
   trait Data[HF <: HRFn, T] {

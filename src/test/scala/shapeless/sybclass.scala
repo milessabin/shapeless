@@ -17,11 +17,12 @@
 package shapeless
 
 class SybClassTests {
-  import org.junit.{ Ignore, Test }
+  import org.junit.Test
   import org.junit.Assert._
 
   import SybClass._
-  import PolyFun._
+  import TypeOperators._
+  import Poly._
   import HList._
 
   def typed[T](t : => T) {}

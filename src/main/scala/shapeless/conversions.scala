@@ -18,7 +18,7 @@ package shapeless
 
 object Tuples {
   import HList._
-  import PolyFun._
+  import Poly._
   
   trait HLister[-T <: Product] {
     type Out <: HList
@@ -76,7 +76,7 @@ object Tuples {
 }
 
 object Functions {
-  import PolyFun._
+  import Poly._
   import HList._
   import Tuples._
   

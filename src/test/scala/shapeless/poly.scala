@@ -19,8 +19,9 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-class PolyFunTests {
-  import PolyFun._
+class PolyTests {
+  import TypeOperators._
+  import Poly._
   
   def typed[T](t : => T) {}
 
@@ -38,7 +39,7 @@ class PolyFunTests {
   implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
   
   @Test
-  def testPolyFun {
+  def testHRFn {
     implicitly[choose.λ[Int]]
     implicitly[Case[choose.type, Set[Int] => Option[Int]]]
     
@@ -177,7 +178,7 @@ class PolyFunTests {
   
   @Test
   def testPolyVal {
-    import PolyFun._
+    import Poly._
 
     val i1 = zero[Int]
     typed[Int](i1)

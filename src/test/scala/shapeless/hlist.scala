@@ -22,7 +22,7 @@ import org.junit.Assert._
 class HListTests {
   import HList._
   import Typeable._
-  import PolyFun._
+  import Poly._
   import Traversables._
   import Nat._
   import Tuples._

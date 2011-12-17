@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class LiftTests {
-  import PolyFun._
+  import Poly._
   import HList._
   import Tuples._
   import Functions._
