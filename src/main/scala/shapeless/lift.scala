@@ -16,7 +16,7 @@
 
 package shapeless
 
-object LiftOFn {
+object Lift {
   import PolyFun._
   import HList._
   import Functions._

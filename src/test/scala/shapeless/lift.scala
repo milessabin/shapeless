@@ -19,12 +19,12 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-class LiftOFnTests {
+class LiftTests {
   import PolyFun._
   import HList._
   import Tuples._
   import Functions._
-  import LiftOFn._
+  import Lift._
   
   def typed[T](t : => T) {}
 
