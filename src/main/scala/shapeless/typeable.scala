@@ -146,12 +146,42 @@ object Typeable extends LowPriorityTypeable {
     }
   }
   
+  implicit def tuple1Typeable[A](implicit castA : Typeable[A]) = new Typeable[Tuple1[A]] {
+    def cast(t : Any) : Option[Tuple1[A]] = {
+      if(t == null) Some(t.asInstanceOf[Tuple1[A]])
+      else if(t.isInstanceOf[Tuple1[_]]) {
+        val p = t.asInstanceOf[Tuple1[_]]
+        for(a <- p._1.cast[A]) yield t.asInstanceOf[Tuple1[A]]
+      } else None
+    }
+  }
+
   implicit def tuple2Typeable[A, B](implicit castA : Typeable[A], castB : Typeable[B]) = new Typeable[(A, B)] {
     def cast(t : Any) : Option[(A, B)] = {
       if(t == null) Some(t.asInstanceOf[(A, B)])
       else if(t.isInstanceOf[(_, _)]) {
         val p = t.asInstanceOf[(_, _)]
         for(a <- p._1.cast[A]; b <- p._2.cast[B]) yield t.asInstanceOf[(A, B)]
+      } else None
+    }
+  }
+
+  implicit def tuple2Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) = new Typeable[(A, B, C)] {
+    def cast(t : Any) : Option[(A, B, C)] = {
+      if(t == null) Some(t.asInstanceOf[(A, B, C)])
+      else if(t.isInstanceOf[(_, _, _)]) {
+        val p = t.asInstanceOf[(_, _, _)]
+        for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]) yield t.asInstanceOf[(A, B, C)]
+      } else None
+    }
+  }
+
+  implicit def tuple2Typeable[A, B, C, D](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) = new Typeable[(A, B, C, D)] {
+    def cast(t : Any) : Option[(A, B, C, D)] = {
+      if(t == null) Some(t.asInstanceOf[(A, B, C, D)])
+      else if(t.isInstanceOf[(_, _, _, _)]) {
+        val p = t.asInstanceOf[(_, _, _, _)]
+        for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]; d <- p._4.cast[D]) yield t.asInstanceOf[(A, B, C, D)]
       } else None
     }
   }
