@@ -570,14 +570,13 @@ class HListTests {
     assertEquals(1, is2._1)
     assertEquals("foo", is2._2)
     
-    import HList.{ :: => #: }
-    import scala.collection.immutable.::
+    import ListCompat._
     
     val tl = l2 match {
       case 23 #: 3.0 #: s #: xs => (s, xs)
     }
     
-    typed[(String, Unit #: String #: Boolean #: Long #: HNil)](tl)
+    typed[(String, Unit :: String :: Boolean :: Long :: HNil)](tl)
     assertEquals("foo", tl._1)
     assertEquals(() :: "bar" :: true :: 5L :: HNil, tl._2)
 
@@ -605,5 +604,15 @@ class HListTests {
     }
     typed[List[Int]](tll2)
     assertEquals(List(2, 3, 4), tll2)
+    
+    val mixed = 23 :: "foo" :: (1 :: 2 :: 3 :: 4 :: 5 :: Nil) :: false :: () :: HNil
+    val tmixed = mixed match {
+      case _ #: _ #: (_ :: 2 :: x :: tl1) #: tl2 => (x, tl1, tl2) 
+      case _ => sys.error("Not matched")
+    }
+    typed[(Int, List[Int], Boolean :: Unit :: HNil)](tmixed)
+    assertEquals(3, tmixed._1)
+    assertEquals(4 :: 5 :: Nil, tmixed._2)
+    assertEquals(false :: () :: HNil, tmixed._3)
   }
 }
