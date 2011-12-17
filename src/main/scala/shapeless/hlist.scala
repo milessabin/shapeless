@@ -16,10 +16,6 @@
 
 package shapeless
 
-// TODO Value/type contains
-// TODO Lenses
-// TODO Unified comprehensions
-
 sealed trait HList
 
 final case class HCons[+H, +T <: HList](head : H, tail : T) extends HList {
