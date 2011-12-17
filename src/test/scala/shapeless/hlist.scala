@@ -27,24 +27,66 @@ class HListTests {
   import Nat._
   import Tuples._
 
+  type SI = Set[Int] :: HNil
+  type OI = Option[Int] :: HNil
+
+  type SISS = Set[Int] :: Set[String] :: HNil
+  type OIOS = Option[Int] :: Option[String] :: HNil
+    
+  type ISII = Int :: String :: Int :: Int :: HNil
+  type IIII = Int :: Int :: Int :: Int :: HNil
+  type IYII = Int :: Any :: Int :: Int :: HNil
+
+  type OIOSOIOI = Option[Int] :: Option[String] :: Option[Int] :: Option[Int] :: HNil
+  type SISSSISI = Set[Int] :: Set[String] :: Set[Int] :: Set[Int] :: HNil
+
+  type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
+  
+  trait Fruit
+  case class Apple() extends Fruit
+  case class Pear() extends Fruit
+  case class Banana() extends Fruit
+  
+  type YYYY = Any :: Any :: Any :: Any :: HNil
+  type FF = Fruit :: Fruit :: HNil
+  type AP = Apple :: Pear :: HNil
+  type BP = Banana :: Pear :: HNil
+  type AF = Apple :: Fruit :: HNil
+  type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
+  type APAP = Apple :: Pear :: Apple :: Pear :: HNil
+  type APBP = Apple :: Pear :: Banana :: Pear :: HNil
+  type APB = Apple :: Pear :: Banana :: HNil
+  type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
+  type PABP = Pear :: Apple :: Banana :: Pear :: HNil
+  
+  val a : Apple = Apple()
+  val p : Pear = Pear()
+  val b : Banana = Banana()
+  val f : Fruit = new Fruit {}
+
+  val ap : AP = a :: p :: HNil
+  val bp : BP = b :: p :: HNil
+  val apap : APAP = a :: p :: a :: p :: HNil
+  val apbp : APBP = a :: p :: b :: p :: HNil
+
   def typed[T](t : => T) {}
   
   @Test
-  def test {
+  def testBasics {
     val l = 1 :: "foo" :: 2.0 :: HNil
+    
     typed[Int](l.head)
     assertEquals(1, l.head)
+    
     typed[String](l.tail.head) 
-    assertEquals("foo", l.tail.head) 
+    assertEquals("foo", l.tail.head)
+    
     typed[Double](l.tail.tail.head)
     assertEquals(2.0, l.tail.tail.head, Double.MinPositiveValue)
-
-    type SI = Set[Int] :: HNil
-    type OI = Option[Int] :: HNil
-
-    type SISS = Set[Int] :: Set[String] :: HNil
-    type OIOS = Option[Int] :: Option[String] :: HNil
-    
+  }
+  
+  @Test
+  def testMap {
     implicitly[MapperAux[choose.type, HNil, HNil]]
     implicitly[Case[choose.type, Set[Int] => Option[Int]]]
     implicitly[choose.λ[Int]]
@@ -60,38 +102,42 @@ class HListTests {
     typed[OIOS](o2)
     assertEquals(Option(1) :: Option("foo") :: HNil, o2)
     
-    type ISII = Int :: String :: Int :: Int :: HNil
-    type IIII = Int :: Int :: Int :: Int :: HNil
-    type IYII = Int :: Any :: Int :: Int :: HNil
-    type OIOSOIOI = Option[Int] :: Option[String] :: Option[Int] :: Option[Int] :: HNil
-    type SISSSISI = Set[Int] :: Set[String] :: Set[Int] :: Set[Int] :: HNil
+    val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
 
+    val l2 = l1 map singleton
+    typed[SISSSISI](l2)
+    assertEquals(Set(1) :: Set("foo") :: Set(2) :: Set(3) :: HNil, l2)
+
+    val l3 = l1 map option
+    typed[OIOSOIOI](l3)
+    assertEquals(Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil, l3)
+
+    val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
+    
+    val l5 = l4 map get
+    typed[ISII](l5)
+    assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, l5)
+    
+    typed[Int](l5.head)
+    typed[String](l5.tail.head)
+    typed[Int](l5.tail.tail.head)
+    typed[Int](l5.tail.tail.tail.head)
+    
+    val l6 = l1 map identity
+    typed[ISII](l6)
+    assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, l6)
+
+    val l7 = l4 map isDefined
+    typed[BBBB](l7)
+    assertEquals(true :: true :: true :: true :: HNil, l7)
+  }
+  
+  @Test
+  def testConformance {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
     typed[Any :: AnyRef :: Any :: Any :: HNil](l1)
     assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, l1)
 
-    trait Fruit
-    case class Apple() extends Fruit
-    case class Pear() extends Fruit
-    case class Banana() extends Fruit
-    
-    type YYYY = Any :: Any :: Any :: Any :: HNil
-    type FF = Fruit :: Fruit :: HNil
-    type AP = Apple :: Pear :: HNil
-    type BP = Banana :: Pear :: HNil
-    type AF = Apple :: Fruit :: HNil
-    type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
-    type APAP = Apple :: Pear :: Apple :: Pear :: HNil
-    type APBP = Apple :: Pear :: Banana :: Pear :: HNil
-    type APB = Apple :: Pear :: Banana :: HNil
-    type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
-    type PABP = Pear :: Apple :: Banana :: Pear :: HNil
-    
-    val a : Apple = Apple()
-    val p : Pear = Pear()
-    val b : Banana = Banana()
-    val f : Fruit = new Fruit {}
-    
     val ap = a :: p :: HNil
     typed[AP](ap)
     val bp = b :: p :: HNil
@@ -102,6 +148,10 @@ class HListTests {
     typed[APBP](apbp)
     val ffff : FFFF = apap
     typed[FFFF](ffff)
+  }
+  
+  @Test
+  def testInitLast {
     
     val lp = apbp.last
     typed[Pear](lp)
@@ -110,7 +160,10 @@ class HListTests {
     val iapb = apbp.init
     typed[APB](iapb)
     assertEquals(a :: p :: b :: HNil, iapb)
-    
+  }
+  
+  @Test
+  def testReverse {
     val pbpa = apbp.reverse
     typed[PBPA](pbpa)
     assertEquals(p :: b :: p :: a :: HNil, pbpa)
@@ -119,7 +172,10 @@ class HListTests {
     val ral = al.reverse
     typed[Apple :: HNil](ral)
     assertEquals(a :: HNil, ral)
+  }
     
+  @Test
+  def testPrepend {
     val apbp2 = ap ::: bp
     typed[APBP](apbp2)
     assertEquals(a :: p :: b :: p :: HNil, apbp2)
@@ -132,7 +188,10 @@ class HListTests {
     val pabp = ap reverse_::: bp
     typed[PABP](pabp)
     assertEquals(p :: a :: b :: p :: HNil, pabp)
+  }
     
+  @Test
+  def testUnifier {
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
     val u21 = lub(a, a)
@@ -214,7 +273,10 @@ class HListTests {
     //typed[UnifierAux[APAP, FFFF]](u10)
     val u11 = getUnifier(apbp)
     //typed[UnifierAux[APBP, FFFF]](u11)
+  }
     
+  @Test
+  def testToList {
     val fruits1 = apap.toList
     typed[List[Fruit]](fruits1)
     assertEquals(List(a, p, a, p), fruits1)
@@ -228,6 +290,8 @@ class HListTests {
     typed[APBP](fruits3.get)
     assertEquals(apbp, fruits3.get)
 
+    val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
+
     val stuff = l1.toList
     typed[List[Any]](stuff)
     assertEquals(List(1, "foo", 2, 3), stuff)
@@ -237,34 +301,7 @@ class HListTests {
     typed[ISII](stuff2.get)
     assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, stuff2.get)
 
-    val moreStuff = (a :: "foo" :: p :: HNil).toList
-    typed[List[Any]](moreStuff)
-    
-    val l2 = l1 map singleton
-    typed[SISSSISI](l2)
-    assertEquals(Set(1) :: Set("foo") :: Set(2) :: Set(3) :: HNil, l2)
-
-    val l3 = l1 map option
-    typed[OIOSOIOI](l3)
-    assertEquals(Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil, l3)
-
     val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
-    
-    val l5 = l4 map get
-    typed[ISII](l5)
-    assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, l5)
-    
-    typed[Int](l5.head)
-    typed[String](l5.tail.head)
-    typed[Int](l5.tail.tail.head)
-    typed[Int](l5.tail.tail.tail.head)
-    
-    val l6 = l1 map identity
-    typed[ISII](l6)
-    assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, l6)
-
-    type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
-    
     val l7 = l4 map isDefined
     typed[BBBB](l7)
     assertEquals(true :: true :: true :: true :: HNil, l7)
@@ -272,6 +309,12 @@ class HListTests {
     val ll2 = l7.toList
     typed[Boolean](ll2.head)
 
+    val moreStuff = (a :: "foo" :: p :: HNil).toList
+    typed[List[Any]](moreStuff)
+  }
+  
+  @Test
+  def testFoldLeft {
     implicitly[MapperAux[isDefined.type, HNil, HNil]]
     implicitly[MapperAux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
     
@@ -295,18 +338,40 @@ class HListTests {
     
     val at0 = sn1(_0)
     typed[Int](at0)
+    assertEquals(23, at0)
+    
     val at1 = sn1(_1)
     typed[Double](at1)
+    assertEquals(3.0, at1, Double.MinPositiveValue)
+    
     val at2 = sn1(_2)
     typed[String](at2)
+    assertEquals("foo", at2)
+    
     val at3 = sn1(_3)
     typed[Unit](at3)
+    assertEquals((), at3)
+    
     val at4 = sn1(_4)
     typed[String](at4)
+    assertEquals("bar", at4)
+    
     val at5 = sn1(_5)
     typed[Boolean](at5)
+    assertEquals(true, at5)
+    
     val at6 = sn1(_6)
     typed[Long](at6)
+    assertEquals(5L, at6)
+    
+    val sn2 =
+      0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: 
+      10 :: 11 :: 12 :: 13 :: 14 :: 15 :: 16 :: 17 :: 18 :: 19 :: 
+      20 :: 21 :: 22 :: HNil
+      
+    val at22 = sn2(_22)
+    typed[Int](at22)
+    assertEquals(22, at22)
   }
   
   @Test
