@@ -631,10 +631,11 @@ object AtAux {
     def apply(l : H :: T) : H = l.head
   }
   
-  implicit def hlistAtN[H, T <: HList, N <: Nat, Out](implicit att : AtAux[T, N, Out]) = new AtAux[H :: T, Succ[N], Out] {
-    def apply(l : H :: T) : Out = att(l.tail) 
-  }
-}  
+  implicit def hlistAtN[H, T <: HList, N <: Nat, Out](implicit att : AtAux[T, N, Out]) =
+    new AtAux[H :: T, Succ[N], Out] {
+      def apply(l : H :: T) : Out = att(l.tail) 
+    }
+}
 
 /**
  * Type class supporting removal of the first ''n'' elements of this `HList`. Available only if this `HList` has at
