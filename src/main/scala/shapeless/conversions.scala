@@ -63,14 +63,16 @@ object Tuples {
   object hlisted {
     def apply[T <: Product](t : T)(implicit hlister : HLister[T]) : hlister.Out = hlister(t)
   }
-  implicit def hlisted1[T <: Product](implicit hlister : HLister[T]) = new Case[hlisted.type, T => hlister.Out](hlister.apply(_))
+  implicit def hlisted1[T <: Product](implicit hlister : HLister[T]) =
+    new Case[hlisted.type, T => hlister.Out](hlister.apply(_))
 
   implicit def univInstHListed[F, G](h : hlisted.type)(implicit c : Case[hlisted.type, F => G]) : F => G = c.value
   
   object tupled {
     def apply[L <: HList](l : L)(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
   }
-  implicit def tupled1[L <: HList](implicit tupler : Tupler[L]) = new Case[tupled.type, L => tupler.Out](tupler.apply(_))
+  implicit def tupled1[L <: HList](implicit tupler : Tupler[L]) =
+    new Case[tupled.type, L => tupler.Out](tupler.apply(_))
   
   implicit def univInstTupled[F, G](t : tupled.type)(implicit c : Case[tupled.type, F => G]) : F => G = c.value
 }
@@ -113,7 +115,8 @@ object Functions {
   }
   
   implicit def fnHLister4[A, B, C, D, R] = new FnHLister0[(A, B, C, D) => R, (A :: B :: C :: D :: HNil) => R] {
-    def apply(f : (A, B, C, D) => R) = (l : A :: B :: C :: D :: HNil) => f(l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
+    def apply(f : (A, B, C, D) => R) =
+      (l : A :: B :: C :: D :: HNil) => f(l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
   }
   
   trait FnHListOps[HLFn] {
@@ -186,8 +189,10 @@ object Traversables {
     }
   }
   
-  implicit def hlistFromTraversable[T, OutH, OutT <: HList](implicit flt : FromTraversable[T, OutT], oc : Typeable[OutH]) = new FromTraversable[T, OutH :: OutT] {
-    def apply(l : Traversable[T]) : Option[OutH :: OutT] = for(e <- l.headOption; h <- e.cast[OutH]; t <- flt(l.tail)) yield h :: t
+  implicit def hlistFromTraversable[T, OutH, OutT <: HList]
+    (implicit flt : FromTraversable[T, OutT], oc : Typeable[OutH]) = new FromTraversable[T, OutH :: OutT] {
+      def apply(l : Traversable[T]) : Option[OutH :: OutT] =
+        for(e <- l.headOption; h <- e.cast[OutH]; t <- flt(l.tail)) yield h :: t
   }
   
   trait TraversableOps[T] {

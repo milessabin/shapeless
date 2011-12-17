@@ -169,9 +169,10 @@ trait LowPriorityHList {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistLeftFolder[H, T <: HList, R, HF](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) = new LeftFolder[H :: T, R, HF] {
-    def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
-  }
+  implicit def hlistLeftFolder[H, T <: HList, R, HF](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) =
+    new LeftFolder[H :: T, R, HF] {
+      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
+    }
   
   trait Lub[-A, -B, +Out] {
     def left(a : A) : Out
@@ -203,9 +204,10 @@ trait LowPriorityHList {
     def apply(l : T :: HNil) = l
   }
   
-  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList](implicit u : Lub[H1, H2, L], lt : Unifier0[L :: T, L :: Out]) = new Unifier0[H1 :: H2 :: T, L :: L :: Out] {
-    def apply(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
-  }
+  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList]
+    (implicit u : Lub[H1, H2, L], lt : Unifier0[L :: T, L :: Out]) = new Unifier0[H1 :: H2 :: T, L :: L :: Out] {
+      def apply(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
+    }
 
   trait ToList[L <: HList, +Lub] {
     def apply(l : L) : List[Lub]
@@ -215,9 +217,10 @@ trait LowPriorityHList {
     def apply(l : T :: HNil) = List(l.head)
   }
   
-  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) = new ToList[H1 :: H2 :: T, L] {
-    def apply(l : H1 :: H2 :: T) = u.left(l.head) :: ttl(l.tail)
-  }
+  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) =
+    new ToList[H1 :: H2 :: T, L] {
+      def apply(l : H1 :: H2 :: T) = u.left(l.head) :: ttl(l.tail)
+    }
   
   trait Tupler[L <: HList] {
     type Out <: Product
@@ -292,9 +295,10 @@ trait LowPriorityHList {
     def apply(l : H :: HNil) : HNil = HNil
   }
   
-  implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : Init0[T, OutT]) = new Init0[H :: T, H :: OutT] {
-    def apply(l : H :: T) : H :: OutT = l.head :: it(l.tail)
-  }
+  implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : Init0[T, OutT]) =
+    new Init0[H :: T, H :: OutT] {
+      def apply(l : H :: T) : H :: OutT = l.head :: it(l.tail)
+    }
   
   trait Selector[L <: HList, U] {
     def apply(l : L) : U
@@ -353,9 +357,10 @@ trait LowPriorityHList {
     def apply(l : L) : L = l
   }
   
-  implicit def hlistDrop2[H, T <: HList, N <: Nat, Out <: HList](implicit dt : Drop0[T, N, Out]) = new Drop0[H :: T, Succ[N], Out] {
-    def apply(l : H :: T) : Out = dt(l.tail)
-  }
+  implicit def hlistDrop2[H, T <: HList, N <: Nat, Out <: HList](implicit dt : Drop0[T, N, Out]) =
+    new Drop0[H :: T, Succ[N], Out] {
+      def apply(l : H :: T) : Out = dt(l.tail)
+    }
 
   trait Take[L <: HList, N <: Nat] {
     type Out <: HList
@@ -378,9 +383,10 @@ trait LowPriorityHList {
     def apply(l : L) : HNil = HNil
   }
   
-  implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList](implicit tt : Take0[T, N, Out]) = new Take0[H :: T, Succ[N], H :: Out] {
-    def apply(l : H :: T) : H :: Out = l.head :: tt(l.tail)
-  }
+  implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList](implicit tt : Take0[T, N, Out]) =
+    new Take0[H :: T, Succ[N], H :: Out] {
+      def apply(l : H :: T) : H :: Out = l.head :: tt(l.tail)
+    }
   
   trait Split[L <: HList, N <: Nat] {
     type Out = (P, S)
@@ -437,9 +443,10 @@ trait LowPriorityHList {
   }
   
   implicit def hlistReverseSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P, S]
-    (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]) = new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
-    def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = st(accS.head :: accP, accS.tail)
-  }
+    (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]) =
+      new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
+        def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = st(accS.head :: accP, accS.tail)
+      }
 
   trait SplitLeft[L <: HList, U] {
     type Out = (P, S)
@@ -488,9 +495,10 @@ trait LowPriorityHList {
   }
 
   implicit def hlistReverseSplitLeft2[AccP <: HList, AccSH, AccST <: HList, U, P, S]
-    (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]) = new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
-    def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = slt(accS.head :: accP, accS.tail)
-  }
+    (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]) =
+      new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
+        def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = slt(accS.head :: accP, accS.tail)
+      }
 
   trait SplitRight[L <: HList, U] {
     type Out = (P, S)
@@ -513,14 +521,16 @@ trait LowPriorityHList {
   }
 
   implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
-    (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) = new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
-  }
+    (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) =
+      new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+        def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
+      }
 
   implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
-    (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) = new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
-  }
+    (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) =
+      new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+        def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
+      }
   
   trait ReverseSplitRight[L <: HList, U] {
     type Out = (P, S)
@@ -543,14 +553,16 @@ trait LowPriorityHList {
   }
   
   implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
-    (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) = new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-    def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
-  }
+    (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) =
+      new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+        def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
+      }
   
   implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
-    (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) = new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-    def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
-  }
+    (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) =
+      new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+        def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
+      }
 
   trait Reverse[L <: HList] {
     type Out <: HList
@@ -572,19 +584,21 @@ trait LowPriorityHList {
     def apply(acc : Out, l : HNil) : Out = acc
   }
   
-  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList](implicit rt : Reverse0[InH :: Acc, InT, Out]) = new Reverse0[Acc, InH :: InT, Out] {
-    def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
-  }
+  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList]
+    (implicit rt : Reverse0[InH :: Acc, InT, Out]) = new Reverse0[Acc, InH :: InT, Out] {
+      def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
+    }
   
   trait Prepend[P <: HList, S <: HList] {
     type Out
     def apply(prefix : P, suffix : S) : Out
   }
 
-  implicit def prepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : Prepend0[P, S, Out0]) = new Prepend[P, S] {
-    type Out = Out0
-    def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
-  }
+  implicit def prepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : Prepend0[P, S, Out0]) =
+    new Prepend[P, S] {
+      type Out = Out0
+      def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
+    }
 
   type PrependAux[P <: HList, S <: HList, Out <: HList] = Prepend0[P, S, Out]
   
@@ -596,19 +610,21 @@ trait LowPriorityHList {
     def apply(prefix : HNil, suffix : S) : S = suffix 
   }
   
-  implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : Prepend0[PT, S, OutT]) = new Prepend0[PH :: PT, S, PH :: OutT] {
-    def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = prefix.head :: pt(prefix.tail, suffix)
-  }
+  implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : Prepend0[PT, S, OutT]) =
+    new Prepend0[PH :: PT, S, PH :: OutT] {
+      def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = prefix.head :: pt(prefix.tail, suffix)
+    }
 
   trait ReversePrepend[P <: HList, S <: HList] {
     type Out <: HList
     def apply(prefix : P, suffix : S) : Out
   }
 
-  implicit def reversePrepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : ReversePrepend0[P, S, Out0]) = new ReversePrepend[P, S] {
-    type Out = Out0
-    def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
-  }
+  implicit def reversePrepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : ReversePrepend0[P, S, Out0]) =
+    new ReversePrepend[P, S] {
+      type Out = Out0
+      def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
+    }
 
   type ReversePrependAux[P <: HList, S <: HList, Out <: HList] = ReversePrepend0[P, S, Out]
 
@@ -620,19 +636,21 @@ trait LowPriorityHList {
     def apply(prefix : HNil, suffix : S) : S = suffix 
   }
   
-  implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList](implicit rpt : ReversePrepend0[PT, PH :: S, Out]) = new ReversePrepend0[PH :: PT, S, Out] {
-    def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
-  }
+  implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList]
+    (implicit rpt : ReversePrepend0[PT, PH :: S, Out]) = new ReversePrepend0[PH :: PT, S, Out] {
+      def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
+    }
   
   trait ConstMapper[C, L <: HList] {
     type Out <: HList
     def apply(c : C, l : L) : Out
   }
   
-  implicit def constMapper[L <: HList, C, Out0 <: HList](implicit mc : ConstMapper0[C, L, Out0]) = new ConstMapper[C, L] {
-    type Out = Out0
-    def apply(c : C, l : L) : Out = mc(c, l)
-  } 
+  implicit def constMapper[L <: HList, C, Out0 <: HList](implicit mc : ConstMapper0[C, L, Out0]) =
+    new ConstMapper[C, L] {
+      type Out = Out0
+      def apply(c : C, l : L) : Out = mc(c, l)
+    } 
   
   type ConstMapperAux[C, L <: HList, Out <: HList] = ConstMapper0[C, L, Out]
   
@@ -644,19 +662,21 @@ trait LowPriorityHList {
     def apply(c : C, l : HNil) = l 
   }
   
-  implicit def hlistConstMapper[H, T <: HList, C, OutT <: HList](implicit mct : ConstMapper0[C, T, OutT]) = new ConstMapper0[C, H :: T, C :: OutT] {
-    def apply(c : C, l : H :: T) : C :: OutT = c :: mct(c, l.tail)  
-  }
+  implicit def hlistConstMapper[H, T <: HList, C, OutT <: HList](implicit mct : ConstMapper0[C, T, OutT]) =
+    new ConstMapper0[C, H :: T, C :: OutT] {
+      def apply(c : C, l : H :: T) : C :: OutT = c :: mct(c, l.tail)  
+    }
   
   trait ZipOne[H <: HList, T <: HList] {
     type Out <: HList
     def apply(h : H, t : T) : Out
   }
   
-  implicit def zipOne[H <: HList, T <: HList, Out0 <: HList](implicit zipOne : ZipOne0[H, T, Out0]) = new ZipOne[H, T] {
-    type Out = Out0
-    def apply(h : H, t : T) : Out = zipOne(h, t)
-  }
+  implicit def zipOne[H <: HList, T <: HList, Out0 <: HList](implicit zipOne : ZipOne0[H, T, Out0]) =
+    new ZipOne[H, T] {
+      type Out = Out0
+      def apply(h : H, t : T) : Out = zipOne(h, t)
+    }
   
   type ZipOneAux[H <: HList, T <: HList, Out <: HList] = ZipOne0[H, T, Out]
   
@@ -676,10 +696,10 @@ trait LowPriorityHList {
     def apply(h : H :: HNil, t : T :: HNil) : (H :: T) :: HNil = (h.head :: t.head) :: HNil 
   }
   
-  implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, OutT <: HList](implicit zot : ZipOne0[HT, TT, OutT]) =
-    new ZipOne0[HH :: HT, TH :: TT, (HH :: TH) :: OutT] {
-    def apply(h : HH :: HT, t : TH :: TT) : (HH :: TH) :: OutT = (h.head :: t.head) :: zot(h.tail, t.tail)
-  }
+  implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, OutT <: HList]
+    (implicit zot : ZipOne0[HT, TT, OutT]) = new ZipOne0[HH :: HT, TH :: TT, (HH :: TH) :: OutT] {
+      def apply(h : HH :: HT, t : TH :: TT) : (HH :: TH) :: OutT = (h.head :: t.head) :: zot(h.tail, t.tail)
+    }
   
   trait Transposer[L <: HList] {
     type Out <: HList
@@ -701,13 +721,15 @@ trait LowPriorityHList {
     def apply(l : HNil) = l 
   }
   
-  implicit def hlistTransposer1[H <: HList, MC <: HList, Out <: HList](implicit mc : ConstMapperAux[HNil, H, MC], zo : ZipOneAux[H, MC, Out]) = new Transposer0[H :: HNil, Out] {
-    def apply(l : H :: HNil) : Out = zo(l.head, mc(HNil, l.head))
-  }
+  implicit def hlistTransposer1[H <: HList, MC <: HList, Out <: HList]
+    (implicit mc : ConstMapperAux[HNil, H, MC], zo : ZipOneAux[H, MC, Out]) = new Transposer0[H :: HNil, Out] {
+      def apply(l : H :: HNil) : Out = zo(l.head, mc(HNil, l.head))
+    }
   
-  implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out <: HList](implicit tt : Transposer0[T, OutT], zo : ZipOne0[H, OutT, Out]) = new Transposer0[H :: T, Out] {
-    def apply(l : H :: T) : Out = zo(l.head, tt(l.tail))
-  }
+  implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out <: HList]
+    (implicit tt : Transposer0[T, OutT], zo : ZipOne0[H, OutT, Out]) = new Transposer0[H :: T, Out] {
+      def apply(l : H :: T) : Out = zo(l.head, tt(l.tail))
+    }
   
   trait Zipper[L <: HList] {
     type Out <: HList
@@ -741,10 +763,11 @@ trait LowPriorityHList {
     def apply(fl : FL, al : AL) : Out
   }
   
-  implicit def zipApply[FL <: HList, AL <: HList, Out0 <: HList](implicit zap : ZipApply0[FL, AL, Out0]) = new ZipApply[FL, AL] {
-    type Out = Out0
-    def apply(fl : FL, al : AL) : Out = zap(fl, al)
-  }
+  implicit def zipApply[FL <: HList, AL <: HList, Out0 <: HList](implicit zap : ZipApply0[FL, AL, Out0]) =
+    new ZipApply[FL, AL] {
+      type Out = Out0
+      def apply(fl : FL, al : AL) : Out = zap(fl, al)
+    }
   
   type ZipApplyAux[FL <: HList, AL <: HList, Out <: HList] = ZipApply0[FL, AL, Out]
   
@@ -756,25 +779,30 @@ trait LowPriorityHList {
     def apply(fl : HNil, al : HNil) : HNil = HNil
   }
   
-  implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList, OutT <: HList](implicit ztt : ZipApply0[FLT, ALT, OutT]) = new ZipApply0[(T => R) :: FLT, T :: ALT, R :: OutT] {
-    def apply(fl : (T => R) :: FLT, al : T :: ALT) : R :: OutT = fl.head(al.head) :: ztt(fl.tail, al.tail) 
-  }
+  implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList, OutT <: HList]
+    (implicit ztt : ZipApply0[FLT, ALT, OutT]) = new ZipApply0[(T => R) :: FLT, T :: ALT, R :: OutT] {
+      def apply(fl : (T => R) :: FLT, al : T :: ALT) : R :: OutT = fl.head(al.head) :: ztt(fl.tail, al.tail) 
+    }
 }
 
 object HList extends LowPriorityHList {
-  implicit def hlistSplitLeft1[P <: HList, SH, ST <: HList] = new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-    def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
-  }
+  implicit def hlistSplitLeft1[P <: HList, SH, ST <: HList] =
+    new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
+      def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+    }
 
-  implicit def hlistReverseSplitLeft1[P <: HList, SH, ST <: HList] = new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-    def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
-  }
+  implicit def hlistReverseSplitLeft1[P <: HList, SH, ST <: HList] =
+    new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
+      def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+    }
   
-  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList](implicit reverse : Reverse[PH :: PT]) = new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
-    def apply(rev : HNil, accP : PH :: PT, accS : S) : (reverse.Out, S) = (accP.reverse, accS)
-  }
+  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList](implicit reverse : Reverse[PH :: PT]) =
+    new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
+      def apply(rev : HNil, accP : PH :: PT, accS : S) : (reverse.Out, S) = (accP.reverse, accS)
+    }
 
-  implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList] = new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
-    def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP, accS)
-  }
+  implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList] =
+    new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
+      def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP, accS)
+    }
 }

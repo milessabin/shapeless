@@ -84,11 +84,12 @@ object Typeable extends LowPriorityTypeable {
     }
   }
   
-  implicit def eitherTypeable[A, B](implicit castA : Typeable[Left[A, B]], castB : Typeable[Right[A, B]]) = new Typeable[Either[A, B]] {
-    def cast(t : Any) : Option[Either[A, B]] = {
-      t.cast[Left[A, B]] orElse t.cast[Right[A, B]]
+  implicit def eitherTypeable[A, B](implicit castA : Typeable[Left[A, B]], castB : Typeable[Right[A, B]]) =
+    new Typeable[Either[A, B]] {
+      def cast(t : Any) : Option[Either[A, B]] = {
+        t.cast[Left[A, B]] orElse t.cast[Right[A, B]]
+      }
     }
-  }
 
   implicit def leftTypeable[A, B](implicit castA : Typeable[A]) = new Typeable[Left[A, B]] {
     def cast(t : Any) : Option[Left[A, B]] = {
@@ -166,23 +167,27 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
-  implicit def tuple3Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) = new Typeable[(A, B, C)] {
-    def cast(t : Any) : Option[(A, B, C)] = {
-      if(t == null) Some(t.asInstanceOf[(A, B, C)])
-      else if(t.isInstanceOf[(_, _, _)]) {
-        val p = t.asInstanceOf[(_, _, _)]
-        for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]) yield t.asInstanceOf[(A, B, C)]
-      } else None
+  implicit def tuple3Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) =
+    new Typeable[(A, B, C)] {
+      def cast(t : Any) : Option[(A, B, C)] = {
+        if(t == null) Some(t.asInstanceOf[(A, B, C)])
+        else if(t.isInstanceOf[(_, _, _)]) {
+          val p = t.asInstanceOf[(_, _, _)]
+          for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]) yield t.asInstanceOf[(A, B, C)]
+        } else None
+      }
     }
-  }
 
-  implicit def tuple4Typeable[A, B, C, D](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) = new Typeable[(A, B, C, D)] {
-    def cast(t : Any) : Option[(A, B, C, D)] = {
-      if(t == null) Some(t.asInstanceOf[(A, B, C, D)])
-      else if(t.isInstanceOf[(_, _, _, _)]) {
-        val p = t.asInstanceOf[(_, _, _, _)]
-        for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]; d <- p._4.cast[D]) yield t.asInstanceOf[(A, B, C, D)]
-      } else None
-    }
-  }
+  implicit def tuple4Typeable[A, B, C, D]
+    (implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) =
+      new Typeable[(A, B, C, D)] {
+        def cast(t : Any) : Option[(A, B, C, D)] = {
+          if(t == null) Some(t.asInstanceOf[(A, B, C, D)])
+          else if(t.isInstanceOf[(_, _, _, _)]) {
+            val p = t.asInstanceOf[(_, _, _, _)]
+            for(a <- p._1.cast[A]; b <- p._2.cast[B]; c <- p._3.cast[C]; d <- p._4.cast[D])
+              yield t.asInstanceOf[(A, B, C, D)]
+          } else None
+        }
+      }
 }

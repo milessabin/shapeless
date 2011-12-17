@@ -73,9 +73,11 @@ object Nat {
   
   trait Sum[A <: Nat, B <: Nat, C <: Nat]
   implicit def sum1[B <: Nat] = new Sum[_0, B, B] {}
-  implicit def sum2[A <: Nat, B <: Nat, C <: Nat](implicit ev : Sum[A, Succ[B], C]) = new Sum[Succ[A], B, C] {}
+  implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
+    (implicit ev : Sum[A, Succ[B], C]) = new Sum[Succ[A], B, C] {}
 
   trait Prod[A <: Nat, B <: Nat, C <: Nat]
   implicit def prod1[B <: Nat] = new Prod[_0, B, _0] {}
-  implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat](implicit ev1 : Prod[A, B, C], ev2 : Sum[B, C, D]) = new Prod[Succ[A], B, D] {}
+  implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
+    (implicit ev1 : Prod[A, B, C], ev2 : Sum[B, C, D]) = new Prod[Succ[A], B, D] {}
 }

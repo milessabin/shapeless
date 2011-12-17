@@ -31,16 +31,18 @@ object SybClass {
     def gmapQ(t : T) : List[HF#G[_]] = Nil
   }
 
-  implicit def pairData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) = new Data[HF, (T, U)] {
-    def gmapQ(t : (T, U)) = List(qt(t._1), qu(t._2))
-  }
-
-  implicit def eitherData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) = new Data[HF, Either[T, U]] {
-    def gmapQ(t : Either[T, U]) = t match {
-      case Left(t) => List(qt(t))
-      case Right(u) => List(qu(u))
+  implicit def pairData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) =
+    new Data[HF, (T, U)] {
+      def gmapQ(t : (T, U)) = List(qt(t._1), qu(t._2))
     }
-  }
+
+  implicit def eitherData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) =
+    new Data[HF, Either[T, U]] {
+      def gmapQ(t : Either[T, U]) = t match {
+        case Left(t) => List(qt(t))
+        case Right(u) => List(qu(u))
+      }
+    }
 
   implicit def optionData[HF <: HRFn, T](implicit qt : Case[HF, T => HF#G[_]]) = new Data[HF, Option[T]] {
     def gmapQ(t : Option[T]) = t.map(qt.value).toList
@@ -50,9 +52,10 @@ object SybClass {
     def gmapQ(t : List[T]) = t.map(qt.value)
   }
   
-  implicit def hlistData[HF <: HRFn, H, T <: HList](implicit qh : Case[HF, H => HF#G[_]], ct : Data[HF, T]) = new Data[HF, H :: T] {
-    def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
-  }
+  implicit def hlistData[HF <: HRFn, H, T <: HList](implicit qh : Case[HF, H => HF#G[_]], ct : Data[HF, T]) =
+    new Data[HF, H :: T] {
+      def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
+    }
   
   trait DataT[HF, T] {
     def gmapT(t : T) : T
@@ -64,16 +67,18 @@ object SybClass {
     def gmapT(t : T) = t
   }
 
-  implicit def pairDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) = new DataT[HF, (T, U)] {
-    def gmapT(t : (T, U)) = (ft(t._1), fu(t._2))
-  }
-
-  implicit def eitherDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) = new DataT[HF, Either[T, U]] {
-    def gmapT(t : Either[T, U]) = t match {
-      case Left(t) => Left(ft(t))
-      case Right(u) => Right(fu(u))
+  implicit def pairDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) =
+    new DataT[HF, (T, U)] {
+      def gmapT(t : (T, U)) = (ft(t._1), fu(t._2))
     }
-  }
+
+  implicit def eitherDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) =
+    new DataT[HF, Either[T, U]] {
+      def gmapT(t : Either[T, U]) = t match {
+        case Left(t) => Left(ft(t))
+        case Right(u) => Right(fu(u))
+      }
+    }
 
   implicit def optionDataT[HF, T](implicit ft : Case[HF, T => T]) = new DataT[HF, Option[T]] {
     def gmapT(t : Option[T]) = t.map(ft.value)
@@ -83,9 +88,10 @@ object SybClass {
     def gmapT(t : List[T]) = t.map(ft.value)
   }
   
-  implicit def hlistDataT[HF <: HRFn, H, T <: HList](implicit fh : Case[HF, H => H], ct : DataT[HF, T]) = new DataT[HF, H :: T] {
-    def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
-  }
+  implicit def hlistDataT[HF <: HRFn, H, T <: HList](implicit fh : Case[HF, H => H], ct : DataT[HF, T]) =
+    new DataT[HF, H :: T] {
+      def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
+    }
 
   case class Node[T](t : T, c : List[Node[T]] = Nil) {
     def fold(f : (T, T) => T) : T = c.map(_.fold(f)).foldLeft(t)(f)
