@@ -166,7 +166,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
-  implicit def tuple2Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) = new Typeable[(A, B, C)] {
+  implicit def tuple3Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) = new Typeable[(A, B, C)] {
     def cast(t : Any) : Option[(A, B, C)] = {
       if(t == null) Some(t.asInstanceOf[(A, B, C)])
       else if(t.isInstanceOf[(_, _, _)]) {
@@ -176,7 +176,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
-  implicit def tuple2Typeable[A, B, C, D](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) = new Typeable[(A, B, C, D)] {
+  implicit def tuple4Typeable[A, B, C, D](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) = new Typeable[(A, B, C, D)] {
     def cast(t : Any) : Option[(A, B, C, D)] = {
       if(t == null) Some(t.asInstanceOf[(A, B, C, D)])
       else if(t.isInstanceOf[(_, _, _, _)]) {
