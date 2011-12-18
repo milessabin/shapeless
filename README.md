@@ -20,27 +20,27 @@ In more concrete terms, selected highlights include,
   type specific cases, and which is interoperable with Scala's ordinary
   monomorphic function values.
   
-    // Function from Sets to Options: no type specific cases
-    object choose extends (Set ~> Option) {
-      def default[T](s : Set[T]) = s.headOption 
-    }
-    
-    // Convertible to a monomorphic function value
-    val lo : List[Option[Int]] = List(Set(1, 3, 5), Set(2, 4, 6)) map choose // == List(Option(1), Option(2))
-    
-    // Function from an arbitrary type to its 'size': type specific cases
-    object size extends (Id ~> Const[Int]#λ) {
-      def default[T](t : T) = 1
-    }
-    implicit def sizeInt = size.λ[Int](x => 1)
-    implicit def sizeString = size.λ[String](s => s.length)
-    implicit def sizeList[T] = size.λ[List[T]](l => l.length)
-    implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+size(t.get))
-    implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
-    
-    size(23) == 1
-    size("foo") == 3
-    size((23, "foo")) == 4
+```// Function from Sets to Options: no type specific cases
+object choose extends (Set ~> Option) {
+  def default[T](s : Set[T]) = s.headOption 
+}
+
+// Convertible to a monomorphic function value
+val lo : List[Option[Int]] = List(Set(1, 3, 5), Set(2, 4, 6)) map choose // == List(Option(1), Option(2))
+
+// Function from an arbitrary type to its 'size': type specific cases
+object size extends (Id ~> Const[Int]#λ) {
+  def default[T](t : T) = 1
+}
+implicit def sizeInt = size.λ[Int](x => 1)
+implicit def sizeString = size.λ[String](s => s.length)
+implicit def sizeList[T] = size.λ[List[T]](l => l.length)
+implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+size(t.get))
+implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
+
+size(23) == 1
+size("foo") == 3
+size((23, "foo")) == 4```
 
 * A `Typeable` type class which provides a type safe cast operation.
 
