@@ -46,12 +46,14 @@ size((23, "foo")) == 4
 
 * A `Typeable` type class which provides a type safe cast operation.
 
+```scala
     val a : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
     val lvs : Option[List[Vector[String]]] = a.cast[List[Vector[String]]]
     lvs.isDefined == true
 
     val lvi : Option[List[Vector[Int]]] = lvs.cast[List[Vector[Int]]]
     lvi.isEmpty == true
+```
 
 * The mother of all Scala `HList`'s, which amongst other things,
     * is covariant.
