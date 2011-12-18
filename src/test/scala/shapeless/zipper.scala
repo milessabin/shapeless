@@ -107,4 +107,14 @@ class ZipperTests {
     typed[String](s9)
     assertEquals("foo", s9)
   }
+  
+  @Test
+  def testEmpty {
+    val l = HNil
+    val z = l.toZipper
+    
+    val l2 = z.insert(23).insert("foo").insert(true).toHList
+    typed[Int :: String :: Boolean :: HNil](l2)
+    assertEquals(23 :: "foo" :: true :: HNil, l2)
+  }
 }

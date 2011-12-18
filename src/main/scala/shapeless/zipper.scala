@@ -16,45 +16,73 @@
 
 package shapeless
 
+/**
+ * Zipper for an `HList`.
+ * 
+ * @author Miles Sabin
+ */
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
   import Zipper._
 
+  /** Move the cursor one place to the right. Available only if not already at the rightmost element. */
   def right(implicit c : IsHCons[R]) = Zipper(suffix.head :: prefix, suffix.tail)
 
+  /** Move the cursor one place to the left. Available only if not already at the leftmost element. */
   def left(implicit c : IsHCons[L]) = Zipper(prefix.tail, prefix.head :: suffix)
   
+  /** Move the cursor ''n'' places to the right. Requires an explicit type argument. Available only if there are
+   * ''n'' places to the right of the cursor. */
   def rightBy[N <: Nat](implicit r : RightBy[N, L, R]) = r(prefix, suffix)
 
+  /** Move the cursor ''n'' places to the right. Available only if there are ''n'' places to the right of the cursor. */
   def rightBy[N <: Nat](n : N)(implicit r : RightBy[N, L, R]) = r(prefix, suffix)
 
+  /** Move the cursor ''n'' places to the left. Requires an explicit type argument. Available only if there are
+   * ''n'' places to the left of the cursor. */
   def leftBy[N <: Nat](implicit l : LeftBy[N, L, R]) = l(prefix, suffix)
 
+  /** Move the cursor ''n'' places to the left. Available only if there are ''n'' places to the right of the cursor. */
   def leftBy[N <: Nat](n : N)(implicit l : LeftBy[N, L, R]) = l(prefix, suffix)
-
+  
+  /** Move the cursor to the first element of type `T` to the right. Available only if there is an element of type `T`
+   * to the right of the cursor.
+   */
   def rightTo[T](implicit r : RightTo[T, L, R]) = r(prefix, suffix)
 
+  /** Move the cursor to the first element of type `T` to the left. Available only if there is an element of type `T`
+   * to the left of the cursor.
+   */
   def leftTo[T](implicit l : LeftTo[T, L, R]) = l(prefix, suffix)
   
+  /** Returns the element at the cursor. Available only if the underlying `HList` is non-empty. */
   def get(implicit c : IsHCons[R]) = suffix.head
 
+  /** Replaces the element at the cursor. Available only if the underlying `HList` is non-empty. */
   def put[E](e : E)(implicit c : IsHCons[R]) = Zipper(prefix, e :: suffix.tail)
 
+  /** Removes the element at the cursor. Available only if the underlying `HList` is non-empty. */
   def delete(implicit c : IsHCons[R]) = Zipper(prefix, suffix.tail)
-  
+
+  /** Moves the cursor to the leftmost position. */
   def first(implicit rp : ReversePrepend[L, R]) = Zipper(HNil, prefix reverse_::: suffix)
   
+  /** Moves the cursor to the rightmost position. */
   def last(implicit rp : ReversePrepend[R, L]) = Zipper(suffix reverse_::: prefix, HNil)
   
+  /** Inserts a new element to the left of the cursor. */
   def insert[E](e : E) = Zipper(e :: prefix, suffix)
   
+  /** Reifies this `Zipper` as an `HList`. */
   def toHList(implicit rp : ReversePrepend[L, R]) = prefix reverse_::: suffix
 }
 
 object Zipper {
   import HList._
   
+  /** Constructs a `Zipper` from the supplied `HList`. */
   def apply[R <: HList](r : R) : Zipper[HNil, R] = Zipper(HNil, r)
   
+  /** Enhances this `HList` with a method supporting conversion to a `Zipper`. */
   trait HListToZipper[L <: HList] {
     def toZipper : Zipper[HNil, L]
   }
