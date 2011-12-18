@@ -16,11 +16,19 @@
 
 package shapeless
 
+/**
+ * Type class supporting type safe cast.
+ * 
+ * @author Miles Sabin
+ */
 trait Typeable[U] {
   def cast(t : Any) : Option[U]
 }
 
 trait LowPriorityTypeable {
+  /**
+   * Default `Typeable` instance. Note that this is safe only up to erasure.
+   */
   implicit def dfltTypeable[U](implicit mU : ClassManifest[U]) = new Typeable[U] {
     def cast(t : Any) : Option[U] = {
       if(t == null || (mU.erasure isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
@@ -28,12 +36,20 @@ trait LowPriorityTypeable {
   }
 }
 
+/**
+ * Provides instances of `Typeable`. Also provides an implicit conversion which enhances arbitrary values with a
+ * `cast[U]` method.
+ */
 object Typeable extends LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.collection.GenTraversable
   import HList._
   
   class Cast(t : Any) {
+    /**
+     * Cast the receiver to a value of type `U` if possible. This operation will be as precise wrt erasure as possible
+     * given the in-scope `Typeable` instances available.
+     */
     def cast[U](implicit castU : Typeable[U]) = castU.cast(t)
   }
   
@@ -45,14 +61,23 @@ object Typeable extends LowPriorityTypeable {
     }
   }
   
+  /** Typeable instance for `Byte`. */
   implicit val byteTypeable = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte])
+  /** Typeable instance for `Short`. */
   implicit val shortTypeable = ValueTypeable[Short, jl.Short](classOf[jl.Short])
+  /** Typeable instance for `Char`. */
   implicit val charTypeable = ValueTypeable[Char, jl.Character](classOf[jl.Character])
+  /** Typeable instance for `Int`. */
   implicit val intTypeable = ValueTypeable[Int, jl.Integer](classOf[jl.Integer])
+  /** Typeable instance for `Long`. */
   implicit val longTypeable = ValueTypeable[Long, jl.Long](classOf[jl.Long])
+  /** Typeable instance for `Float`. */
   implicit val floatTypeable = ValueTypeable[Float, jl.Float](classOf[jl.Float])
+  /** Typeable instance for `Double`. */
   implicit val doubleTypeable = ValueTypeable[Double, jl.Double](classOf[jl.Double])
+  /** Typeable instance for `Boolean`. */
   implicit val booleanTypeable = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean])
+  /** Typeable instance for `Unit`. */
   implicit val unitTypeable = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit])
   
   def isValClass[T](clazz : Class[T]) =
@@ -61,18 +86,21 @@ object Typeable extends LowPriorityTypeable {
     clazz == classOf[jl.Character] ||
     clazz == classOf[runtime.BoxedUnit]
   
+  /** Typeable instance for `AnyVal`. */
   implicit val anyValTypeable = new Typeable[AnyVal] {
     def cast(t : Any) : Option[AnyVal] = {
       if(t == null || isValClass(t.getClass)) Some(t.asInstanceOf[AnyVal]) else None
     }
   }
 
+  /** Typeable instance for `AnyRef`. */
   implicit val anyRefTypeable = new Typeable[AnyRef] {
     def cast(t : Any) : Option[AnyRef] = {
       if(t != null && isValClass(t.getClass)) None else Some(t.asInstanceOf[AnyRef])
     }
   }
   
+  /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT : Typeable[T]) = new Typeable[Option[T]] {
     def cast(t : Any) : Option[Option[T]] = {
       if(t == null) Some(t.asInstanceOf[Option[T]])
@@ -84,6 +112,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
   
+  /** Typeable instance for `Either`. */
   implicit def eitherTypeable[A, B](implicit castA : Typeable[Left[A, B]], castB : Typeable[Right[A, B]]) =
     new Typeable[Either[A, B]] {
       def cast(t : Any) : Option[Either[A, B]] = {
@@ -91,6 +120,7 @@ object Typeable extends LowPriorityTypeable {
       }
     }
 
+  /** Typeable instance for `Left`. */
   implicit def leftTypeable[A, B](implicit castA : Typeable[A]) = new Typeable[Left[A, B]] {
     def cast(t : Any) : Option[Left[A, B]] = {
       if(t == null) Some(t.asInstanceOf[Left[A, B]])
@@ -101,6 +131,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
+  /** Typeable instance for `Right`. */
   implicit def rightTypeable[A, B](implicit castB : Typeable[B]) = new Typeable[Right[A, B]] {
     def cast(t : Any) : Option[Right[A, B]] = {
       if(t == null) Some(t.asInstanceOf[Right[A, B]])
@@ -111,6 +142,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
+  /** Typeable instance for `GenTraversable`. Note that the contents will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
     (implicit mCC : ClassManifest[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
     def cast(t : Any) : Option[CC[T]] =
@@ -122,6 +154,7 @@ object Typeable extends LowPriorityTypeable {
       } else None
   }
   
+  /** Typeable instance for `Map`. Note that the contents will tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y] <: Map[X, Y], T, U]
     (implicit mM : ClassManifest[M[_, _]], castTU : Typeable[(T, U)]) = new Typeable[Map[T, U]] {
     def cast(t : Any) : Option[M[T, U]] =
@@ -133,10 +166,12 @@ object Typeable extends LowPriorityTypeable {
       } else None
   }
   
+  /** Typeable instance for `HNil`. */
   implicit def hnilTypeable = new Typeable[HNil] {
     def cast(t : Any) : Option[HNil] = if(t == null || t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
   }
   
+  /** Typeable instance for `HList`s. Note that the contents will tested for conformance to the element types. */
   implicit def hlistTypeable[H, T <: HList](implicit castH : Typeable[H], castT : Typeable[T]) = new Typeable[H :: T] {
     def cast(t : Any) : Option[H :: T] = {
       if(t == null) Some(t.asInstanceOf[H :: T])
@@ -147,6 +182,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
   
+  /** Typeable instance for `Tuple1`. */
   implicit def tuple1Typeable[A](implicit castA : Typeable[A]) = new Typeable[Tuple1[A]] {
     def cast(t : Any) : Option[Tuple1[A]] = {
       if(t == null) Some(t.asInstanceOf[Tuple1[A]])
@@ -157,6 +193,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
+  /** Typeable instance for `Tuple2`. */
   implicit def tuple2Typeable[A, B](implicit castA : Typeable[A], castB : Typeable[B]) = new Typeable[(A, B)] {
     def cast(t : Any) : Option[(A, B)] = {
       if(t == null) Some(t.asInstanceOf[(A, B)])
@@ -167,6 +204,7 @@ object Typeable extends LowPriorityTypeable {
     }
   }
 
+  /** Typeable instance for `Tuple3`. */
   implicit def tuple3Typeable[A, B, C](implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C]) =
     new Typeable[(A, B, C)] {
       def cast(t : Any) : Option[(A, B, C)] = {
@@ -178,6 +216,7 @@ object Typeable extends LowPriorityTypeable {
       }
     }
 
+  /** Typeable instance for `Tuple4`. */
   implicit def tuple4Typeable[A, B, C, D]
     (implicit castA : Typeable[A], castB : Typeable[B], castC : Typeable[C], castD : Typeable[D]) =
       new Typeable[(A, B, C, D)] {
