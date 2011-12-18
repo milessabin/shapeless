@@ -19,28 +19,131 @@ In more concrete terms, selected highlights include,
 * A new encoding of polymorphic function values which optionally supports
   type specific cases, and which is interoperable with Scala's ordinary
   monomorphic function values.
+  
+    // Function from Sets to Options: no type specific cases
+    object choose extends (Set ~> Option) {
+      def default[T](s : Set[T]) = s.headOption 
+    }
+    
+    // Convertible to a monomorphic function value
+    val lo : List[Option[Int]] = List(Set(1, 3, 5), Set(2, 4, 6)) map choose // == List(Option(1), Option(2))
+    
+    // Function from an arbitrary type to its 'size': type specific cases
+    object size extends (Id ~> Const[Int]#λ) {
+      def default[T](t : T) = 1
+    }
+    implicit def sizeInt = size.λ[Int](x => 1)
+    implicit def sizeString = size.λ[String](s => s.length)
+    implicit def sizeList[T] = size.λ[List[T]](l => l.length)
+    implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+size(t.get))
+    implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
+    
+    size(23) == 1
+    size("foo") == 3
+    size((23, "foo")) == 4
 
-* A `Typeable` type class which provides a type safe cast operation. 
+* A `Typeable` type class which provides a type safe cast operation.
 
-* The mother of all Scala `HLists`, which amongst other things,
+    val a : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
+    val lvs : Option[List[Vector[String]]] = a.cast[List[Vector[String]]]
+    lvs.isDefined == true
+
+    val lvi : Option[List[Vector[Int]]] = lvs.cast[List[Vector[Int]]]
+    lvi.isEmpty == true
+
+* The mother of all Scala `HList`'s, which amongst other things,
     * is covariant.
-    * covers the territory of both typical `HLists` and also `KLists`
-      (`HLists` whose elements share a common outer type constructor).
+    
+    trait Fruit
+    case class Apple() extends Fruit
+    case class Pear() extends Fruit
+    
+    type FFFF = Fruit :: Fruit :: Fruit :: Fruit :: HNil
+    type APAP = Apple :: Pear :: Apple :: Pear :: HNil
+    
+    val a : Apple = Apple()
+    val p : Pear = Pear()
+    
+    val apap : APAP = a :: p :: a :: p :: HNil
+    val ffff : FFFF = apap  // APAP <: FFFF 
+    
     * has a map operation, applying a polymorphic function value (possibly
-      with type specific cases) across its elements.
+      with type specific cases) across its elements. This means that it
+      subsumes both typical `HList`'s and also `KList`'s (`HList`'s whose
+      elements share a common outer type constructor).
+      
+    type SISS = Set[Int] :: Set[String] :: HNil
+    type OIOS = Option[Int] :: Option[String] :: HNil
+    
+    val sets : SISS = Set(1) :: Set("foo") :: HNil
+    val opts : OIOS = sets map choose
+    opts == Option(1) :: Option("foo") :: HNil 
+      
     * has a zipper for traversal and persistent update.
+    
+    val l = 1 :: "foo" :: 3.0 :: HNil
+
+    val l2 = l.toZipper.right.put("wibble", 45).toHList
+    l2 == 1 :: ("wibble", 45) :: 3.0 :: HNil
+  
+    val l3 = l.toZipper.right.delete.toHList
+    l3 == 1 :: 3.0 :: HNil
+
+    val l4 = l.toZipper.last.left.insert("bar").toHList
+    l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil, l5)
+    
     * has a `unify` operation which converts it to an `HList` of elements
       of the least upper bound of the original types.
+      
+    val ffff = apap.unify // type inferred as FFFF
+      
     * supports conversion to an ordinary Scala `List` of elements of the
       least upper bound of the original types.
-    * has a `Typeable` type class instance, allowing, eg. vanilla
-      `List[Any]`s or `HLists` with elements of type `Any` to be safely
-      cast to precisely typed `HLists`.
       
-* Conversions between tuples and `HLists`, and between ordinary Scala
+    val lf = apap.toList
+    lf : List[Fruit] = List(a, p, a, p)
+      
+    * has a `Typeable` type class instance, allowing, eg. vanilla
+      `List[Any]`'s or `HList`'s with elements of type `Any` to be safely
+      cast to precisely typed `HList`'s.
+      
+    val ffff : FFFF = apap.unify               // discard precise typing 
+    val apap2 : Option[APAP] = ffff.cast[APAP] // reestablish precise typing
+    apap2.get == apap  
+      
+* Conversions between tuples and `HList`'s, and between ordinary Scala
   functions of arbitrary arity and functions which take a single
   corresponding `HList` argument. One application of this is the `liftO`
-  function which lifts an ordinary function of arbitrary arity into `Option`. 
+  function which lifts an ordinary function of arbitrary arity into `Option`.
+  
+    // Round trip from tuple to HList and back
+    val t1 = (23, "foo", 2.0, true)
+    
+    val l1 = t1.hlisted
+    h1 == 23 :: "foo" :: 2.0 :: true :: HNil
+    
+    val t2 = l1.tupled
+    t1 == t2
+    
+    // Lift these ordinary Scala function values into Option 
+    val sum : (Int, Int) => Int = _ + _
+    val prd : (Int, Int, Int) => Int = _ * _ * _
+    
+    // Nb. the liftO abstracts over the arity of its function arguments 
+    val sumO = liftO(sum) // (Option[Int], Option[Int]) => Option[Int]
+    val prdO = liftO(prd) // (Option[Int], Option[Int], Option[Int]) => Option[Int]
+
+    val s1 = sumO(Some(1), Some(2))
+    s1 == Option(3)
+
+    val s2 = sumO(Some(1), None)
+    s2 == None
+
+    val p1 = prdO(Some(2), Some(3), Some(4))
+    p1 == Option(24)
+
+    val p2 = prdO(Some(2), None, Some(4))
+    p2 == None
       
 The last three bullets under `HList` make them dramatically more practically
 useful than they are typically thought to be: normally the full type
