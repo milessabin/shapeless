@@ -56,7 +56,7 @@ In more concrete terms, selected highlights include,
 ```
 
 * The mother of all Scala `HList`'s, which amongst other things,
-    * is covariant.
++ is covariant.
 
 ```scala
     trait Fruit
@@ -73,10 +73,10 @@ In more concrete terms, selected highlights include,
     val ffff : FFFF = apap  // APAP <: FFFF 
 ```
 
-    * has a map operation, applying a polymorphic function value (possibly
-      with type specific cases) across its elements. This means that it
-      subsumes both typical `HList`'s and also `KList`'s (`HList`'s whose
-      elements share a common outer type constructor).
++ has a map operation, applying a polymorphic function value (possibly
+  with type specific cases) across its elements. This means that it
+  subsumes both typical `HList`'s and also `KList`'s (`HList`'s whose
+  elements share a common outer type constructor).
       
 ```scala
     type SISS = Set[Int] :: Set[String] :: HNil
