@@ -56,4 +56,14 @@ object TypeOperators {
   // Quantifiers
   type ∃[P[_]] = P[T] forSome { type T }
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
+
+  // Tags
+  type Tagged[U] = { type Tag = U }
+  type @@[T, U] = T with Tagged[U]
+
+  class Tagger[U] {
+    def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
+  }
+  
+  def tag[U] = new Tagger[U]
 }
