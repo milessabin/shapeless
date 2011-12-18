@@ -87,7 +87,7 @@ In more concrete terms, selected highlights include,
     opts == Option(1) :: Option("foo") :: HNil 
 ```
 
-    * has a zipper for traversal and persistent update.
++ has a zipper for traversal and persistent update.
     
 ```scala
     val l = 1 :: "foo" :: 3.0 :: HNil
@@ -102,24 +102,24 @@ In more concrete terms, selected highlights include,
     l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil, l5)
 ```
     
-    * has a `unify` operation which converts it to an `HList` of elements
-      of the least upper bound of the original types.
++ has a `unify` operation which converts it to an `HList` of elements
+  of the least upper bound of the original types.
       
 ```scala
     val ffff = apap.unify // type inferred as FFFF
 ```
       
-    * supports conversion to an ordinary Scala `List` of elements of the
-      least upper bound of the original types.
++ supports conversion to an ordinary Scala `List` of elements of the
+  least upper bound of the original types.
       
 ```scala
     val lf = apap.toList
     lf : List[Fruit] = List(a, p, a, p)
 ```
       
-    * has a `Typeable` type class instance, allowing, eg. vanilla
-      `List[Any]`'s or `HList`'s with elements of type `Any` to be safely
-      cast to precisely typed `HList`'s.
++ has a `Typeable` type class instance, allowing, eg. vanilla
+ `List[Any]`'s or `HList`'s with elements of type `Any` to be safely
+  cast to precisely typed `HList`'s.
       
 ```scala
     val ffff : FFFF = apap.unify               // discard precise typing 
@@ -127,6 +127,15 @@ In more concrete terms, selected highlights include,
     apap2.get == apap  
 ```
       
+These last three bullets under make `HList` dramatically more practically
+useful than they are typically thought to be: normally the full type
+information required to work with them is too fragile to cross subtyping or
+I/O boundaries. This new `HList` implementation supports the discarding of
+precise information where necessary (eg. to serialize a precisely typed
+record after construction), and its later reconstruction (eg. a weakly
+typed deserialized record with a known schema can have it's precise typing
+reestabilished).
+
 * Conversions between tuples and `HList`'s, and between ordinary Scala
   functions of arbitrary arity and functions which take a single
   corresponding `HList` argument. One application of this is the `liftO`
@@ -163,15 +172,6 @@ In more concrete terms, selected highlights include,
     p2 == None
 ```
       
-The last three bullets under `HList` make them dramatically more practically
-useful than they are typically thought to be: normally the full type
-information required to work with them is too fragile to cross subtyping or
-I/O boundaries. This new `HList` implementation supports the discarding of
-precise information where necessary (eg. to serialize a precisely typed
-record after construction), and its later reconstruction (eg. a weakly
-typed deserialized record with a known schema can have it's precise typing
-reestabilished).
-
 The library is targetted at Scala 2.10-SNAPSHOT by default, but currently
 should build against Scala 2.9.1.final with the `-Ydependent-method-types`
 switch enabled. I make no promises that it'll continue to build with 2.9.x,
