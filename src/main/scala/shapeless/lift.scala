@@ -18,7 +18,6 @@ package shapeless
 
 object Lift {
   import Poly._
-  import HList._
   import Functions._
 
   /**

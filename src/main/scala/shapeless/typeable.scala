@@ -43,7 +43,6 @@ trait LowPriorityTypeable {
 object Typeable extends LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.collection.GenTraversable
-  import HList._
   
   class Cast(t : Any) {
     /**
@@ -175,8 +174,8 @@ object Typeable extends LowPriorityTypeable {
   implicit def hlistTypeable[H, T <: HList](implicit castH : Typeable[H], castT : Typeable[T]) = new Typeable[H :: T] {
     def cast(t : Any) : Option[H :: T] = {
       if(t == null) Some(t.asInstanceOf[H :: T])
-      else if(t.isInstanceOf[HCons[_, _ <: HList]]) {
-        val l = t.asInstanceOf[HCons[_, _ <: HList]]
+      else if(t.isInstanceOf[::[_, _ <: HList]]) {
+        val l = t.asInstanceOf[::[_, _ <: HList]]
         for(hd <- l.head.cast[H]; tl <- (l.tail : Any).cast[T]) yield t.asInstanceOf[H :: T]
       } else None
     }

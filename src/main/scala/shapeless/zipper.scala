@@ -16,9 +16,6 @@
 
 package shapeless
 
-import HList._
-import Nat._
-
 case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
   import Zipper._
 
@@ -54,6 +51,8 @@ case class Zipper[L <: HList, R <: HList](prefix : L, suffix : R) {
 }
 
 object Zipper {
+  import HList._
+  
   def apply[R <: HList](r : R) : Zipper[HNil, R] = Zipper(HNil, r)
   
   trait HListToZipper[L <: HList] {

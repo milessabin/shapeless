@@ -266,10 +266,6 @@ final class HListOps[L <: HList](l : L) {
 }
 
 object HList {
-  import Poly._
-  import Nat._
-  import Tuples._
-
   implicit def hlistOps[L <: HList](l : L) = new HListOps(l)
 
   type HCons[+H, +T <: HList] = ::[H, T]

@@ -16,8 +16,6 @@
 
 package shapeless
 
-import HList._
-
 /**
  * Conversions between `Tuples` and `HLists`.
  * 
@@ -28,8 +26,6 @@ import HList._
  * @author Miles Sabin
  */
 object Tuples {
-  import Poly._
-  
   trait TupleOps[L <: HList] {
     def hlisted : L
   }
@@ -120,9 +116,6 @@ object HLister {
  * @author Miles Sabin
  */
 object Functions {
-  import Poly._
-  import Tuples._
-  
   trait FnHListOps[HLFn] {
     def hlisted : HLFn
   }

@@ -24,8 +24,6 @@ package shapeless
  */
 object SybClass {
   import TypeOperators._
-  import Poly._
-  import HList._
   
   /**
    * Type class representing one-level generic queries.
