@@ -20,7 +20,8 @@ In more concrete terms, selected highlights include,
   type specific cases, and which is interoperable with Scala's ordinary
   monomorphic function values.
   
-```// Function from Sets to Options: no type specific cases
+```scala
+// Function from Sets to Options: no type specific cases
 object choose extends (Set ~> Option) {
   def default[T](s : Set[T]) = s.headOption 
 }
@@ -40,7 +41,8 @@ implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.�
 
 size(23) == 1
 size("foo") == 3
-size((23, "foo")) == 4```
+size((23, "foo")) == 4
+```
 
 * A `Typeable` type class which provides a type safe cast operation.
 
