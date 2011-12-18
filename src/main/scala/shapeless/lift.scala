@@ -21,6 +21,9 @@ object Lift {
   import HList._
   import Functions._
 
+  /**
+   * Lifts a function of arbitrary arity into `Option`. 
+   */
   def liftO[InF, InL <: HList, R, OInL <: HList, OutF](f :  InF)
     (implicit
       hlister   : FnHListerAux[InF, InL => R],

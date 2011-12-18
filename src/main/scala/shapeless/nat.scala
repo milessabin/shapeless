@@ -16,9 +16,25 @@
 
 package shapeless
 
+/**
+ * Base trait for type level natural numbers.
+ * 
+ * @author Miles Sabin
+ */
 sealed trait Nat
+
+/**
+ * Encoding of successor.
+ * 
+ * @author Miles Sabin
+ */
 sealed case class Succ[P <: Nat]() extends Nat
 
+/**
+ * Type level encoding of the natural numbers.
+ * 
+ * @author Miles Sabin
+ */
 object Nat {
   final class _0 extends Nat
   type _1 = Succ[_0]
@@ -68,14 +84,29 @@ object Nat {
   val _21 = new _21
   val _22 = new _22
   
+  /**
+   * Type class witnessing that `A` is the predecessor of `B`.
+   * 
+   * @author Miles Sabin
+   */
   trait Pred[A <: Nat, B <: Nat]
   implicit def pred[A <: Nat] = new Pred[Succ[A], A] {}
   
+  /**
+   * Type class witnessing that `C` is the sum of `A` and `B`.
+   * 
+   * @author Miles Sabin
+   */
   trait Sum[A <: Nat, B <: Nat, C <: Nat]
   implicit def sum1[B <: Nat] = new Sum[_0, B, B] {}
   implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
     (implicit ev : Sum[A, Succ[B], C]) = new Sum[Succ[A], B, C] {}
 
+  /**
+   * Type class witnessing that `C` is the product of `A` and `B`.
+   * 
+   * @author Miles Sabin
+   */
   trait Prod[A <: Nat, B <: Nat, C <: Nat]
   implicit def prod1[B <: Nat] = new Prod[_0, B, _0] {}
   implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
