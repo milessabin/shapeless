@@ -114,8 +114,8 @@ In more concrete terms, selected highlights include,
   least upper bound of the original types.
       
 ```scala
-    val lf = apap.toList
-    lf : List[Fruit] = List(a, p, a, p)
+    val lf = apap.toList  // type inferred as List[Fruit]
+    lf == List(a, p, a, p)
 ```
       
 + has a `Typeable` type class instance, allowing, eg. vanilla
@@ -128,14 +128,13 @@ In more concrete terms, selected highlights include,
     apap2.get == apap  
 ```
       
-These last three bullets under make `HList` dramatically more practically
-useful than they are typically thought to be: normally the full type
-information required to work with them is too fragile to cross subtyping or
-I/O boundaries. This new `HList` implementation supports the discarding of
-precise information where necessary (eg. to serialize a precisely typed
-record after construction), and its later reconstruction (eg. a weakly
-typed deserialized record with a known schema can have it's precise typing
-reestabilished).
+These last three bullets make this `HList` dramatically more practically
+useful than `HList`'s are typically thought to be: normally the full
+type information required to work with them is too fragile to cross subtyping
+or I/O boundaries. This implementation supports the discarding of precise
+information where necessary (eg. to serialize a precisely typed record after
+construction), and its later reconstruction (eg. a weakly typed deserialized
+record with a known schema can have it's precise typing reestabilished).
 
 * Conversions between tuples and `HList`'s, and between ordinary Scala
   functions of arbitrary arity and functions which take a single
@@ -156,7 +155,7 @@ reestabilished).
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
     
-    // Nb. the liftO abstracts over the arity of its function arguments 
+    // Nb. liftO abstracts over the arity of its function arguments 
     val sumO = liftO(sum) // (Option[Int], Option[Int]) => Option[Int]
     val prdO = liftO(prd) // (Option[Int], Option[Int], Option[Int]) => Option[Int]
 
