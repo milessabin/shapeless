@@ -2,9 +2,10 @@ shapeless : An exploration of generic/polytypic programming in Scala
 ====================================================================
 
 shapeless is an exploration of generic (aka polytypic) programming in Scala
-derived from the various talks I (Miles Sabin) have given over the course
-of 2011 on implementing [Scrap your boilerplate](http://goo.gl/KmfVG) and
-[higher rank polymorphism](http://goo.gl/zGRQ7) in Scala.
+derived from the various talks I [(Miles Sabin)](http://goo.gl/oBCzn) have
+given over the course of 2011 on implementing [Scrap your boilerplate]
+(http://goo.gl/KmfVG) and [higher rank polymorphism](http://goo.gl/zGRQ7) in
+Scala.
 
 In the new year I'll be [posting](http://www.chuusai.com/blog) a (long
 overdue) series of articles on the implementation techniques used: heavily 
