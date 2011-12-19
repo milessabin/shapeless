@@ -3,7 +3,7 @@ shapeless : An exploration of generic/polytypic programming in Scala
 
 shapeless is an exploration of generic (aka polytypic) programming in Scala
 derived from the various talks I [(Miles Sabin)](http://goo.gl/oBCzn) have
-given over the course of 2011 on implementing [Scrap your boilerplate]
+given over the course of 2011 on implementing [scrap your boilerplate]
 (http://goo.gl/KmfVG) and [higher rank polymorphism](http://goo.gl/zGRQ7) in
 Scala.
 
@@ -15,44 +15,60 @@ functions. In the meantime you'll find Olivera, Moors and Odersky [Type
 Classes as Object and Implicits](http://goo.gl/ZbcxY) useful background
 material.
 
-In more concrete terms, selected highlights include,
+Selected highlights of shapeless include,
 
 * A new encoding of polymorphic function values which optionally supports
   type specific cases, and which is interoperable with Scala's ordinary
   monomorphic function values.
   
 ```scala
-    // Function from Sets to Options: no type specific cases
+    // choose is a function from Sets to Options with no type specific cases
     object choose extends (Set ~> Option) {
       def default[T](s : Set[T]) = s.headOption 
     }
 
-    // Convertible to a monomorphic function value
-    val lo : List[Option[Int]] = List(Set(1, 3, 5), Set(2, 4, 6)) map choose // == List(Option(1), Option(2))
+    // choose is convertible to an ordinary monomorphic function value
+    val lo = List(Set(1, 3, 5), Set(2, 4, 6)) map choose
+    lo == List(Option(1), Option(2))
 
-    // Function from an arbitrary type to its 'size': type specific cases
+    // size is a function from values of arbitrary type to a 'size' which is
+    // defined via type specific cases
     object size extends (Id ~> Const[Int]#λ) {
       def default[T](t : T) = 1
     }
     implicit def sizeInt = size.λ[Int](x => 1)
     implicit def sizeString = size.λ[String](s => s.length)
     implicit def sizeList[T] = size.λ[List[T]](l => l.length)
-    implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+size(t.get))
-    implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
+    implicit def sizeOption[T](implicit cases : size.λ[T]) =
+      size.λ[Option[T]](t => 1+size(t.get))
+    implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) =
+      size.λ[(T, U)](t => size(t._1)+size(t._2))
 
     size(23) == 1
     size("foo") == 3
     size((23, "foo")) == 4
 ```
 
+* An implementation of [Scrap your Boilerplate with Class](http://goo.gl/pR1OV)
+  which provides generic map and fold operations over arbitrarily nested data
+  structures,
+  
+```scala
+    val nested = List(Option(List(Option(List(Option(23))))))
+    
+    val succ = everywhere(inc)(nested)
+    succ == List(Option(List(Option(List(Option(24))))))
+```
+
 * A `Typeable` type class which provides a type safe cast operation.
 
 ```scala
     val a : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
+    
     val lvs : Option[List[Vector[String]]] = a.cast[List[Vector[String]]]
     lvs.isDefined == true
 
-    val lvi : Option[List[Vector[Int]]] = lvs.cast[List[Vector[Int]]]
+    val lvi : Option[List[Vector[Int]]] = a.cast[List[Vector[Int]]]
     lvi.isEmpty == true
 ```
 
