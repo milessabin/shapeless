@@ -47,6 +47,13 @@ class ConversionTests {
     val t4 = tupled(l2)
     typed[(Int, String, Double, Boolean)](t4)
     assertEquals((23, "foo", 2.0, true), t4)
+    
+    val t5 = (23, "foo")
+    val t6 = (false, 3.0)
+    
+    val t7 = (t5.hlisted ::: t6.hlisted).tupled
+    typed[(Int, String, Boolean, Double)](t7)
+    assertEquals((23, "foo", false, 3.0), t7)
   }
   
   @Test
