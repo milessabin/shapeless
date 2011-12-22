@@ -178,8 +178,6 @@ class PolyTests {
   
   @Test
   def testPolyVal {
-    import Poly._
-
     val i1 = zero[Int]
     typed[Int](i1)
     assertEquals(0, i1)
@@ -203,5 +201,54 @@ class PolyTests {
     val l2 = List(23)++zero[List[Int]]
     typed[List[Int]](l2)
     assertEquals(List(23), l2)
+  }
+  
+  @Test
+  def testCompose {
+    import Typeable._
+    
+    // Polymophic function value with type-specific cases for two
+    // argument types. Any is the common result type.
+    
+    object bidi extends (Id ~> Any) with NoDefault
+    implicit val bidiInt = bidi.λ[Int](_.toString)
+    implicit val bidiString = bidi.λ[String](_.toInt)
+    
+    val bi = bidi(23)   // type is Any
+    assertEquals("23", bi)
+    val bs = bidi("23") // type is Any
+    assertEquals(23, bs)
+    
+    val lis = 1 :: "2" :: 3 :: "4" :: HNil
+    val blis = lis map bidi  // type is Any :: Any :: Any :: Any :: HNil
+    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
+    
+    // The common result type means we've lost precision. We can regain it
+    // with a cast (see below for a solution which avoid this problem.
+    val oblis = blis.cast[String :: Int :: String :: Int :: HNil]
+    typed[Option[String :: Int :: String :: Int :: HNil]](oblis)
+    assertTrue(oblis.isDefined)
+    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, oblis.get)
+    
+    // Shapeless doesn't currently have direct support for making the result
+    // type an ad hoc function of the argument type. Nevertheless we can
+    // reuse most of the polymorphic value infrastructure.
+    object bidi2 {
+      def apply[T, U](t : T)(implicit c : Case[this.type, T => U]) : U = c(t)
+    }
+    implicit val bidi2Int = Case[bidi2.type, Int => String](_.toString)
+    implicit val bidi2String = Case[bidi2.type, String => Int](_.toInt)
+    
+    val bi2 = bidi2(23)   // type is String
+    typed[String](bi2)
+    assertEquals("23", bi)
+    val bs2 = bidi2("23") // type is Int
+    typed[Int](bs2)
+    assertEquals(23, bs)
+    
+    val lis2 = 1 :: "2" :: 3 :: "4" :: HNil
+    val blis2 = lis2 map bidi2  // type is String :: Int :: String :: Int :: HNil
+    typed[String :: Int :: String :: Int :: HNil](blis2)
+    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
   }
 }
