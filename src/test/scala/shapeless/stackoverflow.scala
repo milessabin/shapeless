@@ -68,7 +68,6 @@ class StackOverflow2 {
   
   import HList._
   import Functions._
-  import Traversables._
   
   sealed abstract class A { def eval() : A }
   case class A0 () extends A { def eval() = this }
