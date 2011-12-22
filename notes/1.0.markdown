@@ -4,7 +4,6 @@ Selected highlights of this 1.0 release of shapeless include,
   type specific cases, and which is interoperable with Scala's ordinary
   monomorphic function values.
   
-```scala
     // choose is a function from Sets to Options with no type specific cases
     object choose extends (Set ~> Option) {
       def default[T](s : Set[T]) = s.headOption 
@@ -30,22 +29,18 @@ Selected highlights of this 1.0 release of shapeless include,
     size(23) == 1
     size("foo") == 3
     size((23, "foo")) == 4
-```
 
 * An implementation of [Scrap your Boilerplate with Class](http://goo.gl/pR1OV)
   which provides generic map and fold operations over arbitrarily nested data
   structures,
   
-```scala
     val nested = List(Option(List(Option(List(Option(23))))))
     
     val succ = everywhere(inc)(nested)
     succ == List(Option(List(Option(List(Option(24))))))
-```
 
 * A `Typeable` type class which provides a type safe cast operation.
 
-```scala
     val a : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
     
     val lvs : Option[List[Vector[String]]] = a.cast[List[Vector[String]]]
@@ -53,12 +48,10 @@ Selected highlights of this 1.0 release of shapeless include,
 
     val lvi : Option[List[Vector[Int]]] = a.cast[List[Vector[Int]]]
     lvi.isEmpty == true
-```
 
 * The mother of all Scala `HList`'s, which amongst other things,
 + is covariant.
 
-```scala
     trait Fruit
     case class Apple() extends Fruit
     case class Pear() extends Fruit
@@ -71,25 +64,21 @@ Selected highlights of this 1.0 release of shapeless include,
     
     val apap : APAP = a :: p :: a :: p :: HNil
     val ffff : FFFF = apap  // APAP <: FFFF 
-```
 
 + has a map operation, applying a polymorphic function value (possibly
   with type specific cases) across its elements. This means that it
   subsumes both typical `HList`'s and also `KList`'s (`HList`'s whose
   elements share a common outer type constructor).
       
-```scala
     type SISS = Set[Int] :: Set[String] :: HNil
     type OIOS = Option[Int] :: Option[String] :: HNil
     
     val sets : SISS = Set(1) :: Set("foo") :: HNil
     val opts : OIOS = sets map choose
     opts == Option(1) :: Option("foo") :: HNil 
-```
 
 + has a zipper for traversal and persistent update.
     
-```scala
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l2 = l.toZipper.right.put("wibble", 45).toHList
@@ -100,32 +89,25 @@ Selected highlights of this 1.0 release of shapeless include,
 
     val l4 = l.toZipper.last.left.insert("bar").toHList
     l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil, l5)
-```
     
 + has a `unify` operation which converts it to an `HList` of elements
   of the least upper bound of the original types.
       
-```scala
     val ffff = apap.unify // type inferred as FFFF
-```
       
 + supports conversion to an ordinary Scala `List` of elements of the
   least upper bound of the original types.
       
-```scala
     val lf = apap.toList  // type inferred as List[Fruit]
     lf == List(a, p, a, p)
-```
       
 + has a `Typeable` type class instance, allowing, eg. vanilla
  `List[Any]`'s or `HList`'s with elements of type `Any` to be safely
   cast to precisely typed `HList`'s.
       
-```scala
     val ffff : FFFF = apap.unify               // discard precise typing 
     val apap2 : Option[APAP] = ffff.cast[APAP] // reestablish precise typing
     apap2.get == apap  
-```
       
 These last three bullets make this `HList` dramatically more practically
 useful than `HList`'s are typically thought to be: normally the full
@@ -140,7 +122,6 @@ record with a known schema can have it's precise typing reestabilished).
   corresponding `HList` argument. One application of this is the `liftO`
   function which lifts an ordinary function of arbitrary arity into `Option`.
   
-```scala
     // Round trip from tuple to HList and back
     val t1 = (23, "foo", 2.0, true)
     
@@ -169,4 +150,3 @@ record with a known schema can have it's precise typing reestabilished).
 
     val p2 = prdO(Some(2), None, Some(4))
     p2 == None
-```
