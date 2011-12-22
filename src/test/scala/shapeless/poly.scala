@@ -224,7 +224,7 @@ class PolyTests {
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
     
     // The common result type means we've lost precision. We can regain it
-    // with a cast (see below for a solution which avoid this problem.
+    // with a cast (see below for a solution which avoids this problem.
     val oblis = blis.cast[String :: Int :: String :: Int :: HNil]
     typed[Option[String :: Int :: String :: Int :: HNil]](oblis)
     assertTrue(oblis.isDefined)
@@ -249,6 +249,6 @@ class PolyTests {
     val lis2 = 1 :: "2" :: 3 :: "4" :: HNil
     val blis2 = lis2 map bidi2  // type is String :: Int :: String :: Int :: HNil
     typed[String :: Int :: String :: Int :: HNil](blis2)
-    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
+    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis2)
   }
 }
