@@ -73,39 +73,23 @@ trait HLister[-T <: Product] {
   def apply(t : T) : Out
 }
   
+trait HListerAux[-T <: Product, Out <: HList] {
+  def apply(t : T) : Out
+}
+
 /**
  * `HLister` type class instances.
  * 
  * @author Miles Sabin
  */
 object HLister {
-  implicit def hlister[T <: Product, Out0 <: HList](implicit hlister : HLister0[T, Out0]) = new HLister[T] {
+  implicit def hlister[T <: Product, Out0 <: HList](implicit hlister : HListerAux[T, Out0]) = new HLister[T] {
     type Out = Out0
     def apply(t : T) : Out = hlister(t)
   }
-  
-  type HListerAux[-T <: Product, Out <: HList] = HLister0[T, Out]
-  
-  trait HLister0[-T <: Product, Out <: HList] {
-    def apply(t : T) : Out
-  }
-  
-  implicit def tupleHLister1[A] = new HLister0[Product1[A], A :: HNil] {
-    def apply(t : Product1[A]) = t._1 :: HNil
-  }
-  
-  implicit def tupleHLister2[A, B] = new HLister0[Product2[A, B], A :: B :: HNil] {
-    def apply(t : Product2[A, B]) = t._1 :: t._2 :: HNil
-  }
-  
-  implicit def tupleHLister3[A, B, C] = new HLister0[Product3[A, B, C], A :: B :: C :: HNil] {
-    def apply(t : Product3[A, B, C]) = t._1 :: t._2 :: t._3 :: HNil
-  }
-
-  implicit def tupleHLister4[A, B, C, D] = new HLister0[Product4[A, B, C, D], A :: B :: C :: D :: HNil] {
-    def apply(t : Product4[A, B, C, D]) = t._1 :: t._2 :: t._3 :: t._4 :: HNil
-  }
 }
+
+object HListerAux extends HListerAuxInstances
 
 /**
  * Conversions between ordinary functions and `HList` functions.
@@ -160,28 +144,7 @@ object FnHLister {
   }
 }
 
-object FnHListerAux {
-  implicit def fnHLister0[R] = new FnHListerAux[() => R, HNil => R] {
-    def apply(f : () => R) = (l : HNil) => f()
-  }
-  
-  implicit def fnHLister1[A, R] = new FnHListerAux[A => R, (A :: HNil) => R] {
-    def apply(f : A => R) = (l : A :: HNil) => f(l.head)
-  }
-  
-  implicit def fnHLister2[A, B, R] = new FnHListerAux[(A, B) => R, (A :: B :: HNil) => R] {
-    def apply(f : (A, B) => R) = (l : A :: B :: HNil) => f(l.head, l.tail.head)
-  }
-  
-  implicit def fnHLister3[A, B, C, R] = new FnHListerAux[(A, B, C) => R, (A :: B :: C :: HNil) => R] {
-    def apply(f : (A, B, C) => R) = (l : A :: B :: C :: HNil) => f(l.head, l.tail.head, l.tail.tail.head)
-  }
-  
-  implicit def fnHLister4[A, B, C, D, R] = new FnHListerAux[(A, B, C, D) => R, (A :: B :: C :: D :: HNil) => R] {
-    def apply(f : (A, B, C, D) => R) =
-      (l : A :: B :: C :: D :: HNil) => f(l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
-  }
-}
+object FnHListerAux extends FnHListerAuxInstances
 
 /**
  * Type class supporting conversion of functions of a single `HList` argument to ordinary functions (currently up to
@@ -210,27 +173,7 @@ object FnUnHLister {
   }
 }
 
-object FnUnHListerAux {
-  implicit def fnUnHLister0[R] = new FnUnHListerAux[HNil => R, () => R] {
-    def apply(f : HNil => R) = () => f(HNil)
-  }
-  
-  implicit def fnUnHLister1[A, R] = new FnUnHListerAux[(A :: HNil) => R, A => R] {
-    def apply(f : (A :: HNil) => R) = (a : A) => f(a :: HNil)
-  }
-  
-  implicit def fnUnHLister2[A, B, R] = new FnUnHListerAux[(A :: B :: HNil) => R, (A, B) => R] {
-    def apply(f : (A :: B :: HNil) => R) = (a : A, b : B) => f(a :: b :: HNil)
-  }
-
-  implicit def fnUnHLister3[A, B, C, R] = new FnUnHListerAux[(A :: B :: C :: HNil) => R, (A, B, C) => R] {
-    def apply(f : (A :: B :: C :: HNil) => R) = (a : A, b : B, c : C) => f(a :: b :: c :: HNil)
-  }
-
-  implicit def fnUnHLister4[A, B, C, D, R] = new FnUnHListerAux[(A :: B :: C :: D :: HNil) => R, (A, B, C, D) => R] {
-    def apply(f : (A :: B :: C :: D :: HNil) => R) = (a : A, b : B, c : C, d : D) => f(a :: b :: c :: d :: HNil)
-  }
-}
+object FnUnHListerAux extends FnUnHListerAuxInstances
 
 /**
  * Conversions between `Traversables` and `HLists`.

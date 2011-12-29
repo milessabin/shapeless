@@ -495,23 +495,7 @@ object Tupler {
   }
 }
 
-object TuplerAux {
-  implicit def hlistTupler1[A] = new TuplerAux[A :: HNil, Tuple1[A]] {
-    def apply(l : A :: HNil) = Tuple1(l.head)
-  }
-  
-  implicit def hlistTupler2[A, B] = new TuplerAux[A :: B :: HNil, (A, B)] {
-    def apply(l : A :: B :: HNil) = (l.head, l.tail.head)
-  }
-  
-  implicit def hlistTupler3[A, B, C] = new TuplerAux[A :: B :: C :: HNil, (A, B, C)] {
-    def apply(l : A :: B :: C :: HNil) = (l.head, l.tail.head, l.tail.tail.head)
-  }
-  
-  implicit def hlistTupler4[A, B, C, D] = new TuplerAux[A :: B :: C :: D :: HNil, (A, B, C, D)] {
-    def apply(l : A :: B :: C :: D :: HNil) = (l.head, l.tail.head, l.tail.tail.head, l.tail.tail.tail.head)
-  }
-}
+object TuplerAux extends TuplerAuxInstances
 
 /**
  * Type class supporting access to the last element of this `HList`. Available only if this `HList` has at least one
