@@ -15,6 +15,10 @@ functions. In the meantime you'll find Olivera, Moors and Odersky [Type
 Classes as Object and Implicits](http://goo.gl/ZbcxY) useful background
 material.
 
+There is a [mailing list](https://groups.google.com/group/shapeless-dev)
+for discussion around generic programming in Scala in general and
+shapeless in particular. 
+
 Selected highlights of shapeless include,
 
 * A new encoding of polymorphic function values which optionally supports
