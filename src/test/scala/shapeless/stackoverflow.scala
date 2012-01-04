@@ -85,3 +85,34 @@ class StackOverflow2 {
   val a1 = ApplyA(A1.apply _, a :: HNil)
   val a2 = ApplyA(A2.apply _, a :: a :: HNil)
 }
+
+class StackOverflow3 {
+  // http://stackoverflow.com/questions/8681491
+  import HList._
+  import Functions._
+  import Poly._
+  import TypeOperators._
+  
+  case class Input[T](value: T)
+  
+  object value extends (Input ~> Id) {
+    def default[T](i : Input[T]) = i.value
+  }
+  
+  class Preprocessor[In <: HList, Out <: HList, R](ctor : Out => R)
+    (implicit mapper : MapperAux[value.type, In, Out]) {
+      def apply(in : In) = ctor(in map value)
+    }
+  
+  case class Foo(input1 : Int, input2 : String)
+  
+  object FooBuilder extends Preprocessor((Foo.apply _).hlisted)
+  
+  val foo = FooBuilder(Input(23) :: Input("foo") :: HNil)
+  
+  case class Bar(input1 : Int, input2 : String, input3 : Boolean)
+  
+  object BarBuilder extends Preprocessor((Bar.apply _).hlisted)
+  
+  val bar = BarBuilder(Input(23) :: Input("foo") :: Input(true) :: HNil)
+}
