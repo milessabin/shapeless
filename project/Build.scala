@@ -35,8 +35,11 @@ object ShapelessBuild extends Build {
         
         val fnunhlisteraux = dir / "shapeless" / "fnunhlisteraux.scala"
         IO.write(fnunhlisteraux, genFnUnHListerAuxInstances)
+
+        val nats = dir / "shapeless" / "nats.scala"
+        IO.write(nats, genNats)
         
-        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux)
+        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats)
       }
     )
   )
@@ -158,6 +161,24 @@ object ShapelessBuild extends Build {
     genHeader+
     ("""|
         |trait FnUnHListerAuxInstances {"""+instances+"""}
+        |""").stripMargin
+  }
+  
+  def genNats = {
+    def genNat(n : Int) = {
+      ("""|
+          |  type _"""+n+""" = Succ[_"""+(n-1)+"""]
+          |  val _"""+n+""" = new _"""+n+"""
+          |""").stripMargin
+    }
+    
+    val nats = ((1 to 22) map genNat).mkString
+    
+    genHeader+
+    ("""|
+        |trait Nats {
+        |  import Nat._
+        |"""+nats+"""}
         |""").stripMargin
   }
 }
