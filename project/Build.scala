@@ -39,7 +39,10 @@ object ShapelessBuild extends Build {
         val nats = dir / "shapeless" / "nats.scala"
         IO.write(nats, genNats)
         
-        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats)
+        val tupletypeables = dir / "shapeless" / "tupletypeabels.scala"
+        IO.write(tupletypeables, genTupleTypeableInstances)
+        
+        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats, tupletypeables)
       }
     )
   )
@@ -179,6 +182,38 @@ object ShapelessBuild extends Build {
         |trait Nats {
         |  import Nat._
         |"""+nats+"""}
+        |""").stripMargin
+  }
+  
+  def genTupleTypeableInstances = {
+    def genInstance(arity : Int) = {
+      val typeVars = (0 until arity) map (n => (n+'A').toChar)
+      val typeArgs = typeVars.mkString("[", ", ", "]")
+      val tupleType = if (arity == 1) "Tuple1[A]" else typeVars.mkString("(", ", ", ")")
+      val wildcardTupleType = if (arity == 1) "Tuple1[_]" else "("+("_, "*(arity-1))+"_)"
+      val implicitArgs = (typeVars map(a => "cast"+a+" : Typeable["+a+"]")).mkString("(implicit ", ", ", ")")
+      val enumerators = ((0 until arity) map (n => "_ <- p._"+(n+1)+".cast["+(n+'A').toChar+"]")).mkString("(", "; ", ")")
+      
+      ("""|
+          |  implicit def tuple"""+arity+"""Typeable"""+typeArgs+implicitArgs+""" = new Typeable["""+tupleType+"""] {
+          |    def cast(t : Any) : Option["""+tupleType+"""] = {
+          |      if(t == null) Some(t.asInstanceOf["""+tupleType+"""])
+          |      else if(t.isInstanceOf["""+wildcardTupleType+"""]) {
+          |        val p = t.asInstanceOf["""+wildcardTupleType+"""]
+          |        for"""+enumerators+""" yield t.asInstanceOf["""+tupleType+"""]
+          |      } else None
+          |    }
+          |  }
+          |""").stripMargin
+    }
+    
+    val instances = ((1 to 22) map genInstance).mkString
+    
+    genHeader+
+    ("""|
+        |trait TupleTypeableInstances {
+        |  import Typeable._
+        |"""+instances+"""}
         |""").stripMargin
   }
 }
