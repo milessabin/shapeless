@@ -1,0 +1,17 @@
+A minor release of [shapeless](https://github.com/milessabin/shapeless)
+mainly focussed on replacing arity-specific boilerplate with SBT based
+code generation.
+
+* The boilerplate for HList <-> Tuple conversion type class instances is
+  now generated and covers all arities.
+  
+* The boilerplate for ordinary function <-> HList function conversion
+  type class instances is now generated and covers all arities.
+  
+* The boilerplate for tuple Typeable type class instances is now
+  generated and covers all arities.
+  
+* Nat types and values are now generated.
+
+* There is now a type- and value-level conversion from Nats to Int, and
+  there has been some minor reorganization of the Nat type classes.
