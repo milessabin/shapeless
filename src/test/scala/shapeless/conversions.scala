@@ -23,6 +23,7 @@ class ConversionTests {
   import Tuples._
   import Functions._
   import HList._
+  import Poly._
 
   def typed[T](t : => T) {}
   
@@ -54,6 +55,11 @@ class ConversionTests {
     val t7 = (t5.hlisted ::: t6.hlisted).tupled
     typed[(Int, String, Boolean, Double)](t7)
     assertEquals((23, "foo", false, 3.0), t7)
+    
+    val t8 = (Set(2), Set("foo"))
+    val t8b = (t8.hlisted map choose).tupled
+    typed[(Option[Int], Option[String])](t8b)
+    assertEquals((Option(2), Option("foo")), t8b)
   }
   
   @Test
