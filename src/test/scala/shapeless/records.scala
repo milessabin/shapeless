@@ -93,23 +93,19 @@ class RecordTests {
     assertEquals("bar", v10)
     
     val r7 = HNil
+    val r8 = r7.updated(boolField2, false)
+    val v11 = r8(boolField2)
+    typed[Boolean](v11)
+    assertEquals(false, v11)
+
+    val r9 = r6.updated(boolField2, false)
+    val v12 = r9(boolField2)
+    typed[Boolean](v12)
+    assertEquals(false, v12)
     
-    val ua = implicitly[UpdaterAux[HNil, boolField2.type, (boolField2.type, Boolean) :: HNil]]
-    val u = Updater.updater[HNil, boolField2.type, (boolField2.type, Boolean) :: HNil]
-    
-    //val u2 = implicitly[Updater[HNil, boolField2.type] { type Out = (boolField2.type, Boolean) :: HNil}]
-    //val u2b = implicitly[Updater[HNil, boolField2.type]]
-    
-    //val r8 = r7.updated(boolField2, false)
-//
-//    val v7 = r3(boolField2)
-//    typed[Boolean](v7)
-//    assertEquals(false, v7)
-//    
-//    val r4 = r3.updated(doubleField2, 3.0)
-//    
-//    val v8 = r4(doubleField2)
-//    typed[Double](v8)
-//    assertEquals(3.0, v8, Double.MinPositiveValue)
+    val r10 = r9.updated(doubleField2, 3.0)
+    val v13 = r10(doubleField2)
+    typed[Double](v13)
+    assertEquals(3.0, v13, Double.MinPositiveValue)
   }
 }

@@ -118,7 +118,7 @@ final class HListOps[L <: HList](l : L) {
   
   def apply[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
 
-  def updated[T, F <: Field[T]](f : F, v : T)(implicit updater : Updater[L, F]) : updater.Out = updater(l, f, v)
+  def updated[V, F <: Field[V]](f : F, v : V)(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, f, v)
   
   /**
    * Returns the first ''n'' elements of this `HList`. An explicit type argument must be provided. Available only if
@@ -1218,34 +1218,34 @@ object ZipApplyAux {
     }
 }
 
-trait Updater[L <: HList, F <: HList.FieldAux] {
+trait Updater[L <: HList, F <: HList.FieldAux, V] {
   type Out <: HList
-  def apply(l : L, f : F, v : F#valueType) : Out
+  def apply(l : L, f : F, v : V) : Out
 }
 
-trait UpdaterAux[L <: HList, F <: HList.FieldAux, Out <: HList] {
-  def apply(l : L, f : F, v : F#valueType) : Out
+trait UpdaterAux[L <: HList, F <: HList.FieldAux, V, Out <: HList] {
+  def apply(l : L, f : F, v : V) : Out
 }
 
 object Updater {
-  implicit def updater[L <: HList, F <: HList.FieldAux, Out0 <: HList](implicit updater : UpdaterAux[L, F, Out0]) = new Updater[L, F] {
+  implicit def updater[L <: HList, F <: HList.FieldAux, V, Out0 <: HList](implicit updater : UpdaterAux[L, F, V, Out0]) = new Updater[L, F, V] {
     type Out = Out0
-    def apply(l : L, f : F, v : F#valueType) : Out = updater(l, f, v)
+    def apply(l : L, f : F, v : V) : Out = updater(l, f, v)
   }
 }
 
 trait LowPriorityUpdaterAux {
-  implicit def hlistUpdater1[L <: HList, V, F <: HList.Field[V]] = new UpdaterAux[L, F, (F, V) :: L] {
+  implicit def hlistUpdater1[L <: HList, F <: HList.FieldAux, V] = new UpdaterAux[L, F, V, (F, V) :: L] {
     def apply(l : L, f : F, v : V) : (F, V) :: L = (f -> v) :: l
   }
 }
 
 object UpdaterAux extends LowPriorityUpdaterAux {
-  implicit def hlistUpdater2[V, T <: HList, F <: HList.Field[V]] = new UpdaterAux[(F, V) :: T, F, (F, V) :: T] {
+  implicit def hlistUpdater2[T <: HList, F <: HList.FieldAux, V] = new UpdaterAux[(F, V) :: T, F, V, (F, V) :: T] {
     def apply(l : (F, V) :: T, f : F, v : V) : (F, V) :: T = (f -> v) :: l.tail
   }
   
-  implicit def hlistUpdater3[H, T <: HList, F <: HList.FieldAux, Out <: HList](implicit ut : UpdaterAux[T, F, Out]) = new UpdaterAux[H :: T, F, H :: Out] {
-    def apply(l : H :: T, f : F, v : F#valueType) : H :: Out = l.head :: ut(l.tail, f, v)
+  implicit def hlistUpdater3[H, T <: HList, F <: HList.FieldAux, V, Out <: HList](implicit ut : UpdaterAux[T, F, V, Out]) = new UpdaterAux[H :: T, F, V, H :: Out] {
+    def apply(l : H :: T, f : F, v : V) : H :: Out = l.head :: ut(l.tail, f, v)
   }
 }
