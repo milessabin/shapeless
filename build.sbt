@@ -1,6 +1,6 @@
 name := "shapeless"
 
-organization := "com.github.milessabin"
+organization := "com.chuusai"
 
 version := "1.0.1"
 
