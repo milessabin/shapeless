@@ -23,6 +23,8 @@ object ShapelessBuild extends Build {
     id = "root", 
     base = file("."),
     settings = Defaults.defaultSettings ++ Seq(
+      (unmanagedSourceDirectories in Compile) <+= baseDirectory(_ / "examples/src/main/scala"),
+      (unmanagedSourceDirectories in Test) <+= baseDirectory(_ / "examples/src/test/scala"),
       (sourceGenerators in Compile) <+= (sourceManaged in Compile) map { dir =>
         val tupleraux = dir / "shapeless" / "tupleraux.scala"
         IO.write(tupleraux, genTuplerAuxInstances)
