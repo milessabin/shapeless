@@ -86,6 +86,22 @@ object Prod {
 }
 
 /**
+ * Type class witnessing that `A` is less than `B`.
+ * 
+ * @author Miles Sabin
+ */
+trait LT[A <: Nat, B <: Nat]
+
+object LT {
+  import Nat._0
+
+  type <[A <: Nat, B <: Nat] = LT[A, B]
+
+  implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
+  implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
+}
+
+/**
  * Type class supporting conversion of type-level Nats to value level Ints.
  * 
  * @author Miles Sabin
