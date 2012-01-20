@@ -19,11 +19,11 @@ abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
   
   def tail[M <: Nat](implicit pred : Pred[L, M]) = Sized[M](r.tail)
   
-  def take[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = Sized[M](r.take(toInt[M]))
+  def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = Sized[M](r.take(toInt[M]))
   
-  def drop[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = Sized[diff.Out](r.drop(toInt[M]))
+  def drop[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = Sized[diff.Out](r.drop(toInt[M]))
   
-  def splitAt[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = (take[M], drop[M])
+  def splitAt[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = (take[M], drop[M])
   
   def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) : Sized[Repr, Succ[L]] = {
     val builder = cbf.apply(r)
