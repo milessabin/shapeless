@@ -21,7 +21,17 @@ abstract class NList[Repr, L <: Nat](r : Repr) { outer =>
     implicit val conv = outer.conv
   }
   
-  def ++[B >: A, That <: GenTraversableLike[B, That], M <: Nat, N <: Nat](that : NList[That, M] { type A = B })
+  def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) : NList[Repr, Succ[L]] = {
+    val builder = cbf.apply(r)
+    builder += elem
+    builder ++= r.toIterator
+    new NList[Repr, Succ[L]](builder.result) {
+      type A = outer.A
+      implicit val conv = outer.conv
+    }
+  }
+  
+  def ++[B >: A, That <% GenTraversableLike[B, That], M <: Nat, N <: Nat](that : NList[That, M] { type A = B })
     (implicit
       ev : Sum[L, M, N],
       cbf : CanBuildFrom[Repr, B, That]
@@ -51,5 +61,5 @@ object NList {
   implicit def genTraversableNListOps[CC[X] <: GenTraversable[X], T](cc : CC[T])
     (implicit conv : CC[T] => GenTraversableLike[T, CC[T]]) = new NListOps[T, CC[T]](cc)
   
-  implicit def stringNListOps(s : String) = new NListOps[Char, WrappedString](s)
+  implicit def stringNListOps(s : String) = new NListOps[Char, String](s)
 }

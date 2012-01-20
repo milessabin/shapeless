@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-object NListTests {
+class NListTests {
   import Nat._
   import NList._
   
@@ -96,10 +96,15 @@ object NListTests {
     assertTrue(s2.isDefined)
 
     val s3 = s1.get ++ s2.get
+    typed[NList[String, _6]](s3)
     assertEquals("foobar", s3.toRepr)
     
     val cs = for(x <- s1 ; y <- s2) yield x ++ y
+    assertTrue(cs.isDefined)
+    typed[NList[String, _6]](cs.get)
     assertEquals("foobar", cs.get.toRepr)
+    
+    val s4 = 'c' +: s1.get
     
     val ll1 = List(1, 2, 3).toNList[_3]
     assertTrue(ll1.isDefined)
@@ -107,9 +112,12 @@ object NListTests {
     assertTrue(ll2.isDefined)
 
     val ll3 = ll1.get ++ ll2.get
+    typed[NList[List[Int], _6]](ll3)
     assertEquals(List(1, 2, 3, 4, 5, 6), ll3.toRepr)
     
     val cl = for(x <- ll1 ; y <- ll2) yield x ++ y
+    assertTrue(cl.isDefined)
+    typed[NList[List[Int], _6]](cl.get)
     assertEquals(List(1, 2, 3, 4, 5, 6), cl.get.toRepr)
   }
 }
