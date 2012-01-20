@@ -15,10 +15,34 @@ abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
   override def toString = r.toString
   def unsized = r
   
-  def head(implicit ev : _0 < L) : A = r.head 
+  def head(implicit ev : _0 < L) : A = r.head
+  
   def tail[M <: Nat](implicit pred : Pred[L, M]) = new Sized[Repr, M](r.tail) {
     type A = outer.A
     implicit val conv = outer.conv
+  }
+  
+  def take[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = new Sized[Repr, M](r.take(toInt[M])) {
+    type A = outer.A
+    implicit val conv = outer.conv
+  }
+  
+  def drop[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = new Sized[Repr, diff.Out](r.drop(toInt[M])) {
+    type A = outer.A
+    implicit val conv = outer.conv
+  }
+  
+  def splitAt[M <: Nat](implicit diff : DiffAux[L, M], ev : ToInt[M]) = {
+    val prefix = new Sized[Repr, M](r.take(toInt[M])) {
+      type A = outer.A
+      implicit val conv = outer.conv
+    }
+    val suffix = new Sized[Repr, diff.Out](r.drop(toInt[M])) {
+      type A = outer.A
+      implicit val conv = outer.conv
+    }
+    
+    (prefix, suffix)
   }
   
   def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) : Sized[Repr, Succ[L]] = {
@@ -61,4 +85,6 @@ object Sized {
     (implicit conv : CC[T] => GenTraversableLike[T, CC[T]]) = new SizedOps[T, CC[T]](cc)
   
   implicit def stringNListOps(s : String) = new SizedOps[Char, String](s)
+  
+  implicit def sizedToRepr[Repr](s : Sized[Repr, _]) : Repr = s.unsized
 }

@@ -119,5 +119,22 @@ class SizedTests {
     assertTrue(cl.isDefined)
     typed[Sized[List[Int], _6]](cl.get)
     assertEquals(List(1, 2, 3, 4, 5, 6), cl.get.unsized)
+
+    val s = cl.get.size
+    val evens = cl.get.filter(_ % 2 == 0)
+    
+    val j1 = ll1.get.take[_1]
+    
+    val tk1 = cl.get.take[_1]
+    val tk4 = cl.get.take[_4]
+    //val tk7 = cl.get.take[_7]
+    
+    val dr1 = cl.get.drop[_1]
+    val dr4 = cl.get.drop[_4]
+    //val dr7 = cl.get.drop[_7]
+    
+    val (pr1, sf1) = cl.get.splitAt[_1]
+    val (pr4, sf4) = cl.get.splitAt[_4]
+    //val (pr7, sf7) = cl.get.splitAt[_7]
   }
 }
