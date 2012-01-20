@@ -5,8 +5,8 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable.WrappedString
 
 abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
+  import Sized._
   import Nat._
-  import Pred._
   import LT._
   
   type A
@@ -25,27 +25,29 @@ abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
   
   def splitAt[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = (take[M], drop[M])
   
-  def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) : Sized[Repr, Succ[L]] = {
+  def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) = {
     val builder = cbf.apply(r)
     builder += elem
     builder ++= r.toIterator
     Sized[Succ[L]](builder.result)
   }
   
-  def ++[B >: A, That <% GenTraversableLike[B, That], M <: Nat](that : Sized[That, M] { type A = B })
+  def ++[B >: A, That <% GenTraversableLike[B, That], M <: Nat](that : SizedAux[B, That, M])
     (implicit
       sum : Sum[L, M],
       cbf : CanBuildFrom[Repr, B, That]
     ) = Sized[sum.Out](r ++ that.unsized)
 }
 
-class SizedOps[A0, Repr <% GenTraversableLike[A0, Repr]](r : Repr) {
-  import Nat._
-  def sized[L <: Nat](implicit ev : ToInt[L]) : Option[Sized[Repr, L] { type A = A0 }] =
-    if(r.size == toInt[L]) Some(Sized[L](r)) else None
+class SizedOps[A, Repr <% GenTraversableLike[A, Repr]](r : Repr) {
+  def sized[L <: Nat](implicit toInt : ToInt[L]) = if(r.size == toInt()) Some(Sized[L](r)) else None
 }
 
 object Sized {
+  type SizedAux[A0, Repr, L <: Nat] = Sized[Repr, L] {
+    type A = A0
+  }
+  
   class SizedBuilder[L <: Nat] {
     def apply[A0, Repr <% GenTraversableLike[A0, Repr]](r : Repr) = { 
       val conv0 = implicitly[Repr => GenTraversableLike[A0, Repr]]
