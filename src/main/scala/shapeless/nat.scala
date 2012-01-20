@@ -71,6 +71,31 @@ object Sum {
 }
 
 /**
+ * Type class witnessing that `C` is the difference of `A` and `B`.
+ * 
+ * @author Miles Sabin
+ */
+
+trait Diff[A <: Nat, B <: Nat, C <: Nat]
+
+trait DiffAux[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+object DiffAux {
+  implicit def diffAux[A <: Nat, B <: Nat, C <: Nat](implicit diff : Diff[A, B, C]) = new DiffAux[A, B] {
+    type Out = C
+  }
+}
+
+object Diff {
+  import Nat._0
+  implicit def diff1[A <: Nat] = new Diff[A, _0, A] {}
+  implicit def diff2[A <: Nat, B <: Nat, C <: Nat]
+    (implicit ev : Diff[A, B, C]) = new Diff[Succ[A], Succ[B], C] {}
+}
+
+/**
  * Type class witnessing that `C` is the product of `A` and `B`.
  * 
  * @author Miles Sabin
