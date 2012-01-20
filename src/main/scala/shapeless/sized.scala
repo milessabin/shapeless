@@ -32,11 +32,19 @@ abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
     Sized[Succ[L]](builder.result)
   }
   
-  def ++[B >: A, That <% GenTraversableLike[B, That], M <: Nat](that : SizedAux[B, That, M])
+  def ++[B >: A, That, M <: Nat](that : SizedAux[B, That, M])
     (implicit
       sum : Sum[L, M],
       cbf : CanBuildFrom[Repr, B, That]
-    ) = Sized[sum.Out](r ++ that.unsized)
+    ) = {
+    implicit val convThat = that.conv
+    Sized[sum.Out](r ++ that.unsized)
+  }
+    
+  def map[B, That](f : A => B)
+    (implicit
+      cbf : CanBuildFrom[Repr, B, That],
+      convThat : That => GenTraversableLike[B, That]) = Sized[L](r map f)
 }
 
 class SizedOps[A, Repr <% GenTraversableLike[A, Repr]](r : Repr) {
