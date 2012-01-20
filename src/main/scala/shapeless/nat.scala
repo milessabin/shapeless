@@ -49,10 +49,20 @@ object Nat extends Nats {
  * 
  * @author Miles Sabin
  */
-trait Pred[A <: Nat, B <: Nat]
+trait Pred[A <: Nat] {
+  type Out <: Nat
+}
+
+trait PredAux[A <: Nat, B <: Nat]
 
 object Pred {
-  implicit def pred[B <: Nat] = new Pred[Succ[B], B] {}
+  implicit def pred[A <: Nat, B <: Nat](implicit pred : PredAux[A, B]) = new Pred[A] {
+    type Out = B
+  }
+}
+
+object PredAux {
+  implicit def pred[B <: Nat] = new PredAux[Succ[B], B] {}
 }
 
 /**
@@ -60,7 +70,6 @@ object Pred {
  * 
  * @author Miles Sabin
  */
-
 trait Sum[A <: Nat, B <: Nat] {
   type Out <: Nat
 }
@@ -85,7 +94,6 @@ object SumAux {
  * 
  * @author Miles Sabin
  */
-
 trait Diff[A <: Nat, B <: Nat] {
   type Out <: Nat
 }
@@ -110,14 +118,24 @@ object DiffAux {
  * 
  * @author Miles Sabin
  */
-trait Prod[A <: Nat, B <: Nat, C <: Nat]
+trait Prod[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait ProdAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Prod {
+  implicit def prod[A <: Nat, B <: Nat, C <: Nat](implicit diff : ProdAux[A, B, C]) = new Prod[A, B] {
+    type Out = C
+  }
+}
+
+object ProdAux {
   import Nat._0
 
-  implicit def prod1[B <: Nat] = new Prod[_0, B, _0] {}
+  implicit def prod1[B <: Nat] = new ProdAux[_0, B, _0] {}
   implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
-    (implicit ev1 : Prod[A, B, C], ev2 : SumAux[B, C, D]) = new Prod[Succ[A], B, D] {}
+    (implicit ev1 : ProdAux[A, B, C], ev2 : SumAux[B, C, D]) = new ProdAux[Succ[A], B, D] {}
 }
 
 /**

@@ -17,7 +17,7 @@ abstract class Sized[Repr, L <: Nat](r : Repr) { outer =>
   
   def head(implicit ev : _0 < L) : A = r.head
   
-  def tail[M <: Nat](implicit pred : Pred[L, M]) = Sized[M](r.tail)
+  def tail(implicit pred : Pred[L]) = Sized[pred.Out](r.tail)
   
   def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = Sized[M](r.take(toInt[M]))
   
