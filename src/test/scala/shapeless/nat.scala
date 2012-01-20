@@ -25,7 +25,7 @@ class NatTests {
   @Test
   def testNat {
     implicitly[Succ[_1] =:= _2]
-    implicitly[Sum[_2, _3, _5]]
+    implicitly[SumAux[_2, _3, _5]]
     
     implicitly[Pred[_19, _18]]
     
