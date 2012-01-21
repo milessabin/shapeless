@@ -33,6 +33,13 @@ class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { out
     wrap[A, Repr, Succ[L]](builder.result)
   }
   
+  def :+(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) = {
+    val builder = cbf.apply(r)
+    builder ++= r.toIterator
+    builder += elem
+    wrap[A, Repr, Succ[L]](builder.result)
+  }
+  
   def ++[B >: A, That, M <: Nat](that : Sized[That, M] { type A = B })
     (implicit
       sum : Sum[L, M],
