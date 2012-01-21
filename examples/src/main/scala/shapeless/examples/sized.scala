@@ -56,6 +56,6 @@ object SizedExample2 extends App {
   val formatted = csv(hdrs, rows)
   formatted foreach println
   
-  val threeHdrs = Sized[Seq]("Title", "Author", "ISBN") // Sized[List[Int], _3]
-  //val badFormatted = csv(threeHdrs, rows) // Does not compile
+  val threeHdrs = Sized("Title", "Author", "ISBN")  // Sized[List[Int], _3]
+  //val badFormatted = csv(threeHdrs, rows)         // Does not compile
 }
