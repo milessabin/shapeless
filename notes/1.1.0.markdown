@@ -1,0 +1,11 @@
+A minor release of [shapeless](https://github.com/milessabin/shapeless).
+The main changes include,
+
+* The addition of a Sized type for collections with statically known
+  sizes.
+  
+* The beginning of a collection of non-test examples.
+
+* The SBT project was missing an organization identifier. This has been
+  fixed. Thanks to [aloiscochard](https://github.com/aloiscochard) for
+  catching and patching this.
