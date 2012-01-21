@@ -43,8 +43,11 @@ object ShapelessBuild extends Build {
         
         val tupletypeables = dir / "shapeless" / "tupletypeabels.scala"
         IO.write(tupletypeables, genTupleTypeableInstances)
+
+        val sizedbuilder = dir / "shapeless" / "sizedbuilder.scala"
+        IO.write(sizedbuilder, genSizedBuilder)
         
-        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats, tupletypeables)
+        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats, tupletypeables, sizedbuilder)
       }
     )
   )
@@ -215,6 +218,30 @@ object ShapelessBuild extends Build {
     ("""|
         |trait TupleTypeableInstances {
         |  import Typeable._
+        |"""+instances+"""}
+        |""").stripMargin
+  }
+  
+  def genSizedBuilder = {
+    def genInstance(arity : Int) = {
+      val argVars = (0 until arity) map (n => (n+'a').toChar)
+      val args = argVars.mkString("(", " : T, ", " : T)")
+      val appendArgs = argVars.mkString("(", ", ", ")")
+
+      ("""|
+          |  def apply[T]"""+args+"""(implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
+          |    wrap[T, CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
+          |""").stripMargin
+    }
+
+    val instances = ((1 to 22) map genInstance).mkString
+    
+    genHeader+
+    ("""|
+        |class SizedBuilder[CC[_]] {
+        |  import scala.collection.generic.CanBuildFrom
+        |  import Nat._
+        |  import Sized._
         |"""+instances+"""}
         |""").stripMargin
   }

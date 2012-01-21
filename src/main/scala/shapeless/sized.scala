@@ -46,20 +46,6 @@ trait LowPrioritySized {
   implicit def sizedToRepr[Repr](s : Sized[Repr, _]) : Repr = s.unsized
 }
 
-class SizedBuilder[CC[_]] {
-  import Nat._
-  import Sized._
-  
-  def apply[T](a : T)
-    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = wrap[T, CC[T], _1]((cbf() += a).result)
-
-  def apply[T](a : T, b : T)
-    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = wrap[T, CC[T], _2]((cbf() += (a, b)).result)
-      
-  def apply[T](a : T, b : T, c : T)
-    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = wrap[T, CC[T], _3]((cbf() += (a, b, c)).result)
-}
-
 object Sized extends LowPrioritySized {
   import Nat._
   
