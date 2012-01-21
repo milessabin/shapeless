@@ -140,5 +140,28 @@ class SizedTests {
     val ml = cl.get map (_.toString)
     typed[Sized[List[String], _6]](ml)
     assertEquals(List("1", "2", "3", "4", "5", "6"), ml.unsized)
+
+    import scala.collection.immutable.IndexedSeq
+    
+    val is0 = Sized()
+    typed[Sized[IndexedSeq[Nothing], _0]](is0)
+    val is1 = Sized("foo")
+    typed[Sized[IndexedSeq[String], _1]](is1)
+    val is2 = Sized("foo", "bar")
+    typed[Sized[IndexedSeq[String], _2]](is2)
+    
+    val isl0 = Sized[List]()
+    typed[Sized[List[Nothing], _0]](isl0)
+    val isl1 = Sized[List]("foo")
+    typed[Sized[List[String], _1]](isl1)
+    val isl2 = Sized[List]("foo", "bar")
+    typed[Sized[List[String], _2]](isl2)
+
+    val isa0 = Sized[Array]()
+    typed[Sized[Array[Nothing], _0]](isa0)
+    val isa1 = Sized[Array]("foo")
+    typed[Sized[Array[String], _1]](isa1)
+    val isa2 = Sized[Array]("foo", "bar")
+    typed[Sized[Array[String], _2]](isa2)
   }
 }
