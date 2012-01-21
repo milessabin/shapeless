@@ -76,6 +76,9 @@ object Sized extends LowPrioritySized {
       wrap[A, Repr, L](r)
     }
   }
+  
+  def unapplySeq[A0, Repr <% GenTraversableLike[A0, Repr], L <: Nat]
+    (x : Sized[Repr, L] { type A = A0 }) = Some(x.unsized)
 
   implicit def genTraversableSizedConv[CC[X] <: GenTraversable[X], T](cc : CC[T])
     (implicit conv : CC[T] => GenTraversableLike[T, CC[T]]) = new SizedConv[T, CC[T]](cc)
