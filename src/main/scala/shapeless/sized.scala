@@ -74,6 +74,11 @@ object Sized extends LowPrioritySized {
   class SizedConv[A0, Repr <% GenTraversableLike[A0, Repr]](r : Repr) {
     def sized[L <: Nat](implicit toInt : ToInt[L]) =
       if(r.size == toInt()) Some(new Sized[Repr, L](r) { type A = A0 }) else None
+      
+    def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
+      assert(r.size == toInt())
+      new Sized[Repr, L](r) { type A = A0 }
+    }
   }
 
   implicit def genTraversableSizedOps[CC[X] <: GenTraversable[X], T](cc : CC[T])
