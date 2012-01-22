@@ -1,6 +1,8 @@
 name := "shapeless"
 
-version := "1.0.1"
+organization := "com.chuusai"
+
+version := "1.1.0"
 
 scalaVersion := "2.10.0-SNAPSHOT"
 

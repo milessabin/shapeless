@@ -22,16 +22,34 @@ import org.junit.Assert._
 class NatTests {
   import Nat._
   
+  trait Check[N <: Nat]
+  def check[N <: Nat](n : => Check[N]) {}
+  
   @Test
   def testNat {
     implicitly[Succ[_1] =:= _2]
-    implicitly[Sum[_2, _3, _5]]
     
-    implicitly[Pred[_19, _18]]
+    implicitly[PredAux[_19, _18]]
     
-    implicitly[Prod[_2, _3, _6]]
-    implicitly[Prod[_4, _5, _20]]
+    def pred[A <: Nat](implicit pred : Pred[A]) = new Check[pred.Out] {}
+    val pd1 = pred[_19]
+    check[_18](pd1)
     
+    implicitly[SumAux[_2, _3, _5]]
+    
+    def sum[A <: Nat, B <: Nat](implicit sum : Sum[A, B]) = new Check[sum.Out] {}
+    val s1 = sum[_2, _3]
+    check[_5](s1)
+    
+    implicitly[ProdAux[_2, _3, _6]]
+    implicitly[ProdAux[_4, _5, _20]]
+    
+    def prod[A <: Nat, B <: Nat](implicit prod : Prod[A, B]) = new Check[prod.Out] {}
+    val p1 = prod[_2, _3]
+    check[_6](p1)
+    val p2 = prod[_4, _5]
+    check[_20](p2)
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])

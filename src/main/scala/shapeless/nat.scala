@@ -49,10 +49,20 @@ object Nat extends Nats {
  * 
  * @author Miles Sabin
  */
-trait Pred[A <: Nat, B <: Nat]
+trait Pred[A <: Nat] {
+  type Out <: Nat
+}
+
+trait PredAux[A <: Nat, B <: Nat]
 
 object Pred {
-  implicit def pred[B <: Nat] = new Pred[Succ[B], B] {}
+  implicit def pred[A <: Nat, B <: Nat](implicit pred : PredAux[A, B]) = new Pred[A] {
+    type Out = B
+  }
+}
+
+object PredAux {
+  implicit def pred[B <: Nat] = new PredAux[Succ[B], B] {}
 }
 
 /**
@@ -60,14 +70,47 @@ object Pred {
  * 
  * @author Miles Sabin
  */
+trait Sum[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
 
-trait Sum[A <: Nat, B <: Nat, C <: Nat]
+trait SumAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Sum {
+  implicit def sum[A <: Nat, B <: Nat, C <: Nat](implicit diff : SumAux[A, B, C]) = new Sum[A, B] {
+    type Out = C
+  }
+}
+
+object SumAux {
   import Nat._0
-  implicit def sum1[B <: Nat] = new Sum[_0, B, B] {}
+  implicit def sum1[B <: Nat] = new SumAux[_0, B, B] {}
   implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
-    (implicit ev : Sum[A, Succ[B], C]) = new Sum[Succ[A], B, C] {}
+    (implicit ev : SumAux[A, Succ[B], C]) = new SumAux[Succ[A], B, C] {}
+}
+
+/**
+ * Type class witnessing that `C` is the difference of `A` and `B`.
+ * 
+ * @author Miles Sabin
+ */
+trait Diff[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait DiffAux[A <: Nat, B <: Nat, C <: Nat]
+
+object Diff {
+  implicit def diff[A <: Nat, B <: Nat, C <: Nat](implicit diff : DiffAux[A, B, C]) = new Diff[A, B] {
+    type Out = C
+  }
+}
+
+object DiffAux {
+  import Nat._0
+  implicit def diff1[A <: Nat] = new DiffAux[A, _0, A] {}
+  implicit def diff2[A <: Nat, B <: Nat, C <: Nat]
+    (implicit ev : DiffAux[A, B, C]) = new DiffAux[Succ[A], Succ[B], C] {}
 }
 
 /**
@@ -75,14 +118,40 @@ object Sum {
  * 
  * @author Miles Sabin
  */
-trait Prod[A <: Nat, B <: Nat, C <: Nat]
+trait Prod[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait ProdAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Prod {
+  implicit def prod[A <: Nat, B <: Nat, C <: Nat](implicit diff : ProdAux[A, B, C]) = new Prod[A, B] {
+    type Out = C
+  }
+}
+
+object ProdAux {
   import Nat._0
 
-  implicit def prod1[B <: Nat] = new Prod[_0, B, _0] {}
+  implicit def prod1[B <: Nat] = new ProdAux[_0, B, _0] {}
   implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
-    (implicit ev1 : Prod[A, B, C], ev2 : Sum[B, C, D]) = new Prod[Succ[A], B, D] {}
+    (implicit ev1 : ProdAux[A, B, C], ev2 : SumAux[B, C, D]) = new ProdAux[Succ[A], B, D] {}
+}
+
+/**
+ * Type class witnessing that `A` is less than `B`.
+ * 
+ * @author Miles Sabin
+ */
+trait LT[A <: Nat, B <: Nat]
+
+object LT {
+  import Nat._0
+
+  type <[A <: Nat, B <: Nat] = LT[A, B]
+
+  implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
+  implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
 }
 
 /**
