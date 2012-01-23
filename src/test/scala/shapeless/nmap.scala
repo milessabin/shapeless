@@ -21,5 +21,9 @@ class NMapTests {
     val mb = m(true)
     typed[Map[Int :: String :: HNil, Double]](mb)
     assertEquals(Map((1 :: "foo" :: HNil, 2.0), (2 :: "foo" :: HNil, 3.0)), mb)
+    
+    val mib = m(1 :: true :: HNil)
+    typed[Map[String :: HNil, Double]](mib)
+    assertEquals(Map(("foo" :: HNil, 2.0)), mib)
   }
 }
