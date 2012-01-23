@@ -699,18 +699,18 @@ class HListTests {
   }
 
   @Test
-  def testSublist {
+  def testRemoveAll {
     val l = 1 :: true :: "foo" :: HNil
 
-    val li = l.sublist[Int :: HNil]
+    val li = l.removeAll[Int :: HNil]
     typed[(Int :: HNil, Boolean :: String :: HNil)](li)
     assertEquals((1 :: HNil, true :: "foo" :: HNil), li)
 
-    val lb = l.sublist[Boolean :: HNil]
+    val lb = l.removeAll[Boolean :: HNil]
     typed[(Boolean :: HNil, Int :: String :: HNil)](lb)
     assertEquals((true :: HNil, 1 :: "foo" :: HNil), lb)
 
-    val lbi = l.sublist[Boolean :: Int :: HNil]
+    val lbi = l.removeAll[Boolean :: Int :: HNil]
     typed[(Boolean :: Int :: HNil, String :: HNil)](lbi)
     assertEquals((true :: 1 :: HNil, "foo" :: HNil), lbi)
   }
