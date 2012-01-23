@@ -22,6 +22,7 @@ import org.junit.Assert._
 class RecordTests {
   
   import HList._
+  import Record._
 
   def typed[T](t : => T) {}
 
@@ -43,39 +44,39 @@ class RecordTests {
       (doubleField1 ->   2.0) ::
       HNil
     
-    val v1 = r1(intField1)
+    val v1 = r1.get(intField1)
     typed[Int](v1)
     assertEquals(23, v1)
 
-    val v2 = r1(stringField1)
+    val v2 = r1.get(stringField1)
     typed[String](v2)
     assertEquals("foo", v2)
 
-    val v3 = r1(boolField1)
+    val v3 = r1.get(boolField1)
     typed[Boolean](v3)
     assertEquals(true, v3)
     
-    val v4 = r1(doubleField1)
+    val v4 = r1.get(doubleField1)
     typed[Double](v4)
     assertEquals(2.0, v4, Double.MinPositiveValue)
 
     val r2 = r1.updated(intField1, 7)
-    val v5 = r2(intField1)
+    val v5 = r2.get(intField1)
     typed[Int](v5)
     assertEquals(7, v5)
     
     val r3 = r1.updated(stringField1, "wibble")
-    val v6 = r3(stringField1)
+    val v6 = r3.get(stringField1)
     typed[String](v6)
     assertEquals("wibble", v6)
     
     val r4 = r1.updated(boolField1, false)
-    val v7 = r4(boolField1)
+    val v7 = r4.get(boolField1)
     typed[Boolean](v7)
     assertEquals(false, v7)
     
     val r5 = r1.updated(doubleField1, 1.0)
-    val v8 = r5(doubleField1)
+    val v8 = r5.get(doubleField1)
     typed[Double](v8)
     assertEquals(1.0, v8, Double.MinPositiveValue)
 
@@ -84,27 +85,27 @@ class RecordTests {
       (stringField2 -> "bar") ::
       r1
 
-    val v9 = r6(intField2)
+    val v9 = r6.get(intField2)
     typed[Int](v9)
     assertEquals(13, v9)
     
-    val v10 = r6(stringField2)
+    val v10 = r6.get(stringField2)
     typed[String](v10)
     assertEquals("bar", v10)
     
     val r7 = HNil
     val r8 = r7.updated(boolField2, false)
-    val v11 = r8(boolField2)
+    val v11 = r8.get(boolField2)
     typed[Boolean](v11)
     assertEquals(false, v11)
 
     val r9 = r6.updated(boolField2, false)
-    val v12 = r9(boolField2)
+    val v12 = r9.get(boolField2)
     typed[Boolean](v12)
     assertEquals(false, v12)
     
     val r10 = r9.updated(doubleField2, 3.0)
-    val v13 = r10(doubleField2)
+    val v13 = r10.get(doubleField2)
     typed[Double](v13)
     assertEquals(3.0, v13, Double.MinPositiveValue)
   }

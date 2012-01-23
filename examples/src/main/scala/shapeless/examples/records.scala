@@ -23,8 +23,8 @@ package examples
  * @author Miles Sabin
  */
 object RecordExamples extends App {
-  
   import HList._
+  import Record._
 
   object author  extends Field[String]  { override def toString = "Author" }
   object title   extends Field[String]  { override def toString = "Title" }
@@ -47,7 +47,7 @@ object RecordExamples extends App {
   printBook(book)
     
   // Read price field
-  val currentPrice = book(price)  // Static type is Double
+  val currentPrice = book.get(price)  // Static type is Double
   println("Current price is "+currentPrice)
   println
 
