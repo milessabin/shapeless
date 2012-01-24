@@ -118,8 +118,6 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns the first element of type `U` of this `HList` plus the remainder of the `HList`. An explicit type argument
    * must be provided. Available only if there is evidence that this `HList` has an element of type `U`.
-   *
-   * Probably should implement in terms of SplitLeft  
    */
   def remove[U](implicit remove : Remove[U, L]) : (U, remove.Out) = remove(l)
   
@@ -600,6 +598,8 @@ object Selector {
 /**
  * Type class supporting removal of an element from this `HList`. Available only if this `HList` contains an
  * element of type `U`.
+ * 
+ * @author Stacy Curl
  */
 trait Remove[E, L <: HList] {
   type Out <: HList
@@ -622,9 +622,10 @@ object RemoveAux {
     def apply(l : H :: T) : (H, T) = (l.head, l.tail)
   }
   
-  implicit def hlistRemove[H, T <: HList, E, Rem <: HList](implicit r : RemoveAux[T, E, Rem]) = new RemoveAux[H :: T, E, H :: Rem] {
-    def apply(l : H :: T) : (E, H :: Rem) = r(l.tail) match { case (e, tail) => (e, l.head :: tail) }
-  }
+  implicit def hlistRemove[H, T <: HList, E, Rem <: HList](implicit r : RemoveAux[T, E, Rem]) =
+    new RemoveAux[H :: T, E, H :: Rem] {
+      def apply(l : H :: T) : (E, H :: Rem) = r(l.tail) match { case (e, tail) => (e, l.head :: tail) }
+    }
 }
 
 /**
@@ -632,29 +633,42 @@ object RemoveAux {
  * sublist of type `SL`.
  *
  * The elements of `SL` do not have to be contiguous in this `HList`.
+ * 
+ * @author Stacy Curl
  */
 trait RemoveAll[SL <: HList, L <: HList] {
   type Out <: HList
   def apply(l : L): (SL, Out)
 }
-  
-object RemoveAll {
-  implicit def hlistRemoveSingle[L <: HList, E, Rem <: HList](implicit r : RemoveAux[L, E, Rem]) = new RemoveAll[E :: HNil, L] {
-    type Out = Rem
-    def apply(l : L): (E :: HNil, Out) = r(l) match { case (e, sub) => (e :: HNil, sub) }
-  }
 
-  implicit def hlistRemoveAll[L <: HList, E, Rem <: HList, SL <: HList](implicit r : RemoveAux[L, E, Rem], s : RemoveAll[SL, Rem]) = 
-    new RemoveAll[E :: SL, L] {
-      type Out = s.Out
-      def apply(l : L): (E :: SL, Out) = r(l) match { 
-        case (e, rem) => s(rem) match {
-          case (sl, left) => (e :: sl, left)
-        }
-      }
+trait RemoveAllAux[SL <: HList, L <: HList, Rem <: HList] {
+  def apply(l : L): (SL, Rem)
+}
+
+object RemoveAll {
+  implicit def removeAll[SL <: HList, L <: HList, Rem <: HList](implicit removeAll : RemoveAllAux[SL, L, Rem]) =
+    new RemoveAll[SL, L] {
+      type Out = Rem
+      def apply(l : L) = removeAll(l)
     }
 }
 
+object RemoveAllAux {
+  implicit def hlistRemoveAllSingle[L <: HList, E, Rem <: HList](implicit rt : RemoveAux[L, E, Rem]) =
+    new RemoveAllAux[E :: HNil, L, Rem] {
+      def apply(l : L): (E :: HNil, Rem) = rt(l) match { case (e, sub) => (e :: HNil, sub) }
+    }
+
+  implicit def hlistRemoveAll[L <: HList, E, RemE <: HList, Rem <: HList, SLT <: HList]
+    (implicit rt : RemoveAux[L, E, RemE], st : RemoveAllAux[SLT, RemE, Rem]) = 
+      new RemoveAllAux[E :: SLT, L, Rem] {
+        def apply(l : L) : (E :: SLT, Rem) = rt(l) match { 
+          case (e, rem) => st(rem) match {
+            case (sl, left) => (e :: sl, left)
+          }
+        }
+      }
+}
 
 /**
  * Type class supporting access to the ''nth'' element of this `HList`. Available only if this `HList` has at least
