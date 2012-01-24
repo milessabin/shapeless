@@ -25,6 +25,15 @@ final class RecordOps[L <: HList](l : L) {
   // def apply[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
 
   def updated[V, F <: Field[V]](f : F, v : V)(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, f, v)
+
+  def remove[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : (F#valueType, remove.Out) = {
+    val ((f, v), r) = remove(l)
+    (v, r)
+  }
+  
+  def +[V, F <: Field[V]](fv : (F, V))(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, fv._1, fv._2)
+  
+  def -[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : remove.Out = remove(l)._2
 }
 
 trait Field[T] extends FieldAux {
@@ -51,10 +60,11 @@ trait UpdaterAux[L <: HList, F <: FieldAux, V, Out <: HList] {
 }
 
 object Updater {
-  implicit def updater[L <: HList, F <: FieldAux, V, Out0 <: HList](implicit updater : UpdaterAux[L, F, V, Out0]) = new Updater[L, F, V] {
-    type Out = Out0
-    def apply(l : L, f : F, v : V) : Out = updater(l, f, v)
-  }
+  implicit def updater[L <: HList, F <: FieldAux, V, Out0 <: HList](implicit updater : UpdaterAux[L, F, V, Out0]) =
+    new Updater[L, F, V] {
+      type Out = Out0
+      def apply(l : L, f : F, v : V) : Out = updater(l, f, v)
+    }
 }
 
 trait LowPriorityUpdaterAux {
@@ -68,7 +78,8 @@ object UpdaterAux extends LowPriorityUpdaterAux {
     def apply(l : (F, V) :: T, f : F, v : V) : (F, V) :: T = (f -> v) :: l.tail
   }
   
-  implicit def hlistUpdater3[H, T <: HList, F <: FieldAux, V, Out <: HList](implicit ut : UpdaterAux[T, F, V, Out]) = new UpdaterAux[H :: T, F, V, H :: Out] {
-    def apply(l : H :: T, f : F, v : V) : H :: Out = l.head :: ut(l.tail, f, v)
-  }
+  implicit def hlistUpdater3[H, T <: HList, F <: FieldAux, V, Out <: HList](implicit ut : UpdaterAux[T, F, V, Out]) =
+    new UpdaterAux[H :: T, F, V, H :: Out] {
+      def apply(l : H :: T, f : F, v : V) : H :: Out = l.head :: ut(l.tail, f, v)
+    }
 }

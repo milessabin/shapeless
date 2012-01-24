@@ -52,10 +52,14 @@ object RecordExamples extends App {
   println
 
   // Update price field, relying on static type of currentPrice
-  val updated = book.updated(price, currentPrice+2.0)
+  val updated = book + (price -> (currentPrice+2.0))
   printBook(updated)
 
   // Add a new field
-  val extended = (inPrint -> true) :: updated
+  val extended = updated + (inPrint -> true)
   printBook(extended)
+  
+  // Remove a field
+  val noId = extended - id 
+  printBook(noId)
 }
