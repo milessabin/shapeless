@@ -680,4 +680,38 @@ class HListTests {
     assertEquals(4 :: 5 :: Nil, tmixed._2)
     assertEquals(false :: () :: HNil, tmixed._3)
   }
+
+  @Test
+  def testRemove {
+    val l = 1 :: true :: "foo" :: HNil
+
+    val li = l.remove[Int]
+    typed[(Int, Boolean :: String :: HNil)](li)
+    assertEquals((1, true :: "foo" :: HNil), li)
+
+    val lb = l.remove[Boolean]
+    typed[(Boolean, Int :: String :: HNil)](lb)
+    assertEquals((true, 1 :: "foo" :: HNil), lb)
+
+    val ls = l.remove[String]
+    typed[(String, Int :: Boolean :: HNil)](ls)
+    assertEquals(("foo", 1 :: true :: HNil), ls)
+  }
+
+  @Test
+  def testRemoveAll {
+    val l = 1 :: true :: "foo" :: HNil
+
+    val li = l.removeAll[Int :: HNil]
+    typed[(Int :: HNil, Boolean :: String :: HNil)](li)
+    assertEquals((1 :: HNil, true :: "foo" :: HNil), li)
+
+    val lb = l.removeAll[Boolean :: HNil]
+    typed[(Boolean :: HNil, Int :: String :: HNil)](lb)
+    assertEquals((true :: HNil, 1 :: "foo" :: HNil), lb)
+
+    val lbi = l.removeAll[Boolean :: Int :: HNil]
+    typed[(Boolean :: Int :: HNil, String :: HNil)](lbi)
+    assertEquals((true :: 1 :: HNil, "foo" :: HNil), lbi)
+  }
 }
