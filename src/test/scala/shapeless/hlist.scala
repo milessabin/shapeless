@@ -463,6 +463,31 @@ class HListTests {
   }
   
   @Test
+  def testReplace {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+    
+    val (i, r1) = sl.replace(23)
+    typed[Int](i)
+    assertEquals(1, i)
+    assertEquals(23 :: true :: "foo" :: 2.0 :: HNil, r1)
+    
+    val (b, r2) = sl.replace(false)
+    typed[Boolean](b)
+    assertEquals(true, b)
+    assertEquals(1 :: false :: "foo" :: 2.0 :: HNil, r2)
+
+    val (s, r3) = sl.replace("bar")
+    typed[String](s)
+    assertEquals("foo", s)
+    assertEquals(1 :: true :: "bar" :: 2.0 :: HNil, r3)
+
+    val (d, r4) = sl.replace(3.0)
+    typed[Double](d)
+    assertEquals(2.0, d, Double.MinPositiveValue)
+    assertEquals(1 :: true :: "foo" :: 3.0 :: HNil, r4)
+  }
+  
+  @Test
   def testSplitLeft {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
