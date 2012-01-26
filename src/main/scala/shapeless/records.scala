@@ -16,12 +16,18 @@
 
 package shapeless
 
+/**
+ * Record operations on `HList`'s with field-like elements.
+ * 
+ * @author Miles Sabin
+ */
 final class RecordOps[L <: HList](l : L) {
   import Record._
   
   def get[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
   
-  // Reinstate once https://issues.scala-lang.org/browse/SI-5142 is fixed
+  // Creates a bogus ambiguity with HListOps#apply. Will be Reinstated once https://issues.scala-lang.org/browse/SI-5142
+  // is fixed. Use get for now.
   // def apply[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
 
   def updated[V, F <: Field[V]](f : F, v : V)(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, f, v)
@@ -36,6 +42,9 @@ final class RecordOps[L <: HList](l : L) {
   def -[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : remove.Out = remove(l)._2
 }
 
+/**
+ * Field with values of type `T`
+ */
 trait Field[T] extends FieldAux {
   type valueType = T
 }
@@ -50,6 +59,12 @@ object Record {
   type FieldEntry[F <: FieldAux] = (F, F#valueType)
 }
 
+/**
+ * Type class supporting update. Available only if this `HList` has at least one
+ * element.
+ * 
+ * @author Miles Sabin
+ */
 trait Updater[L <: HList, F <: FieldAux, V] {
   type Out <: HList
   def apply(l : L, f : F, v : V) : Out
