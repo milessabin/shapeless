@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package shapeless
-package examples
+package shapeless.examples
 
 /**
  * Type level selection sort
@@ -23,6 +22,7 @@ package examples
  * @author Miles Sabin
  */
 object Sorting {
+  import shapeless._
   import Nat._
   import HList._
   import LT._
