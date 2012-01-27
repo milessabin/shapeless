@@ -30,6 +30,9 @@ object Sorting {
   
   def typed[T](t : => T) {}
 
+  /**
+   * Witness that an HList of Nats is in non-decreasing order at both type and value level.
+   */
   trait NonDecreasing[L <: HList]
   implicit def hnilNonDecreasing = new NonDecreasing[HNil] {}
   implicit def hlistNonDecreasing1[H] = new NonDecreasing[H :: HNil] {}
@@ -46,6 +49,10 @@ object Sorting {
   acceptNonDecreasing(_1 :: _2 :: _3 :: HNil)         // OK
   //acceptNonDecreasing(_1 :: _3 :: _2 :: HNil)         // Does not compile  
 
+  /**
+   * Type class extracting the least element from an HList of Nats at both type and value level.
+   * Returns the least element and the remainder in it's original order.
+   */
   trait SelectLeast[L <: HList, M <: Nat, Rem <: HList] {
     def apply(l : L) : (M, Rem)
   }
@@ -57,10 +64,6 @@ object Sorting {
   }
   
   object SelectLeast extends LowPrioritySelectLeast {
-    implicit def hlistSelectLeast2[H <: Nat] = new SelectLeast[H :: HNil, H, HNil] {
-      def apply(l : H :: HNil) : (H, HNil) = (l.head, HNil)
-    }
-  
     implicit def hlistSelectLeast3[H <: Nat, T <: HList, TM <: Nat, TRem <: HList]
       (implicit tsl : SelectLeast[T, TM, TRem], ev : TM < H) = new SelectLeast[H :: T, TM, H :: TRem] {
       def apply(l : H :: T) : (TM, H :: TRem) = {
@@ -80,6 +83,9 @@ object Sorting {
   typed[_0](l2)
   typed[_3 :: _1 :: _4 :: _2 :: HNil](r2)
   
+  /**
+   * Type class performing selection sort on an HList of Nats at both the type and value level. 
+   */
   trait SelectionSort[L <: HList, S <: HList] {
     def apply(l : L) : S
   }
@@ -91,10 +97,6 @@ object Sorting {
   }
   
   object SelectionSort extends LowPrioritySelectionSort {
-    implicit def hnilSelectionSort = new SelectionSort[HNil, HNil] {
-      def apply(l : HNil) : HNil = HNil
-    }
-    
     implicit def hlistSelectionSort2[L <: HList, M <: Nat, Rem <: HList, ST <: HList]
       (implicit sl : SelectLeast[L, M, Rem], sr : SelectionSort[Rem, ST]) = new SelectionSort[L, M :: ST] {
       def apply(l : L) = {
@@ -106,6 +108,9 @@ object Sorting {
   
   def selectionSort[L <: HList, S <: HList](l : L)(implicit sort : SelectionSort[L, S]) = sort(l)
 
+  /**
+   * The punchline ... 
+   */
   val unsorted = _3 :: _1 :: _4 :: _0 :: _2 :: HNil
   typed[_3 :: _1 :: _4 :: _0 :: _2 :: HNil](unsorted)
   //acceptNonDecreasing(unsorted)  // Does not compile!
