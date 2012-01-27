@@ -128,11 +128,43 @@ final class HListOps[L <: HList](l : L) {
   def removeAll[SL <: HList](implicit removeAll : RemoveAll[SL, L]) : (SL, removeAll.Out) = removeAll(l)
 
   /**
-   * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U`. Available only
-   * if there is evidence that this `HList` has an element of type `U`.
+   * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U` returning both
+   * the replaced element and the updated `HList`. Available only if there is evidence that this `HList` has an element
+   * of type `U`.
    */
   def replace[U](u : U)(implicit replacer : Replacer[L, U, U]) : (U, replacer.Out) = replacer(l, u)
-
+  
+  class ReplaceTypeAux[U] {
+    def apply[V](v : V)(implicit replacer : Replacer[L, U, V]) : (U, replacer.Out) = replacer(l, v)
+  }
+  
+  /**
+   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`, return both the
+   * replaced element and the updated `HList`. An explicit type argument must be provided for `U`. Available only if
+   * there is evidence that this `HList` has an element of type `U`.
+   */
+  def replaceType[U] = new ReplaceTypeAux[U]
+  
+  /**
+   * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U`. Available only
+   * if there is evidence that this `HList` has an element of type `U`.
+   * 
+   * The dummy argument is here to avoid creating an ambiguity with RecordOps#updated and should be removed if
+   * SI-5414 is resolved in a way which eliminates the ambiguity.
+   */
+  def updated[U](u : U, dummy : Unit = ())(implicit replacer : Replacer[L, U, U]) : replacer.Out = replacer(l, u)._2
+  
+  class UpdatedTypeAux[U] {
+    def apply[V](v : V)(implicit replacer : Replacer[L, U, V]) : replacer.Out = replacer(l, v)._2
+  }
+  
+  /**
+   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`, also of type `U`. An
+   * explicit type argument must be provided for `U`. Available only if there is evidence that this `HList` has an
+   * element of type `U`.
+   */
+  def updatedType[U] = new UpdatedTypeAux[U]
+  
   /**
    * Returns the first ''n'' elements of this `HList`. An explicit type argument must be provided. Available only if
    * there is evidence that this `HList` has at least ''n'' elements.
