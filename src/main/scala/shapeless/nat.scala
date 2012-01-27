@@ -155,6 +155,23 @@ object LT {
 }
 
 /**
+ * Type class witnessing that `A` is less than or equal to `B`.
+ * 
+ * @author Miles Sabin
+ */
+trait LTEq[A <: Nat, B <: Nat]
+
+object LTEq {
+  import Nat._0
+
+  type <=[A <: Nat, B <: Nat] = LTEq[A, B]
+
+  implicit def ltEq1 = new <=[_0, _0] {}
+  implicit def ltEq2[B <: Nat] = new <=[_0, Succ[B]] {}
+  implicit def ltEq3[A <: Nat, B <: Nat](implicit lt : A <= B) = new <=[Succ[A], Succ[B]] {}
+}
+
+/**
  * Type class supporting conversion of type-level Nats to value level Ints.
  * 
  * @author Miles Sabin
