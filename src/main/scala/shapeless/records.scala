@@ -24,26 +24,45 @@ package shapeless
 final class RecordOps[L <: HList](l : L) {
   import Record._
   
+  /**
+   * Returns the value associate with the field F. Only available of this record has a field with key type F.
+   */
   def get[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
   
   // Creates a bogus ambiguity with HListOps#apply. Will be Reinstated once https://issues.scala-lang.org/browse/SI-5142
   // is fixed. Use get for now.
   // def apply[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
 
+  /**
+   * Updates or adds to this record a field with key type F and value type F#valueType.
+   */
   def updated[V, F <: Field[V]](f : F, v : V)(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, f, v)
 
+  /**
+   * Remove the first field with key type F from this record, returning both the corresponding value and the updated
+   * record.
+   */
   def remove[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : (F#valueType, remove.Out) = {
     val ((f, v), r) = remove(l)
     (v, r)
   }
   
+  /**
+   * Updates or adds to this record a field with key type F and value type F#valueType.
+   */
   def +[V, F <: Field[V]](fv : (F, V))(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, fv._1, fv._2)
   
+  /**
+   * Remove the first field with key type F from this record, returning both the corresponding value and the updated
+   * record.
+   */
   def -[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : remove.Out = remove(l)._2
 }
 
 /**
  * Field with values of type `T`
+ * 
+ * @author Miles Sabin
  */
 trait Field[T] extends FieldAux {
   type valueType = T
@@ -60,8 +79,7 @@ object Record {
 }
 
 /**
- * Type class supporting update. Available only if this `HList` has at least one
- * element.
+ * Type class supporting record update and extension.
  * 
  * @author Miles Sabin
  */
