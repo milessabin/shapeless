@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package shapeless
-package examples
+package shapeless.examples
 
 class StackOverflow2 {
   // http://stackoverflow.com/questions/8270526
   
+  import shapeless._
   import HList._
   import Functions._
   
@@ -42,6 +42,8 @@ class StackOverflow2 {
 
 class StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
+  
+  import shapeless._
   import HList._
   import Functions._
   import Poly._

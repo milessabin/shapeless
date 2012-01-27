@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package shapeless
-package examples
+package shapeless.examples
 
 /**
  * Record examples.
@@ -23,6 +22,7 @@ package examples
  * @author Miles Sabin
  */
 object RecordExamples extends App {
+  import shapeless._
   import HList._
   import Record._
 

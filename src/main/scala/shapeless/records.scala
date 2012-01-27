@@ -73,7 +73,7 @@ trait FieldAux {
 }
 
 object Record {
-  implicit def recordOps[L <: HList](l : L) = new RecordOps(l)
+  implicit def recordOps[L <: HList](l : L) : RecordOps[L] = new RecordOps(l)
 
   type FieldEntry[F <: FieldAux] = (F, F#valueType)
 }

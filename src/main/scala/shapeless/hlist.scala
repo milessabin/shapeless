@@ -58,8 +58,6 @@ case object HNil extends HNil
  * @author Miles Sabin
  */
 final class HListOps[L <: HList](l : L) {
-  import HList._
-  
   /**
    * Returns the head of this `HList`. Available only if there is evidence that this `HList` is composite.
    */
@@ -73,7 +71,7 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Prepend the argument element to this `HList`.
    */
-  def ::[H](h : H) : H :: L = HCons(h, l)
+  def ::[H](h : H) : H :: L = shapeless.::(h, l)
 
   /**
    * Prepend the argument `HList` to this `HList`.
@@ -266,7 +264,7 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.
    */
-  def zip[R <: HList](r : R)(implicit zipper : Zip[L :: R :: HNil]) : zipper.Out = zipper(HCons(l, HCons(r, HNil)))
+  def zip[R <: HList](r : R)(implicit zipper : Zip[L :: R :: HNil]) : zipper.Out = zipper(l :: r :: HNil)
   
   /**
    * Zips this `HList` of monomorphic function values with its argument `HList` of correspondingly typed function
@@ -316,11 +314,8 @@ final class HListOps[L <: HList](l : L) {
 }
 
 object HList {
-  implicit def hlistOps[L <: HList](l : L) = new HListOps(l)
+  implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 
-  type HCons[+H, +T <: HList] = ::[H, T]
-  val HCons = ::
-  
   /**
    * Convenience aliases for HList :: and List :: allowing them to be used together within match expressions.  
    */

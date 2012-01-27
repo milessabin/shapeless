@@ -22,10 +22,9 @@ package shapeless.examples
  * @author Miles Sabin
  */
 object SizedExamples extends App {
-  import shapeless.Nat
-  import shapeless.Nat._
-  import shapeless.Sized
-  import shapeless.Sized._
+  import shapeless._
+  import Nat._
+  import Sized._
 
   def sequence[T](lo : List[Option[T]]) = if (lo.exists(_ isEmpty)) None else Some(lo.map(_.get))
   
