@@ -225,7 +225,7 @@ might enable a whole lot more.
     
     // extendedHdrs has the wrong number of columns for rows
     val extendedHdrs = Sized("Title", "Author", "ISBN")
-    val badFormatted = csv(threeHdrs, rows)                 // Does not compile
+    val badFormatted = csv(extendedHdrs, rows)             // Does not compile
 ```
 
 Building
