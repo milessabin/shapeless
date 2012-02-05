@@ -44,7 +44,7 @@ Selected highlights of shapeless include,
     implicit def sizeString = size.λ[String](s => s.length)
     implicit def sizeList[T] = size.λ[List[T]](l => l.length)
     implicit def sizeOption[T](implicit cases : size.λ[T]) =
-      size.λ[Option[T]](t => 1+size(t.get))
+      size.λ[Option[T]](t => 1+(t map size).getOrElse(0))
     implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) =
       size.λ[(T, U)](t => size(t._1)+size(t._2))
 
@@ -120,7 +120,7 @@ Selected highlights of shapeless include,
     l3 == 1 :: 3.0 :: HNil
 
     val l4 = l.toZipper.last.left.insert("bar").toHList
-    l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil, l5)
+    l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil
 ```
     
 + has a `unify` operation which converts it to an `HList` of elements
