@@ -35,8 +35,11 @@ object NewtypeExampes extends App {
   
   val ms = MyString("foo")
   
-  //ms.size    // Does not compile
-  ms.mySize  // Compiles. Result is 3.
+  //val s : String = ms        // Does not compile
+  //val ms2 : MyString = "foo" // Does not compile
+  
+  //ms.size                    // Does not compile
+  assert(ms.mySize == 3)       // Compiles. Assertion satisfied.
   
   val s2 = "bar"
   val ms2 = MyString(s2)
