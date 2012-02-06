@@ -45,5 +45,5 @@ object NewtypeExampes extends App {
   val ms2 = MyString(s2)
   
   // Verify that this is an unboxed representation
-  assert(ms2 eq s2)
+  assert(ms2 eq (s2 : AnyRef))
 }
