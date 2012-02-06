@@ -89,6 +89,6 @@ class HListConstraintsTests {
     def acceptSummary[R <: HList : Schema[Int :: String :: HNil]#λ](r : R) = true
     
     acceptSummary(summary) // Compiles
-    // acceptSummary(book) // Does not compiles
+    // acceptSummary(book) // Does not compile
   }
 }
