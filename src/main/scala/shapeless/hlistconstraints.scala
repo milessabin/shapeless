@@ -40,7 +40,7 @@ object UnaryTCConstraint {
 }
 
 /**
- * Type class witnessing that every (type) element of `L` is an element of `M`.
+ * Type class witnessing that every element of `L` is an element of `M`.
  */
 trait BasisConstraint[L <: HList, M <: HList]
 
@@ -49,7 +49,7 @@ object BasisConstraint {
     type λ[L <: HList] = BasisConstraint[L, M] 
   } 
   
-  implicit def hnilDom[M <: HList] = new BasisConstraint[HNil, M] {}
-  implicit def hlistDom[H, T <: HList, M <: HList](implicit bct : BasisConstraint[T, M], sel : Selector[M, H]) =
+  implicit def hnilBasis[M <: HList] = new BasisConstraint[HNil, M] {}
+  implicit def hlistBasis[H, T <: HList, M <: HList](implicit bct : BasisConstraint[T, M], sel : Selector[M, H]) =
     new BasisConstraint[H :: T, M] {}
 }
