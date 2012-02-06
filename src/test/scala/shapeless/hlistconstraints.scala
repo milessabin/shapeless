@@ -62,4 +62,33 @@ class HListConstraintsTests {
     acceptBasis(l1) // Compiles
     //acceptBasis(l2) // Does not compile
   }
+  
+  @Test
+  def testSchemaConstraint {
+    import SchemaConstraint._
+    
+    object author  extends Field[String]
+    object title   extends Field[String]
+    object id      extends Field[Int]
+    object price   extends Field[Double]
+    object inPrint extends Field[Boolean]
+
+    val book =
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (id     ->  262162091) ::
+      (price  ->  44.11) ::
+      HNil
+    
+    val summary = 
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (id     ->  262162091) ::
+      HNil
+      
+    def acceptSummary[R <: HList : Schema[Int :: String :: HNil]#λ](r : R) = true
+    
+    acceptSummary(summary) // Compiles
+    // acceptSummary(book) // Does not compiles
+  }
 }

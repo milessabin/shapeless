@@ -53,3 +53,18 @@ object BasisConstraint {
   implicit def hlistBasis[H, T <: HList, M <: HList](implicit bct : BasisConstraint[T, M], sel : Selector[M, H]) =
     new BasisConstraint[H :: T, M] {}
 }
+
+/**
+ * Type class witnessing that every element of L is of the form FieldEntry[F] where F#valueType is an element of `M`.  
+ */
+trait SchemaConstraint[L <: HList, M <: HList]
+
+object SchemaConstraint {
+  type Schema[M <: HList] = {
+    type λ[L <: HList] = SchemaConstraint[L, M] 
+  }
+  
+  implicit def hnilSchema[M <: HList] = new SchemaConstraint[HNil, M] {}
+  implicit def hlistSchema[F <: FieldAux, V, T <: HList, M <: HList]
+    (implicit bct : SchemaConstraint[T, M], sel : Selector[M, V]) = new SchemaConstraint[(F, V) :: T, M] {}
+}
