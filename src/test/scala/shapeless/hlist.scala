@@ -22,7 +22,6 @@ import org.junit.Assert._
 class HListTests {
   import HList._
   import Typeable._
-  import Poly._
   import Traversables._
   import Nat._
   import Tuples._
@@ -88,8 +87,7 @@ class HListTests {
   @Test
   def testMap {
     implicitly[MapperAux[choose.type, HNil, HNil]]
-    implicitly[Case[choose.type, Set[Int] => Option[Int]]]
-    implicitly[choose.λ[Int]]
+    implicitly[choose.Case1[Set[Int]]]
     implicitly[MapperAux[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
     
     val s1 = Set(1) :: HNil

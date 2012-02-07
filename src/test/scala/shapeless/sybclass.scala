@@ -22,34 +22,35 @@ class SybClassTests {
 
   import SybClass._
   import TypeOperators._
-  import Poly._
   import HList._
 
   def typed[T](t : => T) {}
   
-  object gsizeAll extends (Id ~> Const[Int]#λ) with NoDefault
-  implicit def gsizeAllString = gsizeAll.λ[String](s => s.length)
-  implicit def gsizeAllDflt[T](implicit data : Data[gsizeAll.type, T]) = gsizeAll.λ[T](1+data.gmapQ(_).sum) 
-
-  object gsize extends (Id ~> Const[Int]#λ) {
-    def default[T](t : T) = 1
+  object gsizeAll extends Poly {
+    implicit def caseString = case1[String](_.length)
+    implicit def default[T](implicit data : Data[this.type, T, Int]) = case1[T](1+data.gmapQ(_).sum)
   }
-  implicit def gsizeInt = gsize.λ[Int](i => 1)
-  implicit def gsizeString = gsize.λ[String](s => s.length)
+
+  object gsize extends Poly {
+    implicit def caseInt = case1[Int](i => 1)
+    implicit def caseString = case1[String](_.length)
+    implicit def default[T] = case1[T](t => 1)
+  }
+
+  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, plus.type, T]) = everything(gsize)(plus)(t)
+
+  object incAll extends Poly {
+    implicit def caseInt = case1[Int](_+1)
+    implicit def caseString = case1[String](_+"*")
+    implicit def default[T](implicit data : DataT[this.type, T]) = case1[T](data.gmapT)
+  }
+
+  object inc extends Poly {
+    implicit def caseInt = case1[Int](_+1)
+    implicit def caseString = case1[String](_+"*")
+    implicit def default[T] = case1[T](t => t)
+  }
   
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, T]) : Int = everything(gsize)(_+_)(t) 
-
-  object incAll extends (Id ~> Id) with NoDefault
-  implicit def incAllInt = incAll.λ[Int](_+1)
-  implicit def incAllString = incAll.λ[String](_+"*")
-  implicit def incAllDflt[T](implicit data : DataT[incAll.type, T]) = incAll.λ[T](data.gmapT)
-
-  object inc extends (Id ~> Id) {
-    def default[T](t : T) = t
-  }
-  implicit def incInt = inc.λ[Int](_+1)
-  implicit def incString = inc.λ[String](_+"*")
-
   def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) : T = everywhere(inc)(t)
   
   @Test
@@ -88,19 +89,19 @@ class SybClassTests {
 
   @Test
   def testEverything {
-    val e1 = everything(gsize)(_+_)(23)
+    val e1 = everything(gsize)(plus)(23)
     typed[Int](e1)
     assertEquals(1, e1)
     
-    val e2 = everything(gsize)(_+_)("foo")
+    val e2 = everything(gsize)(plus)("foo")
     typed[Int](e2)
     assertEquals(3, e2)
     
-    val e3 = everything(gsize)(_+_)((23, "foo"))
+    val e3 = everything(gsize)(plus)((23, "foo"))
     typed[Int](e3)
     assertEquals(5, e3)
 
-    val e4 = everything(gsize)(_+_)(List(1, 2, 3, 4))
+    val e4 = everything(gsize)(plus)(List(1, 2, 3, 4))
     typed[Int](e4)
     assertEquals(5, e4)
     
@@ -184,7 +185,7 @@ class SybClassTests {
     typed[Int :: String :: Boolean :: Double :: HNil](li)
     assertEquals(24 :: "foo*" :: true :: 2.0 :: HNil, li)
     
-    val ls = everything(gsize)(_+_)(l)
+    val ls = everything(gsize)(plus)(l)
     typed[Int](ls)
     assertEquals(7, ls)
   }

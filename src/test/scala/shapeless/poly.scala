@@ -21,7 +21,6 @@ import org.junit.Assert._
 
 class PolyTests {
   import TypeOperators._
-  import Poly._
   
   def typed[T](t : => T) {}
 
@@ -29,30 +28,24 @@ class PolyTests {
     def default[T](t : T) = t.toString.toInt
   }
   
-  object size extends (Id ~> Const[Int]#λ) {
-    def default[T](t : T) = 1
+  object size extends Poly {
+    implicit def default[T] = case1[T](t => 1)
+    implicit def caseInt = case1[Int](x => 1)
+    implicit def caseString = case1[String](_.length)
+    implicit def caseList[T] = case1[List[T]](_.length)
+    implicit def caseOption[T](implicit st : Pullback1[T, Int]) = case1[Option[T]](t => 1+(t map size).getOrElse(0))
+    implicit def caseTuple[T, U](implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) = case1[(T, U)](t => size(t._1)+size(t._2))
   }
-  implicit def sizeInt = size.λ[Int](x => 1)
-  implicit def sizeString = size.λ[String](s => s.length)
-  implicit def sizeList[T] = size.λ[List[T]](l => l.length)
-  implicit def sizeOption[T](implicit cases : size.λ[T]) = size.λ[Option[T]](t => 1+(t map size).getOrElse(0))
-  implicit def sizeTuple[T, U](implicit st : size.λ[T], su : size.λ[U]) = size.λ[(T, U)](t => size(t._1)+size(t._2))
   
   @Test
   def testHRFn {
-    implicitly[choose.λ[Int]]
-    implicitly[Case[choose.type, Set[Int] => Option[Int]]]
+    implicitly[choose.Case1[Set[Int]]]
     
-    implicitly[size.λ[Int]]
-    implicitly[Case[size.type, Option[Int] => Int]]
+    implicitly[size.Case1[Int]]
 
-    implicitly[option.λ[Int]]
-    implicitly[Case[option.type, Int => Option[Int]]]
-    implicitly[Case[option.type, Id[Int] => Option[Int]]]
+    implicitly[option.Case1[Int]]
 
-    implicitly[singleton.λ[Int]]
-    implicitly[Case[singleton.type, Int => Set[Int]]]
-    implicitly[Case[singleton.type, Id[Int] => Set[Int]]]
+    implicitly[singleton.Case1[Int]]
 
     val si = size(23)
     assertEquals(1, si)
@@ -116,7 +109,7 @@ class PolyTests {
 
     // Use as polymorphic function values
     def pairApply[G[_]](f : Id ~> G) = (f(23), f("foo"))
-
+    
     val a1 = pairApply(singleton)
     typed[(Set[Int], Set[String])](a1)
     assertEquals((Set(23), Set("foo")), a1)
@@ -124,13 +117,9 @@ class PolyTests {
     val a2 = pairApply(list)
     typed[(List[Int], List[String])](a2)
     assertEquals((List(23), List("foo")), a2)
-    
-    val a3 = pairApply[Const[Int]#λ](size)
-    typed[(Int, Int)](a3)
-    assertEquals((1, 1), a3)  // size without type specific cases
-    
+
     // Use as polymorphic function values with type specific cases
-    def pairApply2[G[_]](f : Id ~> G)(implicit  fi : f.λ[Int], fs : f.λ[String]) = (f(23), f("foo"))
+    def pairApply2[F <: Poly](f : F)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("foo"))
     
     val a4 = pairApply2(singleton)
     typed[(Set[Int], Set[String])](a4)
@@ -140,12 +129,12 @@ class PolyTests {
     typed[(List[Int], List[String])](a5)
     assertEquals((List(23), List("foo")), a5)
     
-    val a6 = pairApply2[Const[Int]#λ](size)
+    val a6 = pairApply2(size)
     typed[(Int, Int)](a6)
     assertEquals((1, 3), a6)
 
-    def pairMap[F[_]](f : Id ~> F) = (List(1, 2, 3) map f, List("foo", "bar", "baz") map f)
-  
+    def pairMap[G[_]](f : Id ~> G) = (List(1, 2, 3) map f, List("foo", "bar", "baz") map f)
+    
     val m1 = pairMap(singleton)
     typed[(List[Set[Int]], List[Set[String]])](m1)
     assertEquals((List(Set(1), Set(2), Set(3)), List(Set("foo"), Set("bar"), Set("baz"))), m1)
@@ -169,11 +158,24 @@ class PolyTests {
     assertEquals(List(Option(1), Option(2), Option(3)), loi2)
 
     import HList._
+    import Mapper._
+    import MapperAux._
     
     val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
     val l9 = l8 map size
     typed[Int :: Int :: Int :: Int :: Int :: Int :: HNil](l9)
     assertEquals(1 :: 3 :: 4 :: 4 :: 4 :: 1 :: HNil, l9)
+
+    def hlistMap[F <: Poly](f : F)(implicit  mapper : Mapper[F, Int :: String :: HNil]) =
+      (23 :: "foo" :: HNil) map f
+      
+    val hm1 = hlistMap(singleton)
+    typed[Set[Int] :: Set[String] :: HNil](hm1)
+    assertEquals(Set(23) :: Set("foo") :: HNil, hm1)
+
+    val hm2 = hlistMap(list)
+    typed[List[Int] :: List[String] :: HNil](hm2)
+    assertEquals(List(23) :: List("foo") :: HNil, hm2)
   }
   
   @Test
@@ -203,52 +205,28 @@ class PolyTests {
     assertEquals(List(23), l2)
   }
   
+  // Polymophic function value with type-specific cases for two
+  // argument types. Result type is dependent on argument type
+  object bidi extends Poly {
+    implicit val caseInt = case1[Int](_.toString)
+    implicit val caseString = case1[String](_.toInt)
+  }
+
   @Test
   def testCompose {
     import Typeable._
     
-    // Polymophic function value with type-specific cases for two
-    // argument types. Any is the common result type.
-    
-    object bidi extends (Id ~> Any) with NoDefault
-    implicit val bidiInt = bidi.λ[Int](_.toString)
-    implicit val bidiString = bidi.λ[String](_.toInt)
-    
-    val bi = bidi(23)   // type is Any
+    val bi = bidi(23)
+    typed[String](bi)
     assertEquals("23", bi)
-    val bs = bidi("23") // type is Any
+    
+    val bs = bidi("23")
+    typed[Int](bs)
     assertEquals(23, bs)
     
     val lis = 1 :: "2" :: 3 :: "4" :: HNil
-    val blis = lis map bidi  // type is Any :: Any :: Any :: Any :: HNil
+    val blis = lis map bidi
+    typed[String :: Int :: String :: Int :: HNil](blis)
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
-    
-    // The common result type means we've lost precision. We can regain it
-    // with a cast (see below for a solution which avoids this problem.
-    val oblis = blis.cast[String :: Int :: String :: Int :: HNil]
-    typed[Option[String :: Int :: String :: Int :: HNil]](oblis)
-    assertTrue(oblis.isDefined)
-    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, oblis.get)
-    
-    // Shapeless doesn't currently have direct support for making the result
-    // type an ad hoc function of the argument type. Nevertheless we can
-    // reuse most of the polymorphic value infrastructure.
-    object bidi2 {
-      def apply[T, U](t : T)(implicit c : Case[this.type, T => U]) : U = c(t)
-    }
-    implicit val bidi2Int = Case[bidi2.type, Int => String](_.toString)
-    implicit val bidi2String = Case[bidi2.type, String => Int](_.toInt)
-    
-    val bi2 = bidi2(23)   // type is String
-    typed[String](bi2)
-    assertEquals("23", bi)
-    val bs2 = bidi2("23") // type is Int
-    typed[Int](bs2)
-    assertEquals(23, bs)
-    
-    val lis2 = 1 :: "2" :: 3 :: "4" :: HNil
-    val blis2 = lis2 map bidi2  // type is String :: Int :: String :: Int :: HNil
-    typed[String :: Int :: String :: Int :: HNil](blis2)
-    assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis2)
   }
 }

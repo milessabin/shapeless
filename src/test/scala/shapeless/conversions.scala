@@ -23,7 +23,6 @@ class ConversionTests {
   import Tuples._
   import Functions._
   import HList._
-  import Poly._
 
   def typed[T](t : => T) {}
   

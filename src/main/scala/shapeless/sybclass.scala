@@ -23,144 +23,155 @@ package shapeless
  * @author Miles Sabin
  */
 object SybClass {
+  import Poly._
   import TypeOperators._
   
   /**
    * Type class representing one-level generic queries.
    */
-  trait Data[HF <: HRFn, T] {
-    def gmapQ(t : T) : List[HF#G[_]]
+  trait Data[F, T, R] {
+    def gmapQ(t : T) : List[R]
   }
   
-  def gmapQ[HF <: HRFn, T](f : HF)(t : T)(implicit data : Data[HF, T]) = data.gmapQ(t)
+  def gmapQ[F, T, R](f : F)(t : T)(implicit data : Data[F, T, R]) = data.gmapQ(t)
 
   /**
    * Default Data type class instance.
    */
-  implicit def dfltData[HF <: HRFn, T] = new Data[HF, T] {
-    def gmapQ(t : T) : List[HF#G[_]] = Nil
+  implicit def dfltData[F, T, R] = new Data[F, T, R] {
+    def gmapQ(t : T) : List[R] = Nil
   }
 
   /**
    * Data type class instance for pairs.
    */
-  implicit def pairData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) =
-    new Data[HF, (T, U)] {
-      def gmapQ(t : (T, U)) = List(qt(t._1), qu(t._2))
+  implicit def pairData[F <: Poly, T, U, R](implicit qt : Pullback1Aux[F, T, R], qu : Pullback1Aux[F, U, R]) =
+    new Data[F, (T, U), R] {
+      def gmapQ(t : (T, U)) = List(qt.value(t._1), qu.value(t._2))
     }
 
   /**
    * Data type class instance for `Either`.
    */
-  implicit def eitherData[HF <: HRFn, T, U](implicit qt : Case[HF, T => HF#G[_]], qu : Case[HF, U => HF#G[_]]) =
-    new Data[HF, Either[T, U]] {
+  implicit def eitherData[F <: Poly, T, U, R](implicit qt : Pullback1Aux[F, T, R], qu : Pullback1Aux[F, U, R]) =
+    new Data[F, Either[T, U], R] {
       def gmapQ(t : Either[T, U]) = t match {
-        case Left(t) => List(qt(t))
-        case Right(u) => List(qu(u))
+        case Left(t) => List(qt.value(t))
+        case Right(u) => List(qu.value(u))
       }
     }
 
   /**
    * Data type class instance for `Option`.
    */
-  implicit def optionData[HF <: HRFn, T](implicit qt : Case[HF, T => HF#G[_]]) = new Data[HF, Option[T]] {
+  implicit def optionData[F <: Poly, T, R](implicit qt : Pullback1Aux[F, T, R]) = new Data[F, Option[T], R] {
     def gmapQ(t : Option[T]) = t.map(qt.value).toList
   }
 
   /**
    * Data type class instance for `List`s.
    */
-  implicit def listData[HF <: HRFn, T](implicit qt : Case[HF, T => HF#G[_]]) = new Data[HF, List[T]] {
+  implicit def listData[F <: Poly, T, R](implicit qt : Pullback1Aux[F, T, R]) = new Data[F, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt.value)
   }
   
   /**
    * Data type class instance for `HList`s.
    */
-  implicit def hlistData[HF <: HRFn, H, T <: HList](implicit qh : Case[HF, H => HF#G[_]], ct : Data[HF, T]) =
-    new Data[HF, H :: T] {
-      def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
+  implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Pullback1Aux[F, H, R], ct : Data[F, T, R]) =
+    new Data[F, H :: T, R] {
+      def gmapQ(t : H :: T) = qh.value(t.head) :: ct.gmapQ(t.tail)
     }
   
   /**
    * Type class representing one-level generic transformations.
    */
-  trait DataT[HF, T] {
+  trait DataT[F, T] {
     def gmapT(t : T) : T
   }
 
-  def gmapT[HF, T](f : HF)(t : T)(implicit data : DataT[HF, T]) = data.gmapT(t)
+  def gmapT[F, T](f : F)(t : T)(implicit data : DataT[F, T]) = data.gmapT(t)
 
   /**
    * Default DataT type class instance.
    */
-  implicit def dfltDataT[HF, T] : DataT[HF, T] = new DataT[HF, T] {
+  implicit def dfltDataT[F, T] : DataT[F, T] = new DataT[F, T] {
     def gmapT(t : T) = t
   }
 
   /**
    * DataT type class instance for pairs.
    */
-  implicit def pairDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) =
-    new DataT[HF, (T, U)] {
-      def gmapT(t : (T, U)) = (ft(t._1), fu(t._2))
+  implicit def pairDataT[F <: Poly, T, U](implicit ft : HomAux[F, T], fu : HomAux[F, U]) =
+    new DataT[F, (T, U)] {
+      def gmapT(t : (T, U)) = (ft.value(t._1), fu.value(t._2))
     }
 
   /**
    * DataT type class instance for `Either`.
    */
-  implicit def eitherDataT[HF, T, U](implicit ft : Case[HF, T => T], fu : Case[HF, U => U]) =
-    new DataT[HF, Either[T, U]] {
+  implicit def eitherDataT[F <: Poly, T, U](implicit ft : HomAux[F, T], fu : HomAux[F, U]) =
+    new DataT[F, Either[T, U]] {
       def gmapT(t : Either[T, U]) = t match {
-        case Left(t) => Left(ft(t))
-        case Right(u) => Right(fu(u))
+        case Left(t) => Left(ft.value(t))
+        case Right(u) => Right(fu.value(u))
       }
     }
 
   /**
    * DataT type class instance for `Option`.
    */
-  implicit def optionDataT[HF, T](implicit ft : Case[HF, T => T]) = new DataT[HF, Option[T]] {
+  implicit def optionDataT[F <: Poly, T](implicit ft : HomAux[F, T] ) = new DataT[F, Option[T]] {
     def gmapT(t : Option[T]) = t.map(ft.value)
   }
 
   /**
    * DataT type class instance for `List`s.
    */
-  implicit def listDataT[HF, T](implicit ft : Case[HF, T => T]) = new DataT[HF, List[T]] {
+  implicit def listDataT[F <:  Poly, T](implicit ft : HomAux[F, T]) = new DataT[F, List[T]] {
     def gmapT(t : List[T]) = t.map(ft.value)
   }
   
   /**
    * DataT type class instance for `HList`s.
    */
-  implicit def hlistDataT[HF <: HRFn, H, T <: HList](implicit fh : Case[HF, H => H], ct : DataT[HF, T]) =
-    new DataT[HF, H :: T] {
-      def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
+  implicit def hlistDataT[F <: Poly, H, T <: HList](implicit fh : HomAux[F, H], ct : DataT[F, T]) =
+    new DataT[F, H :: T] {
+      def gmapT(t : H :: T) = fh.value(t.head) :: ct.gmapT(t.tail)
     }
 
-  case class Node[T](t : T, c : List[Node[T]] = Nil) {
-    def fold(f : (T, T) => T) : T = c.map(_.fold(f)).foldLeft(t)(f)
+  /** The SYB everything combinator */
+  type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
+  
+  class EverythingAux[F <: Poly, K <: Poly] extends Poly
+  
+  object EverythingAux {
+    implicit def default[F <: Poly, K <: Poly, T, R0]
+      (implicit f : Pullback1Aux[F, T, R0], data : Data[EverythingAux[F, K], T, R0], k : Pullback2Aux[K, R0, R0, R0]) =
+        new Case1Aux[EverythingAux[F, K], T] {
+          type R = R0
+          val value : T => R = (t => data.gmapQ(t).foldLeft(f.value(t))(k.value))
+        }
   }
   
-  type Everything[HF <: HRFn, T] = Case[Everything0[HF], T => Node[HF#G[_]]]
-
-  trait Everything0[HF <: HRFn] extends (Id ~> Const[Node[HF#G[_]]]#λ) with NoDefault
+  class ApplyEverything[F <: Poly] {
+    def apply[K <: Poly](k : K) = new EverythingAux[F, K]
+  }
   
-  /** The SYB everything combinator */
-  def everything[HF <: HRFn, T](f : HF)(k : (HF#G[_], HF#G[_]) => HF#G[_])(t : T) 
-    (implicit c : Case[Everything0[HF], T => Node[HF#G[_]]]) : HF#G[_] = c(t).fold(k)
-    
-  implicit def everythingDflt[HF <: HRFn, T](implicit data : Data[Everything0[HF], T], fT : Case[HF, T => HF#G[_]]) =
-    new Case[Everything0[HF], T => Node[HF#G[_]]](t => Node(fT(t), data.gmapQ(t)))
+  def everything[F <: Poly](f : F) = new ApplyEverything[F]
 
-  type Everywhere[HF, T] = Case[Everywhere0[HF], T => T]
-    
-  trait Everywhere0[HF] extends (Id ~> Id) with NoDefault
-    
   /** The SYB everywhere combinator */
-  def everywhere[HF <: HRFn](f : HF) = new Everywhere0[f.type] {}
+  type Everywhere[F <: Poly, T] = HomAux[EverywhereAux[F], T]
+
+  class EverywhereAux[F <: Poly] extends Poly
   
-  implicit def everywhereDflt[HF, T](implicit data : DataT[Everywhere0[HF], T], fT : Case[HF, T => T]) =
-    new Case[Everywhere0[HF], T => T](t => fT(data.gmapT(t)))
+  object EverywhereAux {
+    implicit def default[F <: Poly, T](implicit data : DataT[EverywhereAux[F], T], f : HomAux[F, T]) =
+      new Case1Aux[EverywhereAux[F], T] {
+        type R = T
+        val value : T => R = t => f.value(data.gmapT(t))
+      }
+  }
+  
+  def everywhere[F <: Poly](f : F) = new EverywhereAux[f.type]
 }

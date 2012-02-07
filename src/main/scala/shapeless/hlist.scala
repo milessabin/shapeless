@@ -393,13 +393,15 @@ object Mapper {
 }
 
 object MapperAux {
+  import Poly._
+  
   implicit def hnilMapper1[HF] = new MapperAux[HF, HNil, HNil] {
     def apply(l : HNil) = HNil
   }
   
-  implicit def hlistMapper1[HF, InH, OutH, InT <: HList, OutT <: HList]
-    (implicit hc : Case[HF, InH => OutH], mt : MapperAux[HF, InT, OutT]) = new MapperAux[HF, InH :: InT, OutH :: OutT] {
-      def apply(l : InH :: InT) = hc(l.head) :: mt(l.tail)
+  implicit def hlistMapper1[HF <: Poly, InH, OutH, InT <: HList, OutT <: HList]
+    (implicit hc : Pullback1Aux[HF, InH, OutH], mt : MapperAux[HF, InT, OutT]) = new MapperAux[HF, InH :: InT, OutH :: OutT] {
+      def apply(l : InH :: InT) = hc.value(l.head) :: mt(l.tail)
   }
 }
 
@@ -447,13 +449,15 @@ trait LeftFolder[L <: HList, R, HF] {
 }
   
 object LeftFolder {
+  import Poly._
+  
   implicit def hnilLeftFolder[R, HF] = new LeftFolder[HNil, R, HF] {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistLeftFolder[H, T <: HList, R, HF](implicit hc : Case[HF, H => R], tf : LeftFolder[T, R, HF]) =
+  implicit def hlistLeftFolder[H, T <: HList, R, HF <: Poly](implicit hc : Pullback1Aux[HF, H, R], tf : LeftFolder[T, R, HF]) =
     new LeftFolder[H :: T, R, HF] {
-      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
+      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.value(l.head)), op)
     }
 }
 

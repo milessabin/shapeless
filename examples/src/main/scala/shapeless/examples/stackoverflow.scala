@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-class StackOverflow2 {
+object StackOverflow2 {
   // http://stackoverflow.com/questions/8270526
   
   import shapeless._
@@ -40,13 +40,12 @@ class StackOverflow2 {
   val a2 = ApplyA(A2.apply _, a :: a :: HNil)
 }
 
-class StackOverflow3 {
+object StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
   
   import shapeless._
   import HList._
   import Functions._
-  import Poly._
   import TypeOperators._
   
   case class Input[T](value: T)
@@ -61,7 +60,7 @@ class StackOverflow3 {
     }
   
   case class Foo(input1 : Int, input2 : String)
-  
+
   object FooBuilder extends Preprocessor((Foo.apply _).hlisted)
   
   val foo = FooBuilder(Input(23) :: Input("foo") :: HNil)

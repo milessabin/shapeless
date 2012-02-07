@@ -37,30 +37,16 @@ object Tuples {
   /**
    * Higher ranked function which converts `Tuples` to `HLists`. 
    */
-  object hlisted {
-    def apply[T <: Product](t : T)(implicit hlister : HLister[T]) : hlister.Out = hlister(t)
+  object hlisted extends Poly {
+    implicit def caseProduct[T <: Product](implicit hlister : HLister[T]) = case1[T](hlister(_))
   }
-  implicit def hlisted1[T <: Product](implicit hlister : HLister[T]) =
-    new Case[hlisted.type, T => hlister.Out](hlister.apply(_))
 
-  /**
-   * Monomorphic instantiator for [[shapeless.Tuples.hlisted]].
-   */
-  implicit def univInstHListed[F, G](h : hlisted.type)(implicit c : Case[hlisted.type, F => G]) : F => G = c.value
-  
   /**
    * Higher ranked function which converts `HLists` to `Tuples`. 
    */
-  object tupled {
-    def apply[L <: HList](l : L)(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
+  object tupled extends Poly {
+    implicit def caseHList[L <: HList](implicit tupler : Tupler[L]) = case1[L](tupler(_))
   }
-  implicit def tupled1[L <: HList](implicit tupler : Tupler[L]) =
-    new Case[tupled.type, L => tupler.Out](tupler.apply(_))
-  
-  /**
-   * Monomorphic instantiator for [[shapeless.Tuples.tupled]].
-   */
-  implicit def univInstTupled[F, G](t : tupled.type)(implicit c : Case[tupled.type, F => G]) : F => G = c.value
 }
 
 /**
