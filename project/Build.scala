@@ -22,7 +22,7 @@ object ShapelessBuild extends Build {
   lazy val project = Project(
     id = "root", 
     base = file("."),
-    settings = Defaults.defaultSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ Publishing.settings ++ Seq(
       (unmanagedSourceDirectories in Compile) <+= baseDirectory(_ / "examples/src/main/scala"),
       (unmanagedSourceDirectories in Test) <+= baseDirectory(_ / "examples/src/test/scala"),
       (sourceGenerators in Compile) <+= (sourceManaged in Compile) map { dir =>
@@ -246,3 +246,4 @@ object ShapelessBuild extends Build {
         |""").stripMargin
   }
 }
+
