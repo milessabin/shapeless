@@ -115,8 +115,11 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns the first element of type `U` of this `HList` plus the remainder of the `HList`. An explicit type argument
    * must be provided. Available only if there is evidence that this `HList` has an element of type `U`.
+   * 
+   * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#remove and should be removed if
+   * SI-5414 is resolved in a way which eliminates the ambiguity.
    */
-  def remove[U](implicit remove : Remove[U, L]) : (U, remove.Out) = remove(l)
+  def removeElem[U](implicit remove : Remove[U, L]) : (U, remove.Out) = remove(l)
   
   /**
    * Returns the first elements of this `HList` that have types in `SL` plus the remainder of the `HList`. An expicit
@@ -147,19 +150,20 @@ final class HListOps[L <: HList](l : L) {
    * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U`. Available only
    * if there is evidence that this `HList` has an element of type `U`.
    * 
-   * The dummy argument is here to avoid creating an ambiguity with RecordOps#updated and should be removed if
+   * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#updated and should be removed if
    * SI-5414 is resolved in a way which eliminates the ambiguity.
    */
-  def updated[U](u : U, dummy : Unit = ())(implicit replacer : Replacer[L, U, U]) : replacer.Out = replacer(l, u)._2
+  def updatedElem[U](u : U)
+    (implicit replacer : Replacer[L, U, U]) : replacer.Out = replacer(l, u)._2
   
   class UpdatedTypeAux[U] {
     def apply[V](v : V)(implicit replacer : Replacer[L, U, V]) : replacer.Out = replacer(l, v)._2
   }
   
   /**
-   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`, also of type `U`. An
-   * explicit type argument must be provided for `U`. Available only if there is evidence that this `HList` has an
-   * element of type `U`.
+   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`. An explicit type
+   * argument must be provided for `U`. Available only if there is evidence that this `HList` has an element of
+   * type `U`.
    */
   def updatedType[U] = new UpdatedTypeAux[U]
   

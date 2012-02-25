@@ -536,16 +536,16 @@ class HListTests {
   def testUpdate {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     
-    val r1 = sl.updated(23)
+    val r1 = sl.updatedElem(23)
     assertEquals(23 :: true :: "foo" :: 2.0 :: HNil, r1)
     
-    val r2 = sl.updated(false)
+    val r2 = sl.updatedElem(false)
     assertEquals(1 :: false :: "foo" :: 2.0 :: HNil, r2)
 
-    val r3 = sl.updated("bar")
+    val r3 = sl.updatedElem("bar")
     assertEquals(1 :: true :: "bar" :: 2.0 :: HNil, r3)
 
-    val r4 = sl.updated(3.0)
+    val r4 = sl.updatedElem(3.0)
     assertEquals(1 :: true :: "foo" :: 3.0 :: HNil, r4)
     
     val r5 = sl.updatedType[Int]('*')
@@ -571,10 +571,10 @@ class HListTests {
     val rr3 = fruits.updatedType[Fruit](p)
     typed[Apple :: Pear :: Apple :: Pear :: HNil](rr3)
     
-    val rr4 = fruits.updated(p)
+    val rr4 = fruits.updatedElem(p)
     typed[Apple :: Pear :: Apple :: Fruit :: HNil](rr4)
     
-    val rr5 = fruits.updated(f)
+    val rr5 = fruits.updatedElem(f)
     typed[Apple :: Pear :: Apple :: Fruit :: HNil](rr5)
   }
 
@@ -801,15 +801,15 @@ class HListTests {
   def testRemove {
     val l = 1 :: true :: "foo" :: HNil
 
-    val li = l.remove[Int]
+    val li = l.removeElem[Int]
     typed[(Int, Boolean :: String :: HNil)](li)
     assertEquals((1, true :: "foo" :: HNil), li)
 
-    val lb = l.remove[Boolean]
+    val lb = l.removeElem[Boolean]
     typed[(Boolean, Int :: String :: HNil)](lb)
     assertEquals((true, 1 :: "foo" :: HNil), lb)
 
-    val ls = l.remove[String]
+    val ls = l.removeElem[String]
     typed[(String, Int :: Boolean :: HNil)](ls)
     assertEquals(("foo", 1 :: true :: HNil), ls)
   }
