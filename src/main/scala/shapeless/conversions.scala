@@ -118,7 +118,7 @@ object Functions {
 }
 
 /**
- * Type class supporting conversion of arbitrary functions (currently up to arity 4) to functions of a single `HList`
+ * Type class supporting conversion of arbitrary functions to functions of a single `HList`
  * argument. 
  * 
  * @author Miles Sabin
@@ -147,8 +147,7 @@ object FnHLister {
 object FnHListerAux extends FnHListerAuxInstances
 
 /**
- * Type class supporting conversion of functions of a single `HList` argument to ordinary functions (currently up to
- * arity 4). 
+ * Type class supporting conversion of functions of a single `HList` argument to ordinary functions. 
  * 
  * @author Miles Sabin
  */
