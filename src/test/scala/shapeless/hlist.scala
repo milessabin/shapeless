@@ -461,7 +461,22 @@ class HListTests {
     typed[Double](sd)
     assertEquals(2.0, sd, Double.MinPositiveValue)
   }
-  
+
+  @Test
+  def testFilter {
+    val l1 = 1 :: 2 :: HNil
+    val f1 = l1.filter[Int]
+    typed[Int :: Int :: HNil](f1)
+    assertEquals(1 :: 2 :: HNil, f1)
+
+    val l2 = 1 :: true :: "foo" :: 2 :: HNil
+    val f2 = l2.filter[Int]
+    typed[Int :: Int :: HNil](f2)
+    assertEquals(1 :: 2 :: HNil, f2)
+
+    typed[HNil](l2.filter[Double])
+  }
+
   @Test
   def testReplace {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
