@@ -111,6 +111,11 @@ final class HListOps[L <: HList](l : L) {
    * if there is evidence that this `HList` has an element of type `U`.
    */
   def select[U](implicit selector : Selector[L, U]) : U = selector(l)
+
+  /**
+   * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
+   */
+  def filter[U](implicit filter : Filter[L, U]) : filter.Out  = filter(l)
   
   /**
    * Returns the first element of type `U` of this `HList` plus the remainder of the `HList`. An explicit type argument
@@ -629,6 +634,43 @@ object Selector {
   implicit def hlistSelect[H, T <: HList, U](implicit st : Selector[T, U]) = new Selector[H :: T, U] {
     def apply(l : H :: T) = st(l.tail)
   }
+}
+
+/**
+ * Type class supporting access to the all elements of this `HList` of type `U`.
+ * 
+ * @author Alois Cochard
+ */
+trait Filter[L <: HList, U] {
+  type Out <: HList
+  def apply(l : L) : Out
+}
+
+object Filter {
+  implicit def hlistFilter[L <: HList, U, Out0 <: HList](implicit aux : FilterAux[L, U, Out0]) = new Filter[L, U] {
+    type Out = Out0
+    def apply(l : L) : Out0 = aux(l)
+  }
+}
+
+trait FilterAux[L <: HList, U, Out <: HList] {
+  def apply(l : L) : Out
+}
+
+object FilterAux {
+  implicit def hlistFilterHNil[L <: HList, U] = new FilterAux[HNil, U, HNil] {
+     def apply(l : HNil) : HNil = HNil
+  }
+
+  implicit def hlistFilter1[L <: HList, H, Out <: HList]
+    (implicit aux : FilterAux[L, H, Out]) = new FilterAux[H :: L, H, H :: Out] {
+       def apply(l : H :: L) : H :: Out = l.head :: aux(l.tail)
+    }
+
+  implicit def hlistFilter2[H, L <: HList, U, Out <: HList]
+    (implicit aux : FilterAux[L, U, Out]) = new FilterAux[H :: L, U, Out] {
+       def apply(l : H :: L) : Out = aux(l.tail)
+    }
 }
 
 /**
