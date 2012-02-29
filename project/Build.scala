@@ -16,6 +16,7 @@
 
 import sbt._
 import Keys._
+import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
 
 object ShapelessBuild extends Build {
 
@@ -23,8 +24,16 @@ object ShapelessBuild extends Build {
     id = "root", 
     base = file("."),
     settings = Defaults.defaultSettings ++ Seq(
+      (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Compile) <+= baseDirectory(_ / "examples/src/main/scala"),
+      
+      (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
       (unmanagedSourceDirectories in Test) <+= baseDirectory(_ / "examples/src/test/scala"),
+      
+      managedSourceDirectories in Test := Seq(),
+      
+      EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
+      
       (sourceGenerators in Compile) <+= (sourceManaged in Compile) map { dir =>
         val tupleraux = dir / "shapeless" / "tupleraux.scala"
         IO.write(tupleraux, genTuplerAuxInstances)
