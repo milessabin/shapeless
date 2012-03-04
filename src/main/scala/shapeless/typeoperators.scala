@@ -20,7 +20,7 @@ object TypeOperators {
   def unexpected : Nothing = sys.error("Unexpected invocation")
   
   // Basic definitions
-  type Id[T] = T
+  type Id[+T] = T
   type Const[C] = {
     type λ[T] = C
   }
