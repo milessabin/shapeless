@@ -26,7 +26,7 @@ package shapeless
 class HMap[R[_, _]](underlying : Map[Any, Any] = Map.empty) extends Poly {
   def get[K, V](k : K)(implicit ev : R[K, V]) : Option[V] = underlying.get(k).asInstanceOf[Option[V]]
   
-  def +[K, V](kv : (K, V))(implicit ev : R[K, V]) : HMap[R] = new HMap[R](underlying + kv)
+  def +[K, V](kv : (K, V))(implicit ev : R[K, V]) : HMap[R] = new HMap[R](underlying+kv)
   def -[K](k : K) : HMap[R] = new HMap[R](underlying-k)
 
   implicit def caseRel[K, V](implicit ev : R[K, V]) = new Case1Aux[HMap[R], K] {
