@@ -16,6 +16,11 @@
 
 package shapeless.examples
 
+/**
+ * Flattening arbitrarily nested tuples.
+ *
+ * @author Miles Sabin
+ */
 object FlattenExample {
   import shapeless._
   import Tuples._

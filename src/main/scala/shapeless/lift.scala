@@ -26,11 +26,11 @@ object Lift {
     (implicit
       hlister   : FnHListerAux[InF, InL => R],
       mapper    : MapperAux[get.type, OInL, InL],
-      folder    : LeftFolder[OInL, Boolean, isDefined.type],
+      folder    : MapFolder[OInL, Boolean, isDefined.type],
       unhlister : FnUnHListerAux[OInL => Option[R], OutF]
     ) : OutF = {
       (o : OInL) =>
-        if(o.foldLeft(true)(isDefined)(_ && _)) Some(f.hlisted(o map get))
+        if(o.foldMap(true)(isDefined)(_ && _)) Some(f.hlisted(o map get))
         else None
     }.unhlisted
 }

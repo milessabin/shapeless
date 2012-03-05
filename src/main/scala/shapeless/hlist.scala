@@ -265,10 +265,16 @@ final class HListOps[L <: HList](l : L) {
   
   /**
    * Maps a higher rank function ''f'' across this `HList` and folds the result using monomorphic combining operator
-   * ''op''. Available only if there is evidence that the result type of `f` at each element conforms to the argument
+   * `op`. Available only if there is evidence that the result type of `f` at each element conforms to the argument
    * type of ''op''.
    */
-  def foldLeft[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : LeftFolder[L, R, HF]) : R = folder(l, z, op)
+  def foldMap[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : MapFolder[L, R, HF]) : R = folder(l, z, op)
+  
+  /**
+   * Computes a left fold over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the partial results of the appropriate types.
+   */
+  def foldLeft[R, HF](z : R)(op : HF)(implicit folder : LeftFolder[L, R, HF]) : folder.Out = folder(l, z)
   
   /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.
@@ -439,26 +445,59 @@ object ConstMapperAux {
 }  
 
 /**
- * Type class supporting folding a higher ranked function over this `HList` and then folding the result using a
+ * Type class supporting mapping a polymorphic function over this `HList` and then folding the result using a
  * monomorphic function value. 
  * 
  * @author Miles Sabin
  */
-trait LeftFolder[L <: HList, R, HF] {
+trait MapFolder[L <: HList, R, HF] {
   def apply(l : L, in : R, op : (R, R) => R) : R 
 }
   
-object LeftFolder {
+object MapFolder {
   import Poly._
   
-  implicit def hnilLeftFolder[R, HF] = new LeftFolder[HNil, R, HF] {
+  implicit def hnilMapFolder[R, HF] = new MapFolder[HNil, R, HF] {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistLeftFolder[H, T <: HList, R, HF <: Poly](implicit hc : Pullback1Aux[HF, H, R], tf : LeftFolder[T, R, HF]) =
-    new LeftFolder[H :: T, R, HF] {
+  implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly](implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
+    new MapFolder[H :: T, R, HF] {
       def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.value(l.head)), op)
     }
+}
+
+/**
+ * Type class supporting folding a polymorphic binary function over this `HList`.
+ * 
+ * @author Miles Sabin
+ */
+trait LeftFolder[L <: HList, In, HF] {
+  type Out
+  def apply(l : L, in : In) : Out 
+}
+
+trait LeftFolderAux[L <: HList, In, HF, Out] {
+  def apply(l : L, in : In) : Out 
+}
+
+object LeftFolder {
+  implicit def trueFolder[L <: HList, In, HF, Out0](implicit folder : LeftFolderAux[L, In, HF, Out0]) = new LeftFolder[L, In, HF] {
+    type Out = Out0
+    def apply(l : L, in : In) : Out = folder.apply(l, in)
+  }
+}
+
+object LeftFolderAux {
+  import Poly._
+  
+  implicit def hnilLeftFolderAux[In, HF] = new LeftFolderAux[HNil, In, HF, In] {
+    def apply(l : HNil, in : In) : In = in 
+  }
+  
+  implicit def hlistLeftFolderAux2[H, T <: HList, In, HF, OutH, Out](implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolderAux[T, OutH, HF, Out]) = new LeftFolderAux[H :: T, In, HF, Out] {
+    def apply(l : H :: T, in : In) : Out = ft(l.tail, f.value(in, l.head))
+  }
 }
 
 /**

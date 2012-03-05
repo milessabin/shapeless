@@ -324,9 +324,9 @@ class HListTests {
     val mlfl2 = (tl2 map isDefined).toList.foldLeft(true)(_ && _)
     assertFalse(mlfl2)
     
-    val fl1 = tl1.foldLeft(true)(isDefined)(_ && _)
+    val fl1 = tl1.foldMap(true)(isDefined)(_ && _)
     assertTrue(fl1)
-    val fl2 = tl2.foldLeft(true)(isDefined)(_ && _)
+    val fl2 = tl2.foldMap(true)(isDefined)(_ && _)
     assertFalse(fl2)
   }
   
@@ -842,5 +842,39 @@ class HListTests {
     val lbi = l.removeAll[Boolean :: Int :: HNil]
     typed[(Boolean :: Int :: HNil, String :: HNil)](lbi)
     assertEquals((true :: 1 :: HNil, "foo" :: HNil), lbi)
+  }
+  
+  object combine extends Poly {
+    implicit def caseCharString = case2[Char, String]((c, s) => s.indexOf(c))
+    implicit def caseIntBoolean = case2[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
+  }
+  
+  @Test
+  def testTrueFold {
+    val c1a = combine('o', "foo")
+    val c1b = combine(c1a, true)
+    assertEquals("pass", c1b)
+    
+    implicitly[LeftFolderAux[HNil, String, combine.type, String]]
+    implicitly[LeftFolderAux[Boolean :: HNil, Int, combine.type, String]]
+    implicitly[LeftFolderAux[String :: Boolean :: HNil, Char, combine.type, String]]
+
+    val tf1 = implicitly[LeftFolder[HNil, String, combine.type]]
+    val tf2 = implicitly[LeftFolder[Boolean :: HNil, Int, combine.type]]
+    val tf3 = implicitly[LeftFolder[String :: Boolean :: HNil, Char, combine.type]]
+
+    val l1 = "foo" :: true :: HNil
+    val f1 = l1.foldLeft('o')(combine)
+    typed[String](f1)
+    assertEquals("pass", f1)
+
+    val c2a = combine('o', "bar")
+    val c2b = combine(c2a, false)
+    assertEquals("pass", c2b)
+
+    val l2 = "bar" :: false :: HNil
+    val f2 = l2.foldLeft('o')(combine)
+    typed[String](f2)
+    assertEquals("pass", f2)
   }
 }
