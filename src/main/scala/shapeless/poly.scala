@@ -25,6 +25,15 @@ import TypeOperators._
  */
 abstract class Case0Aux[-P, T] {
   val value : T
+  def apply() = value
+}
+
+object Case0Aux {
+  def apply[P, T](v : T) = new Case0Aux[P, T] {
+    val value = v
+  }
+  
+  implicit def inst[P, T](c : Case0Aux[P, T]) : T = c.value
 }
 
 /**
@@ -35,6 +44,16 @@ abstract class Case0Aux[-P, T] {
 abstract class Case1Aux[-P, T] {
   type R
   val value : T => R
+  def apply(t : T) = value(t)
+}
+
+object Case1Aux {
+  def apply[P, T, R0](v : T => R0) = new Case1Aux[P, T] {
+    type R = R0
+    val value = v
+  }
+  
+  implicit def inst[P, T, R0](c : Case1Aux[P, T] { type R = R0 }) : T => R0 = c.value
 }
 
 /**
@@ -45,6 +64,16 @@ abstract class Case1Aux[-P, T] {
 abstract class Case2Aux[-P, T, U] {
   type R
   val value : (T, U) => R
+  def apply(t : T, u : U) = value(t, u)
+}
+
+object Case2Aux {
+  def apply[P, T, U, R0](v : (T, U) => R0) = new Case2Aux[P, T, U] {
+    type R = R0
+    val value = v
+  }
+  
+  implicit def inst[P, T, U, R0](c : Case2Aux[P, T, U] { type R = R0 }) : (T, U) => R0 = c.value
 }
 
 /**
@@ -63,24 +92,18 @@ trait Poly {
   type Case2[T, U] = Case2Aux[this.type, T, U]
   
   /** Creates an instance of the case representing this polymorphic value at type `T`. */
-  def case0[T](v : T) = new Case0[T] {
-    val value = v
-  }
-
+  def case0[T](v : T) = new Case0[T] { val value = v }
+  
   /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
-  def case1[T] = new {
-    def apply[R0](f : T => R0) = new Case1[T] {
-      type R = R0
-      val value = f
-    }
+  def case1[T] = new Case1Builder[T]
+  class Case1Builder[T] {
+    def apply[R0](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
   }
 
   /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
-  def case2[T, U] = new {
-    def apply[R0](f : (T, U) => R0) = new Case2[T, U] {
-      type R = R0
-      val value = f
-    }
+  def case2[T, U] = new Case2Builder[T, U]
+  class Case2Builder[T, U] {
+    def apply[R0](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
   }
   
   /** The type of a case of this polymorphic function of the form `T => T` */
@@ -92,9 +115,9 @@ trait Poly {
   /** The type of a case of this polymorphic function of the form `(T, U) => R` */
   type Pullback2[T, U, R0] = Case2[T, U] { type R = R0 }
 
-  def apply[T](implicit c : Case0[T]) : T = c.value
-  def apply[T](t : T)(implicit c : Case1[T]) : c.R = c.value(t)
-  def apply[T, U](t : T, u : U)(implicit c : Case2[T, U]) : c.R = c.value(t, u)
+  def apply[T](implicit c : Case0[T]) : T = c()
+  def apply[T](t : T)(implicit c : Case1[T]) : c.R = c(t)
+  def apply[T, U](t : T, u : U)(implicit c : Case2[T, U]) : c.R = c(t, u)
 }
 
 /**
@@ -104,7 +127,7 @@ trait Poly {
  * @author Miles Sabin
  */
 object Poly {
-  implicit def inst0[P <: Poly, T](p : P)(implicit c : p.Case0[T]) : T = c.value  
+  implicit def inst0[P <: Poly, T](p : P)(implicit c : p.Case0[T]) : T = c.value
   implicit def inst1[P <: Poly, T](p : P)(implicit c : p.Case1[T]) : T => c.R = c.value
   implicit def inst2[P <: Poly, T, U](p : P)(implicit c : p.Case2[T, U]) : (T, U) => c.R = c.value
 

@@ -407,7 +407,7 @@ object MapperAux {
   
   implicit def hlistMapper1[HF <: Poly, InH, OutH, InT <: HList, OutT <: HList]
     (implicit hc : Pullback1Aux[HF, InH, OutH], mt : MapperAux[HF, InT, OutT]) = new MapperAux[HF, InH :: InT, OutH :: OutT] {
-      def apply(l : InH :: InT) = hc.value(l.head) :: mt(l.tail)
+      def apply(l : InH :: InT) = hc(l.head) :: mt(l.tail)
   }
 }
 
@@ -463,7 +463,7 @@ object MapFolder {
   
   implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly](implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
     new MapFolder[H :: T, R, HF] {
-      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc.value(l.head)), op)
+      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
     }
 }
 
@@ -496,7 +496,7 @@ object LeftFolderAux {
   }
   
   implicit def hlistLeftFolderAux2[H, T <: HList, In, HF, OutH, Out](implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolderAux[T, OutH, HF, Out]) = new LeftFolderAux[H :: T, In, HF, Out] {
-    def apply(l : H :: T, in : In) : Out = ft(l.tail, f.value(in, l.head))
+    def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
   }
 }
 

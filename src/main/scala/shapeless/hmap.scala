@@ -29,8 +29,5 @@ class HMap[R[_, _]](underlying : Map[Any, Any] = Map.empty) extends Poly {
   def +[K, V](kv : (K, V))(implicit ev : R[K, V]) : HMap[R] = new HMap[R](underlying+kv)
   def -[K](k : K) : HMap[R] = new HMap[R](underlying-k)
 
-  implicit def caseRel[K, V](implicit ev : R[K, V]) = new Case1Aux[HMap[R], K] {
-    type R = V
-    val value : K => V = k => get(k).get
-  }
+  implicit def caseRel[K, V](implicit ev : R[K, V]) = Case1Aux[HMap[R], K, V](k => get(k).get)
 }
