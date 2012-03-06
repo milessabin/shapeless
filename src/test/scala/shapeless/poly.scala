@@ -24,17 +24,17 @@ class PolyTests {
   
   def typed[T](t : => T) {}
 
-  object toInt extends (Id ~> Const[Int]#λ) {
+  object toInt extends (Id ~>> Int) {
     def default[T](t : T) = t.toString.toInt
   }
   
-  object size extends Poly {
-    implicit def default[T] = case1[T](t => 1)
-    implicit def caseInt = case1[Int](x => 1)
-    implicit def caseString = case1[String](_.length)
-    implicit def caseList[T] = case1[List[T]](_.length)
-    implicit def caseOption[T](implicit st : Pullback1[T, Int]) = case1[Option[T]](t => 1+(t map size).getOrElse(0))
-    implicit def caseTuple[T, U](implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) = case1[(T, U)](t => size(t._1)+size(t._2))
+  object size extends Pullback1[Int] {
+    implicit def default[T] = at[T](t => 1)
+    implicit def caseInt = at[Int](x => 1)
+    implicit def caseString = at[String](_.length)
+    implicit def caseList[T] = at[List[T]](_.length)
+    implicit def caseOption[T](implicit st : Pullback1[T, Int]) = at[Option[T]](t => 1+(t map size).getOrElse(0))
+    implicit def caseTuple[T, U](implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) = at[(T, U)](t => size(t._1)+size(t._2))
   }
   
   @Test
@@ -207,9 +207,9 @@ class PolyTests {
   
   // Polymophic function value with type-specific cases for two
   // argument types. Result type is dependent on argument type
-  object bidi extends Poly {
-    implicit val caseInt = case1[Int](_.toString)
-    implicit val caseString = case1[String](_.toInt)
+  object bidi extends Poly1 {
+    implicit val caseInt = at[Int](_.toString)
+    implicit val caseString = at[String](_.toInt)
   }
 
   @Test

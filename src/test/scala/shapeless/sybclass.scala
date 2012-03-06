@@ -26,29 +26,29 @@ class SybClassTests {
 
   def typed[T](t : => T) {}
   
-  object gsizeAll extends Poly {
-    implicit def caseString = case1[String](_.length)
-    implicit def default[T](implicit data : Data[this.type, T, Int]) = case1[T](1+data.gmapQ(_).sum)
+  object gsizeAll extends Pullback1[Int] {
+    implicit def caseString = at[String](_.length)
+    implicit def default[T](implicit data : Data[this.type, T, Int]) = at[T](1+data.gmapQ(_).sum)
   }
 
-  object gsize extends Poly {
-    implicit def caseInt = case1[Int](i => 1)
-    implicit def caseString = case1[String](_.length)
-    implicit def default[T] = case1[T](t => 1)
+  object gsize extends Pullback1[Int] {
+    implicit def caseInt = at[Int](i => 1)
+    implicit def caseString = at[String](_.length)
+    implicit def default[T] = at[T](t => 1)
   }
 
   def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, plus.type, T]) = everything(gsize)(plus)(t)
 
-  object incAll extends Poly {
-    implicit def caseInt = case1[Int](_+1)
-    implicit def caseString = case1[String](_+"*")
-    implicit def default[T](implicit data : DataT[this.type, T]) = case1[T](data.gmapT)
+  object incAll extends Poly1 {
+    implicit def caseInt = at[Int](_+1)
+    implicit def caseString = at[String](_+"*")
+    implicit def default[T](implicit data : DataT[this.type, T]) = at[T](data.gmapT)
   }
 
-  object inc extends Poly {
-    implicit def caseInt = case1[Int](_+1)
-    implicit def caseString = case1[String](_+"*")
-    implicit def default[T] = case1[T](t => t)
+  object inc extends Poly1 {
+    implicit def caseInt = at[Int](_+1)
+    implicit def caseString = at[String](_+"*")
+    implicit def default[T] = at[T](t => t)
   }
   
   def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) : T = everywhere(inc)(t)

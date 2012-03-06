@@ -844,9 +844,9 @@ class HListTests {
     assertEquals((true :: 1 :: HNil, "foo" :: HNil), lbi)
   }
   
-  object combine extends Poly {
-    implicit def caseCharString = case2[Char, String]((c, s) => s.indexOf(c))
-    implicit def caseIntBoolean = case2[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
+  object combine extends Poly2 {
+    implicit def caseCharString = at[Char, String]((c, s) => s.indexOf(c))
+    implicit def caseIntBoolean = at[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
   }
   
   @Test

@@ -37,15 +37,15 @@ object Tuples {
   /**
    * Higher ranked function which converts `Tuples` to `HLists`. 
    */
-  object hlisted extends Poly {
-    implicit def caseProduct[T <: Product](implicit hlister : HLister[T]) = case1[T](hlister(_))
+  object hlisted extends Poly1 {
+    implicit def caseProduct[T <: Product](implicit hlister : HLister[T]) = at[T](hlister(_))
   }
 
   /**
    * Higher ranked function which converts `HLists` to `Tuples`. 
    */
-  object tupled extends Poly {
-    implicit def caseHList[L <: HList](implicit tupler : Tupler[L]) = case1[L](tupler(_))
+  object tupled extends Poly1 {
+    implicit def caseHList[L <: HList](implicit tupler : Tupler[L]) = at[L](tupler(_))
   }
 }
 

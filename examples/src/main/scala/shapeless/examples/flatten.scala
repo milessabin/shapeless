@@ -75,9 +75,9 @@ object FlattenExample {
   val l1 = f1.toList       // Inferred type is List[Int]
   typed[List[Int]](l1)
   
-  object toDouble extends Poly {
-    implicit def caseInt = case1[Int](_.toDouble)
-    implicit def caseDouble = case1[Double](identity)
+  object toDouble extends Poly1 {
+    implicit def caseInt = at[Int](_.toDouble)
+    implicit def caseDouble = at[Double](identity)
   }
   
   val t2 = (1, ((2, 3.0), 4))

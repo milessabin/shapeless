@@ -90,22 +90,11 @@ trait Poly {
   
   /** The type of the case representing this polymorphic binary function at argument types `T` and `U`. */
   type Case2[T, U] = Case2Aux[this.type, T, U]
-  
-  /** Creates an instance of the case representing this polymorphic value at type `T`. */
-  def case0[T](v : T) = new Case0[T] { val value = v }
-  
-  /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
-  def case1[T] = new Case1Builder[T]
-  class Case1Builder[T] {
-    def apply[R0](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
-  }
 
-  /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
-  def case2[T, U] = new Case2Builder[T, U]
-  class Case2Builder[T, U] {
-    def apply[R0](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
-  }
-  
+  def apply[T](implicit c : Case0[T]) : T = c()
+  def apply[T](t : T)(implicit c : Case1[T]) : c.R = c(t)
+  def apply[T, U](t : T, u : U)(implicit c : Case2[T, U]) : c.R = c(t, u)
+
   /** The type of a case of this polymorphic function of the form `T => T` */
   type Hom[T] = Case1[T] { type R = T }
 
@@ -114,10 +103,37 @@ trait Poly {
 
   /** The type of a case of this polymorphic function of the form `(T, U) => R` */
   type Pullback2[T, U, R0] = Case2[T, U] { type R = R0 }
+}
 
-  def apply[T](implicit c : Case0[T]) : T = c()
-  def apply[T](t : T)(implicit c : Case1[T]) : c.R = c(t)
-  def apply[T, U](t : T, u : U)(implicit c : Case2[T, U]) : c.R = c(t, u)
+trait Poly0 extends Poly {
+  /** Creates an instance of the case representing this polymorphic value at type `T`. */
+  def at[T](v : T) = new Case0[T] { val value = v }
+}
+
+trait Poly1 extends Poly {
+  /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
+  def at[T] = new Case1Builder[T]
+  class Case1Builder[T] {
+    def apply[R0](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
+  }
+}
+
+trait Poly2 extends Poly {
+  /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
+  def at[T, U] = new Case2Builder[T, U]
+  class Case2Builder[T, U] {
+    def apply[R0](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
+  }
+}
+
+trait Pullback1[R0] extends Poly {
+  /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
+  def at[T](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
+}
+
+trait Pullback2[R0] extends Poly {
+  /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
+  def at[T, U](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
 }
 
 /**
@@ -141,15 +157,21 @@ object Poly {
  * 
  * @author Miles Sabin
  */
-trait ~>[F[_], G[_]] extends Poly {
+trait ~>[F[_], G[_]] extends Poly1 {
   def default[T](f : F[T]) : G[T]
   def apply[T](f : F[T]) = default(f)
-  implicit def caseUniv[T] = case1[F[T]](default[T] _)
+  implicit def caseUniv[T] = at[F[T]](default[T] _)
 }
 
 object ~> {
   implicit def inst1[G[_], T](p : Id ~> G) : T => G[T] = p.caseUniv[T].value
   implicit def inst2[F[_], G[_], T](p : F ~> G) : F[T] => G[T] = p.caseUniv[T].value
+}
+
+trait ~>>[F[_], R] extends Pullback1[R] {
+  def default[T](f : F[T]) : R
+  def apply[T](f : F[T]) = default(f)
+  implicit def caseUniv[T] = at[F[T]](default[T] _)
 }
 
 /** Polymorphic identity function. */
@@ -178,7 +200,7 @@ object headOption extends (List ~> Option) {
 }
 
 /** Polymorphic function testing whether or not an `Option` is defined. */
-object isDefined extends (Option ~> Const[Boolean]#λ) {
+object isDefined extends (Option ~>> Boolean) {
   def default[T](o : Option[T]) = o.isDefined
 }
 
@@ -193,17 +215,17 @@ object option extends (Id ~> Option) {
 }
 
 /** Polymorphic addition with type specific cases. */
-object plus extends Poly {
-  implicit val caseInt = case2[Int, Int](_ + _)
-  implicit val caseDouble = case2[Double, Double](_ + _)
-  implicit val caseString = case2[String, String](_ + _)
-  implicit def caseList[T] = case2[List[T], List[T]](_ ::: _)
+object plus extends Poly2 {
+  implicit val caseInt = at[Int, Int](_ + _)
+  implicit val caseDouble = at[Double, Double](_ + _)
+  implicit val caseString = at[String, String](_ + _)
+  implicit def caseList[T] = at[List[T], List[T]](_ ::: _)
 }
 
 /** Polymorphic zero with type specific cases. */
-object zero extends Poly {
-  implicit val zeroInt = case0[Int](0) 
-  implicit val zeroDouble = case0[Double](0.0) 
-  implicit val zeroString = case0[String]("") 
-  implicit def zeroList[T] = case0[List[T]](Nil)
+object zero extends Poly0 {
+  implicit val zeroInt = at[Int](0) 
+  implicit val zeroDouble = at[Double](0.0) 
+  implicit val zeroString = at[String]("") 
+  implicit def zeroList[T] = at[List[T]](Nil)
 }
