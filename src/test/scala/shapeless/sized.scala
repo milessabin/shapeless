@@ -41,8 +41,8 @@ class SizedTests {
     val nl0d = l0.sized[_3]
     assertTrue(nl0d.isEmpty)
     
-    //val h0 = nl0.get.head
-    //val t0 = nl0.get.tail
+    //val h0 = nl0.get.head // Does not compile
+    //val t0 = nl0.get.tail // Does not compile
     
     val nl1 = l1.sized[_0]
     assertTrue(nl1.isEmpty)
@@ -55,7 +55,7 @@ class SizedTests {
 
     val h1 = nl1b.get.head
     val t1 = nl1b.get.tail
-    //val t1b = nl1b.get.tail.tail
+    //val t1b = nl1b.get.tail.tail // Does not compile
 
     val nl2 = l2.sized[_0]
     assertTrue(nl2.isEmpty)
@@ -69,10 +69,10 @@ class SizedTests {
     val h2 = nl2c.get.head
     val t2 = nl2c.get.tail
     val t2b = nl2c.get.tail.tail
-    //val t2c = nl1c.get.tail.tail.tail
+    //val t2c = nl1c.get.tail.tail.tail // Does not compile
 
     val nl3 = l3.sized[_0]
-    assertTrue(nl2.isEmpty)
+    assertTrue(nl3.isEmpty)
     val nl3b = l3.sized[_1]
     assertTrue(nl3b.isEmpty)
     val nl3c = l3.sized[_2]
@@ -84,7 +84,7 @@ class SizedTests {
     val t3 = nl3d.get.tail
     val t3b = nl3d.get.tail.tail
     val t3c = nl3d.get.tail.tail.tail
-    //val t3d = nl1d.get.tail.tail.tail.tail
+    //val t3d = nl1d.get.tail.tail.tail.tail // Does not compile
     
     val rs = "foo".sized[_3].get.unsized
     
@@ -133,15 +133,15 @@ class SizedTests {
     
     val tk1 = cl.get.take[_1]
     val tk4 = cl.get.take[_4]
-    //val tk7 = cl.get.take[_7]
+    //val tk7 = cl.get.take[_7]  // Does not compile
     
     val dr1 = cl.get.drop[_1]
     val dr4 = cl.get.drop[_4]
-    //val dr7 = cl.get.drop[_7]
+    //val dr7 = cl.get.drop[_7]  // Does not compile
     
     val (pr1, sf1) = cl.get.splitAt[_1]
     val (pr4, sf4) = cl.get.splitAt[_4]
-    //val (pr7, sf7) = cl.get.splitAt[_7]
+    //val (pr7, sf7) = cl.get.splitAt[_7]  // Does not compile
     
     val ml = cl.get map (_.toString)
     typed[Sized[List[String], _6]](ml)
