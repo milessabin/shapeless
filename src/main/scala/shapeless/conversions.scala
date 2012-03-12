@@ -19,8 +19,8 @@ package shapeless
 /**
  * Conversions between `Tuples` and `HLists`.
  * 
- * The implicit defined by this object enhances `Tuples` (currently up to arity 4) with an `hlisted` method which
- * constructs an equivalently typed [[shapeless.HList]]. This object also provides higher ranked functions for
+ * The implicit defined by this object enhances `Tuples` with an `hlisted` method which constructs
+ * an equivalently typed [[shapeless.HList]]. This object also provides higher ranked functions for
  * conversion between `Tuples` and `HLists`.
  * 
  * @author Miles Sabin
