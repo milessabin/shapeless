@@ -36,12 +36,14 @@ case class Succ[P <: Nat]() extends Nat
  * @author Miles Sabin
  */
 object Nat extends Nats {
+  def apply[N <: Nat](implicit n : N) = n
+  
   class _0 extends Nat
-  val _0 = new _0
+  implicit val _0 = new _0
   
   def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
 
-  def toInt[N <: Nat](n : N)(implicit toIntN : ToInt[N]) = toIntN() 
+  def toInt[N <: Nat](n : N)(implicit toIntN : ToInt[N]) = toIntN()
 }
 
 /**

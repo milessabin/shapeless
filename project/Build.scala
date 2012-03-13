@@ -185,7 +185,7 @@ object ShapelessBuild extends Build {
     def genNat(n : Int) = {
       ("""|
           |  type _"""+n+""" = Succ[_"""+(n-1)+"""]
-          |  val _"""+n+""" = new _"""+n+"""
+          |  implicit val _"""+n+""" = new _"""+n+"""
           |""").stripMargin
     }
     
