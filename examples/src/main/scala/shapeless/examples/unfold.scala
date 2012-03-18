@@ -70,13 +70,13 @@ object UnfoldExamples {
 
   class A; class B; class C; class D; class E
   
-  object unfoldFn2 extends Poly1 {
+  object unfoldFn1 extends Poly1 {
     implicit def case0 = at[A](_ => (23, new B))
     implicit def case1 = at[B](_ => ("foo", new C))
     implicit def case2 = at[C](_ => (true, new D))
     implicit def case3 = at[D](_ => (1.0, new E))
   }
 
-  val l1 = unfold[D](unfoldFn2)(new A {})
+  val l1 = unfold[D](unfoldFn1)(new A {})
   typed[Int :: String :: Boolean :: HNil](l1)
 }
