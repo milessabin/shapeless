@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package shapeless.examples
+
 import scala.util.parsing.combinator._
 
 /**
