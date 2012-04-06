@@ -172,6 +172,17 @@ final class HListOps[L <: HList](l : L) {
    */
   def updatedType[U] = new UpdatedTypeAux[U]
   
+  class UpdatedAtAux[N <: Nat] {
+    def apply[U](u : U)(implicit replacer : ReplaceAt[L, N, U]) : replacer.Out = replacer(l, u)._2
+  }
+  
+  /**
+   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`. An explicit type
+   * argument must be provided for `U`. Available only if there is evidence that this `HList` has an element of
+   * type `U`.
+   */
+  def updatedAt[N <: Nat] = new UpdatedAtAux[N]
+  
   /**
    * Returns the first ''n'' elements of this `HList`. An explicit type argument must be provided. Available only if
    * there is evidence that this `HList` has at least ''n'' elements.
@@ -277,6 +288,26 @@ final class HListOps[L <: HList](l : L) {
   def foldLeft[R, HF](z : R)(op : HF)(implicit folder : LeftFolder[L, R, HF]) : folder.Out = folder(l, z)
   
   /**
+   * Computes a right fold over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the partial results of the appropriate types.
+   */
+  def foldRight[R, HF](z : R)(op : HF)(implicit folder : RightFolder[L, R, HF]) : folder.Out = folder(l, z)
+  
+  /**
+   * Computes a left reduce over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence that this `HList` has at least one element and that `op` can consume/produce all the partial
+   * results of the appropriate types.
+   */
+  def reduceLeft[HF](op : HF)(implicit reducer : LeftReducer[L, HF]) : reducer.Out = reducer(l)
+  
+  /**
+   * Computes a right reduce over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence that this `HList` has at least one element and that `op` can consume/produce all the partial
+   * results of the appropriate types.
+   */
+  def reduceRight[HF](op : HF)(implicit reducer : RightReducer[L, HF]) : reducer.Out = reducer(l)
+  
+  /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.
    */
   def zip[R <: HList](r : R)(implicit zipper : Zip[L :: R :: HNil]) : zipper.Out = zipper(l :: r :: HNil)
@@ -320,6 +351,11 @@ final class HListOps[L <: HList](l : L) {
    * Converts this `HList` to a correspondingly typed tuple.
    */
   def tupled(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
+  
+  /**
+   * Compute the length of this `Hlist`.
+   */
+  def length(implicit length : Length[L]) : length.Out = length()
   
   /**
    * Converts this `HList` to an ordinary List of elements typed as the least upper bound of the types of the elements
@@ -374,6 +410,34 @@ object IsHCons {
   
     def head(l : H0 :: T0) : H = l.head
     def tail(l : H0 :: T0) : T = l.tail
+  }
+}
+
+trait Length[-L <: HList] {
+  type Out <: Nat
+  def apply() : Out
+}
+
+trait LengthAux[-L <: HList, N <: Nat] {
+  def apply() : N
+}
+
+object Length {
+  implicit def length[L <: HList, N <: Nat](implicit length : LengthAux[L, N]) = new Length[L] {
+    type Out = N
+    def apply() = length()
+  }
+}
+
+object LengthAux {
+  import Nat._
+  
+  implicit def hnilLength = new LengthAux[HNil, _0] {
+    def apply() = _0
+  }
+  
+  implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : LengthAux[T, N], sn : Succ[N]) = new LengthAux[H :: T, Succ[N]] {
+    def apply() = sn
   }
 }
 
@@ -461,14 +525,15 @@ object MapFolder {
     def apply(l : HNil, in : R, op : (R, R) => R) = in
   }
   
-  implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly](implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
-    new MapFolder[H :: T, R, HF] {
-      def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
-    }
+  implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly]
+    (implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
+      new MapFolder[H :: T, R, HF] {
+        def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
+      }
 }
 
 /**
- * Type class supporting folding a polymorphic binary function over this `HList`.
+ * Type class supporting left-folding a polymorphic binary function over this `HList`.
  * 
  * @author Miles Sabin
  */
@@ -482,10 +547,11 @@ trait LeftFolderAux[L <: HList, In, HF, Out] {
 }
 
 object LeftFolder {
-  implicit def trueFolder[L <: HList, In, HF, Out0](implicit folder : LeftFolderAux[L, In, HF, Out0]) = new LeftFolder[L, In, HF] {
-    type Out = Out0
-    def apply(l : L, in : In) : Out = folder.apply(l, in)
-  }
+  implicit def leftFolder[L <: HList, In, HF, Out0](implicit folder : LeftFolderAux[L, In, HF, Out0]) =
+    new LeftFolder[L, In, HF] {
+      type Out = Out0
+      def apply(l : L, in : In) : Out = folder.apply(l, in)
+    }
 }
 
 object LeftFolderAux {
@@ -495,9 +561,101 @@ object LeftFolderAux {
     def apply(l : HNil, in : In) : In = in 
   }
   
-  implicit def hlistLeftFolderAux2[H, T <: HList, In, HF, OutH, Out](implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolderAux[T, OutH, HF, Out]) = new LeftFolderAux[H :: T, In, HF, Out] {
-    def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
+  implicit def hlistLeftFolderAux[H, T <: HList, In, HF, OutH, Out]
+    (implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolderAux[T, OutH, HF, Out]) =
+      new LeftFolderAux[H :: T, In, HF, Out] {
+        def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
+      }
+}
+
+/**
+ * Type class supporting right-folding a polymorphic binary function over this `HList`.
+ * 
+ * @author Miles Sabin
+ */
+trait RightFolder[L <: HList, In, HF] {
+  type Out
+  def apply(l : L, in : In) : Out 
+}
+
+trait RightFolderAux[L <: HList, In, HF, Out] {
+  def apply(l : L, in : In) : Out 
+}
+
+object RightFolder {
+  implicit def rightFolder[L <: HList, In, HF, Out0](implicit folder : RightFolderAux[L, In, HF, Out0]) =
+    new RightFolder[L, In, HF] {
+      type Out = Out0
+      def apply(l : L, in : In) : Out = folder.apply(l, in)
+    }
+}
+
+object RightFolderAux {
+  import Poly._
+  
+  implicit def hnilRightFolderAux[In, HF] = new RightFolderAux[HNil, In, HF, In] {
+    def apply(l : HNil, in : In) : In = in 
   }
+  
+  implicit def hlistRightFolderAux[H, T <: HList, In, HF, OutT, Out]
+    (implicit ft : RightFolderAux[T, In, HF, OutT], f : Pullback2Aux[HF, H, OutT, Out]) =
+      new RightFolderAux[H :: T, In, HF, Out] {
+        def apply(l : H :: T, in : In) : Out = f(l.head, ft(l.tail, in))
+      }
+}
+
+/**
+ * Type class supporting left-reducing a polymorphic binary function over this `HList`.
+ * 
+ * @author Miles Sabin
+ */
+trait LeftReducer[L <: HList, HF] {
+  type Out
+  def apply(l : L) : Out 
+}
+
+object LeftReducer {
+  implicit def leftReducer[H, T <: HList, HF](implicit folder : LeftFolder[T, H, HF]) =
+    new LeftReducer[H :: T, HF] {
+      type Out = folder.Out
+      def apply(l : H :: T) : Out = folder.apply(l.tail, l.head)
+    }
+}
+
+/**
+ * Type class supporting right-reducing a polymorphic binary function over this `HList`.
+ * 
+ * @author Miles Sabin
+ */
+trait RightReducer[L <: HList, HF] {
+  type Out
+  def apply(l : L) : Out 
+}
+
+trait RightReducerAux[L <: HList, HF, Out] {
+  def apply(l : L) : Out 
+}
+
+object RightReducer {
+  implicit def rightReducer[L <: HList, HF, Out0](implicit reducer : RightReducerAux[L, HF, Out0]) =
+    new RightReducer[L, HF] {
+      type Out = Out0
+      def apply(l : L) : Out = reducer.apply(l)
+    }
+}
+
+object RightReducerAux {
+  import Poly._
+  
+  implicit def hsingleRightReducerAux[H, HF] = new RightReducerAux[H :: HNil, HF, H] {
+    def apply(l : H :: HNil) : H = l.head
+  }
+  
+  implicit def hlistRightReducerAux[H, T <: HList, HF, OutT, Out]
+    (implicit rt : RightReducerAux[T, HF, OutT], f : Pullback2Aux[HF, H, OutT, Out]) =
+      new RightReducerAux[H :: T, HF, Out] {
+        def apply(l : H :: T) : Out = f(l.head, rt(l.tail))
+      }
 }
 
 /**
@@ -827,6 +985,47 @@ object ReplacerAux {
   
   implicit def hlistReplacer2[H, T <: HList, U, V, Out <: HList](implicit ut : ReplacerAux[T, U, V, Out]) =
     new ReplacerAux[H :: T, U, V, H :: Out] {
+      def apply(l : H :: T, v : V) : (U, H :: Out) = {
+        val (u, outT) = ut(l.tail, v)
+        (u, l.head :: outT)
+      }
+    }
+}
+
+/**
+ * Type class supporting replacement of the Nth element of this `HList` with an element of type V. Available only if
+ * this `HList` contains at least N elements.
+ * 
+ * @author Miles Sabin
+ */
+trait ReplaceAt[L <: HList, N <: Nat, V] {
+  type Elem
+  type Out <: HList
+  def apply(l : L, v : V) : (Elem, Out)
+}
+
+trait ReplaceAtAux[L <: HList, N <: Nat, U, V, Out <: HList] {
+  def apply(l : L, v : V) : (U, Out)
+}
+
+object ReplaceAt {
+  implicit def replaceAt[L <: HList, N <: Nat, Elem0, V, Out0 <: HList](implicit replacer : ReplaceAtAux[L, N, Elem0, V, Out0]) =
+    new ReplaceAt[L, N, V] {
+      type Elem = Elem0
+      type Out = Out0
+      def apply(l : L, v : V) : (Elem, Out) = replacer(l, v)
+    }
+}
+
+object ReplaceAtAux {
+  import Nat._
+  
+  implicit def hlistReplaceAt1[H, T <: HList, V] = new ReplaceAtAux[H :: T, _0, H, V, V :: T] {
+    def apply(l : H :: T, v : V) : (H, V :: T) = (l.head, v :: l.tail)
+  }
+  
+  implicit def hlistReplaceAt2[H, T <: HList, N <: Nat, U, V, Out <: HList](implicit ut : ReplaceAtAux[T, N, U, V, Out]) =
+    new ReplaceAtAux[H :: T, Succ[N], U, V, H :: Out] {
       def apply(l : H :: T, v : V) : (U, H :: Out) = {
         val (u, outT) = ut(l.tail, v)
         (u, l.head :: outT)
