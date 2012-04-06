@@ -78,6 +78,33 @@ object HLister {
 object HListerAux extends HListerAuxInstances
 
 /**
+ * Type class witnessing the arity of a `Product`
+ * 
+ * @author Miles Sabin
+ */
+trait ProductArity[P <: Product] {
+  type N <: Nat
+}
+
+trait ProductArityAux[P <: Product, N <: Nat]
+
+/**
+ * `ProductArity` type class instances.
+ * 
+ * @author Miles Sabin
+ */
+object ProductArity {
+  implicit def arity[P <: Product, N0 <: Nat](implicit an : ProductArityAux[P, N0]) = new ProductArity[P] {
+    type N = N0
+  }
+}
+
+object ProductArityAux {
+  implicit def arityN[P <: Product, L <: HList, N <: Nat]
+    (implicit hl : HListerAux[P, L], len : LengthAux[L, N]) = new ProductArityAux[P, N] {} 
+}
+
+/**
  * Conversions between ordinary functions and `HList` functions.
  * 
  * The implicits defined by this object enhance ordinary functions (resp. HList functions) with an `hlisted` (resp.
