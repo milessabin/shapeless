@@ -26,6 +26,7 @@ class HListIso[T, L <: HList](ctor : L => T, dtor : T => L) {
 
 object HListIso {
   import Functions._
+  import Tuples._
 
   def apply[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
     (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
@@ -34,4 +35,7 @@ object HListIso {
   def fromHList[T, L <: HList](l : L)(implicit iso : HListIso[T, L]) = iso.fromHList(l)
   
   def toHList[T, L <: HList](t : T)(implicit iso : HListIso[T, L]) = iso.toHList(t) 
+  
+  implicit def tupleIso[T <: Product, L <: HList](implicit hl : HListerAux[T, L], uhl : TuplerAux[L, T]) =
+    new HListIso(uhl.apply, hl.apply)
 }
