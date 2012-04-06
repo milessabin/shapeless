@@ -50,7 +50,7 @@ object ShapelessBuild extends Build {
         val nats = dir / "shapeless" / "nats.scala"
         IO.write(nats, genNats)
         
-        val tupletypeables = dir / "shapeless" / "tupletypeabels.scala"
+        val tupletypeables = dir / "shapeless" / "tupletypeables.scala"
         IO.write(tupletypeables, genTupleTypeableInstances)
 
         val sizedbuilder = dir / "shapeless" / "sizedbuilder.scala"
