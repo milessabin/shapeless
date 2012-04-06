@@ -38,15 +38,15 @@ Selected highlights of shapeless include,
     // size is a function from values of arbitrary type to a 'size' which is
     // defined via type specific cases
     object size extends Poly {
-      implicit def default[T] = case1[T](t => 1)
-      implicit def caseInt = case1[Int](x => 1)
-      implicit def caseString = case1[String](_.length)
-      implicit def caseList[T] = case1[List[T]](_.length)
+      implicit def default[T] = at[T](t => 1)
+      implicit def caseInt = at[Int](x => 1)
+      implicit def caseString = at[String](_.length)
+      implicit def caseList[T] = at[List[T]](_.length)
       implicit def caseOption[T](implicit st : Pullback1[T, Int]) =
-        case1[Option[T]](t => 1+(t map size).getOrElse(0))
+        at[Option[T]](t => 1+(t map size).getOrElse(0))
       implicit def caseTuple[T, U]
         (implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) =
-          case1[(T, U)](t => size(t._1)+size(t._2))
+          at[(T, U)](t => size(t._1)+size(t._2))
     }
 
     size(23) == 1
