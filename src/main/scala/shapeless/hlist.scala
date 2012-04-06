@@ -528,7 +528,7 @@ object MapFolder {
   implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly]
     (implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
       new MapFolder[H :: T, R, HF] {
-        def apply(l : H :: T, in : R, op : (R, R) => R) = tf(l.tail, op(in, hc(l.head)), op)
+        def apply(l : H :: T, in : R, op : (R, R) => R) = op(hc(l.head), tf(l.tail, in, op))
       }
 }
 
