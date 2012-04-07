@@ -193,15 +193,6 @@ record with a known schema can have it's precise typing reestabilished).
     p2 == None
 ```
       
-The library is targetted at Scala 2.10-SNAPSHOT by default, but currently
-should build against Scala 2.9.1.final with the `-Ydependent-method-types`
-switch enabled. I make no promises that it'll continue to build with 2.9.x,
-or even vanilla Scala 2.10-SNAPSHOT: in 2012 I plan to investigate, amongst
-other things, what can be done with [singleton types for literal values]
-(http://goo.gl/U18kK) ... at a minimum they would make the clunky encoding
-of type level natural numbers (in `shapeless/nat.scala`) redundant, and
-might enable a whole lot more.
-
 * Collection types with statically known sizes. These can prevent runtime
   errors that would result from attempting to take the head of an empty list,
   and can also verify more complex and useful relationships. 
@@ -219,15 +210,21 @@ might enable a whole lot more.
     )
   
     // hdrs and rows statically known to have the name number of columns
-    val formatted = csv(hdrs, rows)
-    formatted foreach println                               // Compiles
-    
-    println
+    val formatted = csv(hdrs, rows)                        // Compiles
     
     // extendedHdrs has the wrong number of columns for rows
     val extendedHdrs = Sized("Title", "Author", "ISBN")
     val badFormatted = csv(extendedHdrs, rows)             // Does not compile
 ```
+
+The library is targetted at Scala 2.10-SNAPSHOT by default, but currently
+should build against Scala 2.9.1.final with the `-Ydependent-method-types`
+switch enabled. I make no promises that it'll continue to build with 2.9.x,
+or even vanilla Scala 2.10-SNAPSHOT: in 2012 I plan to investigate, amongst
+other things, what can be done with [singleton types for literal values]
+(http://goo.gl/U18kK) ... at a minimum they would make the clunky encoding
+of type level natural numbers (in `shapeless/nat.scala`) redundant, and
+might enable a whole lot more.
 
 Building
 --------
