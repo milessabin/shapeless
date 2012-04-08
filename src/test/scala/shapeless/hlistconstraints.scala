@@ -64,8 +64,9 @@ class HListConstraintsTests {
   }
   
   @Test
-  def testSchemaConstraint {
-    import SchemaConstraint._
+  def testConstraints {
+    import KeyConstraint._
+    import ValueConstraint._
     
     object author  extends Field[String]
     object title   extends Field[String]
@@ -85,10 +86,15 @@ class HListConstraintsTests {
       (title  -> "Types and Programming Languages") ::
       (id     ->  262162091) ::
       HNil
-      
-    def acceptSummary[R <: HList : Schema[Int :: String :: HNil]#λ](r : R) = true
+
+    def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
     
-    acceptSummary(summary) // Compiles
-    // acceptSummary(book) // Does not compile
+    acceptKeys(summary)   // Compiles
+    //acceptKeys(book)    // Does not compile
+
+    def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
+    
+    acceptValues(summary) // Compiles
+    //acceptValues(book)  // Does not compile
   }
 }

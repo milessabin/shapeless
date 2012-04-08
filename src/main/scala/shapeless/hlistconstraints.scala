@@ -55,16 +55,31 @@ object BasisConstraint {
 }
 
 /**
- * Type class witnessing that every element of L is of the form FieldEntry[F] where F#valueType is an element of `M`.  
+ * Type class witnessing that every element of L is of the form FieldEntry[F] where F is an element of `M`.
  */
-trait SchemaConstraint[L <: HList, M <: HList]
+trait KeyConstraint[L <: HList, M <: HList]
 
-object SchemaConstraint {
-  type Schema[M <: HList] = {
-    type λ[L <: HList] = SchemaConstraint[L, M] 
+object KeyConstraint {
+  type Keys[M <: HList] = {
+    type λ[L <: HList] = KeyConstraint[L, M] 
   }
   
-  implicit def hnilSchema[M <: HList] = new SchemaConstraint[HNil, M] {}
-  implicit def hlistSchema[F <: FieldAux, V, T <: HList, M <: HList]
-    (implicit bct : SchemaConstraint[T, M], sel : Selector[M, V]) = new SchemaConstraint[(F, V) :: T, M] {}
+  implicit def hnilKeys[M <: HList] = new KeyConstraint[HNil, M] {}
+  implicit def hlistKeys[F <: FieldAux, V, T <: HList, M <: HList]
+    (implicit bct : KeyConstraint[T, M], sel : Selector[M, F]) = new KeyConstraint[(F, V) :: T, M] {}
+}
+
+/**
+ * Type class witnessing that every element of L is of the form FieldEntry[F] where F#valueType is an element of `M`.  
+ */
+trait ValueConstraint[L <: HList, M <: HList]
+
+object ValueConstraint {
+  type Values[M <: HList] = {
+    type λ[L <: HList] = ValueConstraint[L, M] 
+  }
+  
+  implicit def hnilValues[M <: HList] = new ValueConstraint[HNil, M] {}
+  implicit def hlistValues[F <: FieldAux, V, T <: HList, M <: HList]
+    (implicit bct : ValueConstraint[T, M], sel : Selector[M, V]) = new ValueConstraint[(F, V) :: T, M] {}
 }
