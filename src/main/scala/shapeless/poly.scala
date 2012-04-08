@@ -174,6 +174,21 @@ trait ~>>[F[_], R] extends Pullback1[R] {
   implicit def caseUniv[T] = at[F[T]](default[T] _)
 }
 
+/**
+ * Type class witnessing the existence of a natural transformation between `K[_]` and `V[_]`
+ * 
+ * @author Miles Sabin
+ */
+class ~?>[K[_], V[_]] {
+  class λ[K, V]
+}
+
+object ~?> {
+  implicit def rel[K[_], V[_]] : K ~?> V = new (K ~?> V)
+  
+  implicit def witness[K[_], V[_], T](implicit rel : K ~?> V) : rel.λ[K[T], V[T]] = new rel.λ[K[T], V[T]] 
+}
+
 /** Polymorphic identity function. */
 object identity extends (Id ~> Id) {
   def default[T](t : T) = t
