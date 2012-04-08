@@ -64,7 +64,7 @@ class HListConstraintsTests {
   }
   
   @Test
-  def testConstraints {
+  def testKeyValueConstraints {
     import KeyConstraint._
     import ValueConstraint._
     
