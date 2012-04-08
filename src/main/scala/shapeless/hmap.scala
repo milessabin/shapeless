@@ -31,3 +31,10 @@ class HMap[R[_, _]](underlying : Map[Any, Any] = Map.empty) extends Poly {
 
   implicit def caseRel[K, V](implicit ev : R[K, V]) = Case1Aux[HMap[R], K, V](k => get(k).get)
 }
+
+object HMap {
+  def apply[R[_, _]] = new HMapBuilder[R]
+
+  def empty[R[_, _]] = new HMap[R]
+  def empty[R[_, _]](underlying : Map[Any, Any]) = new HMap[R](underlying)
+}

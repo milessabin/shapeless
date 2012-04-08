@@ -26,13 +26,14 @@ class HMapTests {
   
   def typed[T](t : => T) {}
 
+  class BiMapIS[K, V]
+  implicit val intToString = new BiMapIS[Int, String]
+  implicit val stringToInt = new BiMapIS[String, Int]
+  
   @Test
-  def testHMap {
-    class Rel[K, V]
-    implicit val intToString = new Rel[Int, String]
-    implicit val stringToInt = new Rel[String, Int]
-    
-    val hm = new HMap[Rel]+(23 -> "foo")+("bar" -> 13)
+  def testBasics {
+    val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
+    //val hm2 = HMap[BiMapIS](23 -> "foo", 23 -> 13)   // Does not compile
     
     val s1 = hm.get(23)
     assertTrue(isDefined(s1))
@@ -43,7 +44,11 @@ class HMapTests {
     assertTrue(isDefined(i1))
     typed[Option[Int]](i1)
     assertEquals(Some(13), i1)
-    
+  }
+  
+  @Test
+  def testPoly {
+    val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
     import hm._
     
     // Map over an HList
@@ -58,5 +63,47 @@ class HMapTests {
     val a1 = pairApply(hm)
     typed[(String, Int)](a1)
     assertEquals(("foo", 13), a1)
+  }
+  
+  @Test
+  def testNatTrans {
+    val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
+    //val nt2 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option(13), Set(23) -> Option(13))  // Does not compile
+    //val nt3 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), "foo" -> 23)         // Does not compile
+
+    // Needed to allow V to be inferred in get
+    implicit object SO extends (Set ~?> Option)
+    
+    val o1 = nt.get(Set("foo"))
+    assertTrue(isDefined(o1))
+    typed[Option[Option[String]]](o1)
+    assertEquals(Some(Some("bar")), o1)
+    
+    val o2 = nt.get(Set(23))
+    assertTrue(isDefined(o2))
+    typed[Option[Option[Int]]](o2)
+    assertEquals(Some(Some(13)), o2)
+  }
+  
+  @Test
+  def testPolyNatTrans {
+    val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
+    import nt._
+    
+    // Needed to allow V to be inferred in Case1 resolution (ie. map and pairApply)
+    implicit object SO extends (Set ~?> Option)
+    
+    // Map over an HList
+    val l1 = Set("foo") :: Set(23) :: HNil
+    val l2 = l1 map nt
+    typed[Option[String] :: Option[Int] :: HNil](l2)
+    assertEquals(Some("bar") :: Some(13) :: HNil, l2)
+
+    // Use as an argument to a HoF
+    def pairApply[F <: Poly](f : F)(implicit cs : f.Case1[Set[String]], ci : f.Case1[Set[Int]]) = (f(Set("foo")), f(Set(23)))
+    
+    val a1 = pairApply(nt)
+    typed[(Option[String], Option[Int])](a1)
+    assertEquals((Option("bar"), Option(13)), a1)
   }
 }

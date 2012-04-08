@@ -56,7 +56,10 @@ object ShapelessBuild extends Build {
         val sizedbuilder = dir / "shapeless" / "sizedbuilder.scala"
         IO.write(sizedbuilder, genSizedBuilder)
         
-        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats, tupletypeables, sizedbuilder)
+        val hmapbuilder = dir / "shapeless" / "hmapbuilder.scala"
+        IO.write(hmapbuilder, genHMapBuilder)
+        
+        Seq(tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, nats, tupletypeables, sizedbuilder, hmapbuilder)
       }
     )
   )
@@ -253,5 +256,30 @@ object ShapelessBuild extends Build {
         |  import Sized._
         |"""+instances+"""}
         |""").stripMargin
+  }
+  
+  def genHMapBuilder = {
+    def genInstance(arity : Int) = {
+      val typeArgs = ((0 until arity) map (n => "K"+n+", V"+n)).mkString("[", ", ", "]")
+      val args = ((0 until arity) map (n => "e"+n+" : (K"+n+", V"+n+")")).mkString("(", ", ", ")")
+      val witnesses = ((0 until arity) map (n => "ev"+n+" : R[K"+n+", V"+n+"]")).mkString("(implicit ", ", ", ")")
+      val mapArgs = ((0 until arity) map (n => "e"+n)).mkString("(", ", ", ")")
+      
+      ("""|
+          |  def apply"""+typeArgs+"""
+          |    """+args+"""
+          |    """+witnesses+"""
+          |    = new HMap[R](Map"""+mapArgs+""")
+          |""").stripMargin
+    }
+    
+    val instances = ((1 to 10) map genInstance).mkString
+
+    genHeader+
+    ("""|
+        |class HMapBuilder[R[_, _]] {
+        |"""+instances+"""}
+        |""").stripMargin
+    
   }
 }
