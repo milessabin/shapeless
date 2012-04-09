@@ -69,7 +69,7 @@ get_script_path () {
   if [[ "${target:0:1}" == "/" ]]; then
     echo "$target"
   else
-    echo "$path/$target"
+    echo "$(dirname $path)/$target"
   fi
 }
 
@@ -330,7 +330,7 @@ process_args ()
   -sbt-snapshot) sbt_explicit_version=$sbt_snapshot_version && shift ;;
        -sbt-jar) require_arg path "$1" "$2" && sbt_jar="$2" && shift 2 ;;
    -sbt-version) require_arg version "$1" "$2" && sbt_explicit_version="$2" && shift 2 ;;
- -scala-version) require_arg version "$1" "$2" && addSbt "scalaVersion := \"$2\"" && shift 2 ;;
+ -scala-version) require_arg version "$1" "$2" && addSbt "set scalaVersion := \"$2\"" && shift 2 ;;
     -scala-home) require_arg path "$1" "$2" && addSbt "set scalaHome in ThisBuild := Some(file(\"$2\"))" && shift 2 ;;
      -java-home) require_arg path "$1" "$2" && java_cmd="$2/bin/java" && shift 2 ;;
 
