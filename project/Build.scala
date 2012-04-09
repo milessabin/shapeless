@@ -23,7 +23,7 @@ object ShapelessBuild extends Build {
   lazy val project = Project(
     id = "root", 
     base = file("."),
-    settings = Defaults.defaultSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ Publishing.settings ++ Seq(
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Compile) <+= baseDirectory(_ / "examples/src/main/scala"),
       
@@ -283,3 +283,4 @@ object ShapelessBuild extends Build {
     
   }
 }
+
