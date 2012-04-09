@@ -74,6 +74,26 @@ final class HListOps[L <: HList](l : L) {
   def ::[H](h : H) : H :: L = shapeless.::(h, l)
 
   /**
+   * Prepend the argument element to this `HList`.
+   */
+  def +:[H](h : H) : H :: L = shapeless.::(h, l)
+  
+  /**
+   * Append the argument element to this `HList`.
+   */
+  def :+[T](t : T)(implicit prepend : Prepend[L, T :: HNil]) : prepend.Out = prepend(l, t :: HNil)
+  
+  /**
+   * Append the argument `HList` to this `HList`.
+   */
+  def ++[S <: HList](suffix : S)(implicit prepend : Prepend[L, S]) : prepend.Out = prepend(l, suffix)
+  
+  /**
+   * Prepend the argument `HList` to this `HList`.
+   */
+  def ++:[P <: HList](prefix : P)(implicit prepend : Prepend[P, L]) : prepend.Out = prepend(prefix, l)
+  
+  /**
    * Prepend the argument `HList` to this `HList`.
    */
   def :::[P <: HList](prefix : P)(implicit prepend : Prepend[P, L]) : prepend.Out = prepend(prefix, l)
