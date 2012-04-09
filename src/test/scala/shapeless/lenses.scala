@@ -47,14 +47,14 @@ class LensTests {
     typed[Int](age1)
     assertEquals(37, age1)
     
-    val person2 = ageLens.set(person, 38)
+    val person2 = ageLens.set(person)(38)
     assertEquals(38, person2.age)
     
     val street1 = streetLens.get(person)
     typed[String](street1)
     assertEquals("Southover Street", street1)
     
-    val person3 = streetLens.set(person, "Montpelier Road")
+    val person3 = streetLens.set(person)("Montpelier Road")
     assertEquals("Montpelier Road", person3.address.street)
   }
   
@@ -97,7 +97,7 @@ class LensTests {
     typed[Int](i)
     assertEquals(23, i)
     
-    val tpi = lens0.set(tp, 13)
+    val tpi = lens0.set(tp)(13)
     typed[ISDB](tpi)
     assertEquals((13, ("foo", (2.0, false))), tpi)
 
@@ -105,7 +105,7 @@ class LensTests {
     typed[(String, (Double, Boolean))](sdb)
     assertEquals(("foo", (2.0, false)), sdb)
 
-    val tpsdb = lens1.set(tp, ("bar", (3.0, true)))
+    val tpsdb = lens1.set(tp)("bar", (3.0, true))
     typed[ISDB](tpsdb)
     assertEquals((23, ("bar", (3.0, true))), tpsdb)
 
@@ -113,7 +113,7 @@ class LensTests {
     typed[String](s)
     assertEquals("foo", s)
 
-    val tps = lens10.set(tp, "bar")
+    val tps = lens10.set(tp)("bar")
     typed[ISDB](tps)
     assertEquals((23, ("bar", (2.0, false))), tps)
 
@@ -121,7 +121,7 @@ class LensTests {
     typed[(Double, Boolean)](db)
     assertEquals((2.0, false), db)
 
-    val tpdb = lens11.set(tp, (3.0, true))
+    val tpdb = lens11.set(tp)(3.0, true)
     typed[ISDB](tpdb)
     assertEquals((23, ("foo", (3.0, true))), tpdb)
 
@@ -129,7 +129,7 @@ class LensTests {
     typed[Double](d)
     (2.0, d,  Double.MinPositiveValue)
 
-    val tpd = lens110.set(tp, 3.0)
+    val tpd = lens110.set(tp)(3.0)
     typed[ISDB](tpd)
     assertEquals((23, ("foo", (3.0, false))), tpd)
 
@@ -137,7 +137,7 @@ class LensTests {
     typed[Boolean](b)
     assertEquals(false, b)
 
-    val tpb = lens111.set(tp, true)
+    val tpb = lens111.set(tp)(true)
     typed[ISDB](tpb)
     assertEquals((23, ("foo", (2.0, true))), tpb)
   }
@@ -155,7 +155,7 @@ class LensTests {
     typed[Int](i)
     assertEquals(23, i)
     
-    val li = lens0.set(l, 13)
+    val li = lens0.set(l)(13)
     typed[ISB](li)
     assertEquals(13 :: "foo" :: true :: HNil, li)
     
@@ -163,7 +163,7 @@ class LensTests {
     typed[String](s)
     assertEquals("foo", s)
     
-    val ls = lens1.set(l, "bar")
+    val ls = lens1.set(l)("bar")
     typed[ISB](ls)
     assertEquals(23 :: "bar" :: true :: HNil, ls)
     
@@ -171,7 +171,7 @@ class LensTests {
     typed[Boolean](b)
     assertEquals(true, b)
 
-    val lb = lens2.set(l, false)
+    val lb = lens2.set(l)(false)
     typed[ISB](lb)
     assertEquals(23 :: "foo" :: false :: HNil, lb)
   }
@@ -184,13 +184,13 @@ class LensTests {
     val b1 = lens.get(s)
     assert(b1)
     
-    val s2 = lens.set(s, false)
+    val s2 = lens.set(s)(false)
     assertEquals(Set("foo", "baz"), s2)
 
     val b2 = lens.get(s2)
     assert(!b2)
 
-    val s3 = lens.set(s2, true)
+    val s3 = lens.set(s2)(true)
     assertEquals(s, s3)
   }
   
@@ -202,22 +202,34 @@ class LensTests {
     val s1 = lens.get(m)
     assertEquals(Option("bar"), s1)
     
-    val m2 = lens.set(m, Option("wibble"))
+    val m2 = lens.set(m)(Option("wibble"))
     assertEquals(Map(23 -> "foo", 13 -> "wibble", 11 -> "baz"), m2)
 
     val s2 = lens.get(m2)
     assertEquals(Option("wibble"), s2)
 
-    val m3 = lens.set(m, None)
+    val m3 = lens.set(m)(None)
     assertEquals(Map(23 -> "foo", 11 -> "baz"), m3)
 
     val s3 = lens.get(m3)
     assertEquals(None, s3)
 
-    val m4 = lens.set(m3, Option("bar"))
+    val m4 = lens.set(m3)(Option("bar"))
     assertEquals(m, m4)
     
     val s4 = lens.get(m4)
     assertEquals(Option("bar"), s4)
+  }
+  
+  @Test
+  def testProducts {
+    val nameAgeCityLens = nameLens * ageLens * cityLens
+    
+    val nac1 = nameAgeCityLens.get(person) 
+    typed[(String, Int, String)](nac1)
+    assertEquals(("Joe Grey", 37, "Brighton"), nac1)
+    
+    val person2 = nameAgeCityLens.set(person)("Joe Soap", 27, "London")
+    assertEquals(Person("Joe Soap", 27, Address("Southover Street", "London", "BN2 9UA")), person2)
   }
 }

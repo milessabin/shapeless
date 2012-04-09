@@ -19,12 +19,12 @@ package shapeless
 trait Lens[C, F] {
   outer =>
   def get(c : C) : F
-  def set(c : C, f : F) : C
-  def modify(c : C)(f : F => F) : C = set(c, f(get(c)))
+  def set(c : C)(f : F) : C
+  def modify(c : C)(f : F => F) : C = set(c)(f(get(c)))
   
   def compose[D](g : Lens[D, C]) = new Lens[D, F] {
     def get(d : D) : F = outer.get(g.get(d))
-    def set(d : D, f : F) : D = g.set(d, outer.set(g.get(d), f))
+    def set(d : D)(f : F) : D = g.set(d)(outer.set(g.get(d))(f))
   }
 
   def >>[L <: HList, N <: Nat](n : N)(implicit iso : HListIso[F, L], lens : HListNthLens[L, N]) =
@@ -32,14 +32,38 @@ trait Lens[C, F] {
       import HListIso._
       
       def get(c : C) : lens.Elem = lens.get(toHList(outer.get(c)))
-      def set(c : C, f : lens.Elem) = outer.set(c, fromHList(lens.set(toHList(outer.get(c)), f)))
+      def set(c : C)(f : lens.Elem) = outer.set(c)(fromHList(lens.set(toHList(outer.get(c)))(f)))
     }
+  
+  def *[G](other : Lens[C, G]) = new ProductLens[C, (F, G)] {
+    def get(c : C) : (F, G) = (outer.get(c), other.get(c))
+    def set(c : C)(fg : (F, G)) = other.set(outer.set(c)(fg._1))(fg._2)
+  }
+}
+
+trait ProductLens[C, P <: Product] extends Lens[C, P] {
+  outer =>
+  import Tuples._
+  def *[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
+    (implicit
+      hlp  : HListerAux[P, L],
+      tpp  : TuplerAux[L, P],
+      pre  : PrependAux[L, T :: HNil, LT],
+      init : InitAux[LT, L],
+      last : LastAux[LT, T],
+      tpq  : TuplerAux[LT, Q],
+      hlq  : HListerAux[Q, LT]) =
+      new ProductLens[C, Q] {
+        def get(c : C) : Q = (outer.get(c).hlisted :+ other.get(c)).tupled
+        def set(c : C)(q : Q) = {
+          val l = q.hlisted
+          other.set(outer.set(c)(l.init.tupled))(l.last)
+        }
+      }
 }
 
 object Lens {
   def apply[C] = id[C]
-  
-  def modify[C, F](l : Lens[C, F])(f : F => F) : C => C = c => l set(c, f(l get c))
   
   object compose extends Poly2 {
     implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
@@ -47,17 +71,17 @@ object Lens {
 
   def id[C] = new Lens[C, C] {
     def get(c : C) : C = c
-    def set(c : C, f : C) : C = f
+    def set(c : C)(f : C) : C = f
   }
   
   def setLens[E](e : E) = new Lens[Set[E], Boolean] {
     def get(s : Set[E]) = s contains e
-    def set(s : Set[E], b : Boolean) = if(b) s+e else s-e
+    def set(s : Set[E])(b : Boolean) = if(b) s+e else s-e
   }
   
   def mapLens[K, V](k : K) = new Lens[Map[K, V], Option[V]] {
     def get(m : Map[K, V]) = m get k
-    def set(m : Map[K, V], ov : Option[V]) = ov match {
+    def set(m : Map[K, V])(ov : Option[V]) = ov match {
       case Some(v) => m+(k -> v)
       case None => m-k
     } 
@@ -69,7 +93,7 @@ object Lens {
 trait HListNthLens[L <: HList, N <: Nat] {
   type Elem
   def get(l : L) : Elem
-  def set(l : L, e : Elem) : L
+  def set(l : L)(e : Elem) : L
   def toLens : Lens[L, Elem]
 }
 
@@ -78,7 +102,7 @@ object HListNthLens {
     new HListNthLens[L, N] {
       type Elem = E
       def get(l : L) : Elem = lens.get(l)
-      def set(l : L, e : Elem) : L = lens.set(l, e)
+      def set(l : L)(e : Elem) : L = lens.set(l)(e)
       def toLens : Lens[L, Elem] = lens
     }
 }
@@ -89,7 +113,6 @@ object HListNthLensAux {
   implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : AtAux[L, N, E], replace : ReplaceAtAux[L, N, E, E, L]) =
     new HListNthLensAux[L, N, E] {
       def get(l : L) : E = l[N] 
-      def set(l : L, e : E) : L = l.updatedAt[N](e)
+      def set(l : L)(e : E) : L = l.updatedAt[N](e)
     }
 }
-
