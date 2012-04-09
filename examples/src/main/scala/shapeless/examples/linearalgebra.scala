@@ -16,6 +16,11 @@
 
 package shapeless.examples
 
+/*
+ * Proof of concept implementation of typesafe vectors of arbitrary dimension.
+ * 
+ * @author Miles Sabin
+ */
 object LinearAlgebraExamples extends App {
   import shapeless._
   import TypeOperators._
