@@ -312,7 +312,7 @@ class HListTests {
   }
   
   @Test
-  def testFoldLeft {
+  def testFoldMap {
     implicitly[MapperAux[isDefined.type, HNil, HNil]]
     implicitly[MapperAux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
     
@@ -850,7 +850,7 @@ class HListTests {
   }
   
   @Test
-  def testTrueFold {
+  def testFoldLeft {
     val c1a = combine('o', "foo")
     val c1b = combine(c1a, true)
     assertEquals("pass", c1b)
@@ -876,5 +876,24 @@ class HListTests {
     val f2 = l2.foldLeft('o')(combine)
     typed[String](f2)
     assertEquals("pass", f2)
+  }
+  
+  @Test
+  def testUpdatedAt {
+    type IBS = Int :: Boolean :: String :: HNil
+    
+    val l = 1 :: true :: "foo" :: HNil
+
+    val li = l.updatedAt[_0](2)
+    typed[IBS](li)
+    assertEquals(2 :: true :: "foo" :: HNil, li)
+
+    val lb = l.updatedAt[_1](false)
+    typed[IBS](lb)
+    assertEquals(1 :: false :: "foo" :: HNil, lb)
+
+    val ls = l.updatedAt[_2]("bar")
+    typed[IBS](ls)
+    assertEquals(1 :: true :: "bar" :: HNil, ls)
   }
 }
