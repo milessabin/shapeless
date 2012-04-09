@@ -49,10 +49,7 @@ object UnfoldExamples {
     def apply(s : S) : Out
   }
   
-  trait LowPriorityUnfoldAux {
-  }
-  
-  object UnfoldAux extends LowPriorityUnfoldAux {
+  object UnfoldAux {
     implicit def unfold1[F <: Poly1, S] : UnfoldAux[F, S, S, HNil] = new UnfoldAux[F, S, S, HNil] {
         def apply(s : S) = HNil
       }
