@@ -17,6 +17,27 @@
 package shapeless
 
 /**
+ * Type class witnessing that the elements of L1 are a subset of the elements of L2
+ *
+ * @author Alois Cochard
+ */
+trait FilterRel[L1 <: HList, T, L2 <: HList]
+
+object FilterRel {
+  type *==*[T] = {
+    type λ[L1 <: HList, L2 <: HList] = FilterRel[L1, T, L2]
+  }
+
+  implicit def hnilFilter[T] = new FilterRel[HNil, T, HNil] {}                                                        
+                                                                                                                                
+  implicit def hlistFilter1[L <: HList, H, Out <: HList](implicit f : FilterRel[L, H, Out]) =
+    new FilterRel[H :: L, H, H :: Out] {}
+
+  implicit def hlistFilter2[H, L <: HList, U, Out <: HList](implicit f : FilterRel[L, U, Out]) = 
+    new FilterRel[H :: L, U, Out] {}
+}
+
+/**
  * Type class witnessing that there is a natural transformation between two HLists
  *
  * @author Alois Cochard
