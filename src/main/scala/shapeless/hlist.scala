@@ -136,6 +136,11 @@ final class HListOps[L <: HList](l : L) {
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
   def filter[U](implicit filter : Filter[L, U]) : filter.Out  = filter(l)
+
+  /**
+   * Returns all elements of type different than `U` of this `HList`. An explicit type argument must be provided.
+   */
+  def filterNot[U](implicit filter : FilterNot[L, U]) : filter.Out  = filter(l)
   
   /**
    * Returns the first element of type `U` of this `HList` plus the remainder of the `HList`. An explicit type argument
@@ -891,6 +896,45 @@ object FilterAux {
   implicit def hlistFilter2[H, L <: HList, U, Out <: HList]
     (implicit aux : FilterAux[L, U, Out]) = new FilterAux[H :: L, U, Out] {
        def apply(l : H :: L) : Out = aux(l.tail)
+    }
+}
+
+/**
+ * Type class supporting access to the all elements of this `HList` of type different than `U`.
+ * 
+ * @author Alois Cochard
+ */
+trait FilterNot[L <: HList, U] {
+  type Out <: HList
+  def apply(l : L) : Out
+}
+
+object FilterNot {
+  implicit def hlistFilterNot[L <: HList, U, Out0 <: HList](implicit aux : FilterNotAux[L, U, Out0]) = new FilterNot[L, U] {
+    type Out = Out0
+    def apply(l : L) : Out0 = aux(l)
+  }
+}
+
+trait FilterNotAux[L <: HList, U, Out <: HList] {
+  def apply(l : L) : Out
+}
+
+object FilterNotAux {
+  import TypeOperators._
+
+  implicit def hlistFilterNotHNil[L <: HList, U] = new FilterNotAux[HNil, U, HNil] {
+     def apply(l : HNil) : HNil = HNil
+  }
+
+  implicit def hlistFilterNot1[L <: HList, H, Out <: HList]
+    (implicit aux : FilterNotAux[L, H, Out]) = new FilterNotAux[H :: L, H, Out] {
+       def apply(l : H :: L) : Out = aux(l.tail)
+    }
+
+  implicit def hlistFilterNot2[H, L <: HList, U, Out <: HList]
+    (implicit aux : FilterNotAux[L, U, Out], e: U =:!= H) = new FilterNotAux[H :: L, U, H :: Out] {
+       def apply(l : H :: L) : H :: Out = l.head :: aux(l.tail)
     }
 }
 
