@@ -21,6 +21,30 @@ package shapeless
  *
  * @author Alois Cochard
  */
+trait FilterNotRel[L1 <: HList, T, L2 <: HList]
+
+object FilterNotRel {
+  import TypeOperators._
+
+  type *!=*[T] = {
+    type λ[L1 <: HList, L2 <: HList] = FilterNotRel[L1, T, L2]
+  }
+
+  implicit def hnilFilterNot[T] = new FilterNotRel[HNil, T, HNil] {}                                                        
+                                                                                                                                
+  implicit def hlistFilterNot1[L <: HList, H, Out <: HList](implicit f : FilterNotRel[L, H, Out]) =
+    new FilterNotRel[H :: L, H, Out] {}
+
+  implicit def hlistFilterNot2[H, L <: HList, U, Out <: HList]
+    (implicit f : FilterNotRel[L, U, Out], e: U =:!= H) =
+      new FilterNotRel[H :: L, U, H :: Out] {}
+}
+
+/**
+ * Type class witnessing that the elements of L1 are a subset of the elements of L2
+ *
+ * @author Alois Cochard
+ */
 trait FilterRel[L1 <: HList, T, L2 <: HList]
 
 object FilterRel {

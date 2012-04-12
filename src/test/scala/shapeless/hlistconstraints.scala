@@ -21,6 +21,19 @@ import org.junit.Assert._
 
 class HListConstraintsTests {
   @Test
+  def testFilterNotRel {
+    import FilterNotRel._
+
+    def accept[L1 <: HList, L2 <: HList](l1: L1)(l2: L2)(implicit f: *!=*[String]#λ[L1, L2]) = l2
+
+    val l1 = 1 :: "a" :: 3 :: HNil
+    val l2 = 24 :: 42 :: HNil
+
+    accept(l1)(l2)
+    //accept(l1)(l1) // Does not compile
+  }
+  
+  @Test
   def testFilterRel {
     import FilterRel._
 
