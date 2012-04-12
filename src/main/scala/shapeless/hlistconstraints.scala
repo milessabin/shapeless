@@ -17,6 +17,32 @@
 package shapeless
 
 /**
+ * Type class witnessing that there is a natural transformation between two HLists
+ *
+ * @author Alois Cochard
+ */
+trait NatTRel[L1 <: HList, F[_], L2 <: HList, G[_]]
+
+object NatTRel {
+  import TypeOperators._
+
+  type ~??>[F[_], G[_]] = {
+    type λ[L1 <: HList, L2 <: HList] = NatTRel[L1, F, L2, G]
+  }
+
+  implicit def hnilNatT[F[_], G[_]] = new NatTRel[HNil, F, HNil, G] {}
+
+  implicit def hlistNatT0[H, L1 <: HList, L2 <: HList, G[_]](implicit n : NatTRel[L1, Id, L2, G]) =
+    new NatTRel[H :: L1, Id, G[H] :: L2, G] {}
+
+  implicit def hlistNatT1[H, L1 <: HList, F[_], L2 <: HList](implicit n : NatTRel[L1, F, L2, Id]) =
+    new NatTRel[F[H] :: L1, F, H :: L2, Id] {}
+
+  implicit def hlistNatT2[H, L1 <: HList, F[_], L2 <: HList, G[_]](implicit n : NatTRel[L1, F, L2, G]) =
+    new NatTRel[F[H] :: L1, F, G[H] :: L2, G] {}
+}
+
+/**
  * Type class witnessing that every element of `L` has `TC` as its outer type constructor. 
  */
 trait UnaryTCConstraint[L <: HList, TC[_]]
