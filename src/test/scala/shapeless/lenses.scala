@@ -71,11 +71,11 @@ class LensTests {
     typed[String](street1)
     assertEquals("Southover Street", street1)
     
-    val street2 = personStreetLens1.get(person)
+    val street2 = personStreetLens2.get(person)
     typed[String](street2)
     assertEquals("Southover Street", street2)
 
-    val street3 = personStreetLens1.get(person)
+    val street3 = personStreetLens3.get(person)
     typed[String](street3)
     assertEquals("Southover Street", street3)
   }
