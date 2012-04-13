@@ -6,6 +6,8 @@ version := "1.2.0-SNAPSHOT"
 
 scalaVersion := "2.10.0-SNAPSHOT"
 
+crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.10.0-SNAPSHOT")
+
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 scalacOptions <++= scalaVersion map { version =>
