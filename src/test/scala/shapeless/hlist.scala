@@ -476,6 +476,21 @@ class HListTests {
   }
 
   @Test
+  def testFilterNot {
+    val l1 = 1 :: 2 :: HNil
+    val f1 = l1.filterNot[String]
+    typed[Int :: Int :: HNil](f1)
+    assertEquals(1 :: 2 :: HNil, f1)
+
+    val l2 = 1 :: true :: "foo" :: 2 :: HNil
+    val f2 = l2.filterNot[String]
+    typed[Int :: Boolean :: Int :: HNil](f2)
+    assertEquals(1 :: true :: 2 :: HNil, f2)
+
+    typed[HNil](l2.filter[Double])
+  }
+
+  @Test
   def testReplace {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     

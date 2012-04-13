@@ -21,6 +21,68 @@ import org.junit.Assert._
 
 class HListConstraintsTests {
   @Test
+  def testFilterNotRel {
+    import FilterNotRel._
+
+    def accept[L <: HList](l: L)(implicit f: *!=*[String]#λ[L]) = (x: f.Out) => x
+
+    val l1 = 1 :: "a" :: 3 :: HNil
+    val l2 = 24 :: 42 :: HNil
+
+    accept(l1).apply(l2)
+    //accept(l1).apply(l1) // Does not compile
+  }
+  
+  @Test
+  def testFilterRel {
+    import FilterRel._
+
+    def accept[L <: HList](l: L)(implicit f: *==*[Int]#λ[L]) = (x: f.Out) => x
+
+    val l1 = 1 :: "a" :: 3 :: HNil
+    val l2 = 1 :: 3 :: HNil
+
+    accept(l1).apply(l2)
+    //accept(l1).apply(l1) // Does not compile
+  }
+
+  @Test
+  def testNatTRel {
+    import TypeOperators._
+    import NatTRel._
+
+    {
+      def acceptOptionToList[L <: HList](l: L)(implicit e: (Option ~??> List)#λ[L]) = (x: e.Out) => x
+
+      val l1 = Option(0) :: Option("a") :: HNil
+      val l2 = List(1) :: List("b") :: HNil
+
+      val a = acceptOptionToList(l1).apply(l2)
+      //acceptOptionToId(l1).apply(l1)  // Does not compile
+    }
+
+    {
+      def acceptOptionToId[L <: HList](l: L)(implicit e: (Option ~??> Id)#λ[L]) = (x: e.Out) => x
+
+      val l1 = Option(0) :: Option("a") :: HNil
+      val l2 = 1 :: "b" :: HNil
+
+      acceptOptionToId(l1).apply(l2)
+      //acceptOptionToId(l1).apply(l1)  // Does not compile
+    }
+
+    {
+      def acceptIdToOption[L <: HList](l: L)(implicit e: (Id ~??> Option)#λ[L]) = (x: e.Out) => x
+
+      val l1 = 1 :: "b" :: HNil
+      val l2 = Option(0) :: Option("a") :: HNil
+
+      acceptIdToOption(l1).apply(l2)
+      //acceptIdToOption(l1).apply(l1)  // Does not compile
+    }
+  }
+
+  @Test
   def testUnaryTCConstraint {
     import TypeOperators._
     import UnaryTCConstraint._
