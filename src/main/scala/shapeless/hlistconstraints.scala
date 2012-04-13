@@ -21,23 +21,30 @@ package shapeless
  *
  * @author Alois Cochard
  */
-trait FilterNotRel[L1 <: HList, T, L2 <: HList]
+trait FilterNotRel[L <: HList, T] { type Out <: HList }
 
 object FilterNotRel {
-  import TypeOperators._
-
   type *!=*[T] = {
-    type λ[L1 <: HList, L2 <: HList] = FilterNotRel[L1, T, L2]
+    type λ[L <: HList] = FilterNotRel[L, T]
   }
 
-  implicit def hnilFilterNot[T] = new FilterNotRel[HNil, T, HNil] {}                                                        
+  implicit def hlistFilterNot[L <: HList, T, Out0 <: HList]
+    (implicit aux : FilterNotRelAux[L, T, Out0]) = new FilterNotRel[L, T] { type Out = Out0 }
+}
+
+trait FilterNotRelAux[L <: HList, T, Out <: HList]
+
+object FilterNotRelAux {
+  import TypeOperators._
+
+  implicit def hnilFilterNot[T] = new FilterNotRelAux[HNil, T, HNil] {}                                                        
                                                                                                                                 
-  implicit def hlistFilterNot1[L <: HList, H, Out <: HList](implicit f : FilterNotRel[L, H, Out]) =
-    new FilterNotRel[H :: L, H, Out] {}
+  implicit def hlistFilterNot1[L <: HList, H, Out <: HList](implicit f : FilterNotRelAux[L, H, Out]) =
+    new FilterNotRelAux[H :: L, H, Out] {}
 
   implicit def hlistFilterNot2[H, L <: HList, U, Out <: HList]
-    (implicit f : FilterNotRel[L, U, Out], e: U =:!= H) =
-      new FilterNotRel[H :: L, U, H :: Out] {}
+    (implicit f : FilterNotRelAux[L, U, Out], e: U =:!= H) =
+      new FilterNotRelAux[H :: L, U, H :: Out] {}
 }
 
 /**
@@ -45,20 +52,27 @@ object FilterNotRel {
  *
  * @author Alois Cochard
  */
-trait FilterRel[L1 <: HList, T, L2 <: HList]
+trait FilterRel[L <: HList, T] { type Out <: HList }
 
 object FilterRel {
   type *==*[T] = {
-    type λ[L1 <: HList, L2 <: HList] = FilterRel[L1, T, L2]
+    type λ[L <: HList] = FilterRel[L, T]
   }
 
-  implicit def hnilFilter[T] = new FilterRel[HNil, T, HNil] {}                                                        
-                                                                                                                                
-  implicit def hlistFilter1[L <: HList, H, Out <: HList](implicit f : FilterRel[L, H, Out]) =
-    new FilterRel[H :: L, H, H :: Out] {}
+  implicit def hlistFilter[L <: HList, T, Out0 <: HList]
+    (implicit aux : FilterRelAux[L, T, Out0]) = new FilterRel[L, T] { type Out = Out0 }
+}
 
-  implicit def hlistFilter2[H, L <: HList, U, Out <: HList](implicit f : FilterRel[L, U, Out]) = 
-    new FilterRel[H :: L, U, Out] {}
+trait FilterRelAux[L <: HList, T, Out <: HList]
+
+object FilterRelAux {
+  implicit def hnilFilter[T] = new FilterRelAux[HNil, T, HNil] {}
+                                                                                                                                
+  implicit def hlistFilter1[L <: HList, H, Out <: HList](implicit f : FilterRelAux[L, H, Out]) =
+    new FilterRelAux[H :: L, H, H :: Out] {}
+
+  implicit def hlistFilter2[H, L <: HList, U, Out <: HList](implicit f : FilterRelAux[L, U, Out]) = 
+    new FilterRelAux[H :: L, U, Out] {}
 }
 
 /**
@@ -71,12 +85,20 @@ trait NatTRel[L <: HList, F[_], G[_]] {
 }
 
 object NatTRel {
+  import TypeOperators._
+
   type ~??>[F[_], G[_]] = {
     type λ[L <: HList] = NatTRel[L, F, G]
   }
 
-  implicit def hlistNatT[L <: HList, F[_], Out0 <: HList, G[_]]
-      (implicit aux : NatTRelAux[L, F, Out0, G]) = new NatTRel[L, F, G] { type Out = Out0 }
+  implicit def hlistNatT0[L <: HList, F[_], Out0 <: HList, G[_]]
+    (implicit aux : NatTRelAux[L, F, Out0, G], e : G[_] =:!= Id[_]) = new NatTRel[L, F, G] { type Out = Out0 }
+
+  implicit def hlistNatT1[L <: HList, Out0 <: HList, G[_]]
+    (implicit aux : NatTRelAux[L, Id, Out0, G]) = new NatTRel[L, Id, G] { type Out = Out0 }
+
+  implicit def hlistNatT2[L <: HList, F[_], Out0 <: HList]
+    (implicit aux : NatTRelAux[L, F, Out0, Id]) = new NatTRel[L, F, Id] { type Out = Out0 }
 }
 
 trait NatTRelAux[L <: HList, F[_], Out <: HList, G[_]] 
@@ -93,8 +115,8 @@ object NatTRelAux {
     new NatTRelAux[F[H] :: L, F, H :: Out, Id] {}
 
   implicit def hlistNatT2[H, L <: HList, F[_], G[_], Out <: HList]
-      (implicit n : NatTRelAux[L, F, Out, G], e : G[_] =:!= Id[_]) =
-        new NatTRelAux[F[H] :: L, F, G[H] :: Out, G] {}
+    (implicit n : NatTRelAux[L, F, Out, G], e : G[_] =:!= Id[_]) =
+      new NatTRelAux[F[H] :: L, F, G[H] :: Out, G] {}
 }
 
 /**

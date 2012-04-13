@@ -24,26 +24,26 @@ class HListConstraintsTests {
   def testFilterNotRel {
     import FilterNotRel._
 
-    def accept[L1 <: HList, L2 <: HList](l1: L1)(l2: L2)(implicit f: *!=*[String]#λ[L1, L2]) = l2
+    def accept[L <: HList](l: L)(implicit f: *!=*[String]#λ[L]) = (x: f.Out) => x
 
     val l1 = 1 :: "a" :: 3 :: HNil
     val l2 = 24 :: 42 :: HNil
 
-    accept(l1)(l2)
-    //accept(l1)(l1) // Does not compile
+    accept(l1).apply(l2)
+    //accept(l1).apply(l1) // Does not compile
   }
   
   @Test
   def testFilterRel {
     import FilterRel._
 
-    def accept[L1 <: HList, L2 <: HList](l1: L1)(l2: L2)(implicit f: *==*[Int]#λ[L1, L2]) = l2
+    def accept[L <: HList](l: L)(implicit f: *==*[Int]#λ[L]) = (x: f.Out) => x
 
     val l1 = 1 :: "a" :: 3 :: HNil
     val l2 = 1 :: 3 :: HNil
 
-    accept(l1)(l2)
-    //accept(l1)(l1) // Does not compile
+    accept(l1).apply(l2)
+    //accept(l1).apply(l1) // Does not compile
   }
 
   @Test
