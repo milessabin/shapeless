@@ -71,22 +71,30 @@ trait NatTRel[L <: HList, F[_], G[_]] {
 }
 
 object NatTRel {
-  import TypeOperators._
-
   type ~??>[F[_], G[_]] = {
     type λ[L <: HList] = NatTRel[L, F, G]
   }
 
-  implicit def hnilNatT[F[_], G[_]] = new NatTRel[HNil, F, G] { type Out = HNil }
+  implicit def hlistNatT[L <: HList, F[_], Out0 <: HList, G[_]]
+      (implicit aux : NatTRelAux[L, F, Out0, G]) = new NatTRel[L, F, G] { type Out = Out0 }
+}
 
-  implicit def hlistNatT0[H, L <: HList, G[_]](implicit n : NatTRel[L, Id, G]) =
-    new NatTRel[H :: L, Id, G] { type Out = G[H] :: n.Out }
+trait NatTRelAux[L <: HList, F[_], Out <: HList, G[_]] 
 
-  implicit def hlistNatT1[H, L <: HList, F[_]](implicit n : NatTRel[L, F, Id]) =
-    new NatTRel[F[H] :: L, F, Id] { type Out = H :: n.Out }
+object NatTRelAux {
+  import TypeOperators._
 
-  implicit def hlistNatT2[H, L <: HList, F[_], G[_]](implicit n : NatTRel[L, F, G], e : G[_] =:!= Id[_]) =
-    new NatTRel[F[H] :: L, F, G] { type Out = G[H] :: n.Out }
+  implicit def hnilNatT[F[_], G[_]] = new NatTRelAux[HNil, F, HNil, G] {}
+
+  implicit def hlistNatT0[H, L <: HList, G[_], Out <: HList](implicit n : NatTRelAux[L, Id, Out, G]) =
+    new NatTRelAux[H :: L, Id, G[H] :: Out,  G] {}
+
+  implicit def hlistNatT1[H, L <: HList, F[_], Out <: HList](implicit n : NatTRelAux[L, F, Out, Id]) =
+    new NatTRelAux[F[H] :: L, F, H :: Out, Id] {}
+
+  implicit def hlistNatT2[H, L <: HList, F[_], G[_], Out <: HList]
+      (implicit n : NatTRelAux[L, F, Out, G], e : G[_] =:!= Id[_]) =
+        new NatTRelAux[F[H] :: L, F, G[H] :: Out, G] {}
 }
 
 /**
