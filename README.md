@@ -285,7 +285,7 @@ the types of their corresponding values,
       HNil
 ```
 
-### Representation of case classes as `HLists`
+### Representation of case classes as HLists
 
 A type representing an isomorphism between an arbitrary case class an
 `HList` composed of the case classes components. This has many
