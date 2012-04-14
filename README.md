@@ -19,11 +19,14 @@ There is a [mailing list](https://groups.google.com/group/shapeless-dev)
 for discussion around generic programming in Scala in general and
 shapeless in particular. 
 
-Selected highlights of shapeless include,
+Selected highlights of shapeless
+--------------------------------
 
-* A new encoding of polymorphic function values which optionally supports
-  type specific cases, and which is interoperable with Scala's ordinary
-  monomorphic function values.
+# Polymorphic function values
+
+A new encoding of polymorphic function values which optionally supports
+type specific cases, and which is interoperable with Scala's ordinary
+monomorphic function values.
   
 ```scala
     // choose is a function from Sets to Options with no type specific cases
@@ -54,9 +57,11 @@ Selected highlights of shapeless include,
     size((23, "foo")) == 4
 ```
 
-* An implementation of [Scrap your Boilerplate with Class](http://goo.gl/pR1OV)
-  which provides generic map and fold operations over arbitrarily nested data
-  structures,
+# Scrap your Boilerplate
+
+An implementation of [Scrap your Boilerplate with Class](http://goo.gl/pR1OV)
+which provides generic map and fold operations over arbitrarily nested data
+structures,
   
 ```scala
     val nested = List(Option(List(Option(List(Option(23))))))
@@ -65,7 +70,9 @@ Selected highlights of shapeless include,
     succ == List(Option(List(Option(List(Option(24))))))
 ```
 
-* A `Typeable` type class which provides a type safe cast operation.
+# Type safe cast
+
+A `Typeable` type class which provides a type safe cast operation.
 
 ```scala
     val a : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
@@ -77,8 +84,11 @@ Selected highlights of shapeless include,
     lvi.isEmpty == true
 ```
 
-* The mother of all Scala `HList`'s, which amongst other things,
-+ is covariant.
+# Heterogenous lists
+
+The mother of all Scala `HList`'s, which amongst other things,
+
+* is covariant.
 
 ```scala
     trait Fruit
@@ -95,7 +105,7 @@ Selected highlights of shapeless include,
     val ffff : FFFF = apap  // APAP <: FFFF 
 ```
 
-+ has a map operation, applying a polymorphic function value (possibly
+* has a map operation, applying a polymorphic function value (possibly
   with type specific cases) across its elements. This means that it
   subsumes both typical `HList`'s and also `KList`'s (`HList`'s whose
   elements share a common outer type constructor).
@@ -109,7 +119,7 @@ Selected highlights of shapeless include,
     opts == Option(1) :: Option("foo") :: HNil 
 ```
 
-+ has a set of fully polymorphic fold operations which take a polymorphic
+* has a set of fully polymorphic fold operations which take a polymorphic
   binary function value. The fold is sensitive to the static types of all of
   the elements of the `HList`,
   
@@ -128,7 +138,7 @@ Selected highlights of shapeless include,
     f1 == "pass"
 ```
 
-+ has a zipper for traversal and persistent update.
+* has a zipper for traversal and persistent update.
     
 ```scala
     val l = 1 :: "foo" :: 3.0 :: HNil
@@ -143,14 +153,14 @@ Selected highlights of shapeless include,
     l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil
 ```
     
-+ has a `unify` operation which converts it to an `HList` of elements
+* has a `unify` operation which converts it to an `HList` of elements
   of the least upper bound of the original types.
       
 ```scala
     val ffff = apap.unify // type inferred as FFFF
 ```
       
-+ supports conversion to an ordinary Scala `List` of elements of the
+* supports conversion to an ordinary Scala `List` of elements of the
   least upper bound of the original types.
       
 ```scala
@@ -158,7 +168,7 @@ Selected highlights of shapeless include,
     lf == List(a, p, a, p)
 ```
       
-+ has a `Typeable` type class instance, allowing, eg. vanilla
+* has a `Typeable` type class instance, allowing, eg. vanilla
  `List[Any]`'s or `HList`'s with elements of type `Any` to be safely
   cast to precisely typed `HList`'s.
       
@@ -168,18 +178,20 @@ Selected highlights of shapeless include,
     apap2.get == apap  
 ```
       
-  These last three bullets make this `HList` dramatically more practically
-  useful than `HList`'s are typically thought to be: normally the full
-  type information required to work with them is too fragile to cross subtyping
-  or I/O boundaries. This implementation supports the discarding of precise
-  information where necessary (eg. to serialize a precisely typed record after
-  construction), and its later reconstruction (eg. a weakly typed deserialized
-  record with a known schema can have it's precise typing reestabilished).
+These last three bullets make this `HList` dramatically more practically
+useful than `HList`'s are typically thought to be: normally the full
+type information required to work with them is too fragile to cross subtyping
+or I/O boundaries. This implementation supports the discarding of precise
+information where necessary (eg. to serialize a precisely typed record after
+construction), and its later reconstruction (eg. a weakly typed deserialized
+record with a known schema can have it's precise typing reestabilished).
 
-* Conversions between tuples and `HList`'s, and between ordinary Scala
-  functions of arbitrary arity and functions which take a single
-  corresponding `HList` argument. One application of this is the `liftO`
-  function which lifts an ordinary function of arbitrary arity into `Option`.
+# Facilities for abstracting over arity
+
+Conversions between tuples and `HList`'s, and between ordinary Scala
+functions of arbitrary arity and functions which take a single
+corresponding `HList` argument. One application of this is the `liftO`
+function which lifts an ordinary function of arbitrary arity into `Option`.
   
 ```scala
     // Round trip from tuple to HList and back
@@ -212,8 +224,10 @@ Selected highlights of shapeless include,
     p2 == None
 ```
 
-* A heterogenous map which supports an arbitrary relation between key type
-  and corresponding value type,
+# Heterogenous maps
+
+A heterogenous map which supports an arbitrary relation between key type
+and corresponding value type,
   
 ```scala
     // Key/value relation to be enforced: Strings map to Ints and vice versa
@@ -231,9 +245,11 @@ Selected highlights of shapeless include,
     i1 == Some(13)
 ```
 
-* An implementation of extensible records modelled as `HLists` of
-  associations. Keys are encoded using singleton types and fully determine
-  the types of their corresponding values,
+# Extensible records
+
+An implementation of extensible records modelled as `HLists` of
+associations. Keys are encoded using singleton types and fully determine
+the types of their corresponding values,
   
 ```scala
     object author  extends Field[String]
@@ -265,11 +281,13 @@ Selected highlights of shapeless include,
       HNil
 ```
 
-* A type representing an isomorphism between an arbitrary case class an
-  `HList` composed of the case classes components. This has many
-  applications including
+# Representation of case classes as `HLists`
+
+A type representing an isomorphism between an arbitrary case class an
+`HList` composed of the case classes components. This has many
+applications including
   
-+ almost automatic derivation of type class instances for case classes
+* almost automatic derivation of type class instances for case classes
   given the instances for their components,
 
 ```scala
@@ -294,8 +312,8 @@ Selected highlights of shapeless include,
     f == Foo(36, "foobar", 4.0)
 ```
     
-  + boilerplate-free lenses for HList and tuple types, and almost
-    boilerplate-free lenses for arbitrary case classes, 
+* boilerplate-free lenses for HList and tuple types, and almost
+  boilerplate-free lenses for arbitrary case classes, 
 
 ```scala
     // A pair of ordinary case classes ...
@@ -341,9 +359,11 @@ Selected highlights of shapeless include,
     person4 == Person("Joe Grey", 39, Address("Montpelier Road", "Brighton", "BN2 9UA"))
 ```
 
-* Collection types with statically known sizes. These can prevent runtime
-  errors that would result from attempting to take the head of an empty list,
-  and can also verify more complex and useful relationships. 
+# Sized types
+
+Collection types with statically known sizes. These can prevent runtime
+errors that would result from attempting to take the head of an empty list,
+and can also verify more complex and useful relationships. 
 
 ```scala
     def row(cols : Seq[String]) = cols.mkString("\"", "\", \"", "\"")
@@ -365,7 +385,9 @@ Selected highlights of shapeless include,
     val badFormatted = csv(extendedHdrs, rows)             // Does not compile
 ```
 
-* A mostly unboxed approximation to Haskell's newtype, 
+# Newtype
+
+A mostly unboxed approximation to Haskell's newtype, 
 
 ```scala
     // MyString is a new type with String as its underlying representation
@@ -393,15 +415,6 @@ Selected highlights of shapeless include,
     // Verify that this is an unboxed representation
     ms.getClass == classOf[String]
 ```
-
-The library is targetted at Scala 2.10-SNAPSHOT by default, but currently
-should build against Scala 2.9.1.final with the `-Ydependent-method-types`
-switch enabled. I make no promises that it'll continue to build with 2.9.x,
-or even vanilla Scala 2.10-SNAPSHOT: in 2012 I plan to investigate, amongst
-other things, what can be done with [singleton types for literal values]
-(http://goo.gl/U18kK) ... at a minimum they would make the clunky encoding
-of type level natural numbers (in `shapeless/nat.scala`) redundant, and
-might enable a whole lot more.
 
 Using shapeless
 ---------------
