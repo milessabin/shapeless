@@ -22,7 +22,7 @@ shapeless in particular.
 Selected highlights of shapeless
 --------------------------------
 
-# Polymorphic function values
+### Polymorphic function values
 
 A new encoding of polymorphic function values which optionally supports
 type specific cases, and which is interoperable with Scala's ordinary
@@ -57,7 +57,7 @@ monomorphic function values.
     size((23, "foo")) == 4
 ```
 
-# Scrap your Boilerplate
+### Scrap your Boilerplate
 
 An implementation of [Scrap your Boilerplate with Class](http://goo.gl/pR1OV)
 which provides generic map and fold operations over arbitrarily nested data
@@ -70,7 +70,7 @@ structures,
     succ == List(Option(List(Option(List(Option(24))))))
 ```
 
-# Type safe cast
+### Type safe cast
 
 A `Typeable` type class which provides a type safe cast operation.
 
@@ -84,7 +84,7 @@ A `Typeable` type class which provides a type safe cast operation.
     lvi.isEmpty == true
 ```
 
-# Heterogenous lists
+### Heterogenous lists
 
 The mother of all Scala `HList`'s, which amongst other things,
 
@@ -186,13 +186,12 @@ information where necessary (eg. to serialize a precisely typed record after
 construction), and its later reconstruction (eg. a weakly typed deserialized
 record with a known schema can have it's precise typing reestabilished).
 
-# Facilities for abstracting over arity
+### Facilities for abstracting over arity
 
 Conversions between tuples and `HList`'s, and between ordinary Scala
 functions of arbitrary arity and functions which take a single
-corresponding `HList` argument. One application of this is the `liftO`
-function which lifts an ordinary function of arbitrary arity into `Option`.
-  
+corresponding `HList` argument.
+
 ```scala
     // Round trip from tuple to HList and back
     val t1 = (23, "foo", 2.0, true)
@@ -202,7 +201,12 @@ function which lifts an ordinary function of arbitrary arity into `Option`.
     
     val t2 = l1.tupled
     t1 == t2
-    
+```    
+
+One application of these is the `liftO` function which lifts an ordinary
+function of arbitrary arity into `Option`.
+  
+```scala
     // Lift these ordinary Scala function values into Option 
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
@@ -224,7 +228,7 @@ function which lifts an ordinary function of arbitrary arity into `Option`.
     p2 == None
 ```
 
-# Heterogenous maps
+### Heterogenous maps
 
 A heterogenous map which supports an arbitrary relation between key type
 and corresponding value type,
@@ -245,7 +249,7 @@ and corresponding value type,
     i1 == Some(13)
 ```
 
-# Extensible records
+### Extensible records
 
 An implementation of extensible records modelled as `HLists` of
 associations. Keys are encoded using singleton types and fully determine
@@ -281,11 +285,11 @@ the types of their corresponding values,
       HNil
 ```
 
-# Representation of case classes as `HLists`
+### Representation of case classes as `HLists`
 
 A type representing an isomorphism between an arbitrary case class an
 `HList` composed of the case classes components. This has many
-applications including
+applications including,
   
 * almost automatic derivation of type class instances for case classes
   given the instances for their components,
@@ -359,7 +363,7 @@ applications including
     person4 == Person("Joe Grey", 39, Address("Montpelier Road", "Brighton", "BN2 9UA"))
 ```
 
-# Sized types
+### Sized types
 
 Collection types with statically known sizes. These can prevent runtime
 errors that would result from attempting to take the head of an empty list,
@@ -385,7 +389,7 @@ and can also verify more complex and useful relationships.
     val badFormatted = csv(extendedHdrs, rows)             // Does not compile
 ```
 
-# Newtype
+### Newtype
 
 A mostly unboxed approximation to Haskell's newtype, 
 
