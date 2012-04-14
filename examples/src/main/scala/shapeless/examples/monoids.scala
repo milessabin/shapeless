@@ -35,8 +35,8 @@ object MonoidExamples extends App {
   case class Bar(b : Boolean, s : String, d : Double)
 
   // Publish their `HListIso`'s
-  implicit def fooCtor = HListIso(Foo.apply _, Foo.unapply _)
-  implicit def barCtor = HListIso(Bar.apply _, Bar.unapply _)
+  implicit def fooIso = HListIso(Foo.apply _, Foo.unapply _)
+  implicit def barIso = HListIso(Bar.apply _, Bar.unapply _)
 
   // And now they're monoids ...
   
