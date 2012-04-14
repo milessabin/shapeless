@@ -13,9 +13,7 @@ crossScalaVersions <<= (version) {
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 scalacOptions <++= scalaVersion map { version =>
-  val Version = """(\d+)\.(\d+)\..*"""r
-  val Version(major0, minor0) = version map identity
-  val (major, minor) = (major0.toInt, minor0.toInt)
+  val Some((major, minor)) = CrossVersion.partialVersion(version)
   if (major < 2 || (major == 2 && minor < 10)) 
     Seq("-Ydependent-method-types")
  	else Nil
