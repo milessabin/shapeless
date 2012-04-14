@@ -1,0 +1,67 @@
+A new release of [shapeless](https://github.com/milessabin/shapeless). Many
+thanks to Alois Cochard and Stacy Curl for their contributions.
+
+The main changes include,
+
+* Major rework of polymorphic function values. Function values for natural
+  transformation vs. more arbitrary morphism are now represented
+  consistently. Typical natural transformations are "self-witnessing". The
+  framework now supports extension to [polymorphic values of higher arities](https://github.com/milessabin/shapeless/blob/master/src/main/scala/shapeless/poly.scala#L233):
+  this is exploited in the implmentation of the new [HList fold operations](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/fold.scala#L24). Type
+  specific cases are now nested implicits reducing implicit scope pollution
+  significantly.
+  
+* Added an implementation of [extensible records](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/records.scala#L24) in terms of HLists of
+  key/value associations. 
+
+* Added HMap: a [heterogenous map](https://github.com/milessabin/shapeless/blob/master/src/test/scala/shapeless/hmap.scala#L22) implementation where the relationship
+  between key types and value types is witnessed by an arbitrary relation.
+
+* Added HListIso: a representation of isomorphisms between case classes and
+  HLists with standard instances for tuples. As well as supporting lenses,
+  they can be used to [almost automatically derive](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/monoids.scala#L19) case class type class
+  instances from the instances of their elements.
+
+* Added Lens: an implementation of [almost boilerplate free lenses](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/lenses.scala#L31) for case
+  classes leveraging HListIso.
+
+* Numerous HList enhancements,
+    * Replaced existing only partly polymorphic fold with fully polymorphic
+      foldLeft, foldRight, reduceLeft and reduceRight. The previous form of
+      fold has been carried over as foldMap and is now a right fold.  
+    * Added filterNot (thanks to @aloiscochard).
+    * Added remove and removeAll (thanks to Stacy Curl)
+    * Added +:, :+, ++, ++:, filter, length, updatedAt, replace,
+      replaceType, updated and updatedType.
+
+* Added HList constraints, 
+    * *->* witnessing that all elements share a common outer type
+      constructor, allowing HLists to be constrained to the form of a [KList](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/klist.scala#L25).
+    * BasisConstraint witnessing that all element types [belong to a given
+      list of types](https://github.com/milessabin/shapeless/blob/master/src/test/scala/shapeless/hlistconstraints.scala#L52).
+    * KeyConstraint and ValueConstraint witnessing that an HList [conforms to
+      the schema](https://github.com/milessabin/shapeless/blob/master/src/test/scala/shapeless/hlistconstraints.scala#L67) associated with a record type.  
+
+* Added type classes witnessing Product arity.
+
+* Added an implementation of an approximation to [newtype](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/newtype.scala#L19).
+
+* Added <= witness for Nat.
+
+* Nat values are now published implicilty.
+
+* Id is now covariant.
+
+* Various new examples and proofs of concept.
+    * A [linear algebra](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/linearalgebra.scala#L24) proof of concept.
+    * Type-level [unfold](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/unfold.scala#L66) and [fibonacci numbers](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/fibonacci.scala#L114) proofs of concept.
+    * An example of [packing/unpacking type class instances](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/pack.scala#L70) at multiple types
+      as a single implicit argument.
+    * Examples of [tuple](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/flatten.scala#L70) and [parser combinator result](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/parsing.scala#L22) flattening.
+    * A [type-level selection sort](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/sorting.scala#L114) example.
+
+* Improved build configuration,
+    * Updated to SBT 0.12.0-M1 and sbteclipse 2.1.0-SNAPSHOT.
+    * Added SBT configuration for publishing to Sonatype OSS (thanks to
+      @aloiscochard).
+    * Added SBT cross build mechanics (thanks to @aloiscochard).
