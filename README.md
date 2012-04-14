@@ -37,7 +37,7 @@ Selected highlights of shapeless include,
 
     // size is a function from values of arbitrary type to a 'size' which is
     // defined via type specific cases
-    object size extends Poly {
+    object size extends Poly1 {
       implicit def default[T] = at[T](t => 1)
       implicit def caseInt = at[Int](x => 1)
       implicit def caseString = at[String](_.length)
@@ -109,6 +109,25 @@ Selected highlights of shapeless include,
     opts == Option(1) :: Option("foo") :: HNil 
 ```
 
++ has a set of fully polymorphic fold operations which take a polymorphic
+  binary function value. The fold is sensitive to the static types of all of
+  the elements of the `HList`,
+  
+```scala
+    // Polymorphic binary function value with type-specific cases:
+    //  (c : Char, s : String) => s.indexOf(c)
+    //  (i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
+    object combine extends Poly2 {
+      implicit def caseCharString = at[Char, String]((c, s) => s.indexOf(c))
+      implicit def caseIntBoolean =
+        at[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
+    }
+    
+    val l1 = "foo" :: true :: HNil
+    val f1 = l1.foldLeft('o')(combine)
+    f1 == "pass"
+```
+
 + has a zipper for traversal and persistent update.
     
 ```scala
@@ -149,13 +168,13 @@ Selected highlights of shapeless include,
     apap2.get == apap  
 ```
       
-These last three bullets make this `HList` dramatically more practically
-useful than `HList`'s are typically thought to be: normally the full
-type information required to work with them is too fragile to cross subtyping
-or I/O boundaries. This implementation supports the discarding of precise
-information where necessary (eg. to serialize a precisely typed record after
-construction), and its later reconstruction (eg. a weakly typed deserialized
-record with a known schema can have it's precise typing reestabilished).
+  These last three bullets make this `HList` dramatically more practically
+  useful than `HList`'s are typically thought to be: normally the full
+  type information required to work with them is too fragile to cross subtyping
+  or I/O boundaries. This implementation supports the discarding of precise
+  information where necessary (eg. to serialize a precisely typed record after
+  construction), and its later reconstruction (eg. a weakly typed deserialized
+  record with a known schema can have it's precise typing reestabilished).
 
 * Conversions between tuples and `HList`'s, and between ordinary Scala
   functions of arbitrary arity and functions which take a single
@@ -192,7 +211,136 @@ record with a known schema can have it's precise typing reestabilished).
     val p2 = prdO(Some(2), None, Some(4))
     p2 == None
 ```
-      
+
+* A heterogenous map which supports an arbitrary relation between key type
+  and corresponding value type,
+  
+```scala
+    // Key/value relation to be enforced: Strings map to Ints and vice versa
+    class BiMapIS[K, V]
+    implicit val intToString = new BiMapIS[Int, String]
+    implicit val stringToInt = new BiMapIS[String, Int]
+  
+    val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
+    val hm2 = HMap[BiMapIS](23 -> "foo", 23 -> 13)   // Does not compile
+    
+    val s1 = hm.get(23)        // Inferred type is Option[String]
+    s1 == Some("foo")
+
+    val i1 = hm.get("bar")     // Inferred type is Option[Int]
+    i1 == Some(13)
+```
+
+* An implementation of extensible records modelled as `HLists` of
+  associations. Keys are encoded using singleton types and fully determine
+  the types of their corresponding values,
+  
+```scala
+    object author  extends Field[String]
+    object title   extends Field[String]
+    object price   extends Field[Double]
+    object inPrint extends Field[Boolean]
+
+    val book =
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (price  ->  44.11) ::
+      HNil
+  
+    // Read price field
+    val currentPrice = book.get(price)  // Inferred type is Double
+    currentPrice == 44.11
+
+    // Update price field, relying on static type of currentPrice
+    val updated = book + (price -> (currentPrice+2.0))
+  
+    // Add a new field
+    val extended = updated + (inPrint -> true)
+    
+    extended ==
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (price  ->  46.11) ::
+      (inPrint -> true) ::
+      HNil
+```
+
+* A type representing an isomorphism between an arbitrary case class an
+  `HList` composed of the case classes components. This has many
+  applications including
+  
++ almost automatic derivation of type class instances for case classes
+  given the instances for their components,
+
+```scala
+    // Given an isomorphism between `C` and an `HList` `L`, construct a
+    // monoid instance for `C` given the monoid instance for `L`, which is 
+    // in turn derived from the monoid instances for its/`C`'s element types.
+    implicit def ccMonoid[C, L <: HList](implicit iso : HListIso[C, L], ml : Monoid[L]) =
+      new Monoid[C] {
+        def zero = fromHList(ml.zero)
+        def append(a : C, b : C) = fromHList(toHList(a) |+| toHList(b))
+      }
+  
+    // An ordinary case class
+    case class Foo(i : Int, s : String, d : Double)
+  
+    // Publish its `HListIso`
+    implicit def fooIso = HListIso(Foo.apply _, Foo.unapply _)
+  
+    // And now it's a monoid ...
+    
+    val f = Foo(13, "foo", 1.0) |+| Foo(23, "bar", 3.0)
+    f == Foo(36, "foobar", 4.0)
+```
+    
+  + boilerplate-free lenses for HList and tuple types, and almost
+    boilerplate-free lenses for arbitrary case classes, 
+
+```scala
+    // A pair of ordinary case classes ...
+    case class Address(street : String, city : String, postcode : String)
+    case class Person(name : String, age : Int, address : Address)
+    
+    // One line of boilerplate per case class ...
+    implicit val addressIso = HListIso(Address.apply _, Address.unapply _)
+    implicit val personIso = HListIso(Person.apply _, Person.unapply _)
+    
+    // Some lenses over Person/Address ...
+    val nameLens     = Lens[Person] >> _0
+    val ageLens      = Lens[Person] >> _1
+    val addressLens  = Lens[Person] >> _2
+    val streetLens   = Lens[Person] >> _2 >> _0
+    val cityLens     = Lens[Person] >> _2 >> _1
+    val postcodeLens = Lens[Person] >> _2 >> _2
+  
+    // Starting value
+    val person = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
+    
+    // Read a field
+    val age1 = ageLens.get(person) // Type inferred is Int
+    age1 == 37
+  
+    // Update a field
+    val person2 = ageLens.set(person)(38)
+    person2.age == 38
+    
+    // Transform a field
+    val person3 = ageLens.modify(person2)(_ + 1)
+    person3.age == 39
+    
+    // Read a nested field
+    val street = streetLens.get(person3)
+    street == "Southover Street"
+    
+    // Update a nested field
+    val person4 = streetLens.set(person3)("Montpelier Road")
+    person4.address.street == "Montpelier Road"
+    
+    // Cumulative result of above updates
+    person4 == Person("Joe Grey", 39, Address("Montpelier Road", "Brighton", "BN2 9UA"))
+```
+
 * Collection types with statically known sizes. These can prevent runtime
   errors that would result from attempting to take the head of an empty list,
   and can also verify more complex and useful relationships. 
@@ -215,6 +363,35 @@ record with a known schema can have it's precise typing reestabilished).
     // extendedHdrs has the wrong number of columns for rows
     val extendedHdrs = Sized("Title", "Author", "ISBN")
     val badFormatted = csv(extendedHdrs, rows)             // Does not compile
+```
+
+* A mostly unboxed approximation to Haskell's newtype, 
+
+```scala
+    // MyString is a new type with String as its underlying representation
+    // and with its operations provided by MyStringOps
+    type MyString = Newtype[String, MyStringOps]
+  
+    // MyString constructor
+    def MyString(s : String) : MyString = newtype(s)
+  
+    // Expose String#size as MyString#mySize. No other operations of String 
+    // are accessible
+    case class MyStringOps(s : String) {
+      def mySize = s.size
+    }
+    implicit val mkOps = MyStringOps
+  
+    val ms = MyString("foo")
+  
+    val s : String = ms        // Does not compile
+    val ms2 : MyString = "foo" // Does not compile
+  
+    //ms.size                  // Does not compile
+    ms.mySize == 3             // Compiles.
+    
+    // Verify that this is an unboxed representation
+    ms.getClass == classOf[String]
 ```
 
 The library is targetted at Scala 2.10-SNAPSHOT by default, but currently
