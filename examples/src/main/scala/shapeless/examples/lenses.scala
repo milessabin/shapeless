@@ -77,7 +77,7 @@ object LenseExamples extends App {
   // Product/composite lenses ...
   
   // Create a product lens spanning Person and Address
-  val nameAgeCityLens = nameLens * ageLens * cityLens
+  val nameAgeCityLens = nameLens ~ ageLens ~ cityLens
   
   val nac1 = nameAgeCityLens.get(person) // Inferred type is the expected tuple type 
   typed[(String, Int, String)](nac1)

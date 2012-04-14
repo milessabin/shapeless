@@ -35,7 +35,7 @@ trait Lens[C, F] {
       def set(c : C)(f : lens.Elem) = outer.set(c)(fromHList(lens.set(toHList(outer.get(c)))(f)))
     }
   
-  def *[G](other : Lens[C, G]) = new ProductLens[C, (F, G)] {
+  def ~[G](other : Lens[C, G]) = new ProductLens[C, (F, G)] {
     def get(c : C) : (F, G) = (outer.get(c), other.get(c))
     def set(c : C)(fg : (F, G)) = other.set(outer.set(c)(fg._1))(fg._2)
   }
@@ -44,7 +44,7 @@ trait Lens[C, F] {
 trait ProductLens[C, P <: Product] extends Lens[C, P] {
   outer =>
   import Tuples._
-  def *[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
+  def ~[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
     (implicit
       hlp  : HListerAux[P, L],
       tpp  : TuplerAux[L, P],

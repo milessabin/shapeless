@@ -223,7 +223,7 @@ class LensTests {
   
   @Test
   def testProducts {
-    val nameAgeCityLens = nameLens * ageLens * cityLens
+    val nameAgeCityLens = nameLens ~ ageLens ~ cityLens
     
     val nac1 = nameAgeCityLens.get(person) 
     typed[(String, Int, String)](nac1)
