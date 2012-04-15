@@ -7,7 +7,7 @@ version := "1.2.0"
 scalaVersion := "2.10.0-SNAPSHOT"
 
 crossScalaVersions <<= (version) {
-  v => Seq("2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M2") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
+  v => Seq("2.9.1", "2.9.1-1", "2.9.2") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
 }
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")

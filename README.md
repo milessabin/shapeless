@@ -425,8 +425,8 @@ Using shapeless
 
 shapeless is published to the Sonatype OSS Repository Hosting Service
 (OSSRH) and will be synced to Maven Central. Release builds are published
-relative to Scala 2.9.1, 2.9.1-1, 2.9.2 and 2.10.0-M2. Snapshot builds are
-also published relative to Scala 2.10.0-SNAPSHOT.
+relative to Scala 2.9.1, 2.9.1-1, 2.9.2. Snapshot builds are also published
+relative to Scala 2.10.0-SNAPSHOT.
 
 If your project is built with Scala 2.9.2, then to include the latest
 release of shapeless in your build add the following to your SBT
