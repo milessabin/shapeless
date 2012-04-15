@@ -42,7 +42,7 @@ trait LowPriorityTypeable {
  */
 object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
-  import scala.collection.GenTraversable
+  import scala.collection.{ GenMap, GenTraversable }
   
   class Cast(t : Any) {
     /**
@@ -154,15 +154,16 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   }
   
   /** Typeable instance for `Map`. Note that the contents will tested for conformance to the key/value types. */
-  implicit def genMapTypeable[M[X, Y] <: Map[X, Y], T, U]
-    (implicit mM : ClassManifest[M[_, _]], castTU : Typeable[(T, U)]) = new Typeable[Map[T, U]] {
-    def cast(t : Any) : Option[M[T, U]] =
-      if(t == null) Some(t.asInstanceOf[M[T, U]])
-      else if(mM.erasure isAssignableFrom t.getClass) {
-        val m = t.asInstanceOf[M[Any, Any]]
-        if(m.forall(_.cast[(T, U)].isDefined)) Some(t.asInstanceOf[M[T, U]])
-        else None
-      } else None
+  implicit def genMapTypeable[M[X, Y], T, U]  // (Temporary?) workaround for inference issue with 2.10.0 ~M3 
+    (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassManifest[M[_, _]], castTU : Typeable[(T, U)]) =
+      new Typeable[M[T, U]] {
+        def cast(t : Any) : Option[M[T, U]] =
+          if(t == null) Some(t.asInstanceOf[M[T, U]])
+          else if(mM.erasure isAssignableFrom t.getClass) {
+            val m = t.asInstanceOf[GenMap[Any, Any]]
+            if(m.forall(_.cast[(T, U)].isDefined)) Some(t.asInstanceOf[M[T, U]])
+            else None
+          } else None
   }
   
   /** Typeable instance for `HNil`. */
