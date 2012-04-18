@@ -129,6 +129,25 @@ class HListTests {
     typed[BBBB](l7)
     assertEquals(true :: true :: true :: true :: HNil, l7)
   }
+
+  object dup extends Poly1 {
+    implicit def default[T] = at[T](t => t :: t :: HNil)
+  }
+
+  @Test
+  def testFlatMap {
+    val l1 = 1 :: "foo" :: true :: HNil
+
+    val l2 = l1 flatMap dup
+    typed[Int :: Int :: String :: String :: Boolean :: Boolean :: HNil](l2)
+    assertEquals(1 :: 1 :: "foo" :: "foo" :: true :: true :: HNil, l2)
+
+    val l3 = (1 :: "foo" :: HNil) :: (2.0 :: true :: HNil) :: HNil
+
+    val l4 = l3 flatMap identity
+    typed[Int :: String :: Double :: Boolean :: HNil](l4)
+    assertEquals(1 :: "foo" :: 2.0 :: true :: HNil, l4)
+  }
   
   @Test
   def testConformance {

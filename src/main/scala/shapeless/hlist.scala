@@ -295,6 +295,11 @@ final class HListOps[L <: HList](l : L) {
   def map[HF](f : HF)(implicit mapper : Mapper[HF, L]) : mapper.Out = mapper(l)
 
   /**
+   * Flatmaps a higher rank function across this `HList`.
+   */
+  def flatMap[HF](f : HF)(implicit mapper : FlatMapper[HF, L]) : mapper.Out = mapper(l)
+
+  /**
    * Replaces each element of this `HList` with a constant value.
    */
   def mapConst[C](c : C)(implicit mapper : ConstMapper[C, L]) : mapper.Out = mapper(c, l)
@@ -497,6 +502,40 @@ object MapperAux {
   implicit def hlistMapper1[HF <: Poly, InH, OutH, InT <: HList, OutT <: HList]
     (implicit hc : Pullback1Aux[HF, InH, OutH], mt : MapperAux[HF, InT, OutT]) = new MapperAux[HF, InH :: InT, OutH :: OutT] {
       def apply(l : InH :: InT) = hc(l.head) :: mt(l.tail)
+  }
+}
+
+/**
+ * Type class supporting flatmapping a higher ranked function over this `HList`. 
+ * 
+ * @author Miles Sabin
+ */
+trait FlatMapper[HF, In <: HList] {
+  type Out <: HList
+  def apply(in: In) : Out
+}
+
+trait FlatMapperAux[HF, In <: HList, Out <: HList] {
+  def apply(in: In) : Out
+}
+
+object FlatMapper {
+  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : FlatMapperAux[HF, In, Out0]) = new FlatMapper[HF, In] {
+    type Out = Out0
+    def apply(in: In) : Out = mapper(in)
+  }
+}
+
+object FlatMapperAux {
+  import Poly._
+  
+  implicit def hnilFlatMapper1[HF] = new FlatMapperAux[HF, HNil, HNil] {
+    def apply(l : HNil) = HNil
+  }
+  
+  implicit def hlistFlatMapper1[HF <: Poly, InH, OutH <: HList, InT <: HList, OutT <: HList, Out <: HList]
+    (implicit hc : Pullback1Aux[HF, InH, OutH], mt : FlatMapperAux[HF, InT, OutT], p : PrependAux[OutH, OutT, Out]) = new FlatMapperAux[HF, InH :: InT, Out] {
+      def apply(l : InH :: InT) = hc(l.head) ::: mt(l.tail)
   }
 }
 
