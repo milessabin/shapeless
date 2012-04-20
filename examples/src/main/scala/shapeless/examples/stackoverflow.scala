@@ -71,3 +71,27 @@ object StackOverflow3 {
   
   val bar = BarBuilder(Input(23) :: Input("foo") :: Input(true) :: HNil)
 }
+
+object StackOverflow4 extends App {
+  // http://stackoverflow.com/questions/10216278
+
+  import shapeless._
+  import HList._
+  import Functions._
+
+  def fun(x: Int) = x
+  def fun1(x: Int, y: Int) = x
+  def fun2(x: Int, foo: Map[Int,String], bar: Seq[Seq[Int]]) = x
+  
+  def wrap_fun[F, T <: HList, R](f : F)
+    (implicit hl : FnHListerAux[F, (Int :: T) => R], unhl : FnUnHListerAux[(Int :: T) => R, F]) =
+    ((x : Int :: T) => f.hlisted(x.head*2 :: x.tail)).unhlisted
+
+  val f1 = wrap_fun(fun _)
+  val f2 = wrap_fun(fun1 _)
+  val f3 = wrap_fun(fun2 _)
+  
+  assert(f1(2) == 4)
+  assert(f2(2, 4) == 4)
+  assert(f3(2, Map(), Seq()) == 4)
+}
