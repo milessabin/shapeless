@@ -32,6 +32,12 @@ object HListIso {
     (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
       new HListIso(apply.hlisted, (cc : CC) => hl(unapply(cc).get))
   
+  // Special case for one-element cases classes because their unapply result types
+  // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
+  // the general case.
+  def apply[CC, T](apply : T => CC, unapply : CC => Option[T]) =
+      new HListIso(apply.hlisted, (cc : CC) => unapply(cc).get :: HNil)
+
   def fromHList[T, L <: HList](l : L)(implicit iso : HListIso[T, L]) = iso.fromHList(l)
   
   def toHList[T, L <: HList](t : T)(implicit iso : HListIso[T, L]) = iso.toHList(t) 
