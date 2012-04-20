@@ -1537,7 +1537,7 @@ object Reverse0 {
  * @author Miles Sabin
  */
 trait Prepend[P <: HList, S <: HList] {
-  type Out
+  type Out <: HList
   def apply(prefix : P, suffix : S) : Out
 }
 
