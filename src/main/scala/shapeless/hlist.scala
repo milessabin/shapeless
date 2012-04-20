@@ -520,10 +520,11 @@ trait FlatMapperAux[HF, In <: HList, Out <: HList] {
 }
 
 object FlatMapper {
-  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : FlatMapperAux[HF, In, Out0]) = new FlatMapper[HF, In] {
-    type Out = Out0
-    def apply(in: In) : Out = mapper(in)
-  }
+  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : FlatMapperAux[HF, In, Out0]) =
+    new FlatMapper[HF, In] {
+      type Out = Out0
+      def apply(in: In) : Out = mapper(in)
+    }
 }
 
 object FlatMapperAux {
@@ -534,9 +535,13 @@ object FlatMapperAux {
   }
   
   implicit def hlistFlatMapper1[HF <: Poly, InH, OutH <: HList, InT <: HList, OutT <: HList, Out <: HList]
-    (implicit hc : Pullback1Aux[HF, InH, OutH], mt : FlatMapperAux[HF, InT, OutT], p : PrependAux[OutH, OutT, Out]) = new FlatMapperAux[HF, InH :: InT, Out] {
-      def apply(l : InH :: InT) = hc(l.head) ::: mt(l.tail)
-  }
+    (implicit
+      hc : Pullback1Aux[HF, InH, OutH],
+      mt : FlatMapperAux[HF, InT, OutT],
+      prepend : PrependAux[OutH, OutT, Out]) =
+      new FlatMapperAux[HF, InH :: InT, Out] {
+        def apply(l : InH :: InT) = prepend(hc(l.head), mt(l.tail))
+      }
 }
 
 /**
