@@ -26,7 +26,7 @@ object SizedExamples extends App {
   import Nat._
   import Sized._
 
-  def sequence[T](lo : List[Option[T]]) = if (lo.exists(_ isEmpty)) None else Some(lo.map(_.get))
+  def sequence[T](lo : List[Option[T]]) = if (lo.exists(_.isEmpty)) None else Some(lo.map(_.get))
   
   def row(cols : Seq[String]) = cols.mkString("\"", "\", \"", "\"")
   
