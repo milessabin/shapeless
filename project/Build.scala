@@ -44,7 +44,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
-      settings = commonSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ Seq(
         moduleName := "shapeless",
         
         (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
