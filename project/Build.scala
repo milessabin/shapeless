@@ -102,7 +102,7 @@ object ShapelessBuild extends Build {
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "1.2.1-SNAPSHOT",
+      version             := "1.2.1",
       scalaVersion        := "2.10.0-SNAPSHOT",
       crossScalaVersions  <<= version {
         v =>
