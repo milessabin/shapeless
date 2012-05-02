@@ -15,5 +15,6 @@
  */
 
 package object shapeless {
+  // Type alias to keep 2.9.x happy 
   type ClassTag[T] = scala.reflect.ClassManifest[T]
 }
