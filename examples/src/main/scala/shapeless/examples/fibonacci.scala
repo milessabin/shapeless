@@ -35,7 +35,7 @@ object FibonacciExamples {
   }
   
   object Fibonacci {
-    implicit def fibonacci[I <: Nat, N0 <: Nat](implicit fib : FibonacciAux[I, N0]) = new Fibonacci[I] {
+    implicit def fibonacci1[I <: Nat, N0 <: Nat](implicit fib : FibonacciAux[I, N0]) = new Fibonacci[I] {
       type N = N0
     }
     
@@ -86,7 +86,7 @@ object FibonacciExamples {
   }
   
   object Fibs {
-    implicit def fibs[N <: Nat, L0 <: HList](implicit fibs : FibsAux[N, L0]) = new Fibs[N] {
+    implicit def fibs1[N <: Nat, L0 <: HList](implicit fibs : FibsAux[N, L0]) = new Fibs[N] {
       type Out = L0
       def apply() = fibs()
     }
