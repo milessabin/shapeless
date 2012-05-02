@@ -29,7 +29,7 @@ trait LowPriorityTypeable {
   /**
    * Default `Typeable` instance. Note that this is safe only up to erasure.
    */
-  implicit def dfltTypeable[U](implicit mU : ClassManifest[U]) = new Typeable[U] {
+  implicit def dfltTypeable[U](implicit mU : ClassTag[U]) = new Typeable[U] {
     def cast(t : Any) : Option[U] = {
       if(t == null || (mU.erasure isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
     }
@@ -143,7 +143,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for `GenTraversable`. Note that the contents will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC : ClassManifest[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
+    (implicit mCC : ClassTag[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
     def cast(t : Any) : Option[CC[T]] =
       if(t == null) Some(t.asInstanceOf[CC[T]])
       else if(mCC.erasure isAssignableFrom t.getClass) {
@@ -155,7 +155,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   
   /** Typeable instance for `Map`. Note that the contents will tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], T, U]  // (Temporary?) workaround for inference issue with 2.10.0 ~M3 
-    (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassManifest[M[_, _]], castTU : Typeable[(T, U)]) =
+    (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassTag[M[_, _]], castTU : Typeable[(T, U)]) =
       new Typeable[M[T, U]] {
         def cast(t : Any) : Option[M[T, U]] =
           if(t == null) Some(t.asInstanceOf[M[T, U]])
