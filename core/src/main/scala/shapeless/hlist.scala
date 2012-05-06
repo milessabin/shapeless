@@ -388,7 +388,7 @@ final class HListOps[L <: HList](l : L) {
   def length(implicit length : Length[L]) : length.Out = length()
   
   /**
-   * Converts this `HList` to an ordinary List of elements typed as the least upper bound of the types of the elements
+   * Converts this `HList` to an ordinary `List` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
   def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
