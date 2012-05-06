@@ -767,6 +767,10 @@ object Unifier {
 }
 
 object UnifierAux {
+  implicit def hnilUnifier[T] = new UnifierAux[HNil, HNil] {
+    def apply(l : HNil) = l
+  }
+  
   implicit def hsingleUnifier[T] = new UnifierAux[T :: HNil, T :: HNil] {
     def apply(l : T :: HNil) = l
   }
