@@ -331,6 +331,48 @@ class HListTests {
   }
   
   @Test
+  def testToArray {
+    def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+    
+    val fruits1 = apap.toArray[Fruit]
+    typed[Array[Fruit]](fruits1)
+    assertArrayEquals2(Array[Fruit](a, p, a, p), fruits1)
+    
+    val fruits2 = apbp.toArray[Fruit]
+    typed[Array[Fruit]](fruits2)
+    assertArrayEquals2(Array[Fruit](a, p, b, p), fruits2)
+    
+    val fruits3 = fruits2.toHList[APBP]
+    assertTrue(fruits3.isDefined)
+    typed[APBP](fruits3.get)
+    assertEquals(apbp, fruits3.get)
+
+    val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
+
+    val stuff = l1.toArray
+    typed[Array[Any]](stuff)
+    assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
+    
+    val stuff2 = stuff.toHList[ISII]
+    assertTrue(stuff2.isDefined)
+    typed[ISII](stuff2.get)
+    assertEquals(1 :: "foo" :: 2 :: 3 :: HNil, stuff2.get)
+
+    val l4 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil
+    val l7 = l4 map isDefined
+    typed[BBBB](l7)
+    assertEquals(true :: true :: true :: true :: HNil, l7)
+
+    val ll2 = l7.toArray
+    typed[Boolean](ll2(0))
+
+    val moreStuff = (a :: "foo" :: p :: HNil).toArray[AnyRef]
+    typed[Array[AnyRef]](moreStuff)
+    assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
+  }
+  
+  @Test
   def testFoldMap {
     implicitly[MapperAux[isDefined.type, HNil, HNil]]
     implicitly[MapperAux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]

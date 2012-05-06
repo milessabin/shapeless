@@ -392,6 +392,16 @@ final class HListOps[L <: HList](l : L) {
    * of this `HList`.
    */
   def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
+  
+  /**
+   * Converts this `HList` to an `Array` of elements typed as the least upper bound of the types of the elements
+   * of this `HList`.
+   * 
+   * It is advisable to specify the type parameter explicitly, because for many reference types, case classes in
+   * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
+   * `CC`) which interacts badly with the invariance of `Array`s.
+   */
+  def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(0, l)
 }
 
 object HList {
@@ -803,6 +813,39 @@ object ToList {
   implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) =
     new ToList[H1 :: H2 :: T, L] {
       def apply(l : H1 :: H2 :: T) = u.left(l.head) :: ttl(l.tail)
+    }
+}
+
+/**
+ * Type class supporting conversion of this `HList` to an `Array` with elements typed as the least upper bound
+ * of the types of the elements of this `HList`.
+ * 
+ * @author Miles Sabin
+ */
+trait ToArray[-L <: HList, Lub] {
+  def apply(n : Int, l : L) : Array[Lub]
+}
+
+object ToArray {
+  implicit def hnilToArray[T : ArrayTag] : ToArray[HNil, T] = new ToArray[HNil, T] {
+    def apply(n : Int, l : HNil) = Array.ofDim[T](n)
+  }
+  
+  implicit def hsingleToArray[T : ArrayTag] : ToArray[T :: HNil, T] = new ToArray[T :: HNil, T] {
+    def apply(n : Int, l : T :: HNil) = {
+      val arr = Array.ofDim[T](n+1)
+      arr(n) = l.head
+      arr
+    }
+  }
+  
+  implicit def hlistToArray[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]) =
+    new ToArray[H1 :: H2 :: T, L] {
+      def apply(n : Int, l : H1 :: H2 :: T) = {
+        val arr = tta(n+1, l.tail)
+        arr(n) = u.left(l.head)
+        arr
+      }
     }
 }
 
