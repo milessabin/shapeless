@@ -787,11 +787,15 @@ object UnifierAux {
  * 
  * @author Miles Sabin
  */
-trait ToList[L <: HList, +Lub] {
+trait ToList[-L <: HList, Lub] {
   def apply(l : L) : List[Lub]
 }
   
 object ToList {
+  implicit def hnilToList[T] : ToList[HNil, T] = new ToList[HNil, T] {
+    def apply(l : HNil) = Nil
+  }
+  
   implicit def hsingleToList[T] : ToList[T :: HNil, T] = new ToList[T :: HNil, T] {
     def apply(l : T :: HNil) = List(l.head)
   }
