@@ -187,6 +187,8 @@ object FnUnHLister {
 
 object FnUnHListerAux extends FnUnHListerAuxInstances
 
+import scala.collection.GenTraversable
+
 /**
  * Conversions between `Traversables` and `HLists`.
  * 
@@ -196,12 +198,13 @@ object FnUnHListerAux extends FnUnHListerAuxInstances
  * @author Miles Sabin
  */
 object Traversables {
-  trait TraversableOps[T] {
-    def toHList[L <: HList](implicit fl : FromTraversable[T, L]) : Option[L]
+  
+  trait TraversableOps {
+    def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L]
   }
   
-  implicit def traversableOps[T](l : Traversable[T]) = new TraversableOps[T] {
-    def toHList[L <: HList](implicit fl : FromTraversable[T, L]) = fl(l) 
+  implicit def traversableOps[T <% GenTraversable[_]](t : T) = new TraversableOps {
+    def toHList[L <: HList](implicit fl : FromTraversable[L]) = fl(t) 
   }
 }
 
@@ -210,28 +213,28 @@ object Traversables {
  * 
  * @author Miles Sabin
  */
-trait FromTraversable[T, Out <: HList] {
-  def apply(l : Traversable[T]) : Option[Out]
+trait FromTraversable[Out <: HList] {
+  def apply(l : GenTraversable[_]) : Option[Out]
 }
-  
+
 /**
  * `FromTraversable` type class instances.
  * 
  * @author Miles Sabin
  */
 object FromTraversable {
+  import scala.collection.GenTraversableLike
   import Typeable._
 
-  implicit def hnilFromTraversable[T] = new FromTraversable[T, HNil] {
-    def apply(l : Traversable[T]) = l match {
-      case Nil => Some(HNil)
-      case _ => None
-    }
+  implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
+    def apply(l : GenTraversable[_]) =
+      if(l.isEmpty) Some(HNil) else None 
   }
   
-  implicit def hlistFromTraversable[T, OutH, OutT <: HList]
-    (implicit flt : FromTraversable[T, OutT], oc : Typeable[OutH]) = new FromTraversable[T, OutH :: OutT] {
-      def apply(l : Traversable[T]) : Option[OutH :: OutT] =
-        for(e <- l.headOption; h <- e.cast[OutH]; t <- flt(l.tail)) yield h :: t
+  implicit def hlistFromTraversable[OutH, OutT <: HList]
+    (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
+      def apply(l : GenTraversable[_]) : Option[OutH :: OutT] =
+        if(l.isEmpty) None
+        else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
   }
 }
