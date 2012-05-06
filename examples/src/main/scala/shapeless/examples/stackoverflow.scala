@@ -51,7 +51,7 @@ object StackOverflow3 {
   case class Input[T](value: T)
   
   object value extends (Input ~> Id) {
-    def default[T](i : Input[T]) = i.value
+    def apply[T](i : Input[T]) = i.value
   }
   
   class Preprocessor[In <: HList, Out <: HList, R](ctor : Out => R)

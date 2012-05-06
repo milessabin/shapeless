@@ -158,20 +158,27 @@ object Poly {
  * @author Miles Sabin
  */
 trait ~>[F[_], G[_]] extends Poly1 {
-  def default[T](f : F[T]) : G[T]
-  def apply[T](f : F[T]) = default(f)
-  implicit def caseUniv[T] = at[F[T]](default[T] _)
+  def apply[T](f : F[T]) : G[T]
+  implicit def caseUniv[T] = at[F[T]](apply[T](_))
 }
 
 object ~> {
-  implicit def inst1[G[_], T](p : Id ~> G) : T => G[T] = p.caseUniv[T].value
-  implicit def inst2[F[_], G[_], T](p : F ~> G) : F[T] => G[T] = p.caseUniv[T].value
+  implicit def inst1[F[_], G[_], T](f : F ~> G) : F[T] => G[T] = f(_)
+  implicit def inst2[G[_], T](f : Id ~> G) : T => G[T] = f(_)
+  implicit def inst3[F[_], T](f : F ~> Id) : F[T] => T = f(_)
+  implicit def inst4[T](f : Id ~> Id) : T => T = f[T](_)  // Explicit type argument needed here to prevent recursion?
+  implicit def inst5[F[_], G, T](f : F ~> Const[G]#λ) : F[T] => G = f(_)
+  implicit def inst6[G, T](f : Id ~> Const[G]#λ) : T => G = f(_)
 }
 
 trait ~>>[F[_], R] extends Pullback1[R] {
-  def default[T](f : F[T]) : R
-  def apply[T](f : F[T]) = default(f)
-  implicit def caseUniv[T] = at[F[T]](default[T] _)
+  def apply[T](f : F[T]) : R
+  implicit def caseUniv[T] = at[F[T]](apply[T](_))
+}
+
+object ~>> {
+  implicit def inst1[F[_], R, T](f : F ~>> R) : F[T] => R = f(_)
+  implicit def inst2[R, T](f : Id ~>> R) : T => R = f(_)
 }
 
 /**
@@ -191,42 +198,42 @@ object ~?> {
 
 /** Polymorphic identity function. */
 object identity extends (Id ~> Id) {
-  def default[T](t : T) = t
+  def apply[T](t : T) = t
 }
 
 /** Polymorphic singleton function. */
 object singleton extends (Id ~> Set) {
-  def default[T](t : T) = Set(t)
+  def apply[T](t : T) = Set(t)
 }
 
 /** Polymorphic function selecting an arbitrary element from a non-empty `Set`. */
 object choose extends (Set ~> Option) {
-  def default[T](s : Set[T]) = s.headOption 
+  def apply[T](s : Set[T]) = s.headOption 
 }
 
 /** Polymorphic function creating singleton `List`s. */
 object list extends (Id ~> List) {
-  def default[T](t : T) = List(t)
+  def apply[T](t : T) = List(t)
 }
 
 /** Polymorphic function returning the head of a `List`. */
 object headOption extends (List ~> Option) {
-  def default[T](l : List[T]) = l.headOption
+  def apply[T](l : List[T]) = l.headOption
 }
 
 /** Polymorphic function testing whether or not an `Option` is defined. */
 object isDefined extends (Option ~>> Boolean) {
-  def default[T](o : Option[T]) = o.isDefined
+  def apply[T](o : Option[T]) = o.isDefined
 }
 
 /** Polymorphic function which opens an `Option`. */
 object get extends (Option ~> Id) {
-  def default[T](o : Option[T]) = o.get
+  def apply[T](o : Option[T]) = o.get
 }
 
 /** Polymorphic function which injects a value into an `Option`. */
 object option extends (Id ~> Option) {
-  def default[T](t : T) = Option(t)
+  def apply[T](t : T) = Option(t)
 }
 
 /** Polymorphic addition with type specific cases. */

@@ -24,7 +24,7 @@ object ImpredicativeExamples extends App {
   def typed[T](t : => T) {}
   
   object head extends (List ~> Id) {
-    def default[T](l : List[T]) = l.head
+    def apply[T](l : List[T]) = l.head
   }
   
   def g(o : Option[List ~> Id]) = o match {

@@ -25,7 +25,7 @@ class PolyTests {
   def typed[T](t : => T) {}
 
   object toInt extends (Id ~>> Int) {
-    def default[T](t : T) = t.toString.toInt
+    def apply[T](t : T) = t.toString.toInt
   }
   
   object size extends Pullback1[Int] {
