@@ -46,6 +46,8 @@ class HListTests {
   case class Pear() extends Fruit
   case class Banana() extends Fruit
   
+  type PWS = Product with Serializable with Fruit
+  
   type YYYY = Any :: Any :: Any :: Any :: HNil
   type FF = Fruit :: Fruit :: HNil
   type AP = Apple :: Pear :: HNil
@@ -313,11 +315,20 @@ class HListTests {
     val u9a = getUnifier(a :: f :: HNil)
     typed[UnifierAux[Apple :: Fruit :: HNil, FF]](u9a)
     val u9b = getUnifier(a :: p :: HNil)
-    //typed[UnifierAux[Apple :: Pear :: HNil, FF]](u9b)
+    typed[UnifierAux[Apple :: Pear :: HNil, PWS :: PWS :: HNil]](u9b)
     val u10 = getUnifier(apap)
-    //typed[UnifierAux[APAP, FFFF]](u10)
+    typed[UnifierAux[APAP, PWS :: PWS :: PWS :: PWS :: HNil]](u10)
     val u11 = getUnifier(apbp)
-    //typed[UnifierAux[APBP, FFFF]](u11)
+    typed[UnifierAux[APBP, PWS :: PWS :: PWS :: PWS :: HNil]](u11)
+    
+    val invar1 = Set(23) :: Set("foo") :: HNil
+    val uinvar1 = invar1.unify
+    typed[Set[_ >: Int with String] :: Set[_ >: Int with String] :: HNil](uinvar1)
+
+    // Unifying three or more elements which have an invariant outer type constructor and differing type
+    // arguments fails, presumably due to a failure to compute a sensble LUB.
+    //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
+    //val uinvar2 = invar.unify
   }
     
   @Test
