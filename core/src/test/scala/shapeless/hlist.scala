@@ -68,6 +68,11 @@ class HListTests {
   val apap : APAP = a :: p :: a :: p :: HNil
   val apbp : APBP = a :: p :: b :: p :: HNil
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+  object incInt extends (Int >-> Int)(_ + 1)
+  object extendedChoose extends Lift1(choose)
+  
   def typed[T](t : => T) {}
   
   @Test
@@ -128,6 +133,19 @@ class HListTests {
     val l7 = l4 map isDefined
     typed[BBBB](l7)
     assertEquals(true :: true :: true :: true :: HNil, l7)
+    
+    val l8 = 23 :: "foo" :: true :: HNil
+    val l9 = l8 map mkString
+    typed[String :: String :: String :: HNil](l9)
+    assertEquals("23" :: "foo" :: "true" :: HNil, l9)
+    
+    val l10 = apbp map fruit
+    typed[Fruit :: Fruit :: Fruit :: Fruit :: HNil](l10)
+    assertEquals(apbp, l10)
+    
+    val l11 = apbp map mkString
+    typed[String :: String :: String :: String :: HNil](l11)
+    assertEquals("Apple()" :: "Pear()" :: "Banana()" :: "Pear()" :: HNil, l11)
   }
 
   object dup extends Poly1 {
@@ -142,11 +160,21 @@ class HListTests {
     typed[Int :: Int :: String :: String :: Boolean :: Boolean :: HNil](l2)
     assertEquals(1 :: 1 :: "foo" :: "foo" :: true :: true :: HNil, l2)
 
-    val l3 = (1 :: "foo" :: HNil) :: (2.0 :: true :: HNil) :: HNil
+    val l3 = (1 :: "foo" :: HNil) :: (HNil : HNil) :: (2.0 :: true :: HNil) :: ("bar" :: HNil) :: HNil
 
     val l4 = l3 flatMap identity
-    typed[Int :: String :: Double :: Boolean :: HNil](l4)
-    assertEquals(1 :: "foo" :: 2.0 :: true :: HNil, l4)
+    typed[Int :: String :: Double :: Boolean :: String :: HNil](l4)
+    assertEquals(1 :: "foo" :: 2.0 :: true :: "bar" :: HNil, l4)
+    
+    val l5 = 23 :: "foo" :: 7 :: true :: 0 :: HNil
+    val l6 = l5 flatMap incInt
+    typed[Int :: Int :: Int :: HNil](l6)
+    assertEquals(24 :: 8 :: 1 :: HNil, l6)
+    
+    val l7 = Set(23) :: "foo" :: Set(true) :: 23 :: HNil
+    val l8 = l7 flatMap extendedChoose
+    typed[Option[Int] :: Option[Boolean] :: HNil](l8)
+    assertEquals(Option(23) :: Option(true) :: HNil, l8)
   }
   
   @Test
