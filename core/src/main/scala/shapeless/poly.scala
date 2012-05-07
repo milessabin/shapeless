@@ -159,7 +159,7 @@ object Poly {
  */
 trait ~>[F[_], G[_]] extends Poly1 {
   def apply[T](f : F[T]) : G[T]
-  implicit def caseUniv[T] = at[F[T]](apply[T](_))
+  implicit def caseUniv[T] = at[F[T]](apply(_))
 }
 
 object ~> {
