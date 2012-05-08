@@ -110,13 +110,14 @@ object ShapelessBuild extends Build {
             (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
       scalacOptions       <<= scalaVersion map { sv =>
-        // -unchecked is too noisy with virtpatmat currently: see, 
-        //  https://groups.google.com/d/msg/scala-internals/OQyffmwMJsg/DC3YZdN_QJIJ
         Seq("-deprecation") ++ (
           if (pre210(sv))
             Seq("-Ydependent-method-types", "-unchecked", "-deprecation")
           else
-            Seq("-feature", "-language:higherKinds", "-language:implicitConversions")
+            Seq("-feature", "-language:higherKinds", "-language:implicitConversions", "-deprecation") ++
+              (if (sv != "2.10.0-M3") Seq("-unchecked") else Nil) 
+          // -unchecked is too noisy with 2.10.0-M3. See, 
+          //  https://groups.google.com/d/msg/scala-internals/OQyffmwMJsg/DC3YZdN_QJIJ
         )
       },
       resolvers           ++= Seq(
