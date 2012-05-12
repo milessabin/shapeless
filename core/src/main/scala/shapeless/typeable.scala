@@ -141,7 +141,8 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     }
   }
 
-  /** Typeable instance for `GenTraversable`. Note that the contents will tested for conformance to the element type. */
+  /** Typeable instance for `GenTraversable`.
+   *  Note that the contents be will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
     (implicit mCC : ClassTag[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
     def cast(t : Any) : Option[CC[T]] =
@@ -153,7 +154,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       } else None
   }
   
-  /** Typeable instance for `Map`. Note that the contents will tested for conformance to the key/value types. */
+  /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], T, U]  // (Temporary?) workaround for inference issue with 2.10.0 ~M3 
     (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassTag[M[_, _]], castTU : Typeable[(T, U)]) =
       new Typeable[M[T, U]] {
@@ -171,7 +172,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     def cast(t : Any) : Option[HNil] = if(t == null || t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
   }
   
-  /** Typeable instance for `HList`s. Note that the contents will tested for conformance to the element types. */
+  /** Typeable instance for `HList`s. Note that the contents will be tested for conformance to the element types. */
   implicit def hlistTypeable[H, T <: HList](implicit castH : Typeable[H], castT : Typeable[T]) = new Typeable[H :: T] {
     def cast(t : Any) : Option[H :: T] = {
       if(t == null) Some(t.asInstanceOf[H :: T])
