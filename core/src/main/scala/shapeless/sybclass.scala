@@ -24,6 +24,7 @@ package shapeless
  */
 trait LowPrioritySybClass {
   import Poly._
+  import Tuples._
   
   /**
    * Type class representing one-level generic queries.
@@ -42,11 +43,11 @@ trait LowPrioritySybClass {
   }
 
   /**
-   * Data type class instance for pairs.
+   * Data type class instance for tuples.
    */
-  implicit def pairData[F <: Poly, T, U, R](implicit qt : Pullback1Aux[F, T, R], qu : Pullback1Aux[F, U, R]) =
-    new Data[F, (T, U), R] {
-      def gmapQ(t : (T, U)) = List(qt(t._1), qu(t._2))
+  implicit def tupleData[F <: Poly, T <: Product, L <: HList, R](implicit hl : HListerAux[T, L], dl : Data[F, L, R]) =
+    new Data[F, T, R] {
+      def gmapQ(t : T) = dl.gmapQ(t.hlisted)
     }
 
   /**
@@ -112,12 +113,13 @@ trait LowPrioritySybClass {
   }
 
   /**
-   * DataT type class instance for pairs.
+   * DataT type class instance for tuples.
    */
-  implicit def pairDataT[F <: Poly, T, U](implicit ft : HomAux[F, T], fu : HomAux[F, U]) =
-    new DataT[F, (T, U)] {
-      def gmapT(t : (T, U)) = (ft(t._1), fu(t._2))
-    }
+  implicit def tupleDataT[F <: Poly, T <: Product, L <: HList]
+    (implicit hl : HListerAux[T, L], tp : TuplerAux[L, T], dl : DataT[F, L]) =
+      new DataT[F, T] {
+        def gmapT(t : T) = dl.gmapT(t.hlisted).tupled
+      }
 
   /**
    * DataT type class instance for `Either`.

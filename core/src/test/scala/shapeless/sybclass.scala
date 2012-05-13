@@ -59,6 +59,10 @@ class SybClassTests {
     val ps = gsizeAll(p)
     assertEquals(5, ps)
 
+    val t = (23, "foo", true, 1.0)
+    val ts = gsizeAll(t)
+    assertEquals(7, ts)
+
     val l = List(1, 2, 3) 
     val ls = gsizeAll(l)
     assertEquals(4, ls)
@@ -73,6 +77,10 @@ class SybClassTests {
     val p = (23, "foo")
     val pi = incAll(p)
     assertEquals((24, "foo*"), pi)
+
+    val t = (23, "foo", true, 1.0)
+    val ti = incAll(t)
+    assertEquals((24, "foo*", true, 1.0), ti)
 
     val o = Option(23)
     val oi = incAll(o)
