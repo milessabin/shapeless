@@ -36,7 +36,7 @@ object HListIso {
   // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
   // the general case.
   def apply[CC, T](apply : T => CC, unapply : CC => Option[T]) =
-      new HListIso(apply.hlisted, (cc : CC) => unapply(cc).get :: HNil)
+    new HListIso(apply.hlisted, (cc : CC) => unapply(cc).get :: HNil)
 
   def fromHList[T, L <: HList](l : L)(implicit iso : HListIso[T, L]) = iso.fromHList(l)
   
