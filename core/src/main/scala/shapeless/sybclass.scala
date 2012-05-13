@@ -22,9 +22,8 @@ package shapeless
  * 
  * @author Miles Sabin
  */
-object SybClass {
+trait LowPrioritySybClass {
   import Poly._
-  import TypeOperators._
   
   /**
    * Type class representing one-level generic queries.
@@ -76,8 +75,21 @@ object SybClass {
   }
   
   /**
+   * Data type class instance for types with associated `HListIso`s.
+   */
+  implicit def hlistIsoData[F <: Poly, T, L <: HList, R](implicit iso : HListIso[T, L], dl : Data[F, L, R]) =
+    new Data[F, T, R] {
+      def gmapQ(t : T) = dl.gmapQ(iso.toHList(t))
+    }
+  
+  /**
    * Data type class instance for `HList`s.
    */
+  implicit def hnilData[F <: Poly, R] =
+    new Data[F, HNil, R] {
+      def gmapQ(t : HNil) = Nil
+    }
+
   implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Pullback1Aux[F, H, R], ct : Data[F, T, R]) =
     new Data[F, H :: T, R] {
       def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
@@ -133,8 +145,21 @@ object SybClass {
   }
   
   /**
+   * DataT type class instance for type with associated `HListIso`s.
+   */
+  implicit def hlistIsoDataT[F <: Poly, T, L <: HList](implicit iso : HListIso[T, L], dl : DataT[F, L]) =
+    new DataT[F, T] {
+      def gmapT(t : T) = iso.fromHList(dl.gmapT(iso.toHList(t)))
+    }
+
+  /**
    * DataT type class instance for `HList`s.
    */
+  implicit def hnilDataT[F <: Poly] =
+    new DataT[F, HNil] {
+      def gmapT(t : HNil) = HNil
+    }
+
   implicit def hlistDataT[F <: Poly, H, T <: HList](implicit fh : HomAux[F, H], ct : DataT[F, T]) =
     new DataT[F, H :: T] {
       def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
@@ -168,4 +193,18 @@ object SybClass {
   }
   
   def everywhere[F <: Poly](f : F) = new EverywhereAux[f.type]
+}
+
+object SybClass extends LowPrioritySybClass {
+  import Poly._
+  
+  implicit def hpHListData[F <: Poly, H, T <: HList, R](implicit qh : Pullback1Aux[F, H, R], ct : Data[F, T, R]) =
+    new Data[F, H :: T, R] {
+      def gmapQ(t : H :: T) = qh(t.head) :: ct.gmapQ(t.tail)
+    }
+
+  implicit def hpHListDataT[F <: Poly, H, T <: HList](implicit fh : HomAux[F, H], ct : DataT[F, T]) =
+    new DataT[F, H :: T] {
+      def gmapT(t : H :: T) = fh(t.head) :: ct.gmapT(t.tail)
+    }
 }

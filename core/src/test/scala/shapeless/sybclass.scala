@@ -188,5 +188,33 @@ class SybClassTests {
     val ls = everything(gsize)(plus)(l)
     typed[Int](ls)
     assertEquals(7, ls)
+    
+    val l2 = 23 :: ("foo" :: true :: HNil) :: 2.0 :: HNil 
+
+    val li2 = everywhere(inc)(l2)
+    typed[Int :: (String :: Boolean :: HNil) :: Double :: HNil](li2)
+    assertEquals(24 :: ("foo*" :: true :: HNil) :: 2.0 :: HNil, li2)
+    
+    val ls2 = everything(gsize)(plus)(l2)
+    typed[Int](ls2)
+    assertEquals(8, ls2)
+  }
+  
+  case class Address(street : String, city : String, postcode : String)
+  case class Person(name : String, age : Int, address : Address)
+  
+  implicit val addressIso = HListIso(Address.apply _, Address.unapply _)
+  implicit val personIso = HListIso(Person.apply _, Person.unapply _)
+  
+  @Test
+  def testHListIso {
+    
+    val p1 = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
+    
+    val p2 = everywhere(inc)(p1)
+    assertEquals(Person("Joe Grey*", 38, Address("Southover Street*", "Brighton*", "BN2 9UA*")), p2)
+
+    val s1 = everything(gsize)(plus)(p1)
+    assertEquals(42, s1)
   }
 }
