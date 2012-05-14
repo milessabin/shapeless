@@ -1,0 +1,18 @@
+A minor release of [shapeless](https://github.com/milessabin/shapeless).
+The main changes include,
+
+* Scrap Your Boilerplate improvements
+    * Data and DataT instances for any type with an associated HListIso,
+      allowing any case class to be traversed/transformed with just the
+      addition of a single one-line implicit declaration
+    * Data and DataT instances for pairs generalized to arbitrary tuples
+    * Added a SYB [example](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/sybclass.scala#L32) which also illustrates the gains from using HListIso
+
+* Generalized toHList to anything viewable as a GenTraversable[_].
+
+* Added HList toArray.
+
+* Added infrastructure for lifting monomorphic functions to Poly1 and extending
+  Poly1 domains to be universal.
+
+* HList unify and toList now properly handle empty HLists.
