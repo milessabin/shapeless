@@ -19,29 +19,45 @@ package shapeless
 /**
  * Representation of an isomorphism between a type (typically a case class) and an `HList`.
  */
-class HListIso[T, L <: HList](ctor : L => T, dtor : T => L) {
-  def fromHList(l : L) : T = ctor(l)
-  def toHList(t : T) : L = dtor(t)
+trait Iso[T, U] {
+  def to(t : T) : U
+  def from(u : U) : T
 }
 
-object HListIso {
+object Iso {
   import Functions._
   import Tuples._
 
-  def apply[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
+  def hlist[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
     (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
-      new HListIso(apply.hlisted, (cc : CC) => hl(unapply(cc).get))
+      new Iso[CC, L] {
+        val ctor = apply.hlisted
+        val dtor = (cc : CC) => hl(unapply(cc).get)
+        def to(t : CC) : L = dtor(t)
+        def from(l : L) : CC = ctor(l)
+      }
   
   // Special case for one-element cases classes because their unapply result types
   // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
   // the general case.
-  def apply[CC, T](apply : T => CC, unapply : CC => Option[T]) =
-    new HListIso(apply.hlisted, (cc : CC) => unapply(cc).get :: HNil)
+  def hlist[CC, T](apply : T => CC, unapply : CC => Option[T]) =
+    new Iso[CC, T :: HNil] {
+      val ctor = apply.hlisted
+      val dtor = (cc : CC) => unapply(cc).get :: HNil 
+        def to(t : CC) : T :: HNil = dtor(t)
+        def from(l : T :: HNil) : CC = ctor(l)
+      }
 
-  def fromHList[T, L <: HList](l : L)(implicit iso : HListIso[T, L]) = iso.fromHList(l)
+  implicit def tupleHListIso[T <: Product, L <: HList](implicit hl : HListerAux[T, L], uhl : TuplerAux[L, T]) =
+    new Iso[T, L] {
+      val ctor = uhl.apply _
+      val dtor = hl.apply _
+      def to(t : T) : L = dtor(t)
+      def from(l : L) : T = ctor(l)
+    }
   
-  def toHList[T, L <: HList](t : T)(implicit iso : HListIso[T, L]) = iso.toHList(t) 
-  
-  implicit def tupleIso[T <: Product, L <: HList](implicit hl : HListerAux[T, L], uhl : TuplerAux[L, T]) =
-    new HListIso(uhl.apply, hl.apply)
+  implicit def identityIso[T] = new Iso[T, T] {
+    def to(t : T) : T = t
+    def from(t : T) : T = t
+  }
 }

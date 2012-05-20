@@ -28,8 +28,8 @@ class LensTests {
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
   
-  implicit val addressIso = HListIso(Address.apply _, Address.unapply _)
-  implicit val personIso = HListIso(Person.apply _, Person.unapply _)
+  implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
+  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
 
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
   val person = Person("Joe Grey", 37, address)

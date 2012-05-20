@@ -24,10 +24,9 @@ object MonoidExamples extends App {
   // Given an isomorphism between `C` and an `HList` `L`, construct a monoid instance for `C` given
   // the monoid instance for `L`, which is in turn derived from the monoid instances for its/`C`'s
   // element types.
-  implicit def ccMonoid[C, L <: HList](implicit iso : HListIso[C, L], ml : Monoid[L]) = new Monoid[C] {
-    import HListIso._
-    def zero = fromHList(ml.zero)
-    def append(a : C, b : C) = fromHList(toHList(a) |+| toHList(b))
+  implicit def ccMonoid[C, L <: HList](implicit iso : Iso[C, L], ml : Monoid[L]) = new Monoid[C] {
+    def zero = iso.from(ml.zero)
+    def append(a : C, b : C) = iso.from(iso.to(a) |+| iso.to(b))
   }
 
   // A pair of arbitrary case classes
@@ -35,8 +34,8 @@ object MonoidExamples extends App {
   case class Bar(b : Boolean, s : String, d : Double)
 
   // Publish their `HListIso`'s
-  implicit def fooIso = HListIso(Foo.apply _, Foo.unapply _)
-  implicit def barIso = HListIso(Bar.apply _, Bar.unapply _)
+  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
+  implicit def barIso = Iso.hlist(Bar.apply _, Bar.unapply _)
 
   // And now they're monoids ...
   

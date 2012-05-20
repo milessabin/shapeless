@@ -38,11 +38,11 @@ object SybClassExamples extends App {
   type Name = String
   type Address = String
 
-  implicit def companyIso[D <: HList] = HListIso(Company.apply[D] _, Company.unapply[D] _)
-  implicit def deptIso[S <: HList] = HListIso(Dept.apply[S] _, Dept.unapply[S] _)
-  implicit val employeeIso = HListIso(Employee.apply _, Employee.unapply _)
-  implicit val personIso = HListIso(Person.apply _, Person.unapply _)
-  implicit val salaryIso = HListIso(Salary.apply _, Salary.unapply _)
+  implicit def companyIso[D <: HList] = Iso.hlist(Company.apply[D] _, Company.unapply[D] _)
+  implicit def deptIso[S <: HList] = Iso.hlist(Dept.apply[S] _, Dept.unapply[S] _)
+  implicit val employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
+  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
+  implicit val salaryIso = Iso.hlist(Salary.apply _, Salary.unapply _)
   
   /*
   // The HListIso definitions for each case class above replace this manually
