@@ -250,10 +250,12 @@ object Zipper {
       def apply(z : Zipper[C, L, R, None.type]) = z
     }
     
-    implicit def nonRootRoot[C, L <: HList, R <: HList, P](implicit pr : Root[P]) = new Root[Zipper[C, L, R, Some[P]]] {
-      type Out = pr.Out
-      def apply(z : Zipper[C, L, R, Some[P]]) = pr(z.parent.get)
-    }
+    implicit def nonRootRoot[C, L <: HList, R <: HList, P, U]
+      (implicit up : Up[Zipper[C, L, R, Some[P]]] { type Out = U }, pr : Root[U]) =
+        new Root[Zipper[C, L, R, Some[P]]] {
+          type Out = pr.Out
+          def apply(z : Zipper[C, L, R, Some[P]]) = pr(z.up)
+        }
   }
   
   trait Get[Z] extends ZipperOp0[Z]
@@ -267,18 +269,20 @@ object Zipper {
   
   trait Put[Z, E] extends ZipperOp1[Z, E]
   
-  object Put {
-    implicit def hlistPut[C <: HList, L <: HList, RH, RT <: HList, P, E, CL <: HList]
-      (implicit rp : ReversePrependAux[L, E :: RT, CL]) =
-        new Put[Zipper[C, L, RH :: RT, P], E] {
-          type Out = Zipper[CL, L, E :: RT, P]
-          def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
-        }
-
+  trait LowPriorityPut {
     implicit def put[C, L <: HList, RH, RT <: HList, P, E, CL <: HList]
       (implicit rp : ReversePrependAux[L, E :: RT, CL], iso : Iso[C, CL]) =
         new Put[Zipper[C, L, RH :: RT, P], E] {
           type Out = Zipper[C, L, E :: RT, P]
+          def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
+        }
+  }
+  
+  object Put extends LowPriorityPut {
+    implicit def hlistPut[C <: HList, L <: HList, RH, RT <: HList, P, E, CL <: HList]
+      (implicit rp : ReversePrependAux[L, E :: RT, CL]) =
+        new Put[Zipper[C, L, RH :: RT, P], E] {
+          type Out = Zipper[CL, L, E :: RT, P]
           def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
         }
   }

@@ -126,6 +126,23 @@ class ZipperTests {
   
   val p1 = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
   
+  case class Dept[E <: HList](manager : Employee, employees : E)
+  case class Employee(name : String, salary : Int)
+  
+  implicit def deptIso[E <: HList] = Iso.hlist(Dept.apply[E] _, Dept.unapply[E] _)
+  implicit def employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
+
+  type D = Dept[Employee :: Employee :: Employee :: HNil]
+
+  val dept =
+    Dept(
+      Employee("Agamemnon", 5000),
+      Employee("Menelaus", 3000) ::
+      Employee("Achilles", 2000) ::
+      Employee("Odysseus", 2000) ::
+      HNil
+    )
+  
   @Test
   def testCaseClasses {
     val z = p1.toZipper
@@ -164,6 +181,9 @@ class ZipperTests {
     
     typed[Person](updatedCity.up.reify)
     assertEquals(Person("Joe Grey", 37, Address("Southover Street", "London", "BN2 9UA")), updatedCity.up.reify)
+
+    typed[Person](updatedCity.root.reify)
+    assertEquals(Person("Joe Grey", 37, Address("Southover Street", "London", "BN2 9UA")), updatedCity.up.reify)
     
     val reifiedAddress = z.right.right.down.reify
     typed[Address](reifiedAddress)
@@ -180,5 +200,17 @@ class ZipperTests {
     
     val root2 = underAddress.root
     typed[Person](root2.reify)
+    
+    val z2 = dept.toZipper
+    
+    val z3 = z2.down.put("King Agamemnon").right.put(8000).up.right.down.right.down.right.put(3000).root.reify
+    typed[D](z3)
+    assertEquals(
+     Dept(
+       Employee("King Agamemnon", 8000),
+       Employee("Menelaus", 3000) ::
+       Employee("Achilles", 3000) ::
+       Employee("Odysseus", 2000) ::
+       HNil), z3)
   }
 }

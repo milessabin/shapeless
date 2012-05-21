@@ -42,7 +42,7 @@ object ZipperExamples extends App {
 
   def typed[T](t : => T) {}
 
-case class Dept[E <: HList](manager : Employee, employees : E)
+  case class Dept[E <: HList](manager : Employee, employees : E)
   case class Employee(name : String, salary : Int)
   
   implicit def deptIso[E <: HList] = Iso.hlist(Dept.apply[E] _, Dept.unapply[E] _)
@@ -101,4 +101,25 @@ case class Dept[E <: HList](manager : Employee, employees : E)
   typed[D](updatedDept)
   println(updatedDept)
   // Dept(Employee(King Agamemnon,8000),Employee(Menelaus,3000) :: Employee(Achilles,2000) :: Employee(Odysseus,2000) :: HNil)
+  
+  val achillesRaise = g9.right.down.right.down.right.put(3000).root.reify
+  typed[D](achillesRaise)
+  println(achillesRaise)
+  // Dept(Employee(King Agamemnon,8000),Employee(Menelaus,3000) :: Employee(Achilles,3000) :: Employee(Odysseus,2000) :: HNil)
+
+  // All together in a single pass ...
+  val singlePass =
+    z.
+      down.put("King Agamemnon").
+      right.put(8000).
+    up.right.
+      down.
+      right.
+        down.
+        right.put(3000).
+    root.reify
+    
+  typed[D](singlePass)
+  println(singlePass)
+  // Dept(Employee(King Agamemnon,8000),Employee(Menelaus,3000) :: Employee(Achilles,3000) :: Employee(Odysseus,2000) :: HNil)
 }
