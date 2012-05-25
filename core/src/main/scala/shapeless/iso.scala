@@ -24,7 +24,14 @@ trait Iso[T, U] {
   def from(u : U) : T
 }
 
-object Iso {
+trait LowPriorityIso {
+  implicit def identityIso[T] = new Iso[T, T] {
+    def to(t : T) : T = t
+    def from(t : T) : T = t
+  }
+}
+
+object Iso extends LowPriorityIso {
   import Functions._
   import Tuples._
 
@@ -56,8 +63,9 @@ object Iso {
       def from(l : L) : T = ctor(l)
     }
   
-  implicit def identityIso[T] = new Iso[T, T] {
-    def to(t : T) : T = t
-    def from(t : T) : T = t
-  }
+  implicit def fnHListFnIso[F, L <: HList, R](implicit hl : FnHListerAux[F, L => R], unhl : FnUnHListerAux[L => R, F]) =
+    new Iso[F, L => R] {
+      def to(f : F) : L => R = hl(f)
+      def from(l : L => R) = unhl(l)
+    }
 }
