@@ -43,6 +43,7 @@ object UnfoldExamples extends App {
     }
     
     def unfold[E] = new ApplyUnfold[E] {} 
+    def unfold[E](e : E) = new ApplyUnfold[E] {} 
   }
   
   trait UnfoldAux[F <: Poly1, E, S, CoS, Out <: HList] {
@@ -79,7 +80,7 @@ object UnfoldExamples extends App {
     implicit def case3 = at[_3](_ => (1.0, _4))
   }
 
-  val l1 = unfold[_3](unfoldMisc)(_0)
+  val l1 = unfold(_3)(unfoldMisc)(_0)
   typed[Int :: String :: Boolean :: HNil](l1)
   println(l1)
 
@@ -99,7 +100,7 @@ object UnfoldExamples extends App {
     implicit def default[N <: Nat](implicit toInt : ToInt[N]) = at[N](_ => toInt())
   }
   
-  val l2 = unfold[_6](unfoldFibs)(_0)
+  val l2 = unfold(_6)(unfoldFibs)(_0)
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: HNil](l2)
   println(l2 map toInt)
 }
