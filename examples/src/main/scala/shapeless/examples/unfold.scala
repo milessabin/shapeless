@@ -30,8 +30,8 @@ object UnfoldExamples extends App {
   }
   
   object Unfold {
-    implicit def unfold1[F <: Poly1, E, S, CS, Out0 <: HList]
-      (implicit unfold : UnfoldAux[F, E, S, CS, Out0]) : Unfold[F, E, S] =
+    implicit def unfold1[F <: Poly1, E, S, Out0 <: HList]
+      (implicit unfold : UnfoldAux[F, E, S, E, Out0]) : Unfold[F, E, S] =
         new Unfold[F, E, S] {
           type Out = Out0
           def apply(s : S) = unfold(s)
