@@ -443,7 +443,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "1.2.0"
+  "com.chuusai" %% "shapeless" % "1.2.2"
 )
 ```
 
@@ -460,7 +460,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless" % "1.2.0" cross CrossVersion.full
+  "com.chuusai" % "shapeless" % "1.2.2" cross CrossVersion.full
 )
 ```
 
