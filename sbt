@@ -4,10 +4,10 @@
 # Author: Paul Phillips <paulp@typesafe.com>
 
 # todo - make this dynamic
-declare -r sbt_release_version=0.12.0-Beta2
-declare -r sbt_snapshot_version=0.12.0-SNAPSHOT
+declare -r sbt_release_version=0.11.3
+declare -r sbt_snapshot_version=0.13.0-SNAPSHOT
 
-unset sbt_jar sbt_dir sbt_create sbt_snapshot
+unset sbt_jar sbt_dir sbt_create sbt_snapshot sbt_launch_dir
 unset scala_version java_home sbt_explicit_version
 unset verbose debug quiet
 
@@ -105,14 +105,16 @@ declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory
 declare -r sbt_opts_file=".sbtopts"
 declare -r jvm_opts_file=".jvmopts"
 declare -r latest_28="2.8.2"
-declare -r latest_29="2.9.2"
+declare -r latest_29="2.9.1"
 declare -r latest_210="2.10.0-SNAPSHOT"
 
 declare -r script_path=$(get_script_path "$BASH_SOURCE")
 declare -r script_dir="$(dirname $script_path)"
 declare -r script_name="$(basename $script_path)"
 
+# some non-read-onlies set with defaults
 declare java_cmd=java
+declare sbt_launch_dir="$script_dir/.lib"
 declare sbt_mem=$default_sbt_mem
 
 # pull -J and -D options to give to java.
@@ -148,7 +150,8 @@ execRunner () {
 sbt_groupid () {
   case $(sbt_version) in
         0.7.*) echo org.scala-tools.sbt ;;
-    0.1[01].*) echo org.scala-tools.sbt ;;
+       0.10.*) echo org.scala-tools.sbt ;;
+    0.11.[12]) echo org.scala-tools.sbt ;;
             *) echo org.scala-sbt ;;
   esac
 }
@@ -169,7 +172,7 @@ make_release_url () {
   make_url $(sbt_groupid) releases $(sbt_version)
 }
 
-# argument is e.g. 0.12.0-SNAPSHOT
+# argument is e.g. 0.13.0-SNAPSHOT
 # finds the actual version (with the build id) at artifactory
 make_snapshot_url () {
   for ver in $(sbt_artifactory_list); do
@@ -191,7 +194,7 @@ jar_url () {
 }
 
 jar_file () {
-  echo "$script_dir/.lib/$1/sbt-launch.jar"
+  echo "$sbt_launch_dir/$1/sbt-launch.jar"
 }
 
 download_url () {
@@ -204,7 +207,7 @@ download_url () {
 
   mkdir -p $(dirname "$jar") && {
     if which curl >/dev/null; then
-      curl --silent "$url" --output "$jar"
+      curl --fail --silent "$url" --output "$jar"
     elif which wget >/dev/null; then
       wget --quiet -O "$jar" "$url"
     fi
@@ -231,7 +234,8 @@ Usage: $script_name [options]
   -sbt-dir   <path>  path to global settings/plugins directory (default: ~/.sbt/<version>)
   -sbt-boot  <path>  path to shared boot directory (default: ~/.sbt/boot in 0.11 series)
   -ivy       <path>  path to local Ivy repository (default: ~/.ivy2)
-  -mem    <integer>  set memory options (default: $sbt_mem, which is $(get_mem_opts $sbt_mem))
+  -mem    <integer>  set memory options (default: $sbt_mem, which is
+                       $(get_mem_opts $sbt_mem) )
   -no-share          use all local caches; no sharing
   -offline           put sbt in offline mode
   -jvm-debug <port>  Turn on JVM debugging, open at the given port.
@@ -243,6 +247,7 @@ Usage: $script_name [options]
   -sbt-version  <version>   use the specified version of sbt 
   -sbt-jar      <path>      use the specified jar as the sbt launcher
   -sbt-snapshot             use a snapshot version of sbt
+  -sbt-launch-dir <path>    directory to hold sbt launchers (default: $sbt_launch_dir)
 
   # scala version (default: as chosen by sbt)
   -28                       use $latest_28
@@ -330,6 +335,7 @@ process_args ()
   -sbt-snapshot) sbt_explicit_version=$sbt_snapshot_version && shift ;;
        -sbt-jar) require_arg path "$1" "$2" && sbt_jar="$2" && shift 2 ;;
    -sbt-version) require_arg version "$1" "$2" && sbt_explicit_version="$2" && shift 2 ;;
+-sbt-launch-dir) require_arg path "$1" "$2" && sbt_launch_dir="$2" && shift 2 ;;
  -scala-version) require_arg version "$1" "$2" && addSbt "set scalaVersion := \"$2\"" && shift 2 ;;
     -scala-home) require_arg path "$1" "$2" && addSbt "set scalaHome in ThisBuild := Some(file(\"$2\"))" && shift 2 ;;
      -java-home) require_arg path "$1" "$2" && java_cmd="$2/bin/java" && shift 2 ;;
