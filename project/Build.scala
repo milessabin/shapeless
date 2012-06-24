@@ -38,7 +38,7 @@ object ShapelessBuild extends Build {
       publishLocal := ()
     )
   )
-  
+
   lazy val shapelessCore = {
     
     Project(
@@ -50,10 +50,6 @@ object ShapelessBuild extends Build {
         (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
         (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
         
-        (unmanagedSourceDirectories in Compile) <++= (scalaVersion, baseDirectory) { (sv, bd) =>
-          if(pre210(sv)) Seq(bd / "src-2.9/main/scala") else Nil
-        },
-  
         managedSourceDirectories in Test := Nil,
         
         EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
@@ -94,36 +90,27 @@ object ShapelessBuild extends Build {
     )
   )
   
-  def pre210(sv : String) : Boolean = {
-    val Some((major, minor)) = CrossVersion.partialVersion(sv)
-    major < 2 || (major == 2 && minor < 10)
-  }
-  
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
       version             := "1.2.3-SNAPSHOT",
       scalaVersion        := "2.10.0-SNAPSHOT",
+
       crossScalaVersions  <<= version {
         v =>
-          Seq("2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M3") ++
-            (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
+          Seq("2.10.0-M4") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
-      scalacOptions       <<= scalaVersion map { sv =>
-        Seq("-deprecation") ++ (
-          if (pre210(sv))
-            Seq("-Ydependent-method-types", "-unchecked", "-deprecation")
-          else
-            Seq("-feature", "-language:higherKinds", "-language:implicitConversions", "-deprecation") ++
-              (if (sv != "2.10.0-M3") Seq("-unchecked") else Nil) 
-          // -unchecked is too noisy with 2.10.0-M3. See, 
-          //  https://groups.google.com/d/msg/scala-internals/OQyffmwMJsg/DC3YZdN_QJIJ
-        )
-      },
+
+      scalacOptions       := Seq(
+        "-feature",
+        "-language:higherKinds",
+        "-language:implicitConversions",
+        "-deprecation",
+        "-unchecked"),
+
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
       )
     )
 }
-
