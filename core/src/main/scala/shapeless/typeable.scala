@@ -26,14 +26,13 @@ trait Typeable[U] {
 }
 
 trait LowPriorityTypeable {
-  import scala.reflect.ClassTag
 
   /**
    * Default `Typeable` instance. Note that this is safe only up to erasure.
    */
-  implicit def dfltTypeable[U](implicit mU : ClassTag[U]) = new Typeable[U] {
+  implicit def dfltTypeable[U](implicit mU : ClassManifest[U]) = new Typeable[U] {
     def cast(t : Any) : Option[U] = {
-      if(t == null || (mU.runtimeClass isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
+      if(t == null || (mU.erasure isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
     }
   }
 }
@@ -45,7 +44,6 @@ trait LowPriorityTypeable {
 object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.collection.{ GenMap, GenTraversable }
-  import scala.reflect.ClassTag
   
   class Cast(t : Any) {
     /**
@@ -147,10 +145,10 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   /** Typeable instance for `GenTraversable`.
    *  Note that the contents be will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC : ClassTag[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
+    (implicit mCC : ClassManifest[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
     def cast(t : Any) : Option[CC[T]] =
       if(t == null) Some(t.asInstanceOf[CC[T]])
-      else if(mCC.runtimeClass isAssignableFrom t.getClass) {
+      else if(mCC.erasure isAssignableFrom t.getClass) {
         val cc = t.asInstanceOf[CC[Any]]
         if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
         else None
@@ -159,11 +157,11 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], T, U]  // (Temporary?) workaround for inference issue with 2.10.0 ~M3 
-    (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassTag[M[_, _]], castTU : Typeable[(T, U)]) =
+    (implicit ev : M[T, U] <:< GenMap[T, U], mM : ClassManifest[M[_, _]], castTU : Typeable[(T, U)]) =
       new Typeable[M[T, U]] {
         def cast(t : Any) : Option[M[T, U]] =
           if(t == null) Some(t.asInstanceOf[M[T, U]])
-          else if(mM.runtimeClass isAssignableFrom t.getClass) {
+          else if(mM.erasure isAssignableFrom t.getClass) {
             val m = t.asInstanceOf[GenMap[Any, Any]]
             if(m.forall(_.cast[(T, U)].isDefined)) Some(t.asInstanceOf[M[T, U]])
             else None

@@ -94,17 +94,11 @@ object ShapelessBuild extends Build {
     Seq(
       organization        := "com.chuusai",
       version             := "1.2.3-SNAPSHOT",
-      scalaVersion        := "2.10.0-SNAPSHOT",
-
-      crossScalaVersions  <<= version {
-        v =>
-          Seq("2.10.0-M4") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
-      },
+      scalaVersion        := "2.9.2",
+      crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.9.2"),
 
       scalacOptions       := Seq(
-        "-feature",
-        "-language:higherKinds",
-        "-language:implicitConversions",
+        "-Ydependent-method-types",
         "-deprecation",
         "-unchecked"),
 
