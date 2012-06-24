@@ -22,6 +22,8 @@ shapeless in particular.
 Selected highlights of shapeless
 --------------------------------
 
+(All the examples below assume you have previously imported shapless._)
+
 ### Polymorphic function values
 
 A new encoding of polymorphic function values which optionally supports
@@ -31,7 +33,7 @@ monomorphic function values.
 ```scala
     // choose is a function from Sets to Options with no type specific cases
     object choose extends (Set ~> Option) {
-      def default[T](s : Set[T]) = s.headOption 
+      def apply[T](s : Set[T]) = s.headOption
     }
 
     // choose is convertible to an ordinary monomorphic function value
@@ -141,15 +143,17 @@ The mother of all Scala `HList`'s, which amongst other things,
 * has a zipper for traversal and persistent update.
     
 ```scala
+    import Zipper._
+
     val l = 1 :: "foo" :: 3.0 :: HNil
 
-    val l2 = l.toZipper.right.put("wibble", 45).toHList
+    val l2 = l.toZipper.right.put("wibble", 45).reify
     l2 == 1 :: ("wibble", 45) :: 3.0 :: HNil
   
-    val l3 = l.toZipper.right.delete.toHList
+    val l3 = l.toZipper.right.delete.reify
     l3 == 1 :: 3.0 :: HNil
 
-    val l4 = l.toZipper.last.left.insert("bar").toHList
+    val l4 = l.toZipper.last.left.insert("bar").reify
     l4 == 1 :: "foo" :: "bar" :: 3.0 :: HNil
 ```
     
@@ -256,6 +260,8 @@ associations. Keys are encoded using singleton types and fully determine
 the types of their corresponding values,
   
 ```scala
+    import Record._
+
     object author  extends Field[String]
     object title   extends Field[String]
     object price   extends Field[Double]
