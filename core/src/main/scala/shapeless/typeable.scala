@@ -26,12 +26,14 @@ trait Typeable[U] {
 }
 
 trait LowPriorityTypeable {
+  import scala.reflect.ClassTag
+
   /**
    * Default `Typeable` instance. Note that this is safe only up to erasure.
    */
   implicit def dfltTypeable[U](implicit mU : ClassTag[U]) = new Typeable[U] {
     def cast(t : Any) : Option[U] = {
-      if(t == null || (mU.erasure isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
+      if(t == null || (mU.runtimeClass isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None
     }
   }
 }
@@ -43,6 +45,7 @@ trait LowPriorityTypeable {
 object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.collection.{ GenMap, GenTraversable }
+  import scala.reflect.ClassTag
   
   class Cast(t : Any) {
     /**
@@ -147,7 +150,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     (implicit mCC : ClassTag[CC[_]], castT : Typeable[T]) = new Typeable[CC[T]] {
     def cast(t : Any) : Option[CC[T]] =
       if(t == null) Some(t.asInstanceOf[CC[T]])
-      else if(mCC.erasure isAssignableFrom t.getClass) {
+      else if(mCC.runtimeClass isAssignableFrom t.getClass) {
         val cc = t.asInstanceOf[CC[Any]]
         if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
         else None
@@ -160,7 +163,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       new Typeable[M[T, U]] {
         def cast(t : Any) : Option[M[T, U]] =
           if(t == null) Some(t.asInstanceOf[M[T, U]])
-          else if(mM.erasure isAssignableFrom t.getClass) {
+          else if(mM.runtimeClass isAssignableFrom t.getClass) {
             val m = t.asInstanceOf[GenMap[Any, Any]]
             if(m.forall(_.cast[(T, U)].isDefined)) Some(t.asInstanceOf[M[T, U]])
             else None

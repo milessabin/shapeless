@@ -827,11 +827,13 @@ trait ToArray[-L <: HList, Lub] {
 }
 
 object ToArray {
-  implicit def hnilToArray[T : ArrayTag] : ToArray[HNil, T] = new ToArray[HNil, T] {
+  import scala.reflect._ // Wildcard import for 2.9.x compatibility
+
+  implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] = new ToArray[HNil, T] {
     def apply(n : Int, l : HNil) = Array.ofDim[T](n)
   }
   
-  implicit def hsingleToArray[T : ArrayTag] : ToArray[T :: HNil, T] = new ToArray[T :: HNil, T] {
+  implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] = new ToArray[T :: HNil, T] {
     def apply(n : Int, l : T :: HNil) = {
       val arr = Array.ofDim[T](n+1)
       arr(n) = l.head
