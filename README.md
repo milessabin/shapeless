@@ -22,7 +22,7 @@ shapeless in particular.
 Selected highlights of shapeless
 --------------------------------
 
-(All the examples below assume you have previously imported shapless._)
+(All the examples below assume you have previously imported shapeless._)
 
 ### Polymorphic function values
 
