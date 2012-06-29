@@ -141,6 +141,58 @@ object ProdAux {
 }
 
 /**
+ * Type class witnessing that `Out` is the product of `A` and `B`.
+ *
+ * @author Tom Switzer
+ */
+trait Div[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait DivAux[A <: Nat, B <: Nat, C <: Nat]
+
+object Div {
+  implicit def div[A <: Nat, B <: Nat, C <: Nat]
+    (implicit div: DivAux[A, B, C]) = new Div[A, B] {
+      type Out = C
+    }
+}
+
+object DivAux {
+  import Nat._
+  import LT._
+
+  implicit def div1[A <: Nat] = new DivAux[_0, A, _0] {}
+
+  implicit def div2[A <: Nat, B <: Nat](implicit e: A < B) =
+    new DivAux[A, B, _0] {}
+
+  implicit def div3[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
+    (implicit diff: DiffAux[Succ[A], B, C], div: DivAux[C, B, D]) =
+      new DivAux[Succ[A], B, Succ[D]] {}
+}
+
+/**
+ * Typeclass witnessing that `Out` is `A` mod `B`.
+ */
+trait Mod[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait ModAux[A <: Nat, B <: Nat, C <: Nat]
+
+object Mod {
+  implicit def mod[A <: Nat, B <: Nat, C <: Nat]
+    (implicit aux: ModAux[A, B, C]) = new Mod[A, B] { type Out = C }
+}
+
+object ModAux {
+  implicit def modAux[A <: Nat, B <: Nat, C <: Nat, D <: Nat, E <: Nat]
+    (implicit div: DivAux[A, B, C], prod: ProdAux[C, B, D], diff: DiffAux[A, D, E]) =
+      new ModAux[A, B, E] {}
+}
+
+/**
  * Type class witnessing that `A` is less than `B`.
  * 
  * @author Miles Sabin
