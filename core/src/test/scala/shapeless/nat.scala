@@ -50,6 +50,31 @@ class NatTests {
     val p2 = prod[_4, _5]
     check[_20](p2)
 
+    implicitly[DivAux[_7, _2, _3]]
+    implicitly[DivAux[_22, _11, _2]]
+    implicitly[DivAux[_15, _3, _5]]
+
+    def div[A <: Nat, B <: Nat](implicit div : Div[A, B]) = new Check[div.Out] {}
+    val d1 = div[_7, _2]
+    check[_3](d1)
+    val d2 = div[_22, _11]
+    check[_2](d2)
+    val d3 = div[_15, _3]
+    check[_5](d3)
+
+    implicitly[ModAux[_7, _2, _1]]
+    implicitly[ModAux[_22, _5, _2]]
+    implicitly[ModAux[_9, _3, _0]]
+
+    def mod[A <: Nat, B <: Nat](implicit mod : Mod[A, B]) = new Check[mod.Out] {}
+    val m1 = mod[_7, _2]
+    check[_1](m1)
+    val m2 = mod[_22, _5]
+    check[_2](m2)
+    val m3 = mod[_9, _3]
+    check[_0](m3)
+
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
