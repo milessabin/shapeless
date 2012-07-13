@@ -4,12 +4,19 @@
 # Author: Paul Phillips <paulp@typesafe.com>
 
 # todo - make this dynamic
-declare -r sbt_release_version=0.11.3
+declare -r sbt_release_version=0.12.0-RC3
 declare -r sbt_snapshot_version=0.13.0-SNAPSHOT
 
 unset sbt_jar sbt_dir sbt_create sbt_snapshot sbt_launch_dir
 unset scala_version java_home sbt_explicit_version
 unset verbose debug quiet
+
+for arg in "$@"; do
+  case $arg in
+    -q|-quiet)  quiet=1 ;;
+            *)          ;;
+  esac
+done
 
 build_props_sbt () {
   if [[ -f project/build.properties ]]; then
@@ -50,7 +57,7 @@ sbt_version () {
 }
 
 echoerr () {
-  echo 1>&2 "$@"
+  [[ -z $quiet ]] && echo 1>&2 "$@"
 }
 vlog () {
   [[ $verbose || $debug ]] && echoerr "$@"
@@ -105,7 +112,7 @@ declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory
 declare -r sbt_opts_file=".sbtopts"
 declare -r jvm_opts_file=".jvmopts"
 declare -r latest_28="2.8.2"
-declare -r latest_29="2.9.1"
+declare -r latest_29="2.9.2"
 declare -r latest_210="2.10.0-SNAPSHOT"
 
 declare -r script_path=$(get_script_path "$BASH_SOURCE")
@@ -115,7 +122,9 @@ declare -r script_name="$(basename $script_path)"
 # some non-read-onlies set with defaults
 declare java_cmd=java
 declare sbt_launch_dir="$script_dir/.lib"
+declare sbt_universal_launcher="$script_dir/lib/sbt-launch.jar"
 declare sbt_mem=$default_sbt_mem
+declare sbt_jar=$sbt_universal_launcher
 
 # pull -J and -D options to give to java.
 declare -a residual_args
@@ -385,7 +394,7 @@ argumentCount=$#
 
 # Update build.properties no disk to set explicit version - sbt gives us no choice
 [[ -n "$sbt_explicit_version" ]] && update_build_props_sbt "$sbt_explicit_version"
-echo "Detected sbt version $(sbt_version)"
+echoerr "Detected sbt version $(sbt_version)"
 
 [[ -n "$scala_version" ]] && echo "Overriding scala version to $scala_version"
 
@@ -416,7 +425,7 @@ EOM
 [[ -n "$sbt_dir" ]] || {
   sbt_dir=~/.sbt/$(sbt_version)
   addJava "-Dsbt.global.base=$sbt_dir"
-  echo "Using $sbt_dir as sbt dir, -sbt-dir to override."
+  echoerr "Using $sbt_dir as sbt dir, -sbt-dir to override."
 }
 
 # since sbt 0.7 doesn't understand iflast
