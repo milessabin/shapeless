@@ -61,7 +61,7 @@ object StagingExamples extends App {
   import scala.tools.reflect.Eval
   import ReflectionUtils._
   
-  def consumeTuple[A, B](t :(A, B))(implicit tc : TupleConsumer[A, B]) = tc(t)
+  def consumeTuple[A, B](t : (A, B))(implicit tc : TupleConsumer[A, B]) = tc(t)
 
   val tuples : List[(Any, Any)] = List((23, "foo"), (true, 2.0))
 
