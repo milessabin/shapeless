@@ -39,16 +39,12 @@ object ShapelessBuild extends Build {
     )
   )
 
-  lazy val shapelessCore = {
-    
+  lazy val shapelessCore =
     Project(
       id = "shapeless-core", 
       base = file("core"),
       settings = commonSettings ++ Publishing.settings ++ Seq(
         moduleName := "shapeless",
-        
-        (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
-        (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
         
         managedSourceDirectories in Test := Nil,
         
@@ -69,19 +65,22 @@ object ShapelessBuild extends Build {
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples"))
       )
     )
-  }
-  
+
+  lazy val shapelessMacros = Project(
+    id = "shapeless-macros",
+    base = file("macros"),
+
+    settings = commonSettings
+  )
+
   lazy val shapelessExamples = Project(
     id = "shapeless-examples",
     base = file("examples"),
-    dependencies = Seq(shapelessCore),
- 
+    dependencies = Seq(shapelessCore, shapelessMacros),
     
     settings = commonSettings ++ Seq(
-      (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
-      (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-      
       libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
         "com.novocode" % "junit-interface" % "0.7" % "test"
       ),
 
@@ -95,6 +94,9 @@ object ShapelessBuild extends Build {
       organization        := "com.chuusai",
       version             := "1.2.3-SNAPSHOT",
       scalaVersion        := "2.10.0-SNAPSHOT",
+
+      (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
+      (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
 
       crossScalaVersions  <<= version {
         v =>
