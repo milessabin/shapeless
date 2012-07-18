@@ -235,6 +235,20 @@ class HListTests {
     val pabp = ap reverse_::: bp
     typed[PABP](pabp)
     assertEquals(p :: a :: b :: p :: HNil, pabp)
+
+    // must compile without requiring an implicit Prepend
+    def prependWithHNil[L <: HList](list: L) = HNil ::: list
+    def prependToHNil[L <: HList](list: L) = list ::: HNil
+    assertEquals(prependWithHNil(ap), ap)
+    assertEquals(prependToHNil(ap), ap)
+    assertEquals(HNil ::: HNil, HNil)
+
+    // must compile without requiring an implicit ReversePrepend
+    def reversePrependWithHNil[L <: HList](list: L) = HNil reverse_::: list
+    def reversePrependToHNil[L <: HList: Reverse](list: L) = list reverse_::: HNil
+    assertEquals(reversePrependWithHNil(ap), ap)
+    assertEquals(reversePrependToHNil(ap), ap.reverse)
+    assertEquals(HNil reverse_::: HNil, HNil)
   }
     
   @Test
