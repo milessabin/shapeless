@@ -39,16 +39,12 @@ object ShapelessBuild extends Build {
     )
   )
 
-  lazy val shapelessCore = {
-    
+  lazy val shapelessCore =
     Project(
       id = "shapeless-core", 
       base = file("core"),
       settings = commonSettings ++ Publishing.settings ++ Seq(
         moduleName := "shapeless",
-        
-        (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
-        (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
         
         managedSourceDirectories in Test := Nil,
         
@@ -69,18 +65,13 @@ object ShapelessBuild extends Build {
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples"))
       )
     )
-  }
-  
+
   lazy val shapelessExamples = Project(
     id = "shapeless-examples",
     base = file("examples"),
     dependencies = Seq(shapelessCore),
- 
     
     settings = commonSettings ++ Seq(
-      (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
-      (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-      
       libraryDependencies ++= Seq(
         "com.novocode" % "junit-interface" % "0.7" % "test"
       ),
@@ -96,6 +87,9 @@ object ShapelessBuild extends Build {
       version             := "1.2.3-SNAPSHOT",
       scalaVersion        := "2.9.2",
       crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.9.2"),
+
+      (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
+      (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
 
       scalacOptions       := Seq(
         "-Ydependent-method-types",
