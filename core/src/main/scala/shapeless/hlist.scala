@@ -1603,7 +1603,19 @@ trait PrependAux[P <: HList, S <: HList, Out <: HList] {
   def apply(prefix : P, suffix : S) : Out
 }
 
-object Prepend {
+trait LowPriorityPrepend {
+  implicit def hnilPrepend1[P <: HNil, S <: HList] = new Prepend[P, S] {
+    type Out = S
+    def apply(prefix: P, suffix: S) = suffix
+  }
+}
+
+object Prepend extends LowPriorityPrepend {
+  implicit def hnilPrepend2[P <: HList, S <: HNil] = new Prepend[P, S] {
+    type Out = P
+    def apply(prefix: P, suffix: S) = prefix
+  }
+
   implicit def prepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : PrependAux[P, S, Out0]) =
     new Prepend[P, S] {
       type Out = Out0
@@ -1635,8 +1647,20 @@ trait ReversePrepend[P <: HList, S <: HList] {
 trait ReversePrependAux[P <: HList, S <: HList, Out <: HList] {
   def apply(prefix : P, suffix : S) : Out
 }
+
+trait LowPriorityReversePrepend {
+  implicit def hnilReversePrepend1[P <: HNil, S <: HList] = new ReversePrepend[P, S] {
+    type Out = S
+    def apply(prefix: P, suffix: S) = suffix
+  }
+}
   
-object ReversePrepend {
+object ReversePrepend extends LowPriorityReversePrepend {
+  implicit def hnilReversePrepend2[P <: HList, S <: HNil](implicit rv: Reverse[P]) = new ReversePrepend[P, S] {
+    type Out = rv.Out
+    def apply(prefix: P, suffix: S) = prefix.reverse
+  }
+
   implicit def reversePrepend[P <: HList, S <: HList, Out0 <: HList]
     (implicit prepend : ReversePrependAux[P, S, Out0]) =
       new ReversePrepend[P, S] {
