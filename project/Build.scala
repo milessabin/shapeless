@@ -87,6 +87,7 @@ object ShapelessBuild extends Build {
       version             := "1.2.3-SNAPSHOT",
       scalaVersion        := "2.9.2",
       crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.9.2"),
+      crossVersion        := CrossVersion.full,
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
