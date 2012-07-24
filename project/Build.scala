@@ -98,6 +98,7 @@ object ShapelessBuild extends Build {
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
 
+      crossVersion        := CrossVersion.full,
       crossScalaVersions  <<= version {
         v =>
           Seq("2.10.0-M4", "2.10.0-M5") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
