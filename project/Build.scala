@@ -101,7 +101,7 @@ object ShapelessBuild extends Build {
       crossVersion        := CrossVersion.full,
       crossScalaVersions  <<= version {
         v =>
-          Seq("2.10.0-M5", "2.10.0-M6") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
+          Seq("2.10.0-M6", "2.10.0-M7") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
 
       scalacOptions       := Seq(
