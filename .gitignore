@@ -8,3 +8,4 @@
 .scala_dependencies
 target/
 *.swp
+tags
