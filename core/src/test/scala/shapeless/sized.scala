@@ -163,8 +163,10 @@ class SizedTests {
     val isl2 = Sized[List]("foo", "bar")
     typed[Sized[List[String], _2]](isl2)
 
-    val isa0 = Sized[Array]()
-    typed[Sized[Array[Nothing], _0]](isa0)
+    // This next case fails due to a regression in Scala 2.10.0-M7. It should
+    // succeed again in M8 and later.
+    //val isa0 = Sized[Array]()
+    //typed[Sized[Array[Nothing], _0]](isa0)
     val isa1 = Sized[Array]("foo")
     typed[Sized[Array[String], _1]](isa1)
     val isa2 = Sized[Array]("foo", "bar")
