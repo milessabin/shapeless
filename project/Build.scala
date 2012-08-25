@@ -66,17 +66,10 @@ object ShapelessBuild extends Build {
       )
     )
 
-  lazy val shapelessMacros = Project(
-    id = "shapeless-macros",
-    base = file("macros"),
-
-    settings = commonSettings
-  )
-
   lazy val shapelessExamples = Project(
     id = "shapeless-examples",
     base = file("examples"),
-    dependencies = Seq(shapelessCore, shapelessMacros),
+    dependencies = Seq(shapelessCore),
     
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
