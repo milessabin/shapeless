@@ -457,6 +457,49 @@ object IsHCons {
   }
 }
 
+/**
+ * Type class witnessing that `HList`s `L1` and `L2` have elements of the form `F1[Ln]` and `F2[Ln]` respectively for all
+ * indices `n`. This implies that a natural transform `F1 ~> F2` will take a list of type `L1` onto a list of type `L2`.
+ * 
+ * @author Miles Sabin
+ */
+trait NatTRel[L1 <: HList, F1[_], L2 <: HList, F2[_]]
+
+object NatTRel {
+  import TypeOperators._
+  
+  implicit def hnilNatTRel1[F1[_], F2[_]] = new NatTRel[HNil, F1, HNil, F2] {}
+  implicit def hnilNatTRel2[H1, F2[_]] = new NatTRel[HNil, Const[H1]#λ, HNil, F2] {}
+  implicit def hnilNatTRel3[F1[_], H2] = new NatTRel[HNil, F1, HNil, Const[H2]#λ] {}
+  implicit def hnilNatTRel4[H1, H2] = new NatTRel[HNil, Const[H1]#λ, HNil, Const[H2]#λ] {}
+
+  implicit def hlistNatTRel1[H, F1[_], F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, F2]) =
+    new NatTRel[F1[H] :: T1, F1, F2[H] :: T2, F2] {}
+
+  implicit def hlistNatTRel2[H, F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, F2]) =
+    new NatTRel[H :: T1, Id, F2[H] :: T2, F2] {}
+  implicit def hlistNatTRel3[H, F1[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Id]) =
+    new NatTRel[F1[H] :: T1, F1, H :: T2, Id] {}
+
+  implicit def hlistNatTRel4[H1, T1 <: HList, H2, F2[_], T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, F2]) =
+    new NatTRel[H1 :: T1, Const[H1]#λ, F2[H2] :: T2, F2] {}
+  implicit def hlistNatTRel5[H1, F1[_], T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Const[H2]#λ]) =
+    new NatTRel[F1[H1] :: T1, F1, H2 :: T2, Const[H2]#λ] {}
+
+  implicit def hlistNatTRel6[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, Id]) =
+    new NatTRel[H1 :: T1, Const[H1]#λ, H2 :: T2, Id] {}
+  implicit def hlistNatTRel7[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, Const[H2]#λ]) =
+    new NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] {}
+
+  implicit def hlistNatTRel8[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, Const[H2]#λ]) =
+    new NatTRel[H1 :: T1, Const[H1]#λ, H2 :: T2, Const[H2]#λ] {}
+}
+
+/**
+ * Type class supporting computing the type-level Nat corresponding to the length of this `HList`. 
+ * 
+ * @author Miles Sabin
+ */
 trait Length[-L <: HList] {
   type Out <: Nat
   def apply() : Out
