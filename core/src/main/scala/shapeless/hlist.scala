@@ -405,6 +405,10 @@ final class HListOps[L <: HList](l : L) {
 }
 
 object HList {
+  def apply() = HNil
+  
+  def apply[P <: Product, L <: HList](p : P)(implicit hl : HListerAux[P, L]) : L = hl(p)
+  
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 
   /**
