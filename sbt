@@ -4,7 +4,7 @@
 # Author: Paul Phillips <paulp@typesafe.com>
 
 # todo - make this dynamic
-declare -r sbt_release_version=0.12.0-RC3
+declare -r sbt_release_version=0.12.0
 declare -r sbt_snapshot_version=0.13.0-SNAPSHOT
 
 unset sbt_jar sbt_dir sbt_create sbt_snapshot sbt_launch_dir
@@ -88,7 +88,7 @@ get_mem_opts () {
   (( $perm > 256 )) || perm=256
   (( $perm < 1024 )) || perm=1024
   local codecache=$(( $perm / 2 ))
-  
+
   echo "-Xms${mem}m -Xmx${mem}m -XX:MaxPermSize=${perm}m -XX:ReservedCodeCacheSize=${codecache}m"
 }
 
@@ -101,7 +101,7 @@ make_url () {
   groupid="$1"
   category="$2"
   version="$3"
-  
+
   echo "http://typesafe.artifactoryonline.com/typesafe/ivy-$category/$groupid/sbt-launch/$version/sbt-launch.jar"
 }
 
@@ -170,7 +170,7 @@ sbt_artifactory_list () {
   local version=${version0%-SNAPSHOT}
   local url="http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/$(sbt_groupid)/sbt-launch/"
   dlog "Looking for snapshot list at: $url "
-  
+
   curl -s --list-only "$url" | \
     grep -F $version | \
     perl -e 'print reverse <>' | \
@@ -209,7 +209,7 @@ jar_file () {
 download_url () {
   local url="$1"
   local jar="$2"
-  
+
   echo "Downloading sbt launcher $(sbt_version):"
   echo "  From  $url"
   echo "    To  $jar"
@@ -241,7 +241,7 @@ Usage: $script_name [options]
   -no-colors         disable ANSI color codes
   -sbt-create        start sbt even if current directory contains no sbt project
   -sbt-dir   <path>  path to global settings/plugins directory (default: ~/.sbt/<version>)
-  -sbt-boot  <path>  path to shared boot directory (default: ~/.sbt/boot in 0.11 series)
+  -sbt-boot  <path>  path to shared boot directory (default: ~/.sbt/boot in 0.11+)
   -ivy       <path>  path to local Ivy repository (default: ~/.ivy2)
   -mem    <integer>  set memory options (default: $sbt_mem, which is
                        $(get_mem_opts $sbt_mem) )
@@ -253,7 +253,7 @@ Usage: $script_name [options]
   # sbt version (default: from project/build.properties if present, else latest release)
   !!! The only way to accomplish this pre-0.12.0 if there is a build.properties file which
   !!! contains an sbt.version property is to update the file on disk.  That's what this does.
-  -sbt-version  <version>   use the specified version of sbt 
+  -sbt-version  <version>   use the specified version of sbt
   -sbt-jar      <path>      use the specified jar as the sbt launcher
   -sbt-snapshot             use a snapshot version of sbt
   -sbt-launch-dir <path>    directory to hold sbt launchers (default: $sbt_launch_dir)
@@ -317,7 +317,7 @@ process_args ()
     local type="$1"
     local opt="$2"
     local arg="$3"
-    
+
     if [[ -z "$arg" ]] || [[ "${arg:0:1}" == "-" ]]; then
       die "$opt requires <$type> argument"
     fi
@@ -359,16 +359,16 @@ process_args ()
               *) addResidual "$1" && shift ;;
     esac
   done
-  
+
   [[ $debug ]] && {
     case $(sbt_version) in
-     0.7.*) addSbt "debug" ;; 
+     0.7.*) addSbt "debug" ;;
          *) addSbt "set logLevel in Global := Level.Debug" ;;
     esac
   }
   [[ $quiet ]] && {
     case $(sbt_version) in
-     0.7.*) ;; 
+     0.7.*) ;;
          *) addSbt "set logLevel in Global := Level.Error" ;;
     esac
   }
