@@ -458,6 +458,65 @@ object IsHCons {
 }
 
 /**
+ * Type class witnessing that the result of wrapping each element of `HList` `L` in type constructor `F` is `Out`.
+ */
+trait Mapped[L <: HList, F[_]] {
+  type Out <: HList
+}
+
+object Mapped {
+  implicit def mapped[L <: HList, F[_], Out0 <: HList](implicit mapped : MappedAux[L, F, Out0]) = new Mapped[L, F] {
+    type Out = Out0
+  }
+}
+
+trait MappedAux[L <: HList, F[_], Out <: HList]
+
+object MappedAux {
+  import TypeOperators._
+  
+  implicit def hnilMappedAux[F[_]] = new MappedAux[HNil, F, HNil] {}
+  
+  implicit def hlistIdMapped[L <: HList] = new MappedAux[L, Id, L] {}
+  
+  implicit def hlistMappedAux1[H, T <: HList, F[_], OutT <: HList](implicit mt : MappedAux[T, F, OutT]) =
+    new MappedAux[H :: T, F, F[H] :: OutT] {}
+
+  implicit def hlistMappedAux2[H, T <: HList, F, OutT <: HList](implicit mt : MappedAux[T, Const[F]#λ, OutT]) =
+    new MappedAux[H :: T, Const[F]#λ, F :: OutT] {}
+}
+
+/**
+ * Type class witnessing that the result of stripping type constructor `F` off each element of `HList` `L` is `Out`.
+ */
+trait Comapped[L <: HList] {
+  type Out <: HList
+  type F[_]
+}
+
+object Comapped {
+  implicit def comapped[L <: HList, F0[_], Out0 <: HList](implicit mapped: ComappedAux[L, F0, Out0]) = new Comapped[L] {
+    type Out = Out0
+    type F[X] = F0[X]
+  }
+}
+
+trait ComappedAux[L <: HList, F[_], Out <: HList]
+
+trait LowPriorityComappedAux {
+  import TypeOperators._
+  
+  implicit def hlistIdComapped[L <: HList] = new ComappedAux[L, Id, L] {}
+}
+
+object ComappedAux extends LowPriorityComappedAux {
+  implicit def hnilComappedAux[F[_]] = new ComappedAux[HNil, F, HNil] {}
+
+  implicit def hlistComappedAux[H, T <: HList, F[_], OutT <: HList](implicit mt : ComappedAux[T, F, OutT]) =
+    new ComappedAux[F[H] :: T, F, H :: OutT] {}
+}
+
+/**
  * Type class witnessing that `HList`s `L1` and `L2` have elements of the form `F1[Ln]` and `F2[Ln]` respectively for all
  * indices `n`. This implies that a natural transform `F1 ~> F2` will take a list of type `L1` onto a list of type `L2`.
  * 
