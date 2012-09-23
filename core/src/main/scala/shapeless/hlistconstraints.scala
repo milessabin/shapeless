@@ -55,6 +55,21 @@ object BasisConstraint {
 }
 
 /**
+ * Type class witnessing that every element of `L` is a subtype of `B`.
+ */
+trait LUBConstraint[L <: HList, B]
+
+object LUBConstraint {
+  type <<:[B] = {
+    type λ[L <: HList] = LUBConstraint[L, B] 
+  } 
+  
+  implicit def hnilLUB[T] = new LUBConstraint[HNil, T] {}
+  implicit def hlistLUB[H, T <: HList, B](implicit bct : LUBConstraint[T, B], ev: H <:< B) =
+    new LUBConstraint[H :: T, B] {}
+}
+
+/**
  * Type class witnessing that every element of L is of the form FieldEntry[F] where F is an element of `M`.
  */
 trait KeyConstraint[L <: HList, M <: HList]

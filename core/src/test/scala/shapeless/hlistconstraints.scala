@@ -64,6 +64,23 @@ class HListConstraintsTests {
   }
   
   @Test
+  def testLUBConstraint {
+    import LUBConstraint._
+    
+    trait Fruit
+    case object Apple extends Fruit
+    case object Pear extends Fruit
+    
+    def acceptLUB[L <: HList : <<:[Fruit]#λ](l : L) = true
+    
+    val l1 = Apple :: Pear :: Apple :: Pear :: HNil
+    val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
+
+    acceptLUB(l1) // Compiles
+    //acceptLUB(l2) // Does not compile
+  }
+
+  @Test
   def testKeyValueConstraints {
     import KeyConstraint._
     import ValueConstraint._
