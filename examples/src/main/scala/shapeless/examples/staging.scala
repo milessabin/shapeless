@@ -17,7 +17,7 @@
 package shapeless.examples
 
 object ReflectionUtils {
-  import scala.reflect.base.{ MirrorOf, TreeCreator, TypeCreator, Universe }
+  import scala.reflect.api.{ MirrorOf, TreeCreator, TypeCreator, Universe }
   import scala.reflect.runtime.currentMirror
   import scala.reflect.runtime.universe._
   import scala.tools.reflect.Eval
@@ -34,7 +34,7 @@ object ReflectionUtils {
     case _ : String => stringTypeId
   }
 
-  def mkExpr[T : AbsTypeTag](mirror: Mirror)(tree : Tree) : mirror.universe.Expr[T] =
+  def mkExpr[T : TypeTag](mirror: Mirror)(tree : Tree) : mirror.universe.Expr[T] =
     mirror.universe.Expr[T](mirror, new TreeCreator {
       def apply[U <: Universe with Singleton](m : MirrorOf[U]) : U#Tree =
         if (m eq mirror) tree.asInstanceOf[U#Tree]
