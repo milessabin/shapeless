@@ -165,7 +165,7 @@ trait LowPriorityLiftFunction1 extends Poly1 {
 
 /**
  * Base class for lifting a `Function1` to a `Poly1` over the universal domain, yielding an `HList` with the result as
- * it's only element if the argument is in the original functions domain, `HNil` otherwise. 
+ * its only element if the argument is in the original functions domain, `HNil` otherwise. 
  */
 class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
   implicit def subT[U <: T] = at[U](t => f(t) :: HNil)
