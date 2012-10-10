@@ -177,6 +177,19 @@ class PolyTests {
     typed[List[Int] :: List[String] :: HNil](hm2)
     assertEquals(List(23) :: List("foo") :: HNil, hm2)
   }
+
+  @Test
+  def testCompose {
+    val so = singleton compose option
+    
+    val sos = so("foo")
+    typed[Set[Option[String]]](sos)
+    assertEquals(Set(Option("foo")), sos)
+
+    val soi = so(23)
+    typed[Set[Option[Int]]](soi)
+    assertEquals(Set(Option(23)), soi)
+  }
   
   @Test
   def testPolyVal {
@@ -213,7 +226,7 @@ class PolyTests {
   }
 
   @Test
-  def testCompose {
+  def testBinary {
     import Typeable._
     
     val bi = bidi(23)

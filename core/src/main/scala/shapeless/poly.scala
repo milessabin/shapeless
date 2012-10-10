@@ -116,6 +116,26 @@ trait Poly1 extends Poly {
   class Case1Builder[T] {
     def apply[R0](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
   }
+  
+  def compose[F <: Poly](f: F) = new Compose1[this.type, F](this, f)
+  
+  def andThen[F <: Poly](f: F) = new Compose1[F, this.type](f, this)
+}
+
+/**
+ * Represents the composition of two unary polymorphic function values
+ *  
+ * @author Miles Sabin
+ */
+class Compose1[F <: Poly, G <: Poly](f : F, g : G) extends Poly
+
+object Compose1 {
+  import Poly._
+  implicit def composeCase[F <: Poly, G <: Poly, T, U, V]
+    (implicit cG : Pullback1Aux[G, T, U], cF : Pullback1Aux[F, U, V]) = new Case1Aux[Compose1[F, G], T] {
+    type R = V
+    val value = cF.value compose cG.value
+  }
 }
 
 trait Poly2 extends Poly {
@@ -165,7 +185,7 @@ trait LowPriorityLiftFunction1 extends Poly1 {
 
 /**
  * Base class for lifting a `Function1` to a `Poly1` over the universal domain, yielding an `HList` with the result as
- * it's only element if the argument is in the original functions domain, `HNil` otherwise. 
+ * its only element if the argument is in the original functions domain, `HNil` otherwise. 
  */
 class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
   implicit def subT[U <: T] = at[U](t => f(t) :: HNil)

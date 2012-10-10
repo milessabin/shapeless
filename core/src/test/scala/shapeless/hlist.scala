@@ -1025,4 +1025,28 @@ class HListTests {
     typed[IBS](ls)
     assertEquals(1 :: true :: "bar" :: HNil, ls)
   }
+
+  @Test
+  def testNatTRel {
+    import TypeOperators._
+
+    type L1 = Int :: String :: Boolean :: HNil
+    type L2 = List[Int] :: List[String] :: List[Boolean] :: HNil
+    type L3 = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
+    type L4 = Int :: Int :: Int :: HNil
+    type L5 = String :: String :: String :: HNil
+
+    implicitly[NatTRel[L1, Id, L2, List]]
+    implicitly[NatTRel[L2, List, L1, Id]]
+
+    implicitly[NatTRel[L2, List, L3, Option]]
+
+    implicitly[NatTRel[L1, Id, L4, Const[Int]#λ]]
+    implicitly[NatTRel[L4, Const[Int]#λ, L1, Id]]
+
+    implicitly[NatTRel[L2, List, L4, Const[Int]#λ]]
+    implicitly[NatTRel[L4, Const[Int]#λ, L2, List]]
+    
+    implicitly[NatTRel[L4, Const[Int]#λ, L5, Const[String]#λ]]
+  }
 }

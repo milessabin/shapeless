@@ -174,6 +174,8 @@ object DivAux {
 
 /**
  * Typeclass witnessing that `Out` is `A` mod `B`.
+ *
+ * @author Tom Switzer
  */
 trait Mod[A <: Nat, B <: Nat] {
   type Out <: Nat
