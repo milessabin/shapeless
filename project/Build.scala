@@ -52,19 +52,9 @@ object ShapelessBuild extends Build {
         
         libraryDependencies ++= Seq(
           "com.novocode" % "junit-interface" % "0.7" % "test"
-        ),
-        
-        (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
-
-        mappings in (Compile, packageSrc) <++=
-          (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
-            (srcs x (Path.relativeTo(base) | Path.flat))
-          },
-          
-        mappings in (Compile, packageSrc) <++=
-          (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples"))
+        )
       )
-    )
+    ).settings(spray.boilerplate.BoilerplatePlugin.Boilerplate.settings: _*)
 
   lazy val shapelessExamples = Project(
     id = "shapeless-examples",
