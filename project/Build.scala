@@ -81,6 +81,8 @@ object ShapelessBuild extends Build {
     )
   )
   
+  //  "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
+
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
