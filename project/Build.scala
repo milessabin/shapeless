@@ -72,16 +72,19 @@ object ShapelessBuild extends Build {
     dependencies = Seq(shapelessCore),
     
     settings = commonSettings ++ Seq(
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
-        "com.novocode" % "junit-interface" % "0.7" % "test"
-      ),
+      libraryDependencies <++= scalaVersion { sv =>
+        Seq(
+          "org.scala-lang" % "scala-compiler" % sv,
+          "com.novocode" % "junit-interface" % "0.7" % "test"
+      )},
 
       publish := (),
       publishLocal := ()
     )
   )
   
+  //  "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
+
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
@@ -94,7 +97,7 @@ object ShapelessBuild extends Build {
       crossVersion        := CrossVersion.full,
       crossScalaVersions  <<= version {
         v =>
-          Seq("2.10.0-M6", "2.10.0-M7") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
+          Seq("2.10.0-RC1") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
 
       scalacOptions       := Seq(
