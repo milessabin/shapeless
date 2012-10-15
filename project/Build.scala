@@ -73,9 +73,9 @@ object ShapelessBuild extends Build {
     
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
         "com.novocode" % "junit-interface" % "0.7" % "test"
       ),
+      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
 
       publish := (),
       publishLocal := ()
