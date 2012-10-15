@@ -73,9 +73,9 @@ object ShapelessBuild extends Build {
     
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
         "com.novocode" % "junit-interface" % "0.7" % "test"
       ),
+      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
 
       publish := (),
       publishLocal := ()
@@ -96,6 +96,7 @@ object ShapelessBuild extends Build {
         v =>
           Seq("2.10.0-M6", "2.10.0-M7") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
+      scalaBinaryVersion <<= scalaVersion(sV => if (CrossVersion.isStable(sV)) CrossVersion.binaryScalaVersion(sV) else sV),
 
       scalacOptions       := Seq(
         "-feature",
