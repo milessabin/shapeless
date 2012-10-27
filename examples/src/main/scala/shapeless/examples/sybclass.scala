@@ -30,20 +30,34 @@ object SybClassExamples extends App {
   // "Scrap your boilerplate: a practical approach to generic programming", Ralf Laemmel, Simon Peyton Jones
   //   http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
   case class Company[D <: HList](depts : D)
+  object Company {
+    implicit def companyIso[D <: HList] = Iso.hlist(Company.apply[D] _, Company.unapply[D] _)
+  }
+
   case class Dept[S <: HList](name : Name, manager : Manager, subunits : S)
+  object Dept {
+    implicit def deptIso[S <: HList] = Iso.hlist(Dept.apply[S] _, Dept.unapply[S] _)
+  }
+
   case class Employee(person : Person, salary : Salary)
+  object Employee {
+    implicit val employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
+  }
+
   case class Person(name : Name, address : Address)
+  object Person {
+    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
+  }
+
   case class Salary(salary : Double)
+  object Salary {
+    implicit val salaryIso = Iso.hlist(Salary.apply _, Salary.unapply _)
+  }
+
   type Manager = Employee
   type Name = String
   type Address = String
 
-  implicit def companyIso[D <: HList] = Iso.hlist(Company.apply[D] _, Company.unapply[D] _)
-  implicit def deptIso[S <: HList] = Iso.hlist(Dept.apply[S] _, Dept.unapply[S] _)
-  implicit val employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
-  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-  implicit val salaryIso = Iso.hlist(Salary.apply _, Salary.unapply _)
-  
   /*
   // The HListIso definitions for each case class above replace this manually
   // written SYB boilerplate
@@ -105,6 +119,7 @@ object SybClassExamples extends App {
       ) ::
       HNil
     )
+    
   println(beforeRaise)
   /* Output:
    * Company(
