@@ -22,16 +22,34 @@ object ReflectionUtils {
   import scala.reflect.runtime.universe._
   import scala.tools.reflect.Eval
 
+  val byteTypeId    = Select(Ident(newTermName("scala")), newTypeName("Byte"))
+  val charTypeId    = Select(Ident(newTermName("scala")), newTypeName("Char"))
+  val shortTypeId   = Select(Ident(newTermName("scala")), newTypeName("Short"))
+  val intTypeId     = Select(Ident(newTermName("scala")), newTypeName("Int"))
+  val longTypeId    = Select(Ident(newTermName("scala")), newTypeName("Long"))
+  val floatTypeId   = Select(Ident(newTermName("scala")), newTypeName("Float"))
+  val doubleTypeId  = Select(Ident(newTermName("scala")), newTypeName("Double"))
   val booleanTypeId = Select(Ident(newTermName("scala")), newTypeName("Boolean"))
-  val intTypeId = Select(Ident(newTermName("scala")), newTypeName("Int"))
-  val doubleTypeId = Select(Ident(newTermName("scala")), newTypeName("Double"))
-  val stringTypeId = Select(Select(Ident(newTermName("java")), newTermName("lang")), newTypeName("String"))
 
   def anyToTypeId(a : Any) = a match {
+    case _ : Byte    => byteTypeId
+    case _ : Char    => charTypeId
+    case _ : Short   => shortTypeId
+    case _ : Int     => intTypeId
+    case _ : Long    => longTypeId
+    case _ : Float   => floatTypeId
+    case _ : Double  => doubleTypeId
     case _ : Boolean => booleanTypeId
-    case _ : Int => intTypeId
-    case _ : Double => doubleTypeId
-    case _ : String => stringTypeId
+    case other =>
+      other.getClass.getName.split('.') match {
+        case Array(unpackaged) => Ident(newTypeName(unpackaged))
+        case Array(root, suffix @ _*) =>
+          val (pathSuffix, typeName) = (suffix.init, suffix.last)
+          Select(
+            pathSuffix.foldLeft(Ident(newTermName(root)) : Tree)(Select),
+            newTypeName(typeName)
+          )
+      }
   }
 
   def mkExpr[T : TypeTag](mirror: Mirror)(tree : Tree) : mirror.universe.Expr[T] =
