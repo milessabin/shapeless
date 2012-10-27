@@ -207,15 +207,40 @@ class SybClassTests {
     typed[Int](ls2)
     assertEquals(8, ls2)
   }
+
+  case class A(x: Int, y: Boolean, z: Int)
+  object A {
+    implicit val aIso = Iso.hlist(A.apply _, A.unapply _)
+  }
   
-  case class Address(street : String, city : String, postcode : String)
-  case class Person(name : String, age : Int, address : Address)
-  
-  implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
-  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-  
+  object flip extends Poly1 {
+    implicit def apply[T] = at[T](t => t)
+    implicit def caseBoolean = at[Boolean](!_)
+  }
+
   @Test
   def testHListIso {
+    // Fails if moved after testHListIso2 
+    val input =    1 :: A(1, true,  2) :: HNil
+    val expected = 1 :: A(1, false, 2) :: HNil
+    
+    val result = everywhere(flip)(input)
+    
+    assertEquals(expected, result) 
+  }
+  
+  case class Address(street : String, city : String, postcode : String)
+  object Address {
+    implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
+  }
+  
+  case class Person(name : String, age : Int, address : Address)
+  object Person {
+    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
+  }
+  
+  @Test
+  def testHListIso2 {
     
     val p1 = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
     
