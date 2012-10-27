@@ -25,16 +25,12 @@ trait Iso[T, U] {
 }
 
 trait LowPriorityIso {
+  import Functions._
+  
   implicit def identityIso[T] = new Iso[T, T] {
     def to(t : T) : T = t
     def from(t : T) : T = t
   }
-}
-
-object Iso extends LowPriorityIso {
-  import Functions._
-  import Tuples._
-
   def hlist[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
     (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
       new Iso[CC, L] {
@@ -43,7 +39,12 @@ object Iso extends LowPriorityIso {
         def to(t : CC) : L = dtor(t)
         def from(l : L) : CC = ctor(l)
       }
-  
+}
+
+object Iso extends LowPriorityIso {
+  import Functions._
+  import Tuples._
+
   // Special case for one-element cases classes because their unapply result types
   // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
   // the general case.
