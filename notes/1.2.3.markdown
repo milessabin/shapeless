@@ -1,0 +1,41 @@
+A minor release of [shapeless](https://github.com/milessabin/shapeless).
+The main changes include,
+
+* Iso is a generalization of the previous HListIso and can now represent an
+  isomorphism between arbitrary types.
+
+* The generic Zipper is applicable to any type with a published Iso with an
+  HList, and now has up and down traversals.
+
+* HList Prepend and ReversePrepend now have special handling for the HNil case,
+  allowing them to be applied without implicit witnesses which can be useful in
+  some scenarios (thanks to @sirthias).
+
+* Added apply factory methods to the HList companion object allowing HLists to
+  be created using Scala collections conventions.
+
+* Several new type classes witnessing properties of, or relations between,
+  HList types,
+    * The Mapped type class which witnesses that the result of wrapping each
+      element of an HList with a given type constructor.
+    * The Comapped type class which witnesses that the result of stripping a
+      given type constructor off element of an HList.
+    * The NatTRel type class which witnesses that a natural transformation
+      exists between two HLists.
+    * The LubConstraint type class which witnesses that every element of an
+      HList is a subtype of a given type.
+
+* Added compose and andThen to Poly1.
+
+* Div and Mod added for type level Nats (thanks to @tixxit).   
+
+* Several new examples and proofs of concept,
+    * Runtime resolution of type class instances via [lightweight staging](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/staging.scala).
+    * Non-diverging [type-level unfold](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/unfold.scala).
+    * Search on [arbitrarily nested](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/deepsearch.scala) case classes, tuples, and lists (thanks to @travisbrown).
+    * Faux [kind-polymorphism](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/kindpoly.scala). 
+
+* Some organizational and build improvements,
+    * Scala 2.9.x support is now continuted on the scala-2.9.x branch.
+    * The Locally modified copy of paulp/sbt-extras is now redundant so has
+      been removed.
