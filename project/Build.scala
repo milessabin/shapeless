@@ -83,12 +83,10 @@ object ShapelessBuild extends Build {
     )
   )
   
-  //  "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
-
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "1.2.3-SNAPSHOT",
+      version             := "1.2.3",
       scalaVersion        := "2.10.0-SNAPSHOT",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
@@ -97,8 +95,10 @@ object ShapelessBuild extends Build {
       crossVersion        := CrossVersion.full,
       crossScalaVersions  <<= version {
         v =>
-          Seq("2.10.0-RC1", "2.10.0-RC2") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
+          Seq("2.10.0-RC3") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT") else Seq())
       },
+
+      scalaBinaryVersion <<= scalaVersion,
 
       scalacOptions       := Seq(
         "-feature",
