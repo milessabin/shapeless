@@ -81,15 +81,14 @@ object ShapelessBuild extends Build {
     )
   )
   
-  //  "org.scala-lang" % "scala-compiler" % "2.10.0-SNAPSHOT",
-
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "1.2.3-SNAPSHOT",
+      version             := "1.2.3",
       scalaVersion        := "2.9.2",
       crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.9.2"),
       crossVersion        := CrossVersion.full,
+      scalaBinaryVersion <<= scalaVersion,
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
