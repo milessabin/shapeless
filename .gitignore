@@ -6,6 +6,7 @@
 .lib
 .settings
 .scala_dependencies
+.worksheet
 target/
 *.swp
 tags
