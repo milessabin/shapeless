@@ -86,19 +86,11 @@ object ShapelessBuild extends Build {
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "1.2.4-SNAPSHOT",
-      scalaVersion        := "2.10.0-SNAPSHOT",
+      version             := "1.2.3",
+      scalaVersion        := "2.10.0",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-
-      crossVersion        := CrossVersion.full,
-      crossScalaVersions  <<= version {
-        v =>
-          Seq("2.10.0-RC5") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.0-SNAPSHOT", "2.10.1-SNAPSHOT") else Seq())
-      },
-
-      scalaBinaryVersion <<= scalaVersion,
 
       scalacOptions       := Seq(
         "-feature",
