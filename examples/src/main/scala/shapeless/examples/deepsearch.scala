@@ -86,9 +86,6 @@ object DeepSearchExamples extends App {
   // Our case class:
   case class Foo(a: String, b: String, c: List[String])
 
-  // Plus one line of boilerplate:
-  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
-
   // And it works:
   assert(Foo("four", "three", List("two", "one")).deepFind(p) == Some("two"))
   assert(Foo("a", "b", "c" :: Nil).deepFind(p) == None)

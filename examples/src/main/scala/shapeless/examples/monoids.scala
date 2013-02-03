@@ -33,11 +33,7 @@ object MonoidExamples extends App {
   case class Foo(i : Int, s : String)
   case class Bar(b : Boolean, s : String, d : Double)
 
-  // Publish their `HListIso`'s
-  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
-  implicit def barIso = Iso.hlist(Bar.apply _, Bar.unapply _)
-
-  // And now they're monoids ...
+  // Automatically they're monoids ...
   
   implicitly[Monoid[Foo]]
   val f = Foo(13, "foo") |+| Foo(23, "bar")

@@ -16,6 +16,10 @@
 
 package shapeless
 
+import scala.language.experimental.macros
+
+import scala.reflect.macros.{ Context, Macro }
+
 /**
  * Representation of an isomorphism between a type (typically a case class) and an `HList`.
  */
@@ -25,48 +29,130 @@ trait Iso[T, U] {
 }
 
 trait LowPriorityIso {
-  import Functions._
-  
-  implicit def identityIso[T] = new Iso[T, T] {
-    def to(t : T) : T = t
-    def from(t : T) : T = t
-  }
-  def hlist[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
-    (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
-      new Iso[CC, L] {
-        val ctor = apply.hlisted
-        val dtor = (cc : CC) => hl(unapply(cc).get)
-        def to(t : CC) : L = dtor(t)
-        def from(l : L) : CC = ctor(l)
-      }
+  implicit def materializeIso[C, L]: Iso[C, L] = macro MaterializeIso.expand[C, L]
 }
 
 object Iso extends LowPriorityIso {
   import Functions._
-  import Tuples._
 
-  // Special case for one-element cases classes because their unapply result types
-  // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
-  // the general case.
-  def hlist[CC, T](apply : T => CC, unapply : CC => Option[T]) =
-    new Iso[CC, T :: HNil] {
-      val ctor = apply.hlisted
-      val dtor = (cc : CC) => unapply(cc).get :: HNil 
-        def to(t : CC) : T :: HNil = dtor(t)
-        def from(l : T :: HNil) : CC = ctor(l)
-      }
+  implicit def identityIso[T] = new Iso[T, T] {
+    def to(t : T) : T = t
+    def from(t : T) : T = t
+  }
 
-  implicit def tupleHListIso[T <: Product, L <: HList](implicit hl : HListerAux[T, L], uhl : TuplerAux[L, T]) =
-    new Iso[T, L] {
-      val ctor = uhl.apply _
-      val dtor = hl.apply _
-      def to(t : T) : L = dtor(t)
-      def from(l : L) : T = ctor(l)
-    }
-  
   implicit def fnHListFnIso[F, L <: HList, R](implicit hl : FnHListerAux[F, L => R], unhl : FnUnHListerAux[L => R, F]) =
     new Iso[F, L => R] {
       def to(f : F) : L => R = hl(f)
       def from(l : L => R) = unhl(l)
     }
+}
+
+trait MaterializeIso extends Macro {
+  def expand[C: c.WeakTypeTag, L: c.WeakTypeTag]: c.Expr[Iso[C, L]] = {
+    import c.universe._
+    import definitions._
+    import Flag._
+
+    val tpe = c.weakTypeOf[C]
+    val sym = tpe.typeSymbol
+
+    if (!sym.isClass || !sym.asClass.isCaseClass)
+      c.abort(c.enclosingPosition, s"$sym is not a case class")
+
+    val fields = tpe.declarations.toList.collect {
+      case x: TermSymbol if x.isVal && x.isCaseAccessor => x
+    }
+
+    val HNilTypeTree   = Select(Ident(TermName("shapeless")), TypeName("HNil"))
+    val HNilValueTree  = Select(Ident(TermName("shapeless")), TermName("HNil"))
+
+    val HConsTypeTree  = Select(Ident(TermName("shapeless")), TypeName("$colon$colon"))
+    val HConsValueTree = Select(Ident(TermName("shapeless")), TermName("$colon$colon"))
+
+    def mkHListType: Tree = {
+      fields.map { f => TypeTree(f.typeSignatureIn(tpe)) }.foldRight(HNilTypeTree : Tree) {
+        case (t, acc) => AppliedTypeTree(HConsTypeTree, List(t, acc))
+      }
+    }
+
+    def mkHListValue: Tree = {
+      fields.map(_.name.toString.trim).foldRight(HNilValueTree : Tree) {
+        case (v, acc) => Apply(HConsValueTree, List(Select(Ident(TermName("t")), TermName(v)), acc))
+      }
+    }
+
+    def mkNth(n: Int): Tree =
+      Select(
+        (0 until n).foldRight(Ident(TermName("u")) : Tree) {
+          case (_, acc) => Select(acc, TermName("tail"))
+        },
+        TermName("head")
+      )
+
+    def mkCaseClassValue: Tree =
+      Apply(
+        Select(Ident(sym.companionSymbol), TermName("apply")),
+        (0 until fields.length).map(mkNth(_)).toList
+      )
+
+    val isoSym = c.mirror.staticClass("shapeless.Iso")
+
+    val isoClass =
+      ClassDef(Modifiers(FINAL), TypeName("$anon"), List(),
+        Template(
+          List(AppliedTypeTree(Ident(isoSym), List(TypeTree(tpe), mkHListType))),
+          emptyValDef,
+          List(
+            DefDef(
+              Modifiers(), nme.CONSTRUCTOR, List(),
+              List(List()),
+              TypeTree(),
+              Block(List(pendingSuperCall), Literal(Constant(())))),
+
+            DefDef(
+              Modifiers(), TermName("to"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("t"), TypeTree(tpe), EmptyTree))),
+              TypeTree(),
+              mkHListValue),
+
+            DefDef(
+              Modifiers(), TermName("from"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("u"), mkHListType, EmptyTree))),
+              TypeTree(),
+              mkCaseClassValue)
+          )
+        )
+      )
+
+    c.Expr[Iso[C, L]](
+      Block(
+        List(isoClass),
+        Apply(Select(New(Ident(TypeName("$anon"))), nme.CONSTRUCTOR), List())
+      )
+    )
+  }
+
+  override def onInfer(tic: c.TypeInferenceContext): Unit = {
+    val C = tic.unknowns(0)
+    val L = tic.unknowns(1)
+
+    import c.universe._
+    import definitions._
+
+    val TypeRef(_, _, List(caseClassTpe, _)) = tic.expectedType // Iso[Test.Foo,?]
+    tic.infer(C, caseClassTpe)
+
+    val fields = caseClassTpe.typeSymbol.typeSignatureIn(caseClassTpe).declarations.toList.collect {
+      case x: TermSymbol if x.isVal && x.isCaseAccessor => x
+    }
+
+    val hnilType  =  weakTypeOf[shapeless.HNil]
+    val hconsType = weakTypeOf[shapeless.::[_, _]]
+
+    val tequiv = fields.map(_.typeSignatureIn(caseClassTpe)).foldRight(hnilType) {
+      case (t, acc) => appliedType(hconsType, List(t, acc))
+    }
+
+    tic.infer(L, tequiv)
+  }
 }
