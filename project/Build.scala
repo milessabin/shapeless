@@ -43,6 +43,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
+
       settings = commonSettings ++ Publishing.settings ++ Seq(
         moduleName := "shapeless",
         
@@ -50,10 +51,12 @@ object ShapelessBuild extends Build {
         
         EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
         
-        libraryDependencies ++= Seq(
-          "com.novocode" % "junit-interface" % "0.7" % "test"
-        ),
-        
+        libraryDependencies <++= scalaVersion { sv =>
+          Seq(
+            "org.scala-lang.macro-paradise" % "scala-reflect" % sv,
+            "com.novocode" % "junit-interface" % "0.7" % "test"
+        )},
+
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
 
         mappings in (Compile, packageSrc) <++=
@@ -69,34 +72,28 @@ object ShapelessBuild extends Build {
   lazy val shapelessExamples = Project(
     id = "shapeless-examples",
     base = file("examples"),
-    dependencies = Seq(shapelessCore),
     
     settings = commonSettings ++ Seq(
       libraryDependencies <++= scalaVersion { sv =>
         Seq(
-          "org.scala-lang" % "scala-compiler" % sv,
+          "org.scala-lang.macro-paradise" % "scala-compiler" % sv,
           "com.novocode" % "junit-interface" % "0.7" % "test"
       )},
 
       publish := (),
       publishLocal := ()
     )
-  )
-  
+  ) dependsOn(shapelessCore)
+
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
       version             := "1.2.4-SNAPSHOT",
       scalaVersion        := "2.11.0-SNAPSHOT",
+      scalaOrganization   := "org.scala-lang.macro-paradise",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-
-      crossVersion        := CrossVersion.full,
-      crossScalaVersions  <<= version {
-        v =>
-          Seq("2.10.0") ++ (if (v.endsWith("-SNAPSHOT")) Seq("2.10.1-SNAPSHOT", "2.11.0-SNAPSHOT") else Seq())
-      },
 
       scalacOptions       := Seq(
         "-feature",
@@ -107,7 +104,7 @@ object ShapelessBuild extends Build {
 
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
-        "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+        Resolver.sonatypeRepo("snapshots")
       )
     )
 }
