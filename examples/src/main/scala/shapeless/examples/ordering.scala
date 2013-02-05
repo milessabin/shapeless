@@ -16,9 +16,11 @@
 
 package shapeless.examples
 
-import shapeless.{::, HList, HNil}
+import shapeless.{Iso, ::, HList, HNil}
 
 object OrderingExamples extends App {
+
+  // Derive an Ordering for an HList from the Orderings of its elements
 
   implicit def hnilOrdering : Ordering[HNil] = new Ordering[HNil] {
     def compare(a : HNil, b : HNil) = 0
@@ -42,6 +44,27 @@ object OrderingExamples extends App {
     1 :: "c" :: HNil,
     2 :: "a" :: HNil,
     2 :: "b" :: HNil
+  ))
+
+  // An Ordering for any type which is isomorphic to an HList, if that HList has an Ordering
+
+  implicit def hlistIsoOrdering[A, H <: HList](implicit iso : Iso[A, H], oh : Ordering[H]) : Ordering[A] = new Ordering[A] {
+    def compare(a1 : A, a2 : A) = oh.compare(iso to a1, iso to a2)
+  }
+
+  case class Foo(i : Int, s : String)
+  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
+
+  implicitly[Ordering[Foo]]
+  val fs = List(
+    Foo(2, "b"),
+    Foo(2, "a"),
+    Foo(1, "c")
+  ).sorted
+  assert(fs == List(
+    Foo(1, "c"),
+    Foo(2, "a"),
+    Foo(2, "b")
   ))
 
 }
