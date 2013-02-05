@@ -18,7 +18,7 @@ package shapeless.examples
 
 import shapeless.{::, HList, HNil}
 
-object Ordering {
+object OrderingExamples extends App {
 
   implicit def hnilOrdering : Ordering[HNil] = new Ordering[HNil] {
     def compare(a : HNil, b : HNil) = 0
@@ -31,5 +31,9 @@ object Ordering {
       else i
     }
   }
+
+  implicitly[Ordering[Int :: String :: HNil]]
+  val hs = List(1 :: "foo" :: HNil, 1 :: "bar" :: HNil).sorted
+  assert(hs == List(1 :: "bar" :: HNil, 1 :: "foo" :: HNil))
 
 }
