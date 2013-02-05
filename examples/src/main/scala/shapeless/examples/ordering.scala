@@ -33,7 +33,15 @@ object OrderingExamples extends App {
   }
 
   implicitly[Ordering[Int :: String :: HNil]]
-  val hs = List(1 :: "foo" :: HNil, 1 :: "bar" :: HNil).sorted
-  assert(hs == List(1 :: "bar" :: HNil, 1 :: "foo" :: HNil))
+  val hs = List(
+    2 :: "b" :: HNil,
+    2 :: "a" :: HNil,
+    1 :: "c" :: HNil
+  ).sorted
+  assert(hs == List(
+    1 :: "c" :: HNil,
+    2 :: "a" :: HNil,
+    2 :: "b" :: HNil
+  ))
 
 }
