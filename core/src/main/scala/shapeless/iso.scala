@@ -29,7 +29,7 @@ trait Iso[T, U] {
 }
 
 trait LowPriorityIso {
-  implicit def materializeIso[C, L]: Iso[C, L] = macro MaterializeIso.expand[C, L]
+  implicit def materializeIso[C, L]: Iso[C, L] = macro IsoMacros.witness[C, L]
 }
 
 object Iso extends LowPriorityIso {
@@ -47,8 +47,8 @@ object Iso extends LowPriorityIso {
     }
 }
 
-trait MaterializeIso extends Macro {
-  def expand[C: c.WeakTypeTag, L: c.WeakTypeTag]: c.Expr[Iso[C, L]] = {
+trait IsoMacros extends Macro {
+  def witness[C: c.WeakTypeTag, L: c.WeakTypeTag]: c.Expr[Iso[C, L]] = {
     import c.universe._
     import definitions._
     import Flag._
