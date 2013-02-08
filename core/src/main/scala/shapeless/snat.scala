@@ -32,11 +32,22 @@ object SNat {
   implicit def natToInt[N](snat: SNat[N]): Int = snat.value
 
   type SInt(i: Int) = macro intSingletonType
+
+  type SBool(b: Boolean) = macro booleanSingletonType
   
   def intSingletonType(c: Context)(i: c.Expr[Int]) = {
     import c.universe._
 
     i.tree match {
+      case Literal(constant: Constant) =>
+        TypeTree(ConstantType(constant))
+    }
+  }
+  
+  def booleanSingletonType(c: Context)(b: c.Expr[Boolean]) = {
+    import c.universe._
+
+    b.tree match {
       case Literal(constant: Constant) =>
         TypeTree(ConstantType(constant))
     }
@@ -166,6 +177,62 @@ trait SBinOpMacros { self: Macro =>
   import c.universe._
 
   val op: (Int, Int) => Int
+
+  override def onInfer(tic: c.TypeInferenceContext): Unit = {
+    val A = tic.unknowns(0)
+    val B = tic.unknowns(1)
+    val C = tic.unknowns(2)
+
+    tic.expectedType match {
+      case TypeRef(_, _,
+        List(aTpe @ ConstantType(Constant(a: Int)), bTpe @ ConstantType(Constant(b: Int)), _)) if(op(a, b) >= 0) => 
+        tic.infer(A, aTpe)
+        tic.infer(B, bTpe)
+        tic.infer(C, ConstantType(Constant(op(a, b))))
+
+      case _ =>
+    }
+  }
+}
+
+trait SLt[A, B, C]
+
+object SLt {
+  implicit def mkLt[A, B, C] = macro SLtMacros.witness[A, B, C]
+
+  def slt[A, B, C](a: SNat[A], b: SNat[B])(implicit slt: SLt[A, B, C]) = slt
+}
+
+trait SLtMacros extends Macro with SRelOpMacros {
+  import c.universe._
+
+  val op: (Int, Int) => Boolean = _ < _
+
+  def witness[A : c.WeakTypeTag, B : c.WeakTypeTag, C : c.WeakTypeTag] =
+    reify(new SLt[A, B, C] {})
+}
+
+trait SLtEq[A, B, C]
+
+object SLtEq {
+  implicit def mkLtEq[A, B, C] = macro SLtEqMacros.witness[A, B, C]
+
+  def slteq[A, B, C](a: SNat[A], b: SNat[B])(implicit slteq: SLtEq[A, B, C]) = slteq
+}
+
+trait SLtEqMacros extends Macro with SRelOpMacros {
+  import c.universe._
+
+  val op: (Int, Int) => Boolean = _ <= _
+
+  def witness[A : c.WeakTypeTag, B : c.WeakTypeTag, C : c.WeakTypeTag] =
+    reify(new SLtEq[A, B, C] {})
+}
+
+trait SRelOpMacros { self: Macro =>
+  import c.universe._
+
+  val op: (Int, Int) => Boolean
 
   override def onInfer(tic: c.TypeInferenceContext): Unit = {
     val A = tic.unknowns(0)
