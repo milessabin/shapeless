@@ -25,63 +25,53 @@ class SNat[N](val value: Int) extends AnyVal {
 }
 
 object SNat {
-  def apply(i: Int): Any = macro SNatMacros.explicitSNat
+  def apply(i: Int): Any = macro SNatMacros.toSNat
 
-  implicit def intToNat[N](i: Int) : SNat[N] = macro SNatMacros.implicitSNat[N]
+  implicit def intToNat[N](i: Int) : SNat[N] = macro SNatMacros.toSNat
 
   implicit def natToInt[N](snat: SNat[N]): Int = snat.value
 
   type SInt(i: Int) = macro intSingletonType
 
   type SBool(b: Boolean) = macro booleanSingletonType
-  
+
+  def eval[A](c: Context)(t: c.Tree) = c.eval(c.Expr[A](c.resetAllAttrs(t.duplicate)))
+
   def intSingletonType(c: Context)(i: c.Expr[Int]) = {
     import c.universe._
 
-    i.tree match {
-      case Literal(constant: Constant) =>
-        TypeTree(ConstantType(constant))
-    }
+    TypeTree(ConstantType(Constant(
+      eval[Int](c)(i.tree)
+    )))
   }
   
   def booleanSingletonType(c: Context)(b: c.Expr[Boolean]) = {
     import c.universe._
 
-    b.tree match {
-      case Literal(constant: Constant) =>
-        TypeTree(ConstantType(constant))
-    }
+    TypeTree(ConstantType(Constant(
+      eval[Boolean](c)(b.tree)
+    )))
   }
 }
 
 trait SNatMacros extends Macro {
   import c.universe._
 
-  def explicitSNat(i: c.Expr[Int]) = {
+  import SNat.eval
 
-    i.tree match {
-      case Literal(Constant(i: Int)) =>
-        val N = TypeTree(ConstantType(Constant(i)))
-        c.Expr(q"new SNat[$N]($i)")
-      case _ => c.abort(c.enclosingPosition, "Argument must be an Int literal")
-    }
-  }
-
-  def implicitSNat[N](i: c.Expr[Int]) = {
-    i.tree match {
-      case Literal(Constant(i: Int)) =>
-        val N = TypeTree(ConstantType(Constant(i)))
-        c.Expr(q"new SNat[$N]($i)")
-      case _ => c.abort(c.enclosingPosition, "Argument must be an Int literal")
-    }
+  def toSNat(i: c.Expr[Int]) = {
+    val n = eval[Int](c)(i.tree)
+    val N = TypeTree(ConstantType(Constant(n)))
+    c.Expr(q"new SNat[$N]($n)")
   }
 
   override def onInfer(tic: c.TypeInferenceContext): Unit = {
     val N = tic.unknowns(0)
 
     tic.tree match {
-      case Apply(_, List(Literal(c @ Constant(_: Int)))) =>
-        tic.infer(N, ConstantType(c))
+      case Apply(_, List(arg)) =>
+        val n = eval[Int](c)(arg)
+        tic.infer(N, ConstantType(Constant(n)))
 
       case _ =>
     }
