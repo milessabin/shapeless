@@ -522,36 +522,44 @@ object ComappedAux extends LowPriorityComappedAux {
  * 
  * @author Miles Sabin
  */
-trait NatTRel[L1 <: HList, F1[_], L2 <: HList, F2[_]]
+trait NatTRel[L1 <: HList, F1[_], L2 <: HList, F2[_]] {
+  def map(nt: F1 ~> F2, fa: L1): L2
+}
 
 object NatTRel {
   import TypeOperators._
-  
-  implicit def hnilNatTRel1[F1[_], F2[_]] = new NatTRel[HNil, F1, HNil, F2] {}
-  implicit def hnilNatTRel2[H1, F2[_]] = new NatTRel[HNil, Const[H1]#λ, HNil, F2] {}
-  implicit def hnilNatTRel3[F1[_], H2] = new NatTRel[HNil, F1, HNil, Const[H2]#λ] {}
-  implicit def hnilNatTRel4[H1, H2] = new NatTRel[HNil, Const[H1]#λ, HNil, Const[H2]#λ] {}
+
+  implicit def hnilNatTRel1[F1[_], F2[_]] = new NatTRel[HNil, F1, HNil, F2] {
+    def map(f: F1 ~> F2, fa: HNil): HNil = HNil
+  }
+  implicit def hnilNatTRel2[F1[_], H2] = new NatTRel[HNil, F1, HNil, Const[H2]#λ] {
+    def map(f: F1 ~> Const[H2]#λ, fa: HNil): HNil = HNil
+  }
 
   implicit def hlistNatTRel1[H, F1[_], F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, F2]) =
-    new NatTRel[F1[H] :: T1, F1, F2[H] :: T2, F2] {}
+    new NatTRel[F1[H] :: T1, F1, F2[H] :: T2, F2] {
+      def map(f: F1 ~> F2, fa: F1[H] :: T1): F2[H] :: T2 = f(fa.head) :: nt.map(f, fa.tail)
+    }
 
   implicit def hlistNatTRel2[H, F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, F2]) =
-    new NatTRel[H :: T1, Id, F2[H] :: T2, F2] {}
+    new NatTRel[H :: T1, Id, F2[H] :: T2, F2] {
+      def map(f: Id ~> F2, fa: H :: T1): F2[H] :: T2 = f(fa.head) :: nt.map(f, fa.tail)
+    }
+
   implicit def hlistNatTRel3[H, F1[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Id]) =
-    new NatTRel[F1[H] :: T1, F1, H :: T2, Id] {}
+    new NatTRel[F1[H] :: T1, F1, H :: T2, Id] {
+      def map(f: F1 ~> Id, fa: F1[H] :: T1): H :: T2 = f(fa.head) :: nt.map(f, fa.tail)
+    }
 
-  implicit def hlistNatTRel4[H1, T1 <: HList, H2, F2[_], T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, F2]) =
-    new NatTRel[H1 :: T1, Const[H1]#λ, F2[H2] :: T2, F2] {}
-  implicit def hlistNatTRel5[H1, F1[_], T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Const[H2]#λ]) =
-    new NatTRel[F1[H1] :: T1, F1, H2 :: T2, Const[H2]#λ] {}
+  implicit def hlistNatTRel4[H1, F1[_], T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Const[H2]#λ]) =
+    new NatTRel[F1[H1] :: T1, F1, H2 :: T2, Const[H2]#λ] {
+      def map(f: F1 ~> Const[H2]#λ, fa: F1[H1] :: T1): H2 :: T2 = f(fa.head) :: nt.map(f, fa.tail)
+    }
 
-  implicit def hlistNatTRel6[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, Id]) =
-    new NatTRel[H1 :: T1, Const[H1]#λ, H2 :: T2, Id] {}
-  implicit def hlistNatTRel7[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, Const[H2]#λ]) =
-    new NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] {}
-
-  implicit def hlistNatTRel8[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Const[H1]#λ, T2, Const[H2]#λ]) =
-    new NatTRel[H1 :: T1, Const[H1]#λ, H2 :: T2, Const[H2]#λ] {}
+  implicit def hlistNatTRel5[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, Const[H2]#λ]) =
+    new NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] {
+      def map(f: Id ~> Const[H2]#λ, fa: H1 :: T1): H2 :: T2 = f(fa.head) :: nt.map(f, fa.tail)
+    }
 }
 
 /**

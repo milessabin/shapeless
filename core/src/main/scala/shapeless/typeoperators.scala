@@ -58,7 +58,7 @@ object TypeOperators {
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
   // Tags
-  type Tagged[U] = { type Tag = U }
+  trait Tagged[U]
   type @@[T, U] = T with Tagged[U]
 
   class Tagger[U] {
