@@ -123,11 +123,11 @@ class SizedTests {
     val s = cl.get.size
     val evens = cl.get.filter(_ % 2 == 0)
     
-    val p = cl.get match {
-      case Sized(a, b, _*) => (a, b)
-      case _ => (9, 10)
-    }
-    assertEquals((1, 2), p)
+    //val p = cl.get match {
+    //  case Sized(a, b, _*) => (a, b)
+    //  case _ => (9, 10)
+    //}
+    //assertEquals((1, 2), p)
     
     val j1 = ll1.get.take[_1]
     

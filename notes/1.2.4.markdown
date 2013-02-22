@@ -1,0 +1,25 @@
+A minor release of [shapeless](https://github.com/milessabin/shapeless).
+The main changes include,
+
+* Lars Hupel (@larsh) contributed the TypeClass type class and associated
+  machinery in support of automatic derivation of instances of type classes
+  from external libraries. The aim is to enable smoother interoperation between
+  shapeless, Scalaz, Spire and other libraries which wish to collaborate.
+
+* Brian McKenna (@puffnfresh) contributed a map method for the NatTRel type
+  class, allowing natural transformations corresponding to the relationship
+  witnessed by the type class to be mapped over HLists without requiring a
+  function-specific Mapper instance.
+
+* Tagged types are now encoded using a trait with a type argument rather than
+  a structural type with a type member. The effect of this is that the
+  companion object of the tagging type will now be included in the implicit
+  scope of any implicit search for a type which embeds any type so tagged.
+  Thanks to Ben Hutchison (@ben\_hutchison).
+
+* Travis Brown (@traivsbrown) contributed an example illustrating how to
+  compute the cartesian product of two HLists.
+
+* Ben James (@bmjames) contributed an example show how to derive an Ordering
+  for an HList given Orderings for its elements and, given that, how to derive
+  an Ordering for any case class with an in-scope Iso.
