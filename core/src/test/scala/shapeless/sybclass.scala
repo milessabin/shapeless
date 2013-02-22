@@ -239,6 +239,7 @@ class SybClassTests {
     implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
   }
   
+  /*
   @Test
   def testHListIso2 {
     
@@ -250,4 +251,5 @@ class SybClassTests {
     val s1 = everything(gsize)(plus)(p1)
     assertEquals(42, s1)
   }
+  */
 }
