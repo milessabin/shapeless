@@ -18,16 +18,8 @@ package shapeless.examples
 
 object MonoidExamples extends App {
   import shapeless._
-  import HList._
+  import TypeClass._
   import Monoid._
-
-  // Given an isomorphism between `C` and an `HList` `L`, construct a monoid instance for `C` given
-  // the monoid instance for `L`, which is in turn derived from the monoid instances for its/`C`'s
-  // element types.
-  implicit def ccMonoid[C, L <: HList](implicit iso : Iso[C, L], ml : Monoid[L]) = new Monoid[C] {
-    def zero = iso.from(ml.zero)
-    def append(a : C, b : C) = iso.from(iso.to(a) |+| iso.to(b))
-  }
 
   // A pair of arbitrary case classes
   case class Foo(i : Int, s : String)
@@ -38,7 +30,6 @@ object MonoidExamples extends App {
   implicit def barIso = Iso.hlist(Bar.apply _, Bar.unapply _)
 
   // And now they're monoids ...
-  
   implicitly[Monoid[Foo]]
   val f = Foo(13, "foo") |+| Foo(23, "bar")
   assert(f == Foo(36, "foobar"))
@@ -58,8 +49,22 @@ trait Monoid[T] {
 
 object Monoid {
   import shapeless._
-  import HList._
   
+  implicit def monoidClass : TypeClass[Monoid] = new TypeClass[Monoid] {
+    def emptyProduct = new Monoid[HNil] {
+      def zero = HNil
+      def append(a : HNil, b : HNil) = HNil
+    }
+    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
+      def zero = FHead.zero :: FTail.zero
+      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
+    }
+    def derive[F, G](instance : Monoid[G], iso : Iso[F, G]) = new Monoid[F] {
+      def zero = iso.from(instance.zero)
+      def append(a : F, b : F) = iso.from(instance.append(iso.to(a), iso.to(b)))
+    }
+  }
+
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
   
   trait MonoidOps[T] {
@@ -89,14 +94,6 @@ object Monoid {
     def zero = ""
     def append(a : String, b : String) = a+b
   }
-
-  implicit def hnilMonoid : Monoid[HNil] = new Monoid[HNil] {
-    def zero = HNil
-    def append(a : HNil, b : HNil) = HNil
-  }
-  
-  implicit def hlistMonoid[H, T <: HList](implicit mh : Monoid[H], mt : Monoid[T]) : Monoid[H :: T] = new Monoid[H :: T] {
-    def zero = mh.zero :: mt.zero
-    def append(a : H :: T, b : H :: T) = (a.head |+| b.head) :: (a.tail |+| b.tail)  
-  }
 }
+
+// vim: expandtab:ts=2:sw=2
