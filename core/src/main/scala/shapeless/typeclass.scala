@@ -64,19 +64,19 @@ object TypeClass {
   // expansion" when trying to resolve the type class instance for the HList.
   // Hence, we seperate that phase with a dedicated type constructor.
 
-  class HListInstance[C[_], L <: HList](val instance: C[L]) extends AnyVal
+  class HListInstance[C[_], L <: HList](val instance: C[L])
 
   object HListInstance {
 
     implicit def nilInstance[C[_] : TypeClass]: HListInstance[C, HNil] =
       new HListInstance[C, HNil](TypeClass[C].emptyProduct)
 
-    implicit def consInstance[C[_] : TypeClass, H, T <: HList](implicit H: C[H], T: HListInstance[C, T]): HListInstance[C, H :: T] =
+    implicit def consInstance[C[_], H, T <: HList](implicit TC: TypeClass[C], H: C[H], T: HListInstance[C, T]): HListInstance[C, H :: T] =
       new HListInstance[C, H :: T](TypeClass[C].product(H, T.instance))
 
   }
 
-  implicit def deriveFromIso[C[_] : TypeClass, F, G <: HList](implicit iso: Iso[F, G], hlistInst: HListInstance[C, G]): C[F] =
+  implicit def deriveFromIso[C[_], F, G <: HList](implicit TC: TypeClass[C], iso: Iso[F, G], hlistInst: HListInstance[C, G]): C[F] =
     TypeClass[C].derive(hlistInst.instance, iso)
 
 }
