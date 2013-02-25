@@ -1141,6 +1141,8 @@ trait FilterAux[L <: HList, U, Out <: HList] {
 }
 
 object FilterAux {
+  import TypeOperators._
+
   implicit def hlistFilterHNil[L <: HList, U] = new FilterAux[HNil, U, HNil] {
      def apply(l : HNil) : HNil = HNil
   }
@@ -1151,7 +1153,7 @@ object FilterAux {
     }
 
   implicit def hlistFilter2[H, L <: HList, U, Out <: HList]
-    (implicit aux : FilterAux[L, U, Out]) = new FilterAux[H :: L, U, Out] {
+    (implicit aux : FilterAux[L, U, Out], e : U =:!= H) = new FilterAux[H :: L, U, Out] {
        def apply(l : H :: L) : Out = aux(l.tail)
     }
 }
