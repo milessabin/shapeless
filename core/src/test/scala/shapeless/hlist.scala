@@ -346,16 +346,16 @@ class HListTests {
   }
 
   @Test
-  def testNormalizer {
+  def testSubtypeUnifier {
     val fruits : Apple :: Pear :: Fruit :: HNil = a :: p :: f :: HNil
-    typed[Fruit :: Fruit :: Fruit :: HNil](fruits.normalize[Fruit])
-    typed[Apple :: Pear :: Fruit :: HNil](fruits.normalize[Apple])
-    assertEquals(a :: p :: f :: HNil, fruits.normalize[Fruit].filter[Fruit])
+    typed[Fruit :: Fruit :: Fruit :: HNil](fruits.unifySubtypes[Fruit])
+    typed[Apple :: Pear :: Fruit :: HNil](fruits.unifySubtypes[Apple])
+    assertEquals(a :: p :: f :: HNil, fruits.unifySubtypes[Fruit].filter[Fruit])
 
     val stuff : Apple :: String :: Pear :: HNil = a :: "foo" :: p :: HNil
-    typed[Fruit :: String :: Fruit :: HNil](stuff.normalize[Fruit])
+    typed[Fruit :: String :: Fruit :: HNil](stuff.unifySubtypes[Fruit])
     assertEquals(HNil, stuff.filter[Fruit])
-    assertEquals(a :: p :: HNil, stuff.normalize[Fruit].filter[Fruit])
+    assertEquals(a :: p :: HNil, stuff.unifySubtypes[Fruit].filter[Fruit])
   }
 
   @Test
