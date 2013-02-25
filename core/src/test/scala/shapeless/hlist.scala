@@ -344,7 +344,20 @@ class HListTests {
     //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
     //val uinvar2 = invar.unify
   }
-    
+
+  @Test
+  def testNormalizer {
+    val fruits : Apple :: Pear :: Fruit :: HNil = a :: p :: f :: HNil
+    typed[Fruit :: Fruit :: Fruit :: HNil](fruits.normalize[Fruit])
+    typed[Apple :: Pear :: Fruit :: HNil](fruits.normalize[Apple])
+    assertEquals(a :: p :: f :: HNil, fruits.normalize[Fruit].filter[Fruit])
+
+    val stuff : Apple :: String :: Pear :: HNil = a :: "foo" :: p :: HNil
+    typed[Fruit :: String :: Fruit :: HNil](stuff.normalize[Fruit])
+    assertEquals(HNil, stuff.filter[Fruit])
+    assertEquals(a :: p :: HNil, stuff.normalize[Fruit].filter[Fruit])
+  }
+
   @Test
   def testToList {
     val fruits1 = apap.toList
