@@ -378,6 +378,11 @@ final class HListOps[L <: HList](l : L) {
   def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
 
   /**
+   * Returns an `HList` with all elements that are subtypes of `B` typed as `B`.
+   */
+  def normalize[B](implicit normalizer : Normalizer[L, B]) : normalizer.Out = normalizer(l)
+
+  /**
    * Converts this `HList` to a correspondingly typed tuple.
    */
   def tupled(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
@@ -902,6 +907,47 @@ object UnifierAux {
   implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList]
     (implicit u : Lub[H1, H2, L], lt : UnifierAux[L :: T, L :: Out]) = new UnifierAux[H1 :: H2 :: T, L :: L :: Out] {
       def apply(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
+    }
+}
+
+/**
+ * Type class supporting normalization of this `HList` to a type `B`, where by "normalize" we mean that all elements
+ * that are subtypes of `B` are typed as `B`, and everything else is unchanged.
+ * 
+ * @author Travis Brown
+ */
+trait Normalizer[L <: HList, B] {
+  type Out
+  def apply(l : L) : Out
+}
+
+trait NormalizerAux[L <: HList, B, Out <: HList] {
+  def apply(l : L) : Out
+}
+  
+object Normalizer {
+  implicit def normalizer[L <: HList, B, Out0 <: HList](implicit normalizer : NormalizerAux[L, B, Out0]) =
+    new Normalizer[L, B] {
+      type Out = Out0
+      def apply(l : L) : Out = normalizer(l)
+    }
+}
+
+object NormalizerAux {
+  import TypeOperators._
+
+  implicit def hnilNormalizer[B] = new NormalizerAux[HNil, B, HNil] {
+    def apply(l : HNil) = l
+  }
+  
+  implicit def hlistNormalizer1[H, T <: HList, B, NT <: HList]
+    (implicit st : H <:< B, normalizer : NormalizerAux[T, B, NT]) = new NormalizerAux[H :: T, B, B :: NT] {
+      def apply(l : H :: T) = st(l.head) :: normalizer(l.tail) 
+    }
+  
+  implicit def hlistNormalizer2[H, T <: HList, B, NT <: HList]
+    (implicit nst : H <:!< B, normalizer : NormalizerAux[T, B, NT]) = new NormalizerAux[H :: T, B, H :: NT] {
+      def apply(l : H :: T) = l.head :: normalizer(l.tail) 
     }
 }
 
