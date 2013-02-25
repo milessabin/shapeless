@@ -314,7 +314,7 @@ applications including,
     case class Foo(i : Int, s : String, d : Double)
   
     // Publish its `Iso`
-    implicit def fooIso = Iso(Foo.apply _, Foo.unapply _)
+    implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
   
     // And now it's a monoid ...
     
@@ -331,8 +331,8 @@ applications including,
     case class Person(name : String, age : Int, address : Address)
     
     // One line of boilerplate per case class ...
-    implicit val addressIso = Iso(Address.apply _, Address.unapply _)
-    implicit val personIso = Iso(Person.apply _, Person.unapply _)
+    implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
+    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
     
     // Some lenses over Person/Address ...
     val nameLens     = Lens[Person] >> _0
