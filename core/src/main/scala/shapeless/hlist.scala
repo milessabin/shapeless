@@ -378,6 +378,11 @@ final class HListOps[L <: HList](l : L) {
   def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
 
   /**
+   * Returns an `HList` with all elements that are subtypes of `B` typed as `B`.
+   */
+  def unifySubtypes[B](implicit subtypeUnifier : SubtypeUnifier[L, B]) : subtypeUnifier.Out = subtypeUnifier(l)
+
+  /**
    * Converts this `HList` to a correspondingly typed tuple.
    */
   def tupled(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
@@ -906,6 +911,48 @@ object UnifierAux {
 }
 
 /**
+ * Type class supporting unification of all elements that are subtypes of `B` in this `HList` to `B`, with all other
+ * elements left unchanged.
+ * 
+ * @author Travis Brown
+ */
+trait SubtypeUnifier[L <: HList, B] {
+  type Out
+  def apply(l : L) : Out
+}
+
+trait SubtypeUnifierAux[L <: HList, B, Out <: HList] {
+  def apply(l : L) : Out
+}
+  
+object SubtypeUnifier {
+  implicit def subtypeUnifier[L <: HList, B, Out0 <: HList](implicit subtypeUnifier : SubtypeUnifierAux[L, B, Out0]) =
+    new SubtypeUnifier[L, B] {
+      type Out = Out0
+      def apply(l : L) : Out = subtypeUnifier(l)
+    }
+}
+
+object SubtypeUnifierAux {
+  import TypeOperators._
+
+  implicit def hnilSubtypeUnifier[B] = new SubtypeUnifierAux[HNil, B, HNil] {
+    def apply(l : HNil) = l
+  }
+  
+  implicit def hlistSubtypeUnifier1[H, T <: HList, B, NT <: HList]
+    (implicit st : H <:< B, subtypeUnifier : SubtypeUnifierAux[T, B, NT]) = new SubtypeUnifierAux[H :: T, B, B :: NT] {
+      def apply(l : H :: T) = st(l.head) :: subtypeUnifier(l.tail) 
+    }
+  
+  implicit def hlistSubtypeUnifier2[H, T <: HList, B, NT <: HList]
+    (implicit nst : H <:!< B, subtypeUnifier : SubtypeUnifierAux[T, B, NT]) =
+      new SubtypeUnifierAux[H :: T, B, H :: NT] {
+        def apply(l : H :: T) = l.head :: subtypeUnifier(l.tail) 
+      }
+}
+
+/**
  * Type class supporting conversion of this `HList` to an ordinary `List` with elements typed as the least upper bound
  * of the types of the elements of this `HList`.
  * 
@@ -1095,6 +1142,8 @@ trait FilterAux[L <: HList, U, Out <: HList] {
 }
 
 object FilterAux {
+  import TypeOperators._
+
   implicit def hlistFilterHNil[L <: HList, U] = new FilterAux[HNil, U, HNil] {
      def apply(l : HNil) : HNil = HNil
   }
@@ -1105,7 +1154,7 @@ object FilterAux {
     }
 
   implicit def hlistFilter2[H, L <: HList, U, Out <: HList]
-    (implicit aux : FilterAux[L, U, Out]) = new FilterAux[H :: L, U, Out] {
+    (implicit aux : FilterAux[L, U, Out], e : U =:!= H) = new FilterAux[H :: L, U, Out] {
        def apply(l : H :: L) : Out = aux(l.tail)
     }
 }

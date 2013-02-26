@@ -304,7 +304,7 @@ applications including,
     // Given an isomorphism between `C` and an `HList` `L`, construct a
     // monoid instance for `C` given the monoid instance for `L`, which is 
     // in turn derived from the monoid instances for its/`C`'s element types.
-    implicit def ccMonoid[C, L <: HList](implicit iso : HListIso[C, L], ml : Monoid[L]) =
+    implicit def ccMonoid[C, L <: HList](implicit iso : Iso[C, L], ml : Monoid[L]) =
       new Monoid[C] {
         def zero = fromHList(ml.zero)
         def append(a : C, b : C) = fromHList(toHList(a) |+| toHList(b))
@@ -313,8 +313,8 @@ applications including,
     // An ordinary case class
     case class Foo(i : Int, s : String, d : Double)
   
-    // Publish its `HListIso`
-    implicit def fooIso = HListIso(Foo.apply _, Foo.unapply _)
+    // Publish its `Iso`
+    implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
   
     // And now it's a monoid ...
     
@@ -331,8 +331,8 @@ applications including,
     case class Person(name : String, age : Int, address : Address)
     
     // One line of boilerplate per case class ...
-    implicit val addressIso = HListIso(Address.apply _, Address.unapply _)
-    implicit val personIso = HListIso(Person.apply _, Person.unapply _)
+    implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
+    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
     
     // Some lenses over Person/Address ...
     val nameLens     = Lens[Person] >> _0
