@@ -36,9 +36,10 @@ object UniquenessExample extends App {
    * returns the element of that type. It will not compile if the type does
    * not occur exactly once in the list.
    */
-  implicit class Uniqueable[L <: HList](l: L) {
+  class Uniqueable[L <: HList](l: L) {
     def unique[A](implicit ev: FilterAux[L, A, A :: HNil]) = ev(l).head
   }
+  implicit def uniqueable[L <: HList](l: L) = new Uniqueable(l)
 
   // A simple type hierarchy for demonstration purposes.
   class Foo
