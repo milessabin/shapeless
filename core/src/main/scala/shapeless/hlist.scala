@@ -16,6 +16,10 @@
 
 package shapeless
 
+import scala.annotation.tailrec
+
+import TypeOperators._  
+  
 /**
  * `HList` ADT base trait.
  * 
@@ -388,10 +392,22 @@ final class HListOps[L <: HList](l : L) {
   def tupled(implicit tupler : Tupler[L]) : tupler.Out = tupler(l)
   
   /**
-   * Compute the length of this `Hlist`.
+   * Compute the length of this `HList`.
    */
   def length(implicit length : Length[L]) : length.Out = length()
   
+  /**
+   * Compute the length of this `HList` as a runtime Int value.
+   */
+  def runtimeLength: Int = {
+    @tailrec def loop(l: HList, acc: Int): Int = l match {
+      case HNil => acc
+      case hd :: tl => loop(tl, acc+1)
+    }
+
+    loop(l, 0)
+  }
+
   /**
    * Converts this `HList` to an ordinary `List` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
@@ -478,8 +494,6 @@ object Mapped {
 trait MappedAux[L <: HList, F[_], Out <: HList]
 
 object MappedAux {
-  import TypeOperators._
-  
   implicit def hnilMappedAux[F[_]] = new MappedAux[HNil, F, HNil] {}
   
   implicit def hlistIdMapped[L <: HList] = new MappedAux[L, Id, L] {}
@@ -509,8 +523,6 @@ object Comapped {
 trait ComappedAux[L <: HList, F[_], Out <: HList]
 
 trait LowPriorityComappedAux {
-  import TypeOperators._
-  
   implicit def hlistIdComapped[L <: HList] = new ComappedAux[L, Id, L] {}
 }
 
@@ -532,8 +544,6 @@ trait NatTRel[L1 <: HList, F1[_], L2 <: HList, F2[_]] {
 }
 
 object NatTRel {
-  import TypeOperators._
-
   implicit def hnilNatTRel1[F1[_], F2[_]] = new NatTRel[HNil, F1, HNil, F2] {
     def map(f: F1 ~> F2, fa: HNil): HNil = HNil
   }
@@ -565,6 +575,78 @@ object NatTRel {
     new NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] {
       def map(f: Id ~> Const[H2]#λ, fa: H1 :: T1): H2 :: T2 = f(fa.head) :: nt.map(f, fa.tail)
     }
+}
+
+/**
+ * Type class providing minimally witnessed operations on `HList`s which can be derived from `L` by wrapping
+ * each of its elements in a type constructor.
+ */
+trait HKernel {
+  type L <: HList
+  type Mapped[G[_]] <: HList
+  type Length <: Nat
+
+  def map[F[_], G[_]](f: F ~> G, l: Mapped[F]): Mapped[G]
+
+  def tabulate[C](from: Int)(f: Int => C): Mapped[Const[C]#λ]
+
+  def toList[C](l: Mapped[Const[C]#λ]): List[C]
+
+  def length: Int
+}
+
+trait HNilHKernel extends HKernel {
+  import Nat._
+
+  type L = HNil
+  type Mapped[G[_]] = HNil
+  type Length = _0
+
+  def map[F[_], G[_]](f: F ~> G, l: HNil): HNil = HNil
+
+  def tabulate[C](from: Int)(f: Int => C): HNil = HNil
+
+  def toList[C](l: HNil): List[C] = Nil
+
+  def length: Int = 0
+}
+
+case object HNilHKernel extends HNilHKernel
+
+final case class HConsHKernel[H, T <: HKernel](tail: T) extends HKernel {
+  type L = H :: tail.L
+  type Mapped[G[_]] = G[H] :: tail.Mapped[G]
+  type Length = Succ[tail.Length]
+
+  def map[F[_], G[_]](f: F ~> G, l: F[H] :: tail.Mapped[F]): G[H] :: tail.Mapped[G] = f(l.head) :: tail.map(f, l.tail)
+
+  def tabulate[C](from: Int)(f: Int => C): C :: tail.Mapped[Const[C]#λ] = f(from) :: tail.tabulate(from+1)(f)
+
+  def toList[C](l: C :: tail.Mapped[Const[C]#λ]): List[C] = l.head :: tail.toList(l.tail)
+
+  def length: Int = 1+tail.length
+}
+
+object HKernel {
+  def apply[L <: HList](implicit mk: HKernelAux[L]): mk.Out = mk()
+  def apply[L <: HList](l: L)(implicit mk: HKernelAux[L]): mk.Out = mk()
+}
+
+trait HKernelAux[L <: HList] {
+  type Out <: HKernel
+  def apply(): Out
+}
+
+object HKernelAux {
+  implicit def mkHNilHKernel = new HKernelAux[HNil] {
+    type Out = HNilHKernel
+    def apply() = HNilHKernel
+  }
+
+  implicit def mkHListHKernel[H, T <: HList](implicit ct: HKernelAux[T]) = new HKernelAux[H :: T] {
+    type Out = HConsHKernel[H, ct.Out]
+    def apply() = HConsHKernel[H, ct.Out](ct())
+  }
 }
 
 /**
@@ -934,8 +1016,6 @@ object SubtypeUnifier {
 }
 
 object SubtypeUnifierAux {
-  import TypeOperators._
-
   implicit def hnilSubtypeUnifier[B] = new SubtypeUnifierAux[HNil, B, HNil] {
     def apply(l : HNil) = l
   }
@@ -1142,8 +1222,6 @@ trait FilterAux[L <: HList, U, Out <: HList] {
 }
 
 object FilterAux {
-  import TypeOperators._
-
   implicit def hlistFilterHNil[L <: HList, U] = new FilterAux[HNil, U, HNil] {
      def apply(l : HNil) : HNil = HNil
   }
@@ -1181,8 +1259,6 @@ trait FilterNotAux[L <: HList, U, Out <: HList] {
 }
 
 object FilterNotAux {
-  import TypeOperators._
-
   implicit def hlistFilterNotHNil[L <: HList, U] = new FilterNotAux[HNil, U, HNil] {
      def apply(l : HNil) : HNil = HNil
   }
