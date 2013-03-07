@@ -17,7 +17,7 @@ The main changes include,
   scope of any implicit search for a type which embeds any type so tagged.
   Thanks to Ben Hutchison (@ben\_hutchison).
 
-* Travis Brown (@traivsbrown) contributed an example illustrating how to
+* Travis Brown (@travisbrown) contributed an example illustrating how to
   compute the cartesian product of two HLists.
 
 * Ben James (@bmjames) contributed an example show how to derive an Ordering
