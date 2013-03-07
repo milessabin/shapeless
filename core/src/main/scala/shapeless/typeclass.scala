@@ -62,7 +62,7 @@ object TypeClass {
   // Derive type classes from isos to HLists.
   // Without the wrapper, `deriveFromIso` participates in a "diverging implicit
   // expansion" when trying to resolve the type class instance for the HList.
-  // Hence, we seperate that phase with a dedicated type constructor.
+  // Hence, we separate that phase with a dedicated type constructor.
 
   class HListInstance[C[_], L <: HList](val instance: C[L]) extends AnyVal
 
