@@ -18,7 +18,7 @@ package shapeless
 
 /**
  * A type class abstracting over the `product` operation of type classes over
- * types of kind `*`, as well as deriving instances using an [[Iso]].
+ * types of kind `*`, as well as deriving instances using an [[shapeless.Iso]].
  */
 trait TypeClass[C[_]] {
 
