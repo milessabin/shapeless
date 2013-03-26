@@ -123,11 +123,11 @@ class SizedTests {
     val s = cl.get.size
     val evens = cl.get.filter(_ % 2 == 0)
     
-    //val p = cl.get match {
-    //  case Sized(a, b, _*) => (a, b)
-    //  case _ => (9, 10)
-    //}
-    //assertEquals((1, 2), p)
+    val p = cl.get match {
+      case Sized(a, b, _*) => (a, b)
+      case _ => (9, 10)
+    }
+    assertEquals((1, 2), p)
     
     val j1 = ll1.get.take[_1]
     
@@ -163,9 +163,8 @@ class SizedTests {
     val isl2 = Sized[List]("foo", "bar")
     typed[Sized[List[String], _2]](isl2)
 
-    // Regression in 2.11.0-SNAPSHOT
-    //val isa0 = Sized[Array]()
-    //typed[Sized[Array[Nothing], _0]](isa0)
+    val isa0 = Sized[Array]()
+    typed[Sized[Array[Nothing], _0]](isa0)
     val isa1 = Sized[Array]("foo")
     typed[Sized[Array[String], _1]](isa1)
     val isa2 = Sized[Array]("foo", "bar")
