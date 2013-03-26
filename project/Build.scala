@@ -86,7 +86,7 @@ object ShapelessBuild extends Build {
       organization        := "com.chuusai",
       version             := "1.2.5-SNAPSHOT",
       scalaVersion        := "2.9.3",
-      crossScalaVersions  := Seq("2.9.1", "2.9.1-1", "2.9.2", "2.9.3"),
+      crossScalaVersions  := Seq("2.9.2", "2.9.3"),
       crossVersion        := CrossVersion.full,
       scalaBinaryVersion <<= scalaVersion,
 
