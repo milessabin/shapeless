@@ -1,6 +1,6 @@
 resolvers += Classpaths.typesafeSnapshots
 
-addSbtPlugin("com.jsuereth" % "xsbt-gpg-plugin" % "0.6")
+addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8")
 
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.1.0")
 
