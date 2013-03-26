@@ -84,9 +84,9 @@ class ConversionTests {
     val hlab = ab.hlisted
     typed[(A :: HNil) => B](hlab)
     
-    def foo[F, L <: HList, R, HF](f : F, l : L)(implicit hl : FnHListerAux[F, HF], ev : HF <:< (L => R)) = hl(f)(l)
+    def foo[F, L <: HList, R](f : F, l : L)(implicit hl : FnHListerAux[F, L => R]) = hl(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
-    val ab2 = foo(ab, b :: HNil)
+    val ab2 = foo(ab, a :: HNil)
   }
   
   @Test

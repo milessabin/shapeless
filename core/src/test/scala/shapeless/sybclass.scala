@@ -26,15 +26,15 @@ class SybClassTests {
 
   def typed[T](t : => T) {}
   
-  object gsizeAll extends Pullback1[Int] {
+  object gsizeAll extends Poly1 {
     implicit def caseString = at[String](_.length)
     implicit def default[T](implicit data : Data[this.type, T, Int]) = at[T](1+data.gmapQ(_).sum)
   }
 
-  object gsize extends Pullback1[Int] {
-    implicit def caseInt = at[Int](i => 1)
+  object gsize extends Poly1 {
+    implicit def caseInt = at[Int](_ => 1)
     implicit def caseString = at[String](_.length)
-    implicit def default[T] = at[T](t => 1)
+    implicit def default[T] = at[T](_ => 1)
   }
 
   def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, plus.type, T]) = everything(gsize)(plus)(t)
@@ -48,7 +48,7 @@ class SybClassTests {
   object inc extends Poly1 {
     implicit def caseInt = at[Int](_+1)
     implicit def caseString = at[String](_+"*")
-    implicit def default[T] = at[T](t => t)
+    implicit def default[T] = at[T](identity)
   }
   
   def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) : T = everywhere(inc)(t)
@@ -214,7 +214,7 @@ class SybClassTests {
   }
   
   object flip extends Poly1 {
-    implicit def apply[T] = at[T](t => t)
+    implicit def apply[T] = at[T](identity)
     implicit def caseBoolean = at[Boolean](!_)
   }
 

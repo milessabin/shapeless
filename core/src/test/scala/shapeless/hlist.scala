@@ -75,7 +75,7 @@ class HListTests {
   object mkString extends (Any -> String)(_.toString)
   object fruit extends (Fruit -> Fruit)(f => f)
   object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends Lift1(choose)
+  object extendedChoose extends LiftU(choose)
   
   def typed[T](t : => T) {}
   
@@ -1000,9 +1000,9 @@ class HListTests {
     assertEquals((true :: 1 :: HNil, "foo" :: HNil), lbi)
   }
   
-  object combine extends Poly2 {
-    implicit def caseCharString = at[Char, String]((c, s) => s.indexOf(c))
-    implicit def caseIntBoolean = at[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
+  object combine extends Poly {
+    implicit def caseCharString = use((c : Char, s : String) => s.indexOf(c))
+    implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
   
   @Test
