@@ -50,9 +50,11 @@ object ShapelessBuild extends Build {
         
         EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
         
-        libraryDependencies ++= Seq(
-          "com.novocode" % "junit-interface" % "0.7" % "test"
-        ),
+        libraryDependencies <++= scalaVersion { sv =>
+          Seq(
+            "org.scala-lang" % "scala-compiler" % sv,
+            "com.novocode" % "junit-interface" % "0.7" % "test"
+        )},
         
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
 

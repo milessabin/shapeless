@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import shapeless.test.ShouldNotTypecheck
+
 class HListTests {
   import HList._
   import Typeable._
@@ -89,8 +91,20 @@ class HListTests {
     
     typed[Double](l.tail.tail.head)
     assertEquals(2.0, l.tail.tail.head, Double.MinPositiveValue)
+    
+    ShouldNotTypecheck("""
+      HNil.head
+    """)
+    
+    ShouldNotTypecheck("""
+      HNil.head
+    """)
+    
+    ShouldNotTypecheck("""
+      l.tail.tail.tail.head
+    """)
   }
-  
+
   @Test
   def testMap {
     implicitly[MapperAux[choose.type, HNil, HNil]]
