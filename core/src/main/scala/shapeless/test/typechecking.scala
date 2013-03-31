@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,18 @@ import java.util.regex.Pattern
 import scala.reflect.macros.{ Context, TypecheckException }
 
 /**
- * A macro that ensures that a code snippet does not typecheck.
+ * A utility which ensures that a code fragment does not typecheck.
  * 
  * Credit: Stefan Zeiger (@StefanZeiger)
  */
-object ShouldNotTypecheck {
+object illTyped {
   def apply(code: String): Unit = macro applyImplNoExp
   def apply(code: String, expected: String): Unit = macro applyImpl
-
-  def applyImplNoExp(ctx: Context)(code: ctx.Expr[String]) = applyImpl(ctx)(code, null)
-
-  def applyImpl(ctx: Context)(code: ctx.Expr[String], expected: ctx.Expr[String]): ctx.Expr[Unit] = {
-    import ctx.universe._
+  
+  def applyImplNoExp(c: Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
+  
+  def applyImpl(c: Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+    import c.universe._
 
     val Expr(Literal(Constant(codeStr: String))) = code
     val (expPat, expMsg) = expected match {
@@ -43,14 +43,16 @@ object ShouldNotTypecheck {
         (Pattern.compile(s, Pattern.CASE_INSENSITIVE), "Expected error matching: "+s)
     }
 
-    try ctx.typeCheck(ctx.parse("{ "+codeStr+" }")) catch { case e: TypecheckException =>
-      val msg = e.getMessage
-      if((expected ne null) && !(expPat.matcher(msg)).matches)
-        ctx.abort(ctx.enclosingPosition, "Type-checking failed in an unexpected way.\n"+
-          expMsg+"\nActual error: "+msg)
-      else return reify(())
+    try {
+      c.typeCheck(c.parse("{ "+codeStr+" }"))
+      c.abort(c.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
+    } catch {
+      case e: TypecheckException =>
+        val msg = e.getMessage
+        if((expected ne null) && !(expPat.matcher(msg)).matches)
+          c.abort(c.enclosingPosition, "Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
     }
-
-    ctx.abort(ctx.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
+    
+    reify(())
   }
 }
