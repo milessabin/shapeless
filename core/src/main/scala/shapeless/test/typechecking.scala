@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,49 @@
 
 package shapeless.test
 
-import scala.language.experimental.macros
-
 import java.util.regex.Pattern
+import java.io.{ PrintWriter, StringWriter }
 
-import scala.reflect.macros.{ Context, TypecheckException }
+import scala.io.Source
+import scala.tools.nsc.Settings
+import scala.tools.nsc.interpreter._
 
 /**
- * A macro that ensures that a code snippet does not typecheck.
+ * A utility which ensures that a code fragment does not typecheck.
  * 
- * Credit: Stefan Zeiger (@StefanZeiger)
+ * Credit: Jorge Ortiz (@JorgeO)
  */
-object ShouldNotTypecheck {
-  def apply(code: String): Unit = macro applyImplNoExp
-  def apply(code: String, expected: String): Unit = macro applyImpl
+class IllTyper[T](failure: String => T, success: String => T) {
+  private val (interpreter, errorBuffer) = {
+    val loader = manifest[shapeless.HNil].erasure.getClassLoader
 
-  def applyImplNoExp(ctx: Context)(code: ctx.Expr[String]) = applyImpl(ctx)(code, null)
+    val settings = new Settings
+    settings.classpath.value = Source.fromURL(loader.getResource("app.class.path")).mkString
+    settings.bootclasspath.append(Source.fromURL(loader.getResource("boot.class.path")).mkString)
+    settings.deprecation.value = true // enable detailed deprecation warnings
+    settings.unchecked.value = true // enable detailed unchecked warnings
+    
+    val eb =  new StringWriter()
+    
+    val i = new IMain(settings, new PrintWriter(eb))
+    i.interpret("""import shapeless._""")
+    (i, eb)
+  }
 
-  def applyImpl(ctx: Context)(code: ctx.Expr[String], expected: ctx.Expr[String]): ctx.Expr[Unit] = {
-    import ctx.universe._
+  def apply(code: String, expected: String = null): T = {
+    val thunked = "() => { %s }".format(code)
+    val expMsg = if(expected == null) "Expected some error." else "Expected error matching: "+expected
 
-    val Expr(Literal(Constant(codeStr: String))) = code
-    val (expPat, expMsg) = expected match {
-      case null => (null, "Expected some error.")
-      case Expr(Literal(Constant(s: String))) =>
-        (Pattern.compile(s, Pattern.CASE_INSENSITIVE), "Expected error matching: "+s)
+    errorBuffer.getBuffer.delete(0, errorBuffer.getBuffer.length)
+    interpreter.interpret(thunked) match {
+      case Results.Error =>
+        val msg = errorBuffer.toString
+        if(expected != null && !expected.matches(msg))
+          failure("Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
+        else
+          success(msg)
+      case Results.Success => failure("Type-checking succeeded unexpectedly.\n"+expMsg)
+      case Results.Incomplete => throw new Exception("Incomplete code snippet")
     }
-
-    try ctx.typeCheck(ctx.parse("{ "+codeStr+" }")) catch { case e: TypecheckException =>
-      val msg = e.getMessage
-      if((expected ne null) && !(expPat.matcher(msg)).matches)
-        ctx.abort(ctx.enclosingPosition, "Type-checking failed in an unexpected way.\n"+
-          expMsg+"\nActual error: "+msg)
-      else return reify(())
-    }
-
-    ctx.abort(ctx.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
   }
 }
