@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.ShouldNotTypecheck
+import shapeless.test.illTyped
 
 class HListTests {
   import HList._
@@ -92,15 +92,15 @@ class HListTests {
     typed[Double](l.tail.tail.head)
     assertEquals(2.0, l.tail.tail.head, Double.MinPositiveValue)
     
-    ShouldNotTypecheck("""
+    illTyped("""
       HNil.head
     """)
     
-    ShouldNotTypecheck("""
+    illTyped("""
       HNil.head
     """)
     
-    ShouldNotTypecheck("""
+    illTyped("""
       l.tail.tail.tail.head
     """)
   }
