@@ -97,7 +97,7 @@ class HListTests {
     """)
     
     illTyped("""
-      HNil.head
+      HNil.tail
     """)
     
     illTyped("""
