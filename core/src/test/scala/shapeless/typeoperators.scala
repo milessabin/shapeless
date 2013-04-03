@@ -53,13 +53,26 @@ class TypeOperatorTests {
     
     val ms = MyString("foo")
     
-    illTyped("""
-      val s : String = ms
+    val env ="""
+      import TypeOperators._
+      type MyString = Newtype[String, MyStringOps]
+      def MyString(s : String) : MyString = newtype(s)
+      case class MyStringOps(s : String) {
+        def mySize = s.size
+      }
+      implicit val mkOps = MyStringOps
+      val ms = MyString("foo")
+    """
+    
+    illTyped(env+"""
+      val s: String = ms
     """)
-    illTyped("""
-      val ms2 : MyString = "foo"
+    
+    illTyped(env+"""
+      val ms2: MyString = "foo"
     """)
-    illTyped("""
+    
+    illTyped(env+"""
       ms.size
     """)
     
