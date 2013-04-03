@@ -58,8 +58,8 @@ object TypeOperators {
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
   // Tags
-  trait Tagged[U]
-  type @@[T, U] = T with Tagged[U]
+  trait Tagged[U] 
+  type @@[+T, U] = T with Tagged[U]
 
   class Tagger[U] {
     def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
@@ -76,13 +76,13 @@ object TypeOperators {
    * values of the representation type to conform to Any. In practice this means that value
    * types will receive their standard Scala AnyVal boxing and reference types will be unboxed.
    */
-  type Newtype[Repr, Ops] = Any @@ NewtypeTag[Repr, Ops]
+  type Newtype[Repr, Ops] = { type Tag = NewtypeTag[Repr, Ops] }
   trait NewtypeTag[Repr, Ops]
   
   /**
    * Creates a value of the newtype given a value of its representation type. 
    */
-  def newtype[Repr, Ops](r : Repr) : Newtype[Repr, Ops] = r.asInstanceOf[Newtype[Repr, Ops]]
+  def newtype[Repr, Ops](r : Repr) : Newtype[Repr, Ops] = r.asInstanceOf[Any with Newtype[Repr, Ops]]
   
   /**
    * Implicit conversion of newtype to `Ops` type for the selection of `Ops` newtype operations.

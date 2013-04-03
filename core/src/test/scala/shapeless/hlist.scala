@@ -21,9 +21,9 @@ import org.junit.Assert._
 
 import shapeless.test.IllTyper
 
-object illTyped extends IllTyper(fail, _ => ())
-
 class HListTests {
+  object illTyped extends IllTyper(fail, _ => ())
+  
   import HList._
   import Typeable._
   import Traversables._
