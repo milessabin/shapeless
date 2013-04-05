@@ -16,6 +16,8 @@
 
 import sbt._
 import Keys._
+import Build.data
+
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
 
 object ShapelessBuild extends Build {
@@ -80,11 +82,21 @@ object ShapelessBuild extends Build {
           "com.novocode" % "junit-interface" % "0.7" % "test"
       )},
 
+      runAllIn(Compile),
+
       publish := (),
       publishLocal := ()
     )
   )
   
+  lazy val runAll = TaskKey[Unit]("run-all") 
+  
+  def runAllIn(config: Configuration) = {
+    runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map { 
+      (classes, runner, cp, s) => classes.foreach(c => runner.run(c, data(cp), Seq(), s.log))
+    }
+  }
+
   def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
