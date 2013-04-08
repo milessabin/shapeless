@@ -137,22 +137,28 @@ object Functions {
  * @author Miles Sabin
  */
 trait FnHLister[F] {
-  type Out
+  type Out = Args => Result
+  type Args <: HList
+  type Result
+  
   def apply(f : F) : Out
 }
   
 trait FnHListerAux[F, Out] {
+  type Args <: HList
+  type Result
   def apply(f : F) : Out
 }
-  
+
 /**
  * `FnHLister` type class instances.
  * 
  * @author Miles Sabin
  */
 object FnHLister {
-  implicit def fnHLister[F, Out0](implicit fnHLister : FnHListerAux[F, Out0]) = new FnHLister[F] {
-    type Out = Out0
+  implicit def fnHLister[F, Args0 <: HList, Result0](implicit fnHLister : FnHListerAux[F, Args0 => Result0]) = new FnHLister[F] {
+    type Args = Args0
+    type Result = Result0
     def apply(f : F) : Out = fnHLister(f)
   }
 }

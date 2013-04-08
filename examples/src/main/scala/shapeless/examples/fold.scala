@@ -27,9 +27,9 @@ object FoldExamples extends App {
   // Polymorphic binary function value with type-specific cases:
   //  (c : Char, s : String) => s.indexOf(c)
   //  (i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
-  object combine extends Poly2 {
-    implicit def caseCharString = at[Char, String]((c, s) => s.indexOf(c))
-    implicit def caseIntBoolean = at[Int, Boolean]((i, b) => if ((i >= 0) == b) "pass" else "fail")
+  object combine extends Poly {
+    implicit def caseCharString = use((c : Char, s : String) => s.indexOf(c))
+    implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
   // Computation is:

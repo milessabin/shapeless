@@ -24,13 +24,13 @@ object UnfoldExamples extends App {
   
   def typed[T](t : => T) {}
   
-  trait Unfold[F <: Poly1, E, S] {
+  trait Unfold[F <: Poly, E, S] {
     type Out <: HList
     def apply(s : S) : Out
   }
   
   object Unfold {
-    implicit def unfold1[F <: Poly1, E, S, Out0 <: HList]
+    implicit def unfold1[F <: Poly, E, S, Out0 <: HList]
       (implicit unfold : UnfoldAux[F, E, S, E, Out0]) : Unfold[F, E, S] =
         new Unfold[F, E, S] {
           type Out = Out0
@@ -38,7 +38,7 @@ object UnfoldExamples extends App {
         }
     
     trait ApplyUnfold[E] {
-      def apply[F <: Poly1, S, L <: HList](f : F)(s : S)
+      def apply[F <: Poly, S, L <: HList](f : F)(s : S)
         (implicit unfold : UnfoldAux[F, E, S, E, L]) = unfold(s)
     }
     
@@ -46,26 +46,26 @@ object UnfoldExamples extends App {
     def unfold[E](e : E) = new ApplyUnfold[E] {} 
   }
   
-  trait UnfoldAux[F <: Poly1, E, S, CoS, Out <: HList] {
+  trait UnfoldAux[F <: Poly, E, S, CoS, Out <: HList] {
     def apply(s : S) : Out
   }
   
   object UnfoldAux {
-    implicit def unfold1[F <: Poly1, S, CoS] : UnfoldAux[F, S, S, CoS, HNil] = new UnfoldAux[F, S, S, CoS, HNil] {
+    implicit def unfold1[F <: Poly, S, CoS] : UnfoldAux[F, S, S, CoS, HNil] = new UnfoldAux[F, S, S, CoS, HNil] {
       def apply(s : S) = HNil
     }
     
     // The trick to prevent diverging implicits here is to have the term CoS (read: co-seed)
     // shrink at the same time as the term S (read: seed) grows. The only structure assumed
     // for the (co-)sequence of seeds is that implied by the cases of F.
-    implicit def unfold2[F <: Poly1, E, S, CoS, SS, OutH, OutT <: HList, PCoS, PCoSV]
+    implicit def unfold2[F <: Poly, E, S, CoS, SS, OutH, OutT <: HList, PCoS, PCoSV]
       (implicit
         shrink : Pullback1Aux[F, PCoS, (PCoSV, CoS)],
         f : Pullback1Aux[F, S, (OutH, SS)],
         ut : UnfoldAux[F, E, SS, PCoS, OutT]) : UnfoldAux[F, E, S, CoS, OutH :: OutT] =
         new UnfoldAux[F, E, S, CoS, OutH :: OutT] {
           def apply(s : S) : OutH :: OutT = { 
-            val (outH, sn) = f(s)
+            val (outH, sn) = f(s :: HNil)
             outH :: ut(sn)
           }
         }

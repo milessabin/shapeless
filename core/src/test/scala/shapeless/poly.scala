@@ -28,13 +28,13 @@ class PolyTests {
     def apply[T](t : T) = t.toString.toInt
   }
   
-  object size extends Pullback1[Int] {
-    implicit def default[T] = at[T](t => 1)
-    implicit def caseInt = at[Int](x => 1)
+  object size extends Poly1 {
+    implicit def default[T] = at[T](_ => 1)
+    implicit def caseInt = at[Int](_ => 1)
     implicit def caseString = at[String](_.length)
     implicit def caseList[T] = at[List[T]](_.length)
     implicit def caseOption[T](implicit st : Pullback1[T, Int]) = at[Option[T]](t => 1+(t map size).getOrElse(0))
-    implicit def caseTuple[T, U](implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) = at[(T, U)](t => size(t._1)+size(t._2))
+    implicit def caseTuple[T, U](implicit st : Pullback1[T, Int], su : Pullback1[U, Int]) = at[(T, U)]{ case (t, u) => size(t)+size(u) }
   }
   
   @Test
