@@ -24,7 +24,7 @@ package shapeless.examples
  *
  * @author Travis Brown
  */
-object CartesianProductExample extends App {
+object CartesianProductExample {
   import shapeless._
 
   def typed[T](t : => T) {}
@@ -91,26 +91,28 @@ object CartesianProductExample extends App {
     implicit def whatever[A, B] = use((a : A, b : B) => (a, b))
   }
 
-  // Two example lists.
-  val xs = 1 :: 'b :: 'c' :: HNil
-  val ys = 4.0 :: "e" :: HNil
-
-  // The Cartesian product of these lists.
-  val result = liftA2(tuple)(xs, ys)
-
-  // The expected type of the Cartesian product.
-  type Result =
-    (Int, Double) :: (Int, String) ::
-    (Symbol, Double) :: (Symbol, String) ::
-    (Char, Double) :: (Char, String) :: HNil
-
-  // The expected value.
-  val expected =
-    (1, 4.0) :: (1, "e") ::
-    ('b, 4.0) :: ('b, "e") ::
-    ('c', 4.0) :: ('c', "e") :: HNil 
-
-  typed[Result](result)
-
-  assert(result == expected)
+  def main(arg: Array[String]) {
+    // Two example lists.
+    val xs = 1 :: 'b :: 'c' :: HNil
+    val ys = 4.0 :: "e" :: HNil
+  
+    // The Cartesian product of these lists.
+    val result = liftA2(tuple)(xs, ys)
+  
+    // The expected type of the Cartesian product.
+    type Result =
+      (Int, Double) :: (Int, String) ::
+      (Symbol, Double) :: (Symbol, String) ::
+      (Char, Double) :: (Char, String) :: HNil
+  
+    // The expected value.
+    val expected =
+      (1, 4.0) :: (1, "e") ::
+      ('b, 4.0) :: ('b, "e") ::
+      ('c', 4.0) :: ('c', "e") :: HNil 
+  
+    typed[Result](result)
+  
+    assert(result == expected)
+  }
 }

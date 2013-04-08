@@ -19,12 +19,14 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
+import shapeless.test.IllTyper
 
 class HMapTests {
   import HList._
   import Mapper._
   import MapperAux._
+  
+  object illTyped extends IllTyper(fail, _ => ())
   
   def typed[T](t : => T) {}
 
