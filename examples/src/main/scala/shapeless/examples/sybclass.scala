@@ -100,7 +100,7 @@ object SybClassExamples extends App {
   */
   
   object raise extends Poly1 {
-    implicit def apply[T] = at[T](t => t)
+    implicit def apply[T] = at[T](identity)
     implicit def caseDouble = at[Double](_*1.1)
   }
 

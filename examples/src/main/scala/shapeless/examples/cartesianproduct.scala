@@ -87,8 +87,8 @@ object CartesianProductExample extends App {
   /**
    * A polymorphic binary function that pairs its arguments.
    */
-  object tuple extends Poly2 {
-    implicit def whatever[A, B] = at[A, B] { case (a, b) => (a, b) }
+  object tuple extends Poly {
+    implicit def whatever[A, B] = use((a : A, b : B) => (a, b))
   }
 
   // Two example lists.

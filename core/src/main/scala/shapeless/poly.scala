@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,61 +19,28 @@ package shapeless
 import TypeOperators._
 
 /**
- * Type-specific case of a polymorphic value.
+ * Type-specific case of a polymorphic function.
  * 
  * @author Miles Sabin
  */
-abstract class Case0Aux[-P, T] {
-  val value : T
-  def apply() = value
+abstract class CaseAux[-P, L <: HList] { outer =>
+  type Result
+  val value : L => Result
+  
+  def apply(t : L) = value(t)
+  def apply()(implicit ev: HNil =:= L) = value(HNil)
+  def apply[T](t: T)(implicit ev: (T :: HNil) =:= L) = value(t :: HNil)
+  def apply[T, U](t: T, u: U)(implicit ev: (T :: U :: HNil) =:= L) = value(t :: u :: HNil)
+  def apply[P <: Product](p : P)(implicit hl: HListerAux[P, L]) = value(hl(p))
 }
 
-object Case0Aux {
-  def apply[P, T](v : T) = new Case0Aux[P, T] {
+object CaseAux extends CaseInst {
+  import Poly._
+  
+  def apply[P, L <: HList, R](v : L => R) = new CaseAux[P, L] {
+    type Result = R
     val value = v
   }
-  
-  implicit def inst[P, T](c : Case0Aux[P, T]) : T = c.value
-}
-
-/**
- * Type-specific case of a polymorphic unary function.
- * 
- * @author Miles Sabin
- */
-abstract class Case1Aux[-P, T] {
-  type R
-  val value : T => R
-  def apply(t : T) = value(t)
-}
-
-object Case1Aux {
-  def apply[P, T, R0](v : T => R0) = new Case1Aux[P, T] {
-    type R = R0
-    val value = v
-  }
-  
-  implicit def inst[P, T, R0](c : Case1Aux[P, T] { type R = R0 }) : T => R0 = c.value
-}
-
-/**
- * Type-specific case of a polymorphic binary function.
- * 
- * @author Miles Sabin
- */
-abstract class Case2Aux[-P, T, U] {
-  type R
-  val value : (T, U) => R
-  def apply(t : T, u : U) = value(t, u)
-}
-
-object Case2Aux {
-  def apply[P, T, U, R0](v : (T, U) => R0) = new Case2Aux[P, T, U] {
-    type R = R0
-    val value = v
-  }
-  
-  implicit def inst[P, T, U, R0](c : Case2Aux[P, T, U] { type R = R0 }) : (T, U) => R0 = c.value
 }
 
 /**
@@ -81,79 +48,71 @@ object Case2Aux {
  * 
  * @author Miles Sabin
  */
-trait Poly {
-  /** The type of the case representing this polymorphic value at type `T`. */
-  type Case0[T] = Case0Aux[this.type, T]
-  
-  /** The type of the case representing this polymorphic unary function at argument type `T`. */
-  type Case1[T] = Case1Aux[this.type, T]
-  
-  /** The type of the case representing this polymorphic binary function at argument types `T` and `U`. */
-  type Case2[T, U] = Case2Aux[this.type, T, U]
-
-  def apply[T](implicit c : Case0[T]) : T = c()
-  def apply[T](t : T)(implicit c : Case1[T]) : c.R = c(t)
-  def apply[T, U](t : T, u : U)(implicit c : Case2[T, U]) : c.R = c(t, u)
-
-  /** The type of a case of this polymorphic function of the form `T => T` */
-  type Hom[T] = Case1[T] { type R = T }
-
-  /** The type of a case of this polymorphic function of the form `T => R` */
-  type Pullback1[T, R0] = Case1[T] { type R = R0 }
-
-  /** The type of a case of this polymorphic function of the form `(T, U) => R` */
-  type Pullback2[T, U, R0] = Case2[T, U] { type R = R0 }
-}
-
-trait Poly0 extends Poly {
-  /** Creates an instance of the case representing this polymorphic value at type `T`. */
-  def at[T](v : T) = new Case0[T] { val value = v }
-}
-
-trait Poly1 extends Poly {
-  /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
-  def at[T] = new Case1Builder[T]
-  class Case1Builder[T] {
-    def apply[R0](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
+trait Poly extends PolyApply with PolyCases {
+  /** The type of the case representing this polymorphic function at argument types `L`. */
+  type Case[L <: HList] = CaseAux[this.type, L]
+  def Case[L <: HList, R](v : L => R) = new Case[L] {
+    type Result = R
+    val value = v
   }
   
-  def compose[F <: Poly](f: F) = new Compose1[this.type, F](this, f)
+  type Case0[T] = Pullback[HNil, T]
   
-  def andThen[F <: Poly](f: F) = new Compose1[F, this.type](f, this)
+  def apply[R](implicit c : Case0[R]) : R = c()
+
+  /** The type of a case of this polymorphic function of the form `L => R` */
+  type Pullback[L <: HList, R] = Case[L] { type Result = R }
+  
+  /** The type of a case of this polymorphic function of the form `T => T` */
+  type Hom[T] = Pullback1[T, T]
+
+  def compose[F <: Poly](f: F) = new Compose[this.type, F](this, f)
+  
+  def andThen[F <: Poly](f: F) = new Compose[F, this.type](f, this)
+
+  trait CaseBuilder[T, L <: HList, R] {
+    def apply(t: T): Pullback[L, R]
+  }
+  
+  trait LowPriorityCaseBuilder {
+    implicit def valueCaseBuilder[T] = new CaseBuilder[T, HNil, T] {
+      def apply(t: T) = Case((_: HNil) => t)
+    }
+  }
+  
+  object CaseBuilder extends LowPriorityCaseBuilder {
+    implicit def fnCaseBuilder[F](implicit hl: FnHLister[F]) = new CaseBuilder[F, hl.Args, hl.Result] {
+      def apply(f: F) = Case((l : hl.Args) => hl(f)(l))
+    }
+  }
+  
+  def use[T, L <: HList, R](t : T)(implicit cb: CaseBuilder[T, L, R]) = cb(t)
 }
 
 /**
- * Represents the composition of two unary polymorphic function values
+ * Trait simplifying the creation of polymorphic values.
+ */
+trait Poly0 extends Poly {
+  def at[T](t: T) = new Case[HNil] {
+    type Result = T
+    val value = (l : HNil) => t
+  }
+}
+
+/**
+ * Represents the composition of two polymorphic function values.
  *  
  * @author Miles Sabin
  */
-class Compose1[F <: Poly, G <: Poly](f : F, g : G) extends Poly
+class Compose[F <: Poly, G <: Poly](f : F, g : G) extends Poly
 
-object Compose1 {
+object Compose {
   import Poly._
   implicit def composeCase[F <: Poly, G <: Poly, T, U, V]
-    (implicit cG : Pullback1Aux[G, T, U], cF : Pullback1Aux[F, U, V]) = new Case1Aux[Compose1[F, G], T] {
-    type R = V
-    val value = cF.value compose cG.value
+    (implicit cG : Pullback1Aux[G, T, U], cF : Pullback1Aux[F, U, V]) = new CaseAux[Compose[F, G], T :: HNil] {
+    type Result = V
+    val value = (t : T :: HNil) => cF(cG.value(t))
   }
-}
-
-trait Poly2 extends Poly {
-  /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
-  def at[T, U] = new Case2Builder[T, U]
-  class Case2Builder[T, U] {
-    def apply[R0](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
-  }
-}
-
-trait Pullback1[R0] extends Poly {
-  /** Creates an instance of the case representing this polymorphic unary function at argument type `T`. */
-  def at[T](f : T => R0) = new Case1[T] { type R = R0 ; val value = f }
-}
-
-trait Pullback2[R0] extends Poly {
-  /** Creates an instance of the case representing this polymorphic binary function at argument types `T` and `U`. */
-  def at[T, U](f : (T, U) => R0) = new Case2[T, U] { type R = R0 ; val value = f }
 }
 
 /**
@@ -162,14 +121,18 @@ trait Pullback2[R0] extends Poly {
  *  
  * @author Miles Sabin
  */
-object Poly {
-  implicit def inst0[P <: Poly, T](p : P)(implicit c : p.Case0[T]) : T = c.value
-  implicit def inst1[P <: Poly, T](p : P)(implicit c : p.Case1[T]) : T => c.R = c.value
-  implicit def inst2[P <: Poly, T, U](p : P)(implicit c : p.Case2[T, U]) : (T, U) => c.R = c.value
-
-  type HomAux[-P, T] = Case1Aux[P, T] { type R = T }
-  type Pullback1Aux[-P, T, R0] = Case1Aux[P, T] { type R = R0 }
-  type Pullback2Aux[-P, T, U, R0] = Case2Aux[P, T, U] { type R = R0 }
+object Poly extends PolyInst with PolyAuxCases {
+  type PullbackAux[-P, L <: HList, R] = CaseAux[P, L] { type Result = R }
+  type HomAux[-P, T] = PullbackAux[P, T :: HNil, T]
+  
+  implicit def inst0[P <: Poly, R](p : P)(implicit c : p.Case0[R]) : R = c()
+  
+  type Case0Aux[-P] = CaseAux[P, HNil]
+  type Pullback0Aux[-P, T] = PullbackAux[P, HNil, T]
+  def Case0Aux[P, T](v : T) = new CaseAux[P, HNil] {
+    type Result = T
+    val value = (l : HNil) => v
+  }
 }
 
 /**
@@ -180,7 +143,7 @@ class ->[T, R](f : T => R) extends Poly1 {
 }
 
 trait LowPriorityLiftFunction1 extends Poly1 {
-  implicit def default[T] = at[T](t => HNil : HNil)
+  implicit def default[T] = at[T](_ => HNil : HNil)
 }
 
 /**
@@ -188,19 +151,25 @@ trait LowPriorityLiftFunction1 extends Poly1 {
  * its only element if the argument is in the original functions domain, `HNil` otherwise. 
  */
 class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
-  implicit def subT[U <: T] = at[U](t => f(t) :: HNil)
+  implicit def subT[U <: T] = at[U](f(_) :: HNil)
 }
 
-trait LowPriorityLift1 extends Poly1 {
-  implicit def default[T] = at[T](t => HNil : HNil)
+trait LowPriorityLiftU extends Poly {
+  implicit def default[L <: HList] = new Case[L] {
+    type Result = HNil
+    val value = (l : L) => HNil
+  }
 }
 
 /**
- * Base class for lifting a `Poly1` to a `Poly1` over the universal domain, yielding an `HList` with the result as it's
+ * Base class for lifting a `Poly` to a `Poly` over the universal domain, yielding an `HList` with the result as it's
  * only element if the argument is in the original functions domain, `HNil` otherwise. 
  */
-class Lift1[P <: Poly](p : P)  extends LowPriorityLift1 {
-  implicit def defined[T](implicit caseT : Case1Aux[P, T]) = at[T](t => caseT(t) :: HNil)
+class LiftU[P <: Poly](p : P)  extends LowPriorityLiftU {
+  implicit def defined[L <: HList](implicit caseT : CaseAux[P, L]) = new Case[L] {
+    type Result = caseT.Result :: HNil
+    val value = (l : L) => caseT(l) :: HNil
+  } 
 }
 
 /**
@@ -222,9 +191,9 @@ object ~> {
   implicit def inst6[G, T](f : Id ~> Const[G]#λ) : T => G = f(_)
 }
 
-trait ~>>[F[_], R] extends Pullback1[R] {
+trait ~>>[F[_], R] extends Poly1 {
   def apply[T](f : F[T]) : R
-  implicit def caseUniv[T] = at[F[T]](apply[T](_))
+  implicit def caseUniv[T] = at[F[T]](apply(_))
 }
 
 object ~>> {
@@ -297,8 +266,8 @@ object plus extends Poly2 {
 
 /** Polymorphic zero with type specific cases. */
 object zero extends Poly0 {
-  implicit val zeroInt = at[Int](0) 
-  implicit val zeroDouble = at[Double](0.0) 
-  implicit val zeroString = at[String]("") 
+  implicit val zeroInt = at(0)
+  implicit val zeroDouble = at(0.0)
+  implicit val zeroString = at("")
   implicit def zeroList[T] = at[List[T]](Nil)
 }
