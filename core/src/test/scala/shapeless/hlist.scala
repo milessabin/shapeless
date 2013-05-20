@@ -986,6 +986,10 @@ class HListTests {
   @Test
   def testRemoveAll {
     val l = 1 :: true :: "foo" :: HNil
+    
+    val lnil = l.removeAll[HNil]
+    typed[(HNil, Int :: Boolean :: String :: HNil)](lnil)
+    assertEquals((HNil, 1 :: true :: "foo" :: HNil), lnil)
 
     val li = l.removeAll[Int :: HNil]
     typed[(Int :: HNil, Boolean :: String :: HNil)](li)

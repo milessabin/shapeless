@@ -1368,11 +1368,10 @@ object RemoveAll {
 }
 
 object RemoveAllAux {
-  implicit def hlistRemoveAllSingle[L <: HList, E, Rem <: HList](implicit rt : RemoveAux[L, E, Rem]) =
-    new RemoveAllAux[E :: HNil, L, Rem] {
-      def apply(l : L): (E :: HNil, Rem) = {
-        val (e, sub) = rt(l) 
-        (e :: HNil, sub)
+  implicit def hlistRemoveAllNil[L <: HList] =
+    new RemoveAllAux[HNil, L, L] {
+      def apply(l : L): (HNil, L) = {
+        (HNil, l)
       }
     }
 
