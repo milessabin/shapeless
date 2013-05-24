@@ -121,17 +121,11 @@ class ZipperTests {
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
   
-  implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
-  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-  
   val p1 = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
   
   case class Dept[E <: HList](manager : Employee, employees : E)
   case class Employee(name : String, salary : Int)
   
-  implicit def deptIso[E <: HList] = Iso.hlist(Dept.apply[E] _, Dept.unapply[E] _)
-  implicit def employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
-
   type D = Dept[Employee :: Employee :: Employee :: HNil]
 
   val dept =

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-3 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,17 @@
 
 package shapeless.examples
 
+import shapeless._
+
 object MonoidExamples extends App {
-  import shapeless._
-  import TypeClass._
-  import Monoid._
+  import MonoidSyntax._
+  import GenericMonoid._ // One line of boilerplate at use sites ... see further comment below.
 
   // A pair of arbitrary case classes
   case class Foo(i : Int, s : String)
   case class Bar(b : Boolean, s : String, d : Double)
 
-  // Publish their `HListIso`'s
-  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
-  implicit def barIso = Iso.hlist(Bar.apply _, Bar.unapply _)
-
-  // And now they're monoids ...
+  // Automatically they're monoids ...
   implicitly[Monoid[Foo]]
   val f = Foo(13, "foo") |+| Foo(23, "bar")
   assert(f == Foo(36, "foobar"))
@@ -48,32 +45,7 @@ trait Monoid[T] {
 }
 
 object Monoid {
-  import shapeless._
-  
-  implicit def monoidClass : TypeClass[Monoid] = new TypeClass[Monoid] {
-    def emptyProduct = new Monoid[HNil] {
-      def zero = HNil
-      def append(a : HNil, b : HNil) = HNil
-    }
-    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-      def zero = FHead.zero :: FTail.zero
-      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-    }
-    def derive[F, G](instance : Monoid[G], iso : Iso[F, G]) = new Monoid[F] {
-      def zero = iso.from(instance.zero)
-      def append(a : F, b : F) = iso.from(instance.append(iso.to(a), iso.to(b)))
-    }
-  }
-
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
-  
-  trait MonoidOps[T] {
-    def |+|(b : T) : T
-  }
-  
-  implicit def monoidOps[T](a : T)(implicit mt : Monoid[T]) : MonoidOps[T] = new MonoidOps[T] {
-    def |+|(b : T) = mt.append(a, b)
-  }
   
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
     def zero = false
@@ -93,6 +65,40 @@ object Monoid {
   implicit def stringMonoid : Monoid[String] = new Monoid[String] {
     def zero = ""
     def append(a : String, b : String) = a+b
+  }
+}
+
+trait MonoidSyntax[T] {
+  def |+|(b : T) : T
+}
+
+object MonoidSyntax {
+  implicit def monoidSyntax[T](a : T)(implicit mt : Monoid[T]) : MonoidSyntax[T] = new MonoidSyntax[T] {
+    def |+|(b : T) = mt.append(a, b)
+  }
+}
+
+// Note that this only needs to be separate from the primary type class companion object 
+// (ie. Monoid above) if you don't want any form of dependency shapeless. If a shapeless
+// dependency isn't problematic then you should have your type class companion extend
+// TypeClass directly. In this case the generic implicits will be included in your type
+// classes implicit scope automatically, and the import at use sites (ie. the
+// "import GenericMonoid._" above) will no longer be necessary
+
+object GenericMonoid extends TypeClass[Monoid] {
+  def emptyProduct = new Monoid[HNil] {
+    def zero = HNil
+    def append(a : HNil, b : HNil) = HNil
+  }
+  
+  def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
+    def zero = FHead.zero :: FTail.zero
+    def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
+  }
+  
+  def derive[F, Repr](instance : Monoid[Repr], gen : GenericAux[F, Repr]) = new Monoid[F] {
+    def zero = gen.from(instance.zero)
+    def append(a : F, b : F) = gen.from(instance.append(gen.to(a), gen.to(b)))
   }
 }
 

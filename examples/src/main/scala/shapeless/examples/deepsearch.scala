@@ -51,9 +51,9 @@ object DeepSearchExamples extends App {
   }
 
   implicit def hlistishSearchable[A, L <: HList, Q](
-    implicit iso: Iso[A, L], s: Searchable[L, Q]
+    implicit gen: GenericAux[A, L], s: Searchable[L, Q]
   ) = new Searchable[A, Q] {
-    def find(p: Q => Boolean)(a: A) = s.find(p)(iso to a)
+    def find(p: Q => Boolean)(a: A) = s.find(p)(gen to a)
   }
 
   case class SearchableWrapper[A](a: A) {
@@ -85,9 +85,6 @@ object DeepSearchExamples extends App {
 
   // Our case class:
   case class Foo(a: String, b: String, c: List[String])
-
-  // Plus one line of boilerplate:
-  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
 
   // And it works:
   assert(Foo("four", "three", List("two", "one")).deepFind(p) == Some("two"))

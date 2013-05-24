@@ -209,9 +209,6 @@ class SybClassTests {
   }
 
   case class A(x: Int, y: Boolean, z: Int)
-  object A {
-    implicit val aIso = Iso.hlist(A.apply _, A.unapply _)
-  }
   
   object flip extends Poly1 {
     implicit def apply[T] = at[T](identity)
@@ -230,14 +227,7 @@ class SybClassTests {
   }
   
   case class Address(street : String, city : String, postcode : String)
-  object Address {
-    implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
-  }
-  
   case class Person(name : String, age : Int, address : Address)
-  object Person {
-    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-  }
   
   @Test
   def testHListIso2 {
