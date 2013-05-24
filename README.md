@@ -495,7 +495,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless" % "1.2.4" cross CrossVersion.full
+  "com.chuusai" % "shapeless" % "1.2.5-SNAPSHOT" cross CrossVersion.full
 )
 ```
 

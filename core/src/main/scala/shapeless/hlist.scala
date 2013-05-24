@@ -422,7 +422,7 @@ final class HListOps[L <: HList](l : L) {
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
-  def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(0, l)
+  def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(runtimeLength, l, 0)
 }
 
 object HList {
@@ -1041,8 +1041,24 @@ object SubtypeUnifierAux {
 trait ToList[-L <: HList, Lub] {
   def apply(l : L) : List[Lub]
 }
-  
-object ToList {
+
+trait LowPriorityToList {
+  implicit def hlistToListAny[L <: HList] = new ToList[L, Any] {
+    val b = scala.collection.mutable.ListBuffer.empty[Any]
+    
+    def apply(l : L) : List[Any] = {
+      @tailrec
+      def loop(l : HList): Unit = l match {
+        case hd :: tl => b += hd ; loop(tl)
+        case _ =>
+      }
+      loop(l)
+      b.toList
+    }
+  }
+}
+
+object ToList extends LowPriorityToList {
   implicit def hnilToList[T] : ToList[HNil, T] = new ToList[HNil, T] {
     def apply(l : HNil) = Nil
   }
@@ -1064,29 +1080,45 @@ object ToList {
  * @author Miles Sabin
  */
 trait ToArray[-L <: HList, Lub] {
-  def apply(n : Int, l : L) : Array[Lub]
+  def apply(len : Int, l : L, i : Int) : Array[Lub]
 }
 
-object ToArray {
-  import scala.reflect._ // Wildcard import for 2.9.x compatibility
+trait LowPriorityToArray {
+  implicit def hlistToArrayAnyRef[L <: HList] = new ToArray[L, Any] {
+    def apply(len: Int, l : L, i : Int) : Array[Any] = {
+      val arr = Array[Any](len)
+      
+      @tailrec
+      def loop(l : HList, i: Int): Unit = l match {
+        case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
+        case _ =>
+      }
+      loop(l, 0)
+      arr
+    }
+  }
+}
 
+object ToArray extends LowPriorityToArray {
+  import scala.reflect.ClassTag
+  
   implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] = new ToArray[HNil, T] {
-    def apply(n : Int, l : HNil) = Array.ofDim[T](n)
+    def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
   }
   
   implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] = new ToArray[T :: HNil, T] {
-    def apply(n : Int, l : T :: HNil) = {
-      val arr = Array.ofDim[T](n+1)
-      arr(n) = l.head
+    def apply(len : Int, l : T :: HNil, i : Int) = {
+      val arr = Array.ofDim[T](len)
+      arr(i) = l.head
       arr
     }
   }
   
   implicit def hlistToArray[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]) =
     new ToArray[H1 :: H2 :: T, L] {
-      def apply(n : Int, l : H1 :: H2 :: T) = {
-        val arr = tta(n+1, l.tail)
-        arr(n) = u.left(l.head)
+      def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
+        val arr = tta(len, l.tail, i+1)
+        arr(i) = u.left(l.head)
         arr
       }
     }
@@ -1336,11 +1368,10 @@ object RemoveAll {
 }
 
 object RemoveAllAux {
-  implicit def hlistRemoveAllSingle[L <: HList, E, Rem <: HList](implicit rt : RemoveAux[L, E, Rem]) =
-    new RemoveAllAux[E :: HNil, L, Rem] {
-      def apply(l : L): (E :: HNil, Rem) = {
-        val (e, sub) = rt(l) 
-        (e :: HNil, sub)
+  implicit def hlistRemoveAllNil[L <: HList] =
+    new RemoveAllAux[HNil, L, L] {
+      def apply(l : L): (HNil, L) = {
+        (HNil, l)
       }
     }
 

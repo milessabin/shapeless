@@ -19,6 +19,7 @@ import Keys._
 import Build.data
 
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
+import com.typesafe.sbt.osgi.SbtOsgi._
 
 object ShapelessBuild extends Build {
   
@@ -45,7 +46,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ Seq(
         moduleName := "shapeless",
         
         managedSourceDirectories in Test := Nil,
@@ -66,7 +67,13 @@ object ShapelessBuild extends Build {
           },
           
         mappings in (Compile, packageSrc) <++=
-          (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples"))
+          (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
+
+        OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
+
+        OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
+
+        OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
       )
     )
 
