@@ -61,9 +61,9 @@ object GenericMacros {
     val hlistSym = c.mirror.staticClass("shapeless.HList")
     val hlistTpe = hlistSym.asClass.toType
     
-    val shapelessNme = newTermName("shapeless")
-    val inlSel = Select(Ident(shapelessNme), newTermName("Inl"))
-    val inrSel = Select(Ident(shapelessNme), newTermName("Inr"))
+    val shapelessNme = TermName("shapeless")
+    val inlSel = Select(Ident(shapelessNme), TermName("Inl"))
+    val inrSel = Select(Ident(shapelessNme), TermName("Inr"))
       
     val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
   
@@ -72,11 +72,11 @@ object GenericMacros {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
       }
   
-      val HNilTypeTree   = Select(Ident(newTermName("shapeless")), newTypeName("HNil"))
-      val HNilValueTree  = Select(Ident(newTermName("shapeless")), newTermName("HNil"))
+      val HNilTypeTree   = Select(Ident(TermName("shapeless")), TypeName("HNil"))
+      val HNilValueTree  = Select(Ident(TermName("shapeless")), TermName("HNil"))
   
-      val HConsTypeTree  = Select(Ident(newTermName("shapeless")), newTypeName("$colon$colon"))
-      val HConsValueTree = Select(Ident(newTermName("shapeless")), newTermName("$colon$colon"))
+      val HConsTypeTree  = Select(Ident(TermName("shapeless")), TypeName("$colon$colon"))
+      val HConsValueTree = Select(Ident(TermName("shapeless")), TermName("$colon$colon"))
   
       def mkHListType: Tree = {
         fields.map { f => TypeTree(f.typeSignatureIn(tpe)) }.foldRight(HNilTypeTree : Tree) {
@@ -86,21 +86,21 @@ object GenericMacros {
   
       def mkHListValue: Tree = {
         fields.map(_.name.toString.trim).foldRight(HNilValueTree : Tree) {
-          case (v, acc) => Apply(HConsValueTree, List(Select(Ident(newTermName("t")), newTermName(v)), acc))
+          case (v, acc) => Apply(HConsValueTree, List(Select(Ident(TermName("t")), TermName(v)), acc))
         }
       }
   
       def mkNth(n: Int): Tree =
         Select(
-          (0 until n).foldRight(Ident(newTermName("r")) : Tree) {
-            case (_, acc) => Select(acc, newTermName("tail"))
+          (0 until n).foldRight(Ident(TermName("r")) : Tree) {
+            case (_, acc) => Select(acc, TermName("tail"))
           },
-          newTermName("head")
+          TermName("head")
         )
   
       def mkCaseClassValue: Tree =
         Apply(
-          Select(Ident(sym.companionSymbol), newTermName("apply")),
+          Select(Ident(sym.companionSymbol), TermName("apply")),
           (0 until fields.length).map(mkNth(_)).toList
         )
   
@@ -116,18 +116,18 @@ object GenericMacros {
               Block(List(pendingSuperCall), Literal(Constant(())))),
               
             TypeDef(
-              Modifiers(), newTypeName("Repr"), List(),
+              Modifiers(), TypeName("Repr"), List(),
               mkHListType),
               
             DefDef(
-              Modifiers(), newTermName("to"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(tpe), EmptyTree))),
+              Modifiers(), TermName("to"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("t"), TypeTree(tpe), EmptyTree))),
               TypeTree(),
               mkHListValue),
 
             DefDef(
-              Modifiers(), newTermName("from"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("r"), mkHListType, EmptyTree))),
+              Modifiers(), TermName("from"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("r"), mkHListType, EmptyTree))),
               TypeTree(),
               mkCaseClassValue)
           )
@@ -148,7 +148,7 @@ object GenericMacros {
 
       val elems = sym.knownDirectSubclasses.toList.flatMap(normalize(_))
       
-      val CoproductTypeTree  = Select(Ident(newTermName("shapeless")), newTypeName("$colon$plus$colon"))
+      val CoproductTypeTree  = Select(Ident(TermName("shapeless")), TypeName("$colon$plus$colon"))
   
       def mkCoproductType: Tree =
         elems.reduceRight(
@@ -160,15 +160,15 @@ object GenericMacros {
         def loop(j: Int): Tree =
           if(j == 0) {
             if(last)
-              Ident(newTermName("x"))
+              Ident(TermName("x"))
             else
               Apply(
-                Select(inlSel, newTermName("apply")),
-                List(Ident(newTermName("x")))
+                Select(inlSel, TermName("apply")),
+                List(Ident(TermName("x")))
               )
           } else {
             Apply(
-              Select(inrSel, newTermName("apply")),
+              Select(inrSel, TermName("apply")),
               List(loop(j-1))
             )
           }
@@ -176,18 +176,18 @@ object GenericMacros {
       }
       
       def mkToCase(i: Int): CaseDef = 
-        CaseDef(Bind(newTermName("x"), Typed(Ident(nme.WILDCARD), elems(i))), EmptyTree, mkCoproductValue(i))
+        CaseDef(Bind(TermName("x"), Typed(Ident(nme.WILDCARD), elems(i))), EmptyTree, mkCoproductValue(i))
       
       def mkCoproductPattern(i: Int): Tree = {
         val last = i == elems.length-1
         def loop(j: Int): Tree =
           if(j == 0) {
             if(last)
-              Bind(newTermName("x"), Ident(nme.WILDCARD))
+              Bind(TermName("x"), Ident(nme.WILDCARD))
             else
               Apply(inlSel,
                 List(
-                  Bind(newTermName("x"), Ident(nme.WILDCARD))))
+                  Bind(TermName("x"), Ident(nme.WILDCARD))))
           } else {
             Apply(inrSel, List(loop(j-1)))
           }
@@ -195,7 +195,7 @@ object GenericMacros {
       }
 
       def mkFromCase(i: Int): CaseDef =
-        CaseDef(mkCoproductPattern(i), EmptyTree, Ident(newTermName("x")))
+        CaseDef(mkCoproductPattern(i), EmptyTree, Ident(TermName("x")))
       
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
@@ -208,23 +208,23 @@ object GenericMacros {
               Block(List(pendingSuperCall), Literal(Constant(())))),
               
             TypeDef(
-              Modifiers(), newTypeName("Repr"), List(),
+              Modifiers(), TypeName("Repr"), List(),
               mkCoproductType),
               
-            DefDef(Modifiers(), newTermName("to"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(base), EmptyTree))),
+            DefDef(Modifiers(), TermName("to"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("t"), TypeTree(base), EmptyTree))),
               mkCoproductType,
               Match(
-                Ident(newTermName("t")),
+                Ident(TermName("t")),
                 (0 until elems.length).map(mkToCase(_))(breakOut)
               )
             ),
             
-            DefDef(Modifiers(), newTermName("from"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("r"), mkCoproductType, EmptyTree))),
+            DefDef(Modifiers(), TermName("from"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("r"), mkCoproductType, EmptyTree))),
               TypeTree(base),
               Match(
-                Ident(newTermName("r")),
+                Ident(TermName("r")),
                 (0 until elems.length).map(mkFromCase(_))(breakOut)
               )
             )
@@ -245,7 +245,7 @@ object GenericMacros {
       if (!sym.isClass) badType()
       val classSym = sym.asClass 
         
-      val className = newTypeName(c.fresh)
+      val className = TypeName(c.freshName)
       
       val isoClass =
         if (classSym.isCaseClass)
