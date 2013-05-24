@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package shapeless
 /**
  * Representation of an isomorphism between a type (typically a case class) and an `HList`.
  */
+@deprecated("Use Generic, GenericAux or scalaz Iso instead", "2.0.0")
 trait Iso[T, U] { self =>
   def to(t : T) : U
   def from(u : U) : T
@@ -31,51 +32,13 @@ trait Iso[T, U] { self =>
   }
 }
 
-trait LowPriorityIso {
-  import Functions._
+object Iso {
+  def apply[T, U](implicit iso: Iso[T, U]) = iso
   
-  implicit def identityIso[T] = new Iso[T, T] {
-    def to(t : T) : T = t
-    def from(t : T) : T = t
-  }
-  def hlist[CC, C, T <: Product, L <: HList](apply : C, unapply : CC => Option[T])
-    (implicit fhl : FnHListerAux[C, L => CC], hl : HListerAux[T, L]) =
-      new Iso[CC, L] {
-        val ctor = apply.hlisted
-        val dtor = (cc : CC) => hl(unapply(cc).get)
-        def to(t : CC) : L = dtor(t)
-        def from(l : L) : CC = ctor(l)
-      }
-}
-
-object Iso extends LowPriorityIso {
-  import Functions._
-  import Tuples._
-
-  // Special case for one-element cases classes because their unapply result types
-  // are Option[T] rather than Option[Tuple1[T]] which would be required to fit
-  // the general case.
-  def hlist[CC, T](apply : T => CC, unapply : CC => Option[T]) =
-    new Iso[CC, T :: HNil] {
-      val ctor = apply.hlisted
-      val dtor = (cc : CC) => unapply(cc).get :: HNil 
-        def to(t : CC) : T :: HNil = dtor(t)
-        def from(l : T :: HNil) : CC = ctor(l)
-      }
-
-  implicit def tupleHListIso[T <: Product, L <: HList](implicit hl : HListerAux[T, L], uhl : TuplerAux[L, T]) =
-    new Iso[T, L] {
-      val ctor = uhl.apply _
-      val dtor = hl.apply _
-      def to(t : T) : L = dtor(t)
-      def from(l : L) : T = ctor(l)
-    }
-  
-  implicit def fnHListFnIso[F, L <: HList, R](implicit hl : FnHListerAux[F, L => R], unhl : FnUnHListerAux[L => R, F]) =
-    new Iso[F, L => R] {
-      def to(f : F) : L => R = hl(f)
-      def from(l : L => R) = unhl(l)
-    }
+  implicit def materializeFromGeneric[T](implicit gen: Generic[T]): Iso[T, gen.Repr] = new Iso[T, gen.Repr] {
+    def to(t : T) : gen.Repr = gen.to(t)
+    def from(u : gen.Repr) : T = gen.from(u)
+  } 
 }
 
 // vim: expandtab:ts=2:sw=2

@@ -30,75 +30,15 @@ object SybClassExamples extends App {
   // "Scrap your boilerplate: a practical approach to generic programming", Ralf Laemmel, Simon Peyton Jones
   //   http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
   case class Company[D <: HList](depts : D)
-  object Company {
-    implicit def companyIso[D <: HList] = Iso.hlist(Company.apply[D] _, Company.unapply[D] _)
-  }
-
   case class Dept[S <: HList](name : Name, manager : Manager, subunits : S)
-  object Dept {
-    implicit def deptIso[S <: HList] = Iso.hlist(Dept.apply[S] _, Dept.unapply[S] _)
-  }
-
   case class Employee(person : Person, salary : Salary)
-  object Employee {
-    implicit val employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
-  }
-
   case class Person(name : Name, address : Address)
-  object Person {
-    implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-  }
-
   case class Salary(salary : Double)
-  object Salary {
-    implicit val salaryIso = Iso.hlist(Salary.apply _, Salary.unapply _)
-  }
 
   type Manager = Employee
   type Name = String
   type Address = String
 
-  /*
-  // The HListIso definitions for each case class above replace this manually
-  // written SYB boilerplate
-  
-  implicit def companyDataT[F <: Poly, D <: HList](implicit fd : HomAux[F, D]) =
-    new DataT[F, Company[D]] {
-      def gmapT(c : Company[D]) = c match {
-        case Company(depts) => Company(fd(depts))
-      }
-    }
-
-  implicit def deptDataT[F <: Poly, S <: HList]
-    (implicit fn : HomAux[F, Name], fm : HomAux[F, Manager], fs : HomAux[F, S]) =
-      new DataT[F, Dept[S]] {
-        def gmapT(d : Dept[S]) = d match {
-          case Dept(name, manager, subunits) => Dept(fn(name), fm(manager), fs(subunits))
-        }
-      }
-
-  implicit def employeeDataT[F <: Poly](implicit fp : HomAux[F, Person], fs : HomAux[F, Salary]) =
-    new DataT[F, Employee] {
-      def gmapT(e : Employee) = e match {
-        case Employee(person, salary) => Employee(fp(person), fs(salary))
-      }
-    }
-
-  implicit def personDataT[F <: Poly](implicit fn : HomAux[F, Name], fa : HomAux[F, Address]) =
-    new DataT[F, Person] {
-      def gmapT(p : Person) = p match {
-        case Person(name, address) => Person(fn(name), fa(address))
-      }
-    }
-
-  implicit def salaryDataT[F <: Poly](implicit fs : HomAux[F, Double]) =
-    new DataT[F, Salary] {
-      def gmapT(s : Salary) = s match {
-        case Salary(salary) => Salary(fs(salary))
-      }
-    }
-  */
-  
   object raise extends Poly1 {
     implicit def apply[T] = at[T](identity)
     implicit def caseDouble = at[Double](_*1.1)

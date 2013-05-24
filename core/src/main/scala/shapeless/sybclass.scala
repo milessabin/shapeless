@@ -76,11 +76,11 @@ trait LowPrioritySybClass {
   }
   
   /**
-   * Data type class instance for types with associated `HListIso`s.
+   * Data type class instance for types with associated `Generic`s.
    */
-  implicit def hlistIsoData[F <: Poly, T, L <: HList, R](implicit iso : Iso[T, L], dl : Data[F, L, R]) =
+  implicit def hlistIsoData[F <: Poly, T, L <: HList, R](implicit gen : GenericAux[T, L], dl : Data[F, L, R]) =
     new Data[F, T, R] {
-      def gmapQ(t : T) = dl.gmapQ(iso.to(t))
+      def gmapQ(t : T) = dl.gmapQ(gen.to(t))
     }
   
   /**
@@ -147,11 +147,11 @@ trait LowPrioritySybClass {
   }
   
   /**
-   * DataT type class instance for type with associated `HListIso`s.
+   * DataT type class instance for type with associated `Generics`s.
    */
-  implicit def hlistIsoDataT[F <: Poly, T, L <: HList](implicit iso : Iso[T, L], dl : DataT[F, L]) =
+  implicit def hlistIsoDataT[F <: Poly, T, L <: HList](implicit gen : GenericAux[T, L], dl : DataT[F, L]) =
     new DataT[F, T] {
-      def gmapT(t : T) = iso.from(dl.gmapT(iso.to(t)))
+      def gmapT(t : T) = gen.from(dl.gmapT(gen.to(t)))
     }
 
   /**

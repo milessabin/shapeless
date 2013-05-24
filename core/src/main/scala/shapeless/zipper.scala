@@ -17,7 +17,7 @@
 package shapeless
 
 /**
- * Generic Zipper for any type with an `Iso` with an `HList`.
+ * Generic Zipper for any type with a representation via `Generic`.
  * 
  * @author Miles Sabin
  */
@@ -69,7 +69,7 @@ case class Zipper[C, L <: HList, R <: HList, P](prefix : L, suffix : R, parent :
   def up(implicit up : Up[Self]) : up.Out = up(this)
   
   /** Moves the cursor down to the next level, placing it at the first element on the left. Available only if the
-   * element current at the cursor has an `Iso` to an `HList`.
+   * element current at the cursor has a representation via `Generic`.
    */
   def down(implicit down : Down[Self]) : down.Out = down(this)
   
@@ -93,12 +93,12 @@ case class Zipper[C, L <: HList, R <: HList, P](prefix : L, suffix : R, parent :
 }
 
 object Zipper {
-  def apply[C, CL <: HList](c : C)(implicit iso : Iso[C, CL]) : Zipper[C, HNil, CL, None.type] =
-    Zipper[C, HNil, CL, None.type](HNil, iso.to(c), None)
+  def apply[C, CL <: HList](c : C)(implicit gen : GenericAux[C, CL]) : Zipper[C, HNil, CL, None.type] =
+    Zipper[C, HNil, CL, None.type](HNil, gen.to(c), None)
 
-  /** Enhances values of any type with an `Iso` with an `HList` with a method supporting conversion to a `Zipper`. */
+  /** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
   class ToZipper[C](c : C) {
-    def toZipper[CL <: HList](implicit iso : Iso[C, CL]) = Zipper(c)
+    def toZipper[CL <: HList](implicit gen : GenericAux[C, CL]) = Zipper(c)
   }
   
   implicit def toZipper[C](c : C) = new ToZipper(c)
@@ -235,10 +235,10 @@ object Zipper {
   trait Down[Z] extends ZipperOp0[Z]
   
   object Down {
-    implicit def down[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit iso : Iso[RH, RHL]) =
+    implicit def down[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit gen : GenericAux[RH, RHL]) =
       new Down[Zipper[C, L, RH :: RT, P]] {
         type Out = Zipper[RH, HNil, RHL, Some[Zipper[C, L, RH :: RT, P]]]
-        def apply(z : Zipper[C, L, RH :: RT, P]) = Zipper(HNil, iso.to(z.suffix.head), Some(z))
+        def apply(z : Zipper[C, L, RH :: RT, P]) = Zipper(HNil, gen.to(z.suffix.head), Some(z))
       }
   }
   
@@ -271,7 +271,7 @@ object Zipper {
   
   trait LowPriorityPut {
     implicit def put[C, L <: HList, RH, RT <: HList, P, E, CL <: HList]
-      (implicit rp : ReversePrependAux[L, E :: RT, CL], iso : Iso[C, CL]) =
+      (implicit gen : GenericAux[C, CL], rp : ReversePrependAux[L, E :: RT, CL]) =
         new Put[Zipper[C, L, RH :: RT, P], E] {
           type Out = Zipper[C, L, E :: RT, P]
           def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
@@ -313,10 +313,10 @@ object Zipper {
   
   object Reify {
     implicit def reify[C, L <: HList, R <: HList, P, CL <: HList]
-      (implicit rp : ReversePrependAux[L, R, CL], iso : Iso[C, CL]) =
+      (implicit gen : GenericAux[C, CL], rp : ReversePrependAux[L, R, CL]) =
         new Reify[Zipper[C, L, R, P]] {
           type Out = C
-          def apply(z : Zipper[C, L, R, P]) = iso.from(z.prefix reverse_::: z.suffix)
+          def apply(z : Zipper[C, L, R, P]) = gen.from(z.prefix reverse_::: z.suffix)
         }
   }
 }

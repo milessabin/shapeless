@@ -27,10 +27,10 @@ trait Lens[C, F] {
     def set(d : D)(f : F) : D = g.set(d)(outer.set(g.get(d))(f))
   }
 
-  def >>[L <: HList, N <: Nat](n : N)(implicit iso : Iso[F, L], lens : HListNthLens[L, N]) =
+  def >>[L <: HList, N <: Nat](n : N)(implicit gen : GenericAux[F, L], lens : HListNthLens[L, N]) =
     new Lens[C, lens.Elem] {
-      def get(c : C) : lens.Elem = lens.get(iso.to(outer.get(c)))
-      def set(c : C)(f : lens.Elem) = outer.set(c)(iso.from(lens.set(iso.to(outer.get(c)))(f)))
+      def get(c : C) : lens.Elem = lens.get(gen.to(outer.get(c)))
+      def set(c : C)(f : lens.Elem) = outer.set(c)(gen.from(lens.set(gen.to(outer.get(c)))(f)))
     }
   
   def ~[G](other : Lens[C, G]) = new ProductLens[C, (F, G)] {

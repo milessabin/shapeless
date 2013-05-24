@@ -45,9 +45,6 @@ object ZipperExamples extends App {
   case class Dept[E <: HList](manager : Employee, employees : E)
   case class Employee(name : String, salary : Int)
   
-  implicit def deptIso[E <: HList] = Iso.hlist(Dept.apply[E] _, Dept.unapply[E] _)
-  implicit def employeeIso = Iso.hlist(Employee.apply _, Employee.unapply _)
-  
   val dept =
     Dept(
       Employee("Agamemnon", 5000),
@@ -101,7 +98,7 @@ object ZipperExamples extends App {
   typed[D](updatedDept)
   println(updatedDept)
   // Dept(Employee(King Agamemnon,8000),Employee(Menelaus,3000) :: Employee(Achilles,2000) :: Employee(Odysseus,2000) :: HNil)
-  
+
   val achillesRaise = g9.right.down.right.down.right.put(3000).root.reify
   typed[D](achillesRaise)
   println(achillesRaise)

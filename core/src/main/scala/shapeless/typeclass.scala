@@ -18,7 +18,7 @@ package shapeless
 
 /**
  * A type class abstracting over the `product` operation of type classes over
- * types of kind `*`, as well as deriving instances using an [[Iso]].
+ * types of kind `*`, as well as deriving instances using an [[Generic]].
  */
 trait TypeClass[C[_]] {
 
@@ -33,52 +33,27 @@ trait TypeClass[C[_]] {
    */
   def emptyProduct: C[HNil]
 
-  /** The product containing one element. */
-  final def product1[F](implicit F: C[F]): C[F :: HNil] =
-    product(F, emptyProduct)
-
-  /**The product containing two elements. */
-  final def product2[F, G](implicit F: C[F], G: C[G]): C[F :: G :: HNil] =
-    product(F, product(G, emptyProduct))
-
-  /**The product containing three elements. */
-  final def product3[F, G, H](implicit F: C[F], G: C[G], H: C[H]): C[F :: G :: H :: HNil] =
-    product(F, product(G, product(H, emptyProduct)))
-
-
   /**
-   * Given a type class instance for `G`, and an `Iso` from `F` to `G`,
+   * Given a `Generic` for `F` as `Repr`, and a type class instance for `Repr`,
    * produce a type class instance for `F`.
    */
-  def derive[F, G](instance: C[G], iso: Iso[F, G]): C[F]
+  def derive[F, Repr](instance: C[Repr], gen: GenericAux[F, Repr]): C[F]
 
+  import TypeClass._
+  
+  implicit val hnilInstance: ReprInstance[C, HNil] =
+    new ReprInstance[C, HNil](emptyProduct)
+
+  implicit def hconsInstance[H, T <: HList](implicit H: C[H], T: ReprInstance[C, T]): ReprInstance[C, H :: T] =
+    new ReprInstance[C, H :: T](product(H, T.instance))
+
+  implicit def deriveFromIso[F, Repr](implicit gen: GenericAux[F, Repr], hlistInst: ReprInstance[C, Repr]): C[F] =
+    derive(hlistInst.instance, gen)
 }
 
 object TypeClass {
-
-  @inline def apply[C[_]](implicit C: TypeClass[C]) = C
-
-
-  // Derive type classes from isos to HLists.
-  // Without the wrapper, `deriveFromIso` participates in a "diverging implicit
-  // expansion" when trying to resolve the type class instance for the HList.
-  // Hence, we separate that phase with a dedicated type constructor.
-
-  class HListInstance[C[_], L <: HList](val instance: C[L]) extends AnyVal
-
-  object HListInstance {
-
-    implicit def nilInstance[C[_] : TypeClass]: HListInstance[C, HNil] =
-      new HListInstance[C, HNil](TypeClass[C].emptyProduct)
-
-    implicit def consInstance[C[_] : TypeClass, H, T <: HList](implicit H: C[H], T: HListInstance[C, T]): HListInstance[C, H :: T] =
-      new HListInstance[C, H :: T](TypeClass[C].product(H, T.instance))
-
-  }
-
-  implicit def deriveFromIso[C[_] : TypeClass, F, G <: HList](implicit iso: Iso[F, G], hlistInst: HListInstance[C, G]): C[F] =
-    TypeClass[C].derive(hlistInst.instance, iso)
-
+  // classes which extend AnyVal cannot be nested
+  class ReprInstance[C[_], Repr](val instance: C[Repr]) extends AnyVal
 }
 
 // vim: expandtab:ts=2:sw=2
