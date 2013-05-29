@@ -57,14 +57,16 @@ object GenericMacros {
     import definitions._
     import Flag._
 
+    val shapelessNme = newTermName("shapeless")
+
     val genericSym = c.mirror.staticClass("shapeless.Generic")
+    
     val hlistSym = c.mirror.staticClass("shapeless.HList")
     val hlistTpe = hlistSym.asClass.toType
     
-    val shapelessNme = newTermName("shapeless")
-    val inlSel = Select(Ident(shapelessNme), newTermName("Inl"))
-    val inrSel = Select(Ident(shapelessNme), newTermName("Inr"))
-      
+    val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
+    val coproductTpe = coproductSym.asClass.toType
+    
     val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
   
     def mkProductIso(className: TypeName, tpe: Type, sym: ClassSymbol): ClassDef = {
@@ -72,11 +74,11 @@ object GenericMacros {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
       }
   
-      val HNilTypeTree   = Select(Ident(newTermName("shapeless")), newTypeName("HNil"))
-      val HNilValueTree  = Select(Ident(newTermName("shapeless")), newTermName("HNil"))
+      val HNilTypeTree   = Select(Ident(shapelessNme), newTypeName("HNil"))
+      val HNilValueTree  = Select(Ident(shapelessNme), newTermName("HNil"))
   
-      val HConsTypeTree  = Select(Ident(newTermName("shapeless")), newTypeName("$colon$colon"))
-      val HConsValueTree = Select(Ident(newTermName("shapeless")), newTermName("$colon$colon"))
+      val HConsTypeTree  = Select(Ident(shapelessNme), newTypeName("$colon$colon"))
+      val HConsValueTree = Select(Ident(shapelessNme), newTermName("$colon$colon"))
   
       def mkHListType: Tree = {
         fields.map { f => TypeTree(f.typeSignatureIn(tpe)) }.foldRight(HNilTypeTree : Tree) {
@@ -148,30 +150,30 @@ object GenericMacros {
 
       val elems = sym.knownDirectSubclasses.toList.flatMap(normalize(_))
       
-      val CoproductTypeTree  = Select(Ident(newTermName("shapeless")), newTypeName("$colon$plus$colon"))
+      val CNilTypeTree = Select(Ident(shapelessNme), newTypeName("CNil"))
+      val CoproductTypeTree = Select(Ident(shapelessNme), newTypeName("$colon$plus$colon"))
+      
+      val inlSel = Select(Ident(shapelessNme), newTermName("Inl"))
+      val inrSel = Select(Ident(shapelessNme), newTermName("Inr"))
   
       def mkCoproductType: Tree =
-        elems.reduceRight(
+        elems.foldRight(CNilTypeTree: Tree)(
           (a: TypeTree, b: Tree) => AppliedTypeTree(CoproductTypeTree, List(a, b))
         )
       
       def mkCoproductValue(i: Int): Tree = {
-        val last = i == elems.length-1
         def loop(j: Int): Tree =
-          if(j == 0) {
-            if(last)
-              Ident(newTermName("x"))
-            else
-              Apply(
-                Select(inlSel, newTermName("apply")),
-                List(Ident(newTermName("x")))
-              )
-          } else {
+          if(j == 0)
+            Apply(
+              Select(inlSel, newTermName("apply")),
+              List(Ident(newTermName("x")))
+            )
+          else
             Apply(
               Select(inrSel, newTermName("apply")),
               List(loop(j-1))
             )
-          }
+
         loop(i)
       }
       
@@ -179,18 +181,14 @@ object GenericMacros {
         CaseDef(Bind(newTermName("x"), Typed(Ident(nme.WILDCARD), elems(i))), EmptyTree, mkCoproductValue(i))
       
       def mkCoproductPattern(i: Int): Tree = {
-        val last = i == elems.length-1
         def loop(j: Int): Tree =
-          if(j == 0) {
-            if(last)
-              Bind(newTermName("x"), Ident(nme.WILDCARD))
-            else
-              Apply(inlSel,
-                List(
-                  Bind(newTermName("x"), Ident(nme.WILDCARD))))
-          } else {
+          if(j == 0)
+            Apply(inlSel,
+              List(
+                Bind(newTermName("x"), Ident(nme.WILDCARD))))
+          else
             Apply(inrSel, List(loop(j-1)))
-          }
+
         loop(i)
       }
 
@@ -234,7 +232,7 @@ object GenericMacros {
     }
 
     val tpe = c.weakTypeOf[T]
-    if(tpe <:< hlistTpe)
+    if(tpe <:< hlistTpe || tpe <:< coproductTpe)
       reify { Generic.identity[T] }
     else {
       val sym = tpe.typeSymbol

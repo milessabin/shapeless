@@ -97,10 +97,10 @@ class IsoTests {
   import IsoAux._
   import scala.collection.immutable.{ :: => Cons }
   
-  type ABP = Apple :+: Banana :+: Pear
-  type APBO = Apple :+: Pear :+: Banana :+: Orange
+  type ABP = Apple :+: Banana :+: Pear :+: CNil
+  type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
   
-  type ABC = A.type :+: B.type :+: C.type
+  type ABC = A.type :+: B.type :+: C.type :+: CNil
   
   def typed[T](t : => T) {}
 
@@ -228,14 +228,14 @@ class IsoTests {
 
   @Test
   def testSingletonCoproducts {
-    type S = Single
+    type S = Single :+: CNil
 
     val iso = Iso[AbstractSingle, S]
     
     val s: AbstractSingle = Single()
     
     val s0 = iso.to(s)
-    typed[Single](s0)
+    typed[Single :+: CNil](s0)
     
     val s1 = iso.from(s0)
     typed[AbstractSingle](s1)
@@ -301,7 +301,7 @@ class IsoTests {
   @Test
   def testParametrized {
     val t: Tree[Int] = Node(Node(Leaf(23), Leaf(13)), Leaf(11))
-    type NI = Node[Int] :+: Leaf[Int]
+    type NI = Node[Int] :+: Leaf[Int] :+: CNil
     
     val iso = Iso[Tree[Int], NI]
     
@@ -315,7 +315,7 @@ class IsoTests {
   @Test
   def testParametrizedWithVarianceOption {
     val o: Option[Int] = Option(23)
-    type SN = None.type :+: Some[Int] 
+    type SN = None.type :+: Some[Int] :+: CNil 
     
     val iso = Iso[Option[Int], SN]
     
@@ -345,7 +345,7 @@ class IsoTests {
     import scala.collection.immutable.{ :: => Cons }
     
     val l: List[Int] = List(1, 2, 3)
-    type CN = Cons[Int] :+: Nil.type 
+    type CN = Cons[Int] :+: Nil.type :+: CNil
     
     val iso = Iso[List[Int], CN]
     
