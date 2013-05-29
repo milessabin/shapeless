@@ -33,8 +33,6 @@ sealed trait CNil extends Coproduct {
   override def toString = "CNil"
 }
 
-case object CNil extends CNil
-
 object Coproduct {
   class MkCoproduct[C <: Coproduct] {
     def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t) 

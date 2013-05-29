@@ -69,7 +69,7 @@ class CoproductTests {
         typed[String](x)
       case Inr(Inr(Inl(x))) =>
         typed[Boolean](x)
-      case Inr(Inr(Inr(CNil))) => ??? // This impossible case required for exhaustivity
+      case Inr(Inr(Inr(_))) => ??? // This impossible case required for exhaustivity
     }
     
     val foo1 = Coproduct[ISB](23)
