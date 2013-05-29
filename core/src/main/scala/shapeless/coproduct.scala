@@ -28,10 +28,7 @@ final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
   override def toString = tail.toString
 }
 
-sealed trait CNil extends Coproduct {
-  def :+:[H](h: H): H :+: CNil = Inl(h)
-  override def toString = "CNil"
-}
+sealed trait CNil extends Coproduct
 
 object Coproduct {
   class MkCoproduct[C <: Coproduct] {
