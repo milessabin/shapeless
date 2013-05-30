@@ -19,6 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.collection.breakOut
+import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
 
 trait Generic[T] { self =>
@@ -147,7 +148,7 @@ object GenericMacros {
             if (appliedTpe <:< base) Some(TypeTree(appliedTpe)) else None
         }
       }
-
+      
       val elems = sym.knownDirectSubclasses.toList.flatMap(normalize(_))
       
       val CNilTypeTree = Select(Ident(shapelessNme), newTypeName("CNil"))
@@ -155,46 +156,40 @@ object GenericMacros {
       
       val inlSel = Select(Ident(shapelessNme), newTermName("Inl"))
       val inrSel = Select(Ident(shapelessNme), newTermName("Inr"))
+      
+      val uncheckedSym = c.mirror.staticClass("scala.unchecked")
   
       def mkCoproductType: Tree =
         elems.foldRight(CNilTypeTree: Tree)(
           (a: TypeTree, b: Tree) => AppliedTypeTree(CoproductTypeTree, List(a, b))
         )
       
-      def mkCoproductValue(i: Int): Tree = {
-        def loop(j: Int): Tree =
-          if(j == 0)
-            Apply(
-              Select(inlSel, newTermName("apply")),
-              List(Ident(newTermName("x")))
-            )
-          else
-            Apply(
-              Select(inrSel, newTermName("apply")),
-              List(loop(j-1))
-            )
-
-        loop(i)
-      }
+      def mkCoproductValue(i: Int): Tree =
+        if(i == 0)
+          Apply(
+            Select(inlSel, newTermName("apply")),
+            List(Ident(newTermName("x")))
+          )
+        else
+          Apply(
+            Select(inrSel, newTermName("apply")),
+            List(mkCoproductValue(i-1))
+          )
       
       def mkToCase(i: Int): CaseDef = 
         CaseDef(Bind(newTermName("x"), Typed(Ident(nme.WILDCARD), elems(i))), EmptyTree, mkCoproductValue(i))
       
-      def mkCoproductPattern(i: Int): Tree = {
-        def loop(j: Int): Tree =
-          if(j == 0)
-            Apply(inlSel,
-              List(
-                Bind(newTermName("x"), Ident(nme.WILDCARD))))
-          else
-            Apply(inrSel, List(loop(j-1)))
-
-        loop(i)
-      }
+      def mkCoproductPattern(i: Int): Tree =
+        if(i == 0)
+          Apply(inlSel,
+            List(
+              Bind(newTermName("x"), Ident(nme.WILDCARD))))
+        else
+          Apply(inrSel, List(mkCoproductPattern(i-1)))
 
       def mkFromCase(i: Int): CaseDef =
         CaseDef(mkCoproductPattern(i), EmptyTree, Ident(newTermName("x")))
-      
+        
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(AppliedTypeTree(Ident(genericSym), List(TypeTree(base)))),
@@ -222,7 +217,10 @@ object GenericMacros {
               List(List(ValDef(Modifiers(PARAM), newTermName("r"), mkCoproductType, EmptyTree))),
               TypeTree(base),
               Match(
-                Ident(newTermName("r")),
+                Annotated(
+                  Apply(Select(New(Ident(uncheckedSym)), nme.CONSTRUCTOR), List()),
+                  Ident(newTermName("r"))
+                ),
                 (0 until elems.length).map(mkFromCase(_))(breakOut)
               )
             )
@@ -255,7 +253,7 @@ object GenericMacros {
           }
         else
           badType()
-        
+
       c.Expr[Generic[T]](
         Block(
           List(isoClass),
