@@ -45,7 +45,7 @@ object SybClassExamples {
     implicit def caseInt = at[Int](_*110/100)
   }
 
-  def main(args: Array[String]) {
+  def paradise : Unit = {
     val beforeRaise =
       Company(
         List(
@@ -85,5 +85,61 @@ object SybClassExamples {
       )
       
     assert(afterRaise == expected)
+  }
+  
+  sealed trait Tree[T]
+  case class Leaf[T](t: T) extends Tree[T]
+  case class Node[T](left: Tree[T], right: Tree[T]) extends Tree[T]
+  
+  object inc extends Poly1 {
+    implicit def caseInt = at[Int](_+1)
+  }
+  
+  def recursion : Unit = {
+    val tree: Tree[Int] =
+      Node(
+        Node(
+          Node(
+            Leaf(1),
+            Node(
+              Leaf(2),
+              Leaf(3)
+            )
+          ),
+          Leaf(4)
+        ),
+        Node(
+          Leaf(5),
+          Leaf(6)
+        )
+      )
+
+    val result = everywhere(inc)(tree)
+    println(result)
+    
+    val expected: Tree[Int] =
+      Node(
+        Node(
+          Node(
+            Leaf(2),
+            Node(
+              Leaf(3),
+              Leaf(4)
+            )
+          ),
+          Leaf(5)
+        ),
+        Node(
+          Leaf(6),
+          Leaf(7)
+        )
+      )
+
+    assert(expected == result)
+  }
+
+  def main(args: Array[String]) {
+    paradise
+    recursion
   }
 }
