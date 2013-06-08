@@ -108,7 +108,7 @@ object ShapelessBuild extends Build {
     Seq(
       organization        := "com.chuusai",
       version             := "2.0.0-SNAPSHOT",
-      scalaVersion        := "2.10.2-SNAPSHOT",
+      scalaVersion        := "2.10.2",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
