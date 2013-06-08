@@ -93,10 +93,10 @@ class GenericTests {
   import GenericTestsAux._
   import scala.collection.immutable.{ :: => Cons }
   
-  type ABP = Apple :+: Banana :+: Pear
-  type APBO = Apple :+: Pear :+: Banana :+: Orange
+  type ABP = Apple :+: Banana :+: Pear :+: CNil
+  type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
   
-  type ABC = A.type :+: B.type :+: C.type
+  type ABC = A.type :+: B.type :+: C.type :+: CNil
   
   def typed[T](t : => T) {}
 
@@ -239,7 +239,7 @@ class GenericTests {
     val s: AbstractSingle = Single()
     
     val s0 = gen.to(s)
-    typed[Single](s0)
+    typed[Single :+: CNil](s0)
     
     val s1 = gen.from(s0)
     typed[AbstractSingle](s1)
@@ -305,7 +305,7 @@ class GenericTests {
   @Test
   def testParametrized {
     val t: Tree[Int] = Node(Node(Leaf(23), Leaf(13)), Leaf(11))
-    type NI = Node[Int] :+: Leaf[Int]
+    type NI = Node[Int] :+: Leaf[Int] :+: CNil
     
     val gen = Generic[Tree[Int]]
     
@@ -319,7 +319,7 @@ class GenericTests {
   @Test
   def testParametrizedWithVarianceOption {
     val o: Option[Int] = Option(23)
-    type SN = None.type :+: Some[Int] 
+    type SN = None.type :+: Some[Int] :+: CNil
     
     val gen = Generic[Option[Int]]
     
@@ -349,7 +349,7 @@ class GenericTests {
     import scala.collection.immutable.{ :: => Cons }
     
     val l: List[Int] = List(1, 2, 3)
-    type CN = Cons[Int] :+: Nil.type 
+    type CN = Cons[Int] :+: Nil.type :+: CNil
     
     val gen = Generic[List[Int]]
     

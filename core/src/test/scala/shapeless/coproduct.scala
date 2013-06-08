@@ -24,15 +24,15 @@ import test.illTyped
 class CoproductTests {
   def typed[T](t : => T) {}
   
-  type ISB = Int :+: String :+: Boolean
-  type III = Int :+: Int :+: Int
+  type ISB = Int :+: String :+: Boolean :+: CNil
+  type III = Int :+: Int :+: Int :+: CNil
   
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
   case class Banana() extends Fruit
   
-  type APB = Apple :+: Pear :+: Banana
+  type APB = Apple :+: Pear :+: Banana :+: CNil
 
   object size extends Poly1 {
     implicit val caseInt     = at[Int](_ => 1)
@@ -42,11 +42,11 @@ class CoproductTests {
 
   @Test
   def testInject {
-    implicitly[Inject[Int, Int]]
-    implicitly[Inject[Int :+: Int, Int]]
-    implicitly[Inject[Int :+: Int :+: Int, Int]]
-    implicitly[Inject[String :+: Int, Int]]
-    implicitly[Inject[Int :+: String, Int]]
+    implicitly[Inject[Int :+: CNil, Int]]
+    implicitly[Inject[Int :+: Int :+: CNil, Int]]
+    implicitly[Inject[Int :+: Int :+: Int :+: CNil, Int]]
+    implicitly[Inject[String :+: Int :+: CNil, Int]]
+    implicitly[Inject[Int :+: String :+: CNil, Int]]
 
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
@@ -55,8 +55,11 @@ class CoproductTests {
     illTyped("""
       val foo4 = Coproduct[ISB](1.0)
     """)
+    illTyped("""
+      val foo4 = Coproduct[ISB](CNil)
+    """)
   }
-  
+
   @Test
   def testMatch {
     def cpMatch(v: ISB) = v match {
@@ -64,8 +67,9 @@ class CoproductTests {
         typed[Int](x)
       case Inr(Inl(x)) =>
         typed[String](x)
-      case Inr(Inr(x)) =>
+      case Inr(Inr(Inl(x))) =>
         typed[Boolean](x)
+      case Inr(Inr(Inr(_))) => ??? // This impossible case required for exhaustivity
     }
     
     val foo1 = Coproduct[ISB](23)
@@ -148,7 +152,7 @@ class CoproductTests {
     
     val foo3b = foo3 map size
     typed[III](foo3b)
-    assertEquals(Inr(Inr(1)), foo3b)
+    assertEquals(Inr(Inr(Inl(1))), foo3b)
   }
   
   @Test

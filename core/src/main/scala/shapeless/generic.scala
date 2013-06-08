@@ -19,6 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.collection.breakOut
+import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
 
 trait Generic[T] { self =>
@@ -57,14 +58,16 @@ object GenericMacros {
     import definitions._
     import Flag._
 
+    val shapelessNme = TermName("shapeless")
+
     val genericSym = c.mirror.staticClass("shapeless.Generic")
+    
     val hlistSym = c.mirror.staticClass("shapeless.HList")
     val hlistTpe = hlistSym.asClass.toType
     
-    val shapelessNme = TermName("shapeless")
-    val inlSel = Select(Ident(shapelessNme), TermName("Inl"))
-    val inrSel = Select(Ident(shapelessNme), TermName("Inr"))
-      
+    val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
+    val coproductTpe = coproductSym.asClass.toType
+    
     val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
   
     def mkProductIso(className: TypeName, tpe: Type, sym: ClassSymbol): ClassDef = {
@@ -72,11 +75,11 @@ object GenericMacros {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
       }
   
-      val HNilTypeTree   = Select(Ident(TermName("shapeless")), TypeName("HNil"))
-      val HNilValueTree  = Select(Ident(TermName("shapeless")), TermName("HNil"))
+      val HNilTypeTree   = Select(Ident(shapelessNme), TypeName("HNil"))
+      val HNilValueTree  = Select(Ident(shapelessNme), TermName("HNil"))
   
-      val HConsTypeTree  = Select(Ident(TermName("shapeless")), TypeName("$colon$colon"))
-      val HConsValueTree = Select(Ident(TermName("shapeless")), TermName("$colon$colon"))
+      val HConsTypeTree  = Select(Ident(shapelessNme), TypeName("$colon$colon"))
+      val HConsValueTree = Select(Ident(shapelessNme), TermName("$colon$colon"))
   
       def mkHListType: Tree = {
         fields.map { f => TypeTree(f.typeSignatureIn(tpe)) }.foldRight(HNilTypeTree : Tree) {
@@ -145,58 +148,48 @@ object GenericMacros {
             if (appliedTpe <:< base) Some(TypeTree(appliedTpe)) else None
         }
       }
-
+      
       val elems = sym.knownDirectSubclasses.toList.flatMap(normalize(_))
       
-      val CoproductTypeTree  = Select(Ident(TermName("shapeless")), TypeName("$colon$plus$colon"))
+      val CNilTypeTree = Select(Ident(shapelessNme), TypeName("CNil"))
+      val CoproductTypeTree = Select(Ident(shapelessNme), TypeName("$colon$plus$colon"))
+      
+      val inlSel = Select(Ident(shapelessNme), TermName("Inl"))
+      val inrSel = Select(Ident(shapelessNme), TermName("Inr"))
+      
+      val uncheckedSym = c.mirror.staticClass("scala.unchecked")
   
       def mkCoproductType: Tree =
-        elems.reduceRight(
+        elems.foldRight(CNilTypeTree: Tree)(
           (a: TypeTree, b: Tree) => AppliedTypeTree(CoproductTypeTree, List(a, b))
         )
       
-      def mkCoproductValue(i: Int): Tree = {
-        val last = i == elems.length-1
-        def loop(j: Int): Tree =
-          if(j == 0) {
-            if(last)
-              Ident(TermName("x"))
-            else
-              Apply(
-                Select(inlSel, TermName("apply")),
-                List(Ident(TermName("x")))
-              )
-          } else {
-            Apply(
-              Select(inrSel, TermName("apply")),
-              List(loop(j-1))
-            )
-          }
-        loop(i)
-      }
+      def mkCoproductValue(i: Int): Tree =
+        if(i == 0)
+          Apply(
+            Select(inlSel, TermName("apply")),
+            List(Ident(TermName("x")))
+          )
+        else
+          Apply(
+            Select(inrSel, TermName("apply")),
+            List(mkCoproductValue(i-1))
+          )
       
       def mkToCase(i: Int): CaseDef = 
         CaseDef(Bind(TermName("x"), Typed(Ident(nme.WILDCARD), elems(i))), EmptyTree, mkCoproductValue(i))
       
-      def mkCoproductPattern(i: Int): Tree = {
-        val last = i == elems.length-1
-        def loop(j: Int): Tree =
-          if(j == 0) {
-            if(last)
-              Bind(TermName("x"), Ident(nme.WILDCARD))
-            else
-              Apply(inlSel,
-                List(
-                  Bind(TermName("x"), Ident(nme.WILDCARD))))
-          } else {
-            Apply(inrSel, List(loop(j-1)))
-          }
-        loop(i)
-      }
+      def mkCoproductPattern(i: Int): Tree =
+        if(i == 0)
+          Apply(inlSel,
+            List(
+              Bind(TermName("x"), Ident(nme.WILDCARD))))
+        else
+          Apply(inrSel, List(mkCoproductPattern(i-1)))
 
       def mkFromCase(i: Int): CaseDef =
         CaseDef(mkCoproductPattern(i), EmptyTree, Ident(TermName("x")))
-      
+        
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(AppliedTypeTree(Ident(genericSym), List(TypeTree(base)))),
@@ -224,7 +217,10 @@ object GenericMacros {
               List(List(ValDef(Modifiers(PARAM), TermName("r"), mkCoproductType, EmptyTree))),
               TypeTree(base),
               Match(
-                Ident(TermName("r")),
+                Annotated(
+                  Apply(Select(New(Ident(uncheckedSym)), nme.CONSTRUCTOR), List()),
+                  Ident(TermName("r"))
+                ),
                 (0 until elems.length).map(mkFromCase(_))(breakOut)
               )
             )
@@ -234,7 +230,7 @@ object GenericMacros {
     }
 
     val tpe = c.weakTypeOf[T]
-    if(tpe <:< hlistTpe)
+    if(tpe <:< hlistTpe || tpe <:< coproductTpe)
       reify { Generic.identity[T] }
     else {
       val sym = tpe.typeSymbol
@@ -257,7 +253,7 @@ object GenericMacros {
           }
         else
           badType()
-        
+
       c.Expr[Generic[T]](
         Block(
           List(isoClass),

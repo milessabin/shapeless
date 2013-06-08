@@ -18,71 +18,64 @@ package shapeless
 
 sealed trait Coproduct
 
-trait :+:[+A, +B] extends Coproduct
+sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
 
-case class Inl[A](a: A) extends (A :+: Nothing)
-case class Inr[B](b: B) extends (Nothing :+: B)
+final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T] {
+  override def toString = head.toString
+}
+
+final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
+  override def toString = tail.toString
+}
+
+sealed trait CNil extends Coproduct
 
 object Coproduct {
-  class MkCoproduct[C] {
+  class MkCoproduct[C <: Coproduct] {
     def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t) 
   }
   
-  def apply[C] = new MkCoproduct[C]
+  def apply[C <: Coproduct] = new MkCoproduct[C]
   
-  class CoproductOps[C](c: C) {
+  class CoproductOps[C <: Coproduct](c: C) {
     def map[F <: Poly](f: F)(implicit mapper: CPMapper[F, C]): mapper.Out = mapper(c)
     
     def select[T](implicit selector: CPSelector[C, T]): Option[T] = selector(c)
     
-    def unify[T](implicit unifier: CPUnifierAux[C, T]): T = unifier(c)
+    def unify[T](implicit unifier: CPUnifierAux[C, T]): T = (unifier(c): @unchecked) match {
+      case Inl(h) => h
+    }
   }
-  implicit def cpOps[C](c: C) = new CoproductOps(c) 
+  implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
 }
 
-trait Inject[C, I] {
+trait Inject[C <: Coproduct, I] {
   def apply(i: I): C
 }
 
-trait LowPriorityInject {
-  implicit def lstInject0[T]: Inject[T, T] = new Inject[T, T] {
-    def apply(t: T): T = t
-  }
-  
-  implicit def lstInject1[H, I]: Inject[H :+: I, I] = new Inject[H :+: I, I] {
-    def apply(t: I): H :+: I = Inr(t) 
-  }
-  
-  implicit def tlInject[H, T, I](implicit tlInj : Inject[T, I]): Inject[H :+: T, I] = new Inject[H :+: T, I] {
+object Inject {
+  implicit def tlInject[H, T <: Coproduct, I](implicit tlInj : Inject[T, I]): Inject[H :+: T, I] = new Inject[H :+: T, I] {
     def apply(i: I): H :+: T = Inr(tlInj(i))
   }
-}
 
-object Inject extends LowPriorityInject {
-  implicit def hdInject[I, CT]: Inject[I :+: CT, I] = new Inject[I :+: CT, I] {
-    def apply(i: I): I :+: CT = Inl(i) 
+  implicit def hdInject[H, T <: Coproduct]: Inject[H :+: T, H] = new Inject[H :+: T, H] {
+    def apply(i: H): H :+: T = Inl(i)
   }
 }
 
-trait CPSelector[C, T] {
+trait CPSelector[C <: Coproduct, T] {
   def apply(c: C): Option[T]
 }
 
-trait LowPriorityCPSelector {
-  implicit def tlSelector0[S]: CPSelector[S, S] = new CPSelector[S, S] {
-    def apply(c: S): Option[S] = Some(c)
-  }
-  
-  implicit def tlSelector1[H, T, S](implicit st: CPSelector[T, S]): CPSelector[H :+: T, S] = new CPSelector[H :+: T, S] {
+object CPSelector {
+  implicit def tlSelector1[H, T <: Coproduct, S](implicit st: CPSelector[T, S]): CPSelector[H :+: T, S] = new CPSelector[H :+: T, S] {
     def apply(c: H :+: T): Option[S] = c match {
       case Inl(h) => None
       case Inr(t) => st(t)
     }
   }
-}
 
-object CPSelector extends LowPriorityCPSelector {
-  implicit def hdSelector[H, T](implicit st: CPSelector[T, H] = null): CPSelector[H :+: T, H] = new CPSelector[H :+: T, H] {
+  implicit def hdSelector[H, T <: Coproduct](implicit st: CPSelector[T, H] = null): CPSelector[H :+: T, H] = new CPSelector[H :+: T, H] {
     def apply(c: H :+: T): Option[H] = c match {
       case Inl(h) => Some(h)
       case Inr(t) => if (st != null) st(t) else None
@@ -90,34 +83,30 @@ object CPSelector extends LowPriorityCPSelector {
   }
 }
 
-trait CPMapper[F <: Poly, C] {
-  type Out
+trait CPMapper[F <: Poly, C <: Coproduct] {
+  type Out <: Coproduct
   def apply(c: C): Out
 }
 
 object CPMapper {
-  implicit def cpMapper[F <: Poly, C, Out0](implicit mapper: CPMapperAux[F, C, Out0]) = new CPMapper[F, C] {
+  implicit def cpMapper[F <: Poly, C <: Coproduct, Out0 <: Coproduct](implicit mapper: CPMapperAux[F, C, Out0]) = new CPMapper[F, C] {
     type Out = Out0
     def apply(c: C): Out = mapper(c)
   }
 }
 
-trait CPMapperAux[F <: Poly, C, Out] {
+trait CPMapperAux[F <: Poly, C <: Coproduct, Out] {
   def apply(c: C): Out
 }
 
-trait LowPriorityCPMapperAux {
+object CPMapperAux {
   import Poly._
 
-  implicit def tlMapper[F <: Poly, T, OutT](implicit ft: Pullback1Aux[F, T, OutT]): CPMapperAux[F, T, OutT] = new CPMapperAux[F, T, OutT] {
-    def apply(t: T): OutT = ft(t)
+  implicit def cnilMapper[F <: Poly]: CPMapperAux[F, CNil, CNil] = new CPMapperAux[F, CNil, CNil] {
+    def apply(t: CNil): CNil = t
   }
-}
 
-object CPMapperAux extends LowPriorityCPMapperAux {
-  import Poly._
-  
-  implicit def hdMapper[F <: Poly, H, OutH, T, OutT]
+  implicit def cpMapper[F <: Poly, H, OutH, T <: Coproduct, OutT <: Coproduct]
     (implicit fh: Pullback1Aux[F, H, OutH], mt: CPMapperAux[F, T, OutT]): CPMapperAux[F, H :+: T, OutH :+: OutT] =
       new CPMapperAux[F, H :+: T, OutH :+: OutT] {
         def apply(c: H :+: T): OutH :+: OutT = c match {
@@ -127,33 +116,34 @@ object CPMapperAux extends LowPriorityCPMapperAux {
       }
 }
 
-trait CPUnifier[C] {
+trait CPUnifier[C <: Coproduct] {
   type Out
-  def apply(c: C): Out
+  def apply(c: C): Out :+: CNil
 }
 
 object CPUnifier {
-  implicit def cpUnifier[C, Out0](implicit unifier: CPUnifierAux[C, Out0]): CPUnifier[C] = new CPUnifier[C] {
+  implicit def cpUnifier[C <: Coproduct, Out0](implicit unifier: CPUnifierAux[C, Out0]): CPUnifier[C] = new CPUnifier[C] {
     type Out = Out0
-    def apply(c: C): Out = unifier(c)
+    def apply(c: C): Out :+: CNil = unifier(c)
   }
 }
 
-trait CPUnifierAux[C, Out] {
-  def apply(c: C): Out
+trait CPUnifierAux[C <: Coproduct, Out] {
+  def apply(c: C): Out :+: CNil
 }
 
-trait LowPriorityCPUnifierAux {
-  implicit def tlUnifier[T]: CPUnifierAux[T, T] = new CPUnifierAux[T, T] {
-    def apply(t: T): T = t
+object CPUnifierAux {
+  implicit def lstUnifier[H]: CPUnifierAux[H :+: CNil, H] = new CPUnifierAux[H :+: CNil, H] {
+    def apply(c: H :+: CNil): H :+: CNil = c
   }
-}
-
-object CPUnifierAux extends LowPriorityCPUnifierAux {
-  implicit def hdUnifier[H, T, TL, L](implicit ut: CPUnifierAux[T, TL], l: Lub[H, TL, L]): CPUnifierAux[H :+: T, L] = new CPUnifierAux[H :+: T, L] {
-    def apply(c: H :+: T): L = c match {
-      case Inl(h) => l.left(h)
-      case Inr(t) => l.right(ut(t))
+  
+  implicit def cpUnifier[H, T <: Coproduct, TL, L](implicit ut: CPUnifierAux[T, TL], l: Lub[H, TL, L]): CPUnifierAux[H :+: T, L] = new CPUnifierAux[H :+: T, L] {
+    def apply(c: H :+: T): L :+: CNil = c match {
+      case Inl(h) => Inl(l.left(h))
+      case Inr(t) => ut(t) match {
+        case Inl(h) => Inl(l.right(h))
+        case Inr(t) => Inr(t)
+      }
     }
   }
 }
