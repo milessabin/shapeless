@@ -431,14 +431,14 @@ Using shapeless
 
 shapeless is published to the Sonatype OSS Repository Hosting Service
 (OSSRH) and will be synced to Maven Central. Release builds are published
-relative to Scala 2.9.2 and 2.10.0. Snapshot builds are also published
-relative to Scala 2.11.0-SNAPSHOT.
+relative to Scala 2.9.x and 2.10.x. Snapshot builds are published relative to
+Scala 2.10.2 and Scala 2.11.0-SNAPSHOT.
 
-To build with Scala 2.10.0 add the following to your SBT (0.12.0 or later)
+To build with Scala 2.10.2 add the following to your SBT (0.12.0 or later)
 configuration,
 
 ```scala
-scalaVersion := "2.10.0"
+scalaVersion := "2.10.2"
 
 resolvers ++= Seq(
   "Sonatype OSS Releases" at "http://oss.sonatype.org/content/repositories/releases/",
@@ -450,11 +450,11 @@ libraryDependencies ++= Seq(
 )
 ```
 
-If your project is built with Scala 2.9.2, then you will also need to specify the
+If your project is built with Scala 2.9.3, then you will also need to specify the
 `-Ydependent-method-types` compiler flag,
 
 ```scala
-scalaVersion := "2.9.2"
+scalaVersion := "2.9.3"
 
 scalacOptions += "-Ydependent-method-types"
 
@@ -468,8 +468,8 @@ libraryDependencies ++= Seq(
 )
 ```
 
-If you want to be able to support building relative to both 2.9.2 and 2.10.0
-then you should use the 2.10.0 configuration above and add the following,
+If you want to be able to support building relative to both 2.9.3 and 2.10.2
+then you should use the 2.10.2 configuration above and add the following,
  
 ```scala
 scalacOptions <++= scalaVersion map { version =>
@@ -483,11 +483,15 @@ scalacOptions <++= scalaVersion map { version =>
 which will set the `-Ydependent-method-types` compiler flag conditionally on
 the actual Scala version in use.
 
-To build with Scala 2.11.0 milestone releases or snapshots then you'll need to
-add the following to your SBT configuration,
+The upcoming shapeless 2.0.0 release makes use of Scala macros and consequently
+no longer supports Scala 2.9.x. It also makes essential use of implicit macros,
+the proper functioning of which depends on bug fixes present from Scala 2.10.2
+onwards. This means that you must specify a Scala version of at least 2.10.2 in
+your SBT build, and you must also specify a full cross version for your
+shapeless dependency,
 
 ```scala
-scalaVersion := "2.11.0-SNAPSHOT"
+scalaVersion := "2.10.2"
 
 resolvers ++= Seq(
   "Sonatype OSS Releases" at "http://oss.sonatype.org/content/repositories/releases/",
@@ -495,7 +499,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless" % "1.2.5-SNAPSHOT" cross CrossVersion.full
+  "com.chuusai" % "shapeless" % "2.0.0-SNAPSHOT" cross CrossVersion.full
 )
 ```
 
