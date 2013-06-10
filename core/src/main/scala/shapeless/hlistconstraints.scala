@@ -66,7 +66,7 @@ object SuperConstraint {
   }
 
 /**
- * If a BasisConstraint for [M, L] and [N, L] are given, then there is also one for [N, L].
+ * If a BasisConstraint for [M, L] and [N, M] are given, then there should exist one for [N, L].
  * In a function which has proven [M, L] one can call another function which needs evidence for [N, L] when wrapped with this.
  * i.e. def acceptM[L <: HList: Super[M]#λ](l: L) = { prove { acceptN(l)(_: N IsSuperOf L) } }
  */
