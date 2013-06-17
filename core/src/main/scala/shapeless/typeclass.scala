@@ -16,9 +16,13 @@
 
 package shapeless
 
+import scala.language.experimental.macros
+
+import scala.reflect.macros.Context
+
 /**
  * A type class abstracting over the `product` operation of type classes over
- * types of kind `*`, as well as deriving instances using an [[Generic]].
+ * types of kind `*`, as well as deriving instances using an isomorphism.
  */
 trait TypeClass[C[_]] {
 
@@ -34,26 +38,41 @@ trait TypeClass[C[_]] {
   def emptyProduct: C[HNil]
 
   /**
-   * Given a `Generic` for `F` as `Repr`, and a type class instance for `Repr`,
+   * Given an isomorphism between `F` and `G`, and a type class instance for `G`,
    * produce a type class instance for `F`.
    */
-  def derive[F, Repr](instance: C[Repr], gen: GenericAux[F, Repr]): C[F]
+  def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
 
-  import TypeClass._
-  
-  implicit val hnilInstance: ReprInstance[C, HNil] =
-    new ReprInstance[C, HNil](emptyProduct)
+}
 
-  implicit def hconsInstance[H, T <: HList](implicit H: C[H], T: ReprInstance[C, T]): ReprInstance[C, H :: T] =
-    new ReprInstance[C, H :: T](product(H, T.instance))
+/**
+ * A type class abstracting additionally over the `coproduct` operation of type
+ * classes over types of kind `*`.
+ */
+trait TypeClassWithCoproduct[C[_]] extends TypeClass[C] {
 
-  implicit def deriveFromIso[F, Repr](implicit gen: GenericAux[F, Repr], hlistInst: ReprInstance[C, Repr]): C[F] =
-    derive(hlistInst.instance, gen)
+  /**
+   * Given two type class instances for `L` and `R`, produce a type class
+   * instance for the coproduct `L :+: R`.
+   */
+  def coproduct[L, R <: Coproduct](CL: => C[L], CR: => C[R]): C[L :+: R]
+
 }
 
 object TypeClass {
-  // classes which extend AnyVal cannot be nested
-  class ReprInstance[C[_], Repr](val instance: C[Repr]) extends AnyVal
+
+  def derive[C[_], T] = macro derive_impl[C, T]
+
+  def derive_impl[C[_], T](context: Context)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
+    val helper = new GenericMacros.Helper[context.type] {
+      val c: context.type = context
+      val expandInner = true
+      val optimizeSingleItem = true
+      val tpe = tTag.tpe
+    }
+    context.Expr[C[T]](helper.ADT.deriveInstance(cTag.tpe.typeConstructor))
+  }
+
 }
 
 // vim: expandtab:ts=2:sw=2
