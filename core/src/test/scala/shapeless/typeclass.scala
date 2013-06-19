@@ -24,8 +24,8 @@ package TypeClassAux {
     def zero : T
     def append(a : T, b : T) : T
   }
-  
-  object Monoid {
+
+  object Monoid extends TypeClassCompanion[Monoid] {
     def mzero[T](implicit mt : Monoid[T]) = mt.zero
     
     implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -47,6 +47,23 @@ package TypeClassAux {
       def zero = ""
       def append(a : String, b : String) = a+b
     }
+
+    implicit val monoidInstance: TypeClass[Monoid] = new TypeClass[Monoid] {
+      def emptyProduct = new Monoid[HNil] {
+        def zero = HNil
+        def append(a : HNil, b : HNil) = HNil
+      }
+
+      def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
+        def zero = FHead.zero :: FTail.zero
+        def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
+      }
+
+      def project[F, G](instance : => Monoid[G], to : F => G, from : G => F) = new Monoid[F] {
+        def zero = from(instance.zero)
+        def append(a : F, b : F) = from(instance.append(to(a), to(b)))
+      }
+    }
   }
   
   trait MonoidSyntax[T] {
@@ -58,41 +75,35 @@ package TypeClassAux {
       def |+|(b : T) = mt.append(a, b)
     }
   }
-  
-  object GenericMonoid extends TypeClass[Monoid] {
-    def emptyProduct = new Monoid[HNil] {
-      def zero = HNil
-      def append(a : HNil, b : HNil) = HNil
-    }
-    
-    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-      def zero = FHead.zero :: FTail.zero
-      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-    }
-    
-    def derive[F, Repr](instance : Monoid[Repr], gen : GenericAux[F, Repr]) = new Monoid[F] {
-      def zero = gen.from(instance.zero)
-      def append(a : F, b : F) = gen.from(instance.append(gen.to(a), gen.to(b)))
-    }
-  }
 }
 
 class TypeClassTests {
   import TypeClassAux._
   
   import MonoidSyntax._
-  import GenericMonoid._
 
   case class Foo(i : Int, s : String)
   case class Bar(b : Boolean, s : String, d : Double)
 
   @Test
   def testBasics {
-    implicitly[Monoid[Foo]]
+    implicit val fooInstance = TypeClass[Monoid, Foo]
+    implicit val barInstance = TypeClass[Monoid, Bar]
+
+    val f = Foo(13, "foo") |+| Foo(23, "bar")
+    assertEquals(Foo(36, "foobar"), f)
+
+    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
+    assertEquals(Bar(true, "foobar", 4.0), b)
+  }
+
+  @Test
+  def testAuto {
+    import Monoid.auto._
+
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
   
-    implicitly[Monoid[Bar]]
     val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
     assertEquals(Bar(true, "foobar", 4.0), b)
   }

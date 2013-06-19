@@ -94,7 +94,7 @@ class GenericTests {
   import scala.collection.immutable.{ :: => Cons }
   
   type ABP = Apple :+: Banana :+: Pear :+: CNil
-  type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
+  type APBO = Apple :+: Banana :+: Orange :+: Pear :+: CNil
   
   type ABC = A.type :+: B.type :+: C.type :+: CNil
   
@@ -305,7 +305,7 @@ class GenericTests {
   @Test
   def testParametrized {
     val t: Tree[Int] = Node(Node(Leaf(23), Leaf(13)), Leaf(11))
-    type NI = Node[Int] :+: Leaf[Int] :+: CNil
+    type NI = Leaf[Int] :+: Node[Int] :+: CNil
     
     val gen = Generic[Tree[Int]]
     
