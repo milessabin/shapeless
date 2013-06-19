@@ -26,14 +26,19 @@ object MonoidExamples extends App {
   case class Bar(b : Boolean, s : String, d : Double)
 
   // Automatically they're monoids ...
-  implicit val fooInstance = TypeClass.derive[Monoid, Foo]
-  implicit val barInstance = TypeClass.derive[Monoid, Bar]
+  {
+    import Monoid.auto._
+    val f = Foo(13, "foo") |+| Foo(23, "bar")
+    assert(f == Foo(36, "foobar"))
+  }
 
-  val f = Foo(13, "foo") |+| Foo(23, "bar")
-  assert(f == Foo(36, "foobar"))
+  // ... or explicitly
+  {
+    implicit val barInstance = TypeClass[Monoid, Bar]
 
-  val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
-  assert(b == Bar(true, "foobar", 4.0))
+    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
+    assert(b == Bar(true, "foobar", 4.0))
+  }
 }
 
 /**
@@ -44,7 +49,7 @@ trait Monoid[T] {
   def append(a : T, b : T) : T
 }
 
-object Monoid {
+object Monoid extends TypeClassCompanion[Monoid] {
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
   
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -83,6 +88,7 @@ object Monoid {
       def append(a : F, b : F) = from(instance.append(to(a), to(b)))
     }
   }
+
 }
 
 trait MonoidSyntax[T] {

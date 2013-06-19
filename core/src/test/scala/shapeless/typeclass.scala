@@ -25,7 +25,7 @@ package TypeClassAux {
     def append(a : T, b : T) : T
   }
 
-  object Monoid {
+  object Monoid extends TypeClassCompanion[Monoid] {
     def mzero[T](implicit mt : Monoid[T]) = mt.zero
     
     implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -87,8 +87,19 @@ class TypeClassTests {
 
   @Test
   def testBasics {
-    implicit val fooInstance = TypeClass.derive[Monoid, Foo]
-    implicit val barInstance = TypeClass.derive[Monoid, Bar]
+    implicit val fooInstance = TypeClass[Monoid, Foo]
+    implicit val barInstance = TypeClass[Monoid, Bar]
+
+    val f = Foo(13, "foo") |+| Foo(23, "bar")
+    assertEquals(Foo(36, "foobar"), f)
+
+    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
+    assertEquals(Bar(true, "foobar", 4.0), b)
+  }
+
+  @Test
+  def testAuto {
+    import Monoid.auto._
 
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)

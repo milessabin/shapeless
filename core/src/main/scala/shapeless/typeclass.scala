@@ -59,9 +59,15 @@ trait TypeClassWithCoproduct[C[_]] extends TypeClass[C] {
 
 }
 
+trait TypeClassCompanion[C[_]] {
+  object auto {
+    implicit def derive[T] = macro TypeClass.derive_impl[C, T]
+  }
+}
+
 object TypeClass {
 
-  def derive[C[_], T] = macro derive_impl[C, T]
+  def apply[C[_], T] = macro derive_impl[C, T]
 
   def derive_impl[C[_], T](context: Context)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
     val helper = new GenericMacros.Helper[context.type] {

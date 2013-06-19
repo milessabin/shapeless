@@ -24,7 +24,7 @@ case class Bar(i : Int) extends Super
 case class BarRec(i : Int, rec: Super) extends Super
 
 object Super {
-  implicit val instance = TypeClass.derive[Show, Super]
+  implicit val instance = TypeClass[Show, Super]
 }
 
 sealed trait MutualA
@@ -32,7 +32,7 @@ case class MutualA1(x: Int) extends MutualA
 case class MutualA2(b: MutualB) extends MutualA
 
 object MutualA {
-  implicit val aInstance: Show[MutualA] = TypeClass.derive[Show, MutualA]
+  implicit val aInstance: Show[MutualA] = TypeClass[Show, MutualA]
 }
 
 sealed trait MutualB
@@ -40,7 +40,7 @@ case class MutualB1(x: Int) extends MutualB
 case class MutualB2(b: MutualA) extends MutualB
 
 object MutualB {
-  implicit val bInstance: Show[MutualB] = TypeClass.derive[Show, MutualB]
+  implicit val bInstance: Show[MutualB] = TypeClass[Show, MutualB]
 }
 
 object ShowExamples extends App {
@@ -71,7 +71,7 @@ trait Show[T] {
   def show(t: T): String
 }
 
-object Show {
+object Show extends TypeClassCompanion[Show] {
   implicit def stringShow: Show[String] = new Show[String] {
     def show(t: String) = t
   }
