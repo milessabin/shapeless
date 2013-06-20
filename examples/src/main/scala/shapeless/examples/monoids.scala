@@ -72,7 +72,7 @@ object Monoid extends TypeClassCompanion[Monoid] {
     def append(a : String, b : String) = a+b
   }
 
-  implicit val monoidInstance: TypeClass[Monoid] = new TypeClass[Monoid] {
+  implicit val monoidInstance: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
     def emptyProduct = new Monoid[HNil] {
       def zero = HNil
       def append(a : HNil, b : HNil) = HNil

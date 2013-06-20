@@ -24,7 +24,7 @@ import scala.reflect.macros.Context
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
  */
-trait TypeClass[C[_]] {
+trait ProductTypeClass[C[_]] {
 
   /**
    * Given a type class instance for `H`, and a type class instance for a
@@ -49,7 +49,7 @@ trait TypeClass[C[_]] {
  * A type class abstracting additionally over the `coproduct` operation of type
  * classes over types of kind `*`.
  */
-trait TypeClassWithCoproduct[C[_]] extends TypeClass[C] {
+trait TypeClass[C[_]] extends ProductTypeClass[C] {
 
   /**
    * Given two type class instances for `L` and `R`, produce a type class

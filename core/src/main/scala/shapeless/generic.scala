@@ -288,9 +288,9 @@ object GenericMacros {
 
         val capability =
           if (usesCoproduct)
-            typeOf[TypeClassWithCoproduct[Any]].typeSymbol
-          else
             typeOf[TypeClass[Any]].typeSymbol
+          else
+            typeOf[ProductTypeClass[Any]].typeSymbol
 
         val capabilityInstance =
           mkImplicitlyAndAssign(capabilityName, AppliedTypeTree(Ident(capability), List(TypeTree(tc))))

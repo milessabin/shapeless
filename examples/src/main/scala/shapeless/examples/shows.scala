@@ -80,7 +80,7 @@ object Show extends TypeClassCompanion[Show] {
     def show(n: Int) = n.toString
   }
 
-  implicit def showInstance: TypeClassWithCoproduct[Show] = new TypeClassWithCoproduct[Show] {
+  implicit def showInstance: TypeClass[Show] = new TypeClass[Show] {
     def emptyProduct = new Show[HNil] {
       def show(t: HNil) = "HNil"
     }
