@@ -296,12 +296,12 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Maps a higher rank function across this `HList`.
    */
-  def map[HF](f : HF)(implicit mapper : Mapper[HF, L]) : mapper.Out = mapper(l)
+  def map(f : Poly)(implicit mapper : Mapper[f.type, L]) : mapper.Out = mapper(l)
 
   /**
    * Flatmaps a higher rank function across this `HList`.
    */
-  def flatMap[HF](f : HF)(implicit mapper : FlatMapper[HF, L]) : mapper.Out = mapper(l)
+  def flatMap(f : Poly)(implicit mapper : FlatMapper[f.type, L]) : mapper.Out = mapper(l)
 
   /**
    * Replaces each element of this `HList` with a constant value.
@@ -313,33 +313,33 @@ final class HListOps[L <: HList](l : L) {
    * `op`. Available only if there is evidence that the result type of `f` at each element conforms to the argument
    * type of ''op''.
    */
-  def foldMap[R, HF](z : R)(f : HF)(op : (R, R) => R)(implicit folder : MapFolder[L, R, HF]) : R = folder(l, z, op)
+  def foldMap[R](z : R)(f : Poly)(op : (R, R) => R)(implicit folder : MapFolder[L, R, f.type]) : R = folder(l, z, op)
   
   /**
    * Computes a left fold over this `HList` using the polymorphic binary combining operator `op`. Available only if
    * there is evidence `op` can consume/produce all the partial results of the appropriate types.
    */
-  def foldLeft[R, HF](z : R)(op : HF)(implicit folder : LeftFolder[L, R, HF]) : folder.Out = folder(l, z)
+  def foldLeft[R](z : R)(op : Poly)(implicit folder : LeftFolder[L, R, op.type]) : folder.Out = folder(l, z)
   
   /**
    * Computes a right fold over this `HList` using the polymorphic binary combining operator `op`. Available only if
    * there is evidence `op` can consume/produce all the partial results of the appropriate types.
    */
-  def foldRight[R, HF](z : R)(op : HF)(implicit folder : RightFolder[L, R, HF]) : folder.Out = folder(l, z)
+  def foldRight[R](z : R)(op : Poly)(implicit folder : RightFolder[L, R, op.type]) : folder.Out = folder(l, z)
   
   /**
    * Computes a left reduce over this `HList` using the polymorphic binary combining operator `op`. Available only if
    * there is evidence that this `HList` has at least one element and that `op` can consume/produce all the partial
    * results of the appropriate types.
    */
-  def reduceLeft[HF](op : HF)(implicit reducer : LeftReducer[L, HF]) : reducer.Out = reducer(l)
+  def reduceLeft(op : Poly)(implicit reducer : LeftReducer[L, op.type]) : reducer.Out = reducer(l)
   
   /**
    * Computes a right reduce over this `HList` using the polymorphic binary combining operator `op`. Available only if
    * there is evidence that this `HList` has at least one element and that `op` can consume/produce all the partial
    * results of the appropriate types.
    */
-  def reduceRight[HF](op : HF)(implicit reducer : RightReducer[L, HF]) : reducer.Out = reducer(l)
+  def reduceRight(op : Poly)(implicit reducer : RightReducer[L, op.type]) : reducer.Out = reducer(l)
   
   /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.

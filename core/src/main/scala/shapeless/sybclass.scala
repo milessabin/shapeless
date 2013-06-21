@@ -419,29 +419,32 @@ object DataTMacros {
 }
 
 import Poly._
+import TypeOperators._
 
-class EverythingAux[F <: Poly, K <: Poly] extends Poly
+class EverythingAux[F, K] extends Poly
 
 trait LowPriorityEverythingAux {
-  implicit def generic[F <: Poly, K <: Poly, T, G, R]
-    (implicit f : Pullback1Aux[F, T, R], gen: GenericAux[T, G], data : Data[EverythingAux[F, K], G, R], k : Pullback2Aux[K, R, R, R]) =
-      Case1Aux[EverythingAux[F, K], T, R](t => data.gmapQ(gen.to(t)).foldLeft(f(t))(k))
+  implicit def generic[E, F <: Poly, K <: Poly, T, G, R]
+    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Pullback1Aux[F, T, R], gen: GenericAux[T, G], data : Data[E, G, R], k : Pullback2Aux[K, R, R, R]) =
+      Case1Aux[E, T, R](t => data.gmapQ(gen.to(t)).foldLeft(f(t))(k))
 }
 
 object EverythingAux extends LowPriorityEverythingAux {
-  implicit def default[F <: Poly, K <: Poly, T, R]
-    (implicit f : Pullback1Aux[F, T, R], data : Data[EverythingAux[F, K], T, R], k : Pullback2Aux[K, R, R, R]) =
-      Case1Aux[EverythingAux[F, K], T, R](t => data.gmapQ(t).foldLeft(f(t))(k))
+  implicit def default[E, F <: Poly, K <: Poly, T, R]
+    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Pullback1Aux[F, T, R], data : Data[E, T, R], k : Pullback2Aux[K, R, R, R]) =
+      Case1Aux[E, T, R](t => data.gmapQ(t).foldLeft(f(t))(k))
 }
 
-class EverywhereAux[F <: Poly] extends Poly
+class EverywhereAux[F] extends Poly
 
 trait LowPriorityEverywhereAux {
-  implicit def generic[F <: Poly, T, G](implicit gen: GenericAux[T, G], data : DataT[EverywhereAux[F], G, G], f : Case1Aux[F, T] = Case1Aux[F, T, T](identity)): Case1Aux[EverywhereAux[F], T] { type Result = f.Result } =
-    Case1Aux[EverywhereAux[F], T, f.Result](t => f(gen.from(data.gmapT(gen.to(t)))))
+  implicit def generic[E, F <: Poly, T, G]
+    (implicit unpack: Unpack1[E, EverywhereAux, F], gen: GenericAux[T, G], data : DataT[E, G, G], f : Case1Aux[F, T] = Case1Aux[F, T, T](identity)): Case1Aux[E, T] { type Result = f.Result } =
+      Case1Aux[E, T, f.Result](t => f(gen.from(data.gmapT(gen.to(t)))))
 }
 
 object EverywhereAux extends LowPriorityEverywhereAux {
-  implicit def default[F <: Poly, T, U](implicit data : DataT[EverywhereAux[F], T, U], f : Case1Aux[F, U] = Case1Aux[F, U, U](identity)): Case1Aux[EverywhereAux[F], T] { type Result = f.Result }=
-    Case1Aux[EverywhereAux[F], T, f.Result](t => f(data.gmapT(t)))
+  implicit def default[E, F <: Poly, T, U]
+    (implicit unpack: Unpack1[E, EverywhereAux, F], data : DataT[E, T, U], f : Case1Aux[F, U] = Case1Aux[F, U, U](identity)): Case1Aux[E, T] { type Result = f.Result } =
+      Case1Aux[E, T, f.Result](t => f(data.gmapT(t)))
 }

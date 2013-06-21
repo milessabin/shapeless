@@ -38,8 +38,8 @@ object UnfoldExamples extends App {
         }
     
     trait ApplyUnfold[E] {
-      def apply[F <: Poly, S, L <: HList](f : F)(s : S)
-        (implicit unfold : UnfoldAux[F, E, S, E, L]) = unfold(s)
+      def apply[S, L <: HList](f : Poly)(s : S)
+        (implicit unfold : UnfoldAux[f.type, E, S, E, L]) = unfold(s)
     }
     
     def unfold[E] = new ApplyUnfold[E] {} 

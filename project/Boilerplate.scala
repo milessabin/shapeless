@@ -268,7 +268,7 @@ object Boilerplate {
       val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
       
       ("""|
-          |  implicit def inst"""+arity+"""[Fn <: Poly, """+typeArgs+"""](fn : Fn)(implicit cse : fn.Case["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
+          |  implicit def inst"""+arity+"""["""+typeArgs+"""](fn : Poly)(implicit cse : fn.Case["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
           |""").stripMargin
     }
 
@@ -293,8 +293,8 @@ object Boilerplate {
       val fnBody = """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
       
       ("""|
-          |  type Case"""+arity+"""Aux[-Fn, """+typeArgs+"""] = CaseAux[Fn, """+hlistType+"""]
-          |  type Pullback"""+arity+"""Aux[-Fn, """+typeArgs+""", Res] = CaseAux[Fn, """+hlistType+"""] { type Result = Res }
+          |  type Case"""+arity+"""Aux[Fn, """+typeArgs+"""] = CaseAux[Fn, """+hlistType+"""]
+          |  type Pullback"""+arity+"""Aux[Fn, """+typeArgs+""", Res] = CaseAux[Fn, """+hlistType+"""] { type Result = Res }
           |  def Case"""+arity+"""Aux[Fn, """+typeArgs+""", Res](fn : """+fnType+""") = new CaseAux[Fn, """+hlistType+"""] {
           |    type Result = Res
           |    val value = (l : """+hlistType+""") => """+fnBody+"""

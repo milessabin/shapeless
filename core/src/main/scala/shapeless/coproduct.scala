@@ -38,7 +38,7 @@ object Coproduct {
   def apply[C <: Coproduct] = new MkCoproduct[C]
   
   class CoproductOps[C <: Coproduct](c: C) {
-    def map[F <: Poly](f: F)(implicit mapper: CPMapper[F, C]): mapper.Out = mapper(c)
+    def map(f: Poly)(implicit mapper: CPMapper[f.type, C]): mapper.Out = mapper(c)
     
     def select[T](implicit selector: CPSelector[C, T]): Option[T] = selector(c)
     

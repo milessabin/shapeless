@@ -91,4 +91,18 @@ object TypeOperators {
    * object of the `Ops` type as an implicit value.
    */
   implicit def newtypeOps[Repr, Ops](t : Newtype[Repr, Ops])(implicit mkOps : Repr => Ops) : Ops = t.asInstanceOf[Repr] 
+
+  // Unpack
+
+  trait Unpack1[-E, F[_], T]
+
+  object Unpack1 {
+    implicit def unpack1[F[_], T]: Unpack1[F[T], F, T] = new Unpack1[F[T], F, T] {}
+  }
+
+  trait Unpack2[-E, F[_, _], T, U]
+
+  object Unpack2 {
+    implicit def unpack2[F[_, _], T, U]: Unpack2[F[T, U], F, T, U] = new Unpack2[F[T, U], F, T, U] {}
+  }
 }
