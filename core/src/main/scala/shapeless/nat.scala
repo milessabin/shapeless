@@ -228,6 +228,55 @@ object LTEq {
 }
 
 /**
+ * Type class witnessing that `Out` is `A` min `B`.
+ * 
+ * @author George Leontiev
+ */
+trait Min[A <: Nat, B <: Nat] {
+  type Out <: Nat
+}
+
+trait MinAux[A <: Nat, B <: Nat, C <: Nat]
+
+object Min {
+  implicit def min[A <: Nat, B <: Nat, C <: Nat]
+    (implicit aux: MinAux[A, B, C]) = new Min[A, B] { type Out = C }
+}
+
+object MinAux {
+  implicit def minAux0[A <: Nat, B <: Nat, C <: Nat]
+    (implicit lteq: LTEq[A, B]) = new MinAux[A, B, A] {}
+  implicit def minAux1[A <: Nat, B <: Nat, C <: Nat]
+    (implicit lteq: LT[B, A]) = new MinAux[A, B, B] {}
+}
+
+
+/**
+ * Type class witnessing that `Out` is `X` raised to the power `N`.
+ * 
+ * @author George Leontiev
+ */
+trait Pow[N <: Nat, X <: Nat] {
+  type Out <: Nat
+}
+
+trait PowAux[N <: Nat, X <: Nat, Z <: Nat]
+
+object Pow {
+  implicit def pow[N <: Nat, X <: Nat, Z <: Nat](implicit pow : PowAux[N, X, Z]) = new Pow[N, X] {
+    type Out = Z
+  }
+}
+
+object PowAux {
+  import Nat.{_0, _1}
+  implicit def pow1[A <: Nat] = new PowAux[Succ[A], _0, _0] {}
+  implicit def pow2[A <: Nat] = new PowAux[_0, Succ[A], _1] {}
+  implicit def pow3[N <: Nat, X <: Nat, Z <: Nat, Y <: Nat]
+    (implicit ev : PowAux[N, X, Z], ev2 : ProdAux[Z, X, Y]) = new PowAux[Succ[N], X, Y] {}
+}
+
+/**
  * Type class supporting conversion of type-level Nats to value level Ints.
  * 
  * @author Miles Sabin
