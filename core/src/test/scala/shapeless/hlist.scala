@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ import org.junit.Assert._
 import shapeless.test.illTyped
 
 class HListTests {
+  import nat._
+
   import HList._
   import Typeable._
   import Traversables._
-  import Nat._
   import Tuples._
 
   type SI = Set[Int] :: HNil
@@ -514,6 +515,48 @@ class HListTests {
   }
   
   @Test
+  def testAtLiteral {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    
+    val at0 = sn1(0)
+    typed[Int](at0)
+    assertEquals(23, at0)
+    
+    val at1 = sn1(1)
+    typed[Double](at1)
+    assertEquals(3.0, at1, Double.MinPositiveValue)
+    
+    val at2 = sn1(2)
+    typed[String](at2)
+    assertEquals("foo", at2)
+    
+    val at3 = sn1(3)
+    typed[Unit](at3)
+    assertEquals((), at3)
+    
+    val at4 = sn1(4)
+    typed[String](at4)
+    assertEquals("bar", at4)
+    
+    val at5 = sn1(5)
+    typed[Boolean](at5)
+    assertEquals(true, at5)
+    
+    val at6 = sn1(6)
+    typed[Long](at6)
+    assertEquals(5L, at6)
+    
+    val sn2 =
+      0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: 
+      10 :: 11 :: 12 :: 13 :: 14 :: 15 :: 16 :: 17 :: 18 :: 19 :: 
+      20 :: 21 :: 22 :: HNil
+      
+    val at22 = sn2(22)
+    typed[Int](at22)
+    assertEquals(22, at22)
+  }
+  
+  @Test
   def testTakeDrop {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
     
@@ -538,6 +581,35 @@ class HListTests {
     assertEquals(23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil, t7)
     
     val d7 = sn1.drop(_7)
+    typed[HNil](d7)
+    assertEquals(HNil, d7)
+  }
+  
+  @Test
+  def testTakeDropLiteral {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+    
+    val t0 = sn1.take(0)
+    typed[HNil](t0)
+    assertEquals(HNil, t0)
+    
+    val d0 = sn1.drop(0)
+    typed[Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil](d0)
+    assertEquals(23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil, d0)
+
+    val t2 = sn1.take(2)
+    typed[Int :: Double :: HNil](t2)
+    assertEquals(23 :: 3.0 :: HNil, t2)
+    
+    val d2 = sn1.drop(2)
+    typed[String :: Unit :: String :: Boolean :: Long :: HNil](d2)
+    assertEquals("foo" :: () :: "bar" :: true :: 5L :: HNil, d2)
+
+    val t7 = sn1.take(7)
+    typed[Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil](t7)
+    assertEquals(23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil, t7)
+    
+    val d7 = sn1.drop(7)
     typed[HNil](d7)
     assertEquals(HNil, d7)
   }
@@ -578,6 +650,45 @@ class HListTests {
     val snri6 = sn1.reverse_split(_6)
     typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil, Long :: HNil)](snri6)
     val snri7 = sn1.reverse_split(_7)
+    typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil, HNil)](snri7)
+  }
+  
+  @Test
+  def testSplitLiteral {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+
+    val sni0 = sn1.split(0)
+    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni0)
+    val sni1 = sn1.split(1)
+    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni1)
+    val sni2 = sn1.split(2)
+    typed[(Int :: Double :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](sni2)
+    val sni3 = sn1.split(3)
+    typed[(Int :: Double :: String :: HNil, Unit :: String :: Boolean :: Long :: HNil)](sni3)
+    val sni4 = sn1.split(4)
+    typed[(Int :: Double :: String :: Unit :: HNil, String :: Boolean :: Long :: HNil)](sni4)
+    val sni5 = sn1.split(5)
+    typed[(Int :: Double :: String :: Unit :: String :: HNil, Boolean :: Long :: HNil)](sni5)
+    val sni6 = sn1.split(6)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: HNil, Long :: HNil)](sni6)
+    val sni7 = sn1.split(7)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil, HNil)](sni7)
+    
+    val snri0 = sn1.reverse_split(0)
+    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri0)
+    val snri1 = sn1.reverse_split(1)
+    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri1)
+    val snri2 = sn1.reverse_split(2)
+    typed[(Double :: Int :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](snri2)
+    val snri3 = sn1.reverse_split(3)
+    typed[(String :: Double :: Int :: HNil, Unit :: String :: Boolean :: Long :: HNil)](snri3)
+    val snri4 = sn1.reverse_split(4)
+    typed[(Unit :: String :: Double :: Int :: HNil, String :: Boolean :: Long :: HNil)](snri4)
+    val snri5 = sn1.reverse_split(5)
+    typed[(String :: Unit :: String :: Double :: Int :: HNil, Boolean :: Long :: HNil)](snri5)
+    val snri6 = sn1.reverse_split(6)
+    typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil, Long :: HNil)](snri6)
+    val snri7 = sn1.reverse_split(7)
     typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil, HNil)](snri7)
   }
   
@@ -657,25 +768,25 @@ class HListTests {
     
     val (i2, r5) = sl.replaceType[Int]('*')
     typed[Int](i2)
-    typed[Char](r5(_0))
+    typed[Char](r5(0))
     assertEquals(1, i2)
     assertEquals('*' :: true :: "foo" :: 2.0 :: HNil, r5)
 
     val (b2, r6) = sl.replaceType[Boolean]('*')
     typed[Boolean](b2)
-    typed[Char](r6(_1))
+    typed[Char](r6(1))
     assertEquals(true, b2)
     assertEquals(1 :: '*' :: "foo" :: 2.0 :: HNil, r6)
 
     val (s2, r7) = sl.replaceType[String]('*')
     typed[String](s2)
-    typed[Char](r7(_2))
+    typed[Char](r7(2))
     assertEquals("foo", s2)
     assertEquals(1 :: true :: '*' :: 2.0 :: HNil, r7)
 
     val (d2, r8) = sl.replaceType[Double]('*')
     typed[Double](d2)
-    typed[Char](r8(_3))
+    typed[Char](r8(3))
     assertEquals(2.0, d2, Double.MinPositiveValue)
     assertEquals(1 :: true :: "foo" :: '*' :: HNil, r8)
     
@@ -1053,6 +1164,25 @@ class HListTests {
     assertEquals(1 :: false :: "foo" :: HNil, lb)
 
     val ls = l.updatedAt[_2]("bar")
+    typed[IBS](ls)
+    assertEquals(1 :: true :: "bar" :: HNil, ls)
+  }
+
+  @Test
+  def testUpdatedAtLiteral {
+    type IBS = Int :: Boolean :: String :: HNil
+    
+    val l = 1 :: true :: "foo" :: HNil
+
+    val li = l.updatedAt(0, 2)
+    typed[IBS](li)
+    assertEquals(2 :: true :: "foo" :: HNil, li)
+
+    val lb = l.updatedAt(1, false)
+    typed[IBS](lb)
+    assertEquals(1 :: false :: "foo" :: HNil, lb)
+
+    val ls = l.updatedAt(2, "bar")
     typed[IBS](ls)
     assertEquals(1 :: true :: "bar" :: HNil, ls)
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ trait Lens[C, F] {
     def set(d : D)(f : F) : D = g.set(d)(outer.set(g.get(d))(f))
   }
 
-  def >>[L <: HList, N <: Nat](n : N)(implicit gen : GenericAux[F, L], lens : HListNthLens[L, N]) =
+  def >>[L <: HList](n : Nat)(implicit gen : GenericAux[F, L], lens : HListNthLens[L, n.N]) =
     new Lens[C, lens.Elem] {
       def get(c : C) : lens.Elem = lens.get(gen.to(outer.get(c)))
       def set(c : C)(f : lens.Elem) = outer.set(c)(gen.from(lens.set(gen.to(outer.get(c)))(f)))

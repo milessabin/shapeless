@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ final class HListOps[L <: HList](l : L) {
    * Returns the ''nth'' of this `HList`. Available only if there is evidence that this `HList` has at least ''n''
    * elements.
    */
-  def apply[N <: Nat](n : N)(implicit at : At[L, N]) : at.Out = at(l)
+  def apply(n : Nat)(implicit at : At[L, n.N]) : at.Out = at(l)
   
   /**
    * Returns the last element of this `HList`. Available only if there is evidence that this `HList` is composite.
@@ -206,12 +206,17 @@ final class HListOps[L <: HList](l : L) {
   }
   
   /**
-   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`. An explicit type
-   * argument must be provided for `U`. Available only if there is evidence that this `HList` has an element of
-   * type `U`.
+   * Replaces the ''nth' element of this `HList` with the supplied value of type `U`. An explicit type argument
+   * must be provided for `N`. Available only if there is evidence that this `HList` has at least ''n'' elements.
    */
   def updatedAt[N <: Nat] = new UpdatedAtAux[N]
   
+  /**
+   * Replaces the ''nth' element of this `HList` with the supplied value of type `U`.  must be provided for `N`.
+   * Available only if there is evidence that this `HList` has at least ''n'' elements.
+   */
+  def updatedAt[U](n: Nat, u : U)(implicit replacer : ReplaceAt[L, n.N, U]) : replacer.Out = replacer(l, u)._2
+
   /**
    * Returns the first ''n'' elements of this `HList`. An explicit type argument must be provided. Available only if
    * there is evidence that this `HList` has at least ''n'' elements.
@@ -222,7 +227,7 @@ final class HListOps[L <: HList](l : L) {
    * Returns the first ''n'' elements of this `HList`. Available only if there is evidence that this `HList` has at
    * least ''n'' elements.
    */
-  def take[N <: Nat](n : N)(implicit take : Take[L, N]) : take.Out = take(l)
+  def take(n : Nat)(implicit take : Take[L, n.N]) : take.Out = take(l)
   
   /**
    * Returns all but the  first ''n'' elements of this `HList`. An explicit type argument must be provided. Available
@@ -234,7 +239,7 @@ final class HListOps[L <: HList](l : L) {
    * Returns all but the  first ''n'' elements of this `HList`. Available only if there is evidence that this `HList`
    * has at least ''n'' elements.
    */
-  def drop[N <: Nat](n : N)(implicit drop : Drop[L, N]) : drop.Out = drop(l)
+  def drop(n : Nat)(implicit drop : Drop[L, n.N]) : drop.Out = drop(l)
   
   /**
    * Splits this `HList` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type argument
@@ -246,7 +251,7 @@ final class HListOps[L <: HList](l : L) {
    * Splits this `HList` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if there is
    * evidence that this `HList` has at least ''n'' elements.
    */
-  def split[N <: Nat](n : N)(implicit split : Split[L, N]) : split.Out = split(l)
+  def split(n : Nat)(implicit split : Split[L, n.N]) : split.Out = split(l)
   
   /**
    * Splits this `HList` at the ''nth'' element, returning the reverse of the prefix and suffix as a pair. An explicit
@@ -258,7 +263,7 @@ final class HListOps[L <: HList](l : L) {
    * Splits this `HList` at the ''nth'' element, returning the reverse of the prefix and suffix as a pair. Available
    * only if there is evidence that this `HList` has at least ''n'' elements.
    */
-  def reverse_split[N <: Nat](n : N)(implicit split : ReverseSplit[L, N]) : split.Out = split(l)
+  def reverse_split(n : Nat)(implicit split : ReverseSplit[L, n.N]) : split.Out = split(l)
 
   /**
    * Splits this `HList` at the first occurrence of an element of type `U`, returning the prefix and suffix as a pair.
@@ -596,8 +601,6 @@ trait HKernel {
 }
 
 trait HNilHKernel extends HKernel {
-  import Nat._
-
   type L = HNil
   type Mapped[G[_]] = HNil
   type Length = _0
@@ -671,14 +674,13 @@ object Length {
 }
 
 object LengthAux {
-  import Nat._
-  
+  import nat._
   implicit def hnilLength = new LengthAux[HNil, _0] {
     def apply() = _0
   }
   
-  implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : LengthAux[T, N], sn : Succ[N]) = new LengthAux[H :: T, Succ[N]] {
-    def apply() = sn
+  implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : LengthAux[T, N], sn : WitnessAux[Succ[N]]) = new LengthAux[H :: T, Succ[N]] {
+    def apply() = sn.value
   }
 }
 
@@ -1449,8 +1451,6 @@ object ReplaceAt {
 }
 
 object ReplaceAtAux {
-  import Nat._
-  
   implicit def hlistReplaceAt1[H, T <: HList, V] = new ReplaceAtAux[H :: T, _0, H, V, V :: T] {
     def apply(l : H :: T, v : V) : (H, V :: T) = (l.head, v :: l.tail)
   }
@@ -1487,8 +1487,6 @@ object At {
 }
 
 object AtAux {
-  import Nat._
-  
   implicit def hlistAtZero[H, T <: HList] = new AtAux[H :: T, _0, H] {
     def apply(l : H :: T) : H = l.head
   }
@@ -1523,8 +1521,6 @@ object Drop {
 }
 
 object DropAux {
-  import Nat._
-  
   implicit def hlistDrop1[L <: HList] = new DropAux[L, _0, L] {
     def apply(l : L) : L = l
   }
@@ -1559,8 +1555,6 @@ object Take {
 }  
 
 object TakeAux {
-  import Nat._
-
   implicit def hlistTake1[L <: HList] = new TakeAux[L, _0, HNil] {
     def apply(l : L) : HNil = HNil
   }
@@ -1598,8 +1592,6 @@ object Split {
 }
 
 object Split0 {
-  import Nat._
-  
   implicit def hlistSplit1[P <: HList, S <: HList] = new Split0[P, S, _0, P, S] {
     def apply(accP : P, accS : S) : (P, S) = (accP, accS)
   }
@@ -1638,8 +1630,6 @@ object ReverseSplit {
 }
 
 object ReverseSplit0 {
-  import Nat._
-  
   implicit def hlistReverseSplit1[P <: HList, S <: HList] = new ReverseSplit0[P, S, _0, P, S] {
     def apply(accP : P, accS : S) : (P, S) = (accP, accS)
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ package shapeless.examples
  */
 object SizedExamples extends App {
   import shapeless._
-  import Nat._
   import Sized._
 
   def sequence[T](lo : List[Option[T]]) = if (lo.exists(_.isEmpty)) None else Some(lo.map(_.get))
@@ -65,8 +64,8 @@ object SizedExamples extends App {
     )
     
     for {
-      shdrs <- hdrs.sized[_2] 
-      srows <- sequence(rows map (_.sized[_2]))
+      shdrs <- hdrs.sized(2)
+      srows <- sequence(rows map (_.sized(2)))
     } {
       // If we get here then our lists are statically know to be
       // of the appropriate sizes
@@ -80,8 +79,8 @@ object SizedExamples extends App {
     val extendedHdrs = List("Title", "Author", "ISBN")
   
     for {
-      shdrs <- extendedHdrs.sized[_2]   // This will be empty ... 
-      srows <- sequence(rows map (_.sized[_2]))
+      shdrs <- extendedHdrs.sized(2)   // This will be empty ... 
+      srows <- sequence(rows map (_.sized(2)))
     } {
       // ... hence, not reached
       val formatted = csv(shdrs, srows)
@@ -92,8 +91,8 @@ object SizedExamples extends App {
     val extendedRows = rows map (_ :+ "-")
 
     for {
-      shdrs <- extendedHdrs.sized[_3]
-      srows <- sequence(extendedRows map (_.sized[_3]))
+      shdrs <- extendedHdrs.sized(3)
+      srows <- sequence(extendedRows map (_.sized(3)))
     } {
       // ... reached this time
       val formatted = csv(shdrs, srows)

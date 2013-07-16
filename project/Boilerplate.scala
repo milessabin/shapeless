@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -348,7 +348,7 @@ object Boilerplate {
     def genNat(n : Int) = {
       ("""|
           |  type _"""+n+""" = Succ[_"""+(n-1)+"""]
-          |  implicit val _"""+n+""" = new _"""+n+"""
+          |  val _"""+n+""": _"""+n+""" = new _"""+n+"""
           |""").stripMargin
     }
     
@@ -357,7 +357,6 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait Nats {
-        |  import Nat._
         |"""+nats+"""}
         |""").stripMargin
   }
@@ -412,7 +411,7 @@ object Boilerplate {
     ("""|
         |class SizedBuilder[CC[_]] {
         |  import scala.collection.generic.CanBuildFrom
-        |  import Nat._
+        |  import nat._
         |  import Sized._
         |"""+instances+"""}
         |""").stripMargin

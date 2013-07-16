@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ package shapeless.examples
 object LenseExamples extends App {
   import shapeless._
   import Lens._
-  import Nat._
 
   def typed[T](t : => T) {}
 
@@ -33,12 +32,12 @@ object LenseExamples extends App {
   case class Person(name : String, age : Int, address : Address)
   
   // Some lenses over Person/Address ...
-  val nameLens     = Lens[Person] >> _0
-  val ageLens      = Lens[Person] >> _1
-  val addressLens  = Lens[Person] >> _2
-  val streetLens   = Lens[Person] >> _2 >> _0
-  val cityLens     = Lens[Person] >> _2 >> _1
-  val postcodeLens = Lens[Person] >> _2 >> _2
+  val nameLens     = Lens[Person] >> 0
+  val ageLens      = Lens[Person] >> 1
+  val addressLens  = Lens[Person] >> 2
+  val streetLens   = Lens[Person] >> 2 >> 0
+  val cityLens     = Lens[Person] >> 2 >> 1
+  val postcodeLens = Lens[Person] >> 2 >> 2
 
   // Starting value
   val person = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))

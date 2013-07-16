@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,43 @@
 
 package shapeless
 
+import scala.language.experimental.macros
+
+import scala.reflect.macros.Context
+
 /**
  * Base trait for type level natural numbers.
  * 
  * @author Miles Sabin
  */
-trait Nat
+trait Nat {
+  type N <: Nat
+}
 
 /**
  * Encoding of successor.
  * 
  * @author Miles Sabin
  */
-case class Succ[P <: Nat]() extends Nat
+case class Succ[P <: Nat]() extends Nat {
+  type N = Succ[P]
+}
+
+object Succ {
+  implicit def witnessN[P <: Nat]: WitnessAux[Succ[P]] =
+    new WitnessAux[Succ[P]] {
+      val value = new Succ[P]()
+    }
+}
+
+/**
+ * Encoding of zero.
+ * 
+ * @author Miles Sabin
+ */
+class _0 extends Nat {
+  type N = _0
+}
 
 /**
  * Type level encoding of the natural numbers.
@@ -36,14 +60,82 @@ case class Succ[P <: Nat]() extends Nat
  * @author Miles Sabin
  */
 object Nat extends Nats {
-  def apply[N <: Nat](implicit n : N) = n
-  
-  class _0 extends Nat
-  implicit val _0 = new _0
-  
-  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
+  def apply(i: Int) = macro NatMacros.materializeWidened
 
-  def toInt[N <: Nat](n : N)(implicit toIntN : ToInt[N]) = toIntN()
+  implicit def materialize(i: Int) = macro NatMacros.materializeSingleton
+}
+
+object NatMacros {
+  def mkNatTpt(c: Context)(i: c.Expr[Int]): c.Tree = {
+    import c.universe._
+
+    val n: Int = SingletonTypeMacros.eval[Int](c)(i.tree).getOrElse(
+      c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
+    )
+
+    if (n < 0)
+      c.abort(c.enclosingPosition, s"A Nat cannot represent $n")
+
+    val succSym = typeOf[Succ[_]].typeConstructor.typeSymbol
+    val _0Sym = typeOf[_0].typeSymbol
+
+    def mkNatTpt(n: Int): Tree = {
+      if(n == 0) Ident(_0Sym)
+      else AppliedTypeTree(Ident(succSym), List(mkNatTpt(n-1)))
+    }
+
+    mkNatTpt(n)
+  }
+
+  def materializeSingleton(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+    import c.universe._
+
+    val natTpt = mkNatTpt(c)(i)
+
+    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+
+    val moduleName = newTermName(c.fresh("nat_"))
+    val moduleDef =
+      ModuleDef(Modifiers(), moduleName,
+        Template(
+          List(natTpt),
+          emptyValDef,
+          List(
+            DefDef(
+              Modifiers(), nme.CONSTRUCTOR, List(),
+              List(List()),
+              TypeTree(),
+              Block(List(pendingSuperCall), Literal(Constant(()))))
+          )
+        )
+      )
+
+    c.Expr[Nat] {
+      Block(
+        List(moduleDef),
+        Ident(moduleName)
+      )
+    }
+  }
+
+  def materializeWidened(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+    import c.universe._
+    val natTpt = mkNatTpt(c)(i)
+
+    val valName = newTermName(c.fresh("nat_"))
+    val valDef =
+      ValDef(Modifiers(), valName,
+        natTpt,
+        Apply(Select(New(natTpt), nme.CONSTRUCTOR), List())
+      )
+
+    c.Expr[Nat] {
+      Block(
+        List(valDef),
+        Ident(valName)
+      )
+    }
+  }
 }
 
 /**
@@ -79,13 +171,12 @@ trait Sum[A <: Nat, B <: Nat] {
 trait SumAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Sum {
-  implicit def sum[A <: Nat, B <: Nat, C <: Nat](implicit diff : SumAux[A, B, C]) = new Sum[A, B] {
+  implicit def sum[A <: Nat, B <: Nat, C <: Nat](implicit sum: SumAux[A, B, C]) = new Sum[A, B] {
     type Out = C
   }
 }
 
 object SumAux {
-  import Nat._0
   implicit def sum1[B <: Nat] = new SumAux[_0, B, B] {}
   implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
     (implicit ev : SumAux[A, Succ[B], C]) = new SumAux[Succ[A], B, C] {}
@@ -103,13 +194,12 @@ trait Diff[A <: Nat, B <: Nat] {
 trait DiffAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Diff {
-  implicit def diff[A <: Nat, B <: Nat, C <: Nat](implicit diff : DiffAux[A, B, C]) = new Diff[A, B] {
+  implicit def diff[A <: Nat, B <: Nat, C <: Nat](implicit diff: DiffAux[A, B, C]) = new Diff[A, B] {
     type Out = C
   }
 }
 
 object DiffAux {
-  import Nat._0
   implicit def diff1[A <: Nat] = new DiffAux[A, _0, A] {}
   implicit def diff2[A <: Nat, B <: Nat, C <: Nat]
     (implicit ev : DiffAux[A, B, C]) = new DiffAux[Succ[A], Succ[B], C] {}
@@ -127,21 +217,19 @@ trait Prod[A <: Nat, B <: Nat] {
 trait ProdAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Prod {
-  implicit def prod[A <: Nat, B <: Nat, C <: Nat](implicit diff : ProdAux[A, B, C]) = new Prod[A, B] {
+  implicit def prod[A <: Nat, B <: Nat, C <: Nat](implicit prod: ProdAux[A, B, C]) = new Prod[A, B] {
     type Out = C
   }
 }
 
 object ProdAux {
-  import Nat._0
-
   implicit def prod1[B <: Nat] = new ProdAux[_0, B, _0] {}
   implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
     (implicit ev1 : ProdAux[A, B, C], ev2 : SumAux[B, C, D]) = new ProdAux[Succ[A], B, D] {}
 }
 
 /**
- * Type class witnessing that `Out` is the product of `A` and `B`.
+ * Type class witnessing that `Out` is the quotient of `A` and `B`.
  *
  * @author Tom Switzer
  */
@@ -159,7 +247,6 @@ object Div {
 }
 
 object DivAux {
-  import Nat._
   import LT._
 
   implicit def div1[A <: Nat] = new DivAux[_0, A, _0] {}
@@ -185,7 +272,7 @@ trait ModAux[A <: Nat, B <: Nat, C <: Nat]
 
 object Mod {
   implicit def mod[A <: Nat, B <: Nat, C <: Nat]
-    (implicit aux: ModAux[A, B, C]) = new Mod[A, B] { type Out = C }
+    (implicit mod: ModAux[A, B, C]) = new Mod[A, B] { type Out = C }
 }
 
 object ModAux {
@@ -202,8 +289,6 @@ object ModAux {
 trait LT[A <: Nat, B <: Nat]
 
 object LT {
-  import Nat._0
-
   type <[A <: Nat, B <: Nat] = LT[A, B]
 
   implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
@@ -218,13 +303,11 @@ object LT {
 trait LTEq[A <: Nat, B <: Nat]
 
 object LTEq {
-  import Nat._0
-
   type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 
   implicit def ltEq1 = new <=[_0, _0] {}
   implicit def ltEq2[B <: Nat] = new <=[_0, Succ[B]] {}
-  implicit def ltEq3[A <: Nat, B <: Nat](implicit lt : A <= B) = new <=[Succ[A], Succ[B]] {}
+  implicit def ltEq3[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
 }
 
 /**
@@ -237,8 +320,6 @@ trait ToInt[N <: Nat] {
 }
 
 object ToInt {
-  import Nat._0
-
   implicit val toInt0 = new ToInt[_0] {
     def apply() = 0 
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ package shapeless
  */
 case class Zipper[C, L <: HList, R <: HList, P](prefix : L, suffix : R, parent : P) {
   import Zipper._
-  import Nat._
   
   type Self = Zipper[C, L, R, P]
   
@@ -44,14 +43,14 @@ case class Zipper[C, L <: HList, R <: HList, P](prefix : L, suffix : R, parent :
   def rightBy[N <: Nat](implicit rightBy : RightBy[Self, N]) = rightBy(this)
 
   /** Move the cursor ''n'' places to the right. Available only if there are ''n'' places to the right of the cursor. */
-  def rightBy[N <: Nat](n : N)(implicit rightBy : RightBy[Self, N]) = rightBy(this)
+  def rightBy(n: Nat)(implicit rightBy : RightBy[Self, n.N]) = rightBy(this)
 
   /** Move the cursor ''n'' places to the left. Requires an explicit type argument. Available only if there are
    * ''n'' places to the left of the cursor. */
   def leftBy[N <: Nat](implicit leftBy : LeftBy[Self, N]) = leftBy(this)
 
   /** Move the cursor ''n'' places to the left. Available only if there are ''n'' places to the right of the cursor. */
-  def leftBy[N <: Nat](n : N)(implicit leftBy : LeftBy[Self, N]) = leftBy(this)
+  def leftBy(n: Nat)(implicit leftBy : LeftBy[Self, n.N]) = leftBy(this)
 
   /** Move the cursor to the first element of type `T` to the right. Available only if there is an element of type `T`
    * to the right of the cursor.

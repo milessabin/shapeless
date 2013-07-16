@@ -17,6 +17,21 @@
 package object shapeless {
   import Poly._
   
+  /** `Nat` literals */
+  object nat extends Nats {
+    /** The natural number 0 */
+    val _0: _0 = new _0
+
+    implicit val witness0: WitnessAux[_0] =
+      new WitnessAux[_0] {
+        val value = _0
+      }
+
+    def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
+
+    def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
+  }
+
   /** The SYB everything combinator */
   type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
   

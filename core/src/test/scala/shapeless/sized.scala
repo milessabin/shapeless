@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class SizedTests {
-  import Nat._
+  import nat._
   import Sized._
   
   def typed[T](t : => T) {}
@@ -32,38 +32,38 @@ class SizedTests {
     val l2 = List(1, 2)
     val l3 = List(1, 2, 3)
     
-    val nl0 = l0.sized[_0]
+    val nl0 = l0.sized(0)
     assertTrue(nl0.isDefined)
-    val nl0b = l0.sized[_1]
+    val nl0b = l0.sized(1)
     assertTrue(nl0b.isEmpty)
-    val nl0c = l0.sized[_2]
+    val nl0c = l0.sized(2)
     assertTrue(nl0c.isEmpty)
-    val nl0d = l0.sized[_3]
+    val nl0d = l0.sized(3)
     assertTrue(nl0d.isEmpty)
     
     //val h0 = nl0.get.head // Does not compile
     //val t0 = nl0.get.tail // Does not compile
     
-    val nl1 = l1.sized[_0]
+    val nl1 = l1.sized(0)
     assertTrue(nl1.isEmpty)
-    val nl1b = l1.sized[_1]
+    val nl1b = l1.sized(1)
     assertTrue(nl1b.isDefined)
-    val nl1c = l1.sized[_2]
+    val nl1c = l1.sized(2)
     assertTrue(nl1c.isEmpty)
-    val nl1d = l1.sized[_3]
+    val nl1d = l1.sized(3)
     assertTrue(nl1d.isEmpty)
 
     val h1 = nl1b.get.head
     val t1 = nl1b.get.tail
     //val t1b = nl1b.get.tail.tail // Does not compile
 
-    val nl2 = l2.sized[_0]
+    val nl2 = l2.sized(0)
     assertTrue(nl2.isEmpty)
-    val nl2b = l2.sized[_1]
+    val nl2b = l2.sized(1)
     assertTrue(nl2b.isEmpty)
-    val nl2c = l2.sized[_2]
+    val nl2c = l2.sized(2)
     assertTrue(nl2c.isDefined)
-    val nl2d = l2.sized[_3]
+    val nl2d = l2.sized(3)
     assertTrue(nl2d.isEmpty)
     
     val h2 = nl2c.get.head
@@ -71,13 +71,13 @@ class SizedTests {
     val t2b = nl2c.get.tail.tail
     //val t2c = nl1c.get.tail.tail.tail // Does not compile
 
-    val nl3 = l3.sized[_0]
+    val nl3 = l3.sized(0)
     assertTrue(nl3.isEmpty)
-    val nl3b = l3.sized[_1]
+    val nl3b = l3.sized(1)
     assertTrue(nl3b.isEmpty)
-    val nl3c = l3.sized[_2]
+    val nl3c = l3.sized(2)
     assertTrue(nl3c.isEmpty)
-    val nl3d = l3.sized[_3]
+    val nl3d = l3.sized(3)
     assertTrue(nl3d.isDefined)
 
     val h3 = nl3d.get.head
@@ -86,13 +86,13 @@ class SizedTests {
     val t3c = nl3d.get.tail.tail.tail
     //val t3d = nl1d.get.tail.tail.tail.tail // Does not compile
     
-    val rs = "foo".sized[_3].get.unsized
+    val rs = "foo".sized(3).get.unsized
     
-    val rl = List(1, 2, 3).sized[_3].get.unsized
+    val rl = List(1, 2, 3).sized(3).get.unsized
     
-    val s1 = "foo".sized[_3]
+    val s1 = "foo".sized(3)
     assertTrue(s1.isDefined)
-    val s2 = "bar".sized[_3]
+    val s2 = "bar".sized(3)
     assertTrue(s2.isDefined)
 
     val s3 = s1.get ++ s2.get
@@ -106,9 +106,9 @@ class SizedTests {
     
     val s4 = 'c' +: s1.get
     
-    val ll1 = List(1, 2, 3).sized[_3]
+    val ll1 = List(1, 2, 3).sized(3)
     assertTrue(ll1.isDefined)
-    val ll2 = List(4, 5, 6).sized[_3]
+    val ll2 = List(4, 5, 6).sized(3)
     assertTrue(ll2.isDefined)
 
     val ll3 = ll1.get ++ ll2.get
@@ -134,26 +134,26 @@ class SizedTests {
     typed[(Int, Int)](p)
     assertEquals((-1, 3), p)
     
-    val j1 = ll1.get.take[_1]
+    val j1 = ll1.get.take(1)
     
-    val tk1 = cl.get.take[_1]
-    val tk4 = cl.get.take[_4]
-    //val tk7 = cl.get.take[_7]  // Does not compile
+    val tk1 = cl.get.take(1)
+    val tk4 = cl.get.take(4)
+    //val tk7 = cl.get.take(7)  // Does not compile
     
-    val dr1 = cl.get.drop[_1]
-    val dr4 = cl.get.drop[_4]
-    //val dr7 = cl.get.drop[_7]  // Does not compile
+    val dr1 = cl.get.drop(1)
+    val dr4 = cl.get.drop(4)
+    //val dr7 = cl.get.drop(7)  // Does not compile
     
-    val (pr1, sf1) = cl.get.splitAt[_1]
-    val (pr4, sf4) = cl.get.splitAt[_4]
-    //val (pr7, sf7) = cl.get.splitAt[_7]  // Does not compile
+    val (pr1, sf1) = cl.get.splitAt(1)
+    val (pr4, sf4) = cl.get.splitAt(4)
+    //val (pr7, sf7) = cl.get.splitAt(7)  // Does not compile
     
     val ml = cl.get map (_.toString)
     typed[Sized[List[String], _6]](ml)
     assertEquals(List("1", "2", "3", "4", "5", "6"), ml.unsized)
 
     import scala.collection.immutable.IndexedSeq
-    
+
     val is0 = Sized()
     typed[Sized[IndexedSeq[Nothing], _0]](is0)
     val is1 = Sized("foo")
