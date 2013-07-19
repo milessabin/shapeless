@@ -74,6 +74,28 @@ class NatTests {
     val m3 = mod(9, 3)
     check(0)(m3)
 
+    implicitly[PowAux[_0, _8, _1]]
+    implicitly[PowAux[_9, _0, _0]]
+    implicitly[PowAux[_3, _2, _8]]
+
+    def pow[A <: Nat, B <: Nat](implicit pow : Pow[A, B]) = new Check[pow.Out] {}
+    val e1 = pow[_3, _1]
+    check(1)(e1)
+    val e2 = pow[_2, _3]
+    check(9)(e2)
+    val e3 = pow[_2, _4]
+    check(16)(e3)
+
+    implicitly[MinAux[_0, _0, _0]]
+    implicitly[MinAux[_5, _2, _2]]
+    implicitly[MinAux[_3, _8, _3]]
+
+    def min[A <: Nat, B <: Nat](implicit min : Min[A, B]) = new Check[min.Out] {}
+    val min1 = min[_3, _4]
+    check(3)(min1)
+    val min2 = min[_5, _4]
+    check(4)(min2)
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
