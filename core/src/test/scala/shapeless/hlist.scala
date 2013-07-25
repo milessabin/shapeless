@@ -971,7 +971,7 @@ class HListTests {
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z2)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z2)
 
-    val z3 = (l1 :: l2 :: HNil).zipped
+    val z3 = (l1 :: l2 :: HNil).zip
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z3)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z3)
     
@@ -990,7 +990,7 @@ class HListTests {
     typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u2)
     assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u2)
     
-    val u3 = z1.unzipped
+    val u3 = z1.unzip
     typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u3)
     assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u3)
     
