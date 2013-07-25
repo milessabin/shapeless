@@ -1158,22 +1158,26 @@ object ToArray extends LowPriorityToArray {
  * @author Miles Sabin
  */
 trait Tupler[L <: HList] {
-  type Out <: Product
+  type Out
   def apply(l : L) : Out
 }
   
-trait TuplerAux[L <: HList, Out <: Product] {
+trait TuplerAux[L <: HList, Out] {
   def apply(l : L) : Out
 }
   
 object Tupler {
-  implicit def tupler[L <: HList, Out0 <: Product](implicit tupler : TuplerAux[L, Out0]) = new Tupler[L] {
+  implicit def tupler[L <: HList, Out0](implicit tupler : TuplerAux[L, Out0]) = new Tupler[L] {
     type Out = Out0
     def apply(l : L) : Out = tupler(l)
   }
 }
 
-object TuplerAux extends TuplerAuxInstances
+object TuplerAux extends TuplerAuxInstances {
+  implicit val hnilTupler = new TuplerAux[HNil, Unit] {
+    def apply(l: HNil): Unit = ()
+  }
+}
 
 /**
  * Type class supporting access to the last element of this `HList`. Available only if this `HList` has at least one
@@ -2073,7 +2077,7 @@ object Zip {
  * @author Miles Sabin
  */
 trait Unzip[L <: HList] {
-  type Out <: Product
+  type Out
   def apply(l : L) : Out
 }
 
