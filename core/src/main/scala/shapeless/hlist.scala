@@ -497,6 +497,18 @@ object IsHCons {
   }
 }
 
+trait IsHConsAux[L <: HList, H, T <: HList] {
+  def head(l : L) : H
+  def tail(l : L) : T
+}
+
+object IsHConsAux {
+  implicit def hlistIsHCons[H, T <: HList] = new IsHConsAux[H :: T, H, T] {
+    def head(l : H :: T) : H = l.head
+    def tail(l : H :: T) : T = l.tail
+  }
+}
+
 /**
  * Type class witnessing that the result of wrapping each element of `HList` `L` in type constructor `F` is `Out`.
  */
