@@ -22,34 +22,35 @@ import scala.collection.breakOut
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
 
-trait Generic[T] { self =>
+trait Generic[T] {
   type Repr
   def to(t : T) : Repr
   def from(r : Repr) : T
 }
 
-object Generic {
+trait LowPriorityGeneric {
   implicit def apply[T] = macro GenericMacros.materialize[T]
-  
-  def identity[T] = new Generic[T] {
-    type Repr = T
-    def to(t : T) : T = t 
-    def from(r : T) : T = r
-  }
 }
 
-trait GenericAux[T, Repr] { self =>
-  def to(t : T) : Repr
-  def from(r : Repr) : T
+object Generic extends LowPriorityGeneric {
+  // Refinement for products, here we can provide the calling context with
+  // a proof that the resulting Repr <: HList
+  implicit def product[T <: Product] = macro GenericMacros.materializeForProduct[T]
 }
 
-object GenericAux {
-  def apply[T, U](implicit gen: GenericAux[T, U]) = gen
-  
-  implicit def materialize[T](implicit gen: Generic[T]): GenericAux[T, gen.Repr] = new GenericAux[T, gen.Repr] {
-    def to(t : T) : gen.Repr = gen.to(t)
-    def from(r : gen.Repr) : T = gen.from(r)
-  }
+class GenericAux[T, Repr0](gen: Generic[T] { type Repr = Repr0 }) {
+  def to(t : T) : Repr0 = gen.to(t)
+  def from(r : Repr0) : T = gen.from(r)
+}
+
+trait LowPriorityGenericAux {
+  implicit def apply[T](implicit gen: Generic[T]): GenericAux[T, gen.Repr] = new GenericAux[T, gen.Repr](gen)
+}
+
+object GenericAux extends LowPriorityGenericAux {
+  // Refinement for products, here we can provide the calling context with
+  // a proof that the resulting Repr <: HList
+  implicit def product[T](implicit gen: Generic[T] { type Repr <: HList }): GenericAux[T, gen.Repr] = new GenericAux[T, gen.Repr](gen)
 }
 
 object GenericMacros {
@@ -57,7 +58,21 @@ object GenericMacros {
   def materialize[T: context.WeakTypeTag](context : Context): context.Expr[Generic[T]] = {
     val tpe0 = context.weakTypeOf[T]
     if (tpe0 <:< context.typeOf[HList] || tpe0 <:< context.typeOf[Coproduct])
-      context.universe.reify { Generic.identity[T] }
+      context.universe.reify {
+        new Generic[T] {
+          type Repr = T
+          def to(t : T) : T = t
+          def from(t : T) : T = t
+        }
+      }
+    else if (tpe0 =:= context.typeOf[Unit])
+      context.universe.reify {
+        new Generic[T] {
+          type Repr = HNil
+          def to(t: Unit): HNil = HNil
+          def from(r : HNil): Unit = ()
+        }
+      }
     else {
       val helper = new Helper[context.type] {
         val c: context.type = context
@@ -66,6 +81,28 @@ object GenericMacros {
         val tpe = tpe0
       }
       context.Expr[Generic[T]](helper.ADT.materializeGeneric)
+    }
+  }
+
+  def materializeForProduct[T <: Product: context.WeakTypeTag](context : Context): context.Expr[Generic[T] { type Repr <: HList }] = {
+    val tpe0 = context.weakTypeOf[T]
+    if (tpe0 <:< context.typeOf[Coproduct])
+      context.abort(context.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+
+    val helper = new Helper[context.type] {
+      val c: context.type = context
+      val expandInner = false
+      val optimizeSingleItem = false
+      val tpe = tpe0
+    }
+
+    context.Expr[Generic[T] { type Repr <: HList }] {
+      if (tpe0 <:< context.typeOf[HList])
+        // Explicit tree construction used here because we can't prove that tpe0
+        // refines HList to reify's satisfaction
+        helper.ADT.materializeIdentityGeneric
+      else
+        helper.ADT.materializeGeneric
     }
   }
 
@@ -336,6 +373,35 @@ object GenericMacros {
             TypeDef(Modifiers(), newTypeName("Repr"), List(), reprTpt),
             mkToRepr(toName),
             mkFromRepr(fromName)
+          ),
+          AppliedTypeTree(
+            Ident(typeOf[Generic[_]].typeSymbol),
+            List(selfTpt)
+          )
+        )
+      }
+
+      def materializeIdentityGeneric = {
+        val toName = newTermName("to")
+        val fromName = newTermName("from")
+
+        def mkIdentityDef(name: TermName) = {
+          val param = newTermName("t")
+          DefDef(
+            Modifiers(),
+            name,
+            List(),
+            List(List(ValDef(Modifiers(PARAM), param, selfTpt, EmptyTree))),
+            selfTpt,
+            Ident(param)
+          )
+        }
+
+        mkDummyClass(
+          List(
+            TypeDef(Modifiers(), newTypeName("Repr"), List(), selfTpt),
+            mkIdentityDef(toName),
+            mkIdentityDef(fromName)
           ),
           AppliedTypeTree(
             Ident(typeOf[Generic[_]].typeSymbol),
