@@ -23,8 +23,6 @@ import shapeless.test.illTyped
 
 class HListTests {
   import nat._
-
-  import HList._
   import syntax.traversable._
   import Typeable._
   import Tuples._
@@ -1031,7 +1029,7 @@ class HListTests {
     assertEquals(1, is2._1)
     assertEquals("foo", is2._2)
     
-    import ListCompat._
+    import HList.ListCompat._
     
     val tl = l2 match {
       case 23 #: 3.0 #: s #: xs => (s, xs)
