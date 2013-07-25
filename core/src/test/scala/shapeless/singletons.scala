@@ -25,6 +25,20 @@ class SingletonTypesTests {
   import SingletonTypes._
   import Witness.{ WitnessEq, WitnessLt }
 
+  val wTrue = Witness(true)
+  type True = wTrue.T
+  val wFalse = Witness(false)
+  type False = wFalse.T
+
+  val w0 = Witness(0)
+  type _0 = w0.T
+  val w1 = Witness(1)
+  type _1 = w1.T
+  val w2 = Witness(2)
+  type _2 = w2.T
+  val w3 = Witness(3)
+  type _3 = w3.T
+
   def typed[T](t: => T) {}
 
   def sameTyped[T](t1: => T)(t2: => T) {}
@@ -70,12 +84,12 @@ class SingletonTypesTests {
   }
 
   object Show {
-    implicit def showTrue[T](implicit t: T = refine(true)) = new Show[T] { def show = "true" }
-    implicit def showFalse[T](implicit t: T = refine(false)) = new Show[T] { def show = "false" }
+    implicit val showTrue  = new Show[True] { def show = "true" }
+    implicit val showFalse = new Show[False] { def show = "false" }
 
-    implicit def showOne[T](implicit t: T = refine(1)) = new Show[T] { def show = "One" }
-    implicit def showTwo[T](implicit t: T = refine(2)) = new Show[T] { def show = "Two" }
-    implicit def showThree[T](implicit t: T = refine(3)) = new Show[T] { def show = "Three" }
+    implicit val showOne   = new Show[_1] { def show = "One" }
+    implicit val showTwo   = new Show[_2] { def show = "Two" }
+    implicit val showThree = new Show[_3] { def show = "Three" }
   }
 
   def show[T](t: T)(implicit s: Show[T]) = s.show
