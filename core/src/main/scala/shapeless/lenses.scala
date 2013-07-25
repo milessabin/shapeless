@@ -41,7 +41,6 @@ trait Lens[C, F] {
 
 trait ProductLens[C, P <: Product] extends Lens[C, P] {
   outer =>
-  import Tuples._
   def ~[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
     (implicit
       hlp  : HListerAux[P, L],
@@ -52,9 +51,9 @@ trait ProductLens[C, P <: Product] extends Lens[C, P] {
       tpq  : TuplerAux[LT, Q],
       hlq  : HListerAux[Q, LT]) =
       new ProductLens[C, Q] {
-        def get(c : C) : Q = (outer.get(c).hlisted :+ other.get(c)).tupled
+        def get(c : C) : Q = (hlp(outer.get(c)) :+ other.get(c)).tupled
         def set(c : C)(q : Q) = {
-          val l = q.hlisted
+          val l = hlq(q)
           other.set(outer.set(c)(l.init.tupled))(l.last)
         }
       }

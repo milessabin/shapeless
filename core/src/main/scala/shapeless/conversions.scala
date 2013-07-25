@@ -17,41 +17,14 @@
 package shapeless
 
 /**
- * Conversions between `Tuples` and `HLists`.
- * 
- * The implicit defined by this object enhances `Tuples` with an `hlisted` method which constructs
- * an equivalently typed [[shapeless.HList]]. This object also provides higher ranked functions for
- * conversion between `Tuples` and `HLists`.
- * 
- * @author Miles Sabin
+ * Higher ranked function which converts `HLists` to tuples.
  */
-object Tuples {
-  trait TupleOps[L <: HList] {
-    def hlisted : L
-  }
-  
-  implicit def tupleOps[T <: Product](t : T)(implicit hlister : HLister[T]) = new TupleOps[hlister.Out] {
-    def hlisted = hlister(t)
-  }
-  
-  /**
-   * Higher ranked function which converts `Tuples` to `HLists`. 
-   */
-  object hlisted extends Poly1 {
-    implicit def caseProduct[T <: Product](implicit hlister : HLister[T]) = at[T](hlister(_))
-  }
-
-  /**
-   * Higher ranked function which converts `HLists` to `Tuples`. 
-   */
-  object tupled extends Poly1 {
-    implicit def caseHList[L <: HList](implicit tupler : Tupler[L]) = at[L](tupler(_))
-  }
-}
-
+object tupled extends Poly1 {
+  implicit def caseHList[L <: HList](implicit tupler: Tupler[L]) = at[L](tupler(_))
 }
 
 /**
+ * Higher ranked function which converts products to `HLists`. 
  */
 object productElements extends Poly1 {
   implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))

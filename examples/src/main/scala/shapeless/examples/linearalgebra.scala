@@ -26,7 +26,6 @@ object LinearAlgebraExamples extends App {
   import nat._
 
   import TypeOperators._
-  import Tuples._
   
   def typed[T](t : => T) {}
 
@@ -48,14 +47,13 @@ object LinearAlgebraExamples extends App {
     
     implicit def pointOpsN[N <: Nat, LN <: HList, PN <: Product, ZLN <: HList]
       (implicit
-        hl : HListerAux[PN, LN],
-        tp : TuplerAux[LN, PN],
+        gen : GenericAux[PN, LN],
         zipper : TransposerAux[LN :: LN :: HNil, ZLN],
         mapper : MapperAux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
           (p : PN) =>
             new VectorOps[N, PN](p) {
               def +(other : Self) : Self =
-                newtype((p.hlisted :: other.tupled.hlisted :: HNil).transpose.map(sum).tupled)
+                newtype(gen.from((gen.to(p) :: gen.to(other.tupled) :: HNil).transpose.map(sum)))
             }
   }
 

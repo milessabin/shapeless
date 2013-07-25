@@ -19,6 +19,9 @@ import sbt._
 object Boilerplate {
   
   def gen(dir : File) = { 
+    val tupleops = dir / "shapeless" / "tupleops.scala"
+    IO.write(tupleops, genTupleOpsImplicits)
+    
     val tupleraux = dir / "shapeless" / "tupleraux.scala"
     IO.write(tupleraux, genTuplerAuxInstances)
     
@@ -62,8 +65,9 @@ object Boilerplate {
     IO.write(hmapbuilder, genHMapBuilder)
     
     Seq(
-      tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply, polycases,
-      polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder, hmapbuilder
+      tupleops, tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply,
+      polycases, polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder,
+      hmapbuilder
     )
   }
 
@@ -85,6 +89,28 @@ object Boilerplate {
         | */
         |
         |package shapeless
+        |""").stripMargin
+  }
+  
+  def genTupleOpsImplicits = {
+    def genImplicit(arity : Int) = {
+      val typeVars = (0 until arity) map (n => (n+'A').toChar)
+      val typeArgs = typeVars.mkString("[", ", ", "]")
+      val tupleType = if (arity == 1) "Tuple1[A]" else typeVars.mkString("(", ", ", ")")
+      
+      ("""|
+          |  implicit def tupleOps"""+arity+typeArgs+"""(t: """+tupleType+"""): TupleOps["""+tupleType+"""] =
+          |    new TupleOps["""+tupleType+"""](t)
+          |""").stripMargin
+    }
+
+    val implicits = ((1 to 22) map genImplicit).mkString
+    
+    genHeader+
+    ("""|
+        |package syntax
+        |
+        |trait TupleOpsImplicits {"""+implicits+"""}
         |""").stripMargin
   }
   
