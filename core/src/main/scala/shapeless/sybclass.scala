@@ -53,7 +53,6 @@ trait LowPriorityData {
 
 object Data extends LowPriorityData {
   import Poly._
-  import Tuples._
 
   def gmapQ[F, T, R](f : F)(t : T)(implicit data : Data[F, T, R]) = data.gmapQ(t)
 
@@ -246,7 +245,6 @@ trait LowPriorityDataT {
 
 object DataT extends LowPriorityDataT {
   import Poly._
-  import Tuples._
 
   def gmapT[F, T, U](f : F)(t : T)(implicit data : DataT[F, T, U]) = data.gmapT(t)
 

@@ -25,7 +25,6 @@ class HListTests {
   import nat._
   import syntax.traversable._
   import Typeable._
-  import Tuples._
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil

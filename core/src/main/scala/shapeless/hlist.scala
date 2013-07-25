@@ -2060,8 +2060,6 @@ trait Zip[L <: HList] {
 }
 
 object Zip {
-  import Tuples._
-  
   implicit def zipper[L <: HList, OutT <: HList, OutM <: HList]
     (implicit
       transposer : TransposerAux[L, OutT],
@@ -2082,8 +2080,6 @@ trait Unzip[L <: HList] {
 }
 
 object Unzip {
-  import Tuples._
-
   implicit def unzipper[L <: HList, OutM <: HList, OutT <: HList]
     (implicit
       mapper : MapperAux[productElements.type, L, OutM],

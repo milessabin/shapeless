@@ -20,8 +20,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 class LiftTests {
-  import HList._
-  import Tuples._
   import syntax.function._
   import Lift._
   

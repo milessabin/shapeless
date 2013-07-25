@@ -20,7 +20,6 @@ object StackOverflow2 {
   // http://stackoverflow.com/questions/8270526
   
   import shapeless._
-  import HList._
   import ops.function._
   
   sealed abstract class A { def eval() : A }
@@ -44,7 +43,6 @@ object StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
   
   import shapeless._
-  import HList._
   import syntax.function._
   import TypeOperators._
   
@@ -76,7 +74,6 @@ object StackOverflow4 extends App {
   // http://stackoverflow.com/questions/10216278
 
   import shapeless._
-  import HList._
   import ops.function._
   import syntax.function._
 
