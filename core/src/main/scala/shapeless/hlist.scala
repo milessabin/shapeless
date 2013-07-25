@@ -2056,11 +2056,11 @@ object Unzip {
 
   implicit def unzipper[L <: HList, OutM <: HList, OutT <: HList]
     (implicit
-      mapper : MapperAux[hlisted.type, L, OutM],
+      mapper : MapperAux[productElements.type, L, OutM],
       transposer : TransposerAux[OutM, OutT],
       tupler : Tupler[OutT]) = new Unzip[L] {
     type Out = tupler.Out
-    def apply(l : L) = (l map hlisted).transpose.tupled
+    def apply(l : L) = (l map productElements).transpose.tupled
   }
 }
   

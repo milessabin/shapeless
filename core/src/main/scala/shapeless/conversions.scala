@@ -155,4 +155,6 @@ object FromTraversable {
         if(l.isEmpty) None
         else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
   }
+object productElements extends Poly1 {
+  implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))
 }

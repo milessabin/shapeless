@@ -975,16 +975,16 @@ class HListTests {
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z3)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z3)
     
-    val t2 = z1.map(hlisted).transpose
+    val t2 = z1.map(productElements).transpose
     val u1 = t2.tupled
     typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u1)
     assertEquals((1 :: "a" :: 1.0 :: HNil, 2 :: "b" :: 2.0 :: HNil), u1)
 
     def unzip[L <: HList, OutM <: HList, OutT <: HList](l : L)
       (implicit
-        mapper : MapperAux[hlisted.type, L, OutM],
+        mapper : MapperAux[productElements.type, L, OutM],
         transposer : TransposerAux[OutM, OutT],
-        tupler : Tupler[OutT]) = l.map(hlisted).transpose.tupled
+        tupler : Tupler[OutT]) = l.map(productElements).transpose.tupled
         
     val u2 = unzip(z1)
     typed[(Int :: String :: Double :: HNil, Int :: String :: Double :: HNil)](u2)
