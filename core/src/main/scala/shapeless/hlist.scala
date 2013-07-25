@@ -68,7 +68,7 @@ final class HListOps[L <: HList](l : L) {
   def head(implicit c : IsHCons[L]) : c.H = c.head(l) 
 
   /**
-   * Returns that tail of this `HList`. Available only if there is evidence that this `HList` is composite.
+   * Returns the tail of this `HList`. Available only if there is evidence that this `HList` is composite.
    */
   def tail(implicit c : IsHCons[L]) : c.T = c.tail(l)
   
@@ -108,13 +108,13 @@ final class HListOps[L <: HList](l : L) {
   def reverse_:::[P <: HList](prefix : P)(implicit prepend : ReversePrepend[P, L]) : prepend.Out = prepend(prefix, l)
 
   /**
-   * Returns the ''nth'' of this `HList`. An explicit type argument must be provided. Available only if there is
+   * Returns the ''nth'' element of this `HList`. An explicit type argument must be provided. Available only if there is
    * evidence that this `HList` has at least ''n'' elements.
    */
   def apply[N <: Nat](implicit at : At[L, N]) : at.Out = at(l)
 
   /**
-   * Returns the ''nth'' of this `HList`. Available only if there is evidence that this `HList` has at least ''n''
+   * Returns the ''nth'' element of this `HList`. Available only if there is evidence that this `HList` has at least ''n''
    * elements.
    */
   def apply(n : Nat)(implicit at : At[L, n.N]) : at.Out = at(l)
@@ -174,7 +174,7 @@ final class HListOps[L <: HList](l : L) {
   }
   
   /**
-   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`, return both the
+   * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`, returning both the
    * replaced element and the updated `HList`. An explicit type argument must be provided for `U`. Available only if
    * there is evidence that this `HList` has an element of type `U`.
    */
@@ -212,8 +212,8 @@ final class HListOps[L <: HList](l : L) {
   def updatedAt[N <: Nat] = new UpdatedAtAux[N]
   
   /**
-   * Replaces the ''nth' element of this `HList` with the supplied value of type `U`.  must be provided for `N`.
-   * Available only if there is evidence that this `HList` has at least ''n'' elements.
+   * Replaces the ''nth' element of this `HList` with the supplied value of type `U`. Available only if there is
+   * evidence that this `HList` has at least ''n'' elements.
    */
   def updatedAt[U](n: Nat, u : U)(implicit replacer : ReplaceAt[L, n.N, U]) : replacer.Out = replacer(l, u)._2
 
