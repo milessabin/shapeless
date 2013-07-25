@@ -32,6 +32,18 @@ package object shapeless {
     def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
   }
 
+  /** Dependent unary function type. */
+  trait DepFn1[T] {
+    type Out
+    def apply(t: T): Out
+  }
+
+  /** Dependent binary function type. */
+  trait DefFn2[T, U] {
+    type Out
+    def apply(t: T, u: U): Out
+  }
+
   /** The SYB everything combinator */
   type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
   
