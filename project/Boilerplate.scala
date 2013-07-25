@@ -160,6 +160,10 @@ object Boilerplate {
     
     genHeader+
     ("""|
+        |package ops
+        |
+        |import function.FnHListerAux
+        |
         |trait FnHListerAuxInstances {"""+instances+"""}
         |""").stripMargin
   }
@@ -185,6 +189,10 @@ object Boilerplate {
     
     genHeader+
     ("""|
+        |package ops
+        |
+        |import function.FnUnHListerAux
+        |
         |trait FnUnHListerAuxInstances {"""+instances+"""}
         |""").stripMargin
   }

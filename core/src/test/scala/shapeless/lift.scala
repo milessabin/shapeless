@@ -22,7 +22,7 @@ import org.junit.Assert._
 class LiftTests {
   import HList._
   import Tuples._
-  import Functions._
+  import syntax.function._
   import Lift._
   
   def typed[T](t : => T) {}

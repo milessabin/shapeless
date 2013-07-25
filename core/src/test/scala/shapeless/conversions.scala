@@ -21,8 +21,9 @@ import org.junit.Assert._
 
 class ConversionTests {
   import Tuples._
-  import Functions._
   import HList._
+  import ops.function.FnHListerAux
+  import syntax.function._
 
   def typed[T](t : => T) {}
   

@@ -119,6 +119,7 @@ trait Poly extends PolyApply with PolyCases {
   }
   
   object CaseBuilder extends LowPriorityCaseBuilder {
+    import ops.function.FnHLister
     implicit def fnCaseBuilder[F](implicit hl: FnHLister[F]) = new CaseBuilder[F, hl.Args, hl.Result] {
       def apply(f: F) = Case((l : hl.Args) => hl(f)(l))
     }

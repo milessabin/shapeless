@@ -21,7 +21,7 @@ object StackOverflow2 {
   
   import shapeless._
   import HList._
-  import Functions._
+  import ops.function._
   
   sealed abstract class A { def eval() : A }
   case class A0 () extends A { def eval() = this }
@@ -45,7 +45,7 @@ object StackOverflow3 {
   
   import shapeless._
   import HList._
-  import Functions._
+  import syntax.function._
   import TypeOperators._
   
   case class Input[T](value: T)
@@ -77,7 +77,8 @@ object StackOverflow4 extends App {
 
   import shapeless._
   import HList._
-  import Functions._
+  import ops.function._
+  import syntax.function._
 
   def fun(x: Int) = x
   def fun1(x: Int, y: Int) = x
