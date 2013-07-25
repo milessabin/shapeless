@@ -49,62 +49,10 @@ object Tuples {
   }
 }
 
-/**
- * Type class supporting conversion of `Tuples` to `HLists`.
- * 
- * @author Miles Sabin
- */
-trait HLister[-T <: Product] {
-  type Out <: HList
-  def apply(t : T) : Out
-}
-  
-trait HListerAux[-T <: Product, Out <: HList] {
-  def apply(t : T) : Out
 }
 
 /**
- * `HLister` type class instances.
- * 
- * @author Miles Sabin
  */
-object HLister {
-  implicit def hlister[T <: Product, Out0 <: HList](implicit hlister : HListerAux[T, Out0]) = new HLister[T] {
-    type Out = Out0
-    def apply(t : T) : Out = hlister(t)
-  }
-}
-
-object HListerAux extends HListerAuxInstances
-
-/**
- * Type class witnessing the arity of a `Product`
- * 
- * @author Miles Sabin
- */
-trait ProductArity[P <: Product] {
-  type N <: Nat
-}
-
-trait ProductArityAux[P <: Product, N <: Nat]
-
-/**
- * `ProductArity` type class instances.
- * 
- * @author Miles Sabin
- */
-object ProductArity {
-  implicit def arity[P <: Product, N0 <: Nat](implicit an : ProductArityAux[P, N0]) = new ProductArity[P] {
-    type N = N0
-  }
-}
-
-object ProductArityAux {
-  implicit def arityN[P <: Product, L <: HList, N <: Nat]
-    (implicit hl : HListerAux[P, L], len : LengthAux[L, N]) = new ProductArityAux[P, N] {} 
-}
-
-
 object productElements extends Poly1 {
   implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))
 }
