@@ -105,56 +105,6 @@ object ProductArityAux {
 }
 
 
-import scala.collection.GenTraversable
-
-/**
- * Conversions between `Traversables` and `HLists`.
- * 
- * The implicit defined by this object enhances `Traversables` with a `toHList` method which constructs an equivalently
- * typed [[shapeless.HList]] if possible. 
- * 
- * @author Miles Sabin
- */
-object Traversables {
-  
-  trait TraversableOps {
-    def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L]
-  }
-  
-  implicit def traversableOps[T <% GenTraversable[_]](t : T) = new TraversableOps {
-    def toHList[L <: HList](implicit fl : FromTraversable[L]) = fl(t) 
-  }
-}
-
-/**
- * Type class supporting type safe conversion of `Traversables` to `HLists`. 
- * 
- * @author Miles Sabin
- */
-trait FromTraversable[Out <: HList] {
-  def apply(l : GenTraversable[_]) : Option[Out]
-}
-
-/**
- * `FromTraversable` type class instances.
- * 
- * @author Miles Sabin
- */
-object FromTraversable {
-  import scala.collection.GenTraversableLike
-  import Typeable._
-
-  implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
-    def apply(l : GenTraversable[_]) =
-      if(l.isEmpty) Some(HNil) else None 
-  }
-  
-  implicit def hlistFromTraversable[OutH, OutT <: HList]
-    (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
-      def apply(l : GenTraversable[_]) : Option[OutH :: OutT] =
-        if(l.isEmpty) None
-        else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
-  }
 object productElements extends Poly1 {
   implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))
 }
