@@ -362,12 +362,26 @@ final class HListOps[L <: HList](l : L) {
    * Zips this `HList` of `HList`s returning an `HList` of tuples. Available only if there is evidence that this
    * `HList` has `HList` elements.
    */
+  def zip(implicit zipper : Zip[L]) : zipper.Out = zipper(l)
+
+  /**
+   * Zips this `HList` of `HList`s returning an `HList` of tuples. Available only if there is evidence that this
+   * `HList` has `HList` elements.
+   */
+  @deprecated("Use zip instead", "2.0.0")
   def zipped(implicit zipper : Zip[L]) : zipper.Out = zipper(l)
 
   /**
    * Unzips this `HList` of tuples returning a tuple of `HList`s. Available only if there is evidence that this
    * `HList` has tuple elements.
    */
+  def unzip(implicit unzipper : Unzip[L]) : unzipper.Out = unzipper(l)
+  
+  /**
+   * Unzips this `HList` of tuples returning a tuple of `HList`s. Available only if there is evidence that this
+   * `HList` has tuple elements.
+   */
+  @deprecated("Use unzip instead", "2.0.0")
   def unzipped(implicit unzipper : Unzip[L]) : unzipper.Out = unzipper(l)
   
   /**
