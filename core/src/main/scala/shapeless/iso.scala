@@ -19,7 +19,7 @@ package shapeless
 /**
  * Representation of an isomorphism between a type (typically a case class) and an `HList`.
  */
-@deprecated("Use Generic, GenericAux or scalaz Iso instead", "2.0.0")
+@deprecated("Use Generic, Generic.Aux or scalaz Iso instead", "2.0.0")
 trait Iso[T, U] { self =>
   def to(t : T) : U
   def from(u : U) : T

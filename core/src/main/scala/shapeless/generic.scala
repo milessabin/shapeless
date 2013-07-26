@@ -33,28 +33,14 @@ trait LowPriorityGeneric {
 }
 
 object Generic extends LowPriorityGeneric {
+  type Aux[T, Repr0] = Generic[T] { type Repr = Repr0 }
+
   // Refinement for products, here we can provide the calling context with
   // a proof that the resulting Repr <: HList
   implicit def product[T <: Product] = macro GenericMacros.materializeForProduct[T]
 }
 
-class GenericAux[T, Repr0](gen: Generic[T] { type Repr = Repr0 }) {
-  def to(t : T) : Repr0 = gen.to(t)
-  def from(r : Repr0) : T = gen.from(r)
-}
-
-trait LowPriorityGenericAux {
-  implicit def apply[T](implicit gen: Generic[T]): GenericAux[T, gen.Repr] = new GenericAux[T, gen.Repr](gen)
-}
-
-object GenericAux extends LowPriorityGenericAux {
-  // Refinement for products, here we can provide the calling context with
-  // a proof that the resulting Repr <: HList
-  implicit def product[T](implicit gen: Generic[T] { type Repr <: HList }): GenericAux[T, gen.Repr] = new GenericAux[T, gen.Repr](gen)
-}
-
 object GenericMacros {
-
   def materialize[T: context.WeakTypeTag](context : Context): context.Expr[Generic[T]] = {
     val tpe0 = context.weakTypeOf[T]
     if (tpe0 <:< context.typeOf[HList] || tpe0 <:< context.typeOf[Coproduct])

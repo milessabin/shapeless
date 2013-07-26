@@ -92,12 +92,12 @@ case class Zipper[C, L <: HList, R <: HList, P](prefix : L, suffix : R, parent :
 }
 
 object Zipper {
-  def apply[C, CL <: HList](c : C)(implicit gen : GenericAux[C, CL]) : Zipper[C, HNil, CL, None.type] =
+  def apply[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) : Zipper[C, HNil, CL, None.type] =
     Zipper[C, HNil, CL, None.type](HNil, gen.to(c), None)
 
   /** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
   class ToZipper[C](c : C) {
-    def toZipper[CL <: HList](implicit gen : GenericAux[C, CL]) = Zipper(c)
+    def toZipper[CL <: HList](implicit gen : Generic.Aux[C, CL]) = Zipper(c)
   }
   
   implicit def toZipper[C](c : C) = new ToZipper(c)
@@ -234,7 +234,7 @@ object Zipper {
   trait Down[Z] extends ZipperOp0[Z]
   
   object Down {
-    implicit def down[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit gen : GenericAux[RH, RHL]) =
+    implicit def down[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit gen : Generic.Aux[RH, RHL]) =
       new Down[Zipper[C, L, RH :: RT, P]] {
         type Out = Zipper[RH, HNil, RHL, Some[Zipper[C, L, RH :: RT, P]]]
         def apply(z : Zipper[C, L, RH :: RT, P]) = Zipper(HNil, gen.to(z.suffix.head), Some(z))
@@ -270,7 +270,7 @@ object Zipper {
   
   trait LowPriorityPut {
     implicit def put[C, L <: HList, RH, RT <: HList, P, E, CL <: HList]
-      (implicit gen : GenericAux[C, CL], rp : ReversePrependAux[L, E :: RT, CL]) =
+      (implicit gen : Generic.Aux[C, CL], rp : ReversePrependAux[L, E :: RT, CL]) =
         new Put[Zipper[C, L, RH :: RT, P], E] {
           type Out = Zipper[C, L, E :: RT, P]
           def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
@@ -312,7 +312,7 @@ object Zipper {
   
   object Reify {
     implicit def reify[C, L <: HList, R <: HList, P, CL <: HList]
-      (implicit gen : GenericAux[C, CL], rp : ReversePrependAux[L, R, CL]) =
+      (implicit gen : Generic.Aux[C, CL], rp : ReversePrependAux[L, R, CL]) =
         new Reify[Zipper[C, L, R, P]] {
           type Out = C
           def apply(z : Zipper[C, L, R, P]) = gen.from(z.prefix reverse_::: z.suffix)
