@@ -23,8 +23,8 @@ import shapeless.test.illTyped
 
 class TupleTests {
   import nat._
-  import syntax.traversable._
-  import syntax.tuple._
+  import syntax.std.traversable._
+  import syntax.std.tuple._
 
   import Typeable._
 

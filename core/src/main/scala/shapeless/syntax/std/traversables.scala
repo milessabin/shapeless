@@ -16,6 +16,7 @@
 
 package shapeless
 package syntax
+package std
 
 import scala.collection.GenTraversable
 

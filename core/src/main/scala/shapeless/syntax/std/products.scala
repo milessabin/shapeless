@@ -16,6 +16,7 @@
 
 package shapeless
 package syntax
+package std
 
 object product {
   implicit def productOps[P <: Product](p: P): ProductOps[P] = new ProductOps[P](p)

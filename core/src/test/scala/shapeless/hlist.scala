@@ -24,7 +24,7 @@ import ops.hlist._
 
 class HListTests {
   import nat._
-  import syntax.traversable._
+  import syntax.std.traversable._
   import Typeable._
 
   type SI = Set[Int] :: HNil

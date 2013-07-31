@@ -108,7 +108,7 @@ object Boilerplate {
     
     genHeader+
     ("""|
-        |package syntax
+        |package syntax.std
         |
         |trait TupleOpsImplicits {"""+implicits+"""}
         |""").stripMargin

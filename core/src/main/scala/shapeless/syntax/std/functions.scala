@@ -16,6 +16,7 @@
 
 package shapeless
 package syntax
+package std
 
 /**
  * Conversions between ordinary functions and `HList` functions.

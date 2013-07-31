@@ -45,7 +45,7 @@ object StackOverflow3 {
   import shapeless._
   import TypeOperators._
   import ops.hlist.{ Mapped, Mapper }
-  import syntax.function._
+  import syntax.std.function._
   
   case class Input[T](value: T)
   
@@ -79,7 +79,7 @@ object StackOverflow4 extends App {
 
   import shapeless._
   import ops.function._
-  import syntax.function._
+  import syntax.std.function._
 
   def fun(x: Int) = x
   def fun1(x: Int, y: Int) = x

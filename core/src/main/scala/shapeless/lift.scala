@@ -19,7 +19,7 @@ package shapeless
 object Lift {
   import ops.function._
   import ops.hlist._
-  import syntax.function._
+  import syntax.std.function._
 
   /**
    * Lifts a function of arbitrary arity into `Option`. 

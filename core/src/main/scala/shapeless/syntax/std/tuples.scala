@@ -16,6 +16,7 @@
 
 package shapeless
 package syntax
+package std
 
 object tuple extends TupleOpsImplicits {
   implicit def unitTupleOps(u: Unit): TupleOps[Unit] = new TupleOps[Unit](u)

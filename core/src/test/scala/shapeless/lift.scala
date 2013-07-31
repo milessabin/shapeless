@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class LiftTests {
-  import syntax.function._
+  import syntax.std.function._
   import Lift._
   
   def typed[T](t : => T) {}
