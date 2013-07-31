@@ -22,7 +22,7 @@ class TypeableTests {
   import org.junit.Test
   import org.junit.Assert._
 
-  import Typeable._
+  import syntax.typeable._
   
   @Test
   def testPrimitives {

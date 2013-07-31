@@ -35,7 +35,7 @@ object traversable {
    * @author Miles Sabin
    */
   object FromTraversable {
-    import Typeable._
+    import syntax.typeable._
 
     implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
       def apply(l : GenTraversable[_]) =

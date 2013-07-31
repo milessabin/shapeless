@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,17 +46,8 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.collection.{ GenMap, GenTraversable }
   import scala.reflect.ClassTag
+  import syntax.typeable._
   
-  class Cast(t : Any) {
-    /**
-     * Cast the receiver to a value of type `U` if possible. This operation will be as precise wrt erasure as possible
-     * given the in-scope `Typeable` instances available.
-     */
-    def cast[U](implicit castU : Typeable[U]) = castU.cast(t)
-  }
-  
-  implicit def anyCast(t : Any) : Cast = new Cast(t)
-
   case class ValueTypeable[U, B](cB : Class[B]) extends Typeable[U] {
     def cast(t : Any) : Option[U] = {
       if(t == null || (cB isAssignableFrom t.getClass)) Some(t.asInstanceOf[U]) else None

@@ -25,7 +25,7 @@ import ops.hlist._
 class HListTests {
   import nat._
   import syntax.std.traversable._
-  import Typeable._
+  import syntax.typeable._
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil

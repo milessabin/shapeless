@@ -25,8 +25,7 @@ class TupleTests {
   import nat._
   import syntax.std.traversable._
   import syntax.std.tuple._
-
-  import Typeable._
+  import syntax.typeable._
 
   type SI = Tuple1[Set[Int]]
   type OI = Tuple1[Option[Int]]

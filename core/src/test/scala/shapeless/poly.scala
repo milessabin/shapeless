@@ -225,8 +225,6 @@ class PolyTests {
 
   @Test
   def testBinary {
-    import Typeable._
-    
     val bi = bidi(23)
     typed[String](bi)
     assertEquals("23", bi)

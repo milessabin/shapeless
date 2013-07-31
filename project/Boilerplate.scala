@@ -429,7 +429,7 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait TupleTypeableInstances {
-        |  import Typeable._
+        |  import syntax.typeable._
         |"""+instances+"""}
         |""").stripMargin
   }
