@@ -40,353 +40,353 @@ object tuple {
         }
   }
 
-  trait TuplePrepend[T, U] extends DepFn2[T, U]
+  trait Prepend[T, U] extends DepFn2[T, U]
 
-  object TuplePrepend {
-    type Aux[T, U, Out0] = TuplePrepend[T, U] { type Out = Out0 }
+  object Prepend {
+    type Aux[T, U, Out0] = Prepend[T, U] { type Out = Out0 }
     implicit def prepend[T, L1 <: HList, U, L2 <: HList, L3 <: HList]
       (implicit gent: Generic.Aux[T, L1], genu: Generic.Aux[U, L2], prepend: hl.Prepend.Aux[L1, L2, L3], tp: hl.Tupler[L3]): Aux[T, U, tp.Out] =
-        new TuplePrepend[T, U] {
+        new Prepend[T, U] {
           type Out = tp.Out
           def apply(t: T, u: U): Out = prepend(gent.to(t), genu.to(u)).tupled
         }
   }
 
-  trait TupleReversePrepend[T, U] extends DepFn2[T, U]
+  trait ReversePrepend[T, U] extends DepFn2[T, U]
 
-  object TupleReversePrepend {
-    type Aux[T, U, Out0] = TupleReversePrepend[T, U] { type Out = Out0 }
+  object ReversePrepend {
+    type Aux[T, U, Out0] = ReversePrepend[T, U] { type Out = Out0 }
     implicit def prepend[T, L1 <: HList, U, L2 <: HList, L3 <: HList]
       (implicit gent: Generic.Aux[T, L1], genu: Generic.Aux[U, L2], prepend: hl.ReversePrepend.Aux[L1, L2, L3], tp: hl.Tupler[L3]): Aux[T, U, tp.Out] =
-        new TupleReversePrepend[T, U] {
+        new ReversePrepend[T, U] {
           type Out = tp.Out
           def apply(t: T, u: U): Out = prepend(gent.to(t), genu.to(u)).tupled
         }
   }
 
-  trait TupleAt[T, N <: Nat] extends DepFn1[T]
+  trait At[T, N <: Nat] extends DepFn1[T]
 
-  object TupleAt {
-    type Aux[T, N <: Nat, Out0] = TupleAt[T, N] { type Out = Out0 }
+  object At {
+    type Aux[T, N <: Nat, Out0] = At[T, N] { type Out = Out0 }
     implicit def at[T, L1 <: HList, N <: Nat]
       (implicit gen: Generic.Aux[T, L1], at: hl.At[L1, N]): Aux[T, N, at.Out] =
-        new TupleAt[T, N] {
+        new At[T, N] {
           type Out = at.Out
           def apply(t: T): Out = at(gen.to(t))
         }
   }
 
-  trait TupleLast[T] extends DepFn1[T]
+  trait Last[T] extends DepFn1[T]
 
-  object TupleLast {
-    type Aux[T, Out0] = TupleLast[T] { type Out = Out0 }
+  object Last {
+    type Aux[T, Out0] = Last[T] { type Out = Out0 }
     implicit def last[T, L <: HList]
       (implicit gen: Generic.Aux[T, L], last: hl.Last[L]): Aux[T, last.Out] =
-        new TupleLast[T] {
+        new Last[T] {
           type Out = last.Out
           def apply(t: T): Out = gen.to(t).last
         }
   }
 
-  trait TupleInit[T] extends DepFn1[T]
+  trait Init[T] extends DepFn1[T]
 
-  object TupleInit {
-    type Aux[T, Out0] = TupleInit[T] { type Out = Out0 }
+  object Init {
+    type Aux[T, Out0] = Init[T] { type Out = Out0 }
     implicit def init[T, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], init: hl.Init.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
-        new TupleInit[T] {
+        new Init[T] {
           type Out = tp.Out
           def apply(t: T): Out = init(gen.to(t)).tupled
         }
   }
 
-  trait TupleSelector[T, U] extends DepFn1[T]
+  trait Selector[T, U] extends DepFn1[T]
 
-  object TupleSelector {
-    type Aux[T, U] = TupleSelector[T, U] { type Out = U }
+  object Selector {
+    type Aux[T, U] = Selector[T, U] { type Out = U }
     implicit def select[T, L <: HList, U]
       (implicit gen: Generic.Aux[T, L], selector: hl.Selector[L, U]): Aux[T, U] =
-        new TupleSelector[T, U] {
+        new Selector[T, U] {
           type Out = U
           def apply(t: T): Out = gen.to(t).select[U]
         }
   }
 
-  trait TupleFilter[T, U] extends DepFn1[T]
+  trait Filter[T, U] extends DepFn1[T]
 
-  object TupleFilter {
-    type Aux[T, U, Out0] = TupleFilter[T, U] { type Out = Out0 }
+  object Filter {
+    type Aux[T, U, Out0] = Filter[T, U] { type Out = Out0 }
     implicit def filterTuple[T, L1 <: HList, U, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], filter: hl.Filter.Aux[L1, U, L2], tp: hl.Tupler[L2]): Aux[T, U, tp.Out] = new TupleFilter[T, U] {
+      (implicit gen: Generic.Aux[T, L1], filter: hl.Filter.Aux[L1, U, L2], tp: hl.Tupler[L2]): Aux[T, U, tp.Out] = new Filter[T, U] {
         type Out = tp.Out
         def apply(t: T): Out = tp(filter(gen.to(t)))
       }
   }
 
-  trait TupleFilterNot[T, U] extends DepFn1[T]
+  trait FilterNot[T, U] extends DepFn1[T]
 
-  object TupleFilterNot {
-    type Aux[T, U, Out0] = TupleFilterNot[T, U] { type Out = Out0 }
+  object FilterNot {
+    type Aux[T, U, Out0] = FilterNot[T, U] { type Out = Out0 }
     implicit def filterNotTuple[T, L1 <: HList, U, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], filterNot: hl.FilterNot.Aux[L1, U, L2], tp: hl.Tupler[L2]): Aux[T, U, tp.Out] = new TupleFilterNot[T, U] {
+      (implicit gen: Generic.Aux[T, L1], filterNot: hl.FilterNot.Aux[L1, U, L2], tp: hl.Tupler[L2]): Aux[T, U, tp.Out] = new FilterNot[T, U] {
         type Out = tp.Out
         def apply(t: T): Out = tp(filterNot(gen.to(t)))
       }
   }
 
-  trait TupleRemove[T, U] extends DepFn1[T]
+  trait Remove[T, U] extends DepFn1[T]
 
-  object TupleRemove {
-    type Aux[T, U, Out0] = TupleRemove[T, U] { type Out = Out0 }
+  object Remove {
+    type Aux[T, U, Out0] = Remove[T, U] { type Out = Out0 }
     implicit def removeTuple[T, L1 <: HList, U, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], remove: hl.Remove.Aux[L1, U, (U, L2)], tp: hl.Tupler[L2]): Aux[T, U, (U, tp.Out)] = new TupleRemove[T, U] {
+      (implicit gen: Generic.Aux[T, L1], remove: hl.Remove.Aux[L1, U, (U, L2)], tp: hl.Tupler[L2]): Aux[T, U, (U, tp.Out)] = new Remove[T, U] {
         type Out = (U, tp.Out)
         def apply(t: T): Out = { val (u, rem) = remove(gen.to(t)) ; (u, tp(rem)) }
       }
   }
 
-  trait TupleRemoveAll[T, S] extends DepFn1[T]
+  trait RemoveAll[T, S] extends DepFn1[T]
 
-  object TupleRemoveAll {
-    type Aux[T, S, Out0] = TupleRemoveAll[T, S] { type Out = Out0 }
+  object RemoveAll {
+    type Aux[T, S, Out0] = RemoveAll[T, S] { type Out = Out0 }
     implicit def removeAllTuple[T, ST, SL <: HList, L1 <: HList, L2 <: HList]
       (implicit gent: Generic.Aux[T, L1], gens: Generic.Aux[ST, SL],  removeAll: hl.RemoveAll.Aux[L1, SL, (SL, L2)], tp: hl.Tupler[L2]): Aux[T, ST, (ST, tp.Out)] =
-        new TupleRemoveAll[T, ST] {
+        new RemoveAll[T, ST] {
           type Out = (ST, tp.Out)
           def apply(t: T): Out = { val (e, rem) = removeAll(gent.to(t)) ; (gens.from(e), tp(rem)) }
         }
   }
 
-  trait TupleReplacer[T, U, V] extends DepFn2[T, U]
+  trait Replacer[T, U, V] extends DepFn2[T, U]
 
-  object TupleReplacer {
-    type Aux[T, U, V, Out0] = TupleReplacer[T, U, V] { type Out = Out0 }
+  object Replacer {
+    type Aux[T, U, V, Out0] = Replacer[T, U, V] { type Out = Out0 }
     implicit def replaceTuple[T, L1 <: HList, U, V, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], replace: hl.Replacer.Aux[L1, V, U, (V, L2)], tp: hl.Tupler[L2]): Aux[T, U, V, (V, tp.Out)] = new TupleReplacer[T, U, V] {
+      (implicit gen: Generic.Aux[T, L1], replace: hl.Replacer.Aux[L1, V, U, (V, L2)], tp: hl.Tupler[L2]): Aux[T, U, V, (V, tp.Out)] = new Replacer[T, U, V] {
         type Out = (V, tp.Out)
         def apply(t: T, u: U): Out = { val (v, rep) = replace(gen.to(t), u) ; (v, tp(rep)) }
       }
   }
 
-  trait TupleReplaceAt[T, N <: Nat, U] extends DepFn2[T, U]
+  trait ReplaceAt[T, N <: Nat, U] extends DepFn2[T, U]
 
-  object TupleReplaceAt {
-    type Aux[T, N <: Nat, U, Out0] = TupleReplaceAt[T, N, U] { type Out = Out0 }
+  object ReplaceAt {
+    type Aux[T, N <: Nat, U, Out0] = ReplaceAt[T, N, U] { type Out = Out0 }
     implicit def replaceTuple[T, L1 <: HList, N <: Nat, U, V, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], replaceAt: hl.ReplaceAt.Aux[L1, N, U, (V, L2)], tp: hl.Tupler[L2]): Aux[T, N, U, (V, tp.Out)] = new TupleReplaceAt[T, N, U] {
+      (implicit gen: Generic.Aux[T, L1], replaceAt: hl.ReplaceAt.Aux[L1, N, U, (V, L2)], tp: hl.Tupler[L2]): Aux[T, N, U, (V, tp.Out)] = new ReplaceAt[T, N, U] {
         type Out = (V, tp.Out)
         def apply(t: T, u: U): Out = { val (v, rep) = replaceAt(gen.to(t), u) ; (v, tp(rep)) }
       }
   }
 
-  trait TupleTake[T, N <: Nat] extends DepFn1[T]
+  trait Take[T, N <: Nat] extends DepFn1[T]
 
-  object TupleTake {
-    type Aux[T, N <: Nat, Out0] = TupleTake[T, N] { type Out = Out0 }
+  object Take {
+    type Aux[T, N <: Nat, Out0] = Take[T, N] { type Out = Out0 }
     implicit def tupleTake[T, L1 <: HList, N <: Nat, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], take: hl.Take.Aux[L1, N, L2], tp: hl.Tupler[L2]): Aux[T, N, tp.Out] = 
-        new TupleTake[T, N] {
+        new Take[T, N] {
           type Out = tp.Out
           def apply(t: T): tp.Out = tp(take(gen.to(t)))
         }
   }
 
-  trait TupleDrop[T, N <: Nat] extends DepFn1[T]
+  trait Drop[T, N <: Nat] extends DepFn1[T]
 
-  object TupleDrop {
-    type Aux[T, N <: Nat, Out0] = TupleDrop[T, N] { type Out = Out0 }
+  object Drop {
+    type Aux[T, N <: Nat, Out0] = Drop[T, N] { type Out = Out0 }
     implicit def tupleDrop[T, L1 <: HList, N <: Nat, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], drop: hl.Drop.Aux[L1, N, L2], tp: hl.Tupler[L2]): Aux[T, N, tp.Out] =
-        new TupleDrop[T, N] {
+        new Drop[T, N] {
           type Out = tp.Out
           def apply(t: T): tp.Out = tp(drop(gen.to(t)))
         }
   }
 
-  trait TupleSplit[T, N <: Nat] extends DepFn1[T]
+  trait Split[T, N <: Nat] extends DepFn1[T]
 
-  object TupleSplit {
-    type Aux[T, N <: Nat, Out0] = TupleSplit[T, N] { type Out = Out0 }
+  object Split {
+    type Aux[T, N <: Nat, Out0] = Split[T, N] { type Out = Out0 }
     implicit def tupleSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.Split.Aux[L, N, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, N, (tpp.Out, tps.Out)] =
-        new TupleSplit[T, N] {
+        new Split[T, N] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleReverseSplit[T, N <: Nat] extends DepFn1[T]
+  trait ReverseSplit[T, N <: Nat] extends DepFn1[T]
 
-  object TupleReverseSplit {
-    type Aux[T, N <: Nat, Out0] = TupleReverseSplit[T, N] { type Out = Out0 }
+  object ReverseSplit {
+    type Aux[T, N <: Nat, Out0] = ReverseSplit[T, N] { type Out = Out0 }
     implicit def tupleReverseSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplit.Aux[L, N, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, N, (tpp.Out, tps.Out)] =
-        new TupleReverseSplit[T, N] {
+        new ReverseSplit[T, N] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleSplitLeft[T, U] extends DepFn1[T]
+  trait SplitLeft[T, U] extends DepFn1[T]
 
-  object TupleSplitLeft {
-    type Aux[T, U, Out0] = TupleSplitLeft[T, U] { type Out = Out0 }
+  object SplitLeft {
+    type Aux[T, U, Out0] = SplitLeft[T, U] { type Out = Out0 }
     implicit def tupleSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.SplitLeft.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
-        new TupleSplitLeft[T, U] {
+        new SplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleReverseSplitLeft[T, U] extends DepFn1[T]
+  trait ReverseSplitLeft[T, U] extends DepFn1[T]
 
-  object TupleReverseSplitLeft {
-    type Aux[T, U, Out0] = TupleReverseSplitLeft[T, U] { type Out = Out0 }
+  object ReverseSplitLeft {
+    type Aux[T, U, Out0] = ReverseSplitLeft[T, U] { type Out = Out0 }
     implicit def tupleReverseSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplitLeft.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
-        new TupleReverseSplitLeft[T, U] {
+        new ReverseSplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleSplitRight[T, U] extends DepFn1[T]
+  trait SplitRight[T, U] extends DepFn1[T]
 
-  object TupleSplitRight {
-    type Aux[T, U, Out0] = TupleSplitRight[T, U] { type Out = Out0 }
+  object SplitRight {
+    type Aux[T, U, Out0] = SplitRight[T, U] { type Out = Out0 }
     implicit def tupleSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.SplitRight.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
-        new TupleSplitRight[T, U] {
+        new SplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleReverseSplitRight[T, U] extends DepFn1[T]
+  trait ReverseSplitRight[T, U] extends DepFn1[T]
 
-  object TupleReverseSplitRight {
-    type Aux[T, U, Out0] = TupleReverseSplitRight[T, U] { type Out = Out0 }
+  object ReverseSplitRight {
+    type Aux[T, U, Out0] = ReverseSplitRight[T, U] { type Out = Out0 }
     implicit def tupleReverseSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplitRight.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
-        new TupleReverseSplitRight[T, U] {
+        new ReverseSplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
           def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
-  trait TupleReverse[T] extends DepFn1[T]
+  trait Reverse[T] extends DepFn1[T]
 
-  object TupleReverse {
-    type Aux[T, Out0] = TupleReverse[T] { type Out = Out0 }
+  object Reverse {
+    type Aux[T, Out0] = Reverse[T] { type Out = Out0 }
     implicit def tupleReverseAux[T, L1 <: HList, L2 <: HList, Out]
       (implicit gen: Generic.Aux[T, L1], reverse: hl.Reverse.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
-        new TupleReverse[T] {
+        new Reverse[T] {
           type Out = tp.Out
           def apply(t: T): tp.Out = tp(reverse(gen.to(t)))
         }
   }
 
-  trait TupleMapper[T, P] extends DepFn1[T]
+  trait Mapper[T, P] extends DepFn1[T]
 
-  object TupleMapper {
-    type Aux[T, P, Out0] = TupleMapper[T, P] { type Out = Out0 }
+  object Mapper {
+    type Aux[T, P, Out0] = Mapper[T, P] { type Out = Out0 }
     implicit def mapper[T, P, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], mapper: hl.Mapper.Aux[P, L1, L2], tp: hl.Tupler[L2]): Aux[T, P, tp.Out] =
-        new TupleMapper[T, P] {
+        new Mapper[T, P] {
           type Out = tp.Out
           def apply(t: T): tp.Out = tp(mapper(gen.to(t)))
         }
   }
 
-  trait TupleFlatMapper[T, P] extends DepFn1[T]
+  trait FlatMapper[T, P] extends DepFn1[T]
 
-  object TupleFlatMapper {
-    type Aux[T, P, Out0] = TupleFlatMapper[T, P] { type Out = Out0 }
+  object FlatMapper {
+    type Aux[T, P, Out0] = FlatMapper[T, P] { type Out = Out0 }
     implicit def mapper[T, P, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], mapper: hl.FlatMapper.Aux[Compose[productElements.type, P], L1, L2], tp: hl.Tupler[L2]): Aux[T, P, tp.Out] =
-        new TupleFlatMapper[T, P] {
+        new FlatMapper[T, P] {
           type Out = tp.Out
           def apply(t: T): tp.Out = tp(mapper(gen.to(t)))
         }
   }
 
-  trait TupleConstMapper[T, C] extends DepFn2[T, C]
+  trait ConstMapper[T, C] extends DepFn2[T, C]
 
-  object TupleConstMapper {
-    type Aux[T, C, Out0] = TupleConstMapper[T, C] { type Out = Out0 }
+  object ConstMapper {
+    type Aux[T, C, Out0] = ConstMapper[T, C] { type Out = Out0 }
     implicit def mapper[T, C, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], mapper: hl.ConstMapper.Aux[C, L1, L2], tp: hl.Tupler[L2]): Aux[T, C, tp.Out] =
-        new TupleConstMapper[T, C] {
+        new ConstMapper[T, C] {
           type Out = tp.Out
           def apply(t: T, c: C): tp.Out = tp(mapper(c, gen.to(t)))
         }
   }
 
-  trait TupleMapFolder[T, R, P] { // Nb. Not a dependent function signature
+  trait MapFolder[T, R, P] { // Nb. Not a dependent function signature
     def apply(t: T, in: R, op: (R, R) => R): R 
   }
 
-  object TupleMapFolder {
+  object MapFolder {
     implicit def mapper[T, L <: HList, R, P]
-      (implicit gen: Generic.Aux[T, L], mapper: hl.MapFolder[L, R, P]): TupleMapFolder[T, R, P] =
-        new TupleMapFolder[T, R, P] {
+      (implicit gen: Generic.Aux[T, L], mapper: hl.MapFolder[L, R, P]): MapFolder[T, R, P] =
+        new MapFolder[T, R, P] {
           def apply(t: T, in: R, op: (R, R) => R): R = mapper(gen.to(t), in, op)
         }
   }
 
-  trait TupleLeftFolder[T, U, P] extends DepFn2[T, U]
+  trait LeftFolder[T, U, P] extends DepFn2[T, U]
 
-  object TupleLeftFolder {
-    type Aux[T, U, P, Out0] = TupleLeftFolder[T, U, P] { type Out = Out0 }
+  object LeftFolder {
+    type Aux[T, U, P, Out0] = LeftFolder[T, U, P] { type Out = Out0 }
     implicit def folder[T, L <: HList, U, P]
       (implicit gen: Generic.Aux[T, L], folder: hl.LeftFolder[L, U, P]): Aux[T, U, P, folder.Out] =
-        new TupleLeftFolder[T, U, P] {
+        new LeftFolder[T, U, P] {
           type Out = folder.Out
           def apply(t: T, u: U): Out = folder(gen.to(t), u)
         }
   }
 
-  trait TupleRightFolder[T, U, P] extends DepFn2[T, U]
+  trait RightFolder[T, U, P] extends DepFn2[T, U]
 
-  object TupleRightFolder {
-    type Aux[T, U, P, Out0] = TupleRightFolder[T, U, P] { type Out = Out0 }
+  object RightFolder {
+    type Aux[T, U, P, Out0] = RightFolder[T, U, P] { type Out = Out0 }
     implicit def folder[T, L <: HList, U, P]
       (implicit gen: Generic.Aux[T, L], folder: hl.RightFolder[L, U, P]): Aux[T, U, P, folder.Out] =
-        new TupleRightFolder[T, U, P] {
+        new RightFolder[T, U, P] {
           type Out = folder.Out
           def apply(t: T, u: U): Out = folder(gen.to(t), u)
         }
   }
   
-  trait TupleLeftReducer[T, P] extends DepFn1[T]
+  trait LeftReducer[T, P] extends DepFn1[T]
 
-  object TupleLeftReducer {
-    type Aux[T, P, Out0] = TupleLeftReducer[T, P] { type Out = Out0 }
+  object LeftReducer {
+    type Aux[T, P, Out0] = LeftReducer[T, P] { type Out = Out0 }
     implicit def folder[T, L <: HList, P]
       (implicit gen: Generic.Aux[T, L], folder: hl.LeftReducer[L, P]): Aux[T, P, folder.Out] =
-        new TupleLeftReducer[T, P] {
+        new LeftReducer[T, P] {
           type Out = folder.Out
           def apply(t: T): Out = folder(gen.to(t))
         }
   }
   
-  trait TupleRightReducer[T, P] extends DepFn1[T]
+  trait RightReducer[T, P] extends DepFn1[T]
 
-  object TupleRightReducer {
-    type Aux[T, P, Out0] = TupleRightReducer[T, P] { type Out = Out0 }
+  object RightReducer {
+    type Aux[T, P, Out0] = RightReducer[T, P] { type Out = Out0 }
     implicit def folder[T, L <: HList, P]
       (implicit gen: Generic.Aux[T, L], folder: hl.RightReducer[L, P]): Aux[T, P, folder.Out] =
-        new TupleRightReducer[T, P] {
+        new RightReducer[T, P] {
           type Out = folder.Out
           def apply(t: T): Out = folder(gen.to(t))
         }
   }
 
-  trait TupleTransposer[T] extends DepFn1[T]
+  trait Transposer[T] extends DepFn1[T]
 
-  object TupleTransposer {
-    type Aux[T, Out0] = TupleTransposer[T] { type Out = Out0 }
+  object Transposer {
+    type Aux[T, Out0] = Transposer[T] { type Out = Out0 }
     implicit def transpose[T, L1 <: HList, L2 <: HList, L3 <: HList, L4 <: HList]
       (implicit
         gen: Generic.Aux[T, L1],
@@ -395,16 +395,16 @@ object tuple {
         mtp: hl.Mapper.Aux[tupled.type, L3, L4],
         tp:  hl.Tupler[L4]
       ): Aux[T, tp.Out] =
-      new TupleTransposer[T] {
+      new Transposer[T] {
         type Out = tp.Out
         def apply(t: T): Out = ((gen.to(t) map productElements).transpose map tupled).tupled
       }
   }
 
-  trait TupleZipApply[FT, AT] extends DepFn2[FT, AT]
+  trait ZipApply[FT, AT] extends DepFn2[FT, AT]
 
-  object TupleZipApply {
-    type Aux[FT, AT, Out0] = TupleZipApply[FT, AT] { type Out = Out0 }
+  object ZipApply {
+    type Aux[FT, AT, Out0] = ZipApply[FT, AT] { type Out = Out0 }
     implicit def zipApply[FT, FL <: HList, AT, AL <: HList, RL <: HList]
       (implicit
         genf: Generic.Aux[FT, FL],
@@ -412,16 +412,16 @@ object tuple {
         zip:  hl.ZipApply.Aux[FL, AL, RL],
         tp:   hl.Tupler[RL]
       ): Aux[FT, AT, tp.Out] = 
-      new TupleZipApply[FT, AT] {
+      new ZipApply[FT, AT] {
         type Out = tp.Out
         def apply(ft: FT, at: AT): Out = (genf.to(ft) zipApply gena.to(at)).tupled
       }
   }
 
-  trait TupleZipOne[H, T] extends DepFn2[H, T]
+  trait ZipOne[H, T] extends DepFn2[H, T]
 
-  object TupleZipOne {
-    type Aux[H, T, Out0] = TupleZipOne[H, T] { type Out = Out0 }
+  object ZipOne {
+    type Aux[H, T, Out0] = ZipOne[H, T] { type Out = Out0 }
     implicit def zipOne[HT, HL <: HList, TT, TL <: HList, TLL <: HList, RLL <: HList, RL <: HList]
       (implicit
         genh: Generic.Aux[HT, HL],
@@ -431,67 +431,67 @@ object tuple {
         mtp:  hl.Mapper.Aux[tupled.type, RLL, RL],
         tp:   hl.Tupler[RL]
       ): Aux[HT, TT, tp.Out] =
-      new TupleZipOne[HT, TT] {
+      new ZipOne[HT, TT] {
         type Out = tp.Out
         def apply(h: HT, t: TT): Out = ((genh.to(h) zipOne (gent.to(t) map productElements)) map tupled).tupled
       }
   }
 
-  trait TupleUnifier[T] extends DepFn1[T]
+  trait Unifier[T] extends DepFn1[T]
 
-  object TupleUnifier {
-    type Aux[T, Out0] = TupleUnifier[T] { type Out = Out0 }
+  object Unifier {
+    type Aux[T, Out0] = Unifier[T] { type Out = Out0 }
     implicit def unifier[T, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], unifier: hl.Unifier.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
-        new TupleUnifier[T] {
+        new Unifier[T] {
           type Out = tp.Out
           def apply(t: T): Out = unifier(gen.to(t)).tupled
         }
   }
 
-  trait TupleSubtypeUnifier[T, B] extends DepFn1[T]
+  trait SubtypeUnifier[T, B] extends DepFn1[T]
 
-  object TupleSubtypeUnifier {
-    type Aux[T, B, Out0] = TupleSubtypeUnifier[T, B] { type Out = Out0 }
+  object SubtypeUnifier {
+    type Aux[T, B, Out0] = SubtypeUnifier[T, B] { type Out = Out0 }
     implicit def subtypeUnifier[T, B, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], unifier: hl.SubtypeUnifier.Aux[L1, B, L2], tp: hl.Tupler[L2]): Aux[T, B, tp.Out] =
-        new TupleSubtypeUnifier[T, B] {
+        new SubtypeUnifier[T, B] {
           type Out = tp.Out
           def apply(t: T): Out = unifier(gen.to(t)).tupled
         }
   }
 
-  trait TupleLength[T] extends DepFn1[T]
+  trait Length[T] extends DepFn1[T]
 
-  object TupleLength {
-    type Aux[T, Out0] = TupleLength[T] { type Out = Out0 }
+  object Length {
+    type Aux[T, Out0] = Length[T] { type Out = Out0 }
     implicit def length[T, L <: HList]
       (implicit gen: Generic.Aux[T, L], length: hl.Length[L]): Aux[T, length.Out] =
-        new TupleLength[T] {
+        new Length[T] {
           type Out = length.Out
           def apply(t: T): Out = length()
         }
   }
 
-  trait TupleToList[T, Lub] extends DepFn1[T]
+  trait ToList[T, Lub] extends DepFn1[T]
 
-  object TupleToList {
-    type Aux[T, Lub, Out0] = TupleToList[T, Lub] { type Out = Out0 }
+  object ToList {
+    type Aux[T, Lub, Out0] = ToList[T, Lub] { type Out = Out0 }
     implicit def toList[T, L <: HList, Lub]
       (implicit gen: Generic.Aux[T, L], toList: hl.ToList[L, Lub]): Aux[T, Lub, List[Lub]] =
-        new TupleToList[T, Lub] {
+        new ToList[T, Lub] {
           type Out = List[Lub]
           def apply(t: T): Out = gen.to(t).toList[Lub]
         }
   }
 
-  trait TupleToArray[T, Lub] extends DepFn1[T]
+  trait ToArray[T, Lub] extends DepFn1[T]
 
-  object TupleToArray {
-    type Aux[T, Lub, Out0] = TupleToArray[T, Lub] { type Out = Out0 }
+  object ToArray {
+    type Aux[T, Lub, Out0] = ToArray[T, Lub] { type Out = Out0 }
     implicit def toArray[T, L <: HList, Lub]
       (implicit gen: Generic.Aux[T, L], toArray: hl.ToArray[L, Lub]): Aux[T, Lub, Array[Lub]] =
-        new TupleToArray[T, Lub] {
+        new ToArray[T, Lub] {
           type Out = Array[Lub]
           def apply(t: T): Out = gen.to(t).toArray[Lub]
         }
