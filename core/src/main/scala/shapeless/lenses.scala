@@ -44,11 +44,11 @@ trait ProductLens[C, P <: Product] extends Lens[C, P] {
   def ~[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
     (implicit
       hlp  : HListerAux[P, L],
-      tpp  : TuplerAux[L, P],
-      pre  : PrependAux[L, T :: HNil, LT],
-      init : InitAux[LT, L],
-      last : LastAux[LT, T],
-      tpq  : TuplerAux[LT, Q],
+      tpp  : Tupler.Aux[L, P],
+      pre  : Prepend.Aux[L, T :: HNil, LT],
+      init : Init.Aux[LT, L],
+      last : Last.Aux[LT, T],
+      tpq  : Tupler.Aux[LT, Q],
       hlq  : HListerAux[Q, LT]) =
       new ProductLens[C, Q] {
         def get(c : C) : Q = (hlp(outer.get(c)) :+ other.get(c)).tupled
@@ -107,7 +107,7 @@ object HListNthLens {
 trait HListNthLensAux[L <: HList, N <: Nat, E] extends Lens[L, E]
 
 object HListNthLensAux {
-  implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : AtAux[L, N, E], replace : ReplaceAtAux[L, N, E, E, L]) =
+  implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : At.Aux[L, N, E], replace : ReplaceAt.Aux[L, N, E, (E, L)]) =
     new HListNthLensAux[L, N, E] {
       def get(l : L) : E = l[N] 
       def set(l : L)(e : E) : L = l.updatedAt[N](e)

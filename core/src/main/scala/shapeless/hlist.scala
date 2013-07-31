@@ -153,24 +153,24 @@ final class HListOps[L <: HList](l : L) {
    * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#remove and should be removed if
    * SI-5414 is resolved in a way which eliminates the ambiguity.
    */
-  def removeElem[U](implicit remove : Remove[U, L]) : (U, remove.Out) = remove(l)
+  def removeElem[U](implicit remove : Remove[L, U]): remove.Out = remove(l)
   
   /**
    * Returns the first elements of this `HList` that have types in `SL` plus the remainder of the `HList`. An expicit
    * type argument must be provided. Available only if there is evidence that this `HList` contains elements with
    * types in `SL`.
    */
-  def removeAll[SL <: HList](implicit removeAll : RemoveAll[SL, L]) : (SL, removeAll.Out) = removeAll(l)
+  def removeAll[SL <: HList](implicit removeAll : RemoveAll[L, SL]): removeAll.Out = removeAll(l)
 
   /**
    * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U` returning both
    * the replaced element and the updated `HList`. Available only if there is evidence that this `HList` has an element
    * of type `U`.
    */
-  def replace[U](u : U)(implicit replacer : Replacer[L, U, U]) : (U, replacer.Out) = replacer(l, u)
+  def replace[U](u : U)(implicit replacer : Replacer[L, U, U]): replacer.Out = replacer(l, u)
   
   class ReplaceTypeAux[U] {
-    def apply[V](v : V)(implicit replacer : Replacer[L, U, V]) : (U, replacer.Out) = replacer(l, v)
+    def apply[V](v : V)(implicit replacer : Replacer[L, U, V]): replacer.Out = replacer(l, v)
   }
   
   /**
@@ -187,11 +187,12 @@ final class HListOps[L <: HList](l : L) {
    * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#updated and should be removed if
    * SI-5414 is resolved in a way which eliminates the ambiguity.
    */
-  def updatedElem[U](u : U)
-    (implicit replacer : Replacer[L, U, U]) : replacer.Out = replacer(l, u)._2
+  def updatedElem[U, Out <: HList](u : U)
+    (implicit replacer : Replacer.Aux[L, U, U, (U, Out)]) : Out = replacer(l, u)._2
   
   class UpdatedTypeAux[U] {
-    def apply[V](v : V)(implicit replacer : Replacer[L, U, V]) : replacer.Out = replacer(l, v)._2
+    def apply[V, Out <: HList](v : V)
+      (implicit replacer : Replacer.Aux[L, U, V, (U, Out)]) : Out = replacer(l, v)._2
   }
   
   /**
@@ -202,7 +203,7 @@ final class HListOps[L <: HList](l : L) {
   def updatedType[U] = new UpdatedTypeAux[U]
   
   class UpdatedAtAux[N <: Nat] {
-    def apply[U](u : U)(implicit replacer : ReplaceAt[L, N, U]) : replacer.Out = replacer(l, u)._2
+    def apply[U, V, Out <: HList](u : U)(implicit replacer : ReplaceAt.Aux[L, N, U, (V, Out)]) : Out = replacer(l, u)._2
   }
   
   /**
@@ -215,7 +216,7 @@ final class HListOps[L <: HList](l : L) {
    * Replaces the ''nth' element of this `HList` with the supplied value of type `U`. Available only if there is
    * evidence that this `HList` has at least ''n'' elements.
    */
-  def updatedAt[U](n: Nat, u : U)(implicit replacer : ReplaceAt[L, n.N, U]) : replacer.Out = replacer(l, u)._2
+  def updatedAt[U, V, Out <: HList](n: Nat, u : U)(implicit replacer : ReplaceAt.Aux[L, n.N, U, (V, Out)]) : Out = replacer(l, u)._2
 
   /**
    * Returns the first ''n'' elements of this `HList`. An explicit type argument must be provided. Available only if
@@ -458,20 +459,6 @@ object HList {
     val :: = scala.collection.immutable.::
     val #: = shapeless.::
   }
-
-  type SplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = Split0[HNil, L, N, P, S]
-  
-  type ReverseSplitAux[L <: HList, N <: Nat, P <: HList, S <: HList] = ReverseSplit0[HNil, L, N, P, S]
-  
-  type SplitLeftAux[L <: HList, U, P <: HList, S <: HList] = SplitLeft0[HNil, L, U, P, S]
-  
-  type ReverseSplitLeftAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitLeft0[HNil, L, U, P, S]
-  
-  type SplitRightAux[L <: HList, U, P <: HList, S <: HList] = SplitRight0[L, HNil, HNil, U, P, S]
-  
-  type ReverseSplitRightAux[L <: HList, U, P <: HList, S <: HList] = ReverseSplitRight0[L, HNil, HNil, U, P, S]
-  
-  type ReverseAux[L <: HList, Out <: HList] = Reverse0[HNil, L, Out]
 }
 
 /**
@@ -488,24 +475,13 @@ trait IsHCons[L <: HList] {
 }
 
 object IsHCons {
+  type Aux[L <: HList, H0, T0 <: HList] = IsHCons[L] { type H = H0; type T = T0 }
   implicit def hlistIsHCons[H0, T0 <: HList] = new IsHCons[H0 :: T0] {
     type H = H0
     type T = T0
   
     def head(l : H0 :: T0) : H = l.head
     def tail(l : H0 :: T0) : T = l.tail
-  }
-}
-
-trait IsHConsAux[L <: HList, H, T <: HList] {
-  def head(l : L) : H
-  def tail(l : L) : T
-}
-
-object IsHConsAux {
-  implicit def hlistIsHCons[H, T <: HList] = new IsHConsAux[H :: T, H, T] {
-    def head(l : H :: T) : H = l.head
-    def tail(l : H :: T) : T = l.tail
   }
 }
 
@@ -517,51 +493,36 @@ trait Mapped[L <: HList, F[_]] {
 }
 
 object Mapped {
-  implicit def mapped[L <: HList, F[_], Out0 <: HList](implicit mapped : MappedAux[L, F, Out0]) = new Mapped[L, F] {
-    type Out = Out0
-  }
-}
+  type Aux[L <: HList, F[_], Out0 <: HList] = Mapped[L, F] { type Out = Out0 }
 
-trait MappedAux[L <: HList, F[_], Out <: HList]
-
-object MappedAux {
-  implicit def hnilMappedAux[F[_]] = new MappedAux[HNil, F, HNil] {}
+  implicit def hnilMapped[F[_]]: Aux[HNil, F, HNil] = new Mapped[HNil, F] { type Out = HNil }
   
-  implicit def hlistIdMapped[L <: HList] = new MappedAux[L, Id, L] {}
+  implicit def hlistIdMapped[L <: HList]: Aux[L, Id, L] = new Mapped[L, Id] { type Out = L }
   
-  implicit def hlistMappedAux1[H, T <: HList, F[_], OutT <: HList](implicit mt : MappedAux[T, F, OutT]) =
-    new MappedAux[H :: T, F, F[H] :: OutT] {}
+  implicit def hlistMapped1[H, T <: HList, F[_], OutM <: HList](implicit mt : Mapped.Aux[T, F, OutM]): Aux[H :: T, F, F[H] :: OutM] =
+    new Mapped[H :: T, F] { type Out = F[H] :: OutM }
 
-  implicit def hlistMappedAux2[H, T <: HList, F, OutT <: HList](implicit mt : MappedAux[T, Const[F]#λ, OutT]) =
-    new MappedAux[H :: T, Const[F]#λ, F :: OutT] {}
+  implicit def hlistMapped2[H, T <: HList, F, OutM <: HList](implicit mt : Mapped.Aux[T, Const[F]#λ, OutM]): Aux[H :: T, Const[F]#λ, F :: OutM] =
+    new Mapped[H :: T, Const[F]#λ] { type Out = F :: OutM }
 }
 
 /**
  * Type class witnessing that the result of stripping type constructor `F` off each element of `HList` `L` is `Out`.
  */
-trait Comapped[L <: HList] {
+trait Comapped[L <: HList, F[_]] {
   type Out <: HList
-  type F[_]
 }
 
-object Comapped {
-  implicit def comapped[L <: HList, F0[_], Out0 <: HList](implicit mapped: ComappedAux[L, F0, Out0]) = new Comapped[L] {
-    type Out = Out0
-    type F[X] = F0[X]
-  }
+trait LowPriorityComapped {
+  type Aux[L <: HList, F[_], Out0 <: HList] = Comapped[L, F] { type Out = Out0 }
+  implicit def hlistIdComapped[L <: HList]: Aux[L, Id, L] = new Comapped[L, Id] { type Out = L }
 }
 
-trait ComappedAux[L <: HList, F[_], Out <: HList]
+object Comapped extends LowPriorityComapped {
+  implicit def hnilComapped[F[_]]: Aux[HNil, F, HNil] = new Comapped[HNil, F] { type Out = HNil }
 
-trait LowPriorityComappedAux {
-  implicit def hlistIdComapped[L <: HList] = new ComappedAux[L, Id, L] {}
-}
-
-object ComappedAux extends LowPriorityComappedAux {
-  implicit def hnilComappedAux[F[_]] = new ComappedAux[HNil, F, HNil] {}
-
-  implicit def hlistComappedAux[H, T <: HList, F[_], OutT <: HList](implicit mt : ComappedAux[T, F, OutT]) =
-    new ComappedAux[F[H] :: T, F, H :: OutT] {}
+  implicit def hlistComapped[H, T <: HList, F[_]](implicit mt : Comapped[T, F]): Aux[F[H] :: T, F, H :: mt.Out] =
+    new Comapped[F[H] :: T, F] { type Out = H :: mt.Out }
 }
 
 /**
@@ -683,30 +644,19 @@ object HKernelAux {
  * 
  * @author Miles Sabin
  */
-trait Length[-L <: HList] {
-  type Out <: Nat
-  def apply() : Out
-}
-
-trait LengthAux[-L <: HList, N <: Nat] {
-  def apply() : N
-}
+trait Length[L <: HList] extends DepFn0[L] { type Out <: Nat }
 
 object Length {
-  implicit def length[L <: HList, N <: Nat](implicit length : LengthAux[L, N]) = new Length[L] {
-    type Out = N
-    def apply() = length()
-  }
-}
-
-object LengthAux {
   import nat._
-  implicit def hnilLength = new LengthAux[HNil, _0] {
-    def apply() = _0
+  type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
+  implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
+    type Out = _0
+    def apply(): Out = _0
   }
   
-  implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : LengthAux[T, N], sn : WitnessAux[Succ[N]]) = new LengthAux[H :: T, Succ[N]] {
-    def apply() = sn.value
+  implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : WitnessAux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
+    type Out = Succ[N]
+    def apply(): Out = sn.value
   }
 }
 
@@ -715,33 +665,25 @@ object LengthAux {
  * 
  * @author Miles Sabin
  */
-trait Mapper[HF, In <: HList] {
-  type Out <: HList
-  def apply(in: In) : Out
-}
-
-trait MapperAux[HF, In <: HList, Out <: HList] {
-  def apply(in: In) : Out
-}
+trait Mapper[HF, In <: HList] extends DepFn1[In] { type Out <: HList }
 
 object Mapper {
-  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : MapperAux[HF, In, Out0]) = new Mapper[HF, In] {
-    type Out = Out0
-    def apply(in: In) : Out = mapper(in)
-  }
-}
-
-object MapperAux {
   import Poly._
+
+  type Aux[HF, In <: HList, Out0 <: HList] = Mapper[HF, In] { type Out = Out0 }
   
-  implicit def hnilMapper1[HF] = new MapperAux[HF, HNil, HNil] {
-    def apply(l : HNil) = HNil
-  }
+  implicit def hnilMapper1[HF]: Aux[HF, HNil, HNil] =
+    new Mapper[HF, HNil] {
+      type Out = HNil
+      def apply(l : HNil): Out = HNil
+    }
   
-  implicit def hlistMapper1[HF <: Poly, InH, OutH, InT <: HList, OutT <: HList]
-    (implicit hc : Pullback1Aux[HF, InH, OutH], mt : MapperAux[HF, InT, OutT]) = new MapperAux[HF, InH :: InT, OutH :: OutT] {
-      def apply(l : InH :: InT) = hc(l.head) :: mt(l.tail)
-  }
+  implicit def hlistMapper1[HF <: Poly, InH, InT <: HList]
+    (implicit hc : Case1Aux[HF, InH], mt : Mapper[HF, InT]): Aux[HF, InH :: InT, hc.Result :: mt.Out] =
+      new Mapper[HF, InH :: InT] {
+        type Out = hc.Result :: mt.Out
+        def apply(l : InH :: InT): Out = hc(l.head) :: mt(l.tail)
+      }
 }
 
 /**
@@ -749,37 +691,28 @@ object MapperAux {
  * 
  * @author Miles Sabin
  */
-trait FlatMapper[HF, In <: HList] {
-  type Out <: HList
-  def apply(in: In) : Out
-}
-
-trait FlatMapperAux[HF, In <: HList, Out <: HList] {
-  def apply(in: In) : Out
-}
+trait FlatMapper[HF, In <: HList] extends DepFn1[In] { type Out <: HList }
 
 object FlatMapper {
-  implicit def mapper[HF, In <: HList, Out0 <: HList](implicit mapper : FlatMapperAux[HF, In, Out0]) =
-    new FlatMapper[HF, In] {
-      type Out = Out0
-      def apply(in: In) : Out = mapper(in)
-    }
-}
-
-object FlatMapperAux {
   import Poly._
   
-  implicit def hnilFlatMapper1[HF] = new FlatMapperAux[HF, HNil, HNil] {
-    def apply(l : HNil) = HNil
-  }
+  type Aux[HF, In <: HList, Out0 <: HList] = FlatMapper[HF, In] { type Out = Out0 }
+
+  implicit def hnilFlatMapper1[HF]: Aux[HF, HNil, HNil] =
+    new FlatMapper[HF, HNil] {
+      type Out = HNil
+      def apply(l : HNil): Out = HNil
+    }
   
-  implicit def hlistFlatMapper1[HF <: Poly, InH, OutH <: HList, InT <: HList, OutT <: HList, Out <: HList]
+  implicit def hlistFlatMapper1[HF <: Poly, InH, OutH <: HList, InT <: HList, OutT <: HList, Out0 <: HList]
     (implicit
       hc : Pullback1Aux[HF, InH, OutH],
-      mt : FlatMapperAux[HF, InT, OutT],
-      prepend : PrependAux[OutH, OutT, Out]) =
-      new FlatMapperAux[HF, InH :: InT, Out] {
-        def apply(l : InH :: InT) = prepend(hc(l.head), mt(l.tail))
+      mt : FlatMapper.Aux[HF, InT, OutT],
+      prepend : Prepend.Aux[OutH, OutT, Out0]
+    ): Aux[HF, InH :: InT, Out0] =
+      new FlatMapper[HF, InH :: InT] {
+        type Out = Out0
+        def apply(l : InH :: InT): Out = prepend(hc(l.head), mt(l.tail))
       }
 }
 
@@ -788,33 +721,24 @@ object FlatMapperAux {
  * 
  * @author Miles Sabin
  */
-trait ConstMapper[C, L <: HList] {
-  type Out <: HList
-  def apply(c : C, l : L) : Out
-}
-  
-trait ConstMapperAux[C, L <: HList, Out <: HList] {
-  def apply(c : C, l : L) : Out
-}
+trait ConstMapper[C, L <: HList] extends DepFn2[C, L] { type Out <: HList }
 
 object ConstMapper {
-  implicit def constMapper[L <: HList, C, Out0 <: HList](implicit mc : ConstMapperAux[C, L, Out0]) =
-    new ConstMapper[C, L] {
-      type Out = Out0
-      def apply(c : C, l : L) : Out = mc(c, l)
-    } 
-}
+  type Aux[C, L <: HList, Out0 <: HList] = ConstMapper[C, L] { type Out = Out0 }
 
-object ConstMapperAux {
-  implicit def hnilConstMapper[C] = new ConstMapperAux[C, HNil, HNil] {
-    def apply(c : C, l : HNil) = l 
-  }
-  
-  implicit def hlistConstMapper[H, T <: HList, C, OutT <: HList](implicit mct : ConstMapperAux[C, T, OutT]) =
-    new ConstMapperAux[C, H :: T, C :: OutT] {
-      def apply(c : C, l : H :: T) : C :: OutT = c :: mct(c, l.tail)  
+  implicit def hnilConstMapper[C]: Aux[C, HNil, HNil] =
+    new ConstMapper[C, HNil] {
+      type Out = HNil
+      def apply(c : C, l : HNil): Out = l 
     }
-}  
+  
+  implicit def hlistConstMapper[H, T <: HList, C]
+  (implicit mct : ConstMapper[C, T]): Aux[C, H :: T, C :: mct.Out] =
+      new ConstMapper[C, H :: T] {
+        type Out = C :: mct.Out
+        def apply(c : C, l : H :: T): Out = c :: mct(c, l.tail)  
+      }
+}
 
 /**
  * Type class supporting mapping a polymorphic function over this `HList` and then folding the result using a
@@ -829,14 +753,14 @@ trait MapFolder[L <: HList, R, HF] {
 object MapFolder {
   import Poly._
   
-  implicit def hnilMapFolder[R, HF] = new MapFolder[HNil, R, HF] {
-    def apply(l : HNil, in : R, op : (R, R) => R) = in
+  implicit def hnilMapFolder[R, HF]: MapFolder[HNil, R, HF] = new MapFolder[HNil, R, HF] {
+    def apply(l : HNil, in : R, op : (R, R) => R): R = in
   }
   
   implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly]
-    (implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]) =
+    (implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]): MapFolder[H :: T, R, HF] =
       new MapFolder[H :: T, R, HF] {
-        def apply(l : H :: T, in : R, op : (R, R) => R) = op(hc(l.head), tf(l.tail, in, op))
+        def apply(l : H :: T, in : R, op : (R, R) => R): R = op(hc(l.head), tf(l.tail, in, op))
       }
 }
 
@@ -845,33 +769,23 @@ object MapFolder {
  * 
  * @author Miles Sabin
  */
-trait LeftFolder[L <: HList, In, HF] {
-  type Out
-  def apply(l : L, in : In) : Out 
-}
-
-trait LeftFolderAux[L <: HList, In, HF, Out] {
-  def apply(l : L, in : In) : Out 
-}
+trait LeftFolder[L <: HList, In, HF] extends DepFn2[L, In]
 
 object LeftFolder {
-  implicit def leftFolder[L <: HList, In, HF, Out0](implicit folder : LeftFolderAux[L, In, HF, Out0]) =
-    new LeftFolder[L, In, HF] {
-      type Out = Out0
-      def apply(l : L, in : In) : Out = folder.apply(l, in)
-    }
-}
-
-object LeftFolderAux {
   import Poly._
   
-  implicit def hnilLeftFolderAux[In, HF] = new LeftFolderAux[HNil, In, HF, In] {
-    def apply(l : HNil, in : In) : In = in 
-  }
+  type Aux[L <: HList, In, HF, Out0] = LeftFolder[L, In, HF] { type Out = Out0 }
+
+  implicit def hnilLeftFolder[In, HF]: Aux[HNil, In , HF, In] =
+    new LeftFolder[HNil, In, HF] {
+      type Out = In
+      def apply(l : HNil, in : In): Out = in 
+    }
   
-  implicit def hlistLeftFolderAux[H, T <: HList, In, HF, OutH, Out]
-    (implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolderAux[T, OutH, HF, Out]) =
-      new LeftFolderAux[H :: T, In, HF, Out] {
+  implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH]
+    (implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolder[T, OutH, HF]): Aux[H :: T, In, HF, ft.Out] =
+      new LeftFolder[H :: T, In, HF] {
+        type Out = ft.Out
         def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
       }
 }
@@ -881,34 +795,24 @@ object LeftFolderAux {
  * 
  * @author Miles Sabin
  */
-trait RightFolder[L <: HList, In, HF] {
-  type Out
-  def apply(l : L, in : In) : Out 
-}
-
-trait RightFolderAux[L <: HList, In, HF, Out] {
-  def apply(l : L, in : In) : Out 
-}
+trait RightFolder[L <: HList, In, HF] extends DepFn2[L, In]
 
 object RightFolder {
-  implicit def rightFolder[L <: HList, In, HF, Out0](implicit folder : RightFolderAux[L, In, HF, Out0]) =
-    new RightFolder[L, In, HF] {
-      type Out = Out0
-      def apply(l : L, in : In) : Out = folder.apply(l, in)
-    }
-}
-
-object RightFolderAux {
   import Poly._
   
-  implicit def hnilRightFolderAux[In, HF] = new RightFolderAux[HNil, In, HF, In] {
-    def apply(l : HNil, in : In) : In = in 
-  }
+  type Aux[L <: HList, In, HF, Out0] = RightFolder[L, In, HF] { type Out = Out0 }
+
+  implicit def hnilRightFolder[In, HF]: Aux[HNil, In, HF, In] =
+    new RightFolder[HNil, In, HF] {
+      type Out = In
+      def apply(l : HNil, in : In): Out = in 
+    }
   
-  implicit def hlistRightFolderAux[H, T <: HList, In, HF, OutT, Out]
-    (implicit ft : RightFolderAux[T, In, HF, OutT], f : Pullback2Aux[HF, H, OutT, Out]) =
-      new RightFolderAux[H :: T, In, HF, Out] {
-        def apply(l : H :: T, in : In) : Out = f(l.head, ft(l.tail, in))
+  implicit def hlistRightFolder[H, T <: HList, In, HF, OutT]
+    (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2Aux[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
+      new RightFolder[H :: T, In, HF] {
+        type Out = f.Result
+        def apply(l : H :: T, in : In): Out = f(l.head, ft(l.tail, in))
       }
 }
 
@@ -917,13 +821,11 @@ object RightFolderAux {
  * 
  * @author Miles Sabin
  */
-trait LeftReducer[L <: HList, HF] {
-  type Out
-  def apply(l : L) : Out 
-}
+trait LeftReducer[L <: HList, HF] extends DepFn1[L]
 
 object LeftReducer {
-  implicit def leftReducer[H, T <: HList, HF](implicit folder : LeftFolder[T, H, HF]) =
+  type Aux[L <: HList, HF, Out0] = LeftReducer[L, HF] { type Out = Out0 }
+  implicit def leftReducer[H, T <: HList, HF](implicit folder : LeftFolder[T, H, HF]): Aux[H :: T, HF, folder.Out] =
     new LeftReducer[H :: T, HF] {
       type Out = folder.Out
       def apply(l : H :: T) : Out = folder.apply(l.tail, l.head)
@@ -935,34 +837,24 @@ object LeftReducer {
  * 
  * @author Miles Sabin
  */
-trait RightReducer[L <: HList, HF] {
-  type Out
-  def apply(l : L) : Out 
-}
-
-trait RightReducerAux[L <: HList, HF, Out] {
-  def apply(l : L) : Out 
-}
+trait RightReducer[L <: HList, HF] extends DepFn1[L]
 
 object RightReducer {
-  implicit def rightReducer[L <: HList, HF, Out0](implicit reducer : RightReducerAux[L, HF, Out0]) =
-    new RightReducer[L, HF] {
-      type Out = Out0
-      def apply(l : L) : Out = reducer.apply(l)
-    }
-}
-
-object RightReducerAux {
   import Poly._
   
-  implicit def hsingleRightReducerAux[H, HF] = new RightReducerAux[H :: HNil, HF, H] {
-    def apply(l : H :: HNil) : H = l.head
-  }
+  type Aux[L <: HList, HF, Out0] = RightReducer[L, HF] { type Out = Out0 }
+
+  implicit def hsingleRightReducer[H, HF]: Aux[H :: HNil, HF, H] =
+    new RightReducer[H :: HNil, HF] {
+      type Out = H
+      def apply(l : H :: HNil): Out = l.head
+    }
   
-  implicit def hlistRightReducerAux[H, T <: HList, HF, OutT, Out]
-    (implicit rt : RightReducerAux[T, HF, OutT], f : Pullback2Aux[HF, H, OutT, Out]) =
-      new RightReducerAux[H :: T, HF, Out] {
-        def apply(l : H :: T) : Out = f(l.head, rt(l.tail))
+  implicit def hlistRightReducer[H, T <: HList, HF, OutT]
+    (implicit rt : RightReducer.Aux[T, HF, OutT], f : Case2Aux[HF, H, OutT]): Aux[H :: T, HF, f.Result] =
+      new RightReducer[H :: T, HF] {
+        type Out = f.Result
+        def apply(l : H :: T): Out = f(l.head, rt(l.tail))
       }
 }
 
@@ -973,14 +865,14 @@ object RightReducerAux {
  * @author Miles Sabin
  */
 trait Lub[-A, -B, +Out] {
-  def left(a : A) : Out
-  def right(b : B) : Out
+  def left(a : A): Out
+  def right(b : B): Out
 }
 
 object Lub {
   implicit def lub[T] = new Lub[T, T, T] {
-    def left(a : T) : T = a
-    def right(b : T) : T = b
+    def left(a : T): T = a
+    def right(b : T): T = b
   }
 }
 
@@ -989,35 +881,28 @@ object Lub {
  * 
  * @author Miles Sabin
  */
-trait Unifier[L <: HList] {
-  type Out
-  def apply(l : L) : Out
-}
+trait Unifier[L <: HList] extends DepFn1[L] { type Out <: HList }
 
-trait UnifierAux[L <: HList, Out <: HList] {
-  def apply(l : L) : Out
-}
-  
 object Unifier {
-  implicit def unifier[L <: HList, Out0 <: HList](implicit unifier : UnifierAux[L, Out0]) = new Unifier[L] {
-    type Out = Out0
-    def apply(l : L) : Out = unifier(l)
-  }
-}
+  type Aux[L <: HList, Out0 <: HList] = Unifier[L] { type Out = Out0 }
 
-object UnifierAux {
-  implicit def hnilUnifier[T] = new UnifierAux[HNil, HNil] {
-    def apply(l : HNil) = l
+  implicit val hnilUnifier: Aux[HNil, HNil] = new Unifier[HNil] {
+    type Out = HNil
+    def apply(l : HNil): Out = l
   }
   
-  implicit def hsingleUnifier[T] = new UnifierAux[T :: HNil, T :: HNil] {
-    def apply(l : T :: HNil) = l
-  }
-  
-  implicit def hlistUnifier[H1, H2, L, T <: HList, Out <: HList]
-    (implicit u : Lub[H1, H2, L], lt : UnifierAux[L :: T, L :: Out]) = new UnifierAux[H1 :: H2 :: T, L :: L :: Out] {
-      def apply(l : H1 :: H2 :: T) : L :: L :: Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
+  implicit def hsingleUnifier[T]: Aux[T :: HNil, T :: HNil] =
+    new Unifier[T :: HNil] {
+      type Out = T :: HNil
+      def apply(l : T :: HNil): Out = l
     }
+  
+  implicit def hlistUnifier[H1, H2, L, T <: HList]
+    (implicit u : Lub[H1, H2, L], lt : Unifier[L :: T]): Aux[H1 :: H2 :: T, L :: lt.Out] =
+      new Unifier[H1 :: H2 :: T] {
+        type Out = L :: lt.Out
+        def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
+      }
 }
 
 /**
@@ -1026,37 +911,29 @@ object UnifierAux {
  * 
  * @author Travis Brown
  */
-trait SubtypeUnifier[L <: HList, B] {
-  type Out
-  def apply(l : L) : Out
-}
+trait SubtypeUnifier[L <: HList, B] extends DepFn1[L] { type Out <: HList }
 
-trait SubtypeUnifierAux[L <: HList, B, Out <: HList] {
-  def apply(l : L) : Out
-}
-  
 object SubtypeUnifier {
-  implicit def subtypeUnifier[L <: HList, B, Out0 <: HList](implicit subtypeUnifier : SubtypeUnifierAux[L, B, Out0]) =
-    new SubtypeUnifier[L, B] {
-      type Out = Out0
-      def apply(l : L) : Out = subtypeUnifier(l)
-    }
-}
+  type Aux[L <: HList, B, Out0 <: HList] = SubtypeUnifier[L, B] { type Out = Out0 }
 
-object SubtypeUnifierAux {
-  implicit def hnilSubtypeUnifier[B] = new SubtypeUnifierAux[HNil, B, HNil] {
-    def apply(l : HNil) = l
-  }
-  
-  implicit def hlistSubtypeUnifier1[H, T <: HList, B, NT <: HList]
-    (implicit st : H <:< B, subtypeUnifier : SubtypeUnifierAux[T, B, NT]) = new SubtypeUnifierAux[H :: T, B, B :: NT] {
-      def apply(l : H :: T) = st(l.head) :: subtypeUnifier(l.tail) 
+  implicit def hnilSubtypeUnifier[B]: Aux[HNil, B, HNil] =
+    new SubtypeUnifier[HNil, B] {
+      type Out = HNil
+      def apply(l : HNil): Out = l
     }
   
-  implicit def hlistSubtypeUnifier2[H, T <: HList, B, NT <: HList]
-    (implicit nst : H <:!< B, subtypeUnifier : SubtypeUnifierAux[T, B, NT]) =
-      new SubtypeUnifierAux[H :: T, B, H :: NT] {
-        def apply(l : H :: T) = l.head :: subtypeUnifier(l.tail) 
+  implicit def hlistSubtypeUnifier1[H, T <: HList, B]
+    (implicit st : H <:< B, sut: SubtypeUnifier[T, B]): Aux[H :: T, B, B :: sut.Out] =
+      new SubtypeUnifier[H :: T, B] {
+        type Out = B :: sut.Out
+        def apply(l : H :: T): Out = st(l.head) :: sut(l.tail) 
+      }
+  
+  implicit def hlistSubtypeUnifier2[H, T <: HList, B]
+    (implicit nst : H <:!< B, sut: SubtypeUnifier[T, B]): Aux[H :: T, B, H :: sut.Out] =
+      new SubtypeUnifier[H :: T, B] {
+        type Out = H :: sut.Out
+        def apply(l : H :: T): Out = l.head :: sut(l.tail) 
       }
 }
 
@@ -1067,38 +944,46 @@ object SubtypeUnifierAux {
  * @author Miles Sabin
  */
 trait ToList[-L <: HList, Lub] {
-  def apply(l : L) : List[Lub]
+  def apply(l: L): List[Lub]
 }
 
 trait LowPriorityToList {
-  implicit def hlistToListAny[L <: HList] = new ToList[L, Any] {
-    val b = scala.collection.mutable.ListBuffer.empty[Any]
-    
-    def apply(l : L) : List[Any] = {
-      @tailrec
-      def loop(l : HList): Unit = l match {
-        case hd :: tl => b += hd ; loop(tl)
-        case _ =>
+  implicit def hlistToListAny[L <: HList]: ToList[L, Any] =
+    new ToList[L, Any] {
+      type Out = List[Any]
+      val b = scala.collection.mutable.ListBuffer.empty[Any]
+      
+      def apply(l : L): Out = {
+        @tailrec
+        def loop(l : HList): Unit = l match {
+          case hd :: tl => b += hd ; loop(tl)
+          case _ =>
+        }
+        loop(l)
+        b.toList
       }
-      loop(l)
-      b.toList
     }
-  }
 }
 
 object ToList extends LowPriorityToList {
-  implicit def hnilToList[T] : ToList[HNil, T] = new ToList[HNil, T] {
-    def apply(l : HNil) = Nil
-  }
-  
-  implicit def hsingleToList[T] : ToList[T :: HNil, T] = new ToList[T :: HNil, T] {
-    def apply(l : T :: HNil) = List(l.head)
-  }
-  
-  implicit def hlistToList[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]) =
-    new ToList[H1 :: H2 :: T, L] {
-      def apply(l : H1 :: H2 :: T) = u.left(l.head) :: ttl(l.tail)
+  implicit def hnilToList[T] : ToList[HNil, T] =
+    new ToList[HNil, T] {
+      type Out = List[T]
+      def apply(l : HNil): Out = Nil
     }
+  
+  implicit def hsingleToList[T] : ToList[T :: HNil, T] =
+    new ToList[T :: HNil, T] {
+      type Out = List[T]
+      def apply(l : T :: HNil): Out = List(l.head)
+    }
+  
+  implicit def hlistToList[H1, H2, T <: HList, L]
+    (implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]): ToList[H1 :: H2 :: T, L] =
+      new ToList[H1 :: H2 :: T, L] {
+        type Out = List[L]
+        def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: ttl(l.tail)
+      }
 }
 
 /**
@@ -1112,44 +997,48 @@ trait ToArray[-L <: HList, Lub] {
 }
 
 trait LowPriorityToArray {
-  implicit def hlistToArrayAnyRef[L <: HList] = new ToArray[L, Any] {
-    def apply(len: Int, l : L, i : Int) : Array[Any] = {
-      val arr = Array[Any](len)
-      
-      @tailrec
-      def loop(l : HList, i: Int): Unit = l match {
-        case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
-        case _ =>
+  implicit def hlistToArrayAnyRef[L <: HList]: ToArray[L, Any] =
+    new ToArray[L, Any] {
+      def apply(len: Int, l : L, i : Int) : Array[Any] = {
+        val arr = Array[Any](len)
+        
+        @tailrec
+        def loop(l : HList, i: Int): Unit = l match {
+          case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
+          case _ =>
+        }
+        loop(l, 0)
+        arr
       }
-      loop(l, 0)
-      arr
     }
-  }
 }
 
 object ToArray extends LowPriorityToArray {
   import scala.reflect.ClassTag
   
-  implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] = new ToArray[HNil, T] {
-    def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
-  }
-  
-  implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] = new ToArray[T :: HNil, T] {
-    def apply(len : Int, l : T :: HNil, i : Int) = {
-      val arr = Array.ofDim[T](len)
-      arr(i) = l.head
-      arr
+  implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] =
+    new ToArray[HNil, T] {
+      def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
     }
-  }
   
-  implicit def hlistToArray[H1, H2, T <: HList, L](implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]) =
-    new ToArray[H1 :: H2 :: T, L] {
-      def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
-        val arr = tta(len, l.tail, i+1)
-        arr(i) = u.left(l.head)
+  implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] =
+    new ToArray[T :: HNil, T] {
+      def apply(len : Int, l : T :: HNil, i : Int) = {
+        val arr = Array.ofDim[T](len)
+        arr(i) = l.head
         arr
       }
     }
+  
+  implicit def hlistToArray[H1, H2, T <: HList, L]
+    (implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]): ToArray[H1 :: H2 :: T, L] =
+      new ToArray[H1 :: H2 :: T, L] {
+        def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
+          val arr = tta(len, l.tail, i+1)
+          arr(i) = u.left(l.head)
+          arr
+        }
+      }
 }
 
 /**
@@ -1157,26 +1046,14 @@ object ToArray extends LowPriorityToArray {
  * 
  * @author Miles Sabin
  */
-trait Tupler[L <: HList] {
-  type Out
-  def apply(l : L) : Out
-}
-  
-trait TuplerAux[L <: HList, Out] {
-  def apply(l : L) : Out
-}
-  
-object Tupler {
-  implicit def tupler[L <: HList, Out0](implicit tupler : TuplerAux[L, Out0]) = new Tupler[L] {
-    type Out = Out0
-    def apply(l : L) : Out = tupler(l)
-  }
-}
+trait Tupler[L <: HList] extends DepFn1[L]
 
-object TuplerAux extends TuplerAuxInstances {
-  implicit val hnilTupler = new TuplerAux[HNil, Unit] {
-    def apply(l: HNil): Unit = ()
-  }
+object Tupler extends TuplerInstances {
+  implicit val hnilTupler: Aux[HNil, Unit] =
+    new Tupler[HNil] {
+      type Out = Unit
+      def apply(l: HNil): Out = ()
+    }
 }
 
 /**
@@ -1185,30 +1062,23 @@ object TuplerAux extends TuplerAuxInstances {
  * 
  * @author Miles Sabin
  */
-trait Last[L <: HList] {
-  type Out
-  def apply(l : L) : Out
-}
+trait Last[L <: HList] extends DepFn1[L]
 
-trait LastAux[L <: HList, Out] {
-  def apply(l : L) : Out
-}
-  
 object Last {
-  implicit def last[L <: HList, Out0](implicit last : LastAux[L, Out0]) = new Last[L] {
-    type Out = Out0
-    def apply(l : L) : Out = last(l)
-  }
-}
+  type Aux[L <: HList, Out0] = Last[L] { type Out = Out0 }
 
-object LastAux {
-  implicit def hsingleLast[H] = new LastAux[H :: HNil, H] {
-    def apply(l : H :: HNil) : H = l.head
-  }
+  implicit def hsingleLast[H]: Aux[H :: HNil, H] =
+    new Last[H :: HNil] {
+      type Out = H
+      def apply(l : H :: HNil): Out = l.head
+    }
   
-  implicit def hlistLast[H, T <: HList, Out](implicit lt : LastAux[T, Out]) = new LastAux[H :: T, Out] {
-    def apply(l : H :: T) : Out = lt(l.tail) 
-  }
+  implicit def hlistLast[H, T <: HList]
+    (implicit lt : Last[T]): Aux[H :: T, lt.Out] =
+      new Last[H :: T] {
+        type Out = lt.Out
+        def apply(l : H :: T): Out = lt(l.tail) 
+      }
 }
 
 /**
@@ -1217,31 +1087,23 @@ object LastAux {
  * 
  * @author Miles Sabin
  */
-trait Init[L <: HList] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
+trait Init[L <: HList] extends DepFn1[L] { type Out <: HList }
 
-trait InitAux[L <: HList, Out <: HList] {
-  def apply(l : L) : Out
-}
-  
 object Init {
-  implicit def init[L <: HList, Out0 <: HList](implicit init : InitAux[L, Out0]) = new Init[L] {
-    type Out = Out0
-    def apply(l : L) : Out = init(l)
-  }
-}
+  type Aux[L <: HList, Out0 <: HList] = Init[L] { type Out = Out0 }
 
-object InitAux {
-  implicit def hsingleInit[H] = new InitAux[H :: HNil, HNil] {
-    def apply(l : H :: HNil) : HNil = HNil
-  }
-  
-  implicit def hlistInit[H, T <: HList, OutH, OutT <: HList](implicit it : InitAux[T, OutT]) =
-    new InitAux[H :: T, H :: OutT] {
-      def apply(l : H :: T) : H :: OutT = l.head :: it(l.tail)
+  implicit def hsingleInit[H]: Aux[H :: HNil, HNil] =
+    new Init[H :: HNil] {
+      type Out = HNil
+      def apply(l : H :: HNil): Out = HNil
     }
+  
+  implicit def hlistInit[H, T <: HList, OutH, OutT <: HList]
+    (implicit it : Init[T]): Aux[H :: T, H :: it.Out] =
+      new Init[H :: T] {
+        type Out = H :: it.Out
+        def apply(l : H :: T): Out = l.head :: it(l.tail)
+      }
 }  
 
 /**
@@ -1255,13 +1117,16 @@ trait Selector[L <: HList, U] {
 }
 
 object Selector {
-  implicit def hlistSelect1[H, T <: HList] = new Selector[H :: T, H] {
-    def apply(l : H :: T) = l.head
-  }
+  implicit def hlistSelect1[H, T <: HList]: Selector[H :: T, H] =
+    new Selector[H :: T, H] {
+      def apply(l : H :: T) = l.head
+    }
 
-  implicit def hlistSelect[H, T <: HList, U](implicit st : Selector[T, U]) = new Selector[H :: T, U] {
-    def apply(l : H :: T) = st(l.tail)
-  }
+  implicit def hlistSelect[H, T <: HList, U]
+    (implicit st : Selector[T, U]): Selector[H :: T, U] =
+      new Selector[H :: T, U] {
+        def apply(l : H :: T) = st(l.tail)
+      }
 }
 
 /**
@@ -1269,36 +1134,30 @@ object Selector {
  * 
  * @author Alois Cochard
  */
-trait Filter[L <: HList, U] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
+trait Filter[L <: HList, U] extends DepFn1[L] { type Out <: HList }
 
 object Filter {
-  implicit def hlistFilter[L <: HList, U, Out0 <: HList](implicit aux : FilterAux[L, U, Out0]) = new Filter[L, U] {
-    type Out = Out0
-    def apply(l : L) : Out0 = aux(l)
-  }
-}
+  type Aux[L <: HList, U, Out0 <: HList] = Filter[L, U] { type Out = Out0 }
 
-trait FilterAux[L <: HList, U, Out <: HList] {
-  def apply(l : L) : Out
-}
-
-object FilterAux {
-  implicit def hlistFilterHNil[L <: HList, U] = new FilterAux[HNil, U, HNil] {
-     def apply(l : HNil) : HNil = HNil
-  }
-
-  implicit def hlistFilter1[L <: HList, H, Out <: HList]
-    (implicit aux : FilterAux[L, H, Out]) = new FilterAux[H :: L, H, H :: Out] {
-       def apply(l : H :: L) : H :: Out = l.head :: aux(l.tail)
+  implicit def hlistFilterHNil[L <: HList, U]: Aux[HNil, U, HNil] =
+    new Filter[HNil, U] {
+      type Out = HNil
+      def apply(l : HNil): Out = HNil
     }
 
-  implicit def hlistFilter2[H, L <: HList, U, Out <: HList]
-    (implicit aux : FilterAux[L, U, Out], e : U =:!= H) = new FilterAux[H :: L, U, Out] {
-       def apply(l : H :: L) : Out = aux(l.tail)
-    }
+  implicit def hlistFilter1[L <: HList, H]
+    (implicit f : Filter[L, H]): Aux[H :: L, H, H :: f.Out] =
+      new Filter[H :: L, H] {
+        type Out = H :: f.Out
+        def apply(l : H :: L) : Out = l.head :: f(l.tail)
+      }
+
+  implicit def hlistFilter2[H, L <: HList, U]
+    (implicit f : Filter[L, U], e : U =:!= H): Aux[H :: L, U, f.Out] =
+      new Filter[H :: L, U] {
+        type Out = f.Out
+        def apply(l : H :: L): Out = f(l.tail)
+      }
 }
 
 /**
@@ -1306,36 +1165,30 @@ object FilterAux {
  * 
  * @author Alois Cochard
  */
-trait FilterNot[L <: HList, U] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
+trait FilterNot[L <: HList, U] extends DepFn1[L] { type Out <: HList }
 
 object FilterNot {
-  implicit def hlistFilterNot[L <: HList, U, Out0 <: HList](implicit aux : FilterNotAux[L, U, Out0]) = new FilterNot[L, U] {
-    type Out = Out0
-    def apply(l : L) : Out0 = aux(l)
-  }
-}
+  type Aux[L <: HList, U, Out0 <: HList] = FilterNot[L, U] { type Out = Out0 }
 
-trait FilterNotAux[L <: HList, U, Out <: HList] {
-  def apply(l : L) : Out
-}
-
-object FilterNotAux {
-  implicit def hlistFilterNotHNil[L <: HList, U] = new FilterNotAux[HNil, U, HNil] {
-     def apply(l : HNil) : HNil = HNil
-  }
-
-  implicit def hlistFilterNot1[L <: HList, H, Out <: HList]
-    (implicit aux : FilterNotAux[L, H, Out]) = new FilterNotAux[H :: L, H, Out] {
-       def apply(l : H :: L) : Out = aux(l.tail)
+  implicit def hlistFilterNotHNil[L <: HList, U]: Aux[HNil, U, HNil] =
+    new FilterNot[HNil, U] {
+      type Out = HNil
+      def apply(l : HNil): Out = HNil
     }
+
+  implicit def hlistFilterNot1[L <: HList, H]
+    (implicit f: FilterNot[L, H]): Aux[H :: L, H, f.Out] =
+      new FilterNot[H :: L, H] {
+        type Out = f.Out
+        def apply(l : H :: L): Out = f(l.tail)
+      }
 
   implicit def hlistFilterNot2[H, L <: HList, U, Out <: HList]
-    (implicit aux : FilterNotAux[L, U, Out], e: U =:!= H) = new FilterNotAux[H :: L, U, H :: Out] {
-       def apply(l : H :: L) : H :: Out = l.head :: aux(l.tail)
-    }
+    (implicit f: FilterNot[L, U], e: U =:!= H): Aux[H :: L, U, H :: f.Out] =
+      new FilterNot[H :: L, U] {
+        type Out = H :: f.Out
+        def apply(l : H :: L): Out = l.head :: f(l.tail)
+      }
 }
 
 /**
@@ -1344,30 +1197,21 @@ object FilterNotAux {
  * 
  * @author Stacy Curl
  */
-trait Remove[E, L <: HList] {
-  type Out <: HList
-  def apply(l : L) : (E, Out)
-}
-
-trait RemoveAux[L <: HList, E, Rem <: HList] {
-  def apply(l : L) : (E, Rem)
-}
+trait Remove[L <: HList, E] extends DepFn1[L]
 
 object Remove {
-  implicit def hlistRemove[L <: HList, E, Rem <: HList](implicit aux: RemoveAux[L, E, Rem]) = new Remove[E, L] {
-    type Out = Rem
-    def apply(l : L) : (E, Rem) = aux(l)
-  }
-}
+  type Aux[L <: HList, E, Out0] = Remove[L, E] { type Out = Out0 }
 
-object RemoveAux {
-  implicit def hlistRemove1[H, T <: HList] = new RemoveAux[H :: T, H, T] {
-    def apply(l : H :: T) : (H, T) = (l.head, l.tail)
-  }
+  implicit def hlistRemove1[H, T <: HList]: Aux[H :: T, H, (H, T)] =
+    new Remove[H :: T, H] {
+      type Out = (H, T)
+      def apply(l : H :: T): Out = (l.head, l.tail)
+    }
   
-  implicit def hlistRemove[H, T <: HList, E, Rem <: HList](implicit r : RemoveAux[T, E, Rem]) =
-    new RemoveAux[H :: T, E, H :: Rem] {
-      def apply(l : H :: T) : (E, H :: Rem) = {
+  implicit def hlistRemove[H, T <: HList, E, OutT <: HList](implicit r : Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
+    new Remove[H :: T, E] {
+      type Out = (E, H :: OutT)
+      def apply(l : H :: T): Out = {
         val (e, tail) = r(l.tail)
         (e, l.head :: tail)
       }
@@ -1382,35 +1226,22 @@ object RemoveAux {
  * 
  * @author Stacy Curl
  */
-trait RemoveAll[SL <: HList, L <: HList] {
-  type Out <: HList
-  def apply(l : L): (SL, Out)
-}
-
-trait RemoveAllAux[SL <: HList, L <: HList, Rem <: HList] {
-  def apply(l : L): (SL, Rem)
-}
+trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L]
 
 object RemoveAll {
-  implicit def removeAll[SL <: HList, L <: HList, Rem <: HList](implicit removeAll : RemoveAllAux[SL, L, Rem]) =
-    new RemoveAll[SL, L] {
-      type Out = Rem
-      def apply(l : L) = removeAll(l)
-    }
-}
+  type Aux[L <: HList, SL <: HList, Out0] = RemoveAll[L, SL] { type Out = Out0 }
 
-object RemoveAllAux {
-  implicit def hlistRemoveAllNil[L <: HList] =
-    new RemoveAllAux[HNil, L, L] {
-      def apply(l : L): (HNil, L) = {
-        (HNil, l)
-      }
+  implicit def hlistRemoveAllNil[L <: HList]: Aux[L, HNil, (HNil, L)] =
+    new RemoveAll[L, HNil] {
+      type Out = (HNil, L)
+      def apply(l : L): Out = (HNil, l)
     }
 
   implicit def hlistRemoveAll[L <: HList, E, RemE <: HList, Rem <: HList, SLT <: HList]
-    (implicit rt : RemoveAux[L, E, RemE], st : RemoveAllAux[SLT, RemE, Rem]) = 
-      new RemoveAllAux[E :: SLT, L, Rem] {
-        def apply(l : L) : (E :: SLT, Rem) = {
+    (implicit rt : Remove.Aux[L, E, (E, RemE)], st : Aux[RemE, SLT, (SLT, Rem)]): Aux[L, E :: SLT, (E :: SLT, Rem)] = 
+      new RemoveAll[L, E :: SLT] {
+        type Out = (E :: SLT, Rem)
+        def apply(l : L): Out = {
           val (e, rem) = rt(l)
           val (sl, left) = st(rem)
           (e :: sl, left)
@@ -1424,35 +1255,26 @@ object RemoveAllAux {
  * 
  * @author Miles Sabin
  */
-trait Replacer[L <: HList, U, V] {
-  type Out <: HList
-  def apply(l : L, v : V) : (U, Out)
-}
-
-trait ReplacerAux[L <: HList, U, V, Out <: HList] {
-  def apply(l : L, v : V) : (U, Out)
-}
+trait Replacer[L <: HList, U, V] extends DepFn2[L, V]
 
 object Replacer {
-  implicit def replacer[L <: HList, U, V, Out0 <: HList](implicit replacer : ReplacerAux[L, U, V, Out0]) =
-    new Replacer[L, U, V] {
-      type Out = Out0
-      def apply(l : L, v : V) : (U, Out) = replacer(l, v)
-    }
-}
+  type Aux[L <: HList, U, V, Out0] = Replacer[L, U, V] { type Out = Out0 }
 
-object ReplacerAux {
-  implicit def hlistReplacer1[T <: HList, U, V] = new ReplacerAux[U :: T, U, V, V :: T] {
-    def apply(l : U :: T, v : V) : (U, V :: T) = (l.head, v :: l.tail)
-  }
-  
-  implicit def hlistReplacer2[H, T <: HList, U, V, Out <: HList](implicit ut : ReplacerAux[T, U, V, Out]) =
-    new ReplacerAux[H :: T, U, V, H :: Out] {
-      def apply(l : H :: T, v : V) : (U, H :: Out) = {
-        val (u, outT) = ut(l.tail, v)
-        (u, l.head :: outT)
-      }
+  implicit def hlistReplacer1[T <: HList, U, V]: Aux[U :: T, U, V, (U, V :: T)] =
+    new Replacer[U :: T, U, V] {
+      type Out = (U, V :: T)
+      def apply(l : U :: T, v : V): Out = (l.head, v :: l.tail)
     }
+  
+  implicit def hlistReplacer2[H, T <: HList, U, V, OutT <: HList]
+    (implicit ut : Aux[T, U, V, (U, OutT)]): Aux[H :: T, U, V, (U, H :: OutT)] =
+      new Replacer[H :: T, U, V] {
+        type Out = (U, H :: OutT)
+        def apply(l : H :: T, v : V): Out = {
+          val (u, outT) = ut(l.tail, v)
+          (u, l.head :: outT)
+        }
+      }
 }
 
 /**
@@ -1461,37 +1283,26 @@ object ReplacerAux {
  * 
  * @author Miles Sabin
  */
-trait ReplaceAt[L <: HList, N <: Nat, V] {
-  type Elem
-  type Out <: HList
-  def apply(l : L, v : V) : (Elem, Out)
-}
-
-trait ReplaceAtAux[L <: HList, N <: Nat, U, V, Out <: HList] {
-  def apply(l : L, v : V) : (U, Out)
-}
+trait ReplaceAt[L <: HList, N <: Nat, V] extends DepFn2[L, V]
 
 object ReplaceAt {
-  implicit def replaceAt[L <: HList, N <: Nat, Elem0, V, Out0 <: HList](implicit replacer : ReplaceAtAux[L, N, Elem0, V, Out0]) =
-    new ReplaceAt[L, N, V] {
-      type Elem = Elem0
-      type Out = Out0
-      def apply(l : L, v : V) : (Elem, Out) = replacer(l, v)
-    }
-}
+  type Aux[L <: HList, N <: Nat, V, Out0] = ReplaceAt[L, N, V] { type Out = Out0 }
 
-object ReplaceAtAux {
-  implicit def hlistReplaceAt1[H, T <: HList, V] = new ReplaceAtAux[H :: T, _0, H, V, V :: T] {
-    def apply(l : H :: T, v : V) : (H, V :: T) = (l.head, v :: l.tail)
-  }
-  
-  implicit def hlistReplaceAt2[H, T <: HList, N <: Nat, U, V, Out <: HList](implicit ut : ReplaceAtAux[T, N, U, V, Out]) =
-    new ReplaceAtAux[H :: T, Succ[N], U, V, H :: Out] {
-      def apply(l : H :: T, v : V) : (U, H :: Out) = {
-        val (u, outT) = ut(l.tail, v)
-        (u, l.head :: outT)
-      }
+  implicit def hlistReplaceAt1[H, T <: HList, V]: Aux[H :: T, _0, V, (H, V :: T)] =
+    new ReplaceAt[H :: T, _0, V] {
+      type Out = (H, V :: T)
+      def apply(l : H :: T, v : V): Out = (l.head, v :: l.tail)
     }
+  
+  implicit def hlistReplaceAt2[H, T <: HList, N <: Nat, U, V, Out0 <: HList]
+    (implicit ut : Aux[T, N, V, (U, Out0)]): Aux[H :: T, Succ[N], V, (U, H :: Out0)] =
+      new ReplaceAt[H :: T, Succ[N], V] {
+        type Out = (U, H :: Out0)
+        def apply(l : H :: T, v : V): Out = {
+          val (u, outT) = ut(l.tail, v)
+          (u, l.head :: outT)
+        }
+      }
 }
 
 /**
@@ -1500,31 +1311,23 @@ object ReplaceAtAux {
  * 
  * @author Miles Sabin
  */
-trait At[L <: HList, N <: Nat] {
-  type Out
-  def apply(l : L) : Out 
-}
+trait At[L <: HList, N <: Nat] extends DepFn1[L]
 
-trait AtAux[L <: HList, N <: Nat, Out] {
-  def apply(l : L) : Out
-}
-  
 object At {
-  implicit def at[L <: HList, N <: Nat, Out0](implicit at : AtAux[L, N, Out0]) = new At[L, N] {
-    type Out = Out0
-    def apply(l : L) : Out = at(l)
-  }
-}
+  type Aux[L <: HList, N <: Nat, Out0] = At[L, N] { type Out = Out0 }
 
-object AtAux {
-  implicit def hlistAtZero[H, T <: HList] = new AtAux[H :: T, _0, H] {
-    def apply(l : H :: T) : H = l.head
-  }
-  
-  implicit def hlistAtN[H, T <: HList, N <: Nat, Out](implicit att : AtAux[T, N, Out]) =
-    new AtAux[H :: T, Succ[N], Out] {
-      def apply(l : H :: T) : Out = att(l.tail) 
+  implicit def hlistAtZero[H, T <: HList]: Aux[H :: T, _0, H] = 
+    new At[H :: T, _0] {
+      type Out = H
+      def apply(l : H :: T): Out = l.head
     }
+  
+  implicit def hlistAtN[H, T <: HList, N <: Nat]
+    (implicit att : At[T, N]): Aux[H :: T, Succ[N], att.Out] =
+      new At[H :: T, Succ[N]] {
+        type Out = att.Out
+        def apply(l : H :: T) : Out = att(l.tail) 
+      }
 }
 
 /**
@@ -1533,32 +1336,23 @@ object AtAux {
  * 
  * @author Miles Sabin
  */
-trait Drop[L <: HList, N <: Nat] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
+trait Drop[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
-trait DropAux[L <: HList, N <: Nat, Out <: HList] {
-  def apply(l : L) : Out
-}
-  
 object Drop {
-  implicit def drop[L <: HList, N <: Nat, Out0 <: HList]
-    (implicit drop : DropAux[L, N, Out0]) = new Drop[L, N] {
-    type Out = Out0
-    def apply(l : L) : Out = drop(l)
-  }
-}
+  type Aux[L <: HList, N <: Nat, Out0 <: HList] = Drop[L, N] { type Out = Out0 }
 
-object DropAux {
-  implicit def hlistDrop1[L <: HList] = new DropAux[L, _0, L] {
-    def apply(l : L) : L = l
-  }
-  
-  implicit def hlistDrop2[H, T <: HList, N <: Nat, Out <: HList](implicit dt : DropAux[T, N, Out]) =
-    new DropAux[H :: T, Succ[N], Out] {
-      def apply(l : H :: T) : Out = dt(l.tail)
+  implicit def hlistDrop1[L <: HList]: Aux[L, _0, L] = 
+    new Drop[L, _0] {
+      type Out = L
+      def apply(l : L): Out = l
     }
+  
+  implicit def hlistDrop2[H, T <: HList, N <: Nat]
+    (implicit dt : Drop[T, N]): Aux[H :: T, Succ[N], dt.Out] =
+      new Drop[H :: T, Succ[N]] {
+        type Out = dt.Out
+        def apply(l : H :: T): Out = dt(l.tail)
+      }
 }
 
 /**
@@ -1567,32 +1361,23 @@ object DropAux {
  * 
  * @author Miles Sabin
  */
-trait Take[L <: HList, N <: Nat] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
-  
-trait TakeAux[L <: HList, N <: Nat, Out <: HList] {
-  def apply(l : L) : Out
-}
+trait Take[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
 object Take {
-  implicit def take[L <: HList, N <: Nat, Out0 <: HList]
-    (implicit take : TakeAux[L, N, Out0]) = new Take[L, N] {
-    type Out = Out0
-    def apply(l : L) : Out = take(l)
-  }
-}  
+  type Aux[L <: HList, N <: Nat, Out0 <: HList] = Take[L, N] { type Out = Out0 }
 
-object TakeAux {
-  implicit def hlistTake1[L <: HList] = new TakeAux[L, _0, HNil] {
-    def apply(l : L) : HNil = HNil
-  }
-  
-  implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList](implicit tt : TakeAux[T, N, Out]) =
-    new TakeAux[H :: T, Succ[N], H :: Out] {
-      def apply(l : H :: T) : H :: Out = l.head :: tt(l.tail)
+  implicit def hlistTake1[L <: HList]: Aux[L, _0, HNil] =
+    new Take[L, _0] {
+      type Out = HNil
+      def apply(l : L): Out = HNil
     }
+  
+  implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList]
+    (implicit tt : Take[T, N]): Aux[H :: T, Succ[N], H :: tt.Out] =
+      new Take[H :: T, Succ[N]] {
+        type Out = H :: tt.Out
+        def apply(l : H :: T): Out = l.head :: tt(l.tail)
+      }
 }
 
 /**
@@ -1601,35 +1386,34 @@ object TakeAux {
  * 
  * @author Miles Sabin
  */
-trait Split[L <: HList, N <: Nat] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
+trait Split[L <: HList, N <: Nat] extends DepFn1[L]
   
-trait Split0[AccP <: HList, AccS <: HList, N <: Nat, P <: HList, S <: HList] {
-  def apply(accP : AccP, accS : AccS) : (P, S)
-}
-
 object Split {
-  implicit def split[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
-    (implicit split : Split0[HNil, L, N, P0, S0]) = new Split[L, N] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = split(HNil, l)
-  }
-}
+  type Aux[L <: HList, N <: Nat, Out0] = Split[L, N] { type Out = Out0 }
 
-object Split0 {
-  implicit def hlistSplit1[P <: HList, S <: HList] = new Split0[P, S, _0, P, S] {
-    def apply(accP : P, accS : S) : (P, S) = (accP, accS)
+  implicit def split[L <: HList, N <: Nat, P <: HList, S <: HList]
+    (implicit split : Split0[HNil, L, N, P, S]): Aux[L, N, (P, S)] =
+      new Split[L, N] {
+        type Out = (P, S)
+        def apply(l : L): Out = split(HNil, l)
+      }
+
+  trait Split0[AccP <: HList, AccS <: HList, N <: Nat, P <: HList, S <: HList] {
+    def apply(accP : AccP, accS : AccS) : (P, S)
   }
 
-  implicit def hlistSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P <: HList, S <: HList]
-    (implicit st : Split0[AccP, AccST, N, P, S]) = new Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] {
-    def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
-      st(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+  object Split0 {
+    implicit def hlistSplit1[P <: HList, S <: HList]: Split0[P, S, _0, P, S] =
+      new Split0[P, S, _0, P, S] {
+        def apply(accP : P, accS : S) : (P, S) = (accP, accS)
+      }
+
+    implicit def hlistSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P <: HList, S <: HList]
+      (implicit st : Split0[AccP, AccST, N, P, S]): Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] =
+        new Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] {
+          def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
+            st(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+        }
   }
 }
 
@@ -1639,36 +1423,34 @@ object Split0 {
  * 
  * @author Miles Sabin
  */
-trait ReverseSplit[L <: HList, N <: Nat] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
-
-trait ReverseSplit0[AccP <: HList, AccS <: HList, N <: Nat, P, S] {
-  def apply(accP : AccP, accS : AccS) : (P, S)
-}
+trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L]
 
 object ReverseSplit {
-  implicit def reverseSplit[L <: HList, N <: Nat, P0 <: HList, S0 <: HList]
-    (implicit split : ReverseSplit0[HNil, L, N, P0, S0]) = new ReverseSplit[L, N] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = split(HNil, l)
-  }
-}
+  type Aux[L <: HList, N <: Nat, Out0] = ReverseSplit[L, N] { type Out = Out0 }
 
-object ReverseSplit0 {
-  implicit def hlistReverseSplit1[P <: HList, S <: HList] = new ReverseSplit0[P, S, _0, P, S] {
-    def apply(accP : P, accS : S) : (P, S) = (accP, accS)
-  }
-  
-  implicit def hlistReverseSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P, S]
-    (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]) =
-      new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
-        def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = st(accS.head :: accP, accS.tail)
+  implicit def reverseSplit[L <: HList, N <: Nat, P <: HList, S <: HList]
+    (implicit split : ReverseSplit0[HNil, L, N, P, S]): Aux[L, N, (P, S)] =
+      new ReverseSplit[L, N] {
+        type Out = (P, S)
+        def apply(l : L): Out = split(HNil, l)
       }
+
+  trait ReverseSplit0[AccP <: HList, AccS <: HList, N <: Nat, P, S] {
+    def apply(accP : AccP, accS : AccS): (P, S)
+  }
+
+  object ReverseSplit0 {
+    implicit def hlistReverseSplit1[P <: HList, S <: HList]: ReverseSplit0[P, S, _0, P, S] =
+      new ReverseSplit0[P, S, _0, P, S] {
+        def apply(accP : P, accS : S): (P, S) = (accP, accS)
+      }
+    
+    implicit def hlistReverseSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P, S]
+      (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]): ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] =
+        new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
+          def apply(accP : AccP, accS : AccSH :: AccST): (P, S) = st(accS.head :: accP, accS.tail)
+        }
+  }
 }
 
 /**
@@ -1677,39 +1459,37 @@ object ReverseSplit0 {
  * 
  * @author Miles Sabin
  */
-trait SplitLeft[L <: HList, U] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
-  
-trait SplitLeft0[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
-  def apply(accP : AccP, accS : AccS) : (P, S)
-}
+trait SplitLeft[L <: HList, U] extends DepFn1[L]
 
 object SplitLeft {
-  implicit def splitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
-    (implicit splitLeft : SplitLeft0[HNil, L, U, P0, S0]) = new SplitLeft[L, U] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = splitLeft(HNil, l)
-  }
-}
+  type Aux[L <: HList, U, Out0] = SplitLeft[L, U] { type Out = Out0 }
 
-trait LowPrioritySplitLeft0 {
-  implicit def hlistSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P <: HList, S <: HList]
-    (implicit slt : SplitLeft0[AccP, AccST, U, P, S]) = new SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] {
-    def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
-      slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+  implicit def splitLeft[L <: HList, U, P <: HList, S <: HList]
+    (implicit splitLeft : SplitLeft0[HNil, L, U, P, S]): Aux[L, U, (P, S)] =
+      new SplitLeft[L, U] {
+        type Out = (P, S)
+        def apply(l : L): Out = splitLeft(HNil, l)
+      }
+  
+  trait SplitLeft0[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
+    def apply(accP : AccP, accS : AccS) : (P, S)
   }
-}
 
-object SplitLeft0 extends LowPrioritySplitLeft0 {
-  implicit def hlistSplitLeft2[P <: HList, SH, ST <: HList] =
-    new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-      def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
-    }
+  trait LowPrioritySplitLeft0 {
+    implicit def hlistSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P <: HList, S <: HList]
+      (implicit slt : SplitLeft0[AccP, AccST, U, P, S]): SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] =
+        new SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] {
+          def apply(accP : AccP, accS : AccSH :: AccST): (AccSH :: P, S) =
+            slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+        }
+  }
+
+  object SplitLeft0 extends LowPrioritySplitLeft0 {
+    implicit def hlistSplitLeft2[P <: HList, SH, ST <: HList]: SplitLeft0[P, SH :: ST, SH, P, SH :: ST] =
+      new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
+        def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+      }
+  }
 }
 
 /**
@@ -1718,40 +1498,37 @@ object SplitLeft0 extends LowPrioritySplitLeft0 {
  * 
  * @author Miles Sabin
  */
-trait ReverseSplitLeft[L <: HList, U] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
-  
-trait ReverseSplitLeft0[AccP <: HList, AccS <: HList, U, P, S] {
-  def apply(accP : AccP, accS : AccS) : (P, S)
-}
+trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L]
 
 object ReverseSplitLeft {
-  implicit def reverseSplitLeft[L <: HList, U, P0 <: HList, S0 <: HList]
-    (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P0, S0]) = new ReverseSplitLeft[L, U] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = splitLeft(HNil, l)
-  }
-}
+  type Aux[L <: HList, U, Out0] = ReverseSplitLeft[L, U] { type Out = Out0 }
 
-trait LowPriorityReverseSplitLeft0 {
-  implicit def hlistReverseSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P, S]
-    (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]) =
-      new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
-        def apply(accP : AccP, accS : AccSH :: AccST) : (P, S) = slt(accS.head :: accP, accS.tail)
+  implicit def reverseSplitLeft[L <: HList, U, P <: HList, S <: HList]
+    (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P, S]): Aux[L, U, (P, S)] =
+      new ReverseSplitLeft[L, U] {
+        type Out = (P, S)
+        def apply(l : L): Out = splitLeft(HNil, l)
       }
-}
+  
+  trait ReverseSplitLeft0[AccP <: HList, AccS <: HList, U, P, S] {
+    def apply(accP : AccP, accS : AccS): (P, S)
+  }
 
-object ReverseSplitLeft0 extends LowPriorityReverseSplitLeft0 {
-  implicit def hlistReverseSplitLeft2[P <: HList, SH, ST <: HList] =
-    new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-      def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
-    }
-}  
+  trait LowPriorityReverseSplitLeft0 {
+    implicit def hlistReverseSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P, S]
+      (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]): ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] =
+        new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
+          def apply(accP : AccP, accS : AccSH :: AccST): (P, S) = slt(accS.head :: accP, accS.tail)
+        }
+  }
+
+  object ReverseSplitLeft0 extends LowPriorityReverseSplitLeft0 {
+    implicit def hlistReverseSplitLeft2[P <: HList, SH, ST <: HList]: ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] =
+      new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
+        def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+      }
+  }  
+}
 
 /**
  * Type class supporting splitting this `HList` at the last occurence of an element of type `U` returning the prefix
@@ -1759,45 +1536,43 @@ object ReverseSplitLeft0 extends LowPriorityReverseSplitLeft0 {
  * 
  * @author Miles Sabin
  */
-trait SplitRight[L <: HList, U] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
-  
-trait SplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
-  def apply(rev : Rev, accP : AccP, accS : AccS) : (P, S)
-}
+trait SplitRight[L <: HList, U] extends DepFn1[L]
 
 object SplitRight {
-  implicit def splitRight[L <: HList, U, P0 <: HList, S0 <: HList]
-    (implicit splitRight : SplitRight0[L, HNil, HNil, U, P0, S0]) = new SplitRight[L, U] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = splitRight(l, HNil, HNil)
+  type Aux[L <: HList, U, Out0] = SplitRight[L, U] { type Out = Out0 }
+
+  implicit def splitRight[L <: HList, U, P <: HList, S <: HList]
+    (implicit splitRight : SplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, (P, S)] =
+      new SplitRight[L, U] {
+        type Out = (P, S)
+        def apply(l : L): Out = splitRight(l, HNil, HNil)
+      }
+  
+  trait SplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
+    def apply(rev : Rev, accP : AccP, accS : AccS): (P, S)
   }
-}
 
-trait LowPrioritySplitRight0 {
-  implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
-    (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) =
-      new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-        def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
-      }
+  trait LowPrioritySplitRight0 {
+    implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
+      (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]): SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] =
+        new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+          def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): (P, S) = srt(rev.tail, rev.head :: accP, accS)
+        }
 
-  implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
-    (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) =
-      new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-        def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
-      }
-}
+    implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
+      (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]): SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] =
+        new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+          def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): (P, S) = srt(rev, accP.tail, accP.head :: accS)
+        }
+  }
 
-object SplitRight0 extends LowPrioritySplitRight0 {
-  implicit def hlistSplitRight3[PH, PT <: HList, S <: HList](implicit reverse : Reverse[PH :: PT]) =
-    new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
-      def apply(rev : HNil, accP : PH :: PT, accS : S) : (reverse.Out, S) = (accP.reverse, accS)
-    }
+  object SplitRight0 extends LowPrioritySplitRight0 {
+    implicit def hlistSplitRight3[PH, PT <: HList, S <: HList]
+      (implicit reverse : Reverse[PH :: PT]): SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] =
+        new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
+          def apply(rev : HNil, accP : PH :: PT, accS : S): (reverse.Out, S) = (accP.reverse, accS)
+        }
+  }
 }
 
 /**
@@ -1806,45 +1581,42 @@ object SplitRight0 extends LowPrioritySplitRight0 {
  * 
  * @author Miles Sabin
  */
-trait ReverseSplitRight[L <: HList, U] {
-  type Out = (P, S)
-  type P <: HList
-  type S <: HList
-  def apply(l : L) : Out
-} 
-  
-trait ReverseSplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P, S] {
-  def apply(rev : Rev, accP : AccP, accS : AccS) : (P, S)
-}
+trait ReverseSplitRight[L <: HList, U] extends DepFn1[L]
 
 object ReverseSplitRight {
-  implicit def reverseSplitRight[L <: HList, U, P0 <: HList, S0 <: HList]
-    (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P0, S0]) = new ReverseSplitRight[L, U] {
-    type P = P0
-    type S = S0
-    def apply(l : L) : Out = splitRight(l, HNil, HNil)
-  }
-}
+  type Aux[L <: HList, U, Out0] = ReverseSplitRight[L, U] { type Out = Out0 }
 
-trait LowPriorityReverseSplitRight0 {
-  implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
-    (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]) =
-      new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-        def apply(rev : RevH :: RevT, accP : AccP, accS : HNil) : (P, S) = srt(rev.tail, rev.head :: accP, accS)
+  implicit def reverseSplitRight[L <: HList, U, P <: HList, S <: HList]
+    (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, (P, S)] =
+      new ReverseSplitRight[L, U] {
+        type Out = (P, S)
+        def apply(l : L): Out = splitRight(l, HNil, HNil)
       }
   
-  implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
-    (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]) =
-      new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-        def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS) : (P, S) = srt(rev, accP.tail, accP.head :: accS)
-      }
-}
+  trait ReverseSplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P, S] {
+    def apply(rev : Rev, accP : AccP, accS : AccS): (P, S)
+  }
 
-object ReverseSplitRight0 extends LowPriorityReverseSplitRight0 {
-  implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList] =
-    new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
-      def apply(rev : HNil, accP : PH :: PT, accS : S) = (accP, accS)
-    }
+  trait LowPriorityReverseSplitRight0 {
+    implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
+      (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]): ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] =
+        new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
+          def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): (P, S) = srt(rev.tail, rev.head :: accP, accS)
+        }
+    
+    implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
+      (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]): ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] =
+        new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
+          def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): (P, S) = srt(rev, accP.tail, accP.head :: accS)
+        }
+  }
+
+  object ReverseSplitRight0 extends LowPriorityReverseSplitRight0 {
+    implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList]: ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] =
+      new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
+        def apply(rev : HNil, accP : PH :: PT, accS : S): (PH :: PT, S) = (accP, accS)
+      }
+  }
 }
 
 /**
@@ -1852,31 +1624,33 @@ object ReverseSplitRight0 extends LowPriorityReverseSplitRight0 {
  * 
  * @author Miles Sabin
  */
-trait Reverse[L <: HList] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
-
-trait Reverse0[Acc <: HList, L <: HList, Out <: HList] {
-  def apply(acc : Acc, l : L) : Out
-}
+trait Reverse[L <: HList] extends DepFn1[L] { type Out <: HList }
 
 object Reverse {
-  implicit def reverse[L <: HList, Out0 <: HList](implicit reverse : Reverse0[HNil, L, Out0]) = new Reverse[L] {
-    type Out = Out0
-    def apply(l : L) : Out = reverse(HNil, l)
-  }
-}
+  type Aux[L <: HList, Out0 <: HList] = Reverse[L] { type Out = Out0 }
 
-object Reverse0 {
-  implicit def hnilReverse[Out <: HList] = new Reverse0[Out, HNil, Out] {
-    def apply(acc : Out, l : HNil) : Out = acc
-  }
-  
-  implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList]
-    (implicit rt : Reverse0[InH :: Acc, InT, Out]) = new Reverse0[Acc, InH :: InT, Out] {
-      def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
+  implicit def reverse[L <: HList, Out0 <: HList](implicit reverse : Reverse0[HNil, L, Out0]): Aux[L, Out0] =
+    new Reverse[L] {
+      type Out = Out0
+      def apply(l : L) : Out = reverse(HNil, l)
     }
+
+  trait Reverse0[Acc <: HList, L <: HList, Out <: HList] {
+    def apply(acc : Acc, l : L) : Out
+  }
+
+  object Reverse0 {
+    implicit def hnilReverse[Out <: HList]: Reverse0[Out, HNil, Out] =
+      new Reverse0[Out, HNil, Out] {
+        def apply(acc : Out, l : HNil) : Out = acc
+      }
+    
+    implicit def hlistReverse[Acc <: HList, InH, InT <: HList, Out <: HList]
+      (implicit rt : Reverse0[InH :: Acc, InT, Out]): Reverse0[Acc, InH :: InT, Out] =
+        new Reverse0[Acc, InH :: InT, Out] {
+          def apply(acc : Acc, l : InH :: InT) : Out = rt(l.head :: acc, l.tail)
+        }
+  }
 }
 
 /**
@@ -1884,44 +1658,31 @@ object Reverse0 {
  * 
  * @author Miles Sabin
  */
-trait Prepend[P <: HList, S <: HList] {
-  type Out <: HList
-  def apply(prefix : P, suffix : S) : Out
-}
-
-trait PrependAux[P <: HList, S <: HList, Out <: HList] {
-  def apply(prefix : P, suffix : S) : Out
-}
+trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] { type Out <: HList }
 
 trait LowPriorityPrepend {
-  implicit def hnilPrepend1[P <: HNil, S <: HList] = new Prepend[P, S] {
-    type Out = S
-    def apply(prefix: P, suffix: S) = suffix
-  }
+  type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
+
+  implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
+    new Prepend[P, S] {
+      type Out = P
+      def apply(prefix : P, suffix : S): P = prefix
+    }
 }
 
 object Prepend extends LowPriorityPrepend {
-  implicit def hnilPrepend2[P <: HList, S <: HNil] = new Prepend[P, S] {
-    type Out = P
-    def apply(prefix: P, suffix: S) = prefix
-  }
-
-  implicit def prepend[P <: HList, S <: HList, Out0 <: HList](implicit prepend : PrependAux[P, S, Out0]) =
+  implicit def hnilPrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
     new Prepend[P, S] {
-      type Out = Out0
-      def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
+      type Out = S
+      def apply(prefix : P, suffix : S): S = suffix 
     }
-}
 
-object PrependAux {
-  implicit def hnilPrepend[S <: HList] = new PrependAux[HNil, S, S] {
-    def apply(prefix : HNil, suffix : S) : S = suffix 
-  }
-  
-  implicit def hlistPrepend[PH, PT <: HList, S <: HList, OutT <: HList](implicit pt : PrependAux[PT, S, OutT]) =
-    new PrependAux[PH :: PT, S, PH :: OutT] {
-      def apply(prefix : PH :: PT, suffix : S) : PH :: OutT = prefix.head :: pt(prefix.tail, suffix)
-    }
+  implicit def hlistPrepend[PH, PT <: HList, S <: HList]
+    (implicit pt : Prepend[PT, S]): Aux[PH :: PT, S, PH :: pt.Out] =
+      new Prepend[PH :: PT, S] {
+        type Out = PH :: pt.Out
+        def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
+      }
 }
 
 /**
@@ -1929,45 +1690,32 @@ object PrependAux {
  * 
  * @author Miles Sabin
  */
-trait ReversePrepend[P <: HList, S <: HList] {
-  type Out <: HList
-  def apply(prefix : P, suffix : S) : Out
-}
-
-trait ReversePrependAux[P <: HList, S <: HList, Out <: HList] {
-  def apply(prefix : P, suffix : S) : Out
-}
+trait ReversePrepend[P <: HList, S <: HList] extends DepFn2[P, S] { type Out <: HList }
 
 trait LowPriorityReversePrepend {
-  implicit def hnilReversePrepend1[P <: HNil, S <: HList] = new ReversePrepend[P, S] {
-    type Out = S
-    def apply(prefix: P, suffix: S) = suffix
-  }
-}
-  
-object ReversePrepend extends LowPriorityReversePrepend {
-  implicit def hnilReversePrepend2[P <: HList, S <: HNil](implicit rv: Reverse[P]) = new ReversePrepend[P, S] {
-    type Out = rv.Out
-    def apply(prefix: P, suffix: S) = prefix.reverse
-  }
+  type Aux[P <: HList, S <: HList, Out0 <: HList] = ReversePrepend[P, S] { type Out = Out0 }
 
-  implicit def reversePrepend[P <: HList, S <: HList, Out0 <: HList]
-    (implicit prepend : ReversePrependAux[P, S, Out0]) =
+  implicit def hnilReversePrepend0[P <: HList, S <: HNil]
+    (implicit rv: Reverse[P]): Aux[P, S, rv.Out] =
       new ReversePrepend[P, S] {
-        type Out = Out0
-        def apply(prefix : P, suffix : S) : Out = prepend(prefix, suffix)
+        type Out = rv.Out
+        def apply(prefix: P, suffix: S) = prefix.reverse
       }
 }
 
-object ReversePrependAux {
-  implicit def hnilReversePrepend[S <: HList] = new ReversePrependAux[HNil, S, S] {
-    def apply(prefix : HNil, suffix : S) : S = suffix 
-  }
-  
-  implicit def hlistReversePrepend[PH, PT <: HList, S <: HList, Out <: HList]
-    (implicit rpt : ReversePrependAux[PT, PH :: S, Out]) = new ReversePrependAux[PH :: PT, S, Out] {
-      def apply(prefix : PH :: PT, suffix : S) : Out = rpt(prefix.tail, prefix.head :: suffix)
+object ReversePrepend extends LowPriorityReversePrepend {
+  implicit def hnilReversePrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
+    new ReversePrepend[P, S] {
+      type Out = S
+      def apply(prefix: P, suffix: S) = suffix
     }
+
+  implicit def hlistReversePrepend[PH, PT <: HList, S <: HList]
+    (implicit rpt : ReversePrepend[PT, PH :: S]): Aux[PH :: PT, S, rpt.Out] =
+      new ReversePrepend[PH :: PT, S] {
+        type Out = rpt.Out
+        def apply(prefix : PH :: PT, suffix : S): Out = rpt(prefix.tail, prefix.head :: suffix)
+      }
 }  
 
 /**
@@ -1976,40 +1724,35 @@ object ReversePrependAux {
  * 
  * @author Miles Sabin
  */
-trait ZipOne[H <: HList, T <: HList] {
-  type Out <: HList
-  def apply(h : H, t : T) : Out
-}
-
-trait ZipOneAux[H <: HList, T <: HList, Out <: HList] {
-  def apply(h : H, t : T) : Out
-}
+trait ZipOne[H <: HList, T <: HList] extends DepFn2[H, T] { type Out <: HList }
 
 object ZipOne {
-  implicit def zipOne[H <: HList, T <: HList, Out0 <: HList](implicit zipOne : ZipOneAux[H, T, Out0]) =
-    new ZipOne[H, T] {
-      type Out = Out0
-      def apply(h : H, t : T) : Out = zipOne(h, t)
-    }
-}
+  type Aux[H <: HList, T <: HList, Out0 <: HList] = ZipOne[H, T] { type Out = Out0 }
 
-object ZipOneAux {
-  implicit def zipOne1[H <: HList] = new ZipOneAux[H, HNil, HNil] {
-    def apply(h : H, t : HNil) : HNil = HNil 
-  }
-  
-  implicit def zipOne2[T <: HList] = new ZipOneAux[HNil, T, HNil] {
-    def apply(h : HNil, t : T) : HNil = HNil 
-  }
-
-  implicit def zipOne3[H, T <: HList] = new ZipOneAux[H :: HNil, T :: HNil, (H :: T) :: HNil] {
-    def apply(h : H :: HNil, t : T :: HNil) : (H :: T) :: HNil = (h.head :: t.head) :: HNil 
-  }
-  
-  implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, OutT <: HList]
-    (implicit zot : ZipOneAux[HT, TT, OutT]) = new ZipOneAux[HH :: HT, TH :: TT, (HH :: TH) :: OutT] {
-      def apply(h : HH :: HT, t : TH :: TT) : (HH :: TH) :: OutT = (h.head :: t.head) :: zot(h.tail, t.tail)
+  implicit def zipOne1[H <: HList]: Aux[H, HNil, HNil] =
+    new ZipOne[H, HNil] {
+      type Out = HNil
+      def apply(h : H, t : HNil): Out = HNil 
     }
+  
+  implicit def zipOne2[T <: HList]: Aux[HNil, T, HNil] =
+    new ZipOne[HNil, T] {
+      type Out = HNil
+      def apply(h : HNil, t : T): Out = HNil 
+    }
+
+  implicit def zipOne3[H, T <: HList]: Aux[H :: HNil, T :: HNil, (H :: T) :: HNil] =
+    new ZipOne[H :: HNil, T :: HNil] {
+      type Out = (H :: T) :: HNil
+      def apply(h : H :: HNil, t : T :: HNil): Out = (h.head :: t.head) :: HNil 
+    }
+  
+  implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList]
+  (implicit zot : ZipOne[HT, TT]): Aux[HH :: HT, TH :: TT, (HH :: TH) :: zot.Out] =
+      new ZipOne[HH :: HT, TH :: TT] {
+        type Out = (HH :: TH) :: zot.Out
+        def apply(h : HH :: HT, t : TH :: TT): Out = (h.head :: t.head) :: zot(h.tail, t.tail)
+      }
 }
 
 /**
@@ -2017,36 +1760,30 @@ object ZipOneAux {
  * 
  * @author Miles Sabin
  */
-trait Transposer[L <: HList] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
-
-trait TransposerAux[L <: HList, Out <: HList] {
-  def apply(l : L) : Out
-}
+trait Transposer[L <: HList] extends DepFn1[L] { type Out <: HList }
 
 object Transposer {
-  implicit def transposer[L <: HList, Out0 <: HList](implicit transposer : TransposerAux[L, Out0]) = new Transposer[L] {
-    type Out = Out0
-    def apply(l : L) : Out = transposer(l)
-  }
-}
+  type Aux[L <: HList, Out0 <: HList] = Transposer[L] { type Out = Out0 }
 
-object TransposerAux {
-  implicit def hnilTransposer = new TransposerAux[HNil, HNil] {
-    def apply(l : HNil) = l 
-  }
-  
-  implicit def hlistTransposer1[H <: HList, MC <: HList, Out <: HList]
-    (implicit mc : ConstMapperAux[HNil, H, MC], zo : ZipOneAux[H, MC, Out]) = new TransposerAux[H :: HNil, Out] {
-      def apply(l : H :: HNil) : Out = zo(l.head, mc(HNil, l.head))
+  implicit def hnilTransposer: Aux[HNil, HNil] =
+    new Transposer[HNil] {
+      type Out = HNil
+      def apply(l : HNil): Out = l 
     }
   
-  implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out <: HList]
-    (implicit tt : TransposerAux[T, OutT], zo : ZipOneAux[H, OutT, Out]) = new TransposerAux[H :: T, Out] {
-      def apply(l : H :: T) : Out = zo(l.head, tt(l.tail))
-    }
+  implicit def hlistTransposer1[H <: HList, MC <: HList, Out0 <: HList]
+    (implicit mc : ConstMapper.Aux[HNil, H, MC], zo : ZipOne.Aux[H, MC, Out0]): Aux[H :: HNil, Out0] =
+      new Transposer[H :: HNil] {
+        type Out = Out0
+        def apply(l : H :: HNil): Out = zo(l.head, mc(HNil, l.head))
+      }
+  
+  implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out0 <: HList]
+    (implicit tt : Aux[T, OutT], zo : ZipOne.Aux[H, OutT, Out0]): Aux[H :: T, Out0] =
+      new Transposer[H :: T] {
+        type Out = Out0
+        def apply(l : H :: T): Out = zo(l.head, tt(l.tail))
+      }
 }
 
 /**
@@ -2054,19 +1791,19 @@ object TransposerAux {
  * 
  * @author Miles Sabin
  */
-trait Zip[L <: HList] {
-  type Out <: HList
-  def apply(l : L) : Out
-}
+trait Zip[L <: HList] extends DepFn1[L] { type Out <: HList }
 
 object Zip {
-  implicit def zipper[L <: HList, OutT <: HList, OutM <: HList]
+  type Aux[L <: HList, Out0 <: HList] = Zip[L] { type Out = Out0 }
+
+  implicit def zipper[L <: HList, OutT <: HList]
     (implicit
-      transposer : TransposerAux[L, OutT],
-      mapper : MapperAux[tupled.type, OutT, OutM]) = new Zip[L] {
-    type Out = OutM
-    def apply(l : L) = l.transpose map tupled
-  }
+      transposer : Transposer.Aux[L, OutT],
+      mapper : Mapper[tupled.type, OutT]): Aux[L, mapper.Out] =
+      new Zip[L] {
+        type Out = mapper.Out
+        def apply(l : L): Out = l.transpose map tupled
+      }
 }
 
 /**
@@ -2074,20 +1811,20 @@ object Zip {
  * 
  * @author Miles Sabin
  */
-trait Unzip[L <: HList] {
-  type Out
-  def apply(l : L) : Out
-}
+trait Unzip[L <: HList] extends DepFn1[L]
 
 object Unzip {
+  type Aux[L <: HList, Out0] = Unzip[L] { type Out = Out0 }
+
   implicit def unzipper[L <: HList, OutM <: HList, OutT <: HList]
     (implicit
-      mapper : MapperAux[productElements.type, L, OutM],
-      transposer : TransposerAux[OutM, OutT],
-      tupler : Tupler[OutT]) = new Unzip[L] {
-    type Out = tupler.Out
-    def apply(l : L) = (l map productElements).transpose.tupled
-  }
+      mapper : Mapper.Aux[productElements.type, L, OutM],
+      transposer : Transposer.Aux[OutM, OutT],
+      tupler : Tupler[OutT]): Aux[L, tupler.Out] =
+      new Unzip[L] {
+        type Out = tupler.Out
+        def apply(l : L): Out = (l map productElements).transpose.tupled
+      }
 }
   
 /**
@@ -2097,30 +1834,21 @@ object Unzip {
  * 
  * @author Miles Sabin
  */
-trait ZipApply[FL <: HList, AL <: HList] {
-  type Out <: HList
-  def apply(fl : FL, al : AL) : Out
-}
-
-trait ZipApplyAux[FL <: HList, AL <: HList, Out <: HList] {
-  def apply(fl : FL, al : AL) : Out
-}
+trait ZipApply[FL <: HList, AL <: HList] extends DepFn2[FL, AL] { type Out <: HList }
 
 object ZipApply {
-  implicit def zipApply[FL <: HList, AL <: HList, Out0 <: HList](implicit zap : ZipApplyAux[FL, AL, Out0]) =
-    new ZipApply[FL, AL] {
-      type Out = Out0
-      def apply(fl : FL, al : AL) : Out = zap(fl, al)
-    }
-}
+  type Aux[FL <: HList, AL <: HList, Out0 <: HList] = ZipApply[FL, AL] { type Out = Out0 }
 
-object ZipApplyAux {
-  implicit def hnilZipApply = new ZipApplyAux[HNil, HNil, HNil] {
-    def apply(fl : HNil, al : HNil) : HNil = HNil
-  }
-  
-  implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList, OutT <: HList]
-    (implicit ztt : ZipApplyAux[FLT, ALT, OutT]) = new ZipApplyAux[(T => R) :: FLT, T :: ALT, R :: OutT] {
-      def apply(fl : (T => R) :: FLT, al : T :: ALT) : R :: OutT = fl.head(al.head) :: ztt(fl.tail, al.tail) 
+  implicit def hnilZipApply: Aux[HNil, HNil, HNil] =
+    new ZipApply[HNil, HNil] {
+      type Out = HNil
+      def apply(fl : HNil, al : HNil): Out = HNil
     }
+  
+  implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList]
+    (implicit ztt : ZipApply[FLT, ALT]): Aux[(T => R) :: FLT, T :: ALT, R :: ztt.Out] =
+      new ZipApply[(T => R) :: FLT, T :: ALT] {
+        type Out = R :: ztt.Out
+        def apply(fl : (T => R) :: FLT, al : T :: ALT): Out = fl.head(al.head) :: ztt(fl.tail, al.tail) 
+      }
 }

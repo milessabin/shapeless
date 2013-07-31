@@ -74,7 +74,7 @@ package IsoAux {
   object star extends starLP {
     implicit def caseString = at[String](_+"*")
 
-    implicit def caseIso[T, L <: HList](implicit iso: Iso[T, L], mapper: MapperAux[this.type, L, L]) =
+    implicit def caseIso[T, L <: HList](implicit iso: Iso[T, L], mapper: Mapper.Aux[this.type, L, L]) =
       at[T](t => iso.from(iso.to(t).map(star)))
   }
   
@@ -85,7 +85,7 @@ package IsoAux {
   object inc extends incLP {
     implicit val caseInt = at[Int](_+1)
     
-    implicit def caseProduct[T, L <: HList](implicit iso: Iso[T, L], mapper: MapperAux[this.type, L, L]) =
+    implicit def caseProduct[T, L <: HList](implicit iso: Iso[T, L], mapper: Mapper.Aux[this.type, L, L]) =
       at[T](t => iso.from(iso.to(t).map(inc)))
       
     implicit def caseCoproduct[T, L <: Coproduct](implicit iso: Iso[T, L], mapper: CPMapperAux[this.type, L, L]) =

@@ -42,7 +42,7 @@ object ProductArity {
 
 object ProductArityAux {
   implicit def arityN[P <: Product, L <: HList, N <: Nat]
-    (implicit gen : Generic.Aux[P, L], len : LengthAux[L, N]) = new ProductArityAux[P, N] {} 
+    (implicit gen : Generic.Aux[P, L], len : Length.Aux[L, N]) = new ProductArityAux[P, N] {} 
 }
 
 /**

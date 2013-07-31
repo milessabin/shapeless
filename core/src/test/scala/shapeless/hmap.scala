@@ -24,7 +24,6 @@ import shapeless.test.illTyped
 class HMapTests {
   import HList._
   import Mapper._
-  import MapperAux._
   
   def typed[T](t : => T) {}
 

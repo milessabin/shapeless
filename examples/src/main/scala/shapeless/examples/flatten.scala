@@ -56,14 +56,14 @@ object FlattenExample {
       def apply(t : HNil) = t
     }
     
-    implicit def flattenHList2[H <: Product, LH <: HList, T <: HList, OutH <: HList, OutT <: HList, Out <: HList]
+    implicit def flattenHList2[H <: Product, LH <: HList, T <: HList, OutH <: HList, OutT <: HList]
       (implicit
         hl : HListerAux[H, LH],
         fh : FlattenAux[LH, OutH],
         ft : FlattenAux[T, OutT],
-        prepend : PrependAux[OutH, OutT, Out]
-      ) = new FlattenAux[H :: T, Out] {
-        def apply(l : H :: T) : Out = fh(hl(l.head)) ::: ft(l.tail)
+        prepend : Prepend[OutH, OutT]
+      ) = new FlattenAux[H :: T, prepend.Out] {
+        def apply(l : H :: T): prepend.Out = fh(hl(l.head)) ::: ft(l.tail)
       }
   }  
 

@@ -22,8 +22,8 @@ object Boilerplate {
     val tupleops = dir / "shapeless" / "tupleops.scala"
     IO.write(tupleops, genTupleOpsImplicits)
     
-    val tupleraux = dir / "shapeless" / "tupleraux.scala"
-    IO.write(tupleraux, genTuplerAuxInstances)
+    val tupler = dir / "shapeless" / "tupler.scala"
+    IO.write(tupler, genTuplerInstances)
     
     val hlisteraux = dir / "shapeless" / "hlisteraux.scala"
     IO.write(hlisteraux, genHListerAuxInstances)
@@ -65,7 +65,7 @@ object Boilerplate {
     IO.write(hmapbuilder, genHMapBuilder)
     
     Seq(
-      tupleops, tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply,
+      tupleops, tupler, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply,
       polycases, polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder,
       hmapbuilder
     )
@@ -114,7 +114,7 @@ object Boilerplate {
         |""").stripMargin
   }
   
-  def genTuplerAuxInstances = {
+  def genTuplerInstances = {
     def genInstance(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
       val typeArgs = typeVars.mkString("[", ", ", "]")
@@ -125,8 +125,9 @@ object Boilerplate {
       val tupleValue = if (arity == 1) "Tuple1(a)" else ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
       
       ("""|
-          |  implicit def hlistTupler"""+arity+typeArgs+""" = new TuplerAux["""+hlistType+""", """+tupleType+"""] {
-          |    def apply(l : """+hlistType+""") = l match { case """+pattern+""" => """+tupleValue+""" }
+          |  implicit def hlistTupler"""+arity+typeArgs+""": Aux["""+hlistType+""", """+tupleType+"""] = new Tupler["""+hlistType+"""] {
+          |    type Out = """+tupleType+"""
+          |    def apply(l : """+hlistType+"""): Out = l match { case """+pattern+""" => """+tupleValue+""" }
           |  }
           |""").stripMargin
     }
@@ -135,7 +136,9 @@ object Boilerplate {
     
     genHeader+
     ("""|
-        |trait TuplerAuxInstances {"""+instances+"""}
+        |trait TuplerInstances {
+        |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
+        |"""+instances+"""}
         |""").stripMargin
   }
   

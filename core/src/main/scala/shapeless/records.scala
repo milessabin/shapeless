@@ -42,7 +42,7 @@ final class RecordOps[L <: HList](l : L) {
    * Remove the first field with key type F from this record, returning both the corresponding value and the updated
    * record.
    */
-  def remove[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : (F#valueType, remove.Out) = {
+  def remove[F <: FieldAux, Out <: HList](f : F)(implicit remove : Remove.Aux[L, FieldEntry[F], (FieldEntry[F], Out)]) : (F#valueType, Out) = {
     val ((f, v), r) = remove(l)
     (v, r)
   }
@@ -56,7 +56,7 @@ final class RecordOps[L <: HList](l : L) {
    * Remove the first field with key type F from this record, returning both the corresponding value and the updated
    * record.
    */
-  def -[F <: FieldAux](f : F)(implicit remove : Remove[FieldEntry[F], L]) : remove.Out = remove(l)._2
+  def -[F <: FieldAux, Out <: HList](f : F)(implicit remove : Remove.Aux[L, FieldEntry[F], (FieldEntry[F], Out)]) : Out = remove(l)._2
 }
 
 /**

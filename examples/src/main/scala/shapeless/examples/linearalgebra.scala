@@ -48,8 +48,8 @@ object LinearAlgebraExamples extends App {
     implicit def pointOpsN[N <: Nat, LN <: HList, PN <: Product, ZLN <: HList]
       (implicit
         gen : Generic.Aux[PN, LN],
-        zipper : TransposerAux[LN :: LN :: HNil, ZLN],
-        mapper : MapperAux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
+        zipper : Transposer.Aux[LN :: LN :: HNil, ZLN],
+        mapper : Mapper.Aux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
           (p : PN) =>
             new VectorOps[N, PN](p) {
               def +(other : Self) : Self =

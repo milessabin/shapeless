@@ -105,9 +105,9 @@ class HListTests {
 
   @Test
   def testMap {
-    implicitly[MapperAux[choose.type, HNil, HNil]]
+    implicitly[Mapper.Aux[choose.type, HNil, HNil]]
     implicitly[choose.Case1[Set[Int]]]
-    implicitly[MapperAux[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
+    implicitly[Mapper.Aux[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
     
     val s1 = Set(1) :: HNil
     val o1 = s1 map choose
@@ -303,13 +303,13 @@ class HListTests {
     val u35 = lub(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     typed[(Int :: Any :: Int :: Int :: HNil, Int :: Any :: Int :: Int :: HNil)](u35)
     
-    implicitly[UnifierAux[Apple :: HNil, Apple :: HNil]]
-    implicitly[UnifierAux[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[UnifierAux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier.Aux[Apple :: HNil, Apple :: HNil]]
+    implicitly[Unifier.Aux[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
     
-    implicitly[UnifierAux[Int :: String :: Int :: Int :: HNil, YYYY]]
+    implicitly[Unifier.Aux[Int :: String :: Int :: Int :: HNil, YYYY]]
     
-    val uapap = implicitly[UnifierAux[Apple :: Pear :: Apple :: Pear :: HNil, FFFF]]
+    val uapap = implicitly[Unifier.Aux[Apple :: Pear :: Apple :: Pear :: HNil, FFFF]]
     val unified1 = uapap(apap)
     typed[FFFF](unified1)
     val unified2 = apap.unify
@@ -322,30 +322,30 @@ class HListTests {
     assertFalse(ununified2.isDefined)
     typed[Option[APBP]](ununified2)
 
-    def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : UnifierAux[L, Out]) = u
+    def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : Unifier.Aux[L, Out]) = u
     
     val u2 = getUnifier(a :: HNil)
-    typed[UnifierAux[Apple :: HNil, Apple :: HNil]](u2)
+    typed[Unifier.Aux[Apple :: HNil, Apple :: HNil]](u2)
     val u3 = getUnifier(a :: a :: HNil)
-    typed[UnifierAux[Apple :: Apple :: HNil, Apple :: Apple :: HNil]](u3)
+    typed[Unifier.Aux[Apple :: Apple :: HNil, Apple :: Apple :: HNil]](u3)
     val u4 = getUnifier(a :: a :: a :: HNil)
-    typed[UnifierAux[Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: HNil]](u4)
+    typed[Unifier.Aux[Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: HNil]](u4)
     val u5 = getUnifier(a :: a :: a :: a :: HNil)
-    typed[UnifierAux[Apple :: Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: Apple :: HNil]](u5)
+    typed[Unifier.Aux[Apple :: Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: Apple :: HNil]](u5)
     val u6 = getUnifier(a :: p :: HNil)
-    //typed[UnifierAux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]](u6)
+    //typed[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]](u6)
     val u7 = getUnifier(a :: f :: HNil)
-    typed[UnifierAux[Apple :: Fruit :: HNil, Fruit :: Fruit :: HNil]](u7)
+    typed[Unifier.Aux[Apple :: Fruit :: HNil, Fruit :: Fruit :: HNil]](u7)
     val u8 = getUnifier(f :: a :: HNil)
-    typed[UnifierAux[Fruit :: Apple :: HNil, Fruit :: Fruit :: HNil]](u8)
+    typed[Unifier.Aux[Fruit :: Apple :: HNil, Fruit :: Fruit :: HNil]](u8)
     val u9a = getUnifier(a :: f :: HNil)
-    typed[UnifierAux[Apple :: Fruit :: HNil, FF]](u9a)
+    typed[Unifier.Aux[Apple :: Fruit :: HNil, FF]](u9a)
     val u9b = getUnifier(a :: p :: HNil)
-    typed[UnifierAux[Apple :: Pear :: HNil, PWS :: PWS :: HNil]](u9b)
+    typed[Unifier.Aux[Apple :: Pear :: HNil, PWS :: PWS :: HNil]](u9b)
     val u10 = getUnifier(apap)
-    typed[UnifierAux[APAP, PWS :: PWS :: PWS :: PWS :: HNil]](u10)
+    typed[Unifier.Aux[APAP, PWS :: PWS :: PWS :: PWS :: HNil]](u10)
     val u11 = getUnifier(apbp)
-    typed[UnifierAux[APBP, PWS :: PWS :: PWS :: PWS :: HNil]](u11)
+    typed[Unifier.Aux[APBP, PWS :: PWS :: PWS :: PWS :: HNil]](u11)
     
     val invar1 = Set(23) :: Set("foo") :: HNil
     val uinvar1 = invar1.unify
@@ -452,8 +452,8 @@ class HListTests {
   
   @Test
   def testFoldMap {
-    implicitly[MapperAux[isDefined.type, HNil, HNil]]
-    implicitly[MapperAux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
+    implicitly[Mapper.Aux[isDefined.type, HNil, HNil]]
+    implicitly[Mapper.Aux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
     
     val tl1 = Option(1) :: Option("foo") :: Option(2) :: Option(3) :: HNil 
     val tl2 = Option(1) :: Option("foo") :: (None : Option[Int]) :: Option(3) :: HNil
@@ -959,10 +959,10 @@ class HListTests {
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z1)
     assertEquals((1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z1)
     
-    def zip[L <: HList, OutT <: HList, OutM <: HList](l : L)
+    def zip[L <: HList, OutT <: HList](l : L)
       (implicit
-        transposer : TransposerAux[L, OutT],
-        mapper : MapperAux[tupled.type, OutT, OutM]) = l.transpose.map(tupled)
+        transposer : Transposer.Aux[L, OutT],
+        mapper : Mapper[tupled.type, OutT]) = l.transpose.map(tupled)
     
     val z2 = zip(l1 :: l2 :: HNil)
     typed[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](z2)
@@ -979,8 +979,8 @@ class HListTests {
 
     def unzip[L <: HList, OutM <: HList, OutT <: HList](l : L)
       (implicit
-        mapper : MapperAux[productElements.type, L, OutM],
-        transposer : TransposerAux[OutM, OutT],
+        mapper : Mapper.Aux[productElements.type, L, OutM],
+        transposer : Transposer.Aux[OutM, OutT],
         tupler : Tupler[OutT]) = l.map(productElements).transpose.tupled
         
     val u2 = unzip(z1)
@@ -1123,9 +1123,9 @@ class HListTests {
     val c1b = combine(c1a, true)
     assertEquals("pass", c1b)
     
-    implicitly[LeftFolderAux[HNil, String, combine.type, String]]
-    implicitly[LeftFolderAux[Boolean :: HNil, Int, combine.type, String]]
-    implicitly[LeftFolderAux[String :: Boolean :: HNil, Char, combine.type, String]]
+    implicitly[LeftFolder.Aux[HNil, String, combine.type, String]]
+    implicitly[LeftFolder.Aux[Boolean :: HNil, Int, combine.type, String]]
+    implicitly[LeftFolder.Aux[String :: Boolean :: HNil, Char, combine.type, String]]
 
     val tf1 = implicitly[LeftFolder[HNil, String, combine.type]]
     val tf2 = implicitly[LeftFolder[Boolean :: HNil, Int, combine.type]]

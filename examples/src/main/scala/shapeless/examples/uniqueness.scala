@@ -37,7 +37,7 @@ object UniquenessExample extends App {
    * not occur exactly once in the list.
    */
   implicit class Uniqueable[L <: HList](l: L) {
-    def unique[A](implicit ev: FilterAux[L, A, A :: HNil]) = ev(l).head
+    def unique[A](implicit ev: Filter.Aux[L, A, A :: HNil]) = ev(l).head
   }
 
   // A simple type hierarchy for demonstration purposes.
