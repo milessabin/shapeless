@@ -23,8 +23,9 @@ package shapeless.examples
  */
 object FlattenExample {
   import shapeless._
-  import syntax.tuple._
   import TypeOperators._
+  import ops.hlist.Prepend
+  import syntax.tuple._
   
   def typed[T](t : => T) {}
 

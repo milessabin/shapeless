@@ -23,9 +23,10 @@ package shapeless.examples
  */
 object LinearAlgebraExamples extends App {
   import shapeless._
-  import nat._
-
   import TypeOperators._
+  import nat._
+  import ops.hlist.{ Mapper, Transposer }
+
   
   def typed[T](t : => T) {}
 

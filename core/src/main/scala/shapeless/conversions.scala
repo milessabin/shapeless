@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.Tupler
+
 /**
  * Higher ranked function which converts `HLists` to tuples.
  */

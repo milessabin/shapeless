@@ -21,7 +21,6 @@ class SybClassTests {
   import org.junit.Assert._
 
   import TypeOperators._
-  import HList._
 
   def typed[T](t : => T) {}
 

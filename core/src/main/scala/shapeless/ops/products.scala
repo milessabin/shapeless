@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import hlist.Length
+
 object product {
   trait ProductLength[T] extends DepFn1[T]
 

@@ -29,6 +29,7 @@ package shapeless.examples
  */
 object UniquenessExample extends App {
   import shapeless._
+  import ops.hlist.Filter
 
   /**
    * We'll enrich `HList` with a `unique` method that takes a type parameter,

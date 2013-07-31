@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import ops.hlist.Mapper
+
 package GenericTestsAux {
   sealed trait Fruit
   case class Apple() extends Fruit

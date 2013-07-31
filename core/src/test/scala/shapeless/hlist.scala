@@ -19,7 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
+import test.illTyped
+import ops.hlist._
 
 class HListTests {
   import nat._

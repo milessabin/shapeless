@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.{ IsHCons, ReversePrepend, Split, SplitLeft }
+
 /**
  * Generic Zipper for any type with a representation via `Generic`.
  * 
@@ -163,7 +165,6 @@ object Zipper {
   trait RightBy[Z, N <: Nat] extends ZipperOp0Nat[Z, N]
   
   object RightBy {
-    import HList._
     implicit def rightBy[C, L <: HList, R <: HList, P, N <: Nat, LP <: HList, RS <: HList]
       (implicit split : Split.Aux[R, N, (LP, RS)], reverse : ReversePrepend[LP, L]) =
         new RightBy[Zipper[C, L, R, P], N] {
@@ -178,7 +179,6 @@ object Zipper {
   trait LeftBy[Z, N <: Nat] extends ZipperOp0Nat[Z, N]
 
   object LeftBy {
-    import HList._
     implicit def leftBy[C, L <: HList, R <: HList, P, N <: Nat, RP <: HList, LS <: HList]
       (implicit split : Split.Aux[L, N, (RP, LS)], reverse : ReversePrepend[RP, R]) =
         new LeftBy[Zipper[C, L, R, P], N] {
@@ -193,7 +193,6 @@ object Zipper {
   trait RightTo[Z, T] extends ZipperOp0T[Z, T]
   
   object RightTo {
-    import HList._
     implicit def rightTo[C, L <: HList, R <: HList, P, T, LP <: HList, RS <: HList]
       (implicit split : SplitLeft.Aux[R, T, (LP, RS)], reverse : ReversePrepend[LP, L]) =
         new RightTo[Zipper[C, L, R, P], T] {
@@ -208,7 +207,6 @@ object Zipper {
   trait LeftTo[Z, T] extends ZipperOp0T[Z, T]
 
   object LeftTo {
-    import HList._
     implicit def leftTo[C, L <: HList, R <: HList, P, T, RP <: HList, R0 <: HList]
       (implicit split : SplitLeft.Aux[L, T, (RP, R0)], reverse : ReversePrepend[RP, R], cons : IsHCons[R0]) =
         new LeftTo[Zipper[C, L, R, P], T] {

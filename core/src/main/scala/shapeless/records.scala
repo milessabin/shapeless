@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.{ Remove, ReversePrepend, Selector }
+
 /**
  * Record operations on `HList`'s with field-like elements.
  * 

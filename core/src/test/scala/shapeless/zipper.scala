@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ZipperTests {
-  import HList._
   import Zipper._
   
   def typed[T](t : => T) {}

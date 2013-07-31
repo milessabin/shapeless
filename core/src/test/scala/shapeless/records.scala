@@ -20,8 +20,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 class RecordTests {
-  
-  import HList._
   import Record._
 
   def typed[T](t : => T) {}

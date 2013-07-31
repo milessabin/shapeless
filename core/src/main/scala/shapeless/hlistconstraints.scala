@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.Selector
+
 /**
  * Type class witnessing that every element of `L` has `TC` as its outer type constructor. 
  */

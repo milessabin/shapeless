@@ -23,8 +23,6 @@ import org.junit.Assert._
 class StackOverflow1 {
   // http://stackoverflow.com/questions/7606587
 
-  import HList._
-
   trait FoldCurry[L <: HList, F, Out] {
     def apply(l : L, f : F) : Out
   }

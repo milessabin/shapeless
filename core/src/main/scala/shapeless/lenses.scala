@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.{ At, Init, Last, Prepend, ReplaceAt, Tupler }
+
 trait Lens[C, F] {
   outer =>
   def get(c : C) : F

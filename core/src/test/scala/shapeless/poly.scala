@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import ops.hlist.Mapper
+
 class PolyTests {
   import TypeOperators._
   
@@ -157,9 +159,6 @@ class PolyTests {
     typed[List[Option[Int]]](loi2)
     assertEquals(List(Option(1), Option(2), Option(3)), loi2)
 
-    import HList._
-    import Mapper._
-    
     val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
     val l9 = l8 map size
     typed[Int :: Int :: Int :: Int :: Int :: Int :: HNil](l9)

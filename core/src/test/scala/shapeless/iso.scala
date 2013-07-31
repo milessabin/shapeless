@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import ops.hlist.Mapper
+
 /*
  * These are tests for the deprecated backwards compatibility type `Iso`. Expect deprecation warnings.
  */

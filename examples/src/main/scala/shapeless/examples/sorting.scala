@@ -23,11 +23,9 @@ package shapeless.examples
  */
 object Sorting {
   import shapeless._
-  import nat._
-
-  import HList._
   import LT._
   import LTEq._
+  import nat._
   
   def typed[T](t : => T) {}
 

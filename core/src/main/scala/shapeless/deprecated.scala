@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.Length
+
 /**
  * Type class witnessing the arity of a `Product`
  * 

@@ -18,6 +18,7 @@ package shapeless
 
 object Lift {
   import ops.function._
+  import ops.hlist._
   import syntax.function._
 
   /**

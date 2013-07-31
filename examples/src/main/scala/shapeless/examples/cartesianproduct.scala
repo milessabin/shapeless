@@ -16,6 +16,8 @@
 
 package shapeless.examples
 
+import shapeless.ops.hlist.Prepend
+
 /**
  * Computing the Cartesian product of two HLists.
  *

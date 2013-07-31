@@ -136,6 +136,10 @@ object Boilerplate {
     
     genHeader+
     ("""|
+        |package ops
+        |
+        |import hlist.Tupler
+        |
         |trait TuplerInstances {
         |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
         |"""+instances+"""}

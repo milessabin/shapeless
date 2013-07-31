@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ import org.junit.Assert._
 import shapeless.test.illTyped
 
 class HMapTests {
-  import HList._
-  import Mapper._
-  
   def typed[T](t : => T) {}
 
   class BiMapIS[K, V]
