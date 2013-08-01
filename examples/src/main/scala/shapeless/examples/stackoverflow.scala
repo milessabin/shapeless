@@ -20,8 +20,7 @@ object StackOverflow2 {
   // http://stackoverflow.com/questions/8270526
   
   import shapeless._
-  import HList._
-  import Functions._
+  import ops.function._
   
   sealed abstract class A { def eval() : A }
   case class A0 () extends A { def eval() = this }
@@ -44,9 +43,9 @@ object StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
   
   import shapeless._
-  import HList._
-  import Functions._
   import TypeOperators._
+  import ops.hlist.{ Mapped, Mapper }
+  import syntax.std.function._
   
   case class Input[T](value: T)
   
@@ -55,7 +54,10 @@ object StackOverflow3 {
   }
   
   class Preprocessor[In <: HList, Out <: HList, R](ctor : Out => R)
-    (implicit mapper : MapperAux[value.type, In, Out]) {
+    (implicit
+      mapped: Mapped.Aux[Out, Input, In],
+      mapper: Mapper.Aux[value.type, In, Out]
+    ) {
       def apply(in : In) = ctor(in map value)
     }
   
@@ -76,8 +78,8 @@ object StackOverflow4 extends App {
   // http://stackoverflow.com/questions/10216278
 
   import shapeless._
-  import HList._
-  import Functions._
+  import ops.function._
+  import syntax.std.function._
 
   def fun(x: Int) = x
   def fun1(x: Int, y: Int) = x

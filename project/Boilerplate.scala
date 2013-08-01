@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@ import sbt._
 object Boilerplate {
   
   def gen(dir : File) = { 
-    val tupleraux = dir / "shapeless" / "tupleraux.scala"
-    IO.write(tupleraux, genTuplerAuxInstances)
+    val tupleops = dir / "shapeless" / "tupleops.scala"
+    IO.write(tupleops, genTupleOpsImplicits)
+    
+    val tupler = dir / "shapeless" / "tupler.scala"
+    IO.write(tupler, genTuplerInstances)
     
     val hlisteraux = dir / "shapeless" / "hlisteraux.scala"
     IO.write(hlisteraux, genHListerAuxInstances)
@@ -62,8 +65,9 @@ object Boilerplate {
     IO.write(hmapbuilder, genHMapBuilder)
     
     Seq(
-      tupleraux, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply, polycases,
-      polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder, hmapbuilder
+      tupleops, tupler, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply,
+      polycases, polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder,
+      hmapbuilder
     )
   }
 
@@ -88,7 +92,29 @@ object Boilerplate {
         |""").stripMargin
   }
   
-  def genTuplerAuxInstances = {
+  def genTupleOpsImplicits = {
+    def genImplicit(arity : Int) = {
+      val typeVars = (0 until arity) map (n => (n+'A').toChar)
+      val typeArgs = typeVars.mkString("[", ", ", "]")
+      val tupleType = if (arity == 1) "Tuple1[A]" else typeVars.mkString("(", ", ", ")")
+      
+      ("""|
+          |  implicit def tupleOps"""+arity+typeArgs+"""(t: """+tupleType+"""): TupleOps["""+tupleType+"""] =
+          |    new TupleOps["""+tupleType+"""](t)
+          |""").stripMargin
+    }
+
+    val implicits = ((1 to 22) map genImplicit).mkString
+    
+    genHeader+
+    ("""|
+        |package syntax.std
+        |
+        |trait TupleOpsImplicits {"""+implicits+"""}
+        |""").stripMargin
+  }
+  
+  def genTuplerInstances = {
     def genInstance(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
       val typeArgs = typeVars.mkString("[", ", ", "]")
@@ -99,8 +125,9 @@ object Boilerplate {
       val tupleValue = if (arity == 1) "Tuple1(a)" else ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
       
       ("""|
-          |  implicit def hlistTupler"""+arity+typeArgs+""" = new TuplerAux["""+hlistType+""", """+tupleType+"""] {
-          |    def apply(l : """+hlistType+""") = l match { case """+pattern+""" => """+tupleValue+""" }
+          |  implicit def hlistTupler"""+arity+typeArgs+""": Aux["""+hlistType+""", """+tupleType+"""] = new Tupler["""+hlistType+"""] {
+          |    type Out = """+tupleType+"""
+          |    def apply(l : """+hlistType+"""): Out = l match { case """+pattern+""" => """+tupleValue+""" }
           |  }
           |""").stripMargin
     }
@@ -109,7 +136,13 @@ object Boilerplate {
     
     genHeader+
     ("""|
-        |trait TuplerAuxInstances {"""+instances+"""}
+        |package ops
+        |
+        |import hlist.Tupler
+        |
+        |trait TuplerInstances {
+        |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
+        |"""+instances+"""}
         |""").stripMargin
   }
   
@@ -160,6 +193,10 @@ object Boilerplate {
     
     genHeader+
     ("""|
+        |package ops
+        |
+        |import function.FnHListerAux
+        |
         |trait FnHListerAuxInstances {"""+instances+"""}
         |""").stripMargin
   }
@@ -185,6 +222,10 @@ object Boilerplate {
     
     genHeader+
     ("""|
+        |package ops
+        |
+        |import function.FnUnHListerAux
+        |
         |trait FnUnHListerAuxInstances {"""+instances+"""}
         |""").stripMargin
   }
@@ -268,7 +309,7 @@ object Boilerplate {
       val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
       
       ("""|
-          |  implicit def inst"""+arity+"""[Fn <: Poly, """+typeArgs+"""](fn : Fn)(implicit cse : fn.Case["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
+          |  implicit def inst"""+arity+"""["""+typeArgs+"""](fn : Poly)(implicit cse : fn.Case["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
           |""").stripMargin
     }
 
@@ -293,8 +334,8 @@ object Boilerplate {
       val fnBody = """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
       
       ("""|
-          |  type Case"""+arity+"""Aux[-Fn, """+typeArgs+"""] = CaseAux[Fn, """+hlistType+"""]
-          |  type Pullback"""+arity+"""Aux[-Fn, """+typeArgs+""", Res] = CaseAux[Fn, """+hlistType+"""] { type Result = Res }
+          |  type Case"""+arity+"""Aux[Fn, """+typeArgs+"""] = CaseAux[Fn, """+hlistType+"""]
+          |  type Pullback"""+arity+"""Aux[Fn, """+typeArgs+""", Res] = CaseAux[Fn, """+hlistType+"""] { type Result = Res }
           |  def Case"""+arity+"""Aux[Fn, """+typeArgs+""", Res](fn : """+fnType+""") = new CaseAux[Fn, """+hlistType+"""] {
           |    type Result = Res
           |    val value = (l : """+hlistType+""") => """+fnBody+"""
@@ -348,7 +389,7 @@ object Boilerplate {
     def genNat(n : Int) = {
       ("""|
           |  type _"""+n+""" = Succ[_"""+(n-1)+"""]
-          |  implicit val _"""+n+""" = new _"""+n+"""
+          |  val _"""+n+""": _"""+n+""" = new _"""+n+"""
           |""").stripMargin
     }
     
@@ -357,7 +398,6 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait Nats {
-        |  import Nat._
         |"""+nats+"""}
         |""").stripMargin
   }
@@ -389,7 +429,7 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait TupleTypeableInstances {
-        |  import Typeable._
+        |  import syntax.typeable._
         |"""+instances+"""}
         |""").stripMargin
   }
@@ -412,7 +452,7 @@ object Boilerplate {
     ("""|
         |class SizedBuilder[CC[_]] {
         |  import scala.collection.generic.CanBuildFrom
-        |  import Nat._
+        |  import nat._
         |  import Sized._
         |"""+instances+"""}
         |""").stripMargin

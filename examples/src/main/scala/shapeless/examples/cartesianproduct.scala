@@ -16,6 +16,8 @@
 
 package shapeless.examples
 
+import shapeless.ops.hlist.Prepend
+
 /**
  * Computing the Cartesian product of two HLists.
  *
@@ -66,12 +68,12 @@ object CartesianProductExample extends App {
 
     implicit def hlist[
       HF, XH, XT <: HList, Y <: HList,
-      Out1 <: HList, Out2 <: HList, Out <: HList
+      Out1 <: HList, Out2 <: HList
     ](implicit
       mapper: ApplyMapper[HF, XH, Y, Out1],
       lift: LiftA2[HF, XT, Y, Out2],
-      prepend : PrependAux[Out1, Out2, Out]
-    ) = new LiftA2[HF, XH :: XT, Y, Out] {
+      prepend : Prepend[Out1, Out2]
+    ) = new LiftA2[HF, XH :: XT, Y, prepend.Out] {
       def apply(x: XH :: XT, y: Y) = prepend(mapper(x.head, y), lift(x.tail, y))
     }
   }

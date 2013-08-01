@@ -21,7 +21,6 @@ class SybClassTests {
   import org.junit.Assert._
 
   import TypeOperators._
-  import HList._
 
   def typed[T](t : => T) {}
 
@@ -36,7 +35,7 @@ class SybClassTests {
     implicit def default[T] = at[T](_ => 1)
   }
 
-  def gsizeAll2[T](t : T)(implicit e : Everything[gsize.type, plus.type, T]) = everything(gsize)(plus)(t)
+  def gsizeAll2[T](t : T)(implicit everything : Everything[gsize.type, plus.type, T]) = everything(t)
 
   object incAll extends Poly1 {
     implicit def caseInt = at[Int](_+1)
@@ -49,7 +48,7 @@ class SybClassTests {
     implicit def caseString = at[String](_+"*")
   }
   
-  def incAll2[T](t : T)(implicit e : Everywhere[inc.type, T]) = everywhere(inc)(t)
+  def incAll2[T](t : T)(implicit everywhere : Everywhere[inc.type, T]) = everywhere(t)
 
   sealed trait Fruit
   case class Apple(i: Int) extends Fruit

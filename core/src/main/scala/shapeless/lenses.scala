@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package shapeless
 
+import ops.hlist.{ At, Init, Last, Prepend, ReplaceAt, Tupler }
+
 trait Lens[C, F] {
   outer =>
   def get(c : C) : F
@@ -27,7 +29,7 @@ trait Lens[C, F] {
     def set(d : D)(f : F) : D = g.set(d)(outer.set(g.get(d))(f))
   }
 
-  def >>[L <: HList, N <: Nat](n : N)(implicit gen : GenericAux[F, L], lens : HListNthLens[L, N]) =
+  def >>[L <: HList](n : Nat)(implicit gen : Generic.Aux[F, L], lens : HListNthLens[L, n.N]) =
     new Lens[C, lens.Elem] {
       def get(c : C) : lens.Elem = lens.get(gen.to(outer.get(c)))
       def set(c : C)(f : lens.Elem) = outer.set(c)(gen.from(lens.set(gen.to(outer.get(c)))(f)))
@@ -41,20 +43,19 @@ trait Lens[C, F] {
 
 trait ProductLens[C, P <: Product] extends Lens[C, P] {
   outer =>
-  import Tuples._
   def ~[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
     (implicit
       hlp  : HListerAux[P, L],
-      tpp  : TuplerAux[L, P],
-      pre  : PrependAux[L, T :: HNil, LT],
-      init : InitAux[LT, L],
-      last : LastAux[LT, T],
-      tpq  : TuplerAux[LT, Q],
+      tpp  : Tupler.Aux[L, P],
+      pre  : Prepend.Aux[L, T :: HNil, LT],
+      init : Init.Aux[LT, L],
+      last : Last.Aux[LT, T],
+      tpq  : Tupler.Aux[LT, Q],
       hlq  : HListerAux[Q, LT]) =
       new ProductLens[C, Q] {
-        def get(c : C) : Q = (outer.get(c).hlisted :+ other.get(c)).tupled
+        def get(c : C) : Q = (hlp(outer.get(c)) :+ other.get(c)).tupled
         def set(c : C)(q : Q) = {
-          val l = q.hlisted
+          val l = hlq(q)
           other.set(outer.set(c)(l.init.tupled))(l.last)
         }
       }
@@ -108,7 +109,7 @@ object HListNthLens {
 trait HListNthLensAux[L <: HList, N <: Nat, E] extends Lens[L, E]
 
 object HListNthLensAux {
-  implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : AtAux[L, N, E], replace : ReplaceAtAux[L, N, E, E, L]) =
+  implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : At.Aux[L, N, E], replace : ReplaceAt.Aux[L, N, E, (E, L)]) =
     new HListNthLensAux[L, N, E] {
       def get(l : L) : E = l[N] 
       def set(l : L)(e : E) : L = l.updatedAt[N](e)

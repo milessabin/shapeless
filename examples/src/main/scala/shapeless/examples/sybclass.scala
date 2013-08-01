@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,6 @@ object SybClassExamples {
   type Name = String
   type Address = String
 
-  object raise extends Poly1 {
-    implicit def caseInt = at[Int](_*110/100)
-  }
-
   def paradise : Unit = {
     val beforeRaise =
       Company(
@@ -64,6 +60,8 @@ object SybClassExamples {
       )
   
     // Compute a new company structure with all salaries increased by 10%
+
+    object raise extends ->((i: Int) => i*110/100)
     val afterRaise = everywhere(raise)(beforeRaise)
     println(afterRaise)
 
@@ -91,10 +89,6 @@ object SybClassExamples {
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](left: Tree[T], right: Tree[T]) extends Tree[T]
   
-  object inc extends Poly1 {
-    implicit def caseInt = at[Int](_+1)
-  }
-  
   def recursion : Unit = {
     val tree: Tree[Int] =
       Node(
@@ -114,6 +108,7 @@ object SybClassExamples {
         )
       )
 
+    object inc extends ->((i: Int) => i+1)
     val result = everywhere(inc)(tree)
     println(result)
     

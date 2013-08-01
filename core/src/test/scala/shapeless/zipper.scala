@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ZipperTests {
-  import HList._
-  import Nat._
   import Zipper._
   
   def typed[T](t : => T) {}
@@ -97,12 +95,12 @@ class ZipperTests {
   def testNatIndexing {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
-    val l8 = l.toZipper.rightBy(_2)
+    val l8 = l.toZipper.rightBy(2)
     val d8 = l8.get
     typed[Double](d8)
     assertEquals(3.0, d8, Double.MinPositiveValue)
     
-    val l9 = l8.leftBy(_1)
+    val l9 = l8.leftBy(1)
     val s9 = l9.get
     typed[String](s9)
     assertEquals("foo", s9)

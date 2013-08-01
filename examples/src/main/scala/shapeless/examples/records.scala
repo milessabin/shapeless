@@ -23,8 +23,8 @@ package shapeless.examples
  */
 object RecordExamples extends App {
   import shapeless._
-  import HList._
   import Record._
+  import ops.hlist.ToList
 
   object author  extends Field[String]  { override def toString = "Author" }
   object title   extends Field[String]  { override def toString = "Title" }

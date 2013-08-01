@@ -17,7 +17,9 @@
 package shapeless
 
 object Lift {
-  import Functions._
+  import ops.function._
+  import ops.hlist._
+  import syntax.std.function._
 
   /**
    * Lifts a function of arbitrary arity into `Option`. 
@@ -25,7 +27,8 @@ object Lift {
   def liftO[InF, InL <: HList, R, OInL <: HList, OutF](f :  InF)
     (implicit
       hlister   : FnHListerAux[InF, InL => R],
-      mapper    : MapperAux[get.type, OInL, InL],
+      mapped    : Mapped.Aux[InL, Option, OInL],
+      mapper    : Mapper.Aux[get.type, OInL, InL],
       folder    : MapFolder[OInL, Boolean, isDefined.type],
       unhlister : FnUnHListerAux[OInL => Option[R], OutF]
     ) : OutF = {

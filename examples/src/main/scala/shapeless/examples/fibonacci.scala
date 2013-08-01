@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,120 +23,97 @@ package shapeless.examples
  */
 object FibonacciExamples {
   import shapeless._
-  import Nat._
-  import HList._
+  import nat._
+  import ops.hlist.Reverse
 
   def typed[T](t : => T) {}
   
   // Compute the ith fibonacci number
-  
-  trait Fibonacci[I <: Nat] {
-    type N <: Nat
-  }
+
+  class Fibonacci[I <: Nat, N <: Nat]
   
   object Fibonacci {
-    implicit def fibonacci1[I <: Nat, N0 <: Nat](implicit fib : FibonacciAux[I, N0]) = new Fibonacci[I] {
-      type N = N0
-    }
-    
-    def fibonacci[I <: Nat, N <: Nat](i : I)(implicit fib : FibonacciAux[I, N], n : N) = n
-  }
-  
-  trait FibonacciAux[I <: Nat, N <: Nat]
-  
-  object FibonacciAux {
-    implicit def fib0 = new FibonacciAux[_0, _0] {}
-    implicit def fib1 = new FibonacciAux[_1, _1] {}
+    def apply(i: Nat, j: Nat) = new Fibonacci[i.N, j.N]
+
+    implicit val fib0 = Fibonacci(0, 0)
+    implicit val fib1 = Fibonacci(1, 1)
   
     implicit def fibN[I <: Nat, L <: Nat, M <: Nat, N <: Nat]
-      (implicit l : FibonacciAux[I, L], m : FibonacciAux[Succ[I], M], sum : SumAux[L, M, N]) =
-        new FibonacciAux[Succ[Succ[I]], N] {}
+      (implicit l : Fibonacci[I, L], m : Fibonacci[Succ[I], M], sum : SumAux[L, M, N]) =
+        new Fibonacci[Succ[Succ[I]], N]
   }
   
-  import Fibonacci._
-  
-  val f0 = fibonacci(_0)
+  def fibonacci[N <: Nat](i : Nat)(implicit fib : Fibonacci[i.N, N], wn: WitnessAux[N]) = wn.value
+
+  val f0 = fibonacci(0)
   typed[_0](f0)
   
-  val f1 = fibonacci(_1)
+  val f1 = fibonacci(1)
   typed[_1](f1)
 
-  val f2 = fibonacci(_2)
+  val f2 = fibonacci(2)
   typed[_1](f2)
 
-  val f3 = fibonacci(_3)
+  val f3 = fibonacci(3)
   typed[_2](f3)
 
-  val f4 = fibonacci(_4)
+  val f4 = fibonacci(4)
   typed[_3](f4)
   
-  val f5 = fibonacci(_5)
+  val f5 = fibonacci(5)
   typed[_5](f5)
   
-  val f6 = fibonacci(_6)
+  val f6 = fibonacci(6)
   typed[_8](f6)
 
-  val f7 = fibonacci(_7)
+  val f7 = fibonacci(7)
   typed[_13](f7)
 
   // Compute an HList of the first N fibonacci numbers
-  trait Fibs[N <: Nat] {
-    type Out <: HList
+
+  trait Fibs[N <: Nat, Out <: HList] {
     def apply() : Out
   }
-  
+
   object Fibs {
-    implicit def fibs1[N <: Nat, L0 <: HList](implicit fibs : FibsAux[N, L0]) = new Fibs[N] {
-      type Out = L0
-      def apply() = fibs()
-    }
-    
-    def fibs[N <: Nat, L <: HList](n : N)
-      (implicit fibs : FibsAux[N, L], reverse : Reverse[L]) = fibs().reverse
-  }
-
-  trait FibsAux[N <: Nat, Out <: HList] {
-    def apply() : Out
-  }
-
-  object FibsAux {
-    implicit def fibs0 = new FibsAux[_0, HNil] {
+    implicit def fibs0 = new Fibs[_0, HNil] {
       def apply() = HNil
     }
     
     implicit def fibsN[N <: Nat, H <: Nat, T <: HList]
-      (implicit fib : FibonacciAux[N, H], h : H, fibs : FibsAux[N, T]) =
-        new FibsAux[Succ[N], H :: T] {
-      def apply() = h :: fibs()
+      (implicit fib : Fibonacci[N, H], h : WitnessAux[H], fibs : Fibs[N, T]) =
+        new Fibs[Succ[N], H :: T] {
+      def apply() = h.value :: fibs()
     }
   }
   
-  import Fibs._
-  
-  val l0 = fibs(_0)
+  def fibs[L <: HList](n : Nat)
+    (implicit fibs : Fibs[n.N, L], reverse : Reverse[L]) = fibs().reverse
+
+  val l0 = fibs(0)
   typed[HNil](l0)
   
-  val l1 = fibs(_1)
+  val l1 = fibs(1)
   typed[_0 :: HNil](l1)
 
-  val l2 = fibs(_2)
+  val l2 = fibs(2)
   typed[_0 :: _1 :: HNil](l2)
 
-  val l3 = fibs(_3)
+  val l3 = fibs(3)
   typed[_0 :: _1 :: _1 :: HNil](l3)
 
-  val l4 = fibs(_4)
+  val l4 = fibs(4)
   typed[_0 :: _1 :: _1 :: _2 :: HNil](l4)
 
-  val l5 = fibs(_5)
+  val l5 = fibs(5)
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: HNil](l5)
 
-  val l6 = fibs(_6)
+  val l6 = fibs(6)
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: HNil](l6)
 
-  val l7 = fibs(_7)
+  val l7 = fibs(7)
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: _8 :: HNil](l7)
 
-  val l8 = fibs(_8)
+  val l8 = fibs(8)
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: _8 :: _13 :: HNil](l8)
 }

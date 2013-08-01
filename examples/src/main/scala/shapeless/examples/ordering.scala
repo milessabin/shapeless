@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless.{ GenericAux, ::, HList, HNil }
+import shapeless.{ Generic, ::, HList, HNil }
 
 object OrderingExamples extends App {
 
@@ -25,7 +25,7 @@ object OrderingExamples extends App {
   trait LowPriorityGenericOrdering {
     // An Ordering for any type which is isomorphic to an HList, if that HList has an Ordering
   
-    implicit def hlistIsoOrdering[A, H <: HList](implicit gen : GenericAux[A, H], oh : Ordering[H]) : Ordering[A] = new Ordering[A] {
+    implicit def hlistIsoOrdering[A, H <: HList](implicit gen : Generic.Aux[A, H], oh : Ordering[H]) : Ordering[A] = new Ordering[A] {
       def compare(a1 : A, a2 : A) = oh.compare(gen to a1, gen to a2)
     }
   }

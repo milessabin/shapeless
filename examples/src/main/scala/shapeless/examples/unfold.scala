@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package shapeless.examples
 object UnfoldExamples extends App {
   import shapeless._
   import Poly._
-  import Nat._
-  import HList._
+  import nat._
   
   def typed[T](t : => T) {}
   
@@ -38,8 +37,8 @@ object UnfoldExamples extends App {
         }
     
     trait ApplyUnfold[E] {
-      def apply[F <: Poly, S, L <: HList](f : F)(s : S)
-        (implicit unfold : UnfoldAux[F, E, S, E, L]) = unfold(s)
+      def apply[S, L <: HList](f : Poly)(s : S)
+        (implicit unfold : UnfoldAux[f.type, E, S, E, L]) = unfold(s)
     }
     
     def unfold[E] = new ApplyUnfold[E] {} 
@@ -80,7 +79,7 @@ object UnfoldExamples extends App {
     implicit def case3 = at[_3](_ => (1.0, _4))
   }
 
-  val l1 = unfold(_3)(unfoldMisc)(_0)
+  val l1 = unfold(Nat(3))(unfoldMisc)(Nat(0))
   typed[Int :: String :: Boolean :: HNil](l1)
   println(l1)
 
@@ -92,15 +91,15 @@ object UnfoldExamples extends App {
         fn : Pullback1[N, (FN, Succ[N])],
         fsn : Pullback1[Succ[N], (FSN, Succ[Succ[N]])],
         sum : SumAux[FN, FSN, FSSN],
-        fssn : FSSN) =
-      at[Succ[Succ[N]]](_ => (fssn, Succ[Succ[Succ[N]]]))
+        fssn : WitnessAux[FSSN]) =
+      at[Succ[Succ[N]]](_ => (fssn.value, Succ[Succ[Succ[N]]]))
   }
 
   object toInt extends Poly1 {
     implicit def default[N <: Nat](implicit toInt : ToInt[N]) = at[N](_ => toInt())
   }
   
-  val l2 = unfold(_6)(unfoldFibs)(_0)
+  val l2 = unfold(_6)(unfoldFibs)(Nat(0))
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: HNil](l2)
   println(l2 map toInt)
 }

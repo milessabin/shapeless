@@ -20,9 +20,9 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ConversionTests {
-  import Tuples._
-  import Functions._
-  import HList._
+  import ops.function.FnHListerAux
+  import syntax.std.function._
+  import syntax.std.tuple._
 
   def typed[T](t : => T) {}
   
@@ -30,7 +30,7 @@ class ConversionTests {
   def testTuples {
     val t1 = (23, "foo", 2.0, true)
     
-    val h1 = t1.hlisted
+    val h1 = t1.productElements
     typed[Int :: String :: Double :: Boolean :: HNil](h1)
     assertEquals(23 :: "foo" :: 2.0 :: true :: HNil, h1)
     
@@ -51,12 +51,12 @@ class ConversionTests {
     val t5 = (23, "foo")
     val t6 = (false, 3.0)
     
-    val t7 = (t5.hlisted ::: t6.hlisted).tupled
+    val t7 = (t5.productElements ::: t6.productElements).tupled
     typed[(Int, String, Boolean, Double)](t7)
     assertEquals((23, "foo", false, 3.0), t7)
     
     val t8 = (Set(2), Set("foo"))
-    val t8b = (t8.hlisted map choose).tupled
+    val t8b = (t8.productElements map choose).tupled
     typed[(Option[Int], Option[String])](t8b)
     assertEquals((Option(2), Option("foo")), t8b)
   }
@@ -95,7 +95,7 @@ class ConversionTests {
     
     val f1 = Foo(23, "foo", 2.3)
     val t1 = Foo.unapply(f1).get
-    val hf = t1.hlisted
+    val hf = t1.productElements
     val f2 = Foo.tupled(hf.tupled)
     assertEquals(f1, f2)
   }

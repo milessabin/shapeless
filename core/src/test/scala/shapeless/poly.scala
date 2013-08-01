@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import ops.hlist.Mapper
+
 class PolyTests {
   import TypeOperators._
   
@@ -119,7 +121,7 @@ class PolyTests {
     assertEquals((List(23), List("foo")), a2)
 
     // Use as polymorphic function values with type specific cases
-    def pairApply2[F <: Poly](f : F)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("foo"))
+    def pairApply2(f : Poly)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("foo"))
     
     val a4 = pairApply2(singleton)
     typed[(Set[Int], Set[String])](a4)
@@ -157,16 +159,12 @@ class PolyTests {
     typed[List[Option[Int]]](loi2)
     assertEquals(List(Option(1), Option(2), Option(3)), loi2)
 
-    import HList._
-    import Mapper._
-    import MapperAux._
-    
     val l8 = 23 :: "foo" :: List(1, 2, 3, 4) :: Option("bar") :: (23, "foo") :: 2.0 :: HNil
     val l9 = l8 map size
     typed[Int :: Int :: Int :: Int :: Int :: Int :: HNil](l9)
     assertEquals(1 :: 3 :: 4 :: 4 :: 4 :: 1 :: HNil, l9)
 
-    def hlistMap[F <: Poly](f : F)(implicit  mapper : Mapper[F, Int :: String :: HNil]) =
+    def hlistMap(f : Poly)(implicit  mapper : Mapper[f.type, Int :: String :: HNil]) =
       (23 :: "foo" :: HNil) map f
       
     val hm1 = hlistMap(singleton)
@@ -190,7 +188,7 @@ class PolyTests {
     typed[Set[Option[Int]]](soi)
     assertEquals(Set(Option(23)), soi)
   }
-  
+
   @Test
   def testPolyVal {
     val i1 = zero[Int]
@@ -227,8 +225,6 @@ class PolyTests {
 
   @Test
   def testBinary {
-    import Typeable._
-    
     val bi = bidi(23)
     typed[String](bi)
     assertEquals("23", bi)
@@ -242,4 +238,183 @@ class PolyTests {
     typed[String :: Int :: String :: Int :: HNil](blis)
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
   }
+
+  @Test
+  def testInlinePoly {
+    val l = 23 :: "foo" :: true :: HNil
+    val ll = List(23) :: List("foo") :: List(true) :: HNil
+    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
+    val li = 23 :: 13 :: 7 :: HNil
+    
+    val l1 = ll.map(Poly { def apply[T](t: List[T]) = t.headOption })
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
+
+    val l1b = ll.map(Poly { def apply[T](t: List[T]) = t.toSet })
+    typed[Set[Int] :: Set[String] :: Set[Boolean] :: HNil](l1b)
+
+    val l2 = l.map(Poly { def apply[T](t: T) = Option(t) })
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
+
+    val l2b = l.map(Poly { def apply[T](t: T) = Option[T](t) })
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2b)
+
+    val l3 = lo.map(Poly { def apply[T](t: Option[T]) = t.get })
+    typed[Int :: String :: Boolean :: HNil](l3)
+
+    val l4 = l.map(Poly { def apply[T](t: T) = t })
+    typed[Int :: String :: Boolean :: HNil](l4)
+
+    val l5 = ll.map(Poly { def apply[T](t: List[T]) = t.length })
+    typed[Int :: Int :: Int :: HNil](l5)
+
+    val l6 = l.map(Poly { def apply[T](t: T) = t.toString })
+    typed[String :: String :: String :: HNil](l6)
+
+    val l7 = li.map(Poly { def apply(t: Int) = t+1 })
+    typed[Int :: Int :: Int :: HNil](l7)
+  }
+
+  @Test
+  def testLiftImported {
+    import LiftMethods._
+
+    val l = 23 :: "foo" :: true :: HNil
+    val ll = List(23) :: List("foo") :: List(true) :: HNil
+    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
+    val li = 23 :: 13 :: 7 :: HNil
+
+    val l1 = ll.map(mTcTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
+
+    val l2 = l.map(mIdTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
+
+    val l3 = lo.map(mTcId _)
+    typed[Int :: String :: Boolean :: HNil](l3)
+
+    val l4 = l.map(mIdId _)
+    typed[Int :: String :: Boolean :: HNil](l4)
+
+    val l5 = ll.map(mTcCn _)
+    typed[Int :: Int :: Int :: HNil](l5)
+
+    val l6 = l.map(mIdCn _)
+    typed[String :: String :: String :: HNil](l6)
+
+    val l7 = li.map(mCnCn _)
+    typed[Int :: Int :: Int :: HNil](l7)
+  }
+
+  @Test
+  def testLiftPath {
+    val l = 23 :: "foo" :: true :: HNil
+    val ll = List(23) :: List("foo") :: List(true) :: HNil
+    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
+    val li = 23 :: 13 :: 7 :: HNil
+
+    val l1 = ll.map(LiftMethods.mTcTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
+
+    val l2 = l.map(LiftMethods.mIdTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
+
+    val l3 = lo.map(LiftMethods.mTcId _)
+    typed[Int :: String :: Boolean :: HNil](l3)
+
+    val l4 = l.map(LiftMethods.mIdId _)
+    typed[Int :: String :: Boolean :: HNil](l4)
+
+    val l5 = ll.map(LiftMethods.mTcCn _)
+    typed[Int :: Int :: Int :: HNil](l5)
+
+    val l6 = l.map(LiftMethods.mIdCn _)
+    typed[String :: String :: String :: HNil](l6)
+
+    val l7 = li.map(LiftMethods.mCnCn _)
+    typed[Int :: Int :: Int :: HNil](l7)
+  }
+
+  @Test
+  def testLiftLocal {
+    def mTcTc[T](t : List[T]) = t.headOption
+    def mIdTc[T](t : T) = Option(t)
+    def mTcId[T](t : Option[T]) = t.get
+    def mIdId[T](t : T) = t
+    def mTcCn[T](t : List[T]) = t.length
+    def mIdCn[T](t : T) = t.toString
+    def mCnCn(t : Int) = t+1
+
+    val l = 23 :: "foo" :: true :: HNil
+    val ll = List(23) :: List("foo") :: List(true) :: HNil
+    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
+    val li = 23 :: 13 :: 7 :: HNil
+
+    val l1 = ll.map(mTcTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
+
+    val l2 = l.map(mIdTc _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
+
+    val l3 = lo.map(mTcId _)
+    typed[Int :: String :: Boolean :: HNil](l3)
+
+    val l4 = l.map(mIdId _)
+    typed[Int :: String :: Boolean :: HNil](l4)
+
+    val l5 = ll.map(mTcCn _)
+    typed[Int :: Int :: Int :: HNil](l5)
+
+    val l6 = l.map(mIdCn _)
+    typed[String :: String :: String :: HNil](l6)
+
+    val l7 = li.map(mCnCn _)
+    typed[Int :: Int :: Int :: HNil](l7)
+  }
+
+  def mTcTc2[T](t : List[T]) = t.headOption
+  def mIdTc2[T](t : T) = Option(t)
+  def mTcId2[T](t : Option[T]) = t.get
+  def mIdId2[T](t : T) = t
+  def mTcCn2[T](t : List[T]) = t.length
+  def mIdCn2[T](t : T) = t.toString
+  def mCnCn2(t : Int) = t+1
+
+  @Test
+  def testLiftEnclosing {
+    val l = 23 :: "foo" :: true :: HNil
+    val ll = List(23) :: List("foo") :: List(true) :: HNil
+    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
+    val li = 23 :: 13 :: 7 :: HNil
+
+    val l1 = ll.map(mTcTc2 _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
+
+    val l2 = l.map(mIdTc2 _)
+    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
+
+    val l3 = lo.map(mTcId2 _)
+    typed[Int :: String :: Boolean :: HNil](l3)
+
+    val l4 = l.map(mIdId2 _)
+    typed[Int :: String :: Boolean :: HNil](l4)
+
+    val l5 = ll.map(mTcCn2 _)
+    typed[Int :: Int :: Int :: HNil](l5)
+
+    val l6 = l.map(mIdCn2 _)
+    typed[String :: String :: String :: HNil](l6)
+
+    val l7 = li.map(mCnCn2 _)
+    typed[Int :: Int :: Int :: HNil](l7)
+  }
+}
+
+object LiftMethods {
+  def mTcTc[T](t : List[T]) = t.headOption
+  def mIdTc[T](t : T) = Option(t)
+  def mTcId[T](t : Option[T]) = t.get
+  def mIdId[T](t : T) = t
+  def mTcCn[T](t : List[T]) = t.length
+  def mIdCn[T](t : T) = t.toString
+  def mCnCn(t : Int) = t+1
 }

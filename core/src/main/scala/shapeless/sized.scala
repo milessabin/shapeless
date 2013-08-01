@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ abstract class Sized[+Repr, L <: Nat](r : Repr) {
  * @author Miles Sabin
  */
 class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { outer =>
+  import nat._
   import Sized._
-  import Nat._
   import LT._
   
   /**
@@ -70,7 +70,7 @@ class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { out
    * Returns the first ''m'' elements of this collection. Available only if there is evidence that this collection has
    * at least ''m'' elements. The resulting collection will be statically known to have ''m'' elements.
    */
-  def take[M <: Nat](m : M)(implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[A, Repr, M](r.take(toInt[M]))
+  def take(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[A, Repr, m.N](r.take(toInt[m.N]))
 
   /**
    * Returns all but the  first ''m'' elements of this collection. An explicit type argument must be provided. Available
@@ -84,7 +84,7 @@ class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { out
    * collection has at least ''m'' elements. The resulting collection will be statically known to have ''m'' less
    * elements than this collection.
    */
-  def drop[M <: Nat](m : M)(implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[A, Repr, diff.Out](r.drop(toInt[M]))
+  def drop(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[A, Repr, diff.Out](r.drop(toInt[m.N]))
   
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. An explicit type argument
@@ -98,7 +98,7 @@ class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { out
    * is evidence that this collection has at least ''m'' elements. The resulting collections will be statically know to
    * have ''m'' and ''n-m'' elements respectively.
    */
-  def splitAt[M <: Nat](m : M)(implicit diff : Diff[L, M], ev : ToInt[M]) = (take[M], drop[M])
+  def splitAt(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = (take[m.N], drop[m.N])
   
   /**
    * Prepend the argument element to this collection. The resulting collection will be statically known to have a size
@@ -144,8 +144,6 @@ trait LowPrioritySized {
 }
 
 object Sized extends LowPrioritySized {
-  import Nat._
-  
   implicit def sizedOps[A0, Repr <% GenTraversableLike[A0, Repr], L <: Nat]
     (s : Sized[Repr, L] { type A = A0 }) : SizedOps[A0, Repr, L] = new SizedOps[A0, Repr, L](s.unsized)
   
@@ -160,6 +158,9 @@ object Sized extends LowPrioritySized {
   class SizedConv[A, Repr <% GenTraversableLike[A, Repr]](r : Repr) {
     def sized[L <: Nat](implicit toInt : ToInt[L]) =
       if(r.size == toInt()) Some(wrap[A, Repr, L](r)) else None
+      
+    def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
+      if(r.size == toInt()) Some(wrap[A, Repr, l.N](r)) else None
       
     def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
       assert(r.size == toInt())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,6 @@ import org.junit.Assert._
 import shapeless.test.illTyped
 
 class HMapTests {
-  import HList._
-  import Mapper._
-  import MapperAux._
-  
   def typed[T](t : => T) {}
 
   class BiMapIS[K, V]
@@ -63,7 +59,7 @@ class HMapTests {
     assertEquals("foo" :: 13 :: "foo" :: 13 :: HNil, l2)
     
     // Use as an argument to a HoF
-    def pairApply[F <: Poly](f : F)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("bar"))
+    def pairApply(f: Poly)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("bar"))
 
     val a1 = pairApply(hm)
     typed[(String, Int)](a1)
@@ -110,7 +106,7 @@ class HMapTests {
     assertEquals(Some("bar") :: Some(13) :: HNil, l2)
 
     // Use as an argument to a HoF
-    def pairApply[F <: Poly](f : F)(implicit cs : f.Case1[Set[String]], ci : f.Case1[Set[Int]]) = (f(Set("foo")), f(Set(23)))
+    def pairApply(f: Poly)(implicit cs : f.Case1[Set[String]], ci : f.Case1[Set[Int]]) = (f(Set("foo")), f(Set(23)))
     
     val a1 = pairApply(nt)
     typed[(Option[String], Option[Int])](a1)
