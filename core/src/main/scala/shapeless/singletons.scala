@@ -24,6 +24,19 @@ import scala.tools.reflect.ToolBoxError
 
 object SingletonTypes {
   def refine[T](t: T) = macro SingletonTypeMacros.refineImpl[T]
+
+  implicit def mkSingletonOps[T](t: T) = macro SingletonTypeMacros.mkSingletonOps[T]
+
+  import Witness.WitnessEq
+
+  trait SingletonOps {
+    type T
+    val witness: WitnessEq[T]
+
+    def narrow: T with Singleton = witness.value
+  }
+
+  type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 }
 
 trait Witness {
@@ -53,6 +66,8 @@ object Witness {
 import Witness.{ WitnessEq, WitnessLt }
 
 trait SingletonTypeMacros[C <: Context] {
+  import SingletonTypes.{ SingletonOps, SingletonOpsLt }
+
   val c: C
 
   import c.universe._
@@ -127,6 +142,24 @@ trait SingletonTypeMacros[C <: Context] {
     mkWitness(mkSingletonType0(t0), Literal(Constant(t0)))
   }
 
+  def mkOps[O](sTpt: TypTree, w: Tree) = {
+    val opsTpt = Ident(typeOf[SingletonOps].typeSymbol)
+    val T = TypeDef(Modifiers(), newTypeName("T"), List(), sTpt)
+    val value = ValDef(Modifiers(), newTermName("witness"), TypeTree(), w)
+    c.Expr[O] {
+      mkImplClass(opsTpt, List(T, value), List())
+    }
+  }
+
+  def mkSingletonOps[T](t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = {
+    val t0 = eval[T](t.tree).getOrElse(
+      c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant")
+    )
+    val sTpt = mkSingletonType0(t0)
+    val witness = mkWitness(sTpt , Literal(Constant(t0))).tree
+    mkOps(sTpt, witness)
+  }
+
   def constructor(prop: Boolean) =
     DefDef(
       Modifiers(),
@@ -180,6 +213,8 @@ trait SingletonTypeMacros[C <: Context] {
 }
 
 object SingletonTypeMacros {
+  import SingletonTypes.SingletonOpsLt
+
   def inst(c0: Context) = new SingletonTypeMacros[c0.type] { val c: c0.type = c0 }
 
   def eval[T](c: Context)(t: c.Tree) = inst(c).eval(t)
@@ -189,4 +224,6 @@ object SingletonTypeMacros {
   def materializeImpl[T: c.WeakTypeTag](c: Context): c.Expr[WitnessEq[T]] = inst(c).materializeImpl[T]
 
   def convertImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[WitnessLt[T]] = inst(c).convertImpl[T](t)
+
+  def mkSingletonOps[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = inst(c).mkSingletonOps[T](t)
 }
