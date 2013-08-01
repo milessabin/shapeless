@@ -21,6 +21,8 @@ import org.junit.Assert._
 
 import test.illTyped
 
+import ops.coproduct._
+
 class CoproductTests {
   def typed[T](t : => T) {}
   
