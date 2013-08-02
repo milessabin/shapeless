@@ -673,18 +673,18 @@ object hlist {
    * 
    * @author Miles Sabin
    */
-  trait Selector[L <: HList, U] {
-    def apply(l : L) : U
-  }
+  trait Selector[L <: HList, U] extends DepFn1[L] { type Out = U }
 
   object Selector {
-    implicit def hlistSelect1[H, T <: HList]: Selector[H :: T, H] =
+    type Aux[L <: HList, U] = Selector[L, U]
+
+    implicit def hlistSelect1[H, T <: HList]: Aux[H :: T, H] =
       new Selector[H :: T, H] {
         def apply(l : H :: T) = l.head
       }
 
     implicit def hlistSelect[H, T <: HList, U]
-      (implicit st : Selector[T, U]): Selector[H :: T, U] =
+      (implicit st : Selector[T, U]): Aux[H :: T, U] =
         new Selector[H :: T, U] {
           def apply(l : H :: T) = st(l.tail)
         }

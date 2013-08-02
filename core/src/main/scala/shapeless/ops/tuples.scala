@@ -100,15 +100,14 @@ object tuple {
         }
   }
 
-  trait Selector[T, U] extends DepFn1[T]
+  trait Selector[T, U] extends DepFn1[T] { type Out = U }
 
   object Selector {
-    type Aux[T, U] = Selector[T, U] { type Out = U }
+    type Aux[T, U] = Selector[T, U]
     implicit def select[T, L <: HList, U]
       (implicit gen: Generic.Aux[T, L], selector: hl.Selector[L, U]): Aux[T, U] =
         new Selector[T, U] {
-          type Out = U
-          def apply(t: T): Out = gen.to(t).select[U]
+          def apply(t: T): U = gen.to(t).select[U]
         }
   }
 
