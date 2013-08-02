@@ -50,6 +50,14 @@ package object shapeless {
     def apply(t: T, u: U): Out
   }
 
+  type Field[T] = {
+    type valueType = T
+  }
+
+  type FieldAux = {
+    type valueType
+  }
+
   /** The SYB everything combinator */
   type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
   

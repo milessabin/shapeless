@@ -26,11 +26,11 @@ object RecordExamples extends App {
   import Record._
   import ops.hlist.ToList
 
-  object author  extends Field[String]  { override def toString = "Author" }
-  object title   extends Field[String]  { override def toString = "Title" }
-  object id      extends Field[Int]     { override def toString = "ID" }
-  object price   extends Field[Double]  { override def toString = "Price" }
-  object inPrint extends Field[Boolean] { override def toString = "In print" }
+  object author  extends FieldT[String]  { override def toString = "Author" }
+  object title   extends FieldT[String]  { override def toString = "Title" }
+  object id      extends FieldT[Int]     { override def toString = "ID" }
+  object price   extends FieldT[Double]  { override def toString = "Price" }
+  object inPrint extends FieldT[Boolean] { override def toString = "In print" }
 
   def printBook[B <: HList](b : B)(implicit tl : ToList[B, (Field[_], Any)]) = {
     b.toList foreach { case (field, value) => println(field+": "+value) }

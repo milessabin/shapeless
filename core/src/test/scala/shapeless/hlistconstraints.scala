@@ -85,11 +85,11 @@ class HListConstraintsTests {
     import KeyConstraint._
     import ValueConstraint._
     
-    object author  extends Field[String]
-    object title   extends Field[String]
-    object id      extends Field[Int]
-    object price   extends Field[Double]
-    object inPrint extends Field[Boolean]
+    object author  extends FieldT[String]
+    object title   extends FieldT[String]
+    object id      extends FieldT[Int]
+    object price   extends FieldT[Double]
+    object inPrint extends FieldT[Boolean]
 
     val book =
       (author -> "Benjamin Pierce") ::

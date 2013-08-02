@@ -25,11 +25,12 @@ import ops.hlist.{ Remove, ReversePrepend, Selector }
  */
 final class RecordOps[L <: HList](l : L) {
   import Record._
-  
+
   /**
    * Returns the value associate with the field F. Only available of this record has a field with key type F.
    */
-  def get[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
+  //def get[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
+  def get(k : Witness)(implicit selector : FieldSelector[L, k.T]) = selector(l)
   
   // Creates a bogus ambiguity with HListOps#apply. Will be Reinstated once https://issues.scala-lang.org/browse/SI-5142
   // is fixed. Use get for now.
@@ -66,6 +67,7 @@ final class RecordOps[L <: HList](l : L) {
  * 
  * @author Miles Sabin
  */
+/*
 trait Field[T] extends FieldAux {
   type valueType = T
 }
@@ -73,11 +75,43 @@ trait Field[T] extends FieldAux {
 trait FieldAux {
   type valueType
 }
+*/
+
+trait FieldT[T] {
+  type valueType = T
+}
 
 object Record {
   implicit def recordOps[L <: HList](l : L) : RecordOps[L] = new RecordOps(l)
 
   type FieldEntry[F <: FieldAux] = (F, F#valueType)
+
+  type ValueType[V] = { type valueType = V }
+  type FieldType[K, V] = K with ValueType[V]
+}
+
+trait FieldSelector[L <: HList, K] {
+  type Out
+  def apply(l : L) : Out
+}
+
+trait LowPriorityFieldSelector {
+  type Aux[L <: HList, K, Out0] = FieldSelector[L, K] { type Out = Out0 }
+
+  implicit def hlistSelect[H, T <: HList, K]
+    (implicit st : FieldSelector[T, K]): Aux[H :: T, K, st.Out] =
+      new FieldSelector[H :: T, K] {
+        type Out = st.Out
+        def apply(l : H :: T): Out = st(l.tail)
+      }
+}
+
+object FieldSelector extends LowPriorityFieldSelector {
+  implicit def hlistSelect1[K, V, T <: HList]: Aux[(K, V) :: T, K, V] =
+    new FieldSelector[(K, V) :: T, K] {
+      type Out = V
+      def apply(l : (K, V) :: T): Out = l.head._2
+    }
 }
 
 /**
