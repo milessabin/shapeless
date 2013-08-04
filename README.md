@@ -7,17 +7,19 @@ given over the course of 2011 on implementing [scrap your boilerplate]
 (http://goo.gl/KmfVG) and [higher rank polymorphism](http://goo.gl/zGRQ7) in
 Scala.
 
-In the new year I'll be [posting](http://www.chuusai.com/blog) a (long
-overdue) series of articles on the implementation techniques used: heavily 
-type class based, with essential use of dependent types at various
-junctures, which together enable the relatively smooth encoding of type level
-functions. In the meantime you'll find Olivera, Moors and Odersky [Type
-Classes as Object and Implicits](http://goo.gl/ZbcxY) useful background
-material.
+I'll be [posting](http://www.chuusai.com/blog) a (long overdue) series of 
+articles on the implementation techniques used: heavily type class based,
+with essential use of dependent types at various junctures, which together
+enable the relatively smooth encoding of type level functions. In the
+meantime you'll find Olivera, Moors and Odersky
+[Type Classes as Object and Implicits](http://goo.gl/ZbcxY) useful
+background material.
 
 There is a [mailing list](https://groups.google.com/group/shapeless-dev)
 for discussion around generic programming in Scala in general and
 shapeless in particular. 
+
+[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 
 Selected highlights of shapeless
 --------------------------------
