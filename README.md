@@ -19,7 +19,7 @@ There is a [mailing list](https://groups.google.com/group/shapeless-dev)
 for discussion around generic programming in Scala in general and
 shapeless in particular. 
 
-[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=scala-2.11.x)](https://travis-ci.org/milessabin/shapeless)
 
 Selected highlights of shapeless
 --------------------------------
