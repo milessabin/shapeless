@@ -62,6 +62,37 @@ class HListConstraintsTests {
     acceptBasis(l1) // Compiles
     //acceptBasis(l2) // Does not compile
   }
+
+  @Test
+  def testSuperConstraint {
+    type N = Int :: String :: HNil
+    type M = Boolean :: N
+
+    type Other = Double :: N
+
+    val nCompatible = 23 :: 13 :: "foo" :: "bar" :: HNil
+    val mCompatible = 'a' :: false :: nCompatible
+
+    import SuperConstraint._
+
+    def acceptM[L <: HList: Super[M]#λ](l: L) = {
+      //val a: Boolean = wrap { acceptOther(l)(_: Other IsSuperOf L) } //won't compile, because Other is no Super HList of M      
+
+      val b: Boolean = prove { acceptNExplicit(l) }
+      val c: Boolean = prove { acceptNImplicit(l)(_: N IsSuperOf L) }
+      c || b
+    }
+
+    def acceptNImplicit[L <: HList: Super[N]#λ](l: L) = true
+    def acceptNExplicit[L <: HList](l: L)(ev: N IsSuperOf L) = true
+
+    def acceptOther[L <: HList: Super[Other]#λ](l: L) = true
+
+    //acceptM(nCompatible)//won't compile because M is no Super HList of nCompatible
+    acceptM(mCompatible)
+
+    acceptOther(2.0 :: mCompatible)
+  }
   
   @Test
   def testLUBConstraint {

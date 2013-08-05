@@ -56,6 +56,27 @@ object BasisConstraint {
     new BasisConstraint[H :: T, M] {}
 }
 
+object SuperConstraint {
+  import BasisConstraint._
+
+  type IsSuperOf[M <: HList, L <: HList] = BasisConstraint[M, L]
+
+  trait SuperRelation[N <: HList, M <: HList, L <: HList]
+
+  type Super[M <: HList] = {
+    type λ[L <: HList] = M IsSuperOf L
+  }
+
+/**
+ * If a BasisConstraint for [M, L] and [N, M] are given, then there should exist one for [N, L].
+ * In a function which has proven [M, L] one can call another function which needs evidence for [N, L] when wrapped with this.
+ * i.e. def acceptM[L <: HList: Super[M]#λ](l: L) = { prove { acceptN(l)(_: N IsSuperOf L) } }
+ */
+  def prove[E, H <: HList, K <: HList, J <: HList](f: H IsSuperOf K => E)(implicit e2: J IsSuperOf K, e: SuperRelation[H, J, K]): E = f(new (H IsSuperOf K) {})
+
+  implicit def hlistSuperRelation[N <: HList, M <: HList, L <: HList](implicit e2: N IsSuperOf M, e1: M IsSuperOf L) = new SuperRelation[N, M, L] {}
+}
+
 /**
  * Type class witnessing that every element of `L` is a subtype of `B`.
  */
