@@ -18,10 +18,21 @@ import sbt._
 import Keys._
 
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
+
+import com.typesafe.sbt.pgp.PgpKeys._
+
 import com.typesafe.sbt.osgi.SbtOsgi._
+
 import sbtbuildinfo.Plugin._
+
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
+
+import sbtrelease._
+import sbtrelease.ReleasePlugin._
+import sbtrelease.ReleasePlugin.ReleaseKeys._
+import sbtrelease.ReleaseStateTransformations._
+import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
   
@@ -118,10 +129,25 @@ object ShapelessBuild extends Build {
     }
   }
 
-  def commonSettings = Defaults.defaultSettings ++
+  lazy val publishSignedArtifacts = ReleaseStep(
+    action = st => {
+      val extracted = st.extract
+      val ref = extracted.get(thisProjectRef)
+      extracted.runAggregated(publishSigned in Global in ref, st)
+    },
+    check = st => {
+      // getPublishTo fails if no publish repository is set up.
+      val ex = st.extract
+      val ref = ex.get(thisProjectRef)
+      Classpaths.getPublishTo(ex.get(publishTo in Global in ref))
+      st
+    },
+    enableCrossBuild = true
+  )
+
+  def commonSettings = Defaults.defaultSettings ++ releaseSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "2.0.0-SNAPSHOT",
       scalaVersion        := "2.10.2",
       scalaBinaryVersion  := "2.10.2",
 
@@ -138,6 +164,19 @@ object ShapelessBuild extends Build {
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+      ),
+
+      releaseProcess := Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        inquireVersions,
+        runTest,
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        publishSignedArtifacts,
+        setNextVersion,
+        commitNextVersion,
+        pushChanges
       )
     )
 }
