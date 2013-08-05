@@ -76,11 +76,20 @@ abstract class Sonatype(build: Build) {
   }
 
   def settings: Seq[Setting[_]] = Seq(
-    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+    credentialsSetting,
     publishMavenStyle := true,
     publishTo <<= version((v: String) => Some( if (v.trim endsWith "SNAPSHOT") ossSnapshots else ossStaging)),
     publishArtifact in Test := false,
     pomIncludeRepository := (_ => false),
     pomExtra <<= (scalaVersion)(generatePomExtra)
   )
+
+  lazy val credentialsSetting = credentials += {
+    Seq("build.publish.user", "build.publish.password").map(k => Option(System.getProperty(k))) match {
+      case Seq(Some(user), Some(pass)) =>
+        Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)
+      case _                           =>
+        Credentials(Path.userHome / ".ivy2" / ".credentials")
+    }
+  }
 }
