@@ -436,6 +436,18 @@ object tuple {
       }
   }
 
+  trait ZipConst[T, C] extends DepFn2[T, C]
+
+  object ZipConst {
+    type Aux[T, C, Out0] = ZipConst[T, C] { type Out = Out0 }
+    implicit def zipConst[T, C, L1 <: HList, L2 <: HList]
+    (implicit gen: Generic.Aux[T, L1], zipper: hl.ZipConst.Aux[C, L1, L2], tp: hl.Tupler[L2]): Aux[T, C, tp.Out] =
+      new ZipConst[T, C] {
+        type Out = tp.Out
+        def apply(t: T, c: C): tp.Out = tp(zipper(c, gen.to(t)))
+      }
+  }
+
   trait Unifier[T] extends DepFn1[T]
 
   object Unifier {

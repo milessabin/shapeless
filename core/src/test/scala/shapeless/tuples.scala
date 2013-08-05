@@ -995,6 +995,29 @@ class TupleTests {
     assertEquals((1, true, "bar"), ls)
   }
 
+  @Test
+  def testZipConst {
+    val l1 = (1, true, "a")
+    val c1 = 5
+    val zl1 = l1 zipConst c1
+    typed[((Int, Int), (Boolean, Int), (String, Int))](zl1)
+    assertEquals(((1, c1), (true, c1), ("a", c1)), zl1)
+    
+    val l2 = (Option("a"), 2, Set(true))
+    val c2 = ("b", 5)
+    type C2 = (String, Int)
+    val zl2 = l2 zipConst c2
+    typed[(
+      (Option[String], C2),
+      (Int,            C2),
+      (Set[Boolean],   C2))](zl2)
+    val expected = (
+      (Option("a"), c2),
+      (2, c2),
+      (Set(true), c2))
+    assertEquals(expected, zl2)
+  }
+
   /*
   @Test
   def testNatTRel {
