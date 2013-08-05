@@ -1220,4 +1220,28 @@ class HListTests {
 
     assertEquals(l2, List(1, 1, 1) :: List(true, true, true) :: List("three", "three", "three") :: List() :: HNil)
   }
+
+  @Test
+  def testZipConst {
+    type IBS = Int :: Boolean :: String :: HNil
+    val c = 5
+    type WithConst = (Int, Int) :: (Boolean, Int) :: (String, Int) :: HNil
+    val l = 1 :: true :: "a" :: HNil
+    typed[IBS](l)
+    val expected = (1, c) :: (true, c) :: ("a", c) :: HNil
+    typed[WithConst](expected)
+
+    val zcIntIbs = implicitly[ZipConst[Int, IBS]]
+    val zipped1 = zcIntIbs(c, l)
+    assertEquals(expected, zipped1)
+
+    val zcaIntIbs = implicitly[ZipConst.Aux[Int, IBS, WithConst]]
+    val zipped2 = zcaIntIbs(c, l)
+    typed[WithConst](zipped2)
+    assertEquals(expected, zipped2)
+
+    val zipped3 = l.zipConst(c)
+    typed[WithConst](zipped3)
+    assertEquals(expected, zipped3)
+  }
 }

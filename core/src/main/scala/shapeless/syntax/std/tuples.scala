@@ -344,6 +344,12 @@ final class TupleOps[T](t: T) {
    * this tuple prepended to the corresponding tuple element of the argument tuple.
    */
   def zipOne[R](r: R)(implicit zipOne: ZipOne[T, R]): zipOne.Out = zipOne(t, r)
+
+  /**
+   * Zips this tuple with a constant, resulting in a tuple of tuples, with each element being of the form
+   * ({element from original tuple}, {supplied constant})
+   */
+  def zipConst[C](c: C)(implicit zipper: ZipConst[T, C]): zipper.Out = zipper(t, c)
   
   /**
    * Transposes this tuple.

@@ -16,10 +16,23 @@
 
 import sbt._
 import Keys._
-import Build.data
 
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
+
+import com.typesafe.sbt.pgp.PgpKeys._
+
 import com.typesafe.sbt.osgi.SbtOsgi._
+
+import sbtbuildinfo.Plugin._
+
+import com.typesafe.sbt.SbtGit._
+import GitKeys._
+
+import sbtrelease._
+import sbtrelease.ReleasePlugin._
+import sbtrelease.ReleasePlugin.ReleaseKeys._
+import sbtrelease.ReleaseStateTransformations._
+import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
   
@@ -46,7 +59,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ Seq(
         moduleName := "shapeless",
         
         managedSourceDirectories in Test := Nil,
@@ -60,6 +73,7 @@ object ShapelessBuild extends Build {
         )},
         
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
+        (sourceGenerators in Compile) <+= buildInfo,
 
         initialCommands in console := """import shapeless._""",
 
@@ -72,10 +86,19 @@ object ShapelessBuild extends Build {
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
 
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
-
         OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
+        OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package"),
 
-        OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
+        buildInfoPackage := "shapeless",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
+        buildInfoKeys ++= Seq[BuildInfoKey](
+          version,
+          scalaVersion,
+          gitHeadCommit,
+          BuildInfoKey.action("buildTime") {
+            System.currentTimeMillis
+          }
+        )
       )
     )
 
@@ -102,14 +125,29 @@ object ShapelessBuild extends Build {
   
   def runAllIn(config: Configuration) = {
     runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map { 
-      (classes, runner, cp, s) => classes.foreach(c => runner.run(c, data(cp), Seq(), s.log))
+      (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
     }
   }
 
-  def commonSettings = Defaults.defaultSettings ++
+  lazy val publishSignedArtifacts = ReleaseStep(
+    action = st => {
+      val extracted = st.extract
+      val ref = extracted.get(thisProjectRef)
+      extracted.runAggregated(publishSigned in Global in ref, st)
+    },
+    check = st => {
+      // getPublishTo fails if no publish repository is set up.
+      val ex = st.extract
+      val ref = ex.get(thisProjectRef)
+      Classpaths.getPublishTo(ex.get(publishTo in Global in ref))
+      st
+    },
+    enableCrossBuild = true
+  )
+
+  def commonSettings = Defaults.defaultSettings ++ releaseSettings ++
     Seq(
       organization        := "com.chuusai",
-      version             := "2.0.0-SNAPSHOT",
       scalaVersion        := "2.11.0-SNAPSHOT",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
@@ -125,6 +163,19 @@ object ShapelessBuild extends Build {
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+      ),
+
+      releaseProcess := Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        inquireVersions,
+        runTest,
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        publishSignedArtifacts,
+        setNextVersion,
+        commitNextVersion,
+        pushChanges
       )
     )
 }
