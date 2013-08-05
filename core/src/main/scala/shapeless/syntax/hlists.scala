@@ -358,6 +358,12 @@ final class HListOps[L <: HList](l : L) {
    * this `HList` prepended to the corresponding `HList` element of the argument `HList`.
    */
   def zipOne[T <: HList](t : T)(implicit zipOne : ZipOne[L, T]) : zipOne.Out = zipOne(l, t)
+
+  /**
+   * Zips this `HList` with a constant, resulting in an `HList` of tuples of the form
+   * ({element from this `HList`}, {supplied constant})
+   */
+  def zipConst[C](c: C)(implicit zipConst: ZipConst[C, L]): zipConst.Out = zipConst(c, l)
   
   /**
    * Transposes this `HList`.

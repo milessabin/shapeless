@@ -1413,4 +1413,25 @@ object hlist {
           def apply(fl : (T => R) :: FLT, al : T :: ALT): Out = fl.head(al.head) :: ztt(fl.tail, al.tail) 
         }
   }
+
+  /**
+   * Type class supporting zipping an `HList` with a constant, resulting in an `HList` of tuples of the form
+   * ({element from input `HList`}, {supplied constant})
+   *
+   * @author Cody Allen
+   */
+  trait ZipConst[C, L <: HList] extends DepFn2[C, L] { type Out <: HList }
+
+  object ZipConst {
+    type Aux[C, L <: HList, Out0 <: HList] = ZipConst[C, L] { type Out = Out0 }
+
+    implicit def constZipper[C, L <: HList, M <: HList]
+      (implicit
+        mapper: ConstMapper.Aux[C, L, M],
+        zipper: Zip[L :: M :: HNil]): Aux[C, L, zipper.Out] =
+        new ZipConst[C, L] {
+          type Out = zipper.Out
+          def apply(c: C, l: L) = zipper(l :: mapper(c, l) :: HNil)
+        }
+  }
 }
