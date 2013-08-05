@@ -16,7 +16,6 @@
 
 import sbt._
 import Keys._
-import Build.data
 
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
 import com.typesafe.sbt.osgi.SbtOsgi._
@@ -115,7 +114,7 @@ object ShapelessBuild extends Build {
   
   def runAllIn(config: Configuration) = {
     runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map { 
-      (classes, runner, cp, s) => classes.foreach(c => runner.run(c, data(cp), Seq(), s.log))
+      (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
     }
   }
 
