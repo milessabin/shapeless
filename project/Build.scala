@@ -20,6 +20,9 @@ import Build.data
 
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
 import com.typesafe.sbt.osgi.SbtOsgi._
+import sbtbuildinfo.Plugin._
+import com.typesafe.sbt.SbtGit._
+import GitKeys._
 
 object ShapelessBuild extends Build {
   
@@ -46,7 +49,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ Seq(
         moduleName := "shapeless",
         
         managedSourceDirectories in Test := Nil,
@@ -60,6 +63,7 @@ object ShapelessBuild extends Build {
         )},
         
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
+        (sourceGenerators in Compile) <+= buildInfo,
 
         initialCommands in console := """import shapeless._""",
 
@@ -72,10 +76,19 @@ object ShapelessBuild extends Build {
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
 
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
-
         OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
+        OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package"),
 
-        OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
+        buildInfoPackage := "shapeless",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
+        buildInfoKeys ++= Seq[BuildInfoKey](
+          version,
+          scalaVersion,
+          gitHeadCommit,
+          BuildInfoKey.action("buildTime") {
+            System.currentTimeMillis
+          }
+        )
       )
     )
 
