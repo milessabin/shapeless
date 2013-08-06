@@ -88,6 +88,12 @@ object Record {
 
   type ValueType[V] = { type valueType = V }
   type FieldType[K, V] = K with ValueType[V]
+
+  class KeyBuilder[V] {
+    def apply[K](k : K): FieldType[K, V] = k.asInstanceOf[FieldType[K, V]]
+  }
+  
+  def key[V] = new KeyBuilder[V]
 }
 
 trait FieldSelector[L <: HList, K] {

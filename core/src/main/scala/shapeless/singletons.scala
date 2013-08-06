@@ -30,14 +30,14 @@ object SingletonTypes {
   import Witness.WitnessEq
 
   trait SingletonOps {
-    import Record.{ FieldType }
+    import Record.{ FieldType, key }
 
     type T
     val witness: WitnessEq[T]
 
     def narrow: T with Singleton = witness.value
 
-    def ->>[U](u: U): (T, U) = (witness.value, u)
+    def ->>[V](v: V): (FieldType[T, V], V) = (key[V](witness.value), v)
   }
 
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }

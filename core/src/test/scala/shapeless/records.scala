@@ -53,6 +53,7 @@ class RecordTests {
     assertEquals(2.0, v3, Double.MinPositiveValue)
   }
 
+  /*
   def testSingletons {
     import SingletonTypes._
     import Record._
@@ -60,6 +61,7 @@ class RecordTests {
     val r = ("foo" ->> 23) :: HNil //:: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
     val v1 = r.get("foo")
   }
+  */
 
   /*
   @Test
