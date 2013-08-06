@@ -26,14 +26,14 @@ object Lift {
    */
   def liftO[InF, InL <: HList, R, OInL <: HList, OutF](f :  InF)
     (implicit
-      hlister   : FnHListerAux[InF, InL => R],
-      mapped    : Mapped.Aux[InL, Option, OInL],
-      mapper    : Mapper.Aux[get.type, OInL, InL],
-      folder    : MapFolder[OInL, Boolean, isDefined.type],
-      unhlister : FnUnHListerAux[OInL => Option[R], OutF]
+      fntop  : FnToProduct.Aux[InF, InL => R],
+      mapped : Mapped.Aux[InL, Option, OInL],
+      mapper : Mapper.Aux[get.type, OInL, InL],
+      folder : MapFolder[OInL, Boolean, isDefined.type],
+      fnfromp: FnFromProduct.Aux[OInL => Option[R], OutF]
     ) : OutF = {
       (o : OInL) =>
-        if(o.foldMap(true)(isDefined)(_ && _)) Some(f.hlisted(o map get))
+        if(o.foldMap(true)(isDefined)(_ && _)) Some(f.toProduct(o map get))
         else None
-    }.unhlisted
+    }.fromProduct
 }

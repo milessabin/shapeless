@@ -21,28 +21,28 @@ package std
 /**
  * Conversions between ordinary functions and `HList` functions.
  * 
- * The implicits defined by this object enhance ordinary functions (resp. HList functions) with an `hlisted` (resp.
- * `unhlisted`) method which creates an equivalently typed `HList` function (resp. ordinary function).
+ * The implicits defined by this object enhance ordinary functions (resp. HList functions) with a `toProduct` (resp.
+ * `fromProduct`) method which creates an equivalently typed `HList` function (resp. ordinary function).
  * 
  * @author Miles Sabin
  */
 object function {
   import ops.function._
 
-  implicit def fnHListOps[F](t : F)(implicit fnHLister : FnHLister[F]) = new FnHListOps[fnHLister.Out] {
-    def hlisted = fnHLister(t)
+  implicit def fnHListOps[F](t : F)(implicit fnHLister : FnToProduct[F]) = new FnHListOps[fnHLister.Out] {
+    def toProduct = fnHLister(t)
   }
 
 
-  implicit def fnUnHListOps[F](t : F)(implicit fnUnHLister : FnUnHLister[F]) = new FnUnHListOps[fnUnHLister.Out] {
-    def unhlisted = fnUnHLister(t)
+  implicit def fnUnHListOps[F](t : F)(implicit fnUnHLister : FnFromProduct[F]) = new FnUnHListOps[fnUnHLister.Out] {
+    def fromProduct = fnUnHLister(t)
   }
 }
 
 trait FnHListOps[HLFn] {
-  def hlisted : HLFn
+  def toProduct : HLFn
 }
 
 trait FnUnHListOps[F] {
-  def unhlisted : F
+  def fromProduct : F
 }

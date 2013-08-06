@@ -24,60 +24,16 @@ object function {
    * 
    * @author Miles Sabin
    */
-  trait FnHLister[F] {
-    type Out = Args => Result
-    type Args <: HList
-    type Result
-    
-    def apply(f : F) : Out
-  }
-    
-  trait FnHListerAux[F, Out] {
-    type Args <: HList
-    type Result
-    def apply(f : F) : Out
-  }
+  trait FnToProduct[F] extends DepFn1[F]
 
-  /**
-   * `FnHLister` type class instances.
-   * 
-   * @author Miles Sabin
-   */
-  object FnHLister {
-    implicit def fnHLister[F, Args0 <: HList, Result0](implicit fnHLister : FnHListerAux[F, Args0 => Result0]) = new FnHLister[F] {
-      type Args = Args0
-      type Result = Result0
-      def apply(f : F) : Out = fnHLister(f)
-    }
-  }
-
-  object FnHListerAux extends FnHListerAuxInstances
+  object FnToProduct extends FnToProductInstances
 
   /**
    * Type class supporting conversion of functions of a single `HList` argument to ordinary functions. 
    * 
    * @author Miles Sabin
    */
-  trait FnUnHLister[F] {
-    type Out
-    def apply(f : F) : Out
-  }
+  trait FnFromProduct[F] extends DepFn1[F]
     
-  trait FnUnHListerAux[F, Out] {
-    def apply(f : F) : Out
-  }
-    
-  /**
-   * `FnUnHLister` type class instances.
-   * 
-   * @author Miles Sabin
-   */
-  object FnUnHLister {
-    implicit def fnUnHLister[F, Out0](implicit fnUnHLister : FnUnHListerAux[F, Out0]) = new FnUnHLister[F] {
-      type Out = Out0
-      def apply(f : F) : Out = fnUnHLister(f)
-    }
-  }
-
-  object FnUnHListerAux extends FnUnHListerAuxInstances
+  object FnFromProduct extends FnFromProductInstances
 }

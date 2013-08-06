@@ -31,10 +31,10 @@ class LiftTests {
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
     
-    val hlsum = sum.hlisted
+    val hlsum = sum.toProduct
     typed[Int :: Int :: HNil => Int](hlsum)
     
-    val hlprd = prd.hlisted
+    val hlprd = prd.toProduct
     typed[Int :: Int :: Int :: HNil => Int](hlprd)
     
     val l1 = 2 :: 3 :: HNil
