@@ -30,14 +30,14 @@ object SingletonTypes {
   import Witness.WitnessEq
 
   trait SingletonOps {
-    import Record.{ FieldType, key }
+    import Record.{ FieldType, field }
 
     type T
     val witness: WitnessEq[T]
 
     def narrow: T with Singleton = witness.value
 
-    def ->>[V](v: V): (FieldType[T, V], V) = (key[V](witness.value), v)
+    def ->>[V](v: V): FieldType[T, V] = field[T](v)
   }
 
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
@@ -139,11 +139,20 @@ trait SingletonTypeMacros[C <: Context] {
     }
   }
 
-  def convertImpl[T](t: c.Expr[T]): c.Expr[WitnessLt[T]] = {
-    val t0 = eval[T](t.tree).getOrElse(
-      c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant")
-    )
-    mkWitness(mkSingletonType0(t0), Literal(Constant(t0)))
+  def convertImpl[T: c.WeakTypeTag](t: c.Expr[T]): c.Expr[WitnessLt[T]] = {
+    (weakTypeOf[T], t.tree) match {
+      case (tpe @ ConstantType(const: Constant), _) =>
+        mkWitness(TypeTree(tpe), Literal(const))
+
+      case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
+        mkWitness(TypeTree(tpe), tree)
+
+      case (tpe: TypeRef, Literal(const: Constant)) =>
+        mkWitness(TypeTree(ConstantType(const)), Literal(const))
+
+      case _ =>
+        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
+    }
   }
 
   def mkOps[O](sTpt: TypTree, w: Tree) = {
@@ -156,12 +165,26 @@ trait SingletonTypeMacros[C <: Context] {
   }
 
   def mkSingletonOps[T](t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = {
-    val t0 = eval[T](t.tree).getOrElse(
-      c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant")
-    )
-    val sTpt = mkSingletonType0(t0)
-    val witness = mkWitness(sTpt , Literal(Constant(t0))).tree
-    mkOps(sTpt, witness)
+    (weakTypeOf[T], t.tree) match {
+      case (tpe @ ConstantType(const: Constant), _) =>
+        val sTpt = TypeTree(tpe)
+        mkOps(sTpt, mkWitness(sTpt, Literal(const)).tree)
+
+      case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
+        val sTpt = TypeTree(tpe)
+        mkOps(sTpt, mkWitness(sTpt, tree).tree)
+
+      case (tpe: TypeRef, Literal(const: Constant)) =>
+        val sTpt = TypeTree(ConstantType(const))
+        mkOps(sTpt, mkWitness(sTpt, Literal(const)).tree)
+
+      case (tpe @ TypeRef(pre, sym, args), tree) =>
+        val sTpt = SingletonTypeTree(tree)
+        mkOps(sTpt, mkWitness(sTpt, tree).tree)
+
+      case (tpe, tree) =>
+        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
+    }
   }
 
   def constructor(prop: Boolean) =

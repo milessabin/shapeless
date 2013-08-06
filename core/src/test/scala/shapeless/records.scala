@@ -24,14 +24,14 @@ class RecordTests {
 
   def typed[T](t : => T) {}
 
-  object intField1 extends FieldT[Int]
-  object intField2 extends FieldT[Int]
-  object stringField1 extends FieldT[String]
-  object stringField2 extends FieldT[String]
-  object boolField1 extends FieldT[Boolean]
-  object boolField2 extends FieldT[Boolean]
-  object doubleField1 extends FieldT[Double]
-  object doubleField2 extends FieldT[Double]
+  object intField1 //extends FieldT[Int]
+  object intField2 //extends FieldT[Int]
+  object stringField1 //extends FieldT[String]
+  object stringField2 //extends FieldT[String]
+  object boolField1 //extends FieldT[Boolean]
+  object boolField2 //extends FieldT[Boolean]
+  object doubleField1 //extends FieldT[Double]
+  object doubleField2 //extends FieldT[Double]
 
   @Test
   def testSingletons {
@@ -53,24 +53,15 @@ class RecordTests {
     assertEquals(2.0, v3, Double.MinPositiveValue)
   }
 
-  /*
-  def testSingletons {
-    import SingletonTypes._
-    import Record._
-
-    val r = ("foo" ->> 23) :: HNil //:: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
-    val v1 = r.get("foo")
-  }
-  */
-
-  /*
   @Test
   def testGet {
+    import SingletonTypes._
+
     val r1 =
-      (intField1    ->    23) ::
-      (stringField1 -> "foo") ::
-      (boolField1   ->  true) ::
-      (doubleField1 ->   2.0) ::
+      (intField1    ->>    23) ::
+      (stringField1 ->> "foo") ::
+      (boolField1   ->>  true) ::
+      (doubleField1 ->>   2.0) ::
       HNil
     
     val v1 = r1.get(intField1)
@@ -89,7 +80,9 @@ class RecordTests {
     typed[Double](v4)
     assertEquals(2.0, v4, Double.MinPositiveValue)
   }
-  
+
+  /*
+
   @Test
   def testUpdate {
     val r1 =

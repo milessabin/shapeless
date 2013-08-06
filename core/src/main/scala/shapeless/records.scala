@@ -86,14 +86,14 @@ object Record {
 
   type FieldEntry[F <: FieldAux] = (F, F#valueType)
 
-  type ValueType[V] = { type valueType = V }
-  type FieldType[K, V] = K with ValueType[V]
+  type KeyType[K] = { type keyType = K }
+  type FieldType[K, V] = V with KeyType[K]
 
-  class KeyBuilder[V] {
-    def apply[K](k : K): FieldType[K, V] = k.asInstanceOf[FieldType[K, V]]
+  class FieldBuilder[K] {
+    def apply[V](v : V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
   }
   
-  def key[V] = new KeyBuilder[V]
+  def field[K] = new FieldBuilder[K]
 }
 
 trait FieldSelector[L <: HList, K] {
@@ -102,6 +102,8 @@ trait FieldSelector[L <: HList, K] {
 }
 
 trait LowPriorityFieldSelector {
+  import Record.FieldType
+
   type Aux[L <: HList, K, Out0] = FieldSelector[L, K] { type Out = Out0 }
 
   implicit def hlistSelect[H, T <: HList, K]
@@ -113,10 +115,12 @@ trait LowPriorityFieldSelector {
 }
 
 object FieldSelector extends LowPriorityFieldSelector {
-  implicit def hlistSelect1[K, V, T <: HList]: Aux[(K, V) :: T, K, V] =
-    new FieldSelector[(K, V) :: T, K] {
+  import Record.FieldType
+
+  implicit def hlistSelect1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, V] =
+    new FieldSelector[FieldType[K, V] :: T, K] {
       type Out = V
-      def apply(l : (K, V) :: T): Out = l.head._2
+      def apply(l : FieldType[K, V] :: T): Out = l.head
     }
 }
 
