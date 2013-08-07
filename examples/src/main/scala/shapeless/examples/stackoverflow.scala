@@ -28,8 +28,8 @@ object StackOverflow2 {
   case class A2 ( a : A, b : A ) extends A  { def eval() = this }
   
   case class ApplyA[C, L <: HList, HF](c : C, l : L)
-    (implicit hl : FnHListerAux[C, HF], ev : HF <:< (L => A)) extends A {
-      def eval () : A = hl(c)(l)
+    (implicit fntp: FnToProduct.Aux[C, HF], ev : HF <:< (L => A)) extends A {
+      def eval () : A = fntp(c)(l)
     }
 
   val a : A = A0()
@@ -63,13 +63,13 @@ object StackOverflow3 {
   
   case class Foo(input1 : Int, input2 : String)
 
-  object FooBuilder extends Preprocessor((Foo.apply _).hlisted)
+  object FooBuilder extends Preprocessor((Foo.apply _).toProduct)
   
   val foo = FooBuilder(Input(23) :: Input("foo") :: HNil)
   
   case class Bar(input1 : Int, input2 : String, input3 : Boolean)
   
-  object BarBuilder extends Preprocessor((Bar.apply _).hlisted)
+  object BarBuilder extends Preprocessor((Bar.apply _).toProduct)
   
   val bar = BarBuilder(Input(23) :: Input("foo") :: Input(true) :: HNil)
 }
@@ -86,8 +86,8 @@ object StackOverflow4 extends App {
   def fun2(x: Int, foo: Map[Int,String], bar: Seq[Seq[Int]]) = x
   
   def wrap_fun[F, T <: HList, R](f : F)
-    (implicit hl : FnHListerAux[F, (Int :: T) => R], unhl : FnUnHListerAux[(Int :: T) => R, F]) =
-    ((x : Int :: T) => f.hlisted(x.head*2 :: x.tail)).unhlisted
+    (implicit fntp: FnToProduct.Aux[F, (Int :: T) => R], fnfp: FnFromProduct.Aux[(Int :: T) => R, F]): F =
+      ((x : Int :: T) => f.toProduct(x.head*2 :: x.tail)).fromProduct
 
   val f1 = wrap_fun(fun _)
   val f2 = wrap_fun(fun1 _)

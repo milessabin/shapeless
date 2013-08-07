@@ -113,16 +113,19 @@ trait Poly extends PolyApply with PolyCases {
   }
   
   trait LowPriorityCaseBuilder {
-    implicit def valueCaseBuilder[T] = new CaseBuilder[T, HNil, T] {
-      def apply(t: T) = Case((_: HNil) => t)
-    }
+    implicit def valueCaseBuilder[T]: CaseBuilder[T, HNil, T] =
+      new CaseBuilder[T, HNil, T] {
+        def apply(t: T) = Case((_: HNil) => t)
+      }
   }
   
   object CaseBuilder extends LowPriorityCaseBuilder {
-    import ops.function.FnHLister
-    implicit def fnCaseBuilder[F](implicit hl: FnHLister[F]) = new CaseBuilder[F, hl.Args, hl.Result] {
-      def apply(f: F) = Case((l : hl.Args) => hl(f)(l))
-    }
+    import ops.function.FnToProduct
+    implicit def fnCaseBuilder[F, H, T <: HList, Result]
+      (implicit fntp: FnToProduct.Aux[F, ((H :: T) => Result)]): CaseBuilder[F, H :: T, Result] =
+        new CaseBuilder[F, H :: T, Result] {
+          def apply(f: F) = Case((l : H :: T) => fntp(f)(l))
+        }
   }
   
   def use[T, L <: HList, R](t : T)(implicit cb: CaseBuilder[T, L, R]) = cb(t)

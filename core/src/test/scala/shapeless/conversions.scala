@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ConversionTests {
-  import ops.function.FnHListerAux
+  import ops.function.FnToProduct
   import syntax.std.function._
   import syntax.std.tuple._
 
@@ -34,7 +34,7 @@ class ConversionTests {
     typed[Int :: String :: Double :: Boolean :: HNil](h1)
     assertEquals(23 :: "foo" :: 2.0 :: true :: HNil, h1)
     
-    val h2 = hlisted(t1)
+    val h2 = productElements(t1)
     typed[Int :: String :: Double :: Boolean :: HNil](h2)
     assertEquals(23 :: "foo" :: 2.0 :: true :: HNil, h2)
     
@@ -66,10 +66,10 @@ class ConversionTests {
     val sum : (Int, Int) => Int = _+_
     val prd : (Int, Int, Int) => Int = _*_*_
     
-    val hlsum = sum.hlisted
+    val hlsum = sum.toProduct
     typed[(Int :: Int :: HNil) => Int](hlsum)
     
-    val hlprd = prd.hlisted
+    val hlprd = prd.toProduct
     typed[(Int :: Int :: Int :: HNil) => Int](hlprd)
     
     trait A
@@ -81,10 +81,10 @@ class ConversionTests {
     
     val ab : A => B = (a : A) => b
     
-    val hlab = ab.hlisted
+    val hlab = ab.toProduct
     typed[(A :: HNil) => B](hlab)
-    
-    def foo[F, L <: HList, R](f : F, l : L)(implicit hl : FnHListerAux[F, L => R]) = hl(f)(l)
+ 
+    def foo[F, L <: HList, R](f : F, l : L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
     val ab2 = foo(ab, a :: HNil)
   }

@@ -28,11 +28,11 @@ object Boilerplate {
     val hlisteraux = dir / "shapeless" / "hlisteraux.scala"
     IO.write(hlisteraux, genHListerAuxInstances)
     
-    val fnhlisteraux = dir / "shapeless" / "fnhlisteraux.scala"
-    IO.write(fnhlisteraux, genFnHListerAuxInstances)
+    val fntoproduct = dir / "shapeless" / "fntoproduct.scala"
+    IO.write(fntoproduct, genFnToProductInstances)
     
-    val fnunhlisteraux = dir / "shapeless" / "fnunhlisteraux.scala"
-    IO.write(fnunhlisteraux, genFnUnHListerAuxInstances)
+    val fnfromproduct = dir / "shapeless" / "fnfromproduct.scala"
+    IO.write(fnfromproduct, genFnFromProductInstances)
     
     val caseinst = dir / "shapeless" / "caseinst.scala"
     IO.write(caseinst, genCaseInst)
@@ -65,7 +65,7 @@ object Boilerplate {
     IO.write(hmapbuilder, genHMapBuilder)
     
     Seq(
-      tupleops, tupler, hlisteraux, fnhlisteraux, fnunhlisteraux, caseinst, polyapply,
+      tupleops, tupler, hlisteraux, fntoproduct, fnfromproduct, caseinst, polyapply,
       polycases, polyinst, polyauxcases, polyntraits, nats, tupletypeables, sizedbuilder,
       hmapbuilder
     )
@@ -169,7 +169,7 @@ object Boilerplate {
         |""").stripMargin
   }
   
-  def genFnHListerAuxInstances = {
+  def genFnToProductInstances = {
     def genInstance(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
       val typeArgs = (typeVars :+ "Res").mkString("[", ", ", "]")
@@ -181,10 +181,9 @@ object Boilerplate {
       val fnBody = if (arity == 0) """fn()""" else """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
       
       ("""|
-          |  implicit def fnHLister"""+arity+typeArgs+""" = new FnHListerAux["""+fnType+""", """+hlistFnType+"""] {
-          |    type Args = """+hlistType+"""
-          |    type Result = Res
-          |    def apply(fn : """+fnType+""") = (l : """+hlistType+""") => """+fnBody+"""
+          |  implicit def fnToProduct"""+arity+typeArgs+""": Aux["""+fnType+""", """+hlistFnType+"""] = new FnToProduct["""+fnType+"""] {
+          |    type Out = """+hlistFnType+"""
+          |    def apply(fn: """+fnType+"""): Out = (l : """+hlistType+""") => """+fnBody+"""
           |  }
           |""").stripMargin
     }
@@ -195,13 +194,15 @@ object Boilerplate {
     ("""|
         |package ops
         |
-        |import function.FnHListerAux
+        |import function.FnToProduct
         |
-        |trait FnHListerAuxInstances {"""+instances+"""}
+        |trait FnToProductInstances {
+        |  type Aux[F, Out0] = FnToProduct[F] { type Out = Out0 }
+        |"""+instances+"""}
         |""").stripMargin
   }
   
-  def genFnUnHListerAuxInstances = {
+  def genFnFromProductInstances = {
     def genInstance(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
       val typeArgs = (typeVars :+ "Res").mkString("[", ", ", "]")
@@ -212,8 +213,9 @@ object Boilerplate {
       val hlistFnArgs = (((0 until arity) map (n => (n+'a').toChar)) :+ "HNil").mkString("", " :: ", "")
       
       ("""|
-          |  implicit def fnUnHLister"""+arity+typeArgs+""" = new FnUnHListerAux["""+hlistFnType+""", """+fnType+"""] {
-          |    def apply(hf : """+hlistFnType+""") = """+litArgs+""" => hf("""+hlistFnArgs+""")
+          |  implicit def fnFromProduct"""+arity+typeArgs+""": Aux["""+hlistFnType+""", """+fnType+"""] = new FnFromProduct["""+hlistFnType+"""] {
+          |    type Out = """+fnType+"""
+          |    def apply(hf : """+hlistFnType+"""): Out = """+litArgs+""" => hf("""+hlistFnArgs+""")
           |  }
           |""").stripMargin
     }
@@ -224,9 +226,11 @@ object Boilerplate {
     ("""|
         |package ops
         |
-        |import function.FnUnHListerAux
+        |import function.FnFromProduct
         |
-        |trait FnUnHListerAuxInstances {"""+instances+"""}
+        |trait FnFromProductInstances {
+        |  type Aux[F, Out0] = FnFromProduct[F] { type Out = Out0 }
+        |"""+instances+"""}
         |""").stripMargin
   }
   
