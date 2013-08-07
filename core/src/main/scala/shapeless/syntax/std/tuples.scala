@@ -89,6 +89,18 @@ final class TupleOps[T](t: T) {
   def apply(n: Nat)(implicit at: At[T, n.N]): at.Out = at(t)
   
   /**
+   * Returns the ''nth'' element of this tuple. An explicit type argument must be provided. Available only if there is
+   * evidence that this tuple has at least ''n'' elements.
+   */
+  def at[N <: Nat](implicit at: At[T, N]): at.Out = at(t)
+
+  /**
+   * Returns the ''nth'' element of this tuple. Available only if there is evidence that this tuple has at least ''n''
+   * elements.
+   */
+  def at(n: Nat)(implicit at: At[T, n.N]): at.Out = at(t)
+  
+  /**
    * Returns the last element of this tuple. Available only if there is evidence that this tuple is composite.
    */
   def last(implicit last: Last[T]): last.Out = last(t)

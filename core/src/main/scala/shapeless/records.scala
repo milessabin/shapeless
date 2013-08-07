@@ -16,8 +16,6 @@
 
 package shapeless
 
-import ops.hlist.{ Remove, ReversePrepend, Selector }
-
 /**
  * Record operations on `HList`'s with field-like elements.
  * 
@@ -27,39 +25,46 @@ final class RecordOps[L <: HList](l : L) {
   import Record._
 
   /**
-   * Returns the value associate with the field F. Only available of this record has a field with key type F.
+   * Returns the value associated with the singleton typed key k. Only available if this record has a field with
+   * with keyType equal to the singleton type k.T.
    */
-  //def get[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
-  def get(k : Witness)(implicit selector : FieldSelector[L, k.T]) = selector(l)
+  def get(k: Witness)(implicit selector : FieldSelector[L, k.T]): selector.Out = selector(l)
   
-  // Creates a bogus ambiguity with HListOps#apply. Will be Reinstated once https://issues.scala-lang.org/browse/SI-5142
-  // is fixed. Use get for now.
-  // def apply[F <: FieldAux](f : F)(implicit selector : Selector[L, FieldEntry[F]]) : F#valueType = selector(l)._2
+  /**
+   * Returns the value associated with the singleton typed key k. Only available if this record has a field with
+   * with keyType equal to the singleton type k.T.
+   *
+   * Note that this can creates a bogus ambiguity with `HListOps#apply` as described in
+   * https://issues.scala-lang.org/browse/SI-5142. If this method is accessible the conflict can be worked around by
+   * using HListOps#at instead of `HListOps#apply`.
+   */
+  def apply(k: Witness)(implicit selector : FieldSelector[L, k.T]): selector.Out = selector(l)
 
   /**
    * Updates or adds to this record a field with key type F and value type F#valueType.
    */
-  def updated[V, F <: Field[V]](f : F, v : V)(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, f, v)
+  def updated[V](k: Witness, v: V)(implicit updater: FieldUpdater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
   /**
-   * Remove the first field with key type F from this record, returning both the corresponding value and the updated
-   * record.
+   * Remove the field associated with the singleton typed key k, returning both the corresponding value and the updated
+   * record. Only available if this record has a field with keyType equal to the singleton type k.T.
    */
-  def remove[F <: FieldAux, Out <: HList](f : F)(implicit remove : Remove.Aux[L, FieldEntry[F], (FieldEntry[F], Out)]) : (F#valueType, Out) = {
-    val ((f, v), r) = remove(l)
-    (v, r)
-  }
+  def remove(k : Witness)(implicit remover: FieldRemover[L, k.T]): remover.Out = remover(l)
   
   /**
-   * Updates or adds to this record a field with key type F and value type F#valueType.
+   * Updates or adds to this record a field of type F.
    */
-  def +[V, F <: Field[V]](fv : (F, V))(implicit updater : Updater[L, F, V]) : updater.Out = updater(l, fv._1, fv._2)
+  def +[F](f: F)(implicit updater : FieldUpdater[L, F]): updater.Out = updater(l, f)
   
   /**
-   * Remove the first field with key type F from this record, returning both the corresponding value and the updated
-   * record.
+   * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this
+   * record has a field with keyType equal to the singleton type k.T.
    */
-  def -[F <: FieldAux, Out <: HList](f : F)(implicit remove : Remove.Aux[L, FieldEntry[F], (FieldEntry[F], Out)]) : Out = remove(l)._2
+  def -[V, Out <: HList](k: Witness)(implicit remover : FieldRemover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
+
+  def keys(implicit keys: Keys[L]): keys.Out = keys()
+
+  def values(implicit values: Values[L]): values.Out = values(l)
 }
 
 /**
@@ -96,9 +101,14 @@ object Record {
   def field[K] = new FieldBuilder[K]
 }
 
+/**
+ * Type class supporting record field selection.
+ * 
+ * @author Miles Sabin
+ */
 trait FieldSelector[L <: HList, K] {
   type Out
-  def apply(l : L) : Out
+  def apply(l : L): Out
 }
 
 trait LowPriorityFieldSelector {
@@ -129,36 +139,107 @@ object FieldSelector extends LowPriorityFieldSelector {
  * 
  * @author Miles Sabin
  */
-trait Updater[L <: HList, F <: FieldAux, V] {
-  type Out <: HList
-  def apply(l : L, f : F, v : V) : Out
+trait FieldUpdater[L <: HList, F] extends DepFn2[L, F] { type Out <: HList }
+
+trait LowPriorityFieldUpdater {
+  import Record.FieldType
+
+  type Aux[L <: HList, F, Out0 <: HList] = FieldUpdater[L, F] { type Out = Out0 }
+  
+  implicit def hlistUpdater1[H, T <: HList, K, V]
+    (implicit ut : FieldUpdater[T, FieldType[K, V]]): Aux[H :: T, FieldType[K, V], H :: ut.Out] =
+      new FieldUpdater[H :: T, FieldType[K, V]] {
+        type Out = H :: ut.Out
+        def apply(l: H :: T, f: FieldType[K, V]): Out = l.head :: ut(l.tail, f)
+      }
 }
 
-trait UpdaterAux[L <: HList, F <: FieldAux, V, Out <: HList] {
-  def apply(l : L, f : F, v : V) : Out
-}
+object FieldUpdater extends LowPriorityFieldUpdater {
+  import Record.FieldType
 
-object Updater {
-  implicit def updater[L <: HList, F <: FieldAux, V, Out0 <: HList](implicit updater : UpdaterAux[L, F, V, Out0]) =
-    new Updater[L, F, V] {
-      type Out = Out0
-      def apply(l : L, f : F, v : V) : Out = updater(l, f, v)
+  implicit def hnilUpdater[L <: HNil, F]: Aux[L, F, F :: HNil] =
+    new FieldUpdater[L, F] {
+      type Out = F :: HNil
+      def apply(l: L, f: F): Out = f :: HNil
+    }
+
+  implicit def hlistUpdater2[K, V, T <: HList]: Aux[FieldType[K, V] :: T, FieldType[K, V], FieldType[K, V] :: T] =
+    new FieldUpdater[FieldType[K, V] :: T, FieldType[K, V]] {
+      type Out = FieldType[K, V] :: T
+      def apply(l: FieldType[K, V] :: T, f: FieldType[K, V]): Out = f :: l.tail
     }
 }
 
-trait LowPriorityUpdaterAux {
-  implicit def hlistUpdater1[L <: HList, F <: FieldAux, V] = new UpdaterAux[L, F, V, (F, V) :: L] {
-    def apply(l : L, f : F, v : V) : (F, V) :: L = (f -> v) :: l
-  }
+/**
+ * Type class supporting record field removal.
+ * 
+ * @author Miles Sabin
+ */
+trait FieldRemover[L <: HList, K] extends DepFn1[L]
+
+trait LowPriorityFieldRemover {
+  import Record.FieldType
+
+  type Aux[L <: HList, K, Out0] = FieldRemover[L, K] { type Out = Out0 }
+  
+  implicit def hlistRemove[H, T <: HList, K, V, OutT <: HList]
+    (implicit rt: Aux[T, K, (V, OutT)]): Aux[H :: T, K, (V, H :: OutT)] =
+      new FieldRemover[H :: T, K] {
+        type Out = (V, H :: OutT)
+        def apply(l : H :: T): Out = {
+          val (v, tail) = rt(l.tail)
+          (v, l.head :: tail)
+        }
+      }
 }
 
-object UpdaterAux extends LowPriorityUpdaterAux {
-  implicit def hlistUpdater2[T <: HList, F <: FieldAux, V] = new UpdaterAux[(F, V) :: T, F, V, (F, V) :: T] {
-    def apply(l : (F, V) :: T, f : F, v : V) : (F, V) :: T = (f -> v) :: l.tail
-  }
-  
-  implicit def hlistUpdater3[H, T <: HList, F <: FieldAux, V, Out <: HList](implicit ut : UpdaterAux[T, F, V, Out]) =
-    new UpdaterAux[H :: T, F, V, H :: Out] {
-      def apply(l : H :: T, f : F, v : V) : H :: Out = l.head :: ut(l.tail, f, v)
+object FieldRemover extends LowPriorityFieldRemover {
+  import Record.FieldType
+
+
+  implicit def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
+    new FieldRemover[FieldType[K, V] :: T, K] {
+      type Out = (V, T)
+      def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
+    }
+}
+
+trait Keys[L <: HList] extends DepFn0[L] { type Out <: HList }
+
+object Keys {
+  import Record.FieldType
+  import Witness.WitnessEq
+
+  type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
+
+  implicit def hnilKeys: Aux[HNil, HNil] =
+    new Keys[HNil] {
+      type Out = HNil
+      def apply(): Out = HNil
+    }
+
+  implicit def hlistKeys[K, V, T <: HList](implicit wk: WitnessEq[K], kt: Keys[T]): Aux[FieldType[K, V] :: T, K :: kt.Out] =
+    new Keys[FieldType[K, V] :: T] {
+      type Out = K :: kt.Out
+      def apply(): Out = wk.value :: kt()
+    }
+}
+
+trait Values[L <: HList] extends DepFn1[L] { type Out <: HList }
+
+object Values {
+  import Record.FieldType
+  type Aux[L <: HList, Out0 <: HList] = Values[L] { type Out = Out0 }
+
+  implicit def hnilValues: Aux[HNil, HNil] =
+    new Values[HNil] {
+      type Out = HNil
+      def apply(l: HNil): Out = HNil
+    }
+
+  implicit def hlistValues[K, V, T <: HList](implicit vt: Values[T]): Aux[FieldType[K, V] :: T, V :: vt.Out] =
+    new Values[FieldType[K, V] :: T] {
+      type Out = V :: vt.Out
+      def apply(l: FieldType[K, V] :: T): Out = l.head :: vt(l.tail)
     }
 }

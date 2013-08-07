@@ -23,25 +23,31 @@ package shapeless.examples
  */
 object RecordExamples extends App {
   import shapeless._
+  import SingletonTypes._
   import Record._
   import ops.hlist.ToList
 
-  object author  extends FieldT[String]  { override def toString = "Author" }
-  object title   extends FieldT[String]  { override def toString = "Title" }
-  object id      extends FieldT[Int]     { override def toString = "ID" }
-  object price   extends FieldT[Double]  { override def toString = "Price" }
-  object inPrint extends FieldT[Boolean] { override def toString = "In print" }
+  object author  /*extends FieldT[String]*/  { override def toString = "Author" }
+  object title   /*extends FieldT[String]*/  { override def toString = "Title" }
+  object id      /*extends FieldT[Int]   */  { override def toString = "ID" }
+  object price   /*extends FieldT[Double]*/  { override def toString = "Price" }
+  object inPrint /*extends FieldT[Boolean]*/ { override def toString = "In print" }
 
-  def printBook[B <: HList](b : B)(implicit tl : ToList[B, (Field[_], Any)]) = {
-    b.toList foreach { case (field, value) => println(field+": "+value) }
+  def printBook[B <: HList, K <: HList, V <: HList](b : B)
+    (implicit
+      keys: Keys.Aux[B, K],
+      values: Values.Aux[B, V],
+      ktl: ToList[K, Any],
+      vtl: ToList[V, Any]) = {
+    (b.keys.toList zip b.values.toList) foreach { case (field, value) => println(field+": "+value) }
     println
   }
-    
+
   val book =
-    (author -> "Benjamin Pierce") ::
-    (title  -> "Types and Programming Languages") ::
-    (id     ->  262162091) ::
-    (price  ->  44.11) ::
+    (author ->> "Benjamin Pierce") ::
+    (title  ->> "Types and Programming Languages") ::
+    (id     ->>  262162091) ::
+    (price  ->>  44.11) ::
     HNil
   
   printBook(book)
@@ -52,11 +58,11 @@ object RecordExamples extends App {
   println
 
   // Update price field, relying on static type of currentPrice
-  val updated = book + (price -> (currentPrice+2.0))
+  val updated = book + (price ->> (currentPrice+2.0))
   printBook(updated)
 
   // Add a new field
-  val extended = updated + (inPrint -> true)
+  val extended = updated + (inPrint ->> true)
   printBook(extended)
   
   // Remove a field
