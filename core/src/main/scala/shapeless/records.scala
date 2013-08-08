@@ -46,6 +46,11 @@ final class RecordOps[L <: HList](l : L) {
   def updated[V](k: Witness, v: V)(implicit updater: FieldUpdater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
   /**
+   * Updates a field having a value with type A by given function.
+   */
+  def updateWith[A, B](k: Witness)(f: A => B)(implicit modifier: FieldModifier[L, k.T, A, B]): modifier.Out = modifier(l, f)
+
+  /**
    * Remove the field associated with the singleton typed key k, returning both the corresponding value and the updated
    * record. Only available if this record has a field with keyType equal to the singleton type k.T.
    */
@@ -167,6 +172,41 @@ object FieldUpdater extends LowPriorityFieldUpdater {
     new FieldUpdater[FieldType[K, V] :: T, FieldType[K, V]] {
       type Out = FieldType[K, V] :: T
       def apply(l: FieldType[K, V] :: T, f: FieldType[K, V]): Out = f :: l.tail
+    }
+}
+
+/**
+ * Type class supporting modification of a record field by given function.
+ * 
+ * @author Joni Freeman
+ */
+@annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
+trait FieldModifier[L <: HList, F, A, B] {
+  type Out
+  def apply(l: L, f: A => B): Out
+}
+
+trait FieldModifierAux[L <: HList, F, A, B, Rem <: HList] {
+  def apply(l: L, f: A => B): Rem
+}
+
+object FieldModifier {
+  implicit def hlistModify[L <: HList, F, A, B, Rem <: HList](implicit aux: FieldModifierAux[L, F, A, B, Rem]) = new FieldModifier[L, F, A, B] {
+    type Out = Rem
+    def apply(l: L, f: A => B): Rem = aux(l, f)
+  }
+}
+
+object FieldModifierAux {
+  import Record.{FieldType, field}
+
+  implicit def hlistModify1[F, A, B, T <: HList] = new FieldModifierAux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] {
+    def apply(l: FieldType[F, A] :: T, f: A => B): FieldType[F, B] :: T = field[F](f(l.head)) :: l.tail
+  }
+  
+  implicit def hlistModify[H, T <: HList, F, A, B, Rem <: HList](implicit m: FieldModifierAux[T, F, A, B, Rem]) =
+    new FieldModifierAux[H :: T, F, A, B, H :: Rem] {
+      def apply(l: H :: T, f: A => B): H :: Rem = l.head :: m(l.tail, f)
     }
 }
 

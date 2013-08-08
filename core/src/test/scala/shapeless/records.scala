@@ -237,4 +237,13 @@ class RecordTests {
     typed[String](v1)
     assertEquals("JOE", v1)
   }
+
+  @Test
+  def testUpdateFieldByFunction {
+    val r = ("foo" ->> 23) :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+    val r2 = r.updateWith("foo")((i: Int) => i.toString)
+    val v1 = r2.get("foo")
+    typed[String](v1)
+    assertEquals("23", v1)
+  }
 }
