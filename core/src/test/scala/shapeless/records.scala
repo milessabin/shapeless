@@ -219,4 +219,22 @@ class RecordTests {
     typed[FieldType[intField1.type, Int] :: FieldType[stringField1.type, String] :: FieldType[boolField1.type, Boolean] :: HNil](r5)
     assertEquals((intField1 ->> 23) :: (stringField1 ->> "foo") :: (boolField1 ->> true) :: HNil, r5)
   }
+
+  @Test
+  def testMappingOverRecordFields {
+    object toUpper extends Poly1 {
+      implicit def stringToUpper[F] = at[FieldType[F, String]] {
+        f => field[F](f.toUpperCase)
+      }
+
+      implicit def otherTypes[X] = at[X](identity)
+    }
+
+    val r = ("foo" ->> "joe") :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+    val r2 = r map toUpper
+
+    val v1 = r2("foo")
+    typed[String](v1)
+    assertEquals("JOE", v1)
+  }
 }
