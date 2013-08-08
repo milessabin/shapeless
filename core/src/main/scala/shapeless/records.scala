@@ -62,8 +62,14 @@ final class RecordOps[L <: HList](l : L) {
    */
   def -[V, Out <: HList](k: Witness)(implicit remover : FieldRemover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
 
+  /**
+   * Returns the keys of this record as an HList of singleton typed values.
+   */
   def keys(implicit keys: Keys[L]): keys.Out = keys()
 
+  /**
+   * Returns an HList of the values of this record.
+   */
   def values(implicit values: Values[L]): values.Out = values(l)
 }
 
@@ -91,8 +97,11 @@ object Record {
 
   type FieldEntry[F <: FieldAux] = (F, F#valueType)
 
-  type KeyType[K] = { type keyType = K }
-  type FieldType[K, V] = V with KeyType[K]
+  trait KeyType[K, V] {
+    type keyType = K
+    type valueType = V
+  }
+  type FieldType[K, V] = V with KeyType[K, V]
 
   class FieldBuilder[K] {
     def apply[V](v : V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
@@ -212,8 +221,8 @@ object Keys {
 
   type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
 
-  implicit def hnilKeys: Aux[HNil, HNil] =
-    new Keys[HNil] {
+  implicit def hnilKeys[L <: HNil]: Aux[L, HNil] =
+    new Keys[L] {
       type Out = HNil
       def apply(): Out = HNil
     }
@@ -231,15 +240,15 @@ object Values {
   import Record.FieldType
   type Aux[L <: HList, Out0 <: HList] = Values[L] { type Out = Out0 }
 
-  implicit def hnilValues: Aux[HNil, HNil] =
-    new Values[HNil] {
+  implicit def hnilValues[L <: HNil]: Aux[L, HNil] =
+    new Values[L] {
       type Out = HNil
-      def apply(l: HNil): Out = HNil
+      def apply(l: L): Out = HNil
     }
 
   implicit def hlistValues[K, V, T <: HList](implicit vt: Values[T]): Aux[FieldType[K, V] :: T, V :: vt.Out] =
     new Values[FieldType[K, V] :: T] {
       type Out = V :: vt.Out
-      def apply(l: FieldType[K, V] :: T): Out = l.head :: vt(l.tail)
+      def apply(l: FieldType[K, V] :: T): Out = (l.head: V) :: vt(l.tail)
     }
 }
