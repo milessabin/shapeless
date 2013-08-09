@@ -27,12 +27,6 @@ object RecordExamples extends App {
   import Record._
   import ops.hlist.ToList
 
-  object author  /*extends FieldT[String]*/  { override def toString = "Author" }
-  object title   /*extends FieldT[String]*/  { override def toString = "Title" }
-  object id      /*extends FieldT[Int]   */  { override def toString = "ID" }
-  object price   /*extends FieldT[Double]*/  { override def toString = "Price" }
-  object inPrint /*extends FieldT[Boolean]*/ { override def toString = "In print" }
-
   def printBook[B <: HList, K <: HList, V <: HList](b : B)
     (implicit
       keys: Keys.Aux[B, K],
@@ -44,28 +38,28 @@ object RecordExamples extends App {
   }
 
   val book =
-    (author ->> "Benjamin Pierce") ::
-    (title  ->> "Types and Programming Languages") ::
-    (id     ->>  262162091) ::
-    (price  ->>  44.11) ::
+    ("author" ->> "Benjamin Pierce") ::
+    ("title"  ->> "Types and Programming Languages") ::
+    ("id"     ->>  262162091) ::
+    ("price"  ->>  44.11) ::
     HNil
   
   printBook(book)
     
   // Read price field
-  val currentPrice = book.get(price)  // Static type is Double
+  val currentPrice = book("price")  // Static type is Double
   println("Current price is "+currentPrice)
   println
 
   // Update price field, relying on static type of currentPrice
-  val updated = book + (price ->> (currentPrice+2.0))
+  val updated = book + ("price" ->> (currentPrice+2.0))
   printBook(updated)
 
   // Add a new field
-  val extended = updated + (inPrint ->> true)
+  val extended = updated + ("inPrint" ->> true)
   printBook(extended)
   
   // Remove a field
-  val noId = extended - id 
+  val noId = extended - "id" 
   printBook(noId)
 }
