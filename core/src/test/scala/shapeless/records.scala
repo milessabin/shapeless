@@ -350,7 +350,7 @@ class RecordTests {
     typed[FieldType[intField1.type, Int] :: FieldType[stringField1.type, String] :: FieldType[boolField1.type, Boolean] :: HNil](r5)
     assertEquals((intField1 ->> 23) :: (stringField1 ->> "foo") :: (boolField1 ->> true) :: HNil, r5)
   }
-  
+
   @Test
   def testRemoveLiteral {
     val r1 =
@@ -395,5 +395,49 @@ class RecordTests {
     val r5 = r1 - "doubleField1"
     typed[FieldType[wIntField1.T, Int] :: FieldType[wStringField1.T, String] :: FieldType[wBoolField1.T, Boolean] :: HNil](r5)
     assertEquals(("intField1" ->> 23) :: ("stringField1" ->> "foo") :: ("boolField1" ->> true) :: HNil, r5)
+  }
+
+  @Test
+  def testMappingOverRecordFields {
+    object toUpper extends Poly1 {
+      implicit def stringToUpper[F] = at[FieldType[F, String]] {
+        f => field[F](f.toUpperCase)
+      }
+
+      implicit def otherTypes[X] = at[X](identity)
+    }
+
+    val r = ("foo" ->> "joe") :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+    val r2 = r map toUpper
+
+    val v1 = r2("foo")
+    typed[String](v1)
+    assertEquals("JOE", v1)
+
+    val v2 = r2("bar")
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+
+    val v3 = r2("baz")
+    typed[Double](v3)
+    assertEquals(2.0, v3, Double.MinPositiveValue)
+  }
+
+  @Test
+  def testUpdateFieldByFunction {
+    val r = ("foo" ->> 23) :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+    val r2 = r.updateWith("foo")((i: Int) => i.toString)
+
+    val v1 = r2.get("foo")
+    typed[String](v1)
+    assertEquals("23", v1)
+
+    val v2 = r2("bar")
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+
+    val v3 = r2("baz")
+    typed[Double](v3)
+    assertEquals(2.0, v3, Double.MinPositiveValue)
   }
 }
