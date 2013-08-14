@@ -22,8 +22,7 @@ import org.junit.Assert._
 import shapeless.test.illTyped
 
 class SingletonTypesTests {
-  import SingletonTypes._
-  import Witness.{ WitnessEq, WitnessLt }
+  import syntax.singleton._
 
   val wTrue = Witness(true)
   type True = wTrue.T
@@ -45,8 +44,8 @@ class SingletonTypesTests {
 
   @Test
   def testRefine {
-    val sTrue = refine(true)
-    val sFalse = refine(false)
+    val sTrue = true.narrow
+    val sFalse = false.narrow
 
     sameTyped(sTrue)(sTrue)
     sameTyped(sTrue)(true)
@@ -56,8 +55,8 @@ class SingletonTypesTests {
       sameTyped(sTrue)(false)
     """)
 
-    val s13 = refine(13)
-    val s23 = refine(23)
+    val s13 = 13.narrow
+    val s23 = 23.narrow
 
     sameTyped(s13)(s13)
     sameTyped(s13)(13)
@@ -67,8 +66,8 @@ class SingletonTypesTests {
       sameTyped(s13)(23)
     """)
 
-    val sFoo = refine("foo")
-    val sBar = refine("bar")
+    val sFoo = "foo".narrow
+    val sBar = "bar".narrow
 
     sameTyped(sFoo)(sFoo)
     sameTyped(sFoo)("foo")
@@ -96,23 +95,23 @@ class SingletonTypesTests {
 
   @Test
   def testRefinedTypeClass {
-    val sTrue = show(refine(true))
+    val sTrue = show(true.narrow)
     assertEquals("true", sTrue)
 
-    val sFalse = show(refine(false))
+    val sFalse = show(false.narrow)
     assertEquals("false", sFalse)
 
-    val sOne = show(refine(1))
+    val sOne = show(1.narrow)
     assertEquals("One", sOne)
 
-    val sTwo = show(refine(2))
+    val sTwo = show(2.narrow)
     assertEquals("Two", sTwo)
 
-    val sThree = show(refine(3))
+    val sThree = show(3.narrow)
     assertEquals("Three", sThree)
 
     illTyped("""
-      show(refine(0))
+      show(0.narrow)
     """)
   }
 
@@ -146,7 +145,7 @@ class SingletonTypesTests {
     """)
   }
 
-  def convert(w: Witness): WitnessEq[w.T] = w
+  def convert(w: Witness): Witness.Eq[w.T] = w
 
   @Test
   def testWitnessConversion {
@@ -190,7 +189,7 @@ class SingletonTypesTests {
     """)
   }
 
-  def boundedConvert(w: WitnessLt[Int]): WitnessEq[w.T] = w
+  def boundedConvert(w: Witness.Lt[Int]): Witness.Eq[w.T] = w
 
   @Test
   def testBoundedWitnessConversion {
@@ -237,7 +236,7 @@ class SingletonTypesTests {
   }
 
   object ShowWitness {
-    implicit def showWitness[T](implicit w: WitnessEq[T]) =
+    implicit def showWitness[T](implicit w: Witness.Aux[T]) =
       new ShowWitness[T] {
         def show = w.value.toString
       }
@@ -261,5 +260,57 @@ class SingletonTypesTests {
 
     val sThree = showWitness(3)
     assertEquals("3", sThree)
+  }
+
+  def showWitnessWith(w: WitnessWith[Show]) = w.instance.show
+
+  @Test
+  def testWitnessWith {
+    val sTrue = showWitnessWith(true)
+    assertEquals("true", sTrue)
+
+    val sFalse = showWitnessWith(false)
+    assertEquals("false", sFalse)
+
+    val sOne = showWitnessWith(1)
+    assertEquals("One", sOne)
+
+    val sTwo = showWitnessWith(2)
+    assertEquals("Two", sTwo)
+
+    val sThree = showWitnessWith(3)
+    assertEquals("Three", sThree)
+  }
+
+  trait Rel[T] {
+    type Out
+  }
+
+  object Rel {
+    implicit def relTrue:  Rel[True]  { type Out = Int  } = new Rel[True]  { type Out = Int }
+    implicit def relFalse: Rel[False] { type Out = String } = new Rel[False] { type Out = String }
+  }
+
+  def check(w: WitnessWith[Rel])(v: w.Out) = v
+
+  @Test
+  def testWitnessWithOut {
+    val relTrue = check(true)(23)
+    typed[Int](relTrue)
+
+    val relFalse = check(false)("foo")
+    typed[String](relFalse)
+
+    illTyped("""
+      check(true)("foo")
+    """)
+
+    illTyped("""
+      check(false)(23)
+    """)
+    
+    illTyped("""
+      check(23)(23)
+    """)
   }
 }

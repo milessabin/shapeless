@@ -215,7 +215,7 @@ object hlist {
       def apply(): Out = _0
     }
     
-    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : WitnessAux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
+    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : Witness.Aux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
       type Out = Succ[N]
       def apply(): Out = sn.value
     }

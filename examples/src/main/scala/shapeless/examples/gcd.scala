@@ -36,7 +36,7 @@ object GCDExamples {
     implicit def gcd1[X <: Nat, Y <: Nat, Z0 <: Nat](implicit gcd : GCDAux[X, Y, Z0]) = new GCD[X, Y] {
       type Z = Z0
     }
-    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : GCDAux[x.N, y.N, N], wn : WitnessAux[N]) = wn.value
+    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : GCDAux[x.N, y.N, N], wn : Witness.Aux[N]) = wn.value
   }
 
   trait GCDAux[X <: Nat, Y <: Nat, Z <: Nat]

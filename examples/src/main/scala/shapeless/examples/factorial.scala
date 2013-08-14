@@ -37,7 +37,7 @@ object FactorialExamples {
       type N = N0
     }
 
-    def factorial[N <: Nat](i : Nat)(implicit fact : FactorialAux[i.N, N], wn : WitnessAux[N]) = wn.value
+    def factorial[N <: Nat](i : Nat)(implicit fact : FactorialAux[i.N, N], wn : Witness.Aux[N]) = wn.value
   }
 
   trait FactorialAux[I <: Nat, N <: Nat]

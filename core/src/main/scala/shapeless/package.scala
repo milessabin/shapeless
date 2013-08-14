@@ -22,8 +22,8 @@ package object shapeless {
     /** The natural number 0 */
     val _0: _0 = new _0
 
-    implicit val witness0: WitnessAux[_0] =
-      new WitnessAux[_0] {
+    implicit val witness0: Witness.Aux[_0] =
+      new Witness.Aux[_0] {
         val value = _0
       }
 
