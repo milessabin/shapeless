@@ -85,23 +85,23 @@ class HListConstraintsTests {
     import KeyConstraint._
     import ValueConstraint._
     
-    object author  extends Field[String]
-    object title   extends Field[String]
-    object id      extends Field[Int]
-    object price   extends Field[Double]
-    object inPrint extends Field[Boolean]
+    object author  extends FieldOf[String]
+    object title   extends FieldOf[String]
+    object id      extends FieldOf[Int]
+    object price   extends FieldOf[Double]
+    object inPrint extends FieldOf[Boolean]
 
     val book =
-      (author -> "Benjamin Pierce") ::
-      (title  -> "Types and Programming Languages") ::
-      (id     ->  262162091) ::
-      (price  ->  44.11) ::
+      (author ->> "Benjamin Pierce") ::
+      (title  ->> "Types and Programming Languages") ::
+      (id     ->>  262162091) ::
+      (price  ->>  44.11) ::
       HNil
     
     val summary = 
-      (author -> "Benjamin Pierce") ::
-      (title  -> "Types and Programming Languages") ::
-      (id     ->  262162091) ::
+      (author ->> "Benjamin Pierce") ::
+      (title  ->> "Types and Programming Languages") ::
+      (id     ->>  262162091) ::
       HNil
 
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
