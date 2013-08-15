@@ -1017,40 +1017,4 @@ class TupleTests {
       (Set(true), c2))
     assertEquals(expected, zl2)
   }
-
-  /*
-  @Test
-  def testNatTRel {
-    type L1 = Int :: String :: Boolean :: HNil
-    type L2 = List[Int] :: List[String] :: List[Boolean] :: HNil
-    type L3 = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
-    type L4 = Int :: Int :: Int :: HNil
-    type L5 = String :: String :: String :: HNil
-
-    implicitly[NatTRel[L1, Id, L2, List]]
-    implicitly[NatTRel[L2, List, L1, Id]]
-
-    implicitly[NatTRel[L2, List, L3, Option]]
-
-    implicitly[NatTRel[L1, Id, L4, Const[Int]#λ]]
-
-    implicitly[NatTRel[L2, List, L4, Const[Int]#λ]]
-  }
-
-  object optionToList extends (Option ~> List) {
-    def apply[A](fa: Option[A]): List[A] = List.fill(3)(fa.toList).flatten
-  }
-
-  @Test
-  def testNatTRelMap {
-    type L1 = Option[Int] :: Option[Boolean] :: Option[String] :: Option[Nothing] :: HNil
-    type L2 = List[Int] :: List[Boolean] :: List[String] :: List[Nothing] :: HNil
-    val nattrel = implicitly[NatTRel[L1, Option, L2, List]]
-
-    val l1: L1 = Option(1) :: Option(true) :: Option("three") :: None :: HNil
-    val l2 = nattrel.map(optionToList, l1)
-
-    assertEquals(l2, List(1, 1, 1) :: List(true, true, true) :: List("three", "three", "three") :: List() :: HNil)
-  }
-  */
 }
