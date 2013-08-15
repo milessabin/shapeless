@@ -780,7 +780,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting removal of a sublist from this `HList`. Available only if this `HLists contains a
+   * Type class supporting removal of a sublist from this `HList`. Available only if this `HList` contains a
    * sublist of type `SL`.
    *
    * The elements of `SL` do not have to be contiguous in this `HList`.
@@ -1280,7 +1280,7 @@ object hlist {
   }  
 
   /**
-   * Type class supporting zipping this `HList` with an `HList` of `HLists` returning an `HList` of `HList`s with each
+   * Type class supporting zipping this `HList` with an `HList` of `HList`s returning an `HList` of `HList`s with each
    * element of this `HList` prepended to the corresponding `HList` element of the argument `HList`.
    * 
    * @author Miles Sabin
