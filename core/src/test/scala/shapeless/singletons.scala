@@ -42,7 +42,6 @@ class SingletonTypesTests {
 
   def sameTyped[T](t1: => T)(t2: => T) {}
 
-  /*
   @Test
   def testRefine {
     val sTrue = true.narrow
@@ -78,7 +77,6 @@ class SingletonTypesTests {
       sameTyped(sFoo)("bar")
     """)
   }
-  */
 
   trait Show[T] {
     def show: String
@@ -95,7 +93,6 @@ class SingletonTypesTests {
 
   def show[T](t: T)(implicit s: Show[T]) = s.show
 
-  /*
   @Test
   def testRefinedTypeClass {
     val sTrue = show(true.narrow)
@@ -117,7 +114,6 @@ class SingletonTypesTests {
       show(0.narrow)
     """)
   }
-  */
 
   @Test
   def testWitness {
