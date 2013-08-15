@@ -24,7 +24,7 @@ import scala.tools.reflect.ToolBoxError
 
 trait Witness {
   type T
-  val value: T
+  val value: T {}
 }
 
 object Witness {
@@ -79,21 +79,6 @@ trait SingletonTypeMacros[C <: Context] {
     case ex: ToolBoxError => None
   }
 
-  def mkSingletonType(s: Any) =
-    CompoundTypeTree(
-      Template(
-        List(
-          TypeTree(ConstantType(Constant(s))),
-          Ident(typeOf[Singleton].typeSymbol)
-        ),
-        emptyValDef,
-        List()
-      )
-    )
-
-  def mkSingletonType0(s: Any) =
-    TypeTree(ConstantType(Constant(s)))
-
   def mkWitnessT[W](sTpe: Type, s: Any) = mkWitness[W](TypeTree(sTpe), Literal(Constant(s)))
 
   def mkWitness[W](sTpt: TypTree, s: Tree) = {
@@ -106,13 +91,8 @@ trait SingletonTypeMacros[C <: Context] {
   }
 
   def materializeImpl[T: c.WeakTypeTag]: c.Expr[Witness.Eq[T]] = {
-    val singletonTpe = typeOf[Singleton]
     weakTypeOf[T] match {
       case t @ ConstantType(Constant(s)) => mkWitnessT(t, s)
-
-      case t @ RefinedType(List(ConstantType(Constant(s)), p2), _) if p2 =:= singletonTpe => mkWitnessT(t, s)
-
-      case t @ RefinedType(List(p1, ConstantType(Constant(s))), _) if p1 =:= singletonTpe => mkWitnessT(t, s)
 
       case t @ SingleType(p, v) if !v.isParameter =>
         mkWitness(TypeTree(t), TypeApply(Select(Ident(v), TermName("asInstanceOf")), List(TypeTree(t))))

@@ -36,7 +36,7 @@ trait SingletonOps {
   /**
    * Narrows this value to its singleton type.
    */
-  def narrow: T with Singleton = witness.value
+  def narrow: T {} = witness.value
 
   /**
    * Returns the provided value tagged with the singleton type of this value as its key in a record-like structure.
