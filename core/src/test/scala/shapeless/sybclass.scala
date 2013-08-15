@@ -20,8 +20,6 @@ class SybClassTests {
   import org.junit.Test
   import org.junit.Assert._
 
-  import TypeOperators._
-
   def typed[T](t : => T) {}
 
   object gsizeAll extends Poly1 {

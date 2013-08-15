@@ -22,8 +22,6 @@ import org.junit.Assert._
 import ops.hlist.Mapper
 
 class PolyTests {
-  import TypeOperators._
-  
   def typed[T](t : => T) {}
 
   object toInt extends (Id ~>> Int) {

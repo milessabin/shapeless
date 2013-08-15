@@ -39,8 +39,8 @@ case class Succ[P <: Nat]() extends Nat {
 }
 
 object Succ {
-  implicit def witnessN[P <: Nat]: WitnessAux[Succ[P]] =
-    new WitnessAux[Succ[P]] {
+  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
+    new Witness.Aux[Succ[P]] {
       val value = new Succ[P]()
     }
 }

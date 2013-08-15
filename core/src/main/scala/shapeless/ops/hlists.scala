@@ -19,8 +19,6 @@ package ops
 
 import scala.annotation.tailrec
 
-import TypeOperators._  
-  
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -215,7 +213,7 @@ object hlist {
       def apply(): Out = _0
     }
     
-    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : WitnessAux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
+    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : Witness.Aux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
       type Out = Succ[N]
       def apply(): Out = sn.value
     }
@@ -417,24 +415,6 @@ object hlist {
           type Out = f.Result
           def apply(l : H :: T): Out = f(l.head, rt(l.tail))
         }
-  }
-
-  /**
-   * Type class witnessing the least upper bound of a pair of types and providing conversions from each to their common
-   * supertype. 
-   * 
-   * @author Miles Sabin
-   */
-  trait Lub[-A, -B, +Out] {
-    def left(a : A): Out
-    def right(b : B): Out
-  }
-
-  object Lub {
-    implicit def lub[T] = new Lub[T, T, T] {
-      def left(a : T): T = a
-      def right(b : T): T = b
-    }
   }
 
   /**
@@ -780,7 +760,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting removal of a sublist from this `HList`. Available only if this `HLists contains a
+   * Type class supporting removal of a sublist from this `HList`. Available only if this `HList` contains a
    * sublist of type `SL`.
    *
    * The elements of `SL` do not have to be contiguous in this `HList`.
@@ -1280,7 +1260,7 @@ object hlist {
   }  
 
   /**
-   * Type class supporting zipping this `HList` with an `HList` of `HLists` returning an `HList` of `HList`s with each
+   * Type class supporting zipping this `HList` with an `HList` of `HList`s returning an `HList` of `HList`s with each
    * element of this `HList` prepended to the corresponding `HList` element of the argument `HList`.
    * 
    * @author Miles Sabin

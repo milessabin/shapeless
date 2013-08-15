@@ -88,6 +88,18 @@ final class HListOps[L <: HList](l : L) {
   def apply(n : Nat)(implicit at : At[L, n.N]) : at.Out = at(l)
   
   /**
+   * Returns the ''nth'' element of this `HList`. An explicit type argument must be provided. Available only if there is
+   * evidence that this `HList` has at least ''n'' elements.
+   */
+  def at[N <: Nat](implicit at : At[L, N]) : at.Out = at(l)
+
+  /**
+   * Returns the ''nth'' element of this `HList`. Available only if there is evidence that this `HList` has at least ''n''
+   * elements.
+   */
+  def at(n : Nat)(implicit at : At[L, n.N]) : at.Out = at(l)
+  
+  /**
    * Returns the last element of this `HList`. Available only if there is evidence that this `HList` is composite.
    */
   def last(implicit last : Last[L]) : last.Out = last(l)

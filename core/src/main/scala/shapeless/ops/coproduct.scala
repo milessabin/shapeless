@@ -17,8 +17,6 @@
 package shapeless
 package ops
 
-import hlist.Lub
-
 object coproduct {
   trait Inject[C <: Coproduct, I] {
     def apply(i: I): C

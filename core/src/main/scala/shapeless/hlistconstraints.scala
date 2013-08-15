@@ -24,8 +24,6 @@ import ops.hlist.Selector
 trait UnaryTCConstraint[L <: HList, TC[_]]
 
 object UnaryTCConstraint {
-  import TypeOperators._
-  
   type *->*[TC[_]] = {
     type λ[L <: HList] = UnaryTCConstraint[L, TC] 
   } 
@@ -72,31 +70,35 @@ object LUBConstraint {
 }
 
 /**
- * Type class witnessing that every element of L is of the form FieldEntry[F] where F is an element of `M`.
+ * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `K` is an element of `M`.
  */
 trait KeyConstraint[L <: HList, M <: HList]
 
 object KeyConstraint {
+  import record._
+
   type Keys[M <: HList] = {
     type λ[L <: HList] = KeyConstraint[L, M] 
   }
   
   implicit def hnilKeys[M <: HList] = new KeyConstraint[HNil, M] {}
-  implicit def hlistKeys[F <: FieldAux, V, T <: HList, M <: HList]
-    (implicit bct : KeyConstraint[T, M], sel : Selector[M, F]) = new KeyConstraint[(F, V) :: T, M] {}
+  implicit def hlistKeys[K, V, T <: HList, M <: HList]
+    (implicit bct : KeyConstraint[T, M], sel : Selector[M, K]) = new KeyConstraint[FieldType[K, V] :: T, M] {}
 }
 
 /**
- * Type class witnessing that every element of L is of the form FieldEntry[F] where F#valueType is an element of `M`.  
+ * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `V` is an element of `M`.
  */
 trait ValueConstraint[L <: HList, M <: HList]
 
 object ValueConstraint {
+  import record._
+
   type Values[M <: HList] = {
     type λ[L <: HList] = ValueConstraint[L, M] 
   }
   
   implicit def hnilValues[M <: HList] = new ValueConstraint[HNil, M] {}
-  implicit def hlistValues[F <: FieldAux, V, T <: HList, M <: HList]
-    (implicit bct : ValueConstraint[T, M], sel : Selector[M, V]) = new ValueConstraint[(F, V) :: T, M] {}
+  implicit def hlistValues[K, V, T <: HList, M <: HList]
+    (implicit bct : ValueConstraint[T, M], sel : Selector[M, V]) = new ValueConstraint[FieldType[K, V] :: T, M] {}
 }

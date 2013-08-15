@@ -16,8 +16,6 @@
 
 package shapeless
 
-import ops.hlist.Lub
-
 sealed trait Coproduct
 
 sealed trait :+:[+H, +T <: Coproduct] extends Coproduct

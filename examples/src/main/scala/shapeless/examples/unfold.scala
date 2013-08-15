@@ -91,7 +91,7 @@ object UnfoldExamples extends App {
         fn : Pullback1[N, (FN, Succ[N])],
         fsn : Pullback1[Succ[N], (FSN, Succ[Succ[N]])],
         sum : SumAux[FN, FSN, FSSN],
-        fssn : WitnessAux[FSSN]) =
+        fssn : Witness.Aux[FSSN]) =
       at[Succ[Succ[N]]](_ => (fssn.value, Succ[Succ[Succ[N]]]))
   }
 

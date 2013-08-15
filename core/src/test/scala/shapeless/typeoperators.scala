@@ -20,7 +20,8 @@ import org.junit.Test
 import org.junit.Assert._
 
 import shapeless.test.illTyped
-import TypeOperators._
+import newtype._
+import tag._
 
 class TypeOperatorTests {
 

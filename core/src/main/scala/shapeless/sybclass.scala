@@ -417,7 +417,6 @@ object DataTMacros {
 }
 
 import Poly._
-import TypeOperators._
 
 class EverythingAux[F, K] extends Poly
 

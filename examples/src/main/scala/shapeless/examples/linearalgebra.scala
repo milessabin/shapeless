@@ -23,8 +23,8 @@ package shapeless.examples
  */
 object LinearAlgebraExamples extends App {
   import shapeless._
-  import TypeOperators._
   import nat._
+  import newtype._
   import ops.hlist.{ Mapper, Transposer }
 
   
