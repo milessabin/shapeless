@@ -19,8 +19,6 @@ package ops
 
 import scala.annotation.tailrec
 
-import TypeOperators._  
-  
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -417,24 +415,6 @@ object hlist {
           type Out = f.Result
           def apply(l : H :: T): Out = f(l.head, rt(l.tail))
         }
-  }
-
-  /**
-   * Type class witnessing the least upper bound of a pair of types and providing conversions from each to their common
-   * supertype. 
-   * 
-   * @author Miles Sabin
-   */
-  trait Lub[-A, -B, +Out] {
-    def left(a : A): Out
-    def right(b : B): Out
-  }
-
-  object Lub {
-    implicit def lub[T] = new Lub[T, T, T] {
-      def left(a : T): T = a
-      def right(b : T): T = b
-    }
   }
 
   /**

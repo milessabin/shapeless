@@ -19,7 +19,6 @@ package shapeless.examples
 // See http://research.microsoft.com/en-us/um/people/simonpj/papers/boxy/boxy-icfp.pdf
 object ImpredicativeExamples extends App {
   import shapeless._
-  import TypeOperators._
   
   def typed[T](t : => T) {}
   

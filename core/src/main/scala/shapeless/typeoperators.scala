@@ -16,58 +16,22 @@
 
 package shapeless
 
-object TypeOperators {
-  def unexpected : Nothing = sys.error("Unexpected invocation")
-  
-  // Basic definitions
-  type Id[+T] = T
-  type Const[C] = {
-    type λ[T] = C
-  }
+object tag {
+  def apply[U] = new Tagger[U]
 
-  type ¬[T] = T => Nothing
-  type ¬¬[T] = ¬[¬[T]]
-  type ∧[T, U] = T with U
-  type ∨[T, U] = ¬[¬[T] ∧ ¬[U]]
-  
-  // Type-lambda for context bound
-  type |∨|[T, U] = {
-    type λ[X] = ¬¬[X] <:< (T ∨ U) 
-  }
-
-  // Type inequalities
-  trait =:!=[A, B] 
-
-  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
-  implicit def neqAmbig1[A] : A =:!= A = unexpected
-  implicit def neqAmbig2[A] : A =:!= A = unexpected
-  
-  trait <:!<[A, B]
-
-  implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
-  implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
-  implicit def nsubAmbig2[A, B >: A] : A <:!< B = unexpected
-
-  // Type-lambda for context bound
-  type |¬|[T] = {
-    type λ[U] = U <:!< T
-  }
-
-  // Quantifiers
-  type ∃[P[_]] = P[T] forSome { type T }
-  type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
-
-  // Tags
   trait Tagged[U] 
   type @@[+T, U] = T with Tagged[U]
 
   class Tagger[U] {
     def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
   }
-  
-  def tag[U] = new Tagger[U]
+}
 
-  // Newtype
+object newtype {
+  /**
+   * Creates a value of the newtype given a value of its representation type. 
+   */
+  def apply[Repr, Ops](r : Repr) : Newtype[Repr, Ops] = r.asInstanceOf[Any with Newtype[Repr, Ops]]
   
   /**
    * New type with `Repr` as representation type and operations provided by `Ops`.
@@ -80,29 +44,50 @@ object TypeOperators {
   trait NewtypeTag[Repr, Ops]
   
   /**
-   * Creates a value of the newtype given a value of its representation type. 
-   */
-  def newtype[Repr, Ops](r : Repr) : Newtype[Repr, Ops] = r.asInstanceOf[Any with Newtype[Repr, Ops]]
-  
-  /**
    * Implicit conversion of newtype to `Ops` type for the selection of `Ops` newtype operations.
    * 
    * The implicit conversion `Repr => Ops` would typically be provided by publishing the companion
    * object of the `Ops` type as an implicit value.
    */
   implicit def newtypeOps[Repr, Ops](t : Newtype[Repr, Ops])(implicit mkOps : Repr => Ops) : Ops = t.asInstanceOf[Repr] 
+}
 
-  // Unpack
+/**
+ * Type class witnessing the least upper bound of a pair of types and providing conversions from each to their common
+ * supertype. 
+ * 
+ * @author Miles Sabin
+ */
+trait Lub[-A, -B, +Out] {
+  def left(a : A): Out
+  def right(b : B): Out
+}
 
-  trait Unpack1[-E, F[_], T]
-
-  object Unpack1 {
-    implicit def unpack1[F[_], T]: Unpack1[F[T], F, T] = new Unpack1[F[T], F, T] {}
+object Lub {
+  implicit def lub[T] = new Lub[T, T, T] {
+    def left(a : T): T = a
+    def right(b : T): T = b
   }
+}
 
-  trait Unpack2[-E, F[_, _], T, U]
+/**
+ * Type class witnessing that type `P` is equal to `F[T]` for some higher kinded type `F[_]` and type `T`.
+ * 
+ * @author Miles Sabin
+ */
+trait Unpack1[-P, F[_], T]
 
-  object Unpack2 {
-    implicit def unpack2[F[_, _], T, U]: Unpack2[F[T, U], F, T, U] = new Unpack2[F[T, U], F, T, U] {}
-  }
+object Unpack1 {
+  implicit def unpack1[F[_], T]: Unpack1[F[T], F, T] = new Unpack1[F[T], F, T] {}
+}
+
+/**
+ * Type class witnessing that type `P` is equal to `F[T, U]` for some higher kinded type `F[_, _]` and types `T` and `U`.
+ * 
+ * @author Miles Sabin
+ */
+trait Unpack2[-P, F[_, _], T, U]
+
+object Unpack2 {
+  implicit def unpack2[F[_, _], T, U]: Unpack2[F[T, U], F, T, U] = new Unpack2[F[T, U], F, T, U] {}
 }

@@ -24,7 +24,6 @@ import shapeless.test.illTyped
 class HListConstraintsTests {
   @Test
   def testUnaryTCConstraint {
-    import TypeOperators._
     import UnaryTCConstraint._
     
     def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true

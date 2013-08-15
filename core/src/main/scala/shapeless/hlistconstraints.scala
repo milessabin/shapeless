@@ -24,8 +24,6 @@ import ops.hlist.Selector
 trait UnaryTCConstraint[L <: HList, TC[_]]
 
 object UnaryTCConstraint {
-  import TypeOperators._
-  
   type *->*[TC[_]] = {
     type λ[L <: HList] = UnaryTCConstraint[L, TC] 
   } 

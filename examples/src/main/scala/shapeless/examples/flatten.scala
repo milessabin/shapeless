@@ -23,7 +23,6 @@ package shapeless.examples
  */
 object FlattenExample {
   import shapeless._
-  import TypeOperators._
   import ops.hlist.Prepend
   import syntax.std.tuple._
   

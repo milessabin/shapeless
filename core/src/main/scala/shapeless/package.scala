@@ -17,6 +17,46 @@
 package object shapeless {
   import Poly._
   
+  def unexpected : Nothing = sys.error("Unexpected invocation")
+  
+  // Basic definitions
+  type Id[+T] = T
+  type Const[C] = {
+    type λ[T] = C
+  }
+
+  type ¬[T] = T => Nothing
+  type ¬¬[T] = ¬[¬[T]]
+  type ∧[T, U] = T with U
+  type ∨[T, U] = ¬[¬[T] ∧ ¬[U]]
+  
+  // Type-lambda for context bound
+  type |∨|[T, U] = {
+    type λ[X] = ¬¬[X] <:< (T ∨ U) 
+  }
+
+  // Type inequalities
+  trait =:!=[A, B] 
+
+  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
+  implicit def neqAmbig1[A] : A =:!= A = unexpected
+  implicit def neqAmbig2[A] : A =:!= A = unexpected
+  
+  trait <:!<[A, B]
+
+  implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
+  implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
+  implicit def nsubAmbig2[A, B >: A] : A <:!< B = unexpected
+
+  // Type-lambda for context bound
+  type |¬|[T] = {
+    type λ[U] = U <:!< T
+  }
+
+  // Quantifiers
+  type ∃[P[_]] = P[T] forSome { type T }
+  type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
+
   /** `Nat` literals */
   object nat extends Nats {
     /** The natural number 0 */

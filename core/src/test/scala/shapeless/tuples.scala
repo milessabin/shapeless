@@ -1021,8 +1021,6 @@ class TupleTests {
   /*
   @Test
   def testNatTRel {
-    import TypeOperators._
-
     type L1 = Int :: String :: Boolean :: HNil
     type L2 = List[Int] :: List[String] :: List[Boolean] :: HNil
     type L3 = Option[Int] :: Option[String] :: Option[Boolean] :: HNil

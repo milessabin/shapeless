@@ -21,8 +21,6 @@ import language.experimental.macros
  
 import reflect.macros.Context
 
-import TypeOperators._
-
 /**
  * Type-specific case of a polymorphic function.
  * 
@@ -191,7 +189,7 @@ object Poly extends PolyInst with PolyAuxCases {
     val nothingSym = c.mirror.staticClass("scala.Nothing")
     val nothingTpe = nothingSym.asType.toType
 
-    val typeOpsSym = c.mirror.staticModule("shapeless.TypeOperators")
+    val typeOpsSym = c.mirror.staticPackage("shapeless")
     val idSym = typeOpsSym.newTypeSymbol(newTypeName("Id"))
     val constSym = typeOpsSym.newTypeSymbol(newTypeName("Const"))
 
@@ -296,11 +294,11 @@ object Poly extends PolyInst with PolyAuxCases {
 
     def mkTargTree(sym: Symbol) =
       if(sym == idSym)
-        Select(Select(Ident(newTermName("shapeless")), newTermName("TypeOperators")), newTypeName("Id"))
+        Select(Ident(newTermName("shapeless")), newTypeName("Id"))
       else if(sym.asType.typeParams.isEmpty)
         SelectFromTypeTree(
           AppliedTypeTree(
-            Select(Select(Ident(newTermName("shapeless")), newTermName("TypeOperators")), newTypeName("Const")),
+            Select(Ident(newTermName("shapeless")), newTypeName("Const")),
             List(Ident(sym.name))
           ),
           newTypeName("λ")
