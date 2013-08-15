@@ -20,6 +20,11 @@ package ops
 object tuple {
   import shapeless.ops.{ hlist => hl }
 
+  /**
+   * Type class witnessing that this tuple is composite and providing access to head and tail. 
+   * 
+   * @author Miles Sabin
+   */
   trait IsComposite[P] {
     type H
     type T
@@ -40,6 +45,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting prepending to this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait Prepend[T, U] extends DepFn2[T, U]
 
   object Prepend {
@@ -52,6 +62,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting reverse prepending to this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait ReversePrepend[T, U] extends DepFn2[T, U]
 
   object ReversePrepend {
@@ -64,6 +79,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting access to the ''nth'' element of this tuple. Available only if this tuple has at least
+   * ''n'' elements. 
+   * 
+   * @author Miles Sabin
+   */
   trait At[T, N <: Nat] extends DepFn1[T]
 
   object At {
@@ -76,6 +97,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting access to the last element of this tuple. Available only if this tuple has at least one
+   * element.
+   * 
+   * @author Miles Sabin
+   */
   trait Last[T] extends DepFn1[T]
 
   object Last {
@@ -88,6 +115,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting access to all but the last element of this tuple. Available only if this tuple has at
+   * least one element.
+   * 
+   * @author Miles Sabin
+   */
   trait Init[T] extends DepFn1[T]
 
   object Init {
@@ -100,6 +133,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting access to the first element of this tuple of type `U`. Available only if this tuple
+   * contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait Selector[T, U] extends DepFn1[T] { type Out = U }
 
   object Selector {
@@ -111,6 +150,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting access to the all elements of this tuple of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait Filter[T, U] extends DepFn1[T]
 
   object Filter {
@@ -122,6 +166,11 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting access to the all elements of this tuple of type different than `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait FilterNot[T, U] extends DepFn1[T]
 
   object FilterNot {
@@ -133,6 +182,12 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting removal of an element from this tuple. Available only if this tuple contains an
+   * element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait Remove[T, U] extends DepFn1[T]
 
   object Remove {
@@ -144,6 +199,14 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting removal of a sublist from this tuple. Available only if this tuple contains a
+   * sublist of type `SL`.
+   *
+   * The elements of `SL` do not have to be contiguous in this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait RemoveAll[T, S] extends DepFn1[T]
 
   object RemoveAll {
@@ -156,6 +219,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting replacement of the first element of type U from this tuple with an element of type V.
+   * Available only if this tuple contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait Replacer[T, U, V] extends DepFn2[T, U]
 
   object Replacer {
@@ -167,6 +236,12 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting replacement of the Nth element of this tuple with an element of type V. Available only if
+   * this tuple contains at least N elements.
+   * 
+   * @author Miles Sabin
+   */
   trait ReplaceAt[T, N <: Nat, U] extends DepFn2[T, U]
 
   object ReplaceAt {
@@ -178,6 +253,12 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting retrieval of the first ''n'' elements of this tuple. Available only if this tuple has at
+   * least ''n'' elements.
+   * 
+   * @author Miles Sabin
+   */
   trait Take[T, N <: Nat] extends DepFn1[T]
 
   object Take {
@@ -190,6 +271,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting removal of the first ''n'' elements of this tuple. Available only if this tuple has at
+   * least ''n'' elements.
+   * 
+   * @author Miles Sabin
+   */
   trait Drop[T, N <: Nat] extends DepFn1[T]
 
   object Drop {
@@ -202,6 +289,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the ''nth'' element returning the prefix and suffix as a pair.
+   * Available only if this tuple has at least ''n'' elements.
+   * 
+   * @author Miles Sabin
+   */
   trait Split[T, N <: Nat] extends DepFn1[T]
 
   object Split {
@@ -214,6 +307,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the ''nth'' element returning the reverse prefix and suffix as a
+   * pair. Available only if this tuple has at least ''n'' elements.
+   * 
+   * @author Miles Sabin
+   */
   trait ReverseSplit[T, N <: Nat] extends DepFn1[T]
 
   object ReverseSplit {
@@ -226,6 +325,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the prefix
+   * and suffix as a pair. Available only if this tuple contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait SplitLeft[T, U] extends DepFn1[T]
 
   object SplitLeft {
@@ -238,6 +343,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the reverse
+   * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait ReverseSplitLeft[T, U] extends DepFn1[T]
 
   object ReverseSplitLeft {
@@ -250,6 +361,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the prefix
+   * and suffix as a pair. Available only if this tuple contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait SplitRight[T, U] extends DepFn1[T]
 
   object SplitRight {
@@ -262,6 +379,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the reverse
+   * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
+   * 
+   * @author Miles Sabin
+   */
   trait ReverseSplitRight[T, U] extends DepFn1[T]
 
   object ReverseSplitRight {
@@ -274,6 +397,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting reversing this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait Reverse[T] extends DepFn1[T]
 
   object Reverse {
@@ -286,6 +414,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting mapping a higher ranked function over this tuple. 
+   * 
+   * @author Miles Sabin
+   */
   trait Mapper[T, P] extends DepFn1[T]
 
   object Mapper {
@@ -298,6 +431,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting flatmapping a higher ranked function over this tuple. 
+   * 
+   * @author Miles Sabin
+   */
   trait FlatMapper[T, P] extends DepFn1[T]
 
   object FlatMapper {
@@ -310,6 +448,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting mapping a constant valued function over this tuple. 
+   * 
+   * @author Miles Sabin
+   */
   trait ConstMapper[T, C] extends DepFn2[T, C]
 
   object ConstMapper {
@@ -322,6 +465,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting mapping a polymorphic function over this tuple and then folding the result using a
+   * monomorphic function value. 
+   * 
+   * @author Miles Sabin
+   */
   trait MapFolder[T, R, P] { // Nb. Not a dependent function signature
     def apply(t: T, in: R, op: (R, R) => R): R 
   }
@@ -334,6 +483,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting left-folding a polymorphic binary function over this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait LeftFolder[T, U, P] extends DepFn2[T, U]
 
   object LeftFolder {
@@ -346,6 +500,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting right-folding a polymorphic binary function over this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait RightFolder[T, U, P] extends DepFn2[T, U]
 
   object RightFolder {
@@ -358,6 +517,11 @@ object tuple {
         }
   }
   
+  /**
+   * Type class supporting left-reducing a polymorphic binary function over this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait LeftReducer[T, P] extends DepFn1[T]
 
   object LeftReducer {
@@ -370,6 +534,11 @@ object tuple {
         }
   }
   
+  /**
+   * Type class supporting right-reducing a polymorphic binary function over this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait RightReducer[T, P] extends DepFn1[T]
 
   object RightReducer {
@@ -382,6 +551,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting transposing this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait Transposer[T] extends DepFn1[T]
 
   object Transposer {
@@ -400,6 +574,13 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting zipping this this tuple of monomorphic function values with its argument tuple of
+   * correspondingly typed function arguments returning the result of each application as a tuple. Available only if
+   * there is evidence that the corresponding function and argument elements have compatible types.
+   * 
+   * @author Miles Sabin
+   */
   trait ZipApply[FT, AT] extends DepFn2[FT, AT]
 
   object ZipApply {
@@ -417,6 +598,12 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting zipping this tuple with a tuple of tuples returning a tuple of tuples with each
+   * element of this tuple prepended to the corresponding tuple element of the argument tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait ZipOne[H, T] extends DepFn2[H, T]
 
   object ZipOne {
@@ -436,6 +623,12 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting zipping a tuple with a constant, resulting in a tuple of tuples of the form
+   * ({element from input tuple}, {supplied constant})
+   *
+   * @author Miles Sabin
+   */
   trait ZipConst[T, C] extends DepFn2[T, C]
 
   object ZipConst {
@@ -448,6 +641,11 @@ object tuple {
       }
   }
 
+  /**
+   * Type class supporting unification of this tuple. 
+   * 
+   * @author Miles Sabin
+   */
   trait Unifier[T] extends DepFn1[T]
 
   object Unifier {
@@ -460,6 +658,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting unification of all elements that are subtypes of `B` in this tuple to `B`, with all other
+   * elements left unchanged.
+   * 
+   * @author Miles Sabin
+   */
   trait SubtypeUnifier[T, B] extends DepFn1[T]
 
   object SubtypeUnifier {
@@ -472,6 +676,11 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting computing the type-level Nat corresponding to the length of this tuple. 
+   * 
+   * @author Miles Sabin
+   */
   trait Length[T] extends DepFn1[T]
 
   object Length {
@@ -484,6 +693,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting conversion of this tuple to a `List` with elements typed as the least upper bound
+   * of the types of the elements of this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait ToList[T, Lub] extends DepFn1[T]
 
   object ToList {
@@ -496,6 +711,12 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting conversion of this tuple to an `Array` with elements typed as the least upper bound
+   * of the types of the elements of this tuple.
+   * 
+   * @author Miles Sabin
+   */
   trait ToArray[T, Lub] extends DepFn1[T]
 
   object ToArray {
