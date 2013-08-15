@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import shapeless.test.illTyped
+
 class HListConstraintsTests {
   @Test
   def testUnaryTCConstraint {
@@ -31,7 +33,10 @@ class HListConstraintsTests {
     val l2 = Option(23) :: true :: Option("foo") :: HNil
     
     acceptOption(l1)  // Compiles
-    //acceptOption(l2)  // Does not compile
+
+    illTyped("""
+    acceptOption(l2)
+    """)
 
     val l3 = 23 :: true :: "foo" :: HNil 
     
@@ -45,7 +50,9 @@ class HListConstraintsTests {
     def acceptConst[L <: HList : *->*[Const[String]#λ]#λ](l : L) = true
     
     acceptConst(l4)  // Compiles
-    //acceptConst(l5)  // Does not compile
+    illTyped("""
+    acceptConst(l5)
+    """)
   }
   
   @Test
@@ -60,7 +67,9 @@ class HListConstraintsTests {
     val l2 = 23 :: true :: 13 :: 7 :: 5 :: 2.0 :: "foo" :: "bar" :: HNil
 
     acceptBasis(l1) // Compiles
-    //acceptBasis(l2) // Does not compile
+    illTyped("""
+    acceptBasis(l2)
+    """)
   }
   
   @Test
@@ -77,7 +86,9 @@ class HListConstraintsTests {
     val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
 
     acceptLUB(l1) // Compiles
-    //acceptLUB(l2) // Does not compile
+    illTyped("""
+    acceptLUB(l2)
+    """)
   }
 
   @Test
@@ -107,11 +118,15 @@ class HListConstraintsTests {
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
     
     acceptKeys(summary)   // Compiles
-    //acceptKeys(book)    // Does not compile
+    illTyped("""
+    acceptKeys(book)
+    """)
 
     def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
     
     acceptValues(summary) // Compiles
-    //acceptValues(book)  // Does not compile
+    illTyped("""
+    acceptValues(book)
+    """)
   }
 }
