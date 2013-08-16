@@ -21,7 +21,6 @@ package shapeless.examples
  * 
  * @author George Leontiev
  */
-
 object GCDExamples {
   import shapeless._
   import nat._
@@ -42,9 +41,12 @@ object GCDExamples {
   trait GCDAux[X <: Nat, Y <: Nat, Z <: Nat]
 
   object GCDAux {
-    implicit def gcd0[X <: Nat](implicit ev : LT[_0, X]) = new GCDAux[X, _0, X] {}
+    implicit def gcd0[X <: Nat] = new GCDAux[X, X, X] {}
     implicit def gcd1[X <: Nat, Y <: Nat, Z <: Nat, Out <: Nat]
-      (implicit ev0 : ModAux[X, Y, Z], ev1 : GCDAux[Y, Z, Out]) = new GCDAux[X, Y, Out] {}
+      (implicit ev0 : LT[X, Y], ev1 : DiffAux[Y, X, Z], ev2 : GCDAux[X, Z, Out]) =
+        new GCDAux[X, Y, Out] {}
+    implicit def gcd2[X <: Nat, Y <: Nat, Out <: Nat]
+      (implicit ev0 : LT[Y, X], ev1 : GCDAux[Y, X, Out]) = new GCDAux[X, Y, Out] {}
   }
 
   import GCD._
@@ -57,4 +59,7 @@ object GCDExamples {
 
   val g3 = gcd(15, 6)
   typed[_3](g3)
+
+  val g4 = gcd(8, 12)
+  typed[_4](g4)
 }
