@@ -446,7 +446,7 @@ object Boilerplate {
 
       ("""|
           |  def apply[T]"""+args+"""(implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
-          |    wrap[T, CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
+          |    wrap[CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
           |""").stripMargin
     }
 
@@ -457,7 +457,7 @@ object Boilerplate {
         |class SizedBuilder[CC[_]] {
         |  import scala.collection.generic.CanBuildFrom
         |  import nat._
-        |  import Sized._
+        |  import Sized.wrap
         |"""+instances+"""}
         |""").stripMargin
   }

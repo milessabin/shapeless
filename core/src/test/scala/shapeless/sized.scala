@@ -23,7 +23,7 @@ import shapeless.test.illTyped
 
 class SizedTests {
   import nat._
-  import Sized._
+  import syntax.sized._
   
   def typed[T](t : => T) {}
   
