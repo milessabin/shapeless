@@ -94,13 +94,13 @@ package object shapeless {
   type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
   
   class ApplyEverything[F <: Poly] {
-    def apply(k : Poly) = new EverythingAux[F, k.type]
+    def apply(k : Poly): EverythingAux[F, k.type] {} = new EverythingAux[F, k.type]
   }
   
-  def everything(f: Poly) = new ApplyEverything[f.type]
+  def everything(f: Poly): ApplyEverything[f.type] {} = new ApplyEverything[f.type]
 
   /** The SYB everywhere combinator */
   type Everywhere[F <: Poly, T] = Case1Aux[EverywhereAux[F], T]
 
-  def everywhere(f: Poly) = new EverywhereAux[f.type]
+  def everywhere(f: Poly): EverywhereAux[f.type] {} = new EverywhereAux[f.type]
 }
