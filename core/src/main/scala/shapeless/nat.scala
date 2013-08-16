@@ -69,9 +69,11 @@ object NatMacros {
   def mkNatTpt(c: Context)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
 
-    val n: Int = SingletonTypeMacros.eval[Int](c)(i.tree).getOrElse(
-      c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
-    )
+    val n = i.tree match {
+      case Literal(Constant(n: Int)) => n
+      case _ =>
+        c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
+    }
 
     if (n < 0)
       c.abort(c.enclosingPosition, s"A Nat cannot represent $n")
