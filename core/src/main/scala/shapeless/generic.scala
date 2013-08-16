@@ -105,14 +105,15 @@ object GenericMacros {
 
     def ADT: ADT = {
       def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
-        classSym.knownDirectSubclasses.toList flatMap { child =>
-          val classSym = child.asClass
-          if (classSym.isCaseClass)
-            List(classSym)
-          else if (classSym.isSealed)
-            collectCases(classSym)
+        classSym.knownDirectSubclasses.toList flatMap { child0 =>
+          val child = child0.asClass
+          child.typeSignature // Workaround for https://issues.scala-lang.org/browse/SI-7755
+          if (child.isCaseClass)
+            List(child)
+          else if (child.isSealed)
+            collectCases(child)
           else
-            exit(s"$classSym is not a case class or a sealed trait")
+            exit(s"$child is not a case class or a sealed trait")
         }
       }
 
@@ -136,6 +137,7 @@ object GenericMacros {
         exit(s"$sym is not a class or trait")
 
       val classSym = sym.asClass
+      classSym.typeSignature // Workaround for https://issues.scala-lang.org/browse/SI-7755
       if (classSym.isCaseClass) // one-case ADT
         ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
       else if (classSym.isSealed) { // multiple cases
