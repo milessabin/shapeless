@@ -446,7 +446,7 @@ object Boilerplate {
 
       ("""|
           |  def apply[T]"""+args+"""(implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
-          |    wrap[T, CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
+          |    wrap[CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
           |""").stripMargin
     }
 
