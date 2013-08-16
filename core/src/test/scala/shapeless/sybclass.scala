@@ -105,9 +105,9 @@ class SybClassTests {
     val oi = incAll(o)
     assertEquals(Some(24), oi)
 
-    val e : Either[String, Int] = Right(23)
-    val ei = incAll(e)
-    assertEquals(Right(24), ei)
+//    val e : Either[String, Int] = Right(23)
+//    val ei = incAll(e)
+//    assertEquals(Right(24), ei)
 
     val lo = List(Some(1), None, Some(2))
     val loi = incAll(lo)
@@ -155,21 +155,21 @@ class SybClassTests {
 
   @Test
   def testEverywhere {
-//    val pi = incAll2((23, "foo"))
-//    typed[(Int, String)](pi)
-//    assertEquals((24, "foo*"), pi)
-//
-//    val oi = incAll2(Option(23))
-//    typed[Option[Int]](oi)
-//    assertEquals(Some(24), oi)
-//
+    val pi = incAll2((23, "foo"))
+    typed[(Int, String)](pi)
+    assertEquals((24, "foo*"), pi)
+
+    val oi = incAll2(Option(23))
+    typed[Option[Int]](oi)
+    assertEquals(Some(24), oi)
+
 //    val ei = incAll2(Right(23) : Either[String, Int])
 //    typed[Either[String, Int]](ei)
 //    assertEquals(Right(24), ei)
-//
-//    val loi = incAll2(List(Some(1), None, Some(2)))
-//    typed[List[Option[Int]]](loi)
-//    assertEquals(List(Some(2), None, Some(3)), loi)
+
+    val loi = incAll2(List(Some(1), None, Some(2)))
+    typed[List[Option[Int]]](loi)
+    assertEquals(List(Some(2), None, Some(3)), loi)
 
     val e1 = everywhere(inc)(23)
     typed[Int](e1)
@@ -320,7 +320,7 @@ class SybClassTests {
     implicit def apply[T] = at[T](identity)
     implicit def caseBoolean = at[Boolean](!_)
   }
-  /*
+
   @Test
   def testGeneric1 {
     val input = A(1, true,  2)
@@ -499,5 +499,4 @@ class SybClassTests {
     typed[Tree[Int]](result3)
     assertEquals(expected3, result3)
   }
-  */
 }
