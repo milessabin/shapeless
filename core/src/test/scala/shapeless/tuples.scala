@@ -1017,4 +1017,12 @@ class TupleTests {
       (Set(true), c2))
     assertEquals(expected, zl2)
   }
+
+  @Test
+  def testPropagation {
+    def useHead[P <: Product](p: P)(implicit ic: ops.tuple.IsComposite[P]) = p.head
+
+    val h = useHead((23, "foo", true))
+    typed[Int](h)
+  }
 }
