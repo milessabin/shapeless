@@ -105,9 +105,9 @@ class SybClassTests {
     val oi = incAll(o)
     assertEquals(Some(24), oi)
 
-//    val e : Either[String, Int] = Right(23)
-//    val ei = incAll(e)
-//    assertEquals(Right(24), ei)
+    val e : Either[String, Int] = Right(23)
+    val ei = incAll(e)
+    assertEquals(Right(24), ei)
 
     val lo = List(Some(1), None, Some(2))
     val loi = incAll(lo)
@@ -163,9 +163,9 @@ class SybClassTests {
     typed[Option[Int]](oi)
     assertEquals(Some(24), oi)
 
-//    val ei = incAll2(Right(23) : Either[String, Int])
-//    typed[Either[String, Int]](ei)
-//    assertEquals(Right(24), ei)
+    val ei = incAll2(Right(23) : Either[String, Int])
+    typed[Either[String, Int]](ei)
+    assertEquals(Right(24), ei)
 
     val loi = incAll2(List(Some(1), None, Some(2)))
     typed[List[Option[Int]]](loi)
