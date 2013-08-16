@@ -18,9 +18,12 @@ package shapeless
 package syntax
 package std
 
-object tuple {
-  implicit def unitTupleOps(u: Unit): TupleOps[Unit] = new TupleOps(u)
+trait LowPriorityTuple {
   implicit def productTupleOps[P <: Product](p: P): TupleOps[P] = new TupleOps(p)
+}
+
+object tuple extends LowPriorityTuple {
+  implicit def unitTupleOps(u: Unit): TupleOps[Unit] = new TupleOps(u)
 
   // Duplicated here from shapeless.HList so that explicit imports of tuple._ don't
   // clobber the conversion to HListOps.
