@@ -457,7 +457,7 @@ object Boilerplate {
         |class SizedBuilder[CC[_]] {
         |  import scala.collection.generic.CanBuildFrom
         |  import nat._
-        |  import Sized._
+        |  import Sized.wrap
         |"""+instances+"""}
         |""").stripMargin
   }

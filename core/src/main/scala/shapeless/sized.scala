@@ -37,14 +37,14 @@ abstract class Sized[+Repr, L <: Nat](r : Repr) {
 /**
  * Carrier for `Sized` operations.
  * 
- * These methods are implemented here and pimped onto the minimal `Sized` type to avoid issues that would otherwise be
- * caused by its covariance.
+ * These operations are implemented here as extension methods of the minimal `Sized` type to avoid issues that would
+ * otherwise be caused by its covariance.
  * 
  * @author Miles Sabin
  */
 class SizedOps[A, Repr <% GenTraversableLike[A, Repr], L <: Nat](r : Repr) { outer =>
   import nat._
-  import Sized._
+  import Sized.wrap
   import LT._
   
   /**
@@ -155,23 +155,5 @@ object Sized extends LowPrioritySized {
   
   def wrap[A0, Repr, L <: Nat](r : Repr) = new Sized[Repr, L](r) { type A = A0 }
 
-  class SizedConv[A, Repr <% GenTraversableLike[A, Repr]](r : Repr) {
-    def sized[L <: Nat](implicit toInt : ToInt[L]) =
-      if(r.size == toInt()) Some(wrap[A, Repr, L](r)) else None
-      
-    def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
-      if(r.size == toInt()) Some(wrap[A, Repr, l.N](r)) else None
-      
-    def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
-      assert(r.size == toInt())
-      wrap[A, Repr, L](r)
-    }
-  }
-  
   def unapplySeq[Repr, L <: Nat](x : Sized[Repr, L]) = Some(x.unsized)
-
-  implicit def genTraversableSizedConv[CC[X] <: GenTraversable[X], T](cc : CC[T])
-    (implicit conv : CC[T] => GenTraversableLike[T, CC[T]]) = new SizedConv[T, CC[T]](cc)
-  
-  implicit def stringSizedConv(s : String) = new SizedConv[Char, String](s)
 }
