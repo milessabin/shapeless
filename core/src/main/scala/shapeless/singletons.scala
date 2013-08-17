@@ -20,7 +20,6 @@ import scala.language.existentials
 import scala.language.experimental.macros
 
 import scala.reflect.macros.Context
-import scala.tools.reflect.ToolBoxError
 
 trait Witness {
   type T
@@ -72,12 +71,6 @@ trait SingletonTypeMacros[C <: Context] {
 
   import c.universe._
   import Flag._
-
-  def eval[T](t: Tree) = try { 
-    Some(c.eval(c.Expr[T](c.resetAllAttrs(t.duplicate))))
-  } catch {
-    case ex: ToolBoxError => None
-  }
 
   def mkWitnessT[W](sTpe: Type, s: Any) = mkWitness[W](TypeTree(sTpe), Literal(Constant(s)))
 
@@ -295,8 +288,6 @@ object SingletonTypeMacros {
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
   def inst(c0: Context) = new SingletonTypeMacros[c0.type] { val c: c0.type = c0 }
-
-  def eval[T](c: Context)(t: c.Tree) = inst(c).eval(t)
 
   def materializeImpl[T: c.WeakTypeTag](c: Context): c.Expr[Witness.Eq[T]] = inst(c).materializeImpl[T]
 

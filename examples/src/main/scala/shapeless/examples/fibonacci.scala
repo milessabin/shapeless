@@ -38,9 +38,9 @@ object FibonacciExamples {
     implicit val fib0 = Fibonacci(0, 0)
     implicit val fib1 = Fibonacci(1, 1)
   
-    implicit def fibN[I <: Nat, L <: Nat, M <: Nat, N <: Nat]
-      (implicit l : Fibonacci[I, L], m : Fibonacci[Succ[I], M], sum : SumAux[L, M, N]) =
-        new Fibonacci[Succ[Succ[I]], N]
+    implicit def fibN[I <: Nat, L <: Nat, M <: Nat]
+      (implicit l : Fibonacci[I, L], m : Fibonacci[Succ[I], M], sum : Sum[L, M]) =
+        new Fibonacci[Succ[Succ[I]], sum.Out]
   }
   
   def fibonacci[N <: Nat](i : Nat)(implicit fib : Fibonacci[i.N, N], wn: Witness.Aux[N]) = wn.value
