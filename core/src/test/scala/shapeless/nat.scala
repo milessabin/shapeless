@@ -29,26 +29,26 @@ class NatTests {
   def testNat {
     implicitly[Succ[_1] =:= _2]
     
-    implicitly[PredAux[_19, _18]]
+    implicitly[Pred.Aux[_19, _18]]
     
     def pred(n: Nat)(implicit pred : Pred[n.N]) = new Check[pred.Out] {}
     val pd1 = pred(19)
     check(18)(pd1)
     
-    implicitly[SumAux[_2, _3, _5]]
+    implicitly[Sum.Aux[_2, _3, _5]]
     
     def sum(a: Nat, b: Nat)(implicit sum : Sum[a.N, b.N]) = new Check[sum.Out] {}
     val s1 = sum(2, 3)
     check(5)(s1)
 
-    implicitly[DiffAux[_5, _1, _4]]
+    implicitly[Diff.Aux[_5, _1, _4]]
 
     def diff(a: Nat, b: Nat)(implicit diff : Diff[a.N, b.N]) = new Check[diff.Out] {}
     val diff1 = diff(5, 1)
     check(4)(diff1)
 
-    implicitly[ProdAux[_2, _3, _6]]
-    implicitly[ProdAux[_4, _5, _20]]
+    implicitly[Prod.Aux[_2, _3, _6]]
+    implicitly[Prod.Aux[_4, _5, _20]]
 
     def prod(a: Nat, b: Nat)(implicit prod : Prod[a.N, b.N]) = new Check[prod.Out] {}
     val p1 = prod(2, 3)
@@ -56,9 +56,9 @@ class NatTests {
     val p2 = prod(4, 5)
     check(20)(p2)
 
-    implicitly[DivAux[_7, _2, _3]]
-    implicitly[DivAux[_22, _11, _2]]
-    implicitly[DivAux[_15, _3, _5]]
+    implicitly[Div.Aux[_7, _2, _3]]
+    implicitly[Div.Aux[_22, _11, _2]]
+    implicitly[Div.Aux[_15, _3, _5]]
 
     def div(a: Nat, b: Nat)(implicit div : Div[a.N, b.N]) = new Check[div.Out] {}
     val d1 = div(7, 2)
@@ -68,9 +68,9 @@ class NatTests {
     val d3 = div(15, 3)
     check(5)(d3)
 
-    implicitly[ModAux[_7, _2, _1]]
-    implicitly[ModAux[_22, _5, _2]]
-    implicitly[ModAux[_9, _3, _0]]
+    implicitly[Mod.Aux[_7, _2, _1]]
+    implicitly[Mod.Aux[_22, _5, _2]]
+    implicitly[Mod.Aux[_9, _3, _0]]
 
     def mod(a: Nat, b: Nat)(implicit mod : Mod[a.N, b.N]) = new Check[mod.Out] {}
     val m1 = mod(7, 2)
@@ -85,9 +85,9 @@ class NatTests {
     implicitly[LTEq[_2, _2]]
     implicitly[LTEq[_2, _3]]
 
-    implicitly[MinAux[_0, _0, _0]]
-    implicitly[MinAux[_5, _2, _2]]
-    implicitly[MinAux[_3, _8, _3]]
+    implicitly[Min.Aux[_0, _0, _0]]
+    implicitly[Min.Aux[_5, _2, _2]]
+    implicitly[Min.Aux[_3, _8, _3]]
 
     def min[A <: Nat, B <: Nat](implicit min : Min[A, B]) = new Check[min.Out] {}
     val min1 = min[_3, _4]
@@ -95,9 +95,9 @@ class NatTests {
     val min2 = min[_5, _4]
     check(4)(min2)
 
-    implicitly[PowAux[_0, _8, _1]]
-    implicitly[PowAux[_9, _0, _0]]
-    implicitly[PowAux[_3, _2, _8]]
+    implicitly[Pow.Aux[_0, _8, _1]]
+    implicitly[Pow.Aux[_9, _0, _0]]
+    implicitly[Pow.Aux[_3, _2, _8]]
 
     def pow[A <: Nat, B <: Nat](implicit pow : Pow[A, B]) = new Check[pow.Out] {}
     val e1 = pow[_3, _1]

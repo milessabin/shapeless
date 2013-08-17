@@ -27,26 +27,19 @@ object GCDExamples {
 
   def typed[T](t : => T) {}
 
-  trait GCD[X <: Nat, Y <: Nat] {
-    type Z <: Nat
-  }
+  trait GCD[X <: Nat, Y <: Nat] { type Out <: Nat }
 
   object GCD {
-    implicit def gcd1[X <: Nat, Y <: Nat, Z0 <: Nat](implicit gcd : GCDAux[X, Y, Z0]) = new GCD[X, Y] {
-      type Z = Z0
-    }
-    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : GCDAux[x.N, y.N, N], wn : Witness.Aux[N]) = wn.value
-  }
+    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : Aux[x.N, y.N, N], wn : Witness.Aux[N]) = wn.value
 
-  trait GCDAux[X <: Nat, Y <: Nat, Z <: Nat]
+    type Aux[X <: Nat, Y <: Nat, Z <: Nat] = GCD[X, Y] { type Out = Z }
 
-  object GCDAux {
-    implicit def gcd0[X <: Nat] = new GCDAux[X, X, X] {}
-    implicit def gcd1[X <: Nat, Y <: Nat, Z <: Nat, Out <: Nat]
-      (implicit ev0 : LT[X, Y], ev1 : DiffAux[Y, X, Z], ev2 : GCDAux[X, Z, Out]) =
-        new GCDAux[X, Y, Out] {}
-    implicit def gcd2[X <: Nat, Y <: Nat, Out <: Nat]
-      (implicit ev0 : LT[Y, X], ev1 : GCDAux[Y, X, Out]) = new GCDAux[X, Y, Out] {}
+    implicit def gcd0[X <: Nat]: Aux[X, X, X] = new GCD[X, X] { type Out = X }
+    implicit def gcd1[X <: Nat, Y <: Nat, Z <: Nat, Out0 <: Nat]
+      (implicit ev0 : LT[X, Y], ev1 : Diff.Aux[Y, X, Z], ev2 : Aux[X, Z, Out0]): Aux[X, Y, Out0] =
+        new GCD[X, Y] { type Out = Out0 }
+    implicit def gcd2[X <: Nat, Y <: Nat, Out0 <: Nat]
+      (implicit ev0 : LT[Y, X], ev1 : Aux[Y, X, Out0]): Aux[X, Y, Out0] = new GCD[X, Y] { type Out = Out0}
   }
 
   import GCD._

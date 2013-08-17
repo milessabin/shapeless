@@ -145,20 +145,12 @@ object NatMacros {
  * 
  * @author Miles Sabin
  */
-trait Pred[A <: Nat] {
-  type Out <: Nat
-}
-
-trait PredAux[A <: Nat, B <: Nat]
+trait Pred[A <: Nat] { type Out <: Nat }
 
 object Pred {
-  implicit def pred[A <: Nat, B <: Nat](implicit pred : PredAux[A, B]) = new Pred[A] {
-    type Out = B
-  }
-}
+  type Aux[A <: Nat, B <: Nat] = Pred[A] { type Out = B }
 
-object PredAux {
-  implicit def pred[B <: Nat] = new PredAux[Succ[B], B] {}
+  implicit def pred[B <: Nat]: Aux[Succ[B], B] = new Pred[Succ[B]] { type Out = B }
 }
 
 /**
@@ -166,22 +158,14 @@ object PredAux {
  * 
  * @author Miles Sabin
  */
-trait Sum[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait SumAux[A <: Nat, B <: Nat, C <: Nat]
+trait Sum[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Sum {
-  implicit def sum[A <: Nat, B <: Nat, C <: Nat](implicit sum: SumAux[A, B, C]) = new Sum[A, B] {
-    type Out = C
-  }
-}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Sum[A, B] { type Out = C }
 
-object SumAux {
-  implicit def sum1[B <: Nat] = new SumAux[_0, B, B] {}
-  implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
-    (implicit ev : SumAux[A, Succ[B], C]) = new SumAux[Succ[A], B, C] {}
+  implicit def sum1[B <: Nat]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
+  implicit def sum2[A <: Nat, B <: Nat]
+    (implicit sum : Sum[A, Succ[B]]): Aux[Succ[A], B, sum.Out] = new Sum[Succ[A], B] { type Out = sum.Out }
 }
 
 /**
@@ -189,22 +173,14 @@ object SumAux {
  * 
  * @author Miles Sabin
  */
-trait Diff[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait DiffAux[A <: Nat, B <: Nat, C <: Nat]
+trait Diff[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Diff {
-  implicit def diff[A <: Nat, B <: Nat, C <: Nat](implicit diff: DiffAux[A, B, C]) = new Diff[A, B] {
-    type Out = C
-  }
-}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Diff[A, B] { type Out = C }
 
-object DiffAux {
-  implicit def diff1[A <: Nat] = new DiffAux[A, _0, A] {}
-  implicit def diff2[A <: Nat, B <: Nat, C <: Nat]
-    (implicit ev : DiffAux[A, B, C]) = new DiffAux[Succ[A], Succ[B], C] {}
+  implicit def diff1[A <: Nat]: Aux[A, _0, A] = new Diff[A, _0] { type Out = A }
+  implicit def diff2[A <: Nat, B <: Nat]
+    (implicit diff : Diff[A, B]): Aux[Succ[A], Succ[B], diff.Out] = new Diff[Succ[A], Succ[B]] { type Out = diff.Out }
 }
 
 /**
@@ -212,22 +188,14 @@ object DiffAux {
  * 
  * @author Miles Sabin
  */
-trait Prod[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait ProdAux[A <: Nat, B <: Nat, C <: Nat]
+trait Prod[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Prod {
-  implicit def prod[A <: Nat, B <: Nat, C <: Nat](implicit prod: ProdAux[A, B, C]) = new Prod[A, B] {
-    type Out = C
-  }
-}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Prod[A, B] { type Out = C }
 
-object ProdAux {
-  implicit def prod1[B <: Nat] = new ProdAux[_0, B, _0] {}
-  implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
-    (implicit ev1 : ProdAux[A, B, C], ev2 : SumAux[B, C, D]) = new ProdAux[Succ[A], B, D] {}
+  implicit def prod1[B <: Nat]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
+  implicit def prod2[A <: Nat, B <: Nat, C <: Nat]
+    (implicit prod: Prod.Aux[A, B, C], sum: Sum[B, C]): Aux[Succ[A], B, sum.Out] = new Prod[Succ[A], B] { type Out = sum.Out }
 }
 
 /**
@@ -235,30 +203,21 @@ object ProdAux {
  *
  * @author Tom Switzer
  */
-trait Div[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait DivAux[A <: Nat, B <: Nat, C <: Nat]
+trait Div[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Div {
-  implicit def div[A <: Nat, B <: Nat, C <: Nat]
-    (implicit div: DivAux[A, B, C]) = new Div[A, B] {
-      type Out = C
-    }
-}
-
-object DivAux {
   import LT._
 
-  implicit def div1[A <: Nat] = new DivAux[_0, A, _0] {}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Div[A, B] { type Out = C }
 
-  implicit def div2[A <: Nat, B <: Nat](implicit e: A < B) =
-    new DivAux[A, B, _0] {}
+  implicit def div1[A <: Nat]: Aux[_0, A, _0] = new Div[_0, A] { type Out = _0 }
+
+  implicit def div2[A <: Nat, B <: Nat](implicit lt: A < B): Aux[A, B, _0] =
+    new Div[A, B] { type Out = _0 }
 
   implicit def div3[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
-    (implicit diff: DiffAux[Succ[A], B, C], div: DivAux[C, B, D]) =
-      new DivAux[Succ[A], B, Succ[D]] {}
+    (implicit diff: Diff.Aux[Succ[A], B, C], div: Div.Aux[C, B, D]): Aux[Succ[A], B, Succ[D]] =
+      new Div[Succ[A], B] { type Out = Succ[D] }
 }
 
 /**
@@ -266,21 +225,14 @@ object DivAux {
  *
  * @author Tom Switzer
  */
-trait Mod[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait ModAux[A <: Nat, B <: Nat, C <: Nat]
+trait Mod[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Mod {
-  implicit def mod[A <: Nat, B <: Nat, C <: Nat]
-    (implicit mod: ModAux[A, B, C]) = new Mod[A, B] { type Out = C }
-}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Mod[A, B] { type Out = C }
 
-object ModAux {
   implicit def modAux[A <: Nat, B <: Nat, C <: Nat, D <: Nat, E <: Nat]
-    (implicit div: DivAux[A, B, C], prod: ProdAux[C, B, D], diff: DiffAux[A, D, E]) =
-      new ModAux[A, B, E] {}
+    (implicit div: Div.Aux[A, B, C], prod: Prod.Aux[C, B, D], diff: Diff.Aux[A, D, E]): Aux[A, B, E] =
+      new Mod[A, B] { type Out = E }
 }
 
 /**
@@ -317,48 +269,33 @@ object LTEq {
  *
  * @author George Leontiev
  */
-trait Min[A <: Nat, B <: Nat] {
-  type Out <: Nat
-}
-
-trait MinAux[A <: Nat, B <: Nat, C <: Nat]
+trait Min[A <: Nat, B <: Nat] { type Out <: Nat }
 
 object Min {
-  implicit def min[A <: Nat, B <: Nat, C <: Nat]
-    (implicit aux: MinAux[A, B, C]) = new Min[A, B] { type Out = C }
-}
+  type Aux[A <: Nat, B <: Nat, C <: Nat] = Min[A, B] { type Out = C }
 
-object MinAux {
   implicit def minAux0[A <: Nat, B <: Nat, C <: Nat]
-    (implicit lteq: LTEq[A, B]) = new MinAux[A, B, A] {}
+    (implicit lteq: LTEq[A, B]): Aux[A, B, A] = new Min[A, B] { type Out = A }
   implicit def minAux1[A <: Nat, B <: Nat, C <: Nat]
-    (implicit lteq: LT[B, A]) = new MinAux[A, B, B] {}
+    (implicit lteq: LT[B, A]): Aux[A, B, B] = new Min[A, B] { type Out = B }
 }
-
 
 /**
  * Type class witnessing that `Out` is `X` raised to the power `N`.
  *
  * @author George Leontiev
  */
-trait Pow[N <: Nat, X <: Nat] {
-  type Out <: Nat
-}
-
-trait PowAux[N <: Nat, X <: Nat, Z <: Nat]
+trait Pow[N <: Nat, X <: Nat] { type Out <: Nat }
 
 object Pow {
-  implicit def pow[N <: Nat, X <: Nat, Z <: Nat](implicit pow : PowAux[N, X, Z]) = new Pow[N, X] {
-    type Out = Z
-  }
-}
+  import nat._1
 
-object PowAux {
-  import nat.{_0, _1}
-  implicit def pow1[A <: Nat] = new PowAux[Succ[A], _0, _0] {}
-  implicit def pow2[A <: Nat] = new PowAux[_0, Succ[A], _1] {}
+  type Aux[N <: Nat, X <: Nat, Z <: Nat] = Pow[N, X] { type Out = Z }
+
+  implicit def pow1[A <: Nat]: Aux[Succ[A], _0, _0] = new Pow[Succ[A], _0] { type Out = _0 }
+  implicit def pow2[A <: Nat]: Aux[_0, Succ[A], _1] = new Pow[_0, Succ[A]] { type Out = _1 }
   implicit def pow3[N <: Nat, X <: Nat, Z <: Nat, Y <: Nat]
-    (implicit ev : PowAux[N, X, Z], ev2 : ProdAux[Z, X, Y]) = new PowAux[Succ[N], X, Y] {}
+    (implicit ev : Pow.Aux[N, X, Z], ev2 : Prod.Aux[Z, X, Y]): Aux[Succ[N], X, Y] = new Pow[Succ[N], X] { type Out = Y }
 }
 
 /**
