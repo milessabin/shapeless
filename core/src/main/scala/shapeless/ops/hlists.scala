@@ -203,7 +203,7 @@ object hlist {
    * 
    * @author Miles Sabin
    */
-  trait Length[L <: HList] extends DepFn0[L] { type Out <: Nat }
+  trait Length[L <: HList] extends DepFn0 { type Out <: Nat }
 
   object Length {
     import nat._

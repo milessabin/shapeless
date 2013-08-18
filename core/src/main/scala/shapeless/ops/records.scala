@@ -144,7 +144,7 @@ package record {
    * 
    * @author Miles Sabin
    */
-  trait Keys[L <: HList] extends DepFn0[L] { type Out <: HList }
+  trait Keys[L <: HList] extends DepFn0 { type Out <: HList }
 
   object Keys {
     type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
