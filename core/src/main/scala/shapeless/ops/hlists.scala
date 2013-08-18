@@ -35,13 +35,14 @@ object hlist {
 
   object IsHCons {
     type Aux[L <: HList, H0, T0 <: HList] = IsHCons[L] { type H = H0; type T = T0 }
-    implicit def hlistIsHCons[H0, T0 <: HList] = new IsHCons[H0 :: T0] {
-      type H = H0
-      type T = T0
-    
-      def head(l : H0 :: T0) : H = l.head
-      def tail(l : H0 :: T0) : T = l.tail
-    }
+    implicit def hlistIsHCons[H0, T0 <: HList]: Aux[H0 :: T0, H0, T0] = 
+      new IsHCons[H0 :: T0] {
+        type H = H0
+        type T = T0
+      
+        def head(l : H0 :: T0) : H = l.head
+        def tail(l : H0 :: T0) : T = l.tail
+      }
   }
 
   /**
