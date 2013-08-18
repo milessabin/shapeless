@@ -236,7 +236,7 @@ class SingletonTypesTests {
   }
 
   object ShowWitness {
-    implicit def showWitness[T](implicit w: Witness.Aux[T]) =
+    implicit def showWitness[T](implicit w: Witness.Eq[T]) =
       new ShowWitness[T] {
         def show = w.value.toString
       }
