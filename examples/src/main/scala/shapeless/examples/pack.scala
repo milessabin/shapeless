@@ -18,52 +18,61 @@ package shapeless.examples
 
 /**
  * Demonstration of automatic packaging of multiple type class instances at call sites and
- * almost automatic unpackaging of them at call targets. 
+ * automatic unpackaging of them at call targets. 
  * 
  * @author Miles Sabin
  */
 object PackExamples extends App {
   import shapeless._
   
-  // 
-  trait Pack[F[_], L <: HList] {
-    implicit def unpack[E](implicit  u : Unpack[F, E, L]) = u(this)
-    
-    def split[H, T <: HList](implicit ev : L =:= (H :: T)) : (F[H], Pack[F, T])
-  }
+  sealed trait Pack[F[_], L <: HList]
+  final case class PCons[F[_], H, T <: HList](head: F[H], tail: Pack[F, T]) extends Pack[F, H :: T]
+  final case class PNil[F[_]]() extends Pack[F, HNil]
   
   object Pack {
-    implicit def packHNil[F[_]] =
-      new Pack[F, HNil] {
-        def split[H, T <: HList](implicit ev : HNil =:= (H :: T)) = {
-          // We will never have evidence that HNil =:= (H :: T) so we can never get here,
-          // but there doesn't seem to be any way to eliminate this method altogether
-          // without doing something at least as bad elsewhere.
-          sys.error("The impossible happened!")
-        }
-      }
-    
-    implicit def packHList[F[_], H0, T0 <: HList](implicit bh : F[H0], pt : Pack[F, T0]) =
-      new Pack[F, H0 :: T0] {
-        def split[H, T <: HList](implicit ev : (H0 :: T0) =:= (H :: T)) = {
-          // The casts here can't fail, but there doesn't seem to be any way of
-          // proving that from the evidence we have.
-          (bh.asInstanceOf[F[H]], pt.asInstanceOf[Pack[F, T]])
-        }
-      }
-  }
+    implicit def packHNil[F[_]]: PNil[F] = PNil[F]()
 
-  trait Unpack[F[_], E, L <: HList] {
-    def apply(p : Pack[F, L]) : F[E]
-  }
-  
-  object Unpack {
-    implicit def unpack1[F[_], H, T <: HList] = new Unpack[F, H, H :: T] {
-      def apply(p : Pack[F, H :: T]) : F[H] = p.split[H, T]._1
+    implicit def packHList[F[_], H, T <: HList]
+      (implicit fh: F[H], pt: Pack[F, T]): Pack[F, H :: T] = PCons(fh, pt)
+
+    implicit def unpack[F[_], E, L <: HList](implicit pack: Pack[F, L], unpack: Unpack[F, L, E]): F[E] = unpack(pack)
+
+    trait Unpack[F[_], L <: HList, E] {
+      def apply(pack: Pack[F, L]): F[E]
     }
 
-    implicit def unpack2[F[_], E, H, T <: HList](implicit ut : Unpack[F, E, T]) = new Unpack[F, E, H :: T] {
-      def apply(p : Pack[F, H :: T]) : F[E] = ut(p.split[H, T]._2)
+    object Unpack extends {
+      implicit def unpack1[F[_], H, T <: HList]
+        (implicit pc: IsPCons.Aux[F, H :: T, H, T]): Unpack[F, H :: T, H] =
+          new Unpack[F, H :: T, H] {
+            def apply(pack: Pack[F, H :: T]): F[H] = pc.split(pack)._1
+          }
+
+      implicit def unpack2[F[_], H, T <: HList, E]
+        (implicit pc: IsPCons.Aux[F, H :: T, H, T], ut: Unpack[F, T, E]): Unpack[F, H :: T, E] =
+          new Unpack[F, H :: T, E] {
+            def apply(pack: Pack[F, H :: T]): F[E] = ut(pc.split(pack)._2)
+          }
+    }
+
+    trait IsPCons[F[_], L <: HList] {
+      type H
+      type T <: HList
+        
+      def split(p: Pack[F, L]): (F[H], Pack[F, T])
+    }
+
+    object IsPCons {
+      type Aux[F[_], L <: HList, H0, T0 <: HList] = IsPCons[F, L] { type H = H0; type T = T0 }
+      implicit def hlistIsPCons[F[_], H0, T0 <: HList]: Aux[F, H0 :: T0, H0, T0] =
+        new IsPCons[F, H0 :: T0] {
+          type H = H0
+          type T = T0
+        
+          def split(p: Pack[F, H :: T]): (F[H], Pack[F, T]) = p match {
+            case PCons(fh, pt) => (fh, pt)
+          }
+        }
     }
   }
   
@@ -88,10 +97,10 @@ object PackExamples extends App {
   implicit val sc = new Show[C] { def show = "C" }
 
   def use3[T, U, V](t : T, u : U, v : V)(implicit pack : Pack[Show, T :: U :: V :: HNil]) = {
-    import pack._
-
+    // Instances automatically unpacked here
     (show(t), show(u), show(v))
   }
   
+  // Instances automatically packed here
   assert(use3(a, b, c) == ("A", "B", "C"))
 }

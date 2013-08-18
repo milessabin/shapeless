@@ -73,7 +73,7 @@ package object shapeless {
   }
 
   /** Dependent nullary function type. */
-  trait DepFn0[T] {
+  trait DepFn0 {
     type Out
     def apply(): Out
   }
