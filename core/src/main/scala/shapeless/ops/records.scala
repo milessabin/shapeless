@@ -155,7 +155,7 @@ package record {
         def apply(): Out = HNil
       }
 
-    implicit def hlistKeys[K, V, T <: HList](implicit wk: Witness.Eq[K], kt: Keys[T]): Aux[FieldType[K, V] :: T, K :: kt.Out] =
+    implicit def hlistKeys[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: Keys[T]): Aux[FieldType[K, V] :: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :: T] {
         type Out = K :: kt.Out
         def apply(): Out = wk.value :: kt()

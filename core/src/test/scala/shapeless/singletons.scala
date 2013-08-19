@@ -145,7 +145,7 @@ class SingletonTypesTests {
     """)
   }
 
-  def convert(w: Witness): Witness.Eq[w.T] = w
+  def convert(w: Witness): Witness.Aux[w.T] = w
 
   @Test
   def testWitnessConversion {
@@ -189,7 +189,7 @@ class SingletonTypesTests {
     """)
   }
 
-  def boundedConvert(w: Witness.Lt[Int]): Witness.Eq[w.T] = w
+  def boundedConvert(w: Witness.Lt[Int]): Witness.Aux[w.T] = w
 
   @Test
   def testBoundedWitnessConversion {
@@ -236,7 +236,7 @@ class SingletonTypesTests {
   }
 
   object ShowWitness {
-    implicit def showWitness[T](implicit w: Witness.Eq[T]) =
+    implicit def showWitness[T](implicit w: Witness.Aux[T]) =
       new ShowWitness[T] {
         def show = w.value.toString
       }

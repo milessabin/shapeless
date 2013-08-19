@@ -58,19 +58,7 @@ package object shapeless {
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
   /** `Nat` literals */
-  object nat extends Nats {
-    /** The natural number 0 */
-    val _0: _0 = new _0
-
-    implicit val witness0: Witness.Aux[_0] =
-      new Witness.Aux[_0] {
-        val value = _0
-      }
-
-    def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
-
-    def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
-  }
+  val nat = Nat
 
   /** Dependent nullary function type. */
   trait DepFn0 {

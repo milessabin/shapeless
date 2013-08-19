@@ -31,7 +31,7 @@ trait SingletonOps {
   /**
    * Returns a Witness of the singleton type of this value.
    */
-  val witness: Witness.Eq[T]
+  val witness: Witness.Aux[T]
 
   /**
    * Narrows this value to its singleton type.
