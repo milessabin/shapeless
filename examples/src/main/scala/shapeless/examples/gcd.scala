@@ -24,6 +24,7 @@ package shapeless.examples
 object GCDExamples {
   import shapeless._
   import nat._
+  import ops.nat._
 
   def typed[T](t : => T) {}
 

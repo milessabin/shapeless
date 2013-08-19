@@ -25,6 +25,7 @@ package shapeless.examples
 object FactorialExamples {
   import shapeless._
   import nat._
+  import ops.nat._
 
   def typed[T](t : => T) {}
 

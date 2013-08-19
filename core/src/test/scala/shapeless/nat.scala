@@ -21,6 +21,7 @@ import org.junit.Assert._
 
 class NatTests {
   import nat._
+  import ops.nat._
   
   trait Check[N <: Nat]
   def check(expected: Nat)(actualy : => Check[expected.N]) {}

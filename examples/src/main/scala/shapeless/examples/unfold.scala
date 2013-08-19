@@ -18,8 +18,9 @@ package shapeless.examples
 
 object UnfoldExamples extends App {
   import shapeless._
-  import Poly._
   import nat._
+  import ops.nat._
+  import Poly._
   
   def typed[T](t : => T) {}
   
