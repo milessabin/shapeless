@@ -27,6 +27,7 @@ object sized {
 }
 
 final class SizedConv[A, Repr <% GenTraversableLike[A, Repr]](r : Repr) {
+  import ops.nat._
   import Sized._
 
   def sized[L <: Nat](implicit toInt : ToInt[L]) =

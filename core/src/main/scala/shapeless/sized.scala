@@ -38,8 +38,9 @@ final class Sized[+Repr, L <: Nat](val unsized : Repr) extends AnyVal
  */
 class SizedOps[A, Repr, L <: Nat](r : GenTraversableLike[A, Repr]) { outer =>
   import nat._
-  import Sized.wrap
+  import ops.nat._
   import LT._
+  import Sized.wrap
   
   /**
    * Returns the head of this collection. Available only if there is evidence that this collection has at least one

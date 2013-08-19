@@ -24,6 +24,7 @@ package shapeless.examples
 object FibonacciExamples {
   import shapeless._
   import nat._
+  import ops.nat._
   import ops.hlist.Reverse
 
   def typed[T](t : => T) {}

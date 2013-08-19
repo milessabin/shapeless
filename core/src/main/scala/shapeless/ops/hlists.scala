@@ -207,7 +207,7 @@ object hlist {
   trait Length[L <: HList] extends DepFn0 { type Out <: Nat }
 
   object Length {
-    import nat._
+    import shapeless.nat._
     type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
     implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
       type Out = _0
