@@ -38,13 +38,6 @@ case class Succ[P <: Nat]() extends Nat {
   type N = Succ[P]
 }
 
-object Succ {
-  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
-    new Witness.Aux[Succ[P]] {
-      val value = new Succ[P]()
-    }
-}
-
 /**
  * Encoding of zero.
  * 
@@ -61,6 +54,25 @@ class _0 extends Nat {
  */
 object Nat extends Nats {
   def apply(i: Int) = macro NatMacros.materializeWidened
+
+  /** The natural number 0 */
+  val _0: _0 = new _0
+
+  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
+
+  def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
+
+  implicit val witness0: Witness.Aux[_0] =
+    new Witness {
+      type T = _0
+      val value = _0
+    }
+
+  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
+    new Witness {
+      type T = Succ[P]
+      val value = new Succ[P]()
+    }
 
   implicit def materialize(i: Int) = macro NatMacros.materializeSingleton
 }

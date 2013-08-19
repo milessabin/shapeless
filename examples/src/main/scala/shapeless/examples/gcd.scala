@@ -30,7 +30,7 @@ object GCDExamples {
   trait GCD[X <: Nat, Y <: Nat] { type Out <: Nat }
 
   object GCD {
-    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : Aux[x.N, y.N, N], wn : Witness.Aux[N]) = wn.value
+    def gcd[N <: Nat](x : Nat, y : Nat)(implicit gcd : Aux[x.N, y.N, N], wn : Witness.Aux[N]): N = wn.value
 
     type Aux[X <: Nat, Y <: Nat, Z <: Nat] = GCD[X, Y] { type Out = Z }
 
