@@ -17,6 +17,7 @@
 package shapeless.examples
 
 import shapeless._
+import poly._
 
 /*
  * Examples of Scrap Your Boilerplate in action

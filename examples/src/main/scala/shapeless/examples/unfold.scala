@@ -20,7 +20,7 @@ object UnfoldExamples extends App {
   import shapeless._
   import nat._
   import ops.nat._
-  import Poly._
+  import poly._
   
   def typed[T](t : => T) {}
   
@@ -60,8 +60,8 @@ object UnfoldExamples extends App {
     // for the (co-)sequence of seeds is that implied by the cases of F.
     implicit def unfold2[F <: Poly, E, S, CoS, SS, OutH, OutT <: HList, PCoS, PCoSV]
       (implicit
-        shrink : Pullback1Aux[F, PCoS, (PCoSV, CoS)],
-        f : Pullback1Aux[F, S, (OutH, SS)],
+        shrink : Case1.Aux[F, PCoS, (PCoSV, CoS)],
+        f : Case1.Aux[F, S, (OutH, SS)],
         ut : UnfoldAux[F, E, SS, PCoS, OutT]) : UnfoldAux[F, E, S, CoS, OutH :: OutT] =
         new UnfoldAux[F, E, S, CoS, OutH :: OutT] {
           def apply(s : S) : OutH :: OutT = { 
@@ -89,8 +89,8 @@ object UnfoldExamples extends App {
     implicit def case1 = at[_1](_ => (_1, _2))
     implicit def caseN[N <: Nat, FN <: Nat, FSN <: Nat, FSSN <: Nat]
       (implicit
-        fn : Pullback1[N, (FN, Succ[N])],
-        fsn : Pullback1[Succ[N], (FSN, Succ[Succ[N]])],
+        fn : Case.Aux[N, (FN, Succ[N])],
+        fsn : Case.Aux[Succ[N], (FSN, Succ[Succ[N]])],
         sum : Sum.Aux[FN, FSN, FSSN],
         fssn : Witness.Aux[FSSN]) =
       at[Succ[Succ[N]]](_ => ((fssn.value: FSSN), Succ[Succ[Succ[N]]]))

@@ -28,6 +28,7 @@ import shapeless.ops.hlist.Prepend
  */
 object CartesianProductExample extends App {
   import shapeless._
+  import poly._
 
   def typed[T](t : => T) {}
 
@@ -46,7 +47,7 @@ object CartesianProductExample extends App {
     }
 
     implicit def hlist[HF, A, XH, XT <: HList, OutH, OutT <: HList](implicit
-      applied: Poly.Pullback2Aux[HF, A, XH, OutH],
+      applied: Case2.Aux[HF, A, XH, OutH],
       mapper: ApplyMapper[HF, A, XT, OutT]
     ) = new ApplyMapper[HF, A, XH :: XT, OutH :: OutT] {
       def apply(a: A, x: XH :: XT) = applied(a, x.head) :: mapper(a, x.tail)

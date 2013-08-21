@@ -15,8 +15,6 @@
  */
 
 package object shapeless {
-  import Poly._
-  
   def unexpected : Nothing = sys.error("Unexpected invocation")
   
   // Basic definitions
@@ -60,6 +58,10 @@ package object shapeless {
   /** `Nat` literals */
   val nat = Nat
 
+  /** `Poly` definitions */
+  val poly = PolyDefns
+  import poly._
+
   /** Dependent nullary function type. */
   trait DepFn0 {
     type Out
@@ -79,7 +81,7 @@ package object shapeless {
   }
 
   /** The SYB everything combinator */
-  type Everything[F <: Poly, K <: Poly, T] = Case1Aux[EverythingAux[F, K], T]
+  type Everything[F <: Poly, K <: Poly, T] = Case1[EverythingAux[F, K], T]
   
   class ApplyEverything[F <: Poly] {
     def apply(k : Poly): EverythingAux[F, k.type] {} = new EverythingAux[F, k.type]
@@ -88,7 +90,7 @@ package object shapeless {
   def everything(f: Poly): ApplyEverything[f.type] {} = new ApplyEverything[f.type]
 
   /** The SYB everywhere combinator */
-  type Everywhere[F <: Poly, T] = Case1Aux[EverywhereAux[F], T]
+  type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
   def everywhere(f: Poly): EverywhereAux[f.type] {} = new EverywhereAux[f.type]
 }

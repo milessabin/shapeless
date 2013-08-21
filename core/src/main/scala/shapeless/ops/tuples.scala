@@ -439,6 +439,7 @@ object tuple {
   trait FlatMapper[T, P] extends DepFn1[T]
 
   object FlatMapper {
+    import poly.Compose
     type Aux[T, P, Out0] = FlatMapper[T, P] { type Out = Out0 }
     implicit def mapper[T, P, L1 <: HList, L2 <: HList]
       (implicit gen: Generic.Aux[T, L1], mapper: hl.FlatMapper.Aux[Compose[productElements.type, P], L1, L2], tp: hl.Tupler[L2]): Aux[T, P, tp.Out] =

@@ -20,12 +20,13 @@ import org.junit.Test
 import org.junit.Assert._
 
 import test.illTyped
-import ops.hlist._
 
 class HListTests {
   import nat._
+  import poly._
   import syntax.std.traversable._
   import syntax.typeable._
+  import ops.hlist._
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil
@@ -107,7 +108,7 @@ class HListTests {
   @Test
   def testMap {
     implicitly[Mapper.Aux[choose.type, HNil, HNil]]
-    implicitly[choose.Case1[Set[Int]]]
+    implicitly[choose.Case[Set[Int]]]
     implicitly[Mapper.Aux[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
     
     val s1 = Set(1) :: HNil

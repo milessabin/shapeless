@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import poly._
+
 object coproduct {
   trait Inject[C <: Coproduct, I] {
     def apply(i: I): C
@@ -55,8 +57,6 @@ object coproduct {
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
 
   object Mapper {
-    import Poly._
-
     type Aux[F <: Poly, C <: Coproduct, Out0 <: Coproduct] = Mapper[F, C] { type Out = Out0 }
 
     implicit def cnilMapper[F <: Poly]: Aux[F, CNil, CNil] = new Mapper[F, CNil] {
@@ -65,7 +65,7 @@ object coproduct {
     }
 
     implicit def cpMapper[F <: Poly, H, OutH, T <: Coproduct]
-      (implicit fh: Pullback1Aux[F, H, OutH], mt: Mapper[F, T]): Aux[F, H :+: T, OutH :+: mt.Out] =
+      (implicit fh: Case1.Aux[F, H, OutH], mt: Mapper[F, T]): Aux[F, H :+: T, OutH :+: mt.Out] =
         new Mapper[F, H :+: T] {
           type Out = OutH :+: mt.Out
           def apply(c: H :+: T): Out = c match {

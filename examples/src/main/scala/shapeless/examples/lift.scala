@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package shapeless
+package shapeless.examples
 
-object Lift {
+import shapeless._
+
+object Lift extends App {
+  import poly._
   import ops.function._
   import ops.hlist._
   import syntax.std.function._
@@ -36,4 +39,12 @@ object Lift {
         if(o.foldMap(true)(isDefined)(_ && _)) Some(f.toProduct(o map get))
         else None
     }.fromProduct
+
+  object isDefined extends (Option ~>> Boolean) {
+    def apply[T](o : Option[T]) = o.isDefined
+  }
+
+  object get extends (Option ~> Id) {
+    def apply[T](o : Option[T]) = o.get
+  }
 }
