@@ -43,19 +43,19 @@ trait Lens[C, F] {
 
 trait ProductLens[C, P <: Product] extends Lens[C, P] {
   outer =>
-  def ~[T, L <: HList, LT <: HList, Q <: Product](other : Lens[C, T])
+  def ~[T, L <: HList, LT <: HList, Q <: Product, QL <: HList](other : Lens[C, T])
     (implicit
-      hlp  : HListerAux[P, L],
+      genp : Generic.Aux[P, L],
       tpp  : Tupler.Aux[L, P],
       pre  : Prepend.Aux[L, T :: HNil, LT],
-      init : Init.Aux[LT, L],
-      last : Last.Aux[LT, T],
       tpq  : Tupler.Aux[LT, Q],
-      hlq  : HListerAux[Q, LT]) =
+      genq : Generic.Aux[Q, QL],
+      init : Init.Aux[QL, L],
+      last : Last.Aux[QL, T]) =
       new ProductLens[C, Q] {
-        def get(c : C) : Q = (hlp(outer.get(c)) :+ other.get(c)).tupled
+        def get(c : C) : Q = (genp.to(outer.get(c)) :+ other.get(c)).tupled
         def set(c : C)(q : Q) = {
-          val l = hlq(q)
+          val l = genq.to(q)
           other.set(outer.set(c)(l.init.tupled))(l.last)
         }
       }
