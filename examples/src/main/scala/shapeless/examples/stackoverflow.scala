@@ -43,6 +43,7 @@ object StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
   
   import shapeless._
+  import poly._
   import ops.hlist.{ Mapped, Mapper }
   import syntax.std.function._
   

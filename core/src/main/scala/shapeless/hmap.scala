@@ -16,7 +16,7 @@
 
 package shapeless
 
-import Poly._
+import poly._
   
 /**
  * Heterogenous map with type-level key/value associations that are fixed by an arbitrary
@@ -31,7 +31,7 @@ class HMap[R[_, _]](underlying : Map[Any, Any] = Map.empty) extends Poly1 {
   def +[K, V](kv : (K, V))(implicit ev : R[K, V]) : HMap[R] = new HMap[R](underlying+kv)
   def -[K](k : K) : HMap[R] = new HMap[R](underlying-k)
 
-  implicit def caseRel[K, V](implicit ev : R[K, V]) = Case1Aux[this.type, K, V](get(_).get)
+  implicit def caseRel[K, V](implicit ev : R[K, V]) = Case1[this.type, K, V](get(_).get)
 }
 
 object HMap {
@@ -40,3 +40,21 @@ object HMap {
   def empty[R[_, _]] = new HMap[R]
   def empty[R[_, _]](underlying : Map[Any, Any]) = new HMap[R](underlying)
 }
+
+/**
+ * Type class witnessing the existence of a natural transformation between `K[_]` and `V[_]`.
+ *
+ * Use this trait to represent an `HMap` relation of the form `K[T]` maps to `V[T]`.
+ * 
+ * @author Miles Sabin
+ */
+class ~?>[K[_], V[_]] {
+  class λ[K, V]
+}
+
+object ~?> {
+  implicit def rel[K[_], V[_]] : K ~?> V = new (K ~?> V)
+  
+  implicit def witness[K[_], V[_], T](implicit rel : K ~?> V) : rel.λ[K[T], V[T]] = new rel.λ[K[T], V[T]] 
+}
+

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package shapeless
+package shapeless.examples
 
 import org.junit.Test
 import org.junit.Assert._
+
+import shapeless._
 
 class LiftTests {
   import syntax.std.function._

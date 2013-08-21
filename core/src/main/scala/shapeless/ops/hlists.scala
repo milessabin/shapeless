@@ -19,6 +19,8 @@ package ops
 
 import scala.annotation.tailrec
 
+import poly._
+
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -228,8 +230,6 @@ object hlist {
   trait Mapper[HF, In <: HList] extends DepFn1[In] { type Out <: HList }
 
   object Mapper {
-    import Poly._
-
     type Aux[HF, In <: HList, Out0 <: HList] = Mapper[HF, In] { type Out = Out0 }
     
     implicit def hnilMapper1[HF]: Aux[HF, HNil, HNil] =
@@ -239,7 +239,7 @@ object hlist {
       }
     
     implicit def hlistMapper1[HF <: Poly, InH, InT <: HList]
-      (implicit hc : Case1Aux[HF, InH], mt : Mapper[HF, InT]): Aux[HF, InH :: InT, hc.Result :: mt.Out] =
+      (implicit hc : Case1[HF, InH], mt : Mapper[HF, InT]): Aux[HF, InH :: InT, hc.Result :: mt.Out] =
         new Mapper[HF, InH :: InT] {
           type Out = hc.Result :: mt.Out
           def apply(l : InH :: InT): Out = hc(l.head) :: mt(l.tail)
@@ -254,8 +254,6 @@ object hlist {
   trait FlatMapper[HF, In <: HList] extends DepFn1[In] { type Out <: HList }
 
   object FlatMapper {
-    import Poly._
-    
     type Aux[HF, In <: HList, Out0 <: HList] = FlatMapper[HF, In] { type Out = Out0 }
 
     implicit def hnilFlatMapper1[HF]: Aux[HF, HNil, HNil] =
@@ -266,7 +264,7 @@ object hlist {
     
     implicit def hlistFlatMapper1[HF <: Poly, InH, OutH <: HList, InT <: HList, OutT <: HList, Out0 <: HList]
       (implicit
-        hc : Pullback1Aux[HF, InH, OutH],
+        hc : Case1.Aux[HF, InH, OutH],
         mt : FlatMapper.Aux[HF, InT, OutT],
         prepend : Prepend.Aux[OutH, OutT, Out0]
       ): Aux[HF, InH :: InT, Out0] =
@@ -311,14 +309,12 @@ object hlist {
   }
     
   object MapFolder {
-    import Poly._
-    
     implicit def hnilMapFolder[R, HF]: MapFolder[HNil, R, HF] = new MapFolder[HNil, R, HF] {
       def apply(l : HNil, in : R, op : (R, R) => R): R = in
     }
     
     implicit def hlistMapFolder[H, T <: HList, R, HF <: Poly]
-      (implicit hc : Pullback1Aux[HF, H, R], tf : MapFolder[T, R, HF]): MapFolder[H :: T, R, HF] =
+      (implicit hc : Case1.Aux[HF, H, R], tf : MapFolder[T, R, HF]): MapFolder[H :: T, R, HF] =
         new MapFolder[H :: T, R, HF] {
           def apply(l : H :: T, in : R, op : (R, R) => R): R = op(hc(l.head), tf(l.tail, in, op))
         }
@@ -332,8 +328,6 @@ object hlist {
   trait LeftFolder[L <: HList, In, HF] extends DepFn2[L, In]
 
   object LeftFolder {
-    import Poly._
-    
     type Aux[L <: HList, In, HF, Out0] = LeftFolder[L, In, HF] { type Out = Out0 }
 
     implicit def hnilLeftFolder[In, HF]: Aux[HNil, In , HF, In] =
@@ -343,7 +337,7 @@ object hlist {
       }
     
     implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH]
-      (implicit f : Pullback2Aux[HF, In, H, OutH], ft : LeftFolder[T, OutH, HF]): Aux[H :: T, In, HF, ft.Out] =
+      (implicit f : Case2.Aux[HF, In, H, OutH], ft : LeftFolder[T, OutH, HF]): Aux[H :: T, In, HF, ft.Out] =
         new LeftFolder[H :: T, In, HF] {
           type Out = ft.Out
           def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
@@ -358,8 +352,6 @@ object hlist {
   trait RightFolder[L <: HList, In, HF] extends DepFn2[L, In]
 
   object RightFolder {
-    import Poly._
-    
     type Aux[L <: HList, In, HF, Out0] = RightFolder[L, In, HF] { type Out = Out0 }
 
     implicit def hnilRightFolder[In, HF]: Aux[HNil, In, HF, In] =
@@ -369,7 +361,7 @@ object hlist {
       }
     
     implicit def hlistRightFolder[H, T <: HList, In, HF, OutT]
-      (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2Aux[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
+      (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
         new RightFolder[H :: T, In, HF] {
           type Out = f.Result
           def apply(l : H :: T, in : In): Out = f(l.head, ft(l.tail, in))
@@ -400,8 +392,6 @@ object hlist {
   trait RightReducer[L <: HList, HF] extends DepFn1[L]
 
   object RightReducer {
-    import Poly._
-    
     type Aux[L <: HList, HF, Out0] = RightReducer[L, HF] { type Out = Out0 }
 
     implicit def hsingleRightReducer[H, HF]: Aux[H :: HNil, HF, H] =
@@ -411,7 +401,7 @@ object hlist {
       }
     
     implicit def hlistRightReducer[H, T <: HList, HF, OutT]
-      (implicit rt : RightReducer.Aux[T, HF, OutT], f : Case2Aux[HF, H, OutT]): Aux[H :: T, HF, f.Result] =
+      (implicit rt : RightReducer.Aux[T, HF, OutT], f : Case2[HF, H, OutT]): Aux[H :: T, HF, f.Result] =
         new RightReducer[H :: T, HF] {
           type Out = f.Result
           def apply(l : H :: T): Out = f(l.head, rt(l.tail))

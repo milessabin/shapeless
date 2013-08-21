@@ -37,14 +37,11 @@ object Boilerplate {
     val polyapply = dir / "shapeless" / "polyapply.scala"
     IO.write(polyapply, genPolyApply)
 
-    val polycases = dir / "shapeless" / "polycases.scala"
-    IO.write(polycases, genPolyCases)
-
     val polyinst = dir / "shapeless" / "polyinst.scala"
     IO.write(polyinst, genPolyInst)
 
-    val polyauxcases = dir / "shapeless" / "polyauxcases.scala"
-    IO.write(polyauxcases, genPolyAuxCases)
+    val cases = dir / "shapeless" / "cases.scala"
+    IO.write(cases, genCases)
 
     val polyntraits = dir / "shapeless" / "polyntraits.scala"
     IO.write(polyntraits, genPolyNTraits)
@@ -63,8 +60,8 @@ object Boilerplate {
     
     Seq(
       tupler, hlisteraux, fntoproduct, fnfromproduct, caseinst, polyapply,
-      polycases, polyinst, polyauxcases, polyntraits, nats, tupletypeables,
-      sizedbuilder, hmapbuilder
+      polyinst, cases, polyntraits, nats, tupletypeables, sizedbuilder,
+      hmapbuilder
     )
   }
 
@@ -219,7 +216,7 @@ object Boilerplate {
       val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
       
       ("""|
-          |  implicit def inst"""+arity+"""[Fn <: Poly, """+typeArgs+""", Res](cse : CaseAux[Fn, """+hlistType+"""] { type Result = Res }) : """+fnType+""" = """+fnArgs+""" => cse.value"""+caseArgs+"""
+          |  implicit def inst"""+arity+"""[Fn <: Poly, """+typeArgs+""", Res](cse : Case[Fn, """+hlistType+"""] { type Result = Res }) : """+fnType+""" = """+fnArgs+""" => cse.value"""+caseArgs+"""
           |""").stripMargin
     }
 
@@ -228,6 +225,8 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait CaseInst {
+        |  import poly._
+        |
         |"""+insts+"""
         |}
         |""").stripMargin
@@ -242,7 +241,7 @@ object Boilerplate {
       val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
       
       ("""|
-          |  def apply"""+typeArgs+fnArgs+"""(implicit cse : CaseAux[this.type, """+hlistType+"""]) : cse.Result = cse"""+caseArgs+"""
+          |  def apply"""+typeArgs+fnArgs+"""(implicit cse : Case[this.type, """+hlistType+"""]) : cse.Result = cse"""+caseArgs+"""
           |""").stripMargin
     }
 
@@ -251,29 +250,9 @@ object Boilerplate {
     genHeader+
     ("""|
         |trait PolyApply {
+        |  import poly._
+        |
         |"""+applies+"""
-        |}
-        |""").stripMargin
-  }
-
-  def genPolyCases = {
-    def genCase(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString(", ")
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      
-      ("""|
-          |  type Case"""+arity+"""["""+typeArgs+"""] = CaseAux[this.type, """+hlistType+"""]
-          |  type Pullback"""+arity+"""["""+typeArgs+""", Res] = CaseAux[this.type, """+hlistType+"""] { type Result = Res }
-          |""").stripMargin
-    }
-
-    val cases = ((1 to 22) map genCase).mkString
-    
-    genHeader+
-    ("""|
-        |trait PolyCases {
-        |"""+cases+"""
         |}
         |""").stripMargin
   }
@@ -288,7 +267,7 @@ object Boilerplate {
       val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
       
       ("""|
-          |  implicit def inst"""+arity+"""["""+typeArgs+"""](fn : Poly)(implicit cse : fn.Case["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
+          |  implicit def inst"""+arity+"""["""+typeArgs+"""](fn : Poly)(implicit cse : fn.ProductCase["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
           |""").stripMargin
     }
 
@@ -302,22 +281,26 @@ object Boilerplate {
         |""").stripMargin
   }
 
-  def genPolyAuxCases = {
+  def genCases = {
     def genCase(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
       val typeArgs = typeVars.mkString(", ")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
+      val fnType = typeVars.mkString("(", ", ", ")")+" => Result0"
       val hlistType = (typeVars :+ "HNil").mkString(" :: ")
       val pattern = ((0 until arity) map (n => (n+'a').toChar)).mkString("", " :: ", " :: HNil")
       val fnArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
       val fnBody = """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
       
       ("""|
-          |  type Case"""+arity+"""Aux[Fn, """+typeArgs+"""] = CaseAux[Fn, """+hlistType+"""]
-          |  type Pullback"""+arity+"""Aux[Fn, """+typeArgs+""", Res] = CaseAux[Fn, """+hlistType+"""] { type Result = Res }
-          |  def Case"""+arity+"""Aux[Fn, """+typeArgs+""", Res](fn : """+fnType+""") = new CaseAux[Fn, """+hlistType+"""] {
-          |    type Result = Res
-          |    val value = (l : """+hlistType+""") => """+fnBody+"""
+          |  type Case"""+arity+"""[Fn, """+typeArgs+"""] = Case[Fn, """+hlistType+"""]
+          |  object Case"""+arity+""" {
+          |    type Aux[Fn, """+typeArgs+""", Result0] = Case[Fn, """+hlistType+"""] { type Result = Result0 }
+          |
+          |    def apply[Fn, """+typeArgs+""", Result0](fn : """+fnType+"""): Aux[Fn, """+typeArgs+""", Result0] =
+          |      new Case[Fn, """+hlistType+"""] {
+          |        type Result = Result0
+          |         val value = (l : """+hlistType+""") => """+fnBody+"""
+          |      }
           |  }
           |""").stripMargin
     }
@@ -326,7 +309,9 @@ object Boilerplate {
     
     genHeader+
     ("""|
-        |trait PolyAuxCases {
+        |trait Cases {
+        |  import poly._
+        |
         |"""+cases+"""
         |}
         |""").stripMargin
@@ -335,6 +320,7 @@ object Boilerplate {
   def genPolyNTraits = {
     def genTrait(arity : Int) = {
       val typeVars = (0 until arity) map (n => (n+'A').toChar)
+      val typeArgsList = typeVars.mkString(", ")
       val typeArgs = typeVars.mkString("[", ", ", "]")
       val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
       val hlistType = (typeVars :+ "HNil").mkString(" :: ")
@@ -343,9 +329,14 @@ object Boilerplate {
       val fnBody = if (arity == 0) """fn()""" else """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
       
       ("""|
-          |trait Poly"""+arity+""" extends Poly {
+          |trait Poly"""+arity+""" extends Poly { outer =>
+          |  type Case"""+typeArgs+""" = poly.Case[this.type, """+hlistType+"""]
+          |  object Case {
+          |    type Aux["""+typeArgsList+""", Result0] = poly.Case[outer.type, """+hlistType+"""] { type Result = Result0 }
+          |  }
+          |
           |  class CaseBuilder"""+typeArgs+""" {
-          |    def apply[Res](fn: """+fnType+""") = new Case["""+hlistType+"""] {
+          |    def apply[Res](fn: """+fnType+""") = new Case["""+typeArgsList+"""] {
           |      type Result = Res
           |      val value = (l : """+hlistType+""") => """+fnBody+"""
           |    }

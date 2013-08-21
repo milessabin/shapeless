@@ -20,6 +20,8 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.Context
 
+import poly._
+
 /**
  * An implementation of [http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/ 
  * "Scrap your boilerplate with class"] in Scala.
@@ -52,14 +54,12 @@ trait LowPriorityData {
 }
 
 object Data extends LowPriorityData {
-  import Poly._
-
   def gmapQ[F, T, R](f : F)(t : T)(implicit data : Data[F, T, R]) = data.gmapQ(t)
 
   /**
    * Data type class instance for `List`s.
    */
-  implicit def listData[F <: Poly, T, R](implicit qt : Pullback1Aux[F, T, R]): Data[F, List[T], R] = new Data[F, List[T], R] {
+  implicit def listData[F <: Poly, T, R](implicit qt : Case1.Aux[F, T, R]): Data[F, List[T], R] = new Data[F, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt)
   }
   
@@ -72,7 +72,7 @@ object Data extends LowPriorityData {
     }
 
   // Use of macro here is solely to prevent spurious implicit divergence
-  implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Pullback1Aux[F, H, R], ct : Data[F, T, R]) =
+  implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]) =
     macro DataMacros.hlistDataImpl[F, H, T, R]
   
   /**
@@ -84,7 +84,7 @@ object Data extends LowPriorityData {
     }
 
   // Use of macro here is solely to prevent spurious implicit divergence
-  implicit def coproductData[F <: Poly, H, T <: Coproduct, R](implicit qh : Pullback1Aux[F, H, R], ct : Data[F, T, R]) =
+  implicit def coproductData[F <: Poly, H, T <: Coproduct, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]) =
     macro DataMacros.coproductDataImpl[F, H, T, R]
 }
 
@@ -190,7 +190,7 @@ object DataMacros {
   }
   
   def hlistDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: Context)(qh: c.Expr[Poly.Pullback1Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
+    (c: Context)(qh: c.Expr[Case1.Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
     import c.universe._
 
     reify {
@@ -203,7 +203,7 @@ object DataMacros {
   }
 
   def coproductDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: Context)(qh : c.Expr[Poly.Pullback1Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = { 
+    (c: Context)(qh : c.Expr[Case1.Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = { 
     import c.universe._
     
     reify {
@@ -244,14 +244,12 @@ trait LowPriorityDataT {
 }
 
 object DataT extends LowPriorityDataT {
-  import Poly._
-
   def gmapT[F, T, U](f : F)(t : T)(implicit data : DataT[F, T, U]) = data.gmapT(t)
 
   /**
    * DataT type class instance for `List`s.
    */
-  implicit def listDataT[F <:  Poly, T, U](implicit ft : Pullback1Aux[F, T, U]): DataT[F, List[T], List[U]] =
+  implicit def listDataT[F <:  Poly, T, U](implicit ft : Case1.Aux[F, T, U]): DataT[F, List[T], List[U]] =
     new DataT[F, List[T], List[U]] {
       def gmapT(t : List[T]) = t.map(ft)
     }
@@ -266,7 +264,7 @@ object DataT extends LowPriorityDataT {
 
   // Use of macro here is solely to prevent spurious implicit divergence
   implicit def hlistDataT[F <: Poly, H, T <: HList, U, V <: HList]
-    (implicit fh : Pullback1Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.hlistDataTImpl[F, H, T, U, V]
+    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.hlistDataTImpl[F, H, T, U, V]
 
   /**
    * DataT type class instance for `Coproducts`s.
@@ -278,7 +276,7 @@ object DataT extends LowPriorityDataT {
 
   // Use of macro here is solely to prevent spurious implicit divergence
   implicit def coproductDataT[F <: Poly, H, T <: Coproduct, U, V <: Coproduct]
-    (implicit fh : Pullback1Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.coproductDataTImpl[F, H, T, U, V]
+    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.coproductDataTImpl[F, H, T, U, V]
 }
 
 object DataTMacros {
@@ -387,7 +385,7 @@ object DataTMacros {
   }
   
   def hlistDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, U: c.WeakTypeTag, V <: HList: c.WeakTypeTag]
-    (c: Context)(fh: c.Expr[Poly.Pullback1Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
+    (c: Context)(fh: c.Expr[Case1.Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
     import c.universe._
 
     reify {
@@ -400,7 +398,7 @@ object DataTMacros {
   }
 
   def coproductDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, U: c.WeakTypeTag, V <: Coproduct: c.WeakTypeTag]
-    (c: Context)(fh : c.Expr[Poly.Pullback1Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = { 
+    (c: Context)(fh : c.Expr[Case1.Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = { 
     import c.universe._
     
     reify {
@@ -416,32 +414,30 @@ object DataTMacros {
   }
 }
 
-import Poly._
-
 class EverythingAux[F, K] extends Poly
 
 trait LowPriorityEverythingAux {
   implicit def generic[E, F <: Poly, K <: Poly, T, G, R]
-    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Pullback1Aux[F, T, R], gen: Generic.Aux[T, G], data : Data[E, G, R], k : Pullback2Aux[K, R, R, R]) =
-      Case1Aux[E, T, R](t => data.gmapQ(gen.to(t)).foldLeft(f(t))(k))
+    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Case1.Aux[F, T, R], gen: Generic.Aux[T, G], data : Data[E, G, R], k : Case2.Aux[K, R, R, R]) =
+      Case1[E, T, R](t => data.gmapQ(gen.to(t)).foldLeft(f(t))(k))
 }
 
 object EverythingAux extends LowPriorityEverythingAux {
   implicit def default[E, F <: Poly, K <: Poly, T, R]
-    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Pullback1Aux[F, T, R], data : Data[E, T, R], k : Pullback2Aux[K, R, R, R]) =
-      Case1Aux[E, T, R](t => data.gmapQ(t).foldLeft(f(t))(k))
+    (implicit unpack: Unpack2[E, EverythingAux, F, K], f : Case1.Aux[F, T, R], data : Data[E, T, R], k : Case2.Aux[K, R, R, R]) =
+      Case1[E, T, R](t => data.gmapQ(t).foldLeft(f(t))(k))
 }
 
 class EverywhereAux[F] extends Poly
 
 trait LowPriorityEverywhereAux {
   implicit def generic[E, F <: Poly, T, G]
-    (implicit unpack: Unpack1[E, EverywhereAux, F], gen: Generic.Aux[T, G], data : DataT[E, G, G], f : Case1Aux[F, T] = Case1Aux[F, T, T](identity)): Case1Aux[E, T] { type Result = f.Result } =
-      Case1Aux[E, T, f.Result](t => f(gen.from(data.gmapT(gen.to(t)))))
+    (implicit unpack: Unpack1[E, EverywhereAux, F], gen: Generic.Aux[T, G], data : DataT[E, G, G], f : Case1[F, T] = Case1[F, T, T](identity)): Case1[E, T] { type Result = f.Result } =
+      Case1[E, T, f.Result](t => f(gen.from(data.gmapT(gen.to(t)))))
 }
 
 object EverywhereAux extends LowPriorityEverywhereAux {
   implicit def default[E, F <: Poly, T, U]
-    (implicit unpack: Unpack1[E, EverywhereAux, F], data : DataT[E, T, U], f : Case1Aux[F, U] = Case1Aux[F, U, U](identity)): Case1Aux[E, T] { type Result = f.Result } =
-      Case1Aux[E, T, f.Result](t => f(data.gmapT(t)))
+    (implicit unpack: Unpack1[E, EverywhereAux, F], data : DataT[E, T, U], f : Case1[F, U] = Case1[F, U, U](identity)): Case1[E, T] { type Result = f.Result } =
+      Case1[E, T, f.Result](t => f(data.gmapT(t)))
 }
