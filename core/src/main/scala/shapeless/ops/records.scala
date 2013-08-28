@@ -29,6 +29,7 @@ package record {
    * 
    * @author Miles Sabin
    */
+  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
   trait Selector[L <: HList, K] {
     type Out
     def apply(l : L): Out
@@ -115,6 +116,7 @@ package record {
    * 
    * @author Miles Sabin
    */
+  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
   trait Remover[L <: HList, K] extends DepFn1[L]
 
   trait LowPriorityRemover {
