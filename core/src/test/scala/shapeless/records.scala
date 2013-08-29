@@ -478,4 +478,18 @@ class RecordTests {
     ps.sortBy(_("age"))
     ps.sortBy(_("teeth"))
   }
+
+  @Test
+  def testRename {
+    val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
+    val r1 = r.rename("foo", "foobar")
+
+    val v1 = r1.get("foobar")
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = r1.get("bar")
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+  }
 }
