@@ -492,4 +492,10 @@ class RecordTests {
     typed[Boolean](v2)
     assertEquals(true, v2)
   }
+
+  @Test
+  def testShow {
+    val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
+    assertEquals("{ foo = 23, bar = true }", r.show)
+  }
 }
