@@ -6,6 +6,8 @@ boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since the
 experimental project into library which, while still testing the limits of what's possible in Scala, is being used
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped. 
 
+[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+
 ## Finding out more about the project
 
 A feature overview of shapeless-2.0.0 can be found [here][features200m1]. If you are upgrading from shapeless-1.2.4 you
