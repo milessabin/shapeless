@@ -152,23 +152,23 @@ compatibility.
 
 ## Contributors
 
-+ Alois Cochard <alois.cochard@gmail.com> @aloiscochard
-+ Ben Hutchison <brhutchison@gmail.com> @ben_hutchison
-+ Ben James <ben.james@guardian.co.uk> @bmjames
-+ Brian McKenna <brian@brianmckenna.org> @puffnfresh
++ Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
++ Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
++ Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
++ Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
 + Cody Allen <ceedubs@gmail.com>
-+ George Leontiev <folone@gmail.com> @folone
++ George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Huw Giddens <hgiddens@gmail.com>
-+ Jason Zaugg <jzaugg@gmail.com> @retronym
-+ Joni Freeman <joni.freeman@ri.fi> @jonifreeman
-+ Kevin Wright <kev.lee.wright@gmail.com> @thecoda
-+ Lars Hupel <lars.hupel@mytum.de> @larsr_h
-+ Mathias Doenitz <mathias@spray.io> @sirthias
++ Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
++ Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
++ Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
++ Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
++ Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
 + Michael Donaghy <md401@srcf.ucam.org>
-+ Michael Pilquist <mpilquist@gmail.com> @mpilquist
-+ Miles Sabin <miles@milessabin.com> @milessabin
++ Michael Pilquist <mpilquist@gmail.com> [@mpilquist](https://twitter.com/mpilquist)
++ Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
 + Nikolas Evangelopoulos <nikolas@jkl.gr> 
 + Stacy Curl <stacy.curl@gmail.com>
-+ Tom Switzer <thomas.switzer@gmail.com> @tixxit
-+ Travis Brown <travisrobertbrown@gmail.com> @travisbrown
++ Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
++ Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
 
