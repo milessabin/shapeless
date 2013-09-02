@@ -211,10 +211,4 @@ package record {
         def apply(l: FieldType[K, V] :: T): Out = (l.head: V) :: vt(l.tail)
       }
   }
-
-  object showField extends Poly1 {
-    implicit def f[F, V](implicit wk: shapeless.Witness.Aux[F]) = at[FieldType[F, V]] {
-      f => wk.value.toString + " = " + f.toString
-    }
-  }
 }

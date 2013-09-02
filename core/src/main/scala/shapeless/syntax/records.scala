@@ -86,13 +86,4 @@ final class RecordOps[L <: HList](l : L) {
    * Returns an HList of the values of this record.
    */
   def values(implicit values: Values[L]): values.Out = values(l)
-
-  /**
-   * Convert record to String.
-   */
-  def show(implicit folder: ops.hlist.MapFolder[L, String, showField.type]): String = {
-    val concat = (s1: String, s2: String) => if (s2 != "") s1 + ", " + s2 else s1
-    "{ " + l.foldMap("")(showField)(concat) + " }"
-  }
 }
-
