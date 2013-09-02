@@ -480,9 +480,9 @@ class RecordTests {
   }
 
   @Test
-  def testRename {
+  def testRenameField {
     val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
-    val r1 = r.rename("foo", "foobar")
+    val r1 = r.renameField("foo", "foobar")
 
     val v1 = r1.get("foobar")
     typed[Int](v1)
