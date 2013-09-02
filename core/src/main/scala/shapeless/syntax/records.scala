@@ -72,6 +72,12 @@ final class RecordOps[L <: HList](l : L) {
   def -[V, Out <: HList](k: Witness)(implicit remover : Remover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
 
   /**
+   * Rename the field associated with the singleton typed key oldKey. Only available if this
+   * record has a field with keyType equal to the singleton type oldKey.T.
+   */
+  def renameField(oldKey: Witness, newKey: Witness)(implicit renamer: Renamer[L, oldKey.T, newKey.T]): renamer.Out = renamer(l)
+
+  /**
    * Returns the keys of this record as an HList of singleton typed values.
    */
   def keys(implicit keys: Keys[L]): keys.Out = keys()

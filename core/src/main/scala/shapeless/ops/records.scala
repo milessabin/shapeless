@@ -142,6 +142,31 @@ package record {
   }
 
   /**
+   * Type class supporting renaming of a record field.
+   * 
+   * @author Joni Freeman
+   */
+  @annotation.implicitNotFound(msg = "No field ${K1} in record ${L}")
+  trait Renamer[L <: HList, K1, K2] extends DepFn1[L] { type Out <: HList }
+
+  object Renamer {
+    type Aux[L <: HList, K1, K2, Out0 <: HList] = Renamer[L, K1, K2] { type Out = Out0 }
+
+    implicit def hlistRenamer1[T <: HList, K1, K2, V]: Aux[FieldType[K1, V] :: T, K1, K2, FieldType[K2, V] :: T] =
+      new Renamer[FieldType[K1, V] :: T, K1, K2] {
+        type Out = FieldType[K2, V] :: T
+        def apply(l: FieldType[K1, V] :: T): Out = field[K2](l.head : V) :: l.tail
+      }
+    
+    implicit def hlistRenamer[H, T <: HList, K1, K2, V]
+      (implicit rn: Renamer[T, K1, K2]): Aux[H :: T, K1, K2, H :: rn.Out] =
+        new Renamer[H :: T, K1, K2] {
+          type Out = H :: rn.Out
+          def apply(l: H :: T): Out = l.head :: rn(l.tail)
+        }
+  }
+
+  /**
    * Type class supporting collecting the keys of a record as an `HList`.
    * 
    * @author Miles Sabin
