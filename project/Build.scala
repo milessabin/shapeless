@@ -59,7 +59,7 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core", 
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
         moduleName := "shapeless",
         
         managedSourceDirectories in Test := Nil,
@@ -98,6 +98,19 @@ object ShapelessBuild extends Build {
           BuildInfoKey.action("buildTime") {
             System.currentTimeMillis
           }
+        ),
+
+        releaseProcess := Seq[ReleaseStep](
+          checkSnapshotDependencies,
+          inquireVersions,
+          runTest,
+          setReleaseVersion,
+          commitReleaseVersion,
+          tagRelease,
+          publishSignedArtifacts,
+          setNextVersion,
+          commitNextVersion,
+          pushChanges
         )
       )
     )
@@ -145,7 +158,7 @@ object ShapelessBuild extends Build {
     enableCrossBuild = true
   )
 
-  def commonSettings = Defaults.defaultSettings ++ releaseSettings ++
+  def commonSettings = Defaults.defaultSettings ++
     Seq(
       organization        := "com.chuusai",
       scalaVersion        := "2.10.2",
@@ -164,19 +177,6 @@ object ShapelessBuild extends Build {
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-      ),
-
-      releaseProcess := Seq[ReleaseStep](
-        checkSnapshotDependencies,
-        inquireVersions,
-        runTest,
-        setReleaseVersion,
-        commitReleaseVersion,
-        tagRelease,
-        publishSignedArtifacts,
-        setNextVersion,
-        commitNextVersion,
-        pushChanges
       )
     )
 }
