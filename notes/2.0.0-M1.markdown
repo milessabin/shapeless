@@ -4,7 +4,8 @@ A first milestone for the next major release of
 This is the first milestone release of shapeless-2.0.0. Most new features and
 refactorings are in place for the final release, and this preview is intended
 to provide a context for feedback from prospective users and users of the
-current release. Detailed [migration notes][migration] are available.
+current release. A detailed [feature overview][features] and [migration
+notes][migration] are available.
 
 A big "Thank You!" to everyone who has contributed to this release, either
 directly in code or by using and discussing it, by inviting me to talk about
@@ -16,6 +17,7 @@ Spray routing and Specs 2 respectively. I am also very grateful to Eugene
 Burmako ([@xeno_by][xeno_by]) for his work on Scala macros, implicit macros in
 particular, which have enabled much of what's new.
 
+[features]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0
 [sirthias]: https://twitter.com/sirthias
 [etorreborre]: https://twitter.com/etorreborre
