@@ -10,7 +10,7 @@ widely in production systems wherever there are arities to be abstracted over an
 
 ## Finding out more about the project
 
-A feature overview of shapeless-2.0.0 can be found [here][features200m1]. If you are upgrading from shapeless-1.2.4 you
+A feature overview of shapeless-2.0.0 can be found [here][features200]. If you are upgrading from shapeless-1.2.4 you
 will find the [release notes][relnotes] and [migration guide][migration] useful.
 
 shapeless is part of the [typelevel][] family of projects along with [Scalaz][scalaz] and [Spire][spire]. It is an Open
@@ -34,7 +34,7 @@ this release should be treated as a stopgap until you are able to move your proj
 feasible to backport some of the updates via a compiler plugin for Scala 2.9.x, and anyone interested in contributing or
 sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 
-[features200m1]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0-M1
+[features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [features124]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-1.2.4
 [relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0-M1
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0 
