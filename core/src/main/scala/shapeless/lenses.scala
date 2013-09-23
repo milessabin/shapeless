@@ -16,7 +16,8 @@
 
 package shapeless
 
-import ops.hlist.{ At, Init, Last, Prepend, ReplaceAt, Tupler }
+import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt,
+                   Replacer, Tupler }
 
 trait Lens[C, F] {
   outer =>
@@ -86,6 +87,13 @@ object Lens {
     } 
   }
   
+  def hlistSelectLens[L <: HList, U](implicit selector : Selector[L, U],
+                                    replacer : Replacer.Aux[L, U, U, (U, L)])
+      : Lens[L, U] = new Lens[L, U] {
+    def get(l : L) = selector(l)
+    def set(l : L)(u : U) = replacer(l, u)._2
+  }
+
   def hlistNthLens[L <: HList, N <: Nat](implicit lens : HListNthLens[L, N]) = lens.toLens
 }
 
