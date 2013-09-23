@@ -16,7 +16,10 @@
 
 package shapeless
 
-import ops.hlist.{ At, Init, Last, Prepend, ReplaceAt, Tupler }
+import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt,
+                   Replacer, Tupler }
+import ops.record.{ Selector => RSelector, Updater }
+import record.{ FieldType, field }
 
 trait Lens[C, F] {
   outer =>
@@ -86,6 +89,26 @@ object Lens {
     } 
   }
   
+  /** The lens of an element of `L`, chosen by the element type, `U`.
+    */
+  def hlistSelectLens[L <: HList, U](implicit selector : Selector[L, U],
+                                     replacer : Replacer.Aux[L, U, U, (U, L)])
+      : Lens[L, U] = new Lens[L, U] {
+    def get(l : L) = selector(l)
+    def set(l : L)(u : U) = replacer(l, u)._2
+  }
+
+  /** The lens of an element of the record type `L`, chosen by the
+    * singleton type of `k`.
+    */
+  def recordLens[L <: HList, U](k: Witness)
+                (implicit selector : RSelector.Aux[L, k.T, U],
+                 updater : Updater.Aux[L, FieldType[k.T, U], L])
+      : Lens[L, U] = new Lens[L, U] {
+    def get(l : L) = selector(l)
+    def set(l : L)(u : U) = updater(l, field[k.T](u))
+  }
+
   def hlistNthLens[L <: HList, N <: Nat](implicit lens : HListNthLens[L, N]) = lens.toLens
 }
 

@@ -146,32 +146,59 @@ class LensTests {
     val l = 23 :: "foo" :: true :: HNil
     
     val lens0 = hlistNthLens[ISB, _0] 
+    val lensI = hlistSelectLens[ISB, Int]
     val lens1 = hlistNthLens[ISB, _1] 
+    val lensS = hlistSelectLens[ISB, String]
     val lens2 = hlistNthLens[ISB, _2] 
+    val lensB = hlistSelectLens[ISB, Boolean]
 
     val i = lens0.get(l)
     typed[Int](i)
     assertEquals(23, i)
-    
+    assertEquals(23, lensI.get(l))
+
     val li = lens0.set(l)(13)
     typed[ISB](li)
     assertEquals(13 :: "foo" :: true :: HNil, li)
-    
+    assertEquals(13 :: "foo" :: true :: HNil, lensI.set(l)(13))
+
     val s = lens1.get(l)
     typed[String](s)
     assertEquals("foo", s)
+    assertEquals("foo", lensS.get(l))
     
     val ls = lens1.set(l)("bar")
     typed[ISB](ls)
     assertEquals(23 :: "bar" :: true :: HNil, ls)
+    assertEquals(23 :: "bar" :: true :: HNil, lensS.set(l)("bar"))
     
     val b = lens2.get(l)
     typed[Boolean](b)
     assertEquals(true, b)
+    assertEquals(true, lensB.get(l))
 
     val lb = lens2.set(l)(false)
     typed[ISB](lb)
     assertEquals(23 :: "foo" :: false :: HNil, lb)
+    assertEquals(23 :: "foo" :: false :: HNil, lensB.set(l)(false))
+  }
+
+  @Test
+  def testRecords {
+    import record.FieldType, syntax.singleton._
+
+    val (fooT, barT) = (Witness("foo"), Witness("bar"))
+    type LT = (fooT.T FieldType Int) :: (barT.T FieldType String) :: HNil
+    val l = ("foo" ->> 42) :: ("bar" ->> "hi") :: HNil
+    typed[LT](l)
+
+    val li = recordLens[LT, Int]("foo")
+    assertEquals(42, li.get(l))
+    assertEquals(("foo" ->> 84) :: ("bar" ->> "hi") :: HNil, li.set(l)(84))
+
+    val ls = recordLens[LT, String]("bar")
+    assertEquals("hi", ls.get(l))
+    assertEquals(("foo" ->> 42) :: ("bar" ->> "bye") :: HNil, ls.set(l)("bye"))
   }
 
   @Test
