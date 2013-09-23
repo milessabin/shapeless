@@ -87,6 +87,8 @@ object Lens {
     } 
   }
   
+  /** The lens of an element of `L`, chosen by the element type, `U`.
+    */
   def hlistSelectLens[L <: HList, U](implicit selector : Selector[L, U],
                                     replacer : Replacer.Aux[L, U, U, (U, L)])
       : Lens[L, U] = new Lens[L, U] {
