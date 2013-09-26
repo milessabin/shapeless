@@ -35,6 +35,8 @@ object traversable {
    * @author Miles Sabin
    */
   object FromTraversable {
+    def apply[Out <: HList](implicit from: FromTraversable[Out]) = from
+
     import syntax.typeable._
 
     implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
