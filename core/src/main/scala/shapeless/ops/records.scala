@@ -47,6 +47,8 @@ package record {
   }
 
   object Selector extends LowPrioritySelector {
+    def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
+
     implicit def hlistSelect1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, V] =
       new Selector[FieldType[K, V] :: T, K] {
         type Out = V
@@ -73,6 +75,8 @@ package record {
   }
 
   object Updater extends LowPriorityUpdater {
+    def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
+
     implicit def hnilUpdater[L <: HNil, F]: Aux[L, F, F :: HNil] =
       new Updater[L, F] {
         type Out = F :: HNil
@@ -95,6 +99,8 @@ package record {
   trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] { type Out <: HList }
 
   object Modifier {
+    def apply[L <: HList, F, A, B](implicit modifier: Modifier[L, F, A, B]): Aux[L, F, A, B, modifier.Out] = modifier
+
     type Aux[L <: HList, F, A, B, Out0 <: HList] = Modifier[L, F, A, B] { type Out = Out0 }
 
     implicit def hlistModify1[F, A, B, T <: HList]: Aux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] =
@@ -134,6 +140,8 @@ package record {
   }
 
   object Remover extends LowPriorityRemover {
+    def apply[L <: HList, K](implicit remover: Remover[L, K]): Aux[L, K, remover.Out] = remover
+
     implicit def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
       new Remover[FieldType[K, V] :: T, K] {
         type Out = (V, T)
@@ -150,6 +158,8 @@ package record {
   trait Renamer[L <: HList, K1, K2] extends DepFn1[L] { type Out <: HList }
 
   object Renamer {
+    def apply[L <: HList, K1, K2](implicit renamer: Renamer[L, K1, K2]): Aux[L, K1, K2, renamer.Out] = renamer
+
     type Aux[L <: HList, K1, K2, Out0 <: HList] = Renamer[L, K1, K2] { type Out = Out0 }
 
     implicit def hlistRenamer1[T <: HList, K1, K2, V]: Aux[FieldType[K1, V] :: T, K1, K2, FieldType[K2, V] :: T] =
@@ -174,6 +184,8 @@ package record {
   trait Keys[L <: HList] extends DepFn0 { type Out <: HList }
 
   object Keys {
+    def apply[L <: HList](implicit keys: Keys[L]): Aux[L, keys.Out] = keys
+
     type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
 
     implicit def hnilKeys[L <: HNil]: Aux[L, HNil] =
@@ -197,6 +209,8 @@ package record {
   trait Values[L <: HList] extends DepFn1[L] { type Out <: HList }
 
   object Values {
+    def apply[L <: HList](implicit values: Values[L]): Aux[L, values.Out] = values
+
     type Aux[L <: HList, Out0 <: HList] = Values[L] { type Out = Out0 }
 
     implicit def hnilValues[L <: HNil]: Aux[L, HNil] =

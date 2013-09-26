@@ -26,7 +26,9 @@ object function {
    */
   trait FnToProduct[F] extends DepFn1[F]
 
-  object FnToProduct extends FnToProductInstances
+  object FnToProduct extends FnToProductInstances {
+    def apply[F](implicit fntop: FnToProduct[F]): Aux[F, fntop.Out] = fntop
+  }
 
   /**
    * Type class supporting conversion of functions of a single `HList` argument to ordinary functions. 
@@ -35,5 +37,7 @@ object function {
    */
   trait FnFromProduct[F] extends DepFn1[F]
     
-  object FnFromProduct extends FnFromProductInstances
+  object FnFromProduct extends FnFromProductInstances {
+    def apply[F](implicit fnfromp: FnFromProduct[F]): Aux[F, fnfromp.Out] = fnfromp
+  }
 }

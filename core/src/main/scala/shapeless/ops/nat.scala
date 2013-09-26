@@ -26,6 +26,8 @@ object nat {
   trait Pred[A <: Nat] { type Out <: Nat }
 
   object Pred {
+    def apply[A <: Nat](implicit pred: Pred[A]): Aux[A, pred.Out] = pred
+
     type Aux[A <: Nat, B <: Nat] = Pred[A] { type Out = B }
 
     implicit def pred[B <: Nat]: Aux[Succ[B], B] = new Pred[Succ[B]] { type Out = B }
@@ -39,6 +41,8 @@ object nat {
   trait Sum[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Sum {
+    def apply[A <: Nat, B <: Nat](implicit sum: Sum[A, B]): Aux[A, B, sum.Out] = sum
+
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Sum[A, B] { type Out = C }
 
     implicit def sum1[B <: Nat]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
@@ -54,6 +58,8 @@ object nat {
   trait Diff[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Diff {
+    def apply[A <: Nat, B <: Nat](implicit diff: Diff[A, B]): Aux[A, B, diff.Out] = diff
+
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Diff[A, B] { type Out = C }
 
     implicit def diff1[A <: Nat]: Aux[A, _0, A] = new Diff[A, _0] { type Out = A }
@@ -69,6 +75,8 @@ object nat {
   trait Prod[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Prod {
+    def apply[A <: Nat, B <: Nat](implicit prod: Prod[A, B]): Aux[A, B, prod.Out] = prod
+
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Prod[A, B] { type Out = C }
 
     implicit def prod1[B <: Nat]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
@@ -84,6 +92,8 @@ object nat {
   trait Div[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Div {
+    def apply[A <: Nat, B <: Nat](implicit div: Div[A, B]): Aux[A, B, div.Out] = div
+
     import LT._
 
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Div[A, B] { type Out = C }
@@ -106,6 +116,8 @@ object nat {
   trait Mod[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Mod {
+    def apply[A <: Nat, B <: Nat](implicit mod: Mod[A, B]): Aux[A, B, mod.Out] = mod
+
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Mod[A, B] { type Out = C }
 
     implicit def modAux[A <: Nat, B <: Nat, C <: Nat, D <: Nat, E <: Nat]
@@ -121,6 +133,8 @@ object nat {
   trait LT[A <: Nat, B <: Nat]
 
   object LT {
+    def apply[A <: Nat, B <: Nat](implicit lt: A < B) = lt
+
     type <[A <: Nat, B <: Nat] = LT[A, B]
 
     implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
@@ -135,6 +149,8 @@ object nat {
   trait LTEq[A <: Nat, B <: Nat]
 
   object LTEq {
+    def apply[A <: Nat, B <: Nat](implicit lteq: A <= B) = lteq
+
     type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 
     implicit def ltEq1 = new <=[_0, _0] {}
@@ -150,6 +166,8 @@ object nat {
   trait Min[A <: Nat, B <: Nat] { type Out <: Nat }
 
   object Min {
+    def apply[A <: Nat, B <: Nat](implicit min: Min[A, B]): Aux[A, B, min.Out] = min
+
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Min[A, B] { type Out = C }
 
     implicit def minAux0[A <: Nat, B <: Nat, C <: Nat]
@@ -166,6 +184,8 @@ object nat {
   trait Pow[N <: Nat, X <: Nat] { type Out <: Nat }
 
   object Pow {
+    def apply[A <: Nat, B <: Nat](implicit pow: Pow[A, B]): Aux[A, B, pow.Out] = pow
+
     import shapeless.nat._1
 
     type Aux[N <: Nat, X <: Nat, Z <: Nat] = Pow[N, X] { type Out = Z }
@@ -186,6 +206,8 @@ object nat {
   }
 
   object ToInt {
+    def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
+
     implicit val toInt0 = new ToInt[_0] {
       def apply() = 0 
     }

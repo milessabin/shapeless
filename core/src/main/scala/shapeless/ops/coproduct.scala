@@ -25,6 +25,8 @@ object coproduct {
   }
 
   object Inject {
+    def apply[C <: Coproduct, I](implicit inject: Inject[C, I]) = inject
+
     implicit def tlInject[H, T <: Coproduct, I](implicit tlInj : Inject[T, I]): Inject[H :+: T, I] = new Inject[H :+: T, I] {
       def apply(i: I): H :+: T = Inr(tlInj(i))
     }
@@ -39,6 +41,8 @@ object coproduct {
   }
 
   object Selector {
+    def apply[C <: Coproduct, T](implicit select: Selector[C, T]) = select
+
     implicit def tlSelector1[H, T <: Coproduct, S](implicit st: Selector[T, S]): Selector[H :+: T, S] = new Selector[H :+: T, S] {
       def apply(c: H :+: T): Option[S] = c match {
         case Inl(h) => None
@@ -57,6 +61,9 @@ object coproduct {
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
 
   object Mapper {
+    def apply[F <: Poly, C <: Coproduct](implicit mapper: Mapper[F, C]): Aux[F, C, mapper.Out] = mapper
+    def apply[C <: Coproduct](f: Poly)(implicit mapper: Mapper[f.type, C]): Aux[f.type, C, mapper.Out] = mapper
+
     type Aux[F <: Poly, C <: Coproduct, Out0 <: Coproduct] = Mapper[F, C] { type Out = Out0 }
 
     implicit def cnilMapper[F <: Poly]: Aux[F, CNil, CNil] = new Mapper[F, CNil] {
@@ -78,6 +85,8 @@ object coproduct {
   trait Unifier[C <: Coproduct] extends DepFn1[C]
 
   object Unifier {
+    def apply[C <: Coproduct](implicit unifier: Unifier[C]): Aux[C, unifier.Out] = unifier
+
     type Aux[C <: Coproduct, Out0] = Unifier[C] { type Out = Out0 }
 
     implicit def lstUnifier[H]: Aux[H :+: CNil, H] =

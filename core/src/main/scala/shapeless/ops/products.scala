@@ -23,7 +23,10 @@ object product {
   trait ProductLength[T] extends DepFn1[T]
 
   object ProductLength {
+    def apply[T](implicit length: ProductLength[T]): Aux[T, length.Out] = length
+
     type Aux[T, Out0] = ProductLength[T] { type Out = Out0 }
+    
     implicit def length[T, L <: HList]
       (implicit gen: Generic.Aux[T, L], length: Length[L]): Aux[T, length.Out] =
         new ProductLength[T] {
