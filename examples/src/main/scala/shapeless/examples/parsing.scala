@@ -20,7 +20,7 @@ import scala.util.parsing.combinator._
 
 /**
  * An illustration of shapeless techniques applied to Scala's combinator parsers.
- * See http://stackoverflow.com/questions/959439 for context.
+ * See http://stackoverflow.com/questions/9594392 for context.
  */
 object CombinatorTesting extends App {
   
