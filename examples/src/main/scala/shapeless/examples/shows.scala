@@ -50,11 +50,11 @@ object ShowExamples extends App {
   val rec: Super = BarRec(1, Foo(0, "foo"))
 
   assert(bar.show == "Inl(0)")
-  assert(rec.show == "Inr(Inl(1 :: Inr(Inr(Inl(0 :: foo :: HNil))) :: HNil))")
+  assert(rec.show == "Inr(Inl(1 :: Inr(Inr(0 :: foo :: HNil)) :: HNil))")
 
   val mutual: MutualA = MutualA2(MutualB2(MutualA1(0)))
 
-  assert(mutual.show == "Inr(Inl(Inr(Inl(Inl(0)))))")
+  assert(mutual.show == "Inr(Inr(Inl(0)))")
 }
 
 trait ShowSyntax {

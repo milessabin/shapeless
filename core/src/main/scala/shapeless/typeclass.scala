@@ -57,6 +57,19 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
    */
   def coproduct[L, R <: Coproduct](CL: => C[L], CR: => C[R]): C[L :+: R]
 
+  /**
+   * Given a type class instances for `L`, produce a type class instance
+   * for the coproduct `L :+: CNil`.
+   */
+  def coproduct1[L](CL: => C[L]): C[L :+: CNil] = {
+    def from(l: L): L :+: CNil = Inl(l)
+    def to(cp: L :+: CNil) = cp match {
+      case Inl(l) => l
+      case Inr(_) => sys.error("absurd")
+    }
+    project(CL, to, from)
+  }
+
 }
 
 trait TypeClassCompanion[C[_]] {

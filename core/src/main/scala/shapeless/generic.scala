@@ -155,7 +155,8 @@ object GenericMacros {
     }
 
 
-    def undefined = reify { ??? }.tree
+    def undefined =
+      reify { ??? }.tree
 
     def exit(msg: String) =
       c.abort(c.enclosingPosition, msg)
@@ -419,8 +420,10 @@ object GenericMacros {
 
     case class ADTMulti(tpe: Type, classSym: ClassSymbol, cases: List[ADTCase]) extends ADT {
 
-      if (cases.isEmpty)
-        exit(s"$tpe appears to have no cases")
+      val (init, last) = cases match {
+        case Nil    => exit(s"$tpe appears to have no cases")
+        case i :+ l => (i, l)
+      }
 
       def reprTpt =
         mkCoproductTpt(cases.map(_.reprTpt))
@@ -434,10 +437,14 @@ object GenericMacros {
 
       def usesCoproduct = true
 
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) =
-        cases.map(_.mkInstance(tc, mapping)).foldRight(undefined) { case (instance, acc) =>
+      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) = {
+        val lastInstance =
+          Apply(Select(tc, newTermName("coproduct1")), List(last.mkInstance(tc, mapping)))
+
+        init.map(_.mkInstance(tc, mapping)).foldRight(lastInstance) { case (instance, acc) =>
           Apply(Select(tc, newTermName("coproduct")), List(instance, acc))
         }
+      }
 
     }
 
