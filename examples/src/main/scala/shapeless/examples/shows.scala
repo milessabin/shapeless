@@ -89,6 +89,13 @@ object Show extends TypeClassCompanion[Show] {
       def show(ft: F :: T) = s"${FHead.show(ft.head)} :: ${FTail.show(ft.tail)}"
     }
 
+    override def coproduct1[L](CL: => Show[L]) = new Show[L :+: CNil] {
+      def show(l: L :+: CNil) = l match {
+        case Inl(l) => s"Inl(${CL.show(l)})"
+        case Inr(_) => sys.error("absurd")
+      }
+    }
+
     def coproduct[L, R <: Coproduct](CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
       def show(lr: L :+: R) = lr match {
         case Inl(l) => s"Inl(${CL.show(l)})"
