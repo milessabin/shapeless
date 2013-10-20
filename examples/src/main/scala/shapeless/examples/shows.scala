@@ -50,11 +50,11 @@ object ShowExamples extends App {
   val rec: Super = BarRec(1, Foo(0, "foo"))
 
   assert(bar.show == "Inl(0)")
-  assert(rec.show == "Inr(Inl(1 :: Inr(Inr(0 :: foo :: HNil)) :: HNil))")
+  assert(rec.show == "Inr(Inl(1 :: Inr(Inr(Inl(0 :: foo :: HNil))) :: HNil))")
 
   val mutual: MutualA = MutualA2(MutualB2(MutualA1(0)))
 
-  assert(mutual.show == "Inr(Inr(Inl(0)))")
+  assert(mutual.show == "Inr(Inl(Inr(Inl(Inl(0)))))")
 }
 
 trait ShowSyntax {
@@ -87,6 +87,13 @@ object Show extends TypeClassCompanion[Show] {
 
     def product[F, T <: HList](FHead : Show[F], FTail : Show[T]) = new Show[F :: T] {
       def show(ft: F :: T) = s"${FHead.show(ft.head)} :: ${FTail.show(ft.tail)}"
+    }
+
+    override def coproduct1[L](CL: => Show[L]) = new Show[L :+: CNil] {
+      def show(l: L :+: CNil) = l match {
+        case Inl(l) => s"Inl(${CL.show(l)})"
+        case Inr(_) => sys.error("absurd")
+      }
     }
 
     def coproduct[L, R <: Coproduct](CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
