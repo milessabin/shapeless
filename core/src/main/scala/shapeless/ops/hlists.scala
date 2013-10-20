@@ -1393,11 +1393,11 @@ object hlist {
           def apply(l : H :: HNil): Out = zo(l.head, mc(HNil, l.head))
         }
     
-    implicit def hlistTransposer2[H <: HList, T <: HList, OutT <: HList, Out0 <: HList]
-      (implicit tt : Aux[T, OutT], zo : ZipOne.Aux[H, OutT, Out0]): Aux[H :: T, Out0] =
-        new Transposer[H :: T] {
+    implicit def hlistTransposer2[H <: HList, TH <: HList, TT <: HList, OutT <: HList, Out0 <: HList]
+      (implicit tt : Aux[TH :: TT, OutT], zo : ZipOne.Aux[H, OutT, Out0]): Aux[H :: TH :: TT, Out0] =
+        new Transposer[H :: TH :: TT] {
           type Out = Out0
-          def apply(l : H :: T): Out = zo(l.head, tt(l.tail))
+          def apply(l : H :: TH :: TT): Out = zo(l.head, tt(l.tail))
         }
   }
 
