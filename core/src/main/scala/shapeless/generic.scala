@@ -198,7 +198,7 @@ object GenericMacros {
       )
     }
 
-    def mkDummyClass(contents: List[Tree], supertpt: Tree): Tree = {
+    def mkDummyClass(contents: List[Tree], supertpe: Type): Tree = {
       val name = newTypeName(c.fresh())
 
       val clazz =
@@ -207,7 +207,7 @@ object GenericMacros {
           name,
           List(),
           Template(
-            List(supertpt),
+            List(TypeTree(supertpe)),
             emptyValDef,
             constructor :: contents
           )
@@ -219,34 +219,34 @@ object GenericMacros {
       )
     }
 
-    def mkImplicitly(tpt: Tree): Tree =
+    def mkImplicitly(typ: Type): Tree =
       TypeApply(
         Select(Ident(definitions.PredefModule), newTermName("implicitly")),
-        List(tpt)
+        List(TypeTree(typ))
       )
 
-    def mkImplicitlyAndAssign(name: TermName, tpt: Tree): ValDef =
+    def mkImplicitlyAndAssign(name: TermName, typ: Type): ValDef =
       ValDef(
         Modifiers(LAZY),
         name,
-        tpt,
-        mkImplicitly(tpt)
+        TypeTree(typ),
+        mkImplicitly(typ)
       )
 
-    def mkCompoundTpt[Parent, Nil <: Parent, Cons[_, _ <: Parent] <: Parent](
-      items: List[Tree])(implicit
+    def mkCompoundTpe[Parent, Nil <: Parent, Cons[_, _ <: Parent] <: Parent](
+      items: List[Type])(implicit
       nil: c.WeakTypeTag[Nil],
       cons: c.WeakTypeTag[Cons[Any, Nothing]]
-    ): Tree =
-      items.foldRight(TypeTree(nil.tpe): Tree) { case (tpt, acc) =>
-        AppliedTypeTree(Ident(cons.tpe.typeSymbol), List(tpt, acc))
+    ): Type =
+      items.foldRight(nil.tpe) { case (tpe, acc) =>
+        appliedType(cons.tpe, List(tpe, acc))
       }
 
-    def mkHListTpt(items: List[Tree]): Tree =
-      mkCompoundTpt[HList, HNil, ::](items)
+    def mkHListTpe(items: List[Type]): Type =
+      mkCompoundTpe[HList, HNil, ::](items)
 
-    def mkCoproductTpt(items: List[Tree]): Tree =
-      mkCompoundTpt[Coproduct, CNil, :+:](items)
+    def mkCoproductTpe(items: List[Type]): Type =
+      mkCompoundTpe[Coproduct, CNil, :+:](items)
 
     def anyNothing =
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
@@ -260,17 +260,14 @@ object GenericMacros {
 
       def wrap(index: Int)(tree: Tree): Tree
 
-      def reprTpt: Tree
+      def reprTpe: Type
 
       def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]): Tree
 
       lazy val allFieldTypes: List[Type] =
         cases.flatMap(_.fieldTypes).filterNot(tpe =:= _).distinct
 
-      def selfTpt: Tree =
-        TypeTree(tpe)
-
-      def mkToOrFrom(name: TermName, inputTpt: Tree, outputTpt: Tree, exhaust: Boolean, mkCase: (ADTCase, Tree => Tree) => CaseDef): Tree = {
+      def mkToOrFrom(name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean, mkCase: (ADTCase, Tree => Tree) => CaseDef): Tree = {
         val param = newTermName(c.fresh("param"))
 
         val clauses =
@@ -280,8 +277,8 @@ object GenericMacros {
           Modifiers(),
           name,
           List(),
-          List(List(ValDef(Modifiers(PARAM), param, inputTpt, EmptyTree))),
-          outputTpt,
+          List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
+          TypeTree(outputTpe),
           Match(Ident(param), if (exhaust) clauses :+ absurdCase else clauses)
         )
       }
@@ -289,8 +286,8 @@ object GenericMacros {
       def mkToRepr(name: TermName): Tree =
         mkToOrFrom(
           name,
-          selfTpt,
-          reprTpt,
+          tpe,
+          reprTpe,
           false,
           _.mkToReprCase(_)
         )
@@ -298,8 +295,8 @@ object GenericMacros {
       def mkFromRepr(name: TermName): Tree =
         mkToOrFrom(
           name,
-          reprTpt,
-          selfTpt,
+          reprTpe,
+          tpe,
           usesCoproduct,
           _.mkFromReprCase(_)
         )
@@ -314,22 +311,22 @@ object GenericMacros {
 
         val capability =
           if (usesCoproduct)
-            typeOf[TypeClass[Any]].typeSymbol
+            typeOf[TypeClass[Any]]
           else
-            typeOf[ProductTypeClass[Any]].typeSymbol
+            typeOf[ProductTypeClass[Any]]
 
         val capabilityInstance =
-          mkImplicitlyAndAssign(capabilityName, AppliedTypeTree(Ident(capability), List(TypeTree(tc))))
+          mkImplicitlyAndAssign(capabilityName, appliedType(capability, List(tc)))
 
         val baseInstances = baseMapping map { case (tpe, name) =>
-          mkImplicitlyAndAssign(name, AppliedTypeTree(Ident(tc.typeSymbol), List(TypeTree(tpe))))
+          mkImplicitlyAndAssign(name, appliedType(tc, List(tpe)))
         }
 
         val reprInstance =
           ValDef(
             Modifiers(LAZY),
             reprName,
-            AppliedTypeTree(Ident(tc.typeSymbol), List(reprTpt)),
+            TypeTree(appliedType(tc, List(reprTpe))),
             combineCaseInstances(Ident(capabilityName), mapping)
           )
 
@@ -337,7 +334,7 @@ object GenericMacros {
           ValDef(
             Modifiers(LAZY),
             resName,
-            AppliedTypeTree(Ident(tc.typeSymbol), List(selfTpt)),
+            TypeTree(appliedType(tc, List(tpe))),
             Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
           )
 
@@ -359,13 +356,13 @@ object GenericMacros {
 
         mkDummyClass(
           List(
-            TypeDef(Modifiers(), newTypeName("Repr"), List(), reprTpt),
+            TypeDef(Modifiers(), newTypeName("Repr"), List(), TypeTree(reprTpe)),
             mkToRepr(toName),
             mkFromRepr(fromName)
           ),
-          AppliedTypeTree(
-            Ident(typeOf[Generic[_]].typeSymbol),
-            List(selfTpt)
+          appliedType(
+            typeOf[Generic[_]].typeConstructor,
+            List(tpe)
           )
         )
       }
@@ -380,21 +377,21 @@ object GenericMacros {
             Modifiers(),
             name,
             List(),
-            List(List(ValDef(Modifiers(PARAM), param, selfTpt, EmptyTree))),
-            selfTpt,
+            List(List(ValDef(Modifiers(PARAM), param, TypeTree(tpe), EmptyTree))),
+            TypeTree(tpe),
             Ident(param)
           )
         }
 
         mkDummyClass(
           List(
-            TypeDef(Modifiers(), newTypeName("Repr"), List(), selfTpt),
+            TypeDef(Modifiers(), newTypeName("Repr"), List(), TypeTree(tpe)),
             mkIdentityDef(toName),
             mkIdentityDef(fromName)
           ),
-          AppliedTypeTree(
-            Ident(typeOf[Generic[_]].typeSymbol),
-            List(selfTpt)
+          appliedType(
+            typeOf[Generic[_]].typeConstructor,
+            List(tpe)
           )
         )
       }
@@ -407,7 +404,7 @@ object GenericMacros {
 
       def cases = List(cse)
 
-      def reprTpt = cse.reprTpt
+      def reprTpe = cse.reprTpe
 
       def wrap(index: Int)(tree: Tree) = tree
 
@@ -425,8 +422,8 @@ object GenericMacros {
         case i :+ l => (i, l)
       }
 
-      def reprTpt =
-        mkCoproductTpt(cases.map(_.reprTpt))
+      def reprTpe =
+        mkCoproductTpe(cases.map(_.reprTpe))
 
       def wrap(index: Int)(tree: Tree): Tree = {
         val inl = Apply(reify { Inl }.tree, List(tree))
@@ -450,7 +447,7 @@ object GenericMacros {
 
     sealed trait ADTCase {
       def fieldTypes: List[Type]
-      def reprTpt: Tree
+      def reprTpe: Type
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree
       def mkToReprCase(wrap: Tree => Tree): CaseDef
       def mkFromReprCase(wrap: Tree => Tree): CaseDef
@@ -459,7 +456,7 @@ object GenericMacros {
     case class SimpleADTCase(tpe: Type) extends ADTCase {
 
       def fieldTypes: List[Type] = List(tpe)
-      def reprTpt: Tree = TypeTree(tpe)
+      def reprTpe = tpe
 
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
         mapping(tpe)
@@ -499,11 +496,11 @@ object GenericMacros {
       def fieldTypes: List[Type] =
         fields.map(_.typeSignatureIn(tpe))
 
-      def reprTpt = fieldTypes match {
+      def reprTpe = fieldTypes match {
         case List(tpe) if optimizeSingleItem =>
-          TypeTree(tpe)
+          tpe
         case tpes =>
-          mkHListTpt(tpes.map(TypeTree(_)))
+          mkHListTpe(tpes)
       }
 
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = fieldTypes match {
