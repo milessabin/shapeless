@@ -1447,7 +1447,7 @@ object hlist {
   }
     
   /**
-   * Type class supporting zipping this this `HList` of monomorphic function values with its argument `HList` of
+   * Type class supporting zipping this `HList` of monomorphic function values with its argument `HList` of
    * correspondingly typed function arguments returning the result of each application as an `HList`. Available only if
    * there is evidence that the corresponding function and argument elements have compatible types.
    * 
