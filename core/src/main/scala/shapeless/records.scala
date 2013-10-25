@@ -43,6 +43,26 @@ object record {
 }
 
 /**
+ * Polymorphic function that allows modifications on record fields while preserving the
+ * original key types.
+ *
+ * @author Dario Rexin
+ */
+trait FieldPoly extends Poly1 {
+  import record._
+
+  class FieldCaseBuilder[A, T] {
+    def apply[Res](fn: A => Res) = new Case[FieldType[T, A]] {
+      type Result = FieldType[T, Res]
+      val value: Function1[A :: HNil, FieldType[T, Res]] =
+        (l: A :: HNil) => field[T](fn(l.head))
+    }
+  }
+
+  def atField[A](w: Witness) = new FieldCaseBuilder[A, w.T]
+}
+
+/**
  * Field with values of type `V`.
  *
  * Record keys of this form should be objects which extend this trait. Keys may also be arbitrary singleton typed
