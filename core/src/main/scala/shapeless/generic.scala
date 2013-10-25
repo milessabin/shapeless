@@ -251,6 +251,9 @@ object GenericMacros {
     def anyNothing =
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
 
+    def literalOfName(name: Name): Tree =
+      Literal(Constant(name.decoded.trim))
+
     sealed trait ADT {
       def tpe: Type
       def classSym: ClassSymbol
@@ -411,7 +414,7 @@ object GenericMacros {
       def usesCoproduct = false
 
       def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) =
-        cse.mkInstance(tc, mapping)
+        Apply(Select(tc, newTermName("namedCase")), List(cse.mkInstance(tc, mapping), literalOfName(classSym.name)))
 
     }
 
@@ -436,21 +439,25 @@ object GenericMacros {
 
       def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) = {
         val lastInstance =
-          Apply(Select(tc, newTermName("coproduct1")), List(last.mkInstance(tc, mapping)))
+          Apply(Select(tc, newTermName("namedCoproduct1")), List(last.mkInstance(tc, mapping), literalOfName(last.name)))
 
-        init.map(_.mkInstance(tc, mapping)).foldRight(lastInstance) { case (instance, acc) =>
-          Apply(Select(tc, newTermName("coproduct")), List(instance, acc))
+        init.foldRight(lastInstance) { case (cse, acc) =>
+          val instance = cse.mkInstance(tc, mapping)
+          Apply(Select(tc, newTermName("namedCoproduct")), List(instance, literalOfName(cse.name), acc))
         }
       }
 
     }
 
     sealed trait ADTCase {
+      def tpe: Type
       def fieldTypes: List[Type]
       def reprTpe: Type
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree
       def mkToReprCase(wrap: Tree => Tree): CaseDef
       def mkFromReprCase(wrap: Tree => Tree): CaseDef
+
+      def name = tpe.typeSymbol.name
     }
 
     case class SimpleADTCase(tpe: Type) extends ADTCase {
@@ -493,8 +500,11 @@ object GenericMacros {
       def fieldFreshs(): List[TermName] =
         List.fill(fields.length)(newTermName(c.fresh("pat")))
 
-      def fieldTypes: List[Type] =
-        fields.map(_.typeSignatureIn(tpe))
+      def fieldTypes =
+        fields.map(fieldType)
+
+      def fieldType(sym: TermSymbol): Type =
+        sym.typeSignatureIn(tpe)
 
       def reprTpe = fieldTypes match {
         case List(tpe) if optimizeSingleItem =>
@@ -503,14 +513,14 @@ object GenericMacros {
           mkHListTpe(tpes)
       }
 
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = fieldTypes match {
-        case List(tpe) if optimizeSingleItem =>
-          mapping(tpe)
-        case tpes =>
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = fields match {
+        case List(sym) if optimizeSingleItem =>
+          Apply(Select(tc, newTermName("namedField")), List(mapping(fieldType(sym)), literalOfName(sym.name)))
+        case _ =>
           val empty: Tree = Select(tc, newTermName("emptyProduct"))
-          val cons:  Tree = Select(tc, newTermName("product"))
-          fieldTypes.foldRight(empty) { case (tpe, acc) =>
-            Apply(cons, List(mapping(tpe), acc))
+          val cons:  Tree = Select(tc, newTermName("namedProduct"))
+          fields.foldRight(empty) { case (sym, acc) =>
+            Apply(cons, List(mapping(fieldType(sym)), literalOfName(sym.name), acc))
           }
       }
 

@@ -23,6 +23,8 @@ import scala.reflect.macros.Context
 /**
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
+ *
+ * Name hints can be safely ignored.
  */
 trait ProductTypeClass[C[_]] {
 
@@ -31,6 +33,14 @@ trait ProductTypeClass[C[_]] {
    * product, produce a type class instance for the product prepended with `H`.
    */
   def product[H, T <: HList](CHead: C[H], CTail: C[T]): C[H :: T]
+
+  /**
+   * Similar to [[shapeless.ProductTypeClass#product]], but with a name hint
+   * for the `H` instance. Called by [[shapeless.GenericMacros.materialize]]
+   * with the name of the field with type `H`.
+   */
+  def namedProduct[H, T <: HList](CHead: C[H], name: String, CTail: C[T]): C[H :: T] =
+    product(CHead, CTail)
 
   /**
    * The empty product.
@@ -43,11 +53,29 @@ trait ProductTypeClass[C[_]] {
    */
   def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
 
+  /**
+   * Name hint for a field name. Called by
+   * [[shapeless.GenericMacros.materialize]] when constructing an instance for
+   * a case class with just one field.
+   */
+  def namedField[F](instance: C[F], name: String): C[F] =
+    instance
+
+  /**
+   * Name hint for a case name. Called by
+   * [[shapeless.GenericMacros.materialize]] when constructing an instance for
+   * an ADT with just a single case.
+   */
+  def namedCase[F](instance: C[F], name: String): C[F] =
+    instance
+
 }
 
 /**
- * A type class abstracting additionally over the `coproduct` operation of type
+ * A type class additinally abstracting over the `coproduct` operation of type
  * classes over types of kind `*`.
+ *
+ * Name hints can be safely ignored.
  */
 trait TypeClass[C[_]] extends ProductTypeClass[C] {
 
@@ -58,8 +86,21 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
   def coproduct[L, R <: Coproduct](CL: => C[L], CR: => C[R]): C[L :+: R]
 
   /**
+   * Similar to [[shapeless.TypeClass#coproduct]], but with a name hint
+   * for the `L` instance. Called by [[shapeless.GenericMacros.materialize]]
+   * with the name of the case class associated with type `L`.
+   */
+  def namedCoproduct[L, R <: Coproduct](CL: => C[L], name: String, CR: => C[R]): C[L :+: R] =
+    coproduct(CL, CR)
+
+  /**
    * Given a type class instances for `L`, produce a type class instance
-   * for the coproduct `L :+: CNil`.
+   * for the coproduct `L :+: CNil`. Called by
+   * [[shapeless.GenericMacros.materialize]] when constructing the first
+   * instance in a coproduct.
+   *
+   * Since `CNil` is uninhabited, there is a safe default implementation.
+   * Overriding can be useful for performance reasons.
    */
   def coproduct1[L](CL: => C[L]): C[L :+: CNil] = {
     def from(l: L): L :+: CNil = Inl(l)
@@ -69,6 +110,14 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
     }
     project(CL, to, from)
   }
+
+  /**
+   * Similar to [[shapeless.TypeClass#coproduct1]], but with a name hint
+   * for the `L` instance. Called by [[shapeless.GenericMacros.materialize]]
+   * with the name of the case class associated with type `L`.
+   */
+  def namedCoproduct1[L](CL: => C[L], name: String): C[L :+: CNil] =
+    coproduct1(CL)
 
 }
 
