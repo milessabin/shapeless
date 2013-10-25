@@ -492,4 +492,65 @@ class RecordTests {
     typed[Boolean](v2)
     assertEquals(true, v2)
   }
+
+  @Test
+  def testFieldPoly {
+    import poly._
+
+    object f extends FieldPoly {
+      implicit def atFoo = atField[Int]("foo")(_ + 1)
+    }
+
+    val r = "foo" ->> 23
+
+    val r1 = f(r)
+
+    val fooType = "foo".witness
+
+    typed[FieldType[fooType.T, Int]](r1)
+    assertEquals(24, r1)
+  }
+
+
+  @Test
+  def testFieldPolyOnRecord {
+    import poly._
+
+    object f extends FieldPoly {
+      implicit def atFoo = atField[Int]("foo")(_ + 1)
+    }
+
+    val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
+
+    val r1 = everywhere(f)(r)
+
+    val v1 = r1("foo")
+    typed[Int](v1)
+    assertEquals(24, v1)
+
+    val v2 = r1("bar")
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+  }
+
+  @Test
+  def testFieldPolyNested {
+    import poly._
+
+    object f extends FieldPoly {
+      implicit def atFoo = atField[Int]("foo")(_ + 1)
+    }
+
+    val r = List(List(List(("foo" ->> 23) :: ("bar" ->> true) :: HNil)))
+
+    val List(List(List(r1))) = everywhere(f)(r)
+
+    val v1 = r1("foo")
+    typed[Int](v1)
+    assertEquals(24, v1)
+
+    val v2 = r1("bar")
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+  }
 }
