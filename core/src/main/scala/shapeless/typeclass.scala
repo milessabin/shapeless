@@ -28,6 +28,8 @@ import scala.reflect.macros.Context
  */
 trait ProductTypeClass[C[_]] {
 
+  final def derive[T] = macro TypeClass.derive_impl[C, T]
+
   /**
    * Given a type class instance for `H`, and a type class instance for a
    * product, produce a type class instance for the product prepended with `H`.

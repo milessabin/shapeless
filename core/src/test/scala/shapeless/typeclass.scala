@@ -19,93 +19,90 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import test.illTyped
+
 package TypeClassAux {
-  trait Monoid[T] {
-    def zero : T
-    def append(a : T, b : T) : T
+  sealed trait Dummy[T]
+  case class Product[H, T <: HList](h: Dummy[H], name: String, t: Dummy[T]) extends Dummy[H :: T]
+  case object EmptyProduct extends Dummy[HNil]
+  case class Project[F, G](instance: Dummy[G]) extends Dummy[F]
+  case class NamedField[F](instance: Dummy[F], name: String) extends Dummy[F]
+  case class NamedCase[F](instance: Dummy[F], name: String) extends Dummy[F]
+  case class Sum[L, R <: Coproduct](l: Dummy[L], name: String, r: Dummy[R]) extends Dummy[L :+: R]
+  case class Sum1[L](l: Dummy[L], name: String) extends Dummy[L :+: CNil]
+  case class Base[T](id: String) extends Dummy[T]
+
+  object Dummy extends TypeClassCompanion[Dummy] {
+    implicit def intDummy: Dummy[Int] = Base[Int]("int")
+    implicit def stringDummy: Dummy[String] = Base[String]("string")
+
+    implicit class Syntax[T](t: T)(implicit dummy: Dummy[T]) {
+      def frobnicate = dummy
+    }
   }
 
-  object Monoid extends TypeClassCompanion[Monoid] {
-    def mzero[T](implicit mt : Monoid[T]) = mt.zero
-    
-    implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
-      def zero = false
-      def append(a : Boolean, b : Boolean) = a || b
-    }
-    
-    implicit def intMonoid : Monoid[Int] = new Monoid[Int] {
-      def zero = 0
-      def append(a : Int, b : Int) = a+b
-    }
-    
-    implicit def doubleMonoid : Monoid[Double] = new Monoid[Double] {
-      def zero = 0.0
-      def append(a : Double, b : Double) = a+b
-    }
-    
-    implicit def stringMonoid : Monoid[String] = new Monoid[String] {
-      def zero = ""
-      def append(a : String, b : String) = a+b
-    }
+  object DummyInstance extends TypeClass[Dummy] {
+    def emptyProduct = EmptyProduct
+    def project[F, G](instance: => Dummy[G], to: F => G, from: G => F) = Project[F, G](instance)
+    override def namedProduct[H, T <: HList](h: Dummy[H], name: String, t: Dummy[T]) = Product(h, name, t)
+    override def namedField[F](instance: Dummy[F], name: String) = NamedField(instance, name)
+    override def namedCase[F](instance: Dummy[F], name: String) = NamedCase(instance, name)
+    override def namedCoproduct[L, R <: Coproduct](l: => Dummy[L], name: String, r: => Dummy[R]) = Sum(l, name, r)
+    override def namedCoproduct1[L](l: => Dummy[L], name: String) = Sum1(l, name)
 
-    implicit val monoidInstance: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
-      def emptyProduct = new Monoid[HNil] {
-        def zero = HNil
-        def append(a : HNil, b : HNil) = HNil
-      }
-
-      def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-        def zero = FHead.zero :: FTail.zero
-        def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-      }
-
-      def project[F, G](instance : => Monoid[G], to : F => G, from : G => F) = new Monoid[F] {
-        def zero = from(instance.zero)
-        def append(a : F, b : F) = from(instance.append(to(a), to(b)))
-      }
-    }
-  }
-  
-  trait MonoidSyntax[T] {
-    def |+|(b : T) : T
-  }
-  
-  object MonoidSyntax {
-    implicit def monoidSyntax[T](a : T)(implicit mt : Monoid[T]) : MonoidSyntax[T] = new MonoidSyntax[T] {
-      def |+|(b : T) = mt.append(a, b)
-    }
+    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = sys.error("unexpected call to product")
+    def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = sys.error("unexpected call to coproduct")
+    override def coproduct1[L](l: => Dummy[L]) = sys.error("unexpected call to coproduct1")
   }
 }
 
 class TypeClassTests {
   import TypeClassAux._
-  
-  import MonoidSyntax._
+  import Dummy.Syntax
 
-  case class Foo(i : Int, s : String)
-  case class Bar(b : Boolean, s : String, d : Double)
+  case class Foo(i: Int, s: String)
+  val fooResult = Project(NamedCase(Product(Base("int"), "i", Product(Base("string"), "s", EmptyProduct)), "Foo"))
+
+  sealed trait Cases[A, B]
+  case class CaseA[A, B](a: A) extends Cases[A, B]
+  case class CaseB[A, B](b1: B, b2: B) extends Cases[A, B]
+
+  val casesResult = Project(
+    Sum(NamedField(Base("int"), "a"), "CaseA", Sum1(
+      Product(Base("string"), "b1", Product(
+        Base("string"), "b2", EmptyProduct
+      )), "CaseB"
+    ))
+  )
 
   @Test
-  def testBasics {
-    implicit val fooInstance = TypeClass[Monoid, Foo]
-    implicit val barInstance = TypeClass[Monoid, Bar]
-
-    val f = Foo(13, "foo") |+| Foo(23, "bar")
-    assertEquals(Foo(36, "foobar"), f)
-
-    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
-    assertEquals(Bar(true, "foobar", 4.0), b)
+  def testManualSingle {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(fooResult, tc.derive[Foo])
+    illTyped("""tc.derive[Cases[Int, String]]""")
   }
 
   @Test
-  def testAuto {
-    import Monoid.auto._
+  def testManualMulti {
+    implicit val tc: TypeClass[Dummy] = DummyInstance
+    assertEquals(casesResult, tc.derive[Cases[Int, String]])
+  }
 
-    val f = Foo(13, "foo") |+| Foo(23, "bar")
-    assertEquals(Foo(36, "foobar"), f)
-  
-    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
-    assertEquals(Bar(true, "foobar", 4.0), b)
+  @Test
+  def testAutoSingle {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(fooResult, implicitly[Dummy[Foo]])
+    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
+    assertEquals(fooResult, (null: Foo).frobnicate)
+  }
+
+  @Test
+  def testAutoMulti {
+    import Dummy.auto._
+    implicit val tc: TypeClass[Dummy] = DummyInstance
+    assertEquals(casesResult, tc.derive[Cases[Int, String]])
+    assertEquals(casesResult, (null: Cases[Int, String]).frobnicate)
   }
 }
 
