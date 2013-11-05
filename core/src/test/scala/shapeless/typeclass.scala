@@ -89,6 +89,19 @@ class TypeClassTests {
   }
 
   @Test
+  def testParentCheck {
+    implicit val tc: TypeClass[Dummy] = DummyInstance
+    illTyped("tc.derive[CaseA[Int, String]]",
+      "Attempting to derive a type class instance for class `CaseA` with sealed superclass.*"
+    )
+
+    {
+      import TypeClass.ignoreParent
+      tc.derive[CaseA[Int, String]]
+    }
+  }
+
+  @Test
   def testAutoSingle {
     import Dummy.auto._
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance

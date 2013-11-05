@@ -129,7 +129,11 @@ trait TypeClassCompanion[C[_]] {
   }
 }
 
+final class IgnoreParent
+
 object TypeClass {
+
+  implicit def ignoreParent: IgnoreParent = new IgnoreParent()
 
   def apply[C[_], T] = macro derive_impl[C, T]
 
@@ -138,6 +142,7 @@ object TypeClass {
       val c: context.type = context
       val expandInner = true
       val optimizeSingleItem = true
+      val checkParent = true
       val tpe = tTag.tpe
     }
     context.Expr[C[T]](helper.ADT.deriveInstance(cTag.tpe.typeConstructor))

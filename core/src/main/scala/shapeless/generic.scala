@@ -64,6 +64,7 @@ object GenericMacros {
         val c: context.type = context
         val expandInner = false
         val optimizeSingleItem = false
+        val checkParent = false
         val tpe = tpe0
       }
       context.Expr[Generic[T]](helper.ADT.materializeGeneric)
@@ -79,6 +80,7 @@ object GenericMacros {
       val c: context.type = context
       val expandInner = false
       val optimizeSingleItem = false
+      val checkParent = false
       val tpe = tpe0
     }
 
@@ -97,6 +99,7 @@ object GenericMacros {
     val c: C
     val expandInner: Boolean
     val optimizeSingleItem: Boolean
+    val checkParent: Boolean
     val tpe: c.Type
 
     import c.universe._
@@ -107,7 +110,7 @@ object GenericMacros {
       def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
         classSym.knownDirectSubclasses.toList flatMap { child0 =>
           val child = child0.asClass
-          child.typeSignature // Workaround for https://issues.scala-lang.org/browse/SI-7755
+          child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
           if (child.isCaseClass)
             List(child)
           else if (child.isSealed)
@@ -137,7 +140,19 @@ object GenericMacros {
         exit(s"$sym is not a class or trait")
 
       val classSym = sym.asClass
-      classSym.typeSignature // Workaround for https://issues.scala-lang.org/browse/SI-7755
+      classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+
+      if (checkParent)
+        classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
+          case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
+            val msg = s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence this warning, import `TypeClass.ignoreParent`"
+            if (c.compilerSettings contains "-Xfatal-warnings")
+              c.error(c.enclosingPosition, msg)
+            else
+              c.warning(c.enclosingPosition, msg)
+          case _ =>
+        }
+
       if (classSym.isCaseClass) // one-case ADT
         ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
       else if (classSym.isSealed) { // multiple cases
