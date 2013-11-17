@@ -171,4 +171,5 @@ compatibility.
 + Stacy Curl <stacy.curl@gmail.com>
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
++ Arseniy Zhizhelev <primetalk.github@primetalk.ru> [@primetalk_ru](https://twitter.com/primetalk_ru)
 

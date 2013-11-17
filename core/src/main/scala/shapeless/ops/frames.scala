@@ -20,7 +20,7 @@ package ops
 package frame {
 	import shapeless.frame._
 	/**
-	 * 
+	 * Ordinary operations on Frames. 
 	 * 
 	 * @author Arseniy Zhizhelev
 	 */
@@ -123,24 +123,5 @@ package frame {
 				})
 		
 	}
-//	private 
-//	class FrameLensC
-//		[TInstance<:WithFrameInstance, 
-//			TSlot <: Slot](
-//							instance:TInstance, 
-//							tf:TypedFrame[TInstance], 
-//							slotId: TSlot) (implicit ev:TInstance#TFrame#AllSlots <:<TSlot)
-//		extends FrameLens[TInstance, TSlot ] {
-//		def get:TSlot#Type = instance.fi.apply(slotId)
-//		def set(value:TSlot#Type):TInstance = {
-//			val updatedV = (instance:TInstance).fi.updated(slotId, value)
-//			tf.construct(updatedV)
-//		}
-//		def /[TInnerInstance<: WithFrameInstance, SlotT2 <: Slot {type Type <: TInnerInstance}]
-//			(slotId: SlotT2)(implicit ev1:TSlot#Type , ev2: TInnerInstance#TFrame#AllSlots <:< SlotT2):FrameLens[TInstance, SlotT2] ={
-//			new FrameLensC(instance, tf, slotId)
-//		} 
-//	}
-//	
 	
 }

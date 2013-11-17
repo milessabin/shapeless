@@ -23,7 +23,14 @@ import shapeless.ops.frame.SlotC
  * They contain exactly the given set of slots with values. 
  * 
  * The difference from lenses is that frame approaches the same problem from the other side. It changes storage from case class to a map. 
- * This approach has it's own advantages and disadvantages.  
+ * This approach has it's own advantages and disadvantages.
+ * 
+ * Slot - is a typed field of some FrameInstance.
+ * Frame - is a sequence of slots. It is strictly typed. The Frame contains metainformation about frame instances.
+ * FrameInstance - is an "object" of "type", defined by Frame.
+ * 
+ * TypedFrame - a Frame associated with a case class. 
+ * <CustomCaseClass> with FrameInstance - a case class that is compatible with frames.   
  * 
  * @author Arseniy Zhizhelev
  */
@@ -135,11 +142,4 @@ object frame {
 	}
 	
 	implicit def frameLensOps[O, V](f:FrameLens[O, V]) = new FrameLensOps[O, V](f)
-//	
-//	trait FrameLens[TInstance<:WithFrameInstance, TSlot <: Slot] {
-//		def get:TSlot#Type
-//		def set(value:TSlot#Type):TInstance
-//		def /[TInnerInstance<: WithFrameInstance, SlotT2 <: Slot {type Type <: TInnerInstance}]
-//			(slotId: SlotT2)(implicit ev1:TSlot#Type , ev2: TInnerInstance#TFrame#AllSlots <:< SlotT2):FrameLens[TInstance, SlotT2] 
-//	}
 }

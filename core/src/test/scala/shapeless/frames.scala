@@ -77,4 +77,15 @@ class FrameTests {
   	val q2 = (q1 >> frame1Slot1 >> intSlot1) .set(1)
     assertEquals((q2 >> frame1Slot1 >> intSlot1) .get, 1)
   }
+  
+  @Test
+  def testFrameInstances {
+  	def myMethod(f:FrameInstance1):Int = 
+  		f.intSlot1mul2
+  	
+  	val f1 = (tframe1.initialValue >> intSlot1).set(1)
+  	val f2 = (tframe1.initialValue >> intSlot1).set(2)
+  	assertEquals(myMethod(f1), 2)
+  	assertEquals(myMethod(f2), 2)
+  }
 }
