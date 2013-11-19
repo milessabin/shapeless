@@ -49,12 +49,12 @@ object ShowExamples extends App {
   val bar: Super = Bar(0)
   val rec: Super = BarRec(1, Foo(0, "foo"))
 
-  assert(bar.show == "Inl(0)")
-  assert(rec.show == "Inr(Inl(1 :: Inr(Inr(Inl(0 :: foo :: HNil))) :: HNil))")
+  assert(bar.show == "Bar(i = 0)")
+  assert(rec.show == "BarRec(i = 1, rec = Foo(i = 0, s = foo))")
 
   val mutual: MutualA = MutualA2(MutualB2(MutualA1(0)))
 
-  assert(mutual.show == "Inr(Inl(Inr(Inl(Inl(0)))))")
+  assert(mutual.show == "MutualA2(b = MutualB2(b = MutualA1(x = 0)))")
 }
 
 trait ShowSyntax {
@@ -82,11 +82,36 @@ object Show extends TypeClassCompanion[Show] {
 
   implicit def showInstance: TypeClass[Show] = new TypeClass[Show] {
     def emptyProduct = new Show[HNil] {
-      def show(t: HNil) = "HNil"
+      def show(t: HNil) = ""
     }
 
     def product[F, T <: HList](FHead : Show[F], FTail : Show[T]) = new Show[F :: T] {
       def show(ft: F :: T) = s"${FHead.show(ft.head)} :: ${FTail.show(ft.tail)}"
+    }
+
+    override def namedProduct[F, T <: HList](FHead : Show[F], name : String, FTail : Show[T]) = new Show[F :: T] {
+      def show(ft: F :: T) = {
+        val head = FHead.show(ft.head)
+        val tail = FTail.show(ft.tail)
+        if (tail.isEmpty)
+          s"$name = $head"
+        else
+          s"$name = $head, $tail"
+      }
+    }
+
+    override def coproduct1[L](CL: => Show[L]) = new Show[L :+: CNil] {
+      def show(l: L :+: CNil) = l match {
+        case Inl(l) => s"Inl(${CL.show(l)})"
+        case Inr(_) => sys.error("absurd")
+      }
+    }
+
+    override def namedCoproduct1[L](CL: => Show[L], name: String) = new Show[L :+: CNil] {
+      def show(l: L :+: CNil) = l match {
+        case Inl(l) => s"$name(${CL.show(l)})"
+        case Inr(_) => sys.error("absurd")
+      }
     }
 
     def coproduct[L, R <: Coproduct](CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
@@ -94,6 +119,21 @@ object Show extends TypeClassCompanion[Show] {
         case Inl(l) => s"Inl(${CL.show(l)})"
         case Inr(r) => s"Inr(${CR.show(r)})"
       }
+    }
+
+    override def namedCoproduct[L, R <: Coproduct](CL: => Show[L], name: String, CR: => Show[R]) = new Show[L :+: R] {
+      def show(lr: L :+: R) = lr match {
+        case Inl(l) => s"$name(${CL.show(l)})"
+        case Inr(r) => s"${CR.show(r)}"
+      }
+    }
+
+    override def namedField[F](instance: Show[F], name: String) = new Show[F] {
+      def show(f: F) = s"$name = ${instance.show(f)}"
+    }
+
+    override def namedCase[F](instance: Show[F], name: String) = new Show[F] {
+      def show(f: F) = s"$name(${instance.show(f)})"
     }
 
     def project[F, G](instance : => Show[G], to : F => G, from : G => F) = new Show[F] {
