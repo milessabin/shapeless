@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.WhiteboxContext
 
 /**
  * Base trait for type level natural numbers.
@@ -80,7 +80,7 @@ object Nat extends Nats {
 }
 
 object NatMacros {
-  def mkNatTpt(c: Context)(i: c.Expr[Int]): c.Tree = {
+  def mkNatTpt(c: WhiteboxContext)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
 
     val n = i.tree match {
@@ -103,7 +103,7 @@ object NatMacros {
     mkNatTpt(n)
   }
 
-  def materializeSingleton(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeSingleton(c: WhiteboxContext)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
 
     val natTpt = mkNatTpt(c)(i)
@@ -115,7 +115,7 @@ object NatMacros {
       ModuleDef(Modifiers(), moduleName,
         Template(
           List(natTpt),
-          emptyValDef,
+          noSelfType,
           List(
             DefDef(
               Modifiers(), nme.CONSTRUCTOR, List(),
@@ -134,7 +134,7 @@ object NatMacros {
     }
   }
 
-  def materializeWidened(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeWidened(c: WhiteboxContext)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
     val natTpt = mkNatTpt(c)(i)
 

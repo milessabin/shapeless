@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 trait Lazy[T] {
   val value: T
@@ -31,7 +31,7 @@ object Lazy {
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
-  def mkLazyImpl[T: c.WeakTypeTag](c: Context): c.Expr[Lazy[T]] = {
+  def mkLazyImpl[T: c.WeakTypeTag](c: BlackboxContext): c.Expr[Lazy[T]] = {
     import c.universe._
     import Flag._
 
@@ -45,13 +45,13 @@ object Lazy {
         List(TypeTree(weakTypeOf[T]))
       )
 
-    val recName = newTermName(c.fresh)
-    val className = newTypeName(c.fresh)
+    val recName = TermName(c.freshName)
+    val className = TypeName(c.freshName)
     val recClass =
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(thisLazyTypeTree),
-          emptyValDef,
+          noSelfType,
           List(
             DefDef(
               Modifiers(), nme.CONSTRUCTOR, List(),
@@ -63,9 +63,9 @@ object Lazy {
             // Implicit self-publication ties the knot
             ValDef(Modifiers(IMPLICIT), recName, thisLazyTypeTree, This(tpnme.EMPTY)), 
 
-            ValDef(Modifiers(LAZY), newTermName("value"), TypeTree(weakTypeOf[T]),
+            ValDef(Modifiers(LAZY), TermName("value"), TypeTree(weakTypeOf[T]),
               TypeApply(
-                Select(Ident(definitions.PredefModule), newTermName("implicitly")),
+                Select(Ident(definitions.PredefModule), TermName("implicitly")),
                 List(TypeTree(weakTypeOf[T]))
               )
               

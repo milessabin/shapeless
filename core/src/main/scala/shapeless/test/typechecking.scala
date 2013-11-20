@@ -20,7 +20,7 @@ import scala.language.experimental.macros
 
 import java.util.regex.Pattern
 
-import scala.reflect.macros.{ Context, TypecheckException }
+import scala.reflect.macros.{ WhiteboxContext, TypecheckException }
 
 /**
  * A utility which ensures that a code fragment does not typecheck.
@@ -31,9 +31,9 @@ object illTyped {
   def apply(code: String): Unit = macro applyImplNoExp
   def apply(code: String, expected: String): Unit = macro applyImpl
   
-  def applyImplNoExp(c: Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
+  def applyImplNoExp(c: WhiteboxContext)(code: c.Expr[String]) = applyImpl(c)(code, null)
   
-  def applyImpl(c: Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+  def applyImpl(c: WhiteboxContext)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
 
     val Expr(Literal(Constant(codeStr: String))) = code
