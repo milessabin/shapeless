@@ -128,7 +128,7 @@ class TypeClassTests {
 
   @Test
   def vacuousProduct {
-    implicit val tc: TypeClass[Dummy] = DummyHListingInstance
+    implicit val tc: ProductTypeClass[Dummy] = DummyHListingInstance
     assertEquals(Product(Base("int"), "", Product(Base("string"), "", EmptyProduct)),
                  implicitly[Dummy[Int :: String :: HNil]])
     illTyped("""implicitly[Dummy[Int :: Boolean :: HNil]]""")
