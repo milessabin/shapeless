@@ -54,6 +54,14 @@ package TypeClassAux {
     def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = sys.error("unexpected call to coproduct")
     override def coproduct1[L](l: => Dummy[L]) = sys.error("unexpected call to coproduct1")
   }
+
+  object DummyHListingInstance extends TypeClass[Dummy] {
+    def emptyProduct = EmptyProduct
+    def project[F, G](instance: => Dummy[G], to: F => G, from: G => F) = Project[F, G](instance)
+    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = Product(h, "", t)
+    def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = sys.error("unexpected call to coproduct")
+    override def coproduct1[L](l: => Dummy[L]) = sys.error("unexpected call to coproduct1")
+  }
 }
 
 class TypeClassTests {
@@ -116,6 +124,14 @@ class TypeClassTests {
     implicit val tc: TypeClass[Dummy] = DummyInstance
     assertEquals(casesResult, tc.derive[Cases[Int, String]])
     assertEquals(casesResult, (null: Cases[Int, String]).frobnicate)
+  }
+
+  @Test
+  def vacuousProduct {
+    implicit val tc: TypeClass[Dummy] = DummyHListingInstance
+    assertEquals(Product(Base("int"), "", Product(Base("string"), "", EmptyProduct)),
+                 implicitly[Dummy[Int :: String :: HNil]])
+    illTyped("""implicitly[Dummy[Int :: Boolean :: HNil]]""")
   }
 }
 
