@@ -145,7 +145,11 @@ object GenericMacros {
       if (checkParent)
         classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
           case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
-            val msg = s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence this warning, import `TypeClass.ignoreParent`"
+            val msg =
+              s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with "+
+              s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
+              s"this warning, import `TypeClass.ignoreParent`"
+
             if (c.compilerSettings contains "-Xfatal-warnings")
               c.error(c.enclosingPosition, msg)
             else
