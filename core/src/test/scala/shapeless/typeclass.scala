@@ -88,7 +88,6 @@ class TypeClassTests {
     assertEquals(casesResult, tc.derive[Cases[Int, String]])
   }
 
-  /*
   @Test
   def testParentCheck {
     implicit val tc: TypeClass[Dummy] = DummyInstance
@@ -101,7 +100,6 @@ class TypeClassTests {
       tc.derive[CaseA[Int, String]]
     }
   }
-  */
 
   @Test
   def testAutoSingle {

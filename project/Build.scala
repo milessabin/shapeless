@@ -170,7 +170,7 @@ object ShapelessBuild extends Build {
         "-feature",
         "-language:higherKinds",
         "-language:implicitConversions",
-        //"-Xfatal-warnings",
+        "-Xfatal-warnings",
         "-deprecation",
         "-unchecked"),
 
