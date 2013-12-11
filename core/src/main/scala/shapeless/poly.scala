@@ -47,7 +47,7 @@ object PolyDefns extends Cases {
       val value = v
     }
 
-    implicit def materializeFromValue[P, L <: HList] = macro materializeFromValueImpl[P, L]
+    implicit def materializeFromValue[P, L <: HList]: Case[P, L] = macro materializeFromValueImpl[P, L]
 
     def materializeFromValueImpl[P: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: WhiteboxContext): c.Expr[Case[P, L]] = {
       import c.universe._
@@ -225,7 +225,7 @@ trait Poly extends PolyApply {
 object Poly extends PolyInst {
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
   
-  implicit def apply(f : Any) = macro liftFnImpl
+  implicit def apply(f : Any): Poly = macro liftFnImpl
   
   def liftFnImpl(c: WhiteboxContext)(f: c.Expr[Any]): c.Expr[Poly] = {
     import c.universe._

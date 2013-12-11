@@ -29,7 +29,7 @@ trait Generic[T] {
 }
 
 trait LowPriorityGeneric {
-  implicit def apply[T] = macro GenericMacros.materialize[T]
+  implicit def apply[T]: Generic[T] = macro GenericMacros.materialize[T]
 }
 
 object Generic extends LowPriorityGeneric {
@@ -37,7 +37,7 @@ object Generic extends LowPriorityGeneric {
 
   // Refinement for products, here we can provide the calling context with
   // a proof that the resulting Repr <: HList
-  implicit def product[T <: Product] = macro GenericMacros.materializeForProduct[T]
+  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
 }
 
 object GenericMacros {

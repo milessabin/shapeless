@@ -55,7 +55,7 @@ class _0 extends Nat {
 object Nat extends Nats {
   import ops.nat._
 
-  def apply(i: Int) = macro NatMacros.materializeWidened
+  def apply(i: Int): Nat = macro NatMacros.materializeWidened
 
   /** The natural number 0 */
   val _0: _0 = new _0
@@ -76,7 +76,7 @@ object Nat extends Nats {
       val value = new Succ[P]()
     }
 
-  implicit def materialize(i: Int) = macro NatMacros.materializeSingleton
+  implicit def materialize(i: Int): Nat = macro NatMacros.materializeSingleton
 }
 
 object NatMacros {

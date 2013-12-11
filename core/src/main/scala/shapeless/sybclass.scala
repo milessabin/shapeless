@@ -72,7 +72,7 @@ object Data extends LowPriorityData {
     }
 
   // Use of macro here is solely to prevent spurious implicit divergence
-  implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]) =
+  implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]): Data[F, H :: T, R] =
     macro DataMacros.hlistDataImpl[F, H, T, R]
   
   /**
@@ -84,7 +84,7 @@ object Data extends LowPriorityData {
     }
 
   // Use of macro here is solely to prevent spurious implicit divergence
-  implicit def coproductData[F <: Poly, H, T <: Coproduct, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]) =
+  implicit def coproductData[F <: Poly, H, T <: Coproduct, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]): Data[F, H :+: T, R] =
     macro DataMacros.coproductDataImpl[F, H, T, R]
 }
 
@@ -264,7 +264,8 @@ object DataT extends LowPriorityDataT {
 
   // Use of macro here is solely to prevent spurious implicit divergence
   implicit def hlistDataT[F <: Poly, H, T <: HList, U, V <: HList]
-    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.hlistDataTImpl[F, H, T, U, V]
+    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]): DataT[F, H :: T, U :: V] =
+      macro DataTMacros.hlistDataTImpl[F, H, T, U, V]
 
   /**
    * DataT type class instance for `Coproducts`s.
@@ -276,7 +277,8 @@ object DataT extends LowPriorityDataT {
 
   // Use of macro here is solely to prevent spurious implicit divergence
   implicit def coproductDataT[F <: Poly, H, T <: Coproduct, U, V <: Coproduct]
-    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]) = macro DataTMacros.coproductDataTImpl[F, H, T, U, V]
+    (implicit fh : Case1.Aux[F, H, U], ct : DataT[F, T, V]): DataT[F, H :+: T, U :+: V] =
+      macro DataTMacros.coproductDataTImpl[F, H, T, U, V]
 }
 
 object DataTMacros {
