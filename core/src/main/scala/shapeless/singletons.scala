@@ -30,9 +30,9 @@ object Witness {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
-  implicit def apply[T] = macro SingletonTypeMacros.materializeImpl[T]
+  implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
-  implicit def apply[T](t: T) = macro SingletonTypeMacros.convertImpl[T]
+  implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
 }
 
 trait WitnessWith[TC[_]] extends Witness {
@@ -41,14 +41,15 @@ trait WitnessWith[TC[_]] extends Witness {
 }
 
 trait LowPriorityWitnessWith {
-  implicit def apply2[H, TC2[_ <: H, _], S <: H, T](t: T) = macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S, T]
+  implicit def apply2[H, TC2[_ <: H, _], S <: H, T](t: T): WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T] =
+    macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S, T]
 }
 
 object WitnessWith extends LowPriorityWitnessWith {
   type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0  }
   type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
 
-  implicit def apply1[TC[_], T](t: T) = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
+  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
 trait SingletonTypeMacros[C <: Context] {

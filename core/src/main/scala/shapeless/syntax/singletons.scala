@@ -20,7 +20,7 @@ package syntax
 import scala.language.experimental.macros
 
 object singleton {
-  implicit def mkSingletonOps[T](t: T) = macro SingletonTypeMacros.mkSingletonOps[T]
+  implicit def mkSingletonOps[T0](t: T0): SingletonOps { type T <: T0 } = macro SingletonTypeMacros.mkSingletonOps[T0]
 }
 
 trait SingletonOps {

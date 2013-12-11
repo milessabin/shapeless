@@ -28,7 +28,7 @@ import scala.reflect.macros.Context
  */
 trait ProductTypeClass[C[_]] {
 
-  final def derive[T] = macro TypeClass.derive_impl[C, T]
+  final def derive[T]: C[T] = macro TypeClass.derive_impl[C, T]
 
   /**
    * Given a type class instance for `H`, and a type class instance for a
@@ -125,7 +125,7 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
 
 trait TypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T] = macro TypeClass.derive_impl[C, T]
+    implicit def derive[T]: C[T] = macro TypeClass.derive_impl[C, T]
   }
 }
 
@@ -135,7 +135,7 @@ object TypeClass {
 
   implicit def ignoreParent: IgnoreParent = new IgnoreParent()
 
-  def apply[C[_], T] = macro derive_impl[C, T]
+  def apply[C[_], T]: C[T] = macro derive_impl[C, T]
 
   def derive_impl[C[_], T](context: Context)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
     val helper = new GenericMacros.Helper[context.type] {
