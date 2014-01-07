@@ -74,7 +74,7 @@ object Boilerplate {
     )
   }  
 
-  val genHeader = block"""
+  val header = """
     |/*
     | * Copyright (c) 2011-13 Miles Sabin 
     | *
@@ -92,9 +92,9 @@ object Boilerplate {
     | */
     |
     |package shapeless
-  """
+  """.stripMargin
 
-  class TemplateVals(arity: Int) {
+  class TemplateVals(val arity: Int) {
     val synTypes     = (0 until arity) map (n => (n+'A').toChar)
     val synVals      = (0 until arity) map (n => (n+'a').toChar)
     val synTypedVals = (synVals zip synTypes) map { case (v,t) => v + " : " + t}
@@ -111,20 +111,20 @@ object Boilerplate {
   }
 
   trait Template {
-    def content(arity: Int, tv: TemplateVals): String
+    def content(tv: TemplateVals): String
     def range = 1 to 22
     def body: String = {
-      val header = genHeader.stripMargin split '\n'
-      val rawContents = range map { n => content(n, new TemplateVals(n)) split '\n' filterNot (_.isEmpty) }
+      val headerLines = header split '\n'
+      val rawContents = range map { n => content(new TemplateVals(n)) split '\n' filterNot (_.isEmpty) }
       val preBody = rawContents.head takeWhile (_ startsWith "|") map (_.tail)
       val instances = rawContents flatMap {_ filter (_ startsWith "-") map (_.tail) }
       val postBody = rawContents.head dropWhile (_ startsWith "|") dropWhile (_ startsWith "-") map (_.tail)
-      (header ++ preBody ++ instances ++ postBody) mkString "\n"
+      (headerLines ++ preBody ++ instances ++ postBody) mkString "\n"
     }
   }
 
   object GenTuplerInstances extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       block"""
         |package ops
@@ -146,7 +146,7 @@ object Boilerplate {
   object GenFnToProductInstances extends Template {
     override val range = 0 to 22
 
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
@@ -172,7 +172,7 @@ object Boilerplate {
   object GenFnFromProductInstances extends Template {
     override val range = 0 to 22
 
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
@@ -196,7 +196,7 @@ object Boilerplate {
   }
   
   object GenCaseInst extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       block"""
         |
@@ -209,7 +209,7 @@ object Boilerplate {
   }
 
   object GenPolyApply extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       block"""
         |
@@ -224,7 +224,7 @@ object Boilerplate {
   }
 
   object GenPolyInst extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       block"""
         |
@@ -236,7 +236,7 @@ object Boilerplate {
   }
 
   object GenCases extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       block"""
         |
@@ -260,7 +260,7 @@ object Boilerplate {
   }
 
   object GenPolyNTraits extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
 
@@ -288,19 +288,21 @@ object Boilerplate {
   }
   
   object GenNats extends Template {
-    def content(n: Int, tv: TemplateVals) = block"""
-      |
-      |trait Nats {
-      -
-      -  type _${n} = Succ[_${n-1}]
-      -  val _${n}: _${n} = new _${n}
-      |}
-    """
+    def content(tv: TemplateVals) = {
+      val n = tv.arity
+      block"""
+        |
+        |trait Nats {
+        -
+        -  type _${n} = Succ[_${n-1}]
+        -  val _${n}: _${n} = new _${n}
+        |}
+      """
+    }
   }
   
   object GenTupleTypeableInstances extends Template {
-
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val implicitArgs = (synTypes map(a => s"cast${a} : Typeable[${a}]")) mkString ", "
       val enumerators = synTypes.zipWithIndex map { case (a,idx) => s"_ <- p._${idx+1}.cast[${a}]" } mkString "; "
@@ -325,7 +327,7 @@ object Boilerplate {
   }
   
   object GenSizedBuilder extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val `a:T..n:T` = synVals map (_ + " : T") mkString ", "
 
@@ -344,7 +346,7 @@ object Boilerplate {
   }
   
   object GenHMapBuilder extends Template {
-    def content(arity: Int, tv: TemplateVals) = {
+    def content(tv: TemplateVals) = {
       import tv._
       val typeArgs  = (0 until arity) map (n => s"K${n}, V${n}") mkString ", "
       val args      = (0 until arity) map (n => s"e${n} : (K${n}, V${n})") mkString ", "
