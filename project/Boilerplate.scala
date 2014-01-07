@@ -17,413 +17,351 @@
 import sbt._
 
 object Boilerplate {
+
+  import scala.StringContext._
+
+  implicit class BlockHelper(val sc: StringContext) extends AnyVal {
+    def block(args: Any*): String = {
+      val interpolated = sc.standardInterpolator(treatEscapes, args)
+      val rawLines = interpolated split '\n'
+      val trimmedLines = rawLines map { _ dropWhile (_.isWhitespace) }
+      trimmedLines mkString "\n"
+    }
+  }
+
   
   def gen(dir : File) = { 
     val tupler = dir / "shapeless" / "tupler.scala"
-    IO.write(tupler, genTuplerInstances)
+    IO.write(tupler, GenTuplerInstances.body)
     
     val fntoproduct = dir / "shapeless" / "fntoproduct.scala"
-    IO.write(fntoproduct, genFnToProductInstances)
+    IO.write(fntoproduct, GenFnToProductInstances.body)
     
     val fnfromproduct = dir / "shapeless" / "fnfromproduct.scala"
-    IO.write(fnfromproduct, genFnFromProductInstances)
+    IO.write(fnfromproduct, GenFnFromProductInstances.body)
     
     val caseinst = dir / "shapeless" / "caseinst.scala"
-    IO.write(caseinst, genCaseInst)
+    IO.write(caseinst, GenCaseInst.body)
 
     val polyapply = dir / "shapeless" / "polyapply.scala"
-    IO.write(polyapply, genPolyApply)
+    IO.write(polyapply, GenPolyApply.body)
 
     val polyinst = dir / "shapeless" / "polyinst.scala"
-    IO.write(polyinst, genPolyInst)
+    IO.write(polyinst, GenPolyInst.body)
 
     val cases = dir / "shapeless" / "cases.scala"
-    IO.write(cases, genCases)
+    IO.write(cases, GenCases.body)
 
     val polyntraits = dir / "shapeless" / "polyntraits.scala"
-    IO.write(polyntraits, genPolyNTraits)
+    IO.write(polyntraits, GenPolyNTraits.body)        
 
     val nats = dir / "shapeless" / "nats.scala"
-    IO.write(nats, genNats)
+    IO.write(nats, GenNats.body)
     
     val tupletypeables = dir / "shapeless" / "tupletypeables.scala"
-    IO.write(tupletypeables, genTupleTypeableInstances)
+    IO.write(tupletypeables, GenTupleTypeableInstances.body)
 
     val sizedbuilder = dir / "shapeless" / "sizedbuilder.scala"
-    IO.write(sizedbuilder, genSizedBuilder)
+    IO.write(sizedbuilder, GenSizedBuilder.body)
     
     val hmapbuilder = dir / "shapeless" / "hmapbuilder.scala"
-    IO.write(hmapbuilder, genHMapBuilder)
+    IO.write(hmapbuilder, GenHMapBuilder.body)
     
     Seq(
       tupler, fntoproduct, fnfromproduct, caseinst, polyapply,
       polyinst, cases, polyntraits, nats, tupletypeables, sizedbuilder,
       hmapbuilder
     )
+  }  
+
+  val genHeader = block"""
+    |/*
+    | * Copyright (c) 2011-13 Miles Sabin 
+    | *
+    | * Licensed under the Apache License, Version 2.0 (the "License");
+    | * you may not use this file except in compliance with the License.
+    | * You may obtain a copy of the License at
+    | *
+    | *     http://www.apache.org/licenses/LICENSE-2.0
+    | *
+    | * Unless required by applicable law or agreed to in writing, software
+    | * distributed under the License is distributed on an "AS IS" BASIS,
+    | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    | * See the License for the specific language governing permissions and
+    | * limitations under the License.
+    | */
+    |
+    |package shapeless
+  """
+
+  class TemplateVals(arity: Int) {
+    val synTypes     = (0 until arity) map (n => (n+'A').toChar)
+    val synVals      = (0 until arity) map (n => (n+'a').toChar)
+    val synTypedVals = (synVals zip synTypes) map { case (v,t) => v + " : " + t}
+
+    val `A..N`       = synTypes.mkString(", ")
+    val `A..N,Res`   = (synTypes :+ "Res") mkString ", "
+    val `a..n`       = synVals.mkString(", ")
+    val `A::N`       = (synTypes :+ "HNil") mkString " :: "
+    val `a::n`       = (synVals :+ "HNil") mkString " :: "
+    val `(A..N)`     = if (arity == 1) "Tuple1[A]" else synTypes.mkString("(", ", ", ")")
+    val `(_.._)`     = if (arity == 1) "Tuple1[_]" else Seq.fill(arity)("_").mkString("(", ", ", ")")
+    val `(a..n)`     = if (arity == 1) "Tuple1(a)" else synVals.mkString("(", ", ", ")")
+    val `a:A..n:N`   = synTypedVals mkString ", "    
   }
 
-  def genHeader = {
-    ("""|/*
-        | * Copyright (c) 2011-13 Miles Sabin 
-        | *
-        | * Licensed under the Apache License, Version 2.0 (the "License");
-        | * you may not use this file except in compliance with the License.
-        | * You may obtain a copy of the License at
-        | *
-        | *     http://www.apache.org/licenses/LICENSE-2.0
-        | *
-        | * Unless required by applicable law or agreed to in writing, software
-        | * distributed under the License is distributed on an "AS IS" BASIS,
-        | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-        | * See the License for the specific language governing permissions and
-        | * limitations under the License.
-        | */
-        |
-        |package shapeless
-        |""").stripMargin
-  }
-  
-  def genTuplerInstances = {
-    def genInstance(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString("[", ", ", "]")
-      val tupleType = if (arity == 1) "Tuple1[A]" else typeVars.mkString("(", ", ", ")")
-      val hlistType = typeVars.mkString("", " :: ", " :: HNil")
-      val hlistValue = ((1 to arity) map (n => "t._"+n)).mkString("", " :: ", " :: HNil")
-      val pattern = ((0 until arity) map (n => (n+'a').toChar)).mkString("", " :: ", " :: HNil")
-      val tupleValue = if (arity == 1) "Tuple1(a)" else ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
-      
-      ("""|
-          |  implicit def hlistTupler"""+arity+typeArgs+""": Aux["""+hlistType+""", """+tupleType+"""] = new Tupler["""+hlistType+"""] {
-          |    type Out = """+tupleType+"""
-          |    def apply(l : """+hlistType+"""): Out = l match { case """+pattern+""" => """+tupleValue+""" }
-          |  }
-          |""").stripMargin
+  trait Template {
+    def content(arity: Int, tv: TemplateVals): String
+    def range = 1 to 22
+    def body: String = {
+      val header = genHeader.stripMargin split '\n'
+      val rawContents = range map { n => content(n, new TemplateVals(n)) split '\n' filterNot (_.isEmpty) }
+      val preBody = rawContents.head takeWhile (_ startsWith "|") map (_.tail)
+      val instances = rawContents flatMap {_ filter (_ startsWith "-") map (_.tail) }
+      val postBody = rawContents.head dropWhile (_ startsWith "|") dropWhile (_ startsWith "-") map (_.tail)
+      (header ++ preBody ++ instances ++ postBody) mkString "\n"
     }
+  }
 
-    val instances = ((1 to 22) map genInstance).mkString
-    
-    genHeader+
-    ("""|
+  object GenTuplerInstances extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      block"""
         |package ops
         |
         |import hlist.Tupler
         |
         |trait TuplerInstances {
         |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
-        |"""+instances+"""}
-        |""").stripMargin
+        -
+        -  implicit def hlistTupler${arity}[${`A..N`}]: Aux[${`A::N`}, ${`(A..N)`}] = new Tupler[${`A::N`}] {
+        -    type Out = ${`(A..N)`}
+        -    def apply(l : ${`A::N`}): Out = l match { case ${`a::n`} => ${`(a..n)`} }
+        -  }        
+        |}
+      """
+    }      
   }
   
-  def genFnToProductInstances = {
-    def genInstance(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = (typeVars :+ "Res").mkString("[", ", ", "]")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val hlistFnType = "("+hlistType+") => Res"
-      val pattern = ((0 until arity) map (n => (n+'a').toChar)).mkString("", " :: ", " :: HNil")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
-      val fnBody = if (arity == 0) """fn()""" else """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
-      
-      ("""|
-          |  implicit def fnToProduct"""+arity+typeArgs+""": Aux["""+fnType+""", """+hlistFnType+"""] = new FnToProduct["""+fnType+"""] {
-          |    type Out = """+hlistFnType+"""
-          |    def apply(fn: """+fnType+"""): Out = (l : """+hlistType+""") => """+fnBody+"""
-          |  }
-          |""").stripMargin
-    }
+  object GenFnToProductInstances extends Template {
+    override val range = 0 to 22
 
-    val instances = ((0 to 22) map genInstance).mkString
-    
-    genHeader+
-    ("""|
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val fnType = s"(${`A..N`}) => Res"
+      val hlistFnType = s"(${`A::N`}) => Res"
+      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
+      
+      block"""
         |package ops
         |
         |import function.FnToProduct
         |
         |trait FnToProductInstances {
         |  type Aux[F, Out0] = FnToProduct[F] { type Out = Out0 }
-        |"""+instances+"""}
-        |""").stripMargin
+        -
+        -  implicit def fnToProduct${arity}[${`A..N,Res`}]: Aux[(${fnType}), ${hlistFnType}] = new FnToProduct[${fnType}] {
+        -    type Out = ${hlistFnType}
+        -    def apply(fn: ${fnType}): Out = (l : ${`A::N`}) => ${fnBody}
+        -  }
+        |}
+      """
+    }
   }
   
-  def genFnFromProductInstances = {
-    def genInstance(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = (typeVars :+ "Res").mkString("[", ", ", "]")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val hlistFnType = "("+hlistType+") => Res"
-      val litArgs = ((0 until arity) map (n => (n+'a').toChar+" : "+(n+'A').toChar)).mkString("(", ", ", ")")
-      val hlistFnArgs = (((0 until arity) map (n => (n+'a').toChar)) :+ "HNil").mkString("", " :: ", "")
-      
-      ("""|
-          |  implicit def fnFromProduct"""+arity+typeArgs+""": Aux["""+hlistFnType+""", """+fnType+"""] = new FnFromProduct["""+hlistFnType+"""] {
-          |    type Out = """+fnType+"""
-          |    def apply(hf : """+hlistFnType+"""): Out = """+litArgs+""" => hf("""+hlistFnArgs+""")
-          |  }
-          |""").stripMargin
-    }
+  object GenFnFromProductInstances extends Template {
+    override val range = 0 to 22
 
-    val instances = ((0 to 22) map genInstance).mkString
-    
-    genHeader+
-    ("""|
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val fnType = s"(${`A..N`}) => Res"
+      val hlistFnType = s"(${`A::N`}) => Res"
+
+      block"""
         |package ops
         |
         |import function.FnFromProduct
         |
         |trait FnFromProductInstances {
         |  type Aux[F, Out0] = FnFromProduct[F] { type Out = Out0 }
-        |"""+instances+"""}
-        |""").stripMargin
+        -
+        -  implicit def fnFromProduct${arity}[${`A..N,Res`}]: Aux[${hlistFnType}, ${fnType}] = new FnFromProduct[${hlistFnType}] {
+        -    type Out = ${fnType}
+        -    def apply(hf : ${hlistFnType}): Out = (${`a:A..n:N`}) => hf(${`a::n`})
+        -  }
+        |}
+      """
+    }
+    
   }
   
-  def genCaseInst = {
-    def genInst(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString(", ")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar+" : "+(n+'A').toChar)).mkString("(", ", ", ")")
-      val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
-      
-      ("""|
-          |  implicit def inst"""+arity+"""[Fn <: Poly, """+typeArgs+""", Res](cse : Case[Fn, """+hlistType+"""] { type Result = Res }) : """+fnType+""" = """+fnArgs+""" => cse.value"""+caseArgs+"""
-          |""").stripMargin
-    }
-
-    val insts = ((1 to 22) map genInst).mkString
-    
-    genHeader+
-    ("""|
+  object GenCaseInst extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      block"""
+        |
         |trait CaseInst {
         |  import poly._
-        |
-        |"""+insts+"""
+        -  implicit def inst${arity}[Fn <: Poly, ${`A..N`}, Res](cse : Case[Fn, ${`A::N`}] { type Result = Res }) : (${`A..N`}) => Res = (${`a:A..n:N`}) => cse.value(${`a::n`})
         |}
-        |""").stripMargin
+      """
+    }
   }
 
-  def genPolyApply = {
-    def genApply(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString("[", ", ", "]")
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar+" : "+(n+'A').toChar)).mkString("(", ", ", ")")
-      val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
-      
-      ("""|
-          |  def apply"""+typeArgs+fnArgs+"""(implicit cse : Case[this.type, """+hlistType+"""]) : cse.Result = cse"""+caseArgs+"""
-          |""").stripMargin
-    }
-
-    val applies = ((1 to 22) map genApply).mkString
-    
-    genHeader+
-    ("""|
+  object GenPolyApply extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      block"""
+        |
         |trait PolyApply {
         |  import poly._
+        -  def apply[${`A..N`}](${`a:A..n:N`})(implicit cse : Case[this.type, ${`A::N`}]) : cse.Result = cse(${`a::n`})
+        |}
+      """
+    }
+
+
+  }
+
+  object GenPolyInst extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      block"""
         |
-        |"""+applies+"""
-        |}
-        |""").stripMargin
-  }
-
-  def genPolyInst = {
-    def genInst(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString(", ")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => cse.Result"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar+" : "+(n+'A').toChar)).mkString("(", ", ", ")")
-      val caseArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", " :: ", " :: HNil)")
-      
-      ("""|
-          |  implicit def inst"""+arity+"""["""+typeArgs+"""](fn : Poly)(implicit cse : fn.ProductCase["""+hlistType+"""]) : """+fnType+""" = """+fnArgs+""" => cse"""+caseArgs+"""
-          |""").stripMargin
-    }
-
-    val insts = ((1 to 22) map genInst).mkString
-    
-    genHeader+
-    ("""|
         |trait PolyInst {
-        |"""+insts+"""
+        -  implicit def inst${arity}[${`A..N`}](fn : Poly)(implicit cse : fn.ProductCase[${`A::N`}]) : (${`A..N`}) => cse.Result = (${`a:A..n:N`}) => cse(${`a::n`})
         |}
-        |""").stripMargin
+      """
+    }
   }
 
-  def genCases = {
-    def genCase(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString(", ")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Result0"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val pattern = ((0 until arity) map (n => (n+'a').toChar)).mkString("", " :: ", " :: HNil")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
-      val fnBody = """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
-      
-      ("""|
-          |  type Case"""+arity+"""[Fn, """+typeArgs+"""] = Case[Fn, """+hlistType+"""]
-          |  object Case"""+arity+""" {
-          |    type Aux[Fn, """+typeArgs+""", Result0] = Case[Fn, """+hlistType+"""] { type Result = Result0 }
-          |
-          |    def apply[Fn, """+typeArgs+""", Result0](fn : """+fnType+"""): Aux[Fn, """+typeArgs+""", Result0] =
-          |      new Case[Fn, """+hlistType+"""] {
-          |        type Result = Result0
-          |         val value = (l : """+hlistType+""") => """+fnBody+"""
-          |      }
-          |  }
-          |""").stripMargin
-    }
-
-    val cases = ((1 to 22) map genCase).mkString
-    
-    genHeader+
-    ("""|
+  object GenCases extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      block"""
+        |
         |trait Cases {
         |  import poly._
-        |
-        |"""+cases+"""
+        -
+        -  type Case${arity}[Fn, ${`A..N`}] = Case[Fn, ${`A::N`}]
+        -  object Case${arity} {
+        -    type Aux[Fn, ${`A..N`}, Result0] = Case[Fn, ${`A::N`}] { type Result = Result0 }
+        -
+        -    def apply[Fn, ${`A..N`}, Result0](fn : (${`A..N`}) => Result0): Aux[Fn, ${`A..N`}, Result0] =
+        -      new Case[Fn, ${`A::N`}] {
+        -        type Result = Result0
+        -         val value = (l : ${`A::N`}) => l match { case ${`a::n`} => fn(${`a..n`}) }
+        -      }
+        -  }
         |}
-        |""").stripMargin
+      """
+    }
+    
   }
 
-  def genPolyNTraits = {
-    def genTrait(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgsList = typeVars.mkString(", ")
-      val typeArgs = typeVars.mkString("[", ", ", "]")
-      val fnType = typeVars.mkString("(", ", ", ")")+" => Res"
-      val hlistType = (typeVars :+ "HNil").mkString(" :: ")
-      val pattern = ((0 until arity) map (n => (n+'a').toChar)).mkString("", " :: ", " :: HNil")
-      val fnArgs = ((0 until arity) map (n => (n+'a').toChar)).mkString("(", ", ", ")")
-      val fnBody = if (arity == 0) """fn()""" else """l match { case """+pattern+""" => fn"""+fnArgs+""" }""" 
-      
-      ("""|
-          |trait Poly"""+arity+""" extends Poly { outer =>
-          |  type Case"""+typeArgs+""" = poly.Case[this.type, """+hlistType+"""]
-          |  object Case {
-          |    type Aux["""+typeArgsList+""", Result0] = poly.Case[outer.type, """+hlistType+"""] { type Result = Result0 }
-          |  }
-          |
-          |  class CaseBuilder"""+typeArgs+""" {
-          |    def apply[Res](fn: """+fnType+""") = new Case["""+typeArgsList+"""] {
-          |      type Result = Res
-          |      val value = (l : """+hlistType+""") => """+fnBody+"""
-          |    }
-          |  }
-          |  
-          |  def at"""+typeArgs+""" = new CaseBuilder"""+typeArgs+"""
-          |}
-          |""").stripMargin
-    }
+  object GenPolyNTraits extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
 
-    val traits = ((1 to 22) map genTrait).mkString
-    
-    genHeader+
-    ("""|
-        |"""+traits+"""
-        |""").stripMargin
+      block"""
+        |
+        -
+        -trait Poly${arity} extends Poly { outer =>
+        -  type Case[${`A..N`}] = poly.Case[this.type, ${`A::N`}]
+        -  object Case {
+        -    type Aux[${`A..N`}, Result0] = poly.Case[outer.type, ${`A::N`}] { type Result = Result0 }
+        -  }
+        -
+        -  class CaseBuilder[${`A..N`}] {
+        -    def apply[Res](fn: (${`A..N`}) => Res) = new Case[${`A..N`}] {
+        -      type Result = Res
+        -      val value = (l : ${`A::N`}) => ${fnBody}
+        -    }
+        -  }
+        -  
+        -  def at[${`A..N`}] = new CaseBuilder[${`A..N`}]
+        -}
+        |
+      """
+    }    
   }
   
-  def genNats = {
-    def genNat(n : Int) = {
-      ("""|
-          |  type _"""+n+""" = Succ[_"""+(n-1)+"""]
-          |  val _"""+n+""": _"""+n+""" = new _"""+n+"""
-          |""").stripMargin
-    }
-    
-    val nats = ((1 to 22) map genNat).mkString
-    
-    genHeader+
-    ("""|
-        |trait Nats {
-        |"""+nats+"""}
-        |""").stripMargin
+  object GenNats extends Template {
+    def content(n: Int, tv: TemplateVals) = block"""
+      |
+      |trait Nats {
+      -
+      -  type _${n} = Succ[_${n-1}]
+      -  val _${n}: _${n} = new _${n}
+      |}
+    """
   }
   
-  def genTupleTypeableInstances = {
-    def genInstance(arity : Int) = {
-      val typeVars = (0 until arity) map (n => (n+'A').toChar)
-      val typeArgs = typeVars.mkString("[", ", ", "]")
-      val tupleType = if (arity == 1) "Tuple1[A]" else typeVars.mkString("(", ", ", ")")
-      val wildcardTupleType = if (arity == 1) "Tuple1[_]" else "("+("_, "*(arity-1))+"_)"
-      val implicitArgs = (typeVars map(a => "cast"+a+" : Typeable["+a+"]")).mkString("(implicit ", ", ", ")")
-      val enumerators = ((0 until arity) map (n => "_ <- p._"+(n+1)+".cast["+(n+'A').toChar+"]")).mkString("(", "; ", ")")
-      
-      ("""|
-          |  implicit def tuple"""+arity+"""Typeable"""+typeArgs+implicitArgs+""" = new Typeable["""+tupleType+"""] {
-          |    def cast(t : Any) : Option["""+tupleType+"""] = {
-          |      if(t == null) Some(t.asInstanceOf["""+tupleType+"""])
-          |      else if(t.isInstanceOf["""+wildcardTupleType+"""]) {
-          |        val p = t.asInstanceOf["""+wildcardTupleType+"""]
-          |        for"""+enumerators+""" yield t.asInstanceOf["""+tupleType+"""]
-          |      } else None
-          |    }
-          |  }
-          |""").stripMargin
-    }
-    
-    val instances = ((1 to 22) map genInstance).mkString
-    
-    genHeader+
-    ("""|
+  object GenTupleTypeableInstances extends Template {
+
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val implicitArgs = (synTypes map(a => s"cast${a} : Typeable[${a}]")) mkString ", "
+      val enumerators = synTypes.zipWithIndex map { case (a,idx) => s"_ <- p._${idx+1}.cast[${a}]" } mkString "; "
+
+      block"""
+        |
         |trait TupleTypeableInstances {
         |  import syntax.typeable._
-        |"""+instances+"""}
-        |""").stripMargin
+        -
+        -  implicit def tuple${arity}Typeable[${`A..N`}](implicit ${implicitArgs}) = new Typeable[${`(A..N)`}] {
+        -    def cast(t : Any) : Option[${`(A..N)`}] = {
+        -      if(t == null) Some(t.asInstanceOf[${`(A..N)`}])
+        -      else if(t.isInstanceOf[${`(_.._)`}]) {
+        -        val p = t.asInstanceOf[${`(_.._)`}]
+        -        for(${enumerators}) yield t.asInstanceOf[${`(A..N)`}]
+        -      } else None
+        -    }
+        -  }
+        |}
+      """
+    }        
   }
   
-  def genSizedBuilder = {
-    def genInstance(arity : Int) = {
-      val argVars = (0 until arity) map (n => (n+'a').toChar)
-      val args = argVars.mkString("(", " : T, ", " : T)")
-      val appendArgs = argVars.mkString("(", ", ", ")")
+  object GenSizedBuilder extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val `a:T..n:T` = synVals map (_ + " : T") mkString ", "
 
-      ("""|
-          |  def apply[T]"""+args+"""(implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
-          |    wrap[CC[T], _"""+arity+"""]((cbf() += """+appendArgs+""").result)
-          |""").stripMargin
-    }
-
-    val instances = ((1 to 22) map genInstance).mkString
-    
-    genHeader+
-    ("""|
+      block"""
+        |
         |class SizedBuilder[CC[_]] {
         |  import scala.collection.generic.CanBuildFrom
         |  import nat._
         |  import Sized.wrap
-        |"""+instances+"""}
-        |""").stripMargin
+        -
+        -  def apply[T](${`a:T..n:T`})(implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
+        -    wrap[CC[T], _${arity}]((cbf() += (${`a..n`})).result)
+        |}
+      """
+    }
   }
   
-  def genHMapBuilder = {
-    def genInstance(arity : Int) = {
-      val typeArgs = ((0 until arity) map (n => "K"+n+", V"+n)).mkString("[", ", ", "]")
-      val args = ((0 until arity) map (n => "e"+n+" : (K"+n+", V"+n+")")).mkString("(", ", ", ")")
-      val witnesses = ((0 until arity) map (n => "ev"+n+" : R[K"+n+", V"+n+"]")).mkString("(implicit ", ", ", ")")
-      val mapArgs = ((0 until arity) map (n => "e"+n)).mkString("(", ", ", ")")
-      
-      ("""|
-          |  def apply"""+typeArgs+"""
-          |    """+args+"""
-          |    """+witnesses+"""
-          |    = new HMap[R](Map"""+mapArgs+""")
-          |""").stripMargin
-    }
-    
-    val instances = ((1 to 10) map genInstance).mkString
+  object GenHMapBuilder extends Template {
+    def content(arity: Int, tv: TemplateVals) = {
+      import tv._
+      val typeArgs  = (0 until arity) map (n => s"K${n}, V${n}") mkString ", "
+      val args      = (0 until arity) map (n => s"e${n} : (K${n}, V${n})") mkString ", "
+      val witnesses = (0 until arity) map (n => s"ev${n} : R[K${n}, V${n}]") mkString ", "
+      val mapArgs   = (0 until arity) map (n => "e"+n) mkString ", "
 
-    genHeader+
-    ("""|
+      block"""
+        |
         |class HMapBuilder[R[_, _]] {
-        |"""+instances+"""}
-        |""").stripMargin
-    
+        -
+        -  def apply[${typeArgs}]
+        -  (${args})
+        -  (implicit ${witnesses})
+        -    = new HMap[R](Map(${mapArgs}))
+        |}
+      """
+    }
   }
+
 }
