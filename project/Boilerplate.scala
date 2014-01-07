@@ -16,6 +16,13 @@
 
 import sbt._
 
+/**
+ * Generate a range of boilerplate classes, those offering alternatives with 0-22 params
+ * and would be tedious to craft by hand
+ *
+ * @author Miles Sabin
+ * @author Kevin Wright
+ */
 object Boilerplate {
 
   import scala.StringContext._
@@ -123,6 +130,22 @@ object Boilerplate {
     }
   }
 
+
+  /*
+    Blocks in the templates below use a custom interpolator, combined with post-processing to produce the body
+
+      - The contents of the `header` val is output first
+
+      - Then the first block of lines beginning with '|'
+
+      - Then the block of lines beginning with '-' is replicated once for each arity,
+        with the `templateVals` already pre-populated with relevant relevant vals for that arity
+
+      - Then the last block of lines prefixed with '|'
+
+    The block otherwise behaves as a standard interpolated string with regards to variable substitution.
+  */
+  
   object GenTuplerInstances extends Template {
     def content(tv: TemplateVals) = {
       import tv._
