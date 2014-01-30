@@ -19,7 +19,7 @@ package shapeless
 import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox
 
 trait Witness {
   type T
@@ -52,7 +52,7 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
-trait SingletonTypeMacros[C <: WhiteboxContext] {
+trait SingletonTypeMacros[C <: whitebox.Context] {
   import syntax.SingletonOps
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
@@ -276,19 +276,19 @@ object SingletonTypeMacros {
   import syntax.SingletonOps
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
-  def inst(c0: WhiteboxContext) = new SingletonTypeMacros[c0.type] { val c: c0.type = c0 }
+  def inst(c0: whitebox.Context) = new SingletonTypeMacros[c0.type] { val c: c0.type = c0 }
 
-  def materializeImpl[T: c.WeakTypeTag](c: WhiteboxContext): c.Expr[Witness.Aux[T]] = inst(c).materializeImpl[T]
+  def materializeImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Witness.Aux[T]] = inst(c).materializeImpl[T]
 
-  def convertImpl[T: c.WeakTypeTag](c: WhiteboxContext)(t: c.Expr[T]): c.Expr[Witness.Lt[T]] = inst(c).convertImpl[T](t)
+  def convertImpl[T: c.WeakTypeTag](c: whitebox.Context)(t: c.Expr[T]): c.Expr[Witness.Lt[T]] = inst(c).convertImpl[T](t)
 
-  def convertInstanceImpl1[TC[_], T](c: WhiteboxContext)(t: c.Expr[T])
+  def convertInstanceImpl1[TC[_], T](c: whitebox.Context)(t: c.Expr[T])
     (implicit tcTag: c.WeakTypeTag[TC[_]], tTag: c.WeakTypeTag[T]):
       c.Expr[WitnessWith.Lt[TC, T]] = inst(c).convertInstanceImpl[TC, T](t)
 
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: WhiteboxContext)(t: c.Expr[T])
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: whitebox.Context)(t: c.Expr[T])
     (implicit tcTag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S], tTag: c.WeakTypeTag[T]):
       c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] = inst(c).convertInstanceImpl2[H, TC2, S, T](t)
 
-  def mkSingletonOps[T: c.WeakTypeTag](c: WhiteboxContext)(t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = inst(c).mkSingletonOps[T](t)
+  def mkSingletonOps[T: c.WeakTypeTag](c: whitebox.Context)(t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = inst(c).mkSingletonOps[T](t)
 }

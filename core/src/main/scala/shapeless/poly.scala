@@ -19,7 +19,7 @@ package shapeless
 import language.existentials
 import language.experimental.macros
  
-import reflect.macros.WhiteboxContext
+import reflect.macros.whitebox
 
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
@@ -49,7 +49,7 @@ object PolyDefns extends Cases {
 
     implicit def materializeFromValue[P, L <: HList]: Case[P, L] = macro materializeFromValueImpl[P, L]
 
-    def materializeFromValueImpl[P: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: WhiteboxContext): c.Expr[Case[P, L]] = {
+    def materializeFromValueImpl[P: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: whitebox.Context): c.Expr[Case[P, L]] = {
       import c.universe._
 
       val pTpe = weakTypeOf[P]
@@ -227,7 +227,7 @@ object Poly extends PolyInst {
   
   implicit def apply(f : Any): Poly = macro liftFnImpl
   
-  def liftFnImpl(c: WhiteboxContext)(f: c.Expr[Any]): c.Expr[Poly] = {
+  def liftFnImpl(c: whitebox.Context)(f: c.Expr[Any]): c.Expr[Poly] = {
     import c.universe._
     import Flag._
     

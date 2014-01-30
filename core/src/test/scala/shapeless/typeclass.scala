@@ -97,7 +97,7 @@ class TypeClassTests {
 
     {
       import TypeClass.ignoreParent
-      tc.derive[CaseA[Int, String]]
+      val instance = tc.derive[CaseA[Int, String]]
     }
   }
 

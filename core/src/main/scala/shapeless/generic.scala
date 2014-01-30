@@ -20,7 +20,7 @@ import scala.language.experimental.macros
 
 import scala.collection.breakOut
 import scala.collection.immutable.ListMap
-import scala.reflect.macros.{ BlackboxContext, WhiteboxContext }
+import scala.reflect.macros.{ blackbox, whitebox }
 
 trait Generic[T] {
   type Repr
@@ -41,7 +41,7 @@ object Generic extends LowPriorityGeneric {
 }
 
 object GenericMacros {
-  def materialize[T: context.WeakTypeTag](context : WhiteboxContext): context.Expr[Generic[T]] = {
+  def materialize[T: context.WeakTypeTag](context : whitebox.Context): context.Expr[Generic[T]] = {
     val tpe0 = context.weakTypeOf[T]
     if (tpe0 <:< context.typeOf[HList] || tpe0 <:< context.typeOf[Coproduct])
       context.universe.reify {
@@ -71,7 +71,7 @@ object GenericMacros {
     }
   }
 
-  def materializeForProduct[T <: Product: context.WeakTypeTag](context : WhiteboxContext): context.Expr[Generic[T] { type Repr <: HList }] = {
+  def materializeForProduct[T <: Product: context.WeakTypeTag](context : whitebox.Context): context.Expr[Generic[T] { type Repr <: HList }] = {
     val tpe0 = context.weakTypeOf[T]
     if (tpe0 <:< context.typeOf[Coproduct])
       context.abort(context.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
@@ -94,7 +94,7 @@ object GenericMacros {
     }
   }
 
-  trait Helper[+C <: BlackboxContext] {
+  trait Helper[+C <: blackbox.Context] {
 
     val c: C
     val expandInner: Boolean

@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox
 
 /**
  * A type class abstracting over the `product` operation of type classes over
@@ -137,7 +137,7 @@ object TypeClass {
 
   def apply[C[_], T]: C[T] = macro derive_impl[C, T]
 
-  def derive_impl[C[_], T](context: WhiteboxContext)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
+  def derive_impl[C[_], T](context: whitebox.Context)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
     val helper = new GenericMacros.Helper[context.type] {
       val c: context.type = context
       val expandInner = true

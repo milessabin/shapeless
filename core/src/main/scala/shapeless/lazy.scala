@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox
 
 trait Lazy[T] {
   val value: T
@@ -31,7 +31,7 @@ object Lazy {
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
-  def mkLazyImpl[T: c.WeakTypeTag](c: BlackboxContext): c.Expr[Lazy[T]] = {
+  def mkLazyImpl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[Lazy[T]] = {
     import c.universe._
     import Flag._
 

@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox
 
 import poly._
 
@@ -90,7 +90,7 @@ object Data extends LowPriorityData {
 
 object DataMacros {
   def genericDataImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag, U: c.WeakTypeTag]
-    (c: BlackboxContext)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[Data[F, T, U]] = {
+    (c: blackbox.Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[Data[F, T, U]] = {
     import c.universe._
     import Flag._
 
@@ -190,7 +190,7 @@ object DataMacros {
   }
   
   def hlistDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: BlackboxContext)(qh: c.Expr[Case1.Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
+    (c: blackbox.Context)(qh: c.Expr[Case1.Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
     import c.universe._
 
     reify {
@@ -203,7 +203,7 @@ object DataMacros {
   }
 
   def coproductDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: BlackboxContext)(qh : c.Expr[Case1.Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = { 
+    (c: blackbox.Context)(qh : c.Expr[Case1.Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = { 
     import c.universe._
     
     reify {
@@ -283,7 +283,7 @@ object DataT extends LowPriorityDataT {
 
 object DataTMacros {
   def genericDataTImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: BlackboxContext)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[DataT[F, T, T]] = {
+    (c: blackbox.Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[DataT[F, T, T]] = {
     import c.universe._
     import Flag._
 
@@ -387,7 +387,7 @@ object DataTMacros {
   }
   
   def hlistDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, U: c.WeakTypeTag, V <: HList: c.WeakTypeTag]
-    (c: BlackboxContext)(fh: c.Expr[Case1.Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
+    (c: blackbox.Context)(fh: c.Expr[Case1.Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
     import c.universe._
 
     reify {
@@ -400,7 +400,7 @@ object DataTMacros {
   }
 
   def coproductDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, U: c.WeakTypeTag, V <: Coproduct: c.WeakTypeTag]
-    (c: BlackboxContext)(fh : c.Expr[Case1.Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = { 
+    (c: blackbox.Context)(fh : c.Expr[Case1.Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = { 
     import c.universe._
     
     reify {

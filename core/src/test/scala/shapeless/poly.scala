@@ -289,6 +289,7 @@ class PolyTests {
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
   }
 
+  /*
   @Test
   def testInlinePoly {
     val l = 23 :: "foo" :: true :: HNil
@@ -323,7 +324,9 @@ class PolyTests {
     val l7 = li.map(Poly { def apply(t: Int) = t+1 })
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 
+  /*
   @Test
   def testLiftImported {
     import LiftMethods._
@@ -354,7 +357,9 @@ class PolyTests {
     val l7 = li.map(mCnCn _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 
+  /*
   @Test
   def testLiftPath {
     val l = 23 :: "foo" :: true :: HNil
@@ -383,7 +388,9 @@ class PolyTests {
     val l7 = li.map(LiftMethods.mCnCn _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 
+  /*
   @Test
   def testLiftLocal {
     def mTcTc[T](t : List[T]) = t.headOption
@@ -420,7 +427,9 @@ class PolyTests {
     val l7 = li.map(mCnCn _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 
+  /*
   def mTcTc2[T](t : List[T]) = t.headOption
   def mIdTc2[T](t : T) = Option(t)
   def mTcId2[T](t : Option[T]) = t.get
@@ -457,8 +466,10 @@ class PolyTests {
     val l7 = li.map(mCnCn2 _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 }
 
+/*
 object LiftMethods {
   def mTcTc[T](t : List[T]) = t.headOption
   def mIdTc[T](t : T) = Option(t)
@@ -468,3 +479,4 @@ object LiftMethods {
   def mIdCn[T](t : T) = t.toString
   def mCnCn(t : Int) = t+1
 }
+*/
