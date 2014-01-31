@@ -79,7 +79,7 @@ object ShapelessBuild extends Build {
 
         mappings in (Compile, packageSrc) <++=
           (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
-            (srcs x (Path.relativeTo(base) | Path.flat))
+            (srcs pair (Path.relativeTo(base) | Path.flat))
           },
           
         mappings in (Compile, packageSrc) <++=

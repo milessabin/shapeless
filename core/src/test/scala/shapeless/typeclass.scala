@@ -60,8 +60,16 @@ class TypeClassTests {
   import TypeClassAux._
   import Dummy.Syntax
 
+
+
   case class Foo(i: Int, s: String)
   val fooResult = Project(NamedCase(Product(Base("int"), "i", Product(Base("string"), "s", EmptyProduct)), "Foo"))
+
+  case class Bar()
+  val barResult = Project(NamedCase(EmptyProduct, "Bar"))
+
+  val tupleResult = Project(NamedCase(Product(Base("int"), "_1", Product(Base("string"), "_2", EmptyProduct)), "Tuple2"))
+  val unitResult = Project(NamedCase(EmptyProduct, "Unit"))
 
   sealed trait Cases[A, B]
   case class CaseA[A, B](a: A) extends Cases[A, B]
@@ -83,9 +91,30 @@ class TypeClassTests {
   }
 
   @Test
+  def testManualEmpty {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(barResult, tc.derive[Bar])
+    illTyped("""tc.derive[Cases[Int, String]]""")
+  }
+
+  @Test
   def testManualMulti {
     implicit val tc: TypeClass[Dummy] = DummyInstance
     assertEquals(casesResult, tc.derive[Cases[Int, String]])
+  }
+
+  @Test
+  def testManualTuple {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(tupleResult, tc.derive[(Int, String)])
+    illTyped("""tc.derive[Cases[Int, String]]""")
+  }
+
+  @Test
+  def testManualUnit {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(unitResult, tc.derive[Unit])
+    illTyped("""tc.derive[Cases[Int, String]]""")
   }
 
   @Test
@@ -107,7 +136,16 @@ class TypeClassTests {
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(fooResult, implicitly[Dummy[Foo]])
     illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
-    assertEquals(fooResult, (null: Foo).frobnicate)
+    assertEquals(fooResult, Foo(23, "foo").frobnicate)
+  }
+
+  @Test
+  def testAutoEmpty {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(barResult, implicitly[Dummy[Bar]])
+    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
+    assertEquals(barResult, Bar().frobnicate)
   }
 
   @Test
@@ -115,7 +153,25 @@ class TypeClassTests {
     import Dummy.auto._
     implicit val tc: TypeClass[Dummy] = DummyInstance
     assertEquals(casesResult, tc.derive[Cases[Int, String]])
-    assertEquals(casesResult, (null: Cases[Int, String]).frobnicate)
+    assertEquals(casesResult, (CaseA(23): Cases[Int, String]).frobnicate)
+  }
+
+  @Test
+  def testAutoTuple {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(tupleResult, implicitly[Dummy[(Int, String)]])
+    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
+    assertEquals(tupleResult, (23, "foo").frobnicate)
+  }
+
+  @Test
+  def testAutoUnit {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(unitResult, implicitly[Dummy[Unit]])
+    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
+    assertEquals(unitResult, ().frobnicate)
   }
 }
 

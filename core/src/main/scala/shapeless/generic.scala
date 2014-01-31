@@ -41,53 +41,29 @@ object Generic extends LowPriorityGeneric {
 }
 
 object GenericMacros {
-  def materialize[T: context.WeakTypeTag](context : whitebox.Context): context.Expr[Generic[T]] = {
-    val tpe0 = context.weakTypeOf[T]
-    if (tpe0 <:< context.typeOf[HList] || tpe0 <:< context.typeOf[Coproduct])
-      context.universe.reify {
-        new Generic[T] {
-          type Repr = T
-          def to(t : T) : T = t
-          def from(t : T) : T = t
-        }
-      }
-    else if (tpe0 =:= context.typeOf[Unit])
-      context.universe.reify {
-        new Generic[T] {
-          type Repr = HNil
-          def to(t: Unit): HNil = HNil
-          def from(r : HNil): Unit = ()
-        }
-      }
-    else {
-      val helper = new Helper[context.type] {
-        val c: context.type = context
-        val expandInner = false
-        val optimizeSingleItem = false
-        val checkParent = false
-        val tpe = tpe0
-      }
-      context.Expr[Generic[T]](helper.ADT.materializeGeneric)
-    }
-  }
+  def materialize[T]
+    (ctx: whitebox.Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T]] =
+      materializeAux[Generic[T]](ctx)(false, tT.tpe)
 
-  def materializeForProduct[T <: Product: context.WeakTypeTag](context : whitebox.Context): context.Expr[Generic[T] { type Repr <: HList }] = {
-    val tpe0 = context.weakTypeOf[T]
-    if (tpe0 <:< context.typeOf[Coproduct])
-      context.abort(context.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+  def materializeForProduct[T <: Product]
+    (ctx: whitebox.Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T] { type Repr <: HList }] =
+      materializeAux[Generic[T] { type Repr <: HList }](ctx)(true, tT.tpe)
 
-    val helper = new Helper[context.type] {
-      val c: context.type = context
+  def materializeAux[G]
+    (ctx : whitebox.Context)(product: Boolean, tpe0: ctx.Type): ctx.Expr[G] = {
+    if (product && tpe0 <:< ctx.typeOf[Coproduct])
+      ctx.abort(ctx.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+
+    val helper = new Helper[ctx.type] {
+      val c: ctx.type = ctx
       val expandInner = false
       val optimizeSingleItem = false
       val checkParent = false
       val tpe = tpe0
     }
 
-    context.Expr[Generic[T] { type Repr <: HList }] {
-      if (tpe0 <:< context.typeOf[HList])
-        // Explicit tree construction used here because we can't prove that tpe0
-        // refines HList to reify's satisfaction
+    ctx.Expr[G] {
+      if (tpe0 <:< ctx.typeOf[HList] || tpe0 <:< ctx.typeOf[Coproduct])
         helper.ADT.materializeIdentityGeneric
       else
         helper.ADT.materializeGeneric
@@ -142,37 +118,40 @@ object GenericMacros {
       val classSym = sym.asClass
       classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
 
-      if (checkParent)
-        classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
-          case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
-            val msg =
-              s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with "+
-              s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
-              s"this warning, import `TypeClass.ignoreParent`"
+      if(tpe =:= typeOf[Unit])
+        ADTSingle(tpe, classSym, UnitADTCase())
+      else {
+        if (checkParent)
+          classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
+            case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
+              val msg =
+                s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with "+
+                s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
+                s"this warning, import `TypeClass.ignoreParent`"
 
-            if (c.compilerSettings contains "-Xfatal-warnings")
-              c.error(c.enclosingPosition, msg)
+              if (c.compilerSettings contains "-Xfatal-warnings")
+                c.error(c.enclosingPosition, msg)
+              else
+                c.warning(c.enclosingPosition, msg)
+            case _ =>
+          }
+
+        if (classSym.isCaseClass) // one-case ADT
+          ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
+        else if (classSym.isSealed) { // multiple cases
+          val cases = collectCases(classSym).sortBy(_.fullName)
+          ADTMulti(tpe, classSym, cases map { sym =>
+            val normalized = normalize(sym)
+            if (expandInner)
+              ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
             else
-              c.warning(c.enclosingPosition, msg)
-          case _ =>
+              SimpleADTCase(normalized)
+          })
         }
-
-      if (classSym.isCaseClass) // one-case ADT
-        ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
-      else if (classSym.isSealed) { // multiple cases
-        val cases = collectCases(classSym).sortBy(_.fullName)
-        ADTMulti(tpe, classSym, cases map { sym =>
-          val normalized = normalize(sym)
-          if (expandInner)
-            ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
-          else
-            SimpleADTCase(normalized)
-        })
+        else
+          exit(s"$classSym is not a case class, a sealed trait or Unit")
       }
-      else
-        exit(s"$classSym is not a case class or a sealed trait")
     }
-
 
     def undefined =
       reify { ??? }.tree
@@ -480,7 +459,6 @@ object GenericMacros {
     }
 
     case class SimpleADTCase(tpe: Type) extends ADTCase {
-
       def fieldTypes: List[Type] = List(tpe)
       def reprTpe = tpe
 
@@ -507,8 +485,33 @@ object GenericMacros {
 
     }
 
-    case class ExpandingADTCase(tpe: Type, companion: TermSymbol) extends ADTCase {
+    case class UnitADTCase() extends ADTCase {
+      def hNilValueTree  = reify { HNil }.tree
+      def unitValueTree = reify { () }.tree
 
+      val tpe = typeOf[Unit]
+      val fieldTypes = Nil
+      val reprTpe = typeOf[HNil]
+
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
+        Select(tc, TermName("emptyProduct"))
+
+      def mkToReprCase(wrap: Tree => Tree): CaseDef =
+        CaseDef(
+          unitValueTree,
+          EmptyTree,
+          wrap(hNilValueTree)
+        )
+
+      def mkFromReprCase(wrap: Tree => Tree): CaseDef =
+        CaseDef(
+          wrap(hNilValueTree),
+          EmptyTree,
+          unitValueTree
+        )
+    }
+
+    case class ExpandingADTCase(tpe: Type, companion: TermSymbol) extends ADTCase {
       def hNilValueTree  = reify { HNil }.tree
       def hConsValueTree = reify {  ::  }.tree
 
