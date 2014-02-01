@@ -47,17 +47,17 @@ object PolyDefns extends Cases {
       val value = v
     }
 
-    implicit def materializeFromValue[P, L <: HList]: Case[P, L] = macro materializeFromValueImpl[P, L]
+    implicit def materializeFromValue[P, T]: Case[P, T :: HNil] = macro materializeFromValueImpl[P, T]
 
-    def materializeFromValueImpl[P: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: Context): c.Expr[Case[P, L]] = {
+    def materializeFromValueImpl[P: c.WeakTypeTag, T: c.WeakTypeTag](c: Context): c.Expr[Case[P, T :: HNil]] = {
       import c.universe._
 
       val pTpe = weakTypeOf[P]
-      val lTpe = weakTypeOf[L]
+      val tTpe = weakTypeOf[T]
 
-      val recTpe = weakTypeOf[Case[P, L]]
+      val recTpe = weakTypeOf[Case[P, T :: HNil]]
       if(c.openImplicits.tail.exists(_._1 =:= recTpe))
-        c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case[$pTpe, $lTpe]")
+        c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case[$pTpe, $tTpe :: HNil]")
 
       val caseAuxSym = c.mirror.staticClass("shapeless.PolyDefns.Case")
 
@@ -66,7 +66,7 @@ object PolyDefns extends Cases {
         case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
       }
 
-      c.Expr[Case[P, L]] {
+      c.Expr[Case[P, T :: HNil]] {
         Select(Ident(value), newTermName("caseUniv"))
       }
     }
@@ -140,7 +140,7 @@ object PolyDefns extends Cases {
    */
   trait ~>[F[_], G[_]] extends Poly1 {
     def apply[T](f : F[T]) : G[T]
-    implicit def caseUniv[T] = at[F[T]](apply(_))
+    implicit def caseUniv[T]: Case.Aux[F[T], G[T]] = at[F[T]](apply(_))
   }
 
   object ~> {
