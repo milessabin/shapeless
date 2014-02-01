@@ -39,7 +39,7 @@ object SizedExamples extends App {
       Sized("The Implementation of Functional Programming Languages", "Simon Peyton-Jones")
     )
   
-    // hdrs and rows statically known to have the name number of columns
+    // hdrs and rows statically known to have the same number of columns
     val formatted = csv(hdrs, rows)
     formatted foreach println                               // Compiles
     
