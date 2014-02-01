@@ -61,19 +61,18 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   import c.universe._
   import Flag._
 
-  def mkWitnessT[W](sTpe: Type, s: Any) = mkWitness[W](TypeTree(sTpe), Literal(Constant(s)))
+  def mkWitnessT(sTpe: Type, s: Any): Tree =
+    mkWitness(TypeTree(sTpe), Literal(Constant(s)))
 
-  def mkWitness[W](sTpt: TypTree, s: Tree) = {
+  def mkWitness(sTpt: TypTree, s: Tree): Tree = {
     val witnessTpt = Ident(typeOf[Witness].typeSymbol)
     val T = TypeDef(Modifiers(), TypeName("T"), List(), sTpt)
     val value = ValDef(Modifiers(), TermName("value"), sTpt, s)
-    c.Expr[W] {
-      mkImplClass(witnessTpt, List(T, value), List())
-    }
+    mkImplClass(witnessTpt, List(T, value), List())
   }
 
-  def materializeImpl[T: c.WeakTypeTag]: c.Expr[Witness.Aux[T]] = {
-    weakTypeOf[T] match {
+  def materializeImpl(tpe: Type): Tree = {
+    tpe match {
       case t @ ConstantType(Constant(s)) => mkWitnessT(t, s)
 
       case t @ SingleType(p, v) if !v.isParameter =>
@@ -84,8 +83,8 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     }
   }
 
-  def convertImpl[T: c.WeakTypeTag](t: c.Expr[T]): c.Expr[Witness.Lt[T]] = {
-    (weakTypeOf[T], t.tree) match {
+  def convertImpl(t: c.Expr[Any]): Tree = {
+    (t.actualType, t.tree) match {
       case (tpe @ ConstantType(const: Constant), _) =>
         mkWitness(TypeTree(tpe), Literal(const))
 
@@ -100,7 +99,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     }
   }
 
-  def mkWitnessWith[W](singletonInstanceTpt: TypTree, sTpt: TypTree, s: Tree, i: Tree) = {
+  def mkWitnessWith(singletonInstanceTpt: TypTree, sTpt: TypTree, s: Tree, i: Tree): Tree = {
     val iTpe =
       (i.tpe match {
         case NullaryMethodType(resTpe) => resTpe
@@ -118,13 +117,11 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     val value = ValDef(Modifiers(), TermName("value"), sTpt, s)
     val instance = ValDef(Modifiers(), TermName("instance"), niTpt, i)
     val Out = TypeDef(Modifiers(), TypeName("Out"), List(), Ident(iOut))
-    c.Expr[W] {
-      mkImplClass(singletonInstanceTpt, List(T, value, instance, Out), List())
-    }
+    mkImplClass(singletonInstanceTpt, List(T, value, instance, Out), List())
   }
 
-  def convertInstanceImpl[TC[_], T](t: c.Expr[T])
-    (implicit tcTag: c.WeakTypeTag[TC[_]], tTag: c.WeakTypeTag[T]): c.Expr[WitnessWith.Lt[TC, T]] = {
+  def convertInstanceImpl[TC[_]](t: c.Expr[Any])
+    (implicit tcTag: c.WeakTypeTag[TC[_]]): Tree = {
       val tc = tcTag.tpe.typeConstructor
       val siTpt =
         AppliedTypeTree(
@@ -132,7 +129,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
           List(TypeTree(tc))
         )
 
-      (weakTypeOf[T], t.tree) match {
+      (t.actualType, t.tree) match {
         case (tpe @ ConstantType(const: Constant), _) =>
           val tci = appliedType(tc, List(tpe))
           val i = c.inferImplicitValue(tci, silent = false)
@@ -153,9 +150,8 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
       }
   }
 
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](t: c.Expr[T])
-    (implicit tc2Tag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S], tTag: c.WeakTypeTag[T]):
-      c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] = {
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H](t: c.Expr[Any])
+    (implicit tc2Tag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S]): Tree = {
       val tc2 = tc2Tag.tpe.typeConstructor
       val s = sTag.tpe
 
@@ -167,7 +163,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
       }}
       val tc = pre2.normalize
 
-      (weakTypeOf[T], t.tree) match {
+      (t.actualType, t.tree) match {
         case (tpe @ ConstantType(const: Constant), _) =>
           val tci = appliedType(tc2, List(s, tpe))
           val i = c.inferImplicitValue(tci, silent = false)
@@ -188,32 +184,32 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
       }
   }
 
-  def mkOps[O](sTpt: TypTree, w: Tree) = {
+  def mkOps(sTpt: TypTree, w: Tree): c.Expr[SingletonOps] = {
     val opsTpt = Ident(typeOf[SingletonOps].typeSymbol)
     val T = TypeDef(Modifiers(), TypeName("T"), List(), sTpt)
     val value = ValDef(Modifiers(), TermName("witness"), TypeTree(), w)
-    c.Expr[O] {
+    c.Expr[SingletonOps] {
       mkImplClass(opsTpt, List(T, value), List())
     }
   }
 
-  def mkSingletonOps[T](t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = {
-    (weakTypeOf[T], t.tree) match {
+  def mkSingletonOps(t: c.Expr[Any]): c.Expr[SingletonOps] = {
+    (t.actualType, t.tree) match {
       case (tpe @ ConstantType(const: Constant), _) =>
         val sTpt = TypeTree(tpe)
-        mkOps(sTpt, mkWitness(sTpt, Literal(const)).tree)
+        mkOps(sTpt, mkWitness(sTpt, Literal(const)))
 
       case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
         val sTpt = TypeTree(tpe)
-        mkOps(sTpt, mkWitness(sTpt, tree).tree)
+        mkOps(sTpt, mkWitness(sTpt, tree))
 
       case (tpe: TypeRef, Literal(const: Constant)) =>
         val sTpt = TypeTree(ConstantType(const))
-        mkOps(sTpt, mkWitness(sTpt, Literal(const)).tree)
+        mkOps(sTpt, mkWitness(sTpt, Literal(const)))
 
       case (tpe @ TypeRef(pre, sym, args), tree) =>
         val sTpt = SingletonTypeTree(tree)
-        mkOps(sTpt, mkWitness(sTpt, tree).tree)
+        mkOps(sTpt, mkWitness(sTpt, tree))
 
       case (tpe, tree) =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
@@ -278,17 +274,19 @@ object SingletonTypeMacros {
 
   def inst(c0: whitebox.Context) = new SingletonTypeMacros[c0.type] { val c: c0.type = c0 }
 
-  def materializeImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Witness.Aux[T]] = inst(c).materializeImpl[T]
+  def materializeImpl[T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Witness.Aux[T]] =
+    c.Expr[Witness.Aux[T]](inst(c).materializeImpl(c.weakTypeOf[T]))
 
-  def convertImpl[T: c.WeakTypeTag](c: whitebox.Context)(t: c.Expr[T]): c.Expr[Witness.Lt[T]] = inst(c).convertImpl[T](t)
+  def convertImpl[T](c: whitebox.Context)(t: c.Expr[Any]): c.Expr[Witness.Lt[T]] = c.Expr(inst(c).convertImpl(t))
 
-  def convertInstanceImpl1[TC[_], T](c: whitebox.Context)(t: c.Expr[T])
-    (implicit tcTag: c.WeakTypeTag[TC[_]], tTag: c.WeakTypeTag[T]):
-      c.Expr[WitnessWith.Lt[TC, T]] = inst(c).convertInstanceImpl[TC, T](t)
+  def convertInstanceImpl1[TC[_], T](c: whitebox.Context)(t: c.Expr[Any])
+    (implicit tcTag: c.WeakTypeTag[TC[_]]):
+      c.Expr[WitnessWith.Lt[TC, T]] = c.Expr[WitnessWith.Lt[TC, T]](inst(c).convertInstanceImpl[TC](t))
 
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: whitebox.Context)(t: c.Expr[T])
-    (implicit tcTag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S], tTag: c.WeakTypeTag[T]):
-      c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] = inst(c).convertInstanceImpl2[H, TC2, S, T](t)
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: whitebox.Context)(t: c.Expr[Any])
+    (implicit tcTag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S]):
+      c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] =
+        c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]](inst(c).convertInstanceImpl2[H, TC2, S](t))
 
-  def mkSingletonOps[T: c.WeakTypeTag](c: whitebox.Context)(t: c.Expr[T]): c.Expr[SingletonOpsLt[T]] = inst(c).mkSingletonOps[T](t)
+  def mkSingletonOps(c: whitebox.Context)(t: c.Expr[Any]): c.Expr[SingletonOps] = inst(c).mkSingletonOps(t)
 }
