@@ -58,6 +58,14 @@ object HList {
   
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
   
+  /** Default typeclass instance for `HNil`. */
+  implicit def hnilInstance[TC[_]](implicit TC: ProductTypeClass[TC]): TC[HNil] =
+    TC.emptyProduct
+
+  /** Default typeclass instance for `H :: T`. */
+  implicit def hconsInstance[TC[_], H, T <: HList](implicit TC: ProductTypeClass[TC], H: TC[H], T: TC[T]): TC[H :: T] =
+    TC.product(H, T)
+
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 
   /**

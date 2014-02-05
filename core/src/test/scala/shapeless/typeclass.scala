@@ -23,7 +23,8 @@ import test.illTyped
 
 package TypeClassAux {
   sealed trait Dummy[T]
-  case class Product[H, T <: HList](h: Dummy[H], name: String, t: Dummy[T]) extends Dummy[H :: T]
+  case class Product[H, T <: HList](h: Dummy[H], name: Option[String],
+                                   t: Dummy[T]) extends Dummy[H :: T]
   case object EmptyProduct extends Dummy[HNil]
   case class Project[F, G](instance: Dummy[G]) extends Dummy[F]
   case class NamedField[F](instance: Dummy[F], name: String) extends Dummy[F]
@@ -44,13 +45,13 @@ package TypeClassAux {
   object DummyInstance extends TypeClass[Dummy] {
     def emptyProduct = EmptyProduct
     def project[F, G](instance: => Dummy[G], to: F => G, from: G => F) = Project[F, G](instance)
-    override def namedProduct[H, T <: HList](h: Dummy[H], name: String, t: Dummy[T]) = Product(h, name, t)
+    override def namedProduct[H, T <: HList](h: Dummy[H], name: String, t: Dummy[T]) = Product(h, Some(name), t)
     override def namedField[F](instance: Dummy[F], name: String) = NamedField(instance, name)
     override def namedCase[F](instance: Dummy[F], name: String) = NamedCase(instance, name)
     override def namedCoproduct[L, R <: Coproduct](l: => Dummy[L], name: String, r: => Dummy[R]) = Sum(l, name, r)
     override def namedCoproduct1[L](l: => Dummy[L], name: String) = Sum1(l, name)
 
-    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = sys.error("unexpected call to product")
+    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = Product(h, None, t)
     def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = sys.error("unexpected call to coproduct")
     override def coproduct1[L](l: => Dummy[L]) = sys.error("unexpected call to coproduct1")
   }
@@ -63,7 +64,7 @@ class TypeClassTests {
 
 
   case class Foo(i: Int, s: String)
-  val fooResult = Project(NamedCase(Product(Base("int"), "i", Product(Base("string"), "s", EmptyProduct)), "Foo"))
+  val fooResult = Project(NamedCase(Product(Base("int"), Some("i"), Product(Base("string"), Some("s"), EmptyProduct)), "Foo"))
 
   case class Bar()
   val barResult = Project(NamedCase(EmptyProduct, "Bar"))
@@ -77,8 +78,8 @@ class TypeClassTests {
 
   val casesResult = Project(
     Sum(NamedField(Base("int"), "a"), "CaseA", Sum1(
-      Product(Base("string"), "b1", Product(
-        Base("string"), "b2", EmptyProduct
+      Product(Base("string"), Some("b1"), Product(
+        Base("string"), Some("b2"), EmptyProduct
       )), "CaseB"
     ))
   )
@@ -172,6 +173,14 @@ class TypeClassTests {
     assertEquals(unitResult, implicitly[Dummy[Unit]])
     illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
     assertEquals(unitResult, ().frobnicate)
+  }
+
+  @Test
+  def vacuousProduct {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(Product(Base("int"), None, Product(Base("string"), None, EmptyProduct)),
+                 implicitly[Dummy[Int :: String :: HNil]])
+    illTyped("""implicitly[Dummy[Int :: Boolean :: HNil]]""")
   }
 }
 
