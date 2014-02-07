@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package shapeless
 
 class TypeableTests {
   import java.{ lang => jl }
-  
+
   import org.junit.Test
   import org.junit.Assert._
 
   import syntax.typeable._
-  
+
   @Test
   def testPrimitives {
     val b : Any = 23.toByte
@@ -113,7 +113,7 @@ class TypeableTests {
 
     val cls2 = ls.cast[List[Int]]
     assertTrue(cls2.isEmpty)
-    
+
     val lvs : Any = List(Vector("foo", "bar", "baz"), Vector("wibble"))
     val clvs = lvs.cast[List[Vector[String]]]
     assertTrue(clvs.isDefined)
@@ -123,14 +123,14 @@ class TypeableTests {
 
     val clvs3 = lvs.cast[List[List[String]]]
     assertTrue(clvs3.isEmpty)
-    
+
     val ln : Any = Nil
     val cln = ln.cast[List[Int]]
     assert(cln.isDefined)
 
     val cln2 = ln.cast[List[String]]
     assert(cln2.isDefined)
-    
+
     val si : Any = Set(1, 2, 3, 4)
     val csi = si.cast[Set[Int]]
     assertTrue(csi.isDefined)
@@ -138,13 +138,13 @@ class TypeableTests {
     val csi2 = si.cast[Set[String]]
     assertTrue(csi2.isEmpty)
   }
-  
+
   @Test
   def testHList {
     val lisdb : Any = 23 :: "foo" :: 2.0 :: false :: HNil
     val clisdb = lisdb.cast[Int :: String :: Double :: Boolean :: HNil]
     assertTrue(clisdb.isDefined)
-    
+
     val clisdb2 = lisdb.cast[Int :: String :: Float :: Boolean :: HNil]
     assertTrue(clisdb2.isEmpty)
   }
@@ -154,27 +154,27 @@ class TypeableTests {
     val v : Any = 23
     val cv = v.cast[AnyVal]
     assertTrue(cv.isDefined)
-    
+
     val cv2 = v.cast[AnyRef]
     assertTrue(cv2.isEmpty)
 
     val r : Any = "foo"
     val cr = r.cast[AnyRef]
     assertTrue(cr.isDefined)
-    
+
     val cr2 = r.cast[AnyVal]
     assertTrue(cr2.isEmpty)
   }
-  
+
   @Test
   def testNull {
     val n : Any = null
     val cn = n.cast[AnyVal]
     assertTrue(cn.isDefined)
-    
+
     val cn1 = n.cast[AnyRef]
     assertTrue(cn1.isDefined)
-    
+
     val cn2 = n.cast[Int]
     assertTrue(cn2.isDefined)
 
@@ -193,7 +193,7 @@ class TypeableTests {
     val cn7 = n.cast[(Int, String)]
     assertTrue(cn7.isDefined)
   }
-  
+
   @Test
   def testExistentials {
     val l : Any = List(1, 2, 3, 4)
@@ -203,14 +203,14 @@ class TypeableTests {
     val cl2 = l.cast[Vector[_]]
     assertTrue(cl2.isEmpty)
   }
-  
+
   @Test
   def testTraits {
     trait A
     trait B
     trait C
     class D extends A with B
-    
+
     val d : Any = new D
     val cd = d.cast[A]
     assertTrue(cd.isDefined)
@@ -221,7 +221,7 @@ class TypeableTests {
     val cd3 = d.cast[C]
     assertTrue(cd3.isEmpty)
   }
-  
+
   @Test
   def testIntersections {
     trait A
@@ -242,30 +242,30 @@ class TypeableTests {
     val cd4 = d.cast[C with A] // Subsequent types are not
     assertTrue(cd4.isEmpty)
   }
-  
+
   @Test
   def testTuples {
     val p : Any = (23, "foo")
     val cp = p.cast[(Int, String)]
     assertTrue(cp.isDefined)
-    
+
     val cp2 = p.cast[(Double, String)]
     assertTrue(cp2.isEmpty)
 
     val cp3 = p.cast[(Int, List[String])]
     assertTrue(cp3.isEmpty)
-    
+
     val m : Any = Map(1 -> "1", 2 -> "2", 3 -> "3")
     val cm = m.cast[Map[Int, String]]
     assertTrue(cm.isDefined)
 
     val cm2 = m.cast[Map[Double, String]]
     assertTrue(cm2.isEmpty)
-    
+
     val cm3 = m.cast[Map[Int, List[String]]]
     assertTrue(cm3.isEmpty)
   }
-  
+
   @Test
   def testOption {
     val o : Any = Option(23)
@@ -275,7 +275,7 @@ class TypeableTests {
     val co2 = o.cast[Option[String]]
     assertTrue(co2.isEmpty)
   }
-  
+
   @Test
   def testEither {
     val ei : Any = Left[Int, String](23)
