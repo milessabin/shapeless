@@ -176,4 +176,41 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       } else None
     }
   }
+
+  /** Typeable instance for `CNil`. */
+  implicit def cnilTypeable: Typeable[CNil] = new Typeable[CNil] {
+    def cast(t : Any) : Option[CNil] = None
+  }
+
+  /** Typeable instance for `Coproduct`s.
+   * Note that the contents will be tested for conformance to one of the element types.
+   */
+  implicit def coproductTypeable[H, T <: Coproduct](implicit castH : Typeable[H], castT : Typeable[T]): Typeable[H :+: T] =
+    new Typeable[H :+: T] {
+      def cast(t : Any) : Option[H :+: T] = {
+        t.cast[Inl[H, T]] orElse t.cast[Inr[H, T]]
+      }
+    }
+
+  /** Typeable instance for `Inl`. */
+  implicit def inlTypeable[H, T <: Coproduct](implicit castH : Typeable[H]): Typeable[Inl[H, T]] = new Typeable[Inl[H, T]] {
+    def cast(t : Any) : Option[Inl[H, T]] = {
+      if(t == null) Some(t.asInstanceOf[Inl[H, T]])
+      else if(t.isInstanceOf[Inl[_, _ <: Coproduct]]) {
+        val l = t.asInstanceOf[Inl[_, _ <: Coproduct]]
+        for(hd <- l.head.cast[H]) yield t.asInstanceOf[Inl[H, T]]
+      } else None
+    }
+  }
+
+  /** Typeable instance for `Inr`. */
+  implicit def inrTypeable[H, T <: Coproduct](implicit castT : Typeable[T]): Typeable[Inr[H, T]] = new Typeable[Inr[H, T]] {
+    def cast(t : Any) : Option[Inr[H, T]] = {
+      if(t == null) Some(t.asInstanceOf[Inr[H, T]])
+      else if(t.isInstanceOf[Inr[_, _ <: Coproduct]]) {
+        val r = t.asInstanceOf[Inr[_, _ <: Coproduct]]
+        for(tl <- r.tail.cast[T]) yield t.asInstanceOf[Inr[H, T]]
+      } else None
+    }
+  }
 }

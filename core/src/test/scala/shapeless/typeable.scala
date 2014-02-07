@@ -148,7 +148,41 @@ class TypeableTests {
     val clisdb2 = lisdb.cast[Int :: String :: Float :: Boolean :: HNil]
     assertTrue(clisdb2.isEmpty)
   }
-  
+
+  @Test
+  def testCoproductt {
+    type CP = Int :+: String :+: Double :+: Boolean :+: CNil
+    type CP2 = Char :+: Long :+: Unit :+: CNil
+
+    val cpi : Any = Coproduct[CP](23)
+    val ccpi = cpi.cast[CP]
+    assertTrue(ccpi.isDefined)
+
+    val cps : Any = Coproduct[CP]("foo")
+    val ccps = cps.cast[CP]
+    assertTrue(ccps.isDefined)
+
+    val cpd : Any = Coproduct[CP](2.0)
+    val ccpd = cpd.cast[CP]
+    assertTrue(ccpd.isDefined)
+
+    val cpb : Any = Coproduct[CP](true)
+    val ccpb = cpb.cast[CP]
+    assertTrue(ccpb.isDefined)
+
+    val cpc : Any = Coproduct[CP2]('c')
+    val ccpc = cpc.cast[CP]
+    assertTrue(ccpc.isEmpty)
+
+    val cpl : Any = Coproduct[CP2](13L)
+    val ccpl = cpl.cast[CP]
+    assertTrue(ccpl.isEmpty)
+
+    val cpu : Any = Coproduct[CP2](())
+    val ccpu = cpu.cast[CP]
+    assertTrue(ccpu.isEmpty)
+  }
+
   @Test
   def testAnys {
     val v : Any = 23
