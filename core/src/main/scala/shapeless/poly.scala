@@ -67,7 +67,8 @@ object PolyDefns extends Cases {
       }
 
       c.Expr[Case[P, T :: HNil]] {
-        Select(Ident(value), TermName("caseUniv"))
+        val expansion = Select(Ident(value), TermName("caseUniv"))
+        c.typecheck(expansion, pt = c.macroApplication.tpe)
       }
     }
   }
