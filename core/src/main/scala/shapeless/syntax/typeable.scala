@@ -28,5 +28,3 @@ final class TypeableOps(t : Any) {
    */
   def cast[U](implicit castU : Typeable[U]) = castU.cast(t)
 }
-
-
