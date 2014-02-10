@@ -47,27 +47,28 @@ object PolyDefns extends Cases {
       val value = v
     }
 
-    implicit def materializeFromValue[P, T]: Case[P, T :: HNil] = macro materializeFromValueImpl[P, T]
+    implicit def materializeFromValue1[P, F[_], T]: Case[P, F[T] :: HNil] = macro materializeFromValueImpl[P, F[T], T]
+    implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] = macro materializeFromValueImpl[P, T, T]
 
-    def materializeFromValueImpl[P: c.WeakTypeTag, T: c.WeakTypeTag](c: whitebox.Context): c.Expr[Case[P, T :: HNil]] = {
+    def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
+      (c: whitebox.Context): c.Expr[Case[P, FT :: HNil]] = {
       import c.universe._
 
       val pTpe = weakTypeOf[P]
+      val ftTpe = weakTypeOf[FT]
       val tTpe = weakTypeOf[T]
 
-      val recTpe = weakTypeOf[Case[P, T :: HNil]]
+      val recTpe = weakTypeOf[Case[P, FT :: HNil]]
       if(c.openImplicits.tail.exists(_.pt =:= recTpe))
-        c.abort(c.enclosingPosition, s"Diverging implicit expansion for CaseAux[$pTpe, $tTpe :: HNil]")
-
-      val caseAuxSym = c.mirror.staticClass("shapeless.PolyDefns.Case")
+        c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
 
       val value = pTpe match {
         case SingleType(_, f) => f
         case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
       }
 
-      c.Expr[Case[P, T :: HNil]] {
-        Select(Ident(value), TermName("caseUniv"))
+      c.Expr[Case[P, FT :: HNil]] {
+        TypeApply(Select(Ident(value), TermName("caseUniv")), List(TypeTree(tTpe)))
       }
     }
   }
