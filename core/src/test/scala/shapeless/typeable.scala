@@ -24,6 +24,8 @@ class TypeableTests {
 
   import syntax.typeable._
 
+  def typed[T](t : => T) {}
+
   @Test
   def testPrimitives {
     val b : Any = 23.toByte
@@ -337,5 +339,35 @@ class TypeableTests {
 
     val ces4 = es.cast[Either[Int, Unit]]
     assertTrue(ces4.isEmpty)
+  }
+
+  @Test
+  def testTypeCase {
+    import HList.ListCompat._
+
+    def typeCase[T: Typeable](t: Any): Option[T] = {
+      val T = TypeCase[T]
+      val `List[T]` = TypeCase[List[T]]
+      val `(String, T)` = TypeCase[(String, T)]
+      val `List[(String, T)]` = TypeCase[List[(String, T)]]
+
+      t match {
+        case T(t) => Some(t)
+        case `List[T]`(lt) => lt.headOption
+        case `(String, T)`(s, t) => typed[String](s) ; Some(t)
+        case `List[(String, T)]`((s, t) :: _) => typed[String](s); Some(t)
+        case `List[(String, T)]`(lst) => assertTrue(lst.isEmpty) ; None
+        case _ => None
+      }
+    }
+
+    assertEquals(Some(23), typeCase[Int](23: Any))
+    assertEquals(None, typeCase[String](23: Any))
+    assertEquals(Some(23), typeCase[Int](List(23): Any))
+    assertEquals(None, typeCase[String](List(23): Any))
+    assertEquals(Some(23), typeCase[Int](("foo", 23): Any))
+    assertEquals(None, typeCase[String](("foo", 23): Any))
+    assertEquals(Some(23), typeCase[Int](List(("foo", 23)): Any))
+    assertEquals(None, typeCase[String](List(("foo", 23)): Any))
   }
 }

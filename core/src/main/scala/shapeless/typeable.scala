@@ -229,3 +229,22 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       }
     }
 }
+
+/**
+ * Extractor for use of `Typeable` in pattern matching.
+ *
+ * Thanks to Stacy Curl for the idea.
+ *
+ * @author Miles Sabin
+ */
+trait TypeCase[T] {
+  def unapply(t: Any): Option[T]
+}
+
+object TypeCase {
+  import syntax.typeable._
+  def apply[T: Typeable]: TypeCase[T] = new TypeCase[T] {
+    def unapply(t: Any): Option[T] = t.cast[T]
+  }
+}
+
