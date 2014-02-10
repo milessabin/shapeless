@@ -193,7 +193,8 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t : Any) : Option[CNil] = None
     }
 
-  /** Typeable instance for `Coproduct`s.
+  /**
+   * Typeable instance for `Coproduct`s.
    * Note that the contents will be tested for conformance to one of the element types.
    */
   implicit def coproductTypeable[H, T <: Coproduct]
