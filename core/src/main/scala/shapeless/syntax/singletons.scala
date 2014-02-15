@@ -21,6 +21,9 @@ import scala.language.experimental.macros
 
 object singleton {
   implicit def mkSingletonOps(t: Any): SingletonOps = macro SingletonTypeMacros.mkSingletonOps
+
+  import tag._
+  implicit def narrowSymbol[S <: String](t: Symbol): Symbol @@ S = macro SingletonTypeMacros.narrowSymbol[S]
 }
 
 trait SingletonOps {
