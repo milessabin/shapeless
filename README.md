@@ -70,17 +70,17 @@ resolvers ++= Seq(
 
 ### shapeless-2.0.0-M1
 
-Builds are available for Scala 2.10.2 and later and Scala 2.11.0-M4. Note that you must specify a Scala version of at
+Builds are available for Scala 2.10.2 and later and Scala 2.11.0-M8. Note that you must specify a Scala version of at
 least 2.10.2, and that you must add either `cross CrossVersion.full` or an explicit Scala version suffix to your
 shapeless dependency,
 
 ```scala
-scalaVersion := "2.10.2"
-// scalaVersion := "2.11.0-M4" // alternatively ...
+scalaVersion := "2.10.3"
+// scalaVersion := "2.11.0-M8" // alternatively ...
 
 libraryDependencies ++= Seq(
   "com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full
-//  "com.chuusai" % "shapeless_2.10.2" % "2.0.0-M1" // alternatively ...
+//  "com.chuusai" % "shapeless_2.10.3" % "2.0.0-M1" // alternatively ...
 )
 ```
 
@@ -92,12 +92,12 @@ at least 2.10.2, and that you must add either `cross CrossVersion.full` or an ex
 shapeless dependency,
 
 ```scala
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 // scalaVersion := "2.11.0-SNAPSHOT" // alternatively ...
 
 libraryDependencies ++= Seq(
   "com.chuusai" % "shapeless" % "2.0.0-SNAPSHOT" cross CrossVersion.full changing()
-//  "com.chuusai" % "shapeless_2.10.2" % "2.0.0-SNAPSHOT" changing() // alternatively ...
+//  "com.chuusai" % "shapeless_2.10.3" % "2.0.0-SNAPSHOT" changing() // alternatively ...
 )
 ```
 
@@ -119,17 +119,18 @@ libraryDependencies ++= Seq(
 )
 ```
 
-This option isn't necessary or supported in Scala 2.10, so you should omit it if you are building with Scala 2.10.2,
+This option isn't necessary or supported in Scala 2.10, so you should omit it if you are building with Scala 2.10.2 or
+later,
 
 ```scala
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "1.2.4"
 )
 ```
 
-If you want to be able to support building relative to both 2.9.3 and 2.10.2 then you should use the 2.10.2
+If you want to be able to support building relative to both 2.9.3 and 2.10.3 then you should use the 2.10.3
 configuration above and add the following,
  
 ```scala
@@ -145,9 +146,9 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.0. The master branch is built with Scala 2.10.2 by default. To build with Scala 2.11.0
+shapeless is built with SBT 0.13.0. The master branch is built with Scala 2.10.3 by default. To build with Scala 2.11.0
 you should check out the scala-2.11.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.10.2 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
+and Scala 2.10.3 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
 compatibility.
 
 ## Contributors
