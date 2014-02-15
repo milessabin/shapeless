@@ -67,6 +67,7 @@ object StagedTypeClassExample extends App {
   import scala.reflect.runtime.currentMirror
   import scala.tools.reflect.Eval
   import ReflectionUtils._
+  import language.existentials
 
   trait TupleConsumer[A, B] {
     def apply(t : (A, B)) : String
