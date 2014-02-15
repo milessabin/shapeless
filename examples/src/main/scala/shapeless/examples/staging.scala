@@ -16,6 +16,8 @@
 
 package shapeless.examples
 
+import scala.language.existentials
+
 object ReflectionUtils {
   import scala.reflect.api.{ Mirror => APIMirror, TreeCreator, Universe }
   import scala.reflect.runtime.currentMirror
