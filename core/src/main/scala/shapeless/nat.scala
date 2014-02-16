@@ -58,6 +58,7 @@ object Nat extends Nats {
   def apply(i: Int): Nat = macro NatMacros.materializeWidened
 
   /** The natural number 0 */
+  type _0 = shapeless._0
   val _0: _0 = new _0
 
   def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
