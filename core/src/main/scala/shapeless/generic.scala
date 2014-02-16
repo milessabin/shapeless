@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Lars Hupel, Miles Sabin 
+ * Copyright (c) 2012-13 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ object GenericMacros {
       def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
         classSym.knownDirectSubclasses.toList flatMap { child0 =>
           val child = child0.asClass
-          child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+          child.info // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
           if (child.isCaseClass)
             List(child)
           else if (child.isSealed)
@@ -116,7 +116,12 @@ object GenericMacros {
         exit(s"$sym is not a class or trait")
 
       val classSym = sym.asClass
-      classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+      classSym.info // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+
+      def relatedModule(sym: Symbol): TermSymbol = sym match {
+        case sym: ClassSymbol if sym.isModuleClass => sym.module.asTerm
+        case _ => sym.companion.asTerm
+      }
 
       if(tpe =:= typeOf[Unit])
         ADTSingle(tpe, classSym, UnitADTCase())
@@ -125,8 +130,8 @@ object GenericMacros {
           classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
             case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
               val msg =
-                s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with "+
-                s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
+                s"Attempting to derive a type class instance for class `${classSym.name.decodedName}` with "+
+                s"sealed superclass `${sym.name.decodedName}`; this is most likely unintended. To silence "+
                 s"this warning, import `TypeClass.ignoreParent`"
 
               if (c.compilerSettings contains "-Xfatal-warnings")
@@ -137,13 +142,13 @@ object GenericMacros {
           }
 
         if (classSym.isCaseClass) // one-case ADT
-          ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
+          ADTSingle(tpe, classSym, ExpandingADTCase(tpe, relatedModule(classSym)))
         else if (classSym.isSealed) { // multiple cases
           val cases = collectCases(classSym).sortBy(_.fullName)
           ADTMulti(tpe, classSym, cases map { sym =>
             val normalized = normalize(sym)
             if (expandInner)
-              ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
+              ExpandingADTCase(normalized, relatedModule(sym))
             else
               SimpleADTCase(normalized)
           })
@@ -162,16 +167,16 @@ object GenericMacros {
     def constructor =
       DefDef(
         Modifiers(),
-        nme.CONSTRUCTOR,
+        termNames.CONSTRUCTOR,
         List(),
         List(List()),
         TypeTree(),
-        Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))
+        Block(List(Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())), Literal(Constant(())))
       )
 
     def absurdCase =
       CaseDef(
-        Ident(nme.WILDCARD),
+        Ident(termNames.WILDCARD),
         EmptyTree,
         undefined
       )
@@ -213,7 +218,7 @@ object GenericMacros {
 
       Block(
         List(clazz),
-        Apply(Select(New(Ident(name)), nme.CONSTRUCTOR), List())
+        Apply(Select(New(Ident(name)), termNames.CONSTRUCTOR), List())
       )
     }
 
@@ -250,7 +255,7 @@ object GenericMacros {
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
 
     def literalOfName(name: Name): Tree =
-      Literal(Constant(name.decoded.trim))
+      Literal(Constant(name.decodedName.toString.trim))
 
     sealed trait ADT {
       def tpe: Type
@@ -468,7 +473,7 @@ object GenericMacros {
       def mkToReprCase(wrap: Tree => Tree): CaseDef = {
         val name = TermName(c.freshName("x"))
         CaseDef(
-          Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(tpe))),
+          Bind(name, Typed(Ident(termNames.WILDCARD), TypeTree(tpe))),
           EmptyTree,
           wrap(Ident(name))
         )
@@ -477,7 +482,7 @@ object GenericMacros {
       def mkFromReprCase(wrap: Tree => Tree): CaseDef = {
         val name = TermName(c.freshName("x"))
         CaseDef(
-          wrap(Bind(name, Ident(nme.WILDCARD))),
+          wrap(Bind(name, Ident(termNames.WILDCARD))),
           EmptyTree,
           Ident(name)
         )
@@ -515,7 +520,7 @@ object GenericMacros {
       def hNilValueTree  = reify { HNil }.tree
       def hConsValueTree = reify {  ::  }.tree
 
-      lazy val fields = tpe.declarations.toList collect {
+      lazy val fields = tpe.decls.toList collect {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
       }
 
@@ -526,7 +531,7 @@ object GenericMacros {
         fields.map(fieldType)
 
       def fieldType(sym: TermSymbol): Type =
-        sym.typeSignatureIn(tpe)
+        sym.infoIn(tpe)
 
       def reprTpe = fieldTypes match {
         case List(tpe) if optimizeSingleItem =>
@@ -557,7 +562,7 @@ object GenericMacros {
             }
         }
         CaseDef(
-          Apply(Ident(companion), freshNames.map(f => Bind(f, Ident(nme.WILDCARD)))),
+          Apply(Ident(companion), freshNames.map(f => Bind(f, Ident(termNames.WILDCARD)))),
           EmptyTree,
           wrap(res)
         )
@@ -567,10 +572,10 @@ object GenericMacros {
         val freshNames = fieldFreshs()
         val pat = freshNames match {
           case List(name) if optimizeSingleItem =>
-            Bind(name, Ident(nme.WILDCARD))
+            Bind(name, Ident(termNames.WILDCARD))
           case names =>
-            names.foldRight(Ident(nme.WILDCARD): Tree) { case (sym, acc) =>
-              Apply(hConsValueTree, List(Bind(sym, Ident(nme.WILDCARD)), acc))
+            names.foldRight(Ident(termNames.WILDCARD): Tree) { case (sym, acc) =>
+              Apply(hConsValueTree, List(Bind(sym, Ident(termNames.WILDCARD)), acc))
             }
         }
         CaseDef(

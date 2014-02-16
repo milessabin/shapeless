@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import scala.reflect.macros.whitebox
 
 /**
  * Base trait for type level natural numbers.
- * 
+ *
  * @author Miles Sabin
  */
 trait Nat {
@@ -31,7 +31,7 @@ trait Nat {
 
 /**
  * Encoding of successor.
- * 
+ *
  * @author Miles Sabin
  */
 case class Succ[P <: Nat]() extends Nat {
@@ -40,7 +40,7 @@ case class Succ[P <: Nat]() extends Nat {
 
 /**
  * Encoding of zero.
- * 
+ *
  * @author Miles Sabin
  */
 class _0 extends Nat {
@@ -49,7 +49,7 @@ class _0 extends Nat {
 
 /**
  * Type level encoding of the natural numbers.
- * 
+ *
  * @author Miles Sabin
  */
 object Nat extends Nats {
@@ -61,7 +61,7 @@ object Nat extends Nats {
   type _0 = shapeless._0
   val _0: _0 = new _0
 
-  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
+  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN()
 
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
@@ -109,7 +109,7 @@ object NatMacros {
 
     val natTpt = mkNatTpt(c)(i)
 
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
 
     val moduleName = TermName(c.freshName("nat_"))
     val moduleDef =
@@ -119,7 +119,7 @@ object NatMacros {
           noSelfType,
           List(
             DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
+              Modifiers(), termNames.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(()))))
@@ -143,7 +143,7 @@ object NatMacros {
     val valDef =
       ValDef(Modifiers(), valName,
         natTpt,
-        Apply(Select(New(natTpt), nme.CONSTRUCTOR), List())
+        Apply(Select(New(natTpt), termNames.CONSTRUCTOR), List())
       )
 
     c.Expr[Nat] {

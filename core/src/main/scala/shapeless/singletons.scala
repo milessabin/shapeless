@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,8 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   val c: C
 
   import c.universe._
+  import internal._
+  import decorators._
   import Flag._
 
   def mkWitnessT(sTpe: Type, s: Any): Tree =
@@ -81,7 +83,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     val SymName = TermName("Symbol")
     val ApplyName = TermName("apply")
 
-    tpe.normalize match {
+    tpe.dealias match {
       case t @ ConstantType(Constant(s)) => mkWitnessT(t, s)
 
       case t @ SingleType(p, v) if !v.isParameter =>
@@ -101,10 +103,6 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   def convertImpl(t: c.Expr[Any]): Tree = {
     val SymTpe = typeOf[scala.Symbol]
 
-    val ScalaName = TermName("scala")
-    val SymName = TermName("Symbol")
-    val ApplyName = TermName("apply")
-
     (t.actualType, t.tree) match {
       case (tpe @ ConstantType(const: Constant), _) =>
         mkWitness(TypeTree(tpe), Literal(const))
@@ -113,11 +111,12 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
         mkWitness(TypeTree(tpe), tree)
 
       case (tpe: TypeRef, Literal(const: Constant)) =>
-        mkWitness(TypeTree(ConstantType(const)), Literal(const))
+        mkWitness(TypeTree(constantType(const)), Literal(const))
 
-      case (SymTpe, Apply(Select(Select(Ident(ScalaName), SymName), ApplyName), List(Literal(const: Constant)))) =>
+      case (SymTpe, Apply(Select(Select(Ident(scala_), symbol), apply), List(Literal(const: Constant))))
+      if scala_ == TermName("scala") && symbol == TermName("Symbol") && apply == TermName("apply") =>
         val atatTpe = typeOf[@@[_,_]].typeConstructor
-        val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, ConstantType(const))))
+        val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, constantType(const))))
         val sVal = mkTagged(sTpt, t.tree)
         mkWitness(sTpt, sVal)
 
@@ -131,7 +130,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
       (i.tpe match {
         case NullaryMethodType(resTpe) => resTpe
         case other => other
-      }).normalize
+      }).dealias
 
     val iOut = iTpe.member(TypeName("Out")) match {
       case NoSymbol => definitions.NothingClass
@@ -151,10 +150,6 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     (implicit tcTag: c.WeakTypeTag[TC[_]]): Tree = {
       val SymTpe = typeOf[scala.Symbol]
 
-      val ScalaName = TermName("scala")
-      val SymName = TermName("Symbol")
-      val ApplyName = TermName("apply")
-
       val tc = tcTag.tpe.typeConstructor
       val siTpt =
         AppliedTypeTree(
@@ -173,18 +168,19 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
           val i = c.inferImplicitValue(tci, silent = false)
           mkWitnessWith(siTpt, TypeTree(tpe), tree, i)
 
-        case (SymTpe, Apply(Select(Select(Ident(ScalaName), SymName), ApplyName), List(Literal(const: Constant)))) =>
+        case (SymTpe, Apply(Select(Select(Ident(scala_), symbol), apply), List(Literal(const: Constant))))
+        if scala_ == TermName("scala") && symbol == TermName("Symbol") && apply == TermName("apply") =>
           val atatTpe = typeOf[@@[_,_]].typeConstructor
-          val tci = appliedType(tc, List(appliedType(atatTpe, List(SymTpe, ConstantType(const)))))
-          val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, ConstantType(const))))
+          val tci = appliedType(tc, List(appliedType(atatTpe, List(SymTpe, constantType(const)))))
+          val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, constantType(const))))
           val sVal = mkTagged(sTpt, t.tree)
           val i = c.inferImplicitValue(tci, silent = false)
           mkWitnessWith(siTpt, sTpt, sVal, i)
 
         case (tpe: TypeRef, Literal(const: Constant)) =>
-          val tci = appliedType(tc, List(ConstantType(const)))
+          val tci = appliedType(tc, List(constantType(const)))
           val i = c.inferImplicitValue(tci, silent = false)
-          mkWitnessWith(siTpt, TypeTree(ConstantType(const)), Literal(const), i)
+          mkWitnessWith(siTpt, TypeTree(constantType(const)), Literal(const), i)
 
         case _ =>
           c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
@@ -195,20 +191,16 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
     (implicit tc2Tag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S]): Tree = {
       val SymTpe = typeOf[scala.Symbol]
 
-      val ScalaName = TermName("scala")
-      val SymName = TermName("Symbol")
-      val ApplyName = TermName("apply")
-
       val tc2 = tc2Tag.tpe.typeConstructor
       val s = sTag.tpe
 
       val pre = weakTypeOf[WitnessWith[({ type λ[X] = TC2[S, X] })#λ]]
       val pre2 = pre.map { _ match {
         case TypeRef(prefix, sym, args) if sym.isFreeType =>
-          TypeRef(NoPrefix, tc2.typeSymbol, args)
+          typeRef(NoPrefix, tc2.typeSymbol, args)
         case tpe => tpe
       }}
-      val tc = pre2.normalize
+      val tc = pre2.dealias
 
       (t.actualType, t.tree) match {
         case (tpe @ ConstantType(const: Constant), _) =>
@@ -221,18 +213,19 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
           val i = c.inferImplicitValue(tci, silent = false)
           mkWitnessWith(TypeTree(tc), TypeTree(tpe), tree, i)
 
-        case (SymTpe, Apply(Select(Select(Ident(ScalaName), SymName), ApplyName), List(Literal(const: Constant)))) =>
+        case (SymTpe, Apply(Select(Select(Ident(scala_), symbol), apply), List(Literal(const: Constant))))
+        if scala_ == TermName("scala") && symbol == TermName("Symbol") && apply == TermName("apply") =>
           val atatTpe = typeOf[@@[_,_]].typeConstructor
-          val tci = appliedType(tc2, List(s, appliedType(atatTpe, List(SymTpe, ConstantType(const)))))
-          val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, ConstantType(const))))
+          val tci = appliedType(tc2, List(s, appliedType(atatTpe, List(SymTpe, constantType(const)))))
+          val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, constantType(const))))
           val sVal = mkTagged(sTpt, t.tree)
           val i = c.inferImplicitValue(tci, silent = false)
           mkWitnessWith(TypeTree(tc), sTpt, sVal, i)
 
         case (tpe: TypeRef, Literal(const: Constant)) =>
-          val tci = appliedType(tc2, List(s, ConstantType(const)))
+          val tci = appliedType(tc2, List(s, constantType(const)))
           val i = c.inferImplicitValue(tci, silent = false)
-          mkWitnessWith(TypeTree(tc), TypeTree(ConstantType(const)), Literal(const), i)
+          mkWitnessWith(TypeTree(tc), TypeTree(constantType(const)), Literal(const), i)
 
         case _ =>
           c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
@@ -254,10 +247,6 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   def mkSingletonOps(t: c.Expr[Any]): c.Expr[SingletonOps] = {
     val SymTpe = typeOf[scala.Symbol]
 
-    val ScalaName = TermName("scala")
-    val SymName = TermName("Symbol")
-    val ApplyName = TermName("apply")
-
     (t.actualType, t.tree) match {
       case (tpe @ ConstantType(const: Constant), _) =>
         val sTpt = TypeTree(tpe)
@@ -268,12 +257,13 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
         mkOps(sTpt, mkWitness(sTpt, tree))
 
       case (tpe: TypeRef, Literal(const: Constant)) =>
-        val sTpt = TypeTree(ConstantType(const))
+        val sTpt = TypeTree(constantType(const))
         mkOps(sTpt, mkWitness(sTpt, Literal(const)))
 
-      case (SymTpe, Apply(Select(Select(Ident(ScalaName), SymName), ApplyName), List(Literal(const: Constant)))) =>
+      case (SymTpe, Apply(Select(Select(Ident(scala_), symbol), apply), List(Literal(const: Constant))))
+      if scala_ == TermName("scala") && symbol == TermName("Symbol") && apply == TermName("apply") =>
         val atatTpe = typeOf[@@[_,_]].typeConstructor
-        val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, ConstantType(const))))
+        val sTpt = TypeTree(appliedType(atatTpe, List(SymTpe, constantType(const))))
         val sVal = mkTagged(sTpt, t.tree)
         mkOps(sTpt, mkWitness(sTpt, sVal))
 
@@ -287,13 +277,10 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   }
 
   def narrowSymbol[S <: String](t: c.Expr[scala.Symbol])(implicit sTag: c.WeakTypeTag[S]): c.Expr[scala.Symbol @@ S] = {
-    val ScalaName = TermName("scala")
-    val SymName = TermName("Symbol")
-    val ApplyName = TermName("apply")
-
     (sTag.tpe, t.tree) match {
       case (ConstantType(Constant(s1)),
-            Apply(Select(Select(Ident(ScalaName), SymName), ApplyName), List(Literal(Constant(s2))))) if s1 == s2 =>
+            Apply(Select(Select(Ident(scala_), symbol), apply), List(Literal(Constant(s2)))))
+      if s1 == s2 && scala_ == TermName("scala") && symbol == TermName("Symbol") && apply == TermName("apply") =>
         reify { t.splice.asInstanceOf[scala.Symbol @@ S] }
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
@@ -303,7 +290,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
   def constructor(prop: Boolean) =
     DefDef(
       Modifiers(),
-      nme.CONSTRUCTOR,
+      termNames.CONSTRUCTOR,
       List(),
       List(
         if(prop)
@@ -318,7 +305,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
         List(
           Apply(
             Select(
-              Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR
+              Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR
             ),
             if(prop)
               List(Ident(TermName("i")))
@@ -347,7 +334,7 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
 
     Block(
       List(classDef),
-      Apply(Select(New(Ident(name)), nme.CONSTRUCTOR), args)
+      Apply(Select(New(Ident(name)), termNames.CONSTRUCTOR), args)
     )
   }
 }
