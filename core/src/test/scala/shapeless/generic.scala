@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,14 +94,13 @@ package GenericTestsAux {
 class GenericTests {
   import GenericTestsAux._
   import scala.collection.immutable.{ :: => Cons }
+  import test._
   
   type ABP = Apple :+: Banana :+: Pear :+: CNil
   type APBO = Apple :+: Banana :+: Orange :+: Pear :+: CNil
   
   type ABC = A.type :+: B.type :+: C.type :+: CNil
   
-  def typed[T](t : => T) {}
-
   @Test
   def testProductBasics {
     val p = Person("Joe Soap", "Brighton", 23)

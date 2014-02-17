@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,9 @@ import shapeless._
 
 class LiftTests {
   import syntax.std.function._
+  import test._
   import Lift._
   
-  def typed[T](t : => T) {}
-
   @Test
   def testLiftO {
     

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,11 @@ package shapeless.examples
  * 
  * @author George Leontiev
  */
-
 object FactorialExamples {
   import shapeless._
   import nat._
   import ops.nat._
-
-  def typed[T](t : => T) {}
+  import test._
 
   trait Factorial[I <: Nat] { type Out <: Nat }
 

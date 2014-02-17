@@ -23,8 +23,7 @@ class TypeableTests {
   import org.junit.Assert._
 
   import syntax.typeable._
-
-  def typed[T](t : => T) {}
+  import test._
 
   @Test
   def testPrimitives {

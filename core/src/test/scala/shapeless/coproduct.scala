@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,11 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import test.illTyped
+import test._
 
 import ops.coproduct._
 
 class CoproductTests {
-  def typed[T](t : => T) {}
-  
   type ISB = Int :+: String :+: Boolean :+: CNil
   type III = Int :+: Int :+: Int :+: CNil
   

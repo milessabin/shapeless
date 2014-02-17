@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import test.illTyped
+import test._
 
 class HListTests {
   import nat._
@@ -76,8 +76,6 @@ class HListTests {
   object fruit extends (Fruit -> Fruit)(f => f)
   object incInt extends (Int >-> Int)(_ + 1)
   object extendedChoose extends LiftU(choose)
-  
-  def typed[T](t : => T) {}
   
   @Test
   def testBasics {

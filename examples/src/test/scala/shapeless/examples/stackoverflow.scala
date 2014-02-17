@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package examples
 import org.junit.Test
 import org.junit.Assert._
 
+import test._
+
 class StackOverflow1 {
   // http://stackoverflow.com/questions/7606587
 
@@ -38,8 +40,6 @@ class StackOverflow1 {
   
   def foldCurry[L <: HList, F, Out](l : L, f : F)(implicit fc : FoldCurry[L, F, Out]) : Out = fc(l, f)
   
-  def typed[T](t : => T) {}
-
   @Test
   def testFoldCurry {
     val f1 = (i : Int, j : Int, k : Int, l : Int) => i+j+k+l
