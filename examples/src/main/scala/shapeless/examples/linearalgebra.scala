@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,8 @@ object LinearAlgebraExamples extends App {
   import newtype._
   import ops.hlist.{ Mapper, Transposer }
   import ops.product.ProductLength
-
+  import test._
   
-  def typed[T](t : => T) {}
-
   abstract class VectorOps[N <: Nat, P <: Product](p : P) {
     type Self = Newtype[P, VectorOps[N, P]]
     def tupled = p

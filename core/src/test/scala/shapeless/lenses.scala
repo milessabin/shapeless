@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import org.junit.Test
 import org.junit.Assert._
 
 class LensTests {
+  import test._
   import Lens._
   
-  def typed[T](t : => T) {}
-
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
   

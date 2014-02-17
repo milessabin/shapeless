@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,8 @@ object FlattenExample {
   import shapeless._
   import ops.tuple.FlatMapper
   import syntax.std.tuple._
+  import test._
   
-  def typed[T](t : => T) {}
-
   trait LowPriorityFlatten extends Poly1 {
     implicit def default[T] = at[T](Tuple1(_))
   }

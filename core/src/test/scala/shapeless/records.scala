@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import org.junit.Assert._
 class RecordTests {
   import record._
   import syntax.singleton._
-
-  def typed[T](t : => T) {}
+  import test._
 
   object intField1 extends FieldOf[Int]
   object intField2 extends FieldOf[Int]

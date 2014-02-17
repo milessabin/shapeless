@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,7 @@ object GCDExamples {
   import shapeless._
   import nat._
   import ops.nat._
-
-  def typed[T](t : => T) {}
+  import test._
 
   trait GCD[X <: Nat, Y <: Nat] { type Out <: Nat }
 

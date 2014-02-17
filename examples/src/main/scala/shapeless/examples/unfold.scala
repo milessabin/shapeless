@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ object UnfoldExamples extends App {
   import nat._
   import ops.nat._
   import poly._
-  
-  def typed[T](t : => T) {}
+  import test._
   
   trait Unfold[F <: Poly, E, S] {
     type Out <: HList

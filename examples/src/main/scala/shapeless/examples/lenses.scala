@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ package shapeless.examples
  */
 object LenseExamples extends App {
   import shapeless._
+  import test._
   import Lens._
-
-  def typed[T](t : => T) {}
 
   // A pair of ordinary case classes ...
   case class Address(street : String, city : String, postcode : String)

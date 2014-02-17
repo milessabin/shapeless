@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,11 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
+import shapeless.test._
 
 class SizedTests {
   import nat._
   import syntax.sized._
-  
-  def typed[T](t : => T) {}
   
   @Test
   def testBasics {

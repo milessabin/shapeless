@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.junit.Assert._
 
 import poly._
 import ops.hlist.Mapper
+import test._
 
 /** Polymorphic singleton function. */
 object singleton extends (Id ~> Set) {
@@ -74,8 +75,6 @@ object zero extends Poly0 {
 }
 
 class PolyTests {
-  def typed[T](t : => T) {}
-
   object toInt extends (Id ~>> Int) {
     def apply[T](t : T) = t.toString.toInt
   }

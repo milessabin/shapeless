@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ package shapeless.examples
 object ImpredicativeExamples extends App {
   import shapeless._
   import poly._
-  
-  def typed[T](t : => T) {}
+  import test._
   
   object head extends (List ~> Id) {
     def apply[T](l : List[T]) = l.head

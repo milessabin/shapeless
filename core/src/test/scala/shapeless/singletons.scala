@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
+import shapeless.test._
 
 class SingletonTypesTests {
   import syntax.singleton._
@@ -42,10 +42,6 @@ class SingletonTypesTests {
   type Foo = wFoo.T
   val wBar = Witness('bar)
   type Bar = wBar.T
-
-  def typed[T](t: => T) {}
-
-  def sameTyped[T](t1: => T)(t2: => T) {}
 
   @Test
   def testRefine {

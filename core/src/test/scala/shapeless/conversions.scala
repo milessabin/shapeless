@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ class ConversionTests {
   import ops.function.FnToProduct
   import syntax.std.function._
   import syntax.std.tuple._
+  import test._
 
-  def typed[T](t : => T) {}
-  
   @Test
   def testTuples {
     val t1 = (23, "foo", 2.0, true)

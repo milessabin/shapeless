@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ class SybClassTests {
   import org.junit.Test
   import org.junit.Assert._
 
-  def typed[T](t : => T) {}
+  import test._
 
   object gsizeAll extends Poly1 {
     implicit def caseString = at[String](_.length)
