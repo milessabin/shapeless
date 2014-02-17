@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Lars Hupel, Miles Sabin 
+ * Copyright (c) 2012-14 Lars Hupel, Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,17 +40,43 @@ object Generic extends LowPriorityGeneric {
   implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
 }
 
+trait LabelledGeneric[T] {
+  type Repr
+  def to(t : T) : Repr
+  def from(r : Repr) : T
+}
+
+trait LowPriorityLabelledGeneric {
+  implicit def apply[T]: LabelledGeneric[T] = macro GenericMacros.materializeLabelled[T]
+}
+
+object LabelledGeneric extends LowPriorityLabelledGeneric {
+  // Refinement for products, here we can provide the calling context with
+  // a proof that the resulting Repr is a record
+  implicit def product[T <: Product]: LabelledGeneric[T] = macro GenericMacros.materializeLabelledForProduct[T]
+}
+
 object GenericMacros {
+  import shapeless.record.FieldType
+
   def materialize[T]
     (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T]] =
-      materializeAux[Generic[T]](ctx)(false, tT.tpe)
+      materializeAux[Generic[T]](ctx)(false, false, tT.tpe)
 
   def materializeForProduct[T <: Product]
     (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T] { type Repr <: HList }] =
-      materializeAux[Generic[T] { type Repr <: HList }](ctx)(true, tT.tpe)
+      materializeAux[Generic[T] { type Repr <: HList }](ctx)(true, false, tT.tpe)
+
+  def materializeLabelled[T]
+    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[LabelledGeneric[T]] =
+      materializeAux[LabelledGeneric[T]](ctx)(false, true, tT.tpe)
+
+  def materializeLabelledForProduct[T <: Product]
+    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[LabelledGeneric[T] { type Repr <: HList }] =
+      materializeAux[LabelledGeneric[T] { type Repr <: HList }](ctx)(true, true, tT.tpe)
 
   def materializeAux[G]
-    (ctx : Context)(product: Boolean, tpe0: ctx.Type): ctx.Expr[G] = {
+    (ctx : Context)(product: Boolean, labelled0: Boolean, tpe0: ctx.Type): ctx.Expr[G] = {
     if (product && tpe0 <:< ctx.typeOf[Coproduct])
       ctx.abort(ctx.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
 
@@ -60,6 +86,7 @@ object GenericMacros {
       val optimizeSingleItem = false
       val checkParent = false
       val tpe = tpe0
+      val labelled = labelled0
     }
 
     ctx.Expr[G] {
@@ -77,6 +104,7 @@ object GenericMacros {
     val optimizeSingleItem: Boolean
     val checkParent: Boolean
     val tpe: c.Type
+    val labelled: Boolean
 
     import c.universe._
     import Flag._
@@ -243,14 +271,31 @@ object GenericMacros {
     def mkHListTpe(items: List[Type]): Type =
       mkCompoundTpe[HList, HNil, ::](items)
 
+    def mkFieldTpe(name: Name, tpe: Type): Type = {
+      val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
+      val symTpe = typeOf[scala.Symbol]
+      val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
+
+      val kTpe = appliedType(atatTpe, List(symTpe, ConstantType(constantOfName(name))))
+      appliedType(fieldTypeTpe, List(kTpe, tpe))
+    }
+
+    def mkRecordTpe(fields: List[(Name, Type)]): Type = {
+      val items = fields.map { case (k, v) => mkFieldTpe(k, v) }
+      mkCompoundTpe[HList, HNil, ::](items)
+    }
+
     def mkCoproductTpe(items: List[Type]): Type =
       mkCompoundTpe[Coproduct, CNil, :+:](items)
 
     def anyNothing =
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
 
+    def constantOfName(name: Name): Constant =
+      Constant(name.decoded.trim)
+
     def literalOfName(name: Name): Tree =
-      Literal(Constant(name.decoded.trim))
+      Literal(constantOfName(name))
 
     sealed trait ADT {
       def tpe: Type
@@ -350,6 +395,9 @@ object GenericMacros {
           resName
         )
       }
+      
+      def outerTypeConstructor: Type =
+        (if(labelled) typeOf[LabelledGeneric[_]] else typeOf[Generic[_]]).typeConstructor
 
       def materializeGeneric = {
         val toName = newTermName("to")
@@ -362,7 +410,7 @@ object GenericMacros {
             mkFromRepr(fromName)
           ),
           appliedType(
-            typeOf[Generic[_]].typeConstructor,
+            outerTypeConstructor,
             List(tpe)
           )
         )
@@ -391,7 +439,7 @@ object GenericMacros {
             mkIdentityDef(fromName)
           ),
           appliedType(
-            typeOf[Generic[_]].typeConstructor,
+            outerTypeConstructor,
             List(tpe)
           )
         )
@@ -528,11 +576,20 @@ object GenericMacros {
       def fieldType(sym: TermSymbol): Type =
         sym.typeSignatureIn(tpe)
 
+      def labelledFields: List[(Name, Type)] =
+        fields.map { sym => (sym.name, fieldType(sym)) }
+
+      def fieldNames: List[Name] =
+        fields.map { sym => sym.name }
+
       def reprTpe = fieldTypes match {
         case List(tpe) if optimizeSingleItem =>
           tpe
         case tpes =>
-          mkHListTpe(tpes)
+          if(labelled)
+            mkRecordTpe(labelledFields)
+          else
+            mkHListTpe(tpes)
       }
 
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = fields match {
@@ -546,18 +603,24 @@ object GenericMacros {
           }
       }
 
+      def mkElem(sym: TermName, name: Name, tpe: Type): Tree =
+        if(labelled)
+          TypeApply(Select(Ident(sym), newTermName("asInstanceOf")), List(TypeTree(mkFieldTpe(name, tpe))))
+        else
+          Ident(sym)
+
       def mkToReprCase(wrap: Tree => Tree): CaseDef = {
-        val freshs = fieldFreshs()
+        val freshs = fieldFreshs() zip labelledFields
         val res = freshs match {
-          case List(name) if optimizeSingleItem =>
+          case List((name, _)) if optimizeSingleItem =>
             Ident(name)
           case names =>
-            names.foldRight(hNilValueTree) { case (sym, acc) =>
-              Apply(hConsValueTree, List(Ident(sym), acc))
+            names.foldRight(hNilValueTree) { case ((sym, (name, tpe)), acc) =>
+              Apply(hConsValueTree, List(mkElem(sym, name, tpe), acc))
             }
         }
         CaseDef(
-          Apply(Ident(companion), freshs.map(f => Bind(f, Ident(nme.WILDCARD)))),
+          Apply(Ident(companion), freshs.map(f => Bind(f._1, Ident(nme.WILDCARD)))),
           EmptyTree,
           wrap(res)
         )
@@ -579,11 +642,6 @@ object GenericMacros {
           Apply(Ident(companion), freshs.map(Ident(_)))
         )
       }
-
     }
-
   }
-
 }
-
-// vim: expandtab:ts=2:sw=2

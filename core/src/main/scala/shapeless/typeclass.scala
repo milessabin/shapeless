@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Lars Hupel
+ * Copyright (c) 2013-14 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,6 +144,7 @@ object TypeClass {
       val optimizeSingleItem = true
       val checkParent = true
       val tpe = tTag.tpe
+      val labelled = false
     }
     context.Expr[C[T]](helper.ADT.deriveInstance(cTag.tpe.typeConstructor))
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package shapeless
  * @author Miles Sabin
  */
 object record {
+  import ops.record.{ Keys, Values }
   import syntax.RecordOps
 
   implicit def recordOps[L <: HList](l : L) : RecordOps[L] = new RecordOps(l)
@@ -39,6 +40,34 @@ object record {
 
   class FieldBuilder[K] {
     def apply[V](v : V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
+  }
+
+  /**
+   * Utility trait intended for inferring a record type from a sample value and unpacking it into its
+   * key and value types.
+   */
+  trait RecordType {
+    type Record <: HList
+    type Keys <: HList
+    type Values <: HList
+  }
+
+  object RecordType {
+    type Aux[L, K, V] = RecordType { type Record = L ; type Keys = K ; type Values = V }
+
+    def apply[L <: HList](implicit keys: Keys[L], values: Values[L]): RecordType.Aux[L, keys.Out, values.Out] =
+      new RecordType {
+        type Record = L
+        type Keys = keys.Out
+        type Values = values.Out
+      }
+
+    def like[L <: HList](l: L)(implicit keys: Keys[L], values: Values[L]): RecordType.Aux[L, keys.Out, values.Out] =
+      new RecordType {
+        type Record = L
+        type Keys = keys.Out
+        type Values = values.Out
+      }
   }
 }
 
