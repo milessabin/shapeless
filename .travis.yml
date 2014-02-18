@@ -4,8 +4,8 @@ scala:
 jdk:
 - oraclejdk7
 - openjdk6
-script: sbt -Dbuild.publish.user=${SONATYPE_USER} -Dbuild.publish.password=${SONATYPE_PASS} ++${TRAVIS_SCALA_VERSION} test $(if [[ "${TRAVIS_PULL_REQUEST}" == "false" && ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) && ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.11.x")]]; then echo "publish";  fi)
+script: sbt ++${TRAVIS_SCALA_VERSION} test $(if [[ "${TRAVIS_PULL_REQUEST}" == "false" && ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) && ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.11.x")]]; then echo "publish";  fi)
 env:
   global:
-  - secure: zVnVXV4Fq08mQ1AYXhmA6V2SUIn7NcUXl6QHB0KnwROMLBxAdbenNYzeJkD2lnTiOy/OlvQ8wOBZdBXMvwxOq6pOmdU4RfK49jk22+OAc25Nro+Sue9Exi12uZO8Y705Xk4PJAmn4bFSnV+ykrHdhICvCSqdyUhzo5VPGk+fqNw=
-  - secure: E4kdKRZjZ6g86+S8Hjq9mUuuUjab/51Wp4gxiBViyUqP0qps5nRm/V1ASfyZL0SBUd96lMwaCoJAYr0vlS++sEwR7u4pZHgQSXuGhmnYfSnLwQ48QHVoRJEg0Ap43oUNcW27Meri2zTa6eDF87e83LfLduvuHUVZql3bh4xkOVY=
+  - secure: "Yi/MWSvXrePnkVbiGxh9ZaRnh4EAayheY9fE8kHz+WOFYDA2cdBER60KDLZFC8T3U0lvpx1e7rbCyGu46Z9ypqQ50VgDMk+49N3NYvP2RAfnqecSyaDEzq5r093Hby+jEQUPApmTun8/pPiJTEO5sHCb+aiAGIA4zg8+ealZa2g="
+  - secure: "PMudLwIAqd13AQe7lkNW6wj8CkFvZFYRMgU7emHosmSL198PDH71+nLAhQD93PA1K8fXTPJRvX7C6s8NGi/rinmcFLABXv0NjuPdrYBsbwAWaTQlmc/b+HS3dIPVbmbjyG8az6bZdYbXjaRQZu6vvmIdgJizEGqxvK96yRqNPRw="

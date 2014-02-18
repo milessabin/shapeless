@@ -85,7 +85,7 @@ abstract class Sonatype(build: Build) {
   )
 
   lazy val credentialsSetting = credentials += {
-    Seq("build.publish.user", "build.publish.password").map(k => Option(System.getProperty(k))) match {
+    Seq("SONATYPE_USER", "SONATYPE_PASS").map(k => sys.env.get(k)) match {
       case Seq(Some(user), Some(pass)) =>
         Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)
       case _                           =>
