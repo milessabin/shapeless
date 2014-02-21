@@ -108,7 +108,6 @@ object GenericMacros {
 
     import c.universe._
     import internal._
-    //import decorators._
     import Flag._
 
 
