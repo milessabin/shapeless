@@ -268,9 +268,6 @@ object GenericMacros {
         appliedType(cons.tpe, List(tpe, acc))
       }
 
-    def mkHListTpe(items: List[Type]): Type =
-      mkCompoundTpe[HList, HNil, ::](items)
-
     def mkFieldTpe(name: Name, tpe: Type): Type = {
       val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
       val symTpe = typeOf[scala.Symbol]
@@ -280,6 +277,15 @@ object GenericMacros {
       appliedType(fieldTypeTpe, List(kTpe, tpe))
     }
 
+    def mkElem(elem: Tree, name: Name, tpe: Type): Tree =
+      if(labelled)
+        TypeApply(Select(elem, newTermName("asInstanceOf")), List(TypeTree(mkFieldTpe(name, tpe))))
+      else
+        elem
+
+    def mkHListTpe(items: List[Type]): Type =
+      mkCompoundTpe[HList, HNil, ::](items)
+
     def mkRecordTpe(fields: List[(Name, Type)]): Type = {
       val items = fields.map { case (k, v) => mkFieldTpe(k, v) }
       mkCompoundTpe[HList, HNil, ::](items)
@@ -287,6 +293,11 @@ object GenericMacros {
 
     def mkCoproductTpe(items: List[Type]): Type =
       mkCompoundTpe[Coproduct, CNil, :+:](items)
+
+    def mkUnionTpe(fields: List[(Name, Type)]): Type = {
+      val items = fields.map { case (k, v) => mkFieldTpe(k, v) }
+      mkCompoundTpe[Coproduct, CNil, :+:](items)
+    }
 
     def anyNothing =
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
@@ -304,7 +315,8 @@ object GenericMacros {
 
       def usesCoproduct: Boolean
 
-      def wrap(index: Int)(tree: Tree): Tree
+      def mkCtor(index: Int)(tree: Tree): Tree
+      def mkDtor(index: Int)(tree: Tree): Tree
 
       def reprTpe: Type
 
@@ -313,11 +325,14 @@ object GenericMacros {
       lazy val allFieldTypes: List[Type] =
         cases.flatMap(_.fieldTypes).filterNot(tpe =:= _).distinct
 
-      def mkToOrFrom(name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean, mkCase: (ADTCase, Tree => Tree) => CaseDef): Tree = {
+      def mkToOrFrom(
+        name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean,
+        mkCase: (ADTCase, Tree => Tree, Tree => Tree) => CaseDef
+      ): Tree = {
         val param = newTermName(c.fresh("param"))
 
         val clauses =
-          cases zip (Stream from 0) map { case (c, index) => mkCase(c, wrap(index)) }
+          cases zip (Stream from 0) map { case (c, index) => mkCase(c, mkDtor(index), mkCtor(index)) }
 
         DefDef(
           Modifiers(),
@@ -335,7 +350,7 @@ object GenericMacros {
           tpe,
           reprTpe,
           false,
-          _.mkToReprCase(_)
+          _.mkToReprCase(_, _)
         )
 
       def mkFromRepr(name: TermName): Tree =
@@ -344,7 +359,7 @@ object GenericMacros {
           reprTpe,
           tpe,
           usesCoproduct,
-          _.mkFromReprCase(_)
+          _.mkFromReprCase(_, _)
         )
 
       def mkInstances(resName: TermName, tc: Type, to: Tree, from: Tree): List[Tree] = {
@@ -455,7 +470,8 @@ object GenericMacros {
 
       def reprTpe = cse.reprTpe
 
-      def wrap(index: Int)(tree: Tree) = tree
+      def mkDtor(index: Int)(tree: Tree) = tree
+      def mkCtor(index: Int)(tree: Tree) = tree
 
       def usesCoproduct = false
 
@@ -472,13 +488,26 @@ object GenericMacros {
       }
 
       def reprTpe =
-        mkCoproductTpe(cases.map(_.reprTpe))
+        if(labelled) {
+          val labelledCases = cases.map(cse => (cse.name, cse.reprTpe))
+          mkUnionTpe(labelledCases)
+        }
+        else
+          mkCoproductTpe(cases.map(_.reprTpe))
 
-      def wrap(index: Int)(tree: Tree): Tree = {
+      def mkCDtor(index: Int, tree: Tree): Tree = {
         val inl = Apply(reify { Inl }.tree, List(tree))
         (0 until index).foldLeft(inl: Tree) { case (acc, _) =>
           Apply(reify { Inr }.tree, List(acc))
         }
+      }
+
+      def mkDtor(index: Int)(tree: Tree): Tree = mkCDtor(index, tree)
+
+      def mkCtor(index: Int)(tree: Tree): Tree = {
+        val cse = cases(index)
+        val elem = mkElem(tree, cse.name, cse.tpe)
+        mkCDtor(index, elem)
       }
 
       def usesCoproduct = true
@@ -500,8 +529,8 @@ object GenericMacros {
       def fieldTypes: List[Type]
       def reprTpe: Type
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree
-      def mkToReprCase(wrap: Tree => Tree): CaseDef
-      def mkFromReprCase(wrap: Tree => Tree): CaseDef
+      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef
+      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef
 
       def name = tpe.typeSymbol.name
     }
@@ -513,19 +542,19 @@ object GenericMacros {
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
         mapping(tpe)
 
-      def mkToReprCase(wrap: Tree => Tree): CaseDef = {
+      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
         val name = newTermName(c.fresh("x"))
         CaseDef(
           Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(tpe))),
           EmptyTree,
-          wrap(Ident(name))
+          mkCtor(Ident(name))
         )
       }
 
-      def mkFromReprCase(wrap: Tree => Tree): CaseDef = {
+      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
         val name = newTermName(c.fresh("x"))
         CaseDef(
-          wrap(Bind(name, Ident(nme.WILDCARD))),
+          mkDtor(Bind(name, Ident(nme.WILDCARD))),
           EmptyTree,
           Ident(name)
         )
@@ -544,16 +573,16 @@ object GenericMacros {
       def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
         Select(tc, newTermName("emptyProduct"))
 
-      def mkToReprCase(wrap: Tree => Tree): CaseDef =
+      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef =
         CaseDef(
           unitValueTree,
           EmptyTree,
-          wrap(hNilValueTree)
+          mkCtor(hNilValueTree)
         )
 
-      def mkFromReprCase(wrap: Tree => Tree): CaseDef =
+      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef =
         CaseDef(
-          wrap(hNilValueTree),
+          mkDtor(hNilValueTree),
           EmptyTree,
           unitValueTree
         )
@@ -603,30 +632,24 @@ object GenericMacros {
           }
       }
 
-      def mkElem(sym: TermName, name: Name, tpe: Type): Tree =
-        if(labelled)
-          TypeApply(Select(Ident(sym), newTermName("asInstanceOf")), List(TypeTree(mkFieldTpe(name, tpe))))
-        else
-          Ident(sym)
-
-      def mkToReprCase(wrap: Tree => Tree): CaseDef = {
+      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
         val freshs = fieldFreshs() zip labelledFields
         val res = freshs match {
           case List((name, _)) if optimizeSingleItem =>
             Ident(name)
           case names =>
             names.foldRight(hNilValueTree) { case ((sym, (name, tpe)), acc) =>
-              Apply(hConsValueTree, List(mkElem(sym, name, tpe), acc))
+              Apply(hConsValueTree, List(mkElem(Ident(sym), name, tpe), acc))
             }
         }
         CaseDef(
           Apply(Ident(companion), freshs.map(f => Bind(f._1, Ident(nme.WILDCARD)))),
           EmptyTree,
-          wrap(res)
+          mkCtor(res)
         )
       }
 
-      def mkFromReprCase(wrap: Tree => Tree): CaseDef = {
+      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
         val freshs = fieldFreshs()
         val pat = freshs match {
           case List(name) if optimizeSingleItem =>
@@ -637,7 +660,7 @@ object GenericMacros {
             }
         }
         CaseDef(
-          wrap(pat),
+          mkDtor(pat),
           EmptyTree,
           Apply(Ident(companion), freshs.map(Ident(_)))
         )
