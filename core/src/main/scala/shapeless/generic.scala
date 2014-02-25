@@ -60,151 +60,212 @@ object GenericMacros {
   import shapeless.record.FieldType
 
   def materialize[T]
-    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T]] =
-      materializeAux[Generic[T]](ctx)(false, false, tT.tpe)
+    (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T]] =
+      materializeAux[Generic[T]](c)(false, false, tT.tpe)
 
   def materializeForProduct[T <: Product]
-    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[Generic[T] { type Repr <: HList }] =
-      materializeAux[Generic[T] { type Repr <: HList }](ctx)(true, false, tT.tpe)
+    (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T] { type Repr <: HList }] =
+      materializeAux[Generic[T] { type Repr <: HList }](c)(true, false, tT.tpe)
 
   def materializeLabelled[T]
-    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[LabelledGeneric[T]] =
-      materializeAux[LabelledGeneric[T]](ctx)(false, true, tT.tpe)
+    (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[LabelledGeneric[T]] =
+      materializeAux[LabelledGeneric[T]](c)(false, true, tT.tpe)
 
   def materializeLabelledForProduct[T <: Product]
-    (ctx: Context)(implicit tT: ctx.WeakTypeTag[T]): ctx.Expr[LabelledGeneric[T] { type Repr <: HList }] =
-      materializeAux[LabelledGeneric[T] { type Repr <: HList }](ctx)(true, true, tT.tpe)
+    (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[LabelledGeneric[T] { type Repr <: HList }] =
+      materializeAux[LabelledGeneric[T] { type Repr <: HList }](c)(true, true, tT.tpe)
 
   def materializeAux[G]
-    (ctx : Context)(product: Boolean, labelled0: Boolean, tpe0: ctx.Type): ctx.Expr[G] = {
-    if (product && tpe0 <:< ctx.typeOf[Coproduct])
-      ctx.abort(ctx.enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+    (c0 : Context)(product0: Boolean, labelled0: Boolean, tpe0: c0.Type): c0.Expr[G] = {
+    import c0.{ abort, enclosingPosition, typeOf, Expr }
 
-    val helper = new Helper[ctx.type] {
-      val c: ctx.type = ctx
-      val expandInner = false
-      val optimizeSingleItem = false
-      val checkParent = false
-      val tpe = tpe0
-      val labelled = labelled0
+    if (product0 && tpe0 <:< typeOf[Coproduct])
+      abort(enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+
+    val helper = new Helper[c0.type] {
+      val c: c0.type = c0
+      val fromTpe = tpe0
+      val toProduct = product0
+      val toLabelled = labelled0
+      val labelledRepr = labelled0
     }
 
-    ctx.Expr[G] {
-      if (tpe0 <:< ctx.typeOf[HList] || tpe0 <:< ctx.typeOf[Coproduct])
-        helper.ADT.materializeIdentityGeneric
+    Expr[G] {
+      if (tpe0 <:< typeOf[HList] || tpe0 <:< typeOf[Coproduct])
+        helper.materializeIdentityGeneric
       else
-        helper.ADT.materializeGeneric
+        helper.materializeGeneric
+    }
+  }
+
+  def deriveProductInstance[C[_], T]
+    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(true, false, tTag, cTag)
+
+  def deriveLabelledProductInstance[C[_], T]
+    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(true, true, tTag, cTag)
+
+  def deriveInstance[C[_], T]
+    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(false, false, tTag, cTag)
+
+  def deriveLabelledInstance[C[_], T]
+    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(false, true, tTag, cTag)
+
+  def deriveInstanceAux[C[_], T](c0: Context)
+    (product0: Boolean, labelled0: Boolean, tTag: c0.WeakTypeTag[T], cTag: c0.WeakTypeTag[C[Any]]): c0.Expr[C[T]] = {
+    import c0.Expr
+    val helper = new Helper[c0.type] {
+      val c: c0.type = c0
+      val fromTpe = tTag.tpe
+      val toProduct = product0
+      val toLabelled = labelled0
+      val labelledRepr = false
+    }
+
+    Expr[C[T]] {
+      helper.deriveInstance(cTag.tpe.typeConstructor)
     }
   }
 
   trait Helper[+C <: Context] {
-
     val c: C
-    val expandInner: Boolean
-    val optimizeSingleItem: Boolean
-    val checkParent: Boolean
-    val tpe: c.Type
-    val labelled: Boolean
+    val fromTpe: c.Type
+    val toProduct: Boolean
+    val toLabelled: Boolean
+    val labelledRepr: Boolean
 
     import c.universe._
     import Flag._
 
+    def unitValueTree = reify { () }.tree
+    def absurdValueTree = reify { ??? }.tree
+    def hconsValueTree = reify {  ::  }.tree
+    def hnilValueTree  = reify { HNil }.tree
+    def inlValueTree = reify {  Inl  }.tree
+    def inrValueTree  = reify { Inr }.tree
 
-    def ADT: ADT = {
-      def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
+    def anyRefTpe = typeOf[AnyRef]
+    def unitTpe = typeOf[Unit]
+    def hconsTpe = typeOf[::[_, _]].typeConstructor
+    def hnilTpe = typeOf[HNil]
+    def cconsTpe = typeOf[:+:[_, _]].typeConstructor
+    def cnilTpe = typeOf[CNil]
+    def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
+    def symTpe = typeOf[scala.Symbol]
+    def fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
+    def genericTpe = typeOf[Generic[_]].typeConstructor
+    def labelledGenericTpe = typeOf[LabelledGeneric[_]].typeConstructor
+    def typeClassTpe = typeOf[TypeClass[Any]].typeConstructor
+    def labelledTypeClassTpe = typeOf[LabelledTypeClass[Any]].typeConstructor
+    def productTypeClassTpe = typeOf[ProductTypeClass[Any]].typeConstructor
+    def labelledProductTypeClassTpe = typeOf[LabelledProductTypeClass[Any]].typeConstructor
+    def deriveCtorsTpe = typeOf[DeriveConstructors]
+
+    def toName = newTermName("to")
+    def fromName = newTermName("from")
+    def reprName = newTypeName("Repr")
+
+    def nameAsValue(name: Name): Constant = Constant(name.decoded.trim)
+
+    def nameAsLiteral(name: Name): Tree = Literal(nameAsValue(name))
+
+    def nameOf(tpe: Type) = tpe.typeSymbol.name
+
+    def fieldsOf(tpe: Type): List[(Name, Type)] =
+      tpe.declarations.toList collect {
+        case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => (sym.name, sym.typeSignatureIn(tpe))
+      }
+
+    def reprOf(tpe: Type): Type = {
+      val fields = fieldsOf(tpe)
+      if(labelledRepr)
+        mkRecordTpe(fields)
+      else
+        mkHListTpe(fields.map(_._2))
+    }
+
+    def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
+      items.foldRight(nil) { case (tpe, acc) => appliedType(cons, List(tpe, acc)) }
+
+    def mkFieldTpe(name: Name, valueTpe: Type): Type = {
+      val keyTpe = appliedType(atatTpe, List(symTpe, ConstantType(nameAsValue(name))))
+      appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
+    }
+
+    def mkHListTpe(items: List[Type]): Type =
+      mkCompoundTpe(hnilTpe, hconsTpe, items)
+
+    def mkRecordTpe(fields: List[(Name, Type)]): Type =
+      mkCompoundTpe(hnilTpe, hconsTpe, fields.map((mkFieldTpe _).tupled))
+
+    def mkCoproductTpe(items: List[Type]): Type =
+      mkCompoundTpe(cnilTpe, cconsTpe, items)
+
+    def mkUnionTpe(fields: List[(Name, Type)]): Type =
+      mkCompoundTpe(cnilTpe, cconsTpe, fields.map((mkFieldTpe _).tupled))
+
+    lazy val fromSym = {
+      val sym = fromTpe.typeSymbol
+      if (!sym.isClass)
+        abort(s"$sym is not a class or trait")
+
+      val fromSym0 = sym.asClass
+      fromSym0.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+
+      fromSym0
+    }
+
+    lazy val fromProduct = fromTpe =:= unitTpe || fromSym.isCaseClass
+
+    lazy val fromCtors = {
+      def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
         classSym.knownDirectSubclasses.toList flatMap { child0 =>
           val child = child0.asClass
           child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
           if (child.isCaseClass)
             List(child)
           else if (child.isSealed)
-            collectCases(child)
+            collectCtors(child)
           else
-            exit(s"$child is not a case class or a sealed trait")
+            abort(s"$child is not a case class or a sealed trait")
         }
       }
 
-      // We're using an extremely optimistic strategy here, basically ignoring
-      // the existence of any existential types.
-      def normalize(classSym: ClassSymbol): Type = tpe match {
-        case base: TypeRef =>
-          val subTpe = classSym.asType.toType
-          classSym.typeParams match {
-            case Nil =>
-              subTpe
-            case tpes =>
-              appliedType(subTpe, base.args)
-          }
-        case _ =>
-          exit(s"bad type $tpe")
-      }
+      if(fromProduct)
+        List(fromTpe)
+      else if (fromSym.isSealed) { // multiple ctors
+        if (toProduct) abort(s"Cannot derive a ProductTypeClass for non-Product trait $fromTpe")
+        val ctors = collectCtors(fromSym).sortBy(_.fullName)
+        if (ctors.isEmpty) abort(s"Sealed trait $fromTpe has no case class subtypes")
 
-      val sym = tpe.typeSymbol
-      if (!sym.isClass)
-        exit(s"$sym is not a class or trait")
-
-      val classSym = sym.asClass
-      classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-
-      if(tpe =:= typeOf[Unit])
-        ADTSingle(tpe, classSym, UnitADTCase())
-      else {
-        if (checkParent)
-          classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
-            case Some(sym) if c.inferImplicitValue(typeOf[IgnoreParent]) == EmptyTree =>
-              val msg =
-                s"Attempting to derive a type class instance for class `${classSym.name.decoded}` with "+
-                s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
-                s"this warning, import `TypeClass.ignoreParent`"
-
-              if (c.compilerSettings contains "-Xfatal-warnings")
-                c.error(c.enclosingPosition, msg)
-              else
-                c.warning(c.enclosingPosition, msg)
-            case _ =>
-          }
-
-        if (classSym.isCaseClass) // one-case ADT
-          ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
-        else if (classSym.isSealed) { // multiple cases
-          val cases = collectCases(classSym).sortBy(_.fullName)
-          ADTMulti(tpe, classSym, cases map { sym =>
-            val normalized = normalize(sym)
-            if (expandInner)
-              ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
-            else
-              SimpleADTCase(normalized)
-          })
+        // We're using an extremely optimistic strategy here, basically ignoring
+        // the existence of any existential types.
+        val baseTpe: TypeRef = fromTpe match {
+          case tr: TypeRef => tr
+          case _ => abort(s"bad type $fromTpe")
         }
-        else
-          exit(s"$classSym is not a case class, a sealed trait or Unit")
+
+        ctors map { sym =>
+          val subTpe = sym.asType.toType
+          val normalized = sym.typeParams match {
+            case Nil  => subTpe
+            case tpes => appliedType(subTpe, baseTpe.args)
+          }
+
+          normalized
+        }
       }
+      else
+        abort(s"$fromSym is not a case class, a sealed trait or Unit")
     }
 
-    def undefined =
-      reify { ??? }.tree
-
-    def exit(msg: String) =
+    def abort(msg: String) =
       c.abort(c.enclosingPosition, msg)
 
-    def constructor =
-      DefDef(
-        Modifiers(),
-        nme.CONSTRUCTOR,
-        List(),
-        List(List()),
-        TypeTree(),
-        Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))
-      )
-
-    def absurdCase =
-      CaseDef(
-        Ident(nme.WILDCARD),
-        EmptyTree,
-        undefined
-      )
-
-    def mkDummyObject(contents: List[Tree], select: TermName): Tree = {
+    def mkObjectSelection(defns: List[Tree], member: TermName): Tree = {
       val name = newTermName(c.fresh())
 
       val module =
@@ -212,19 +273,19 @@ object GenericMacros {
           Modifiers(),
           name,
           Template(
-            List(TypeTree(typeOf[AnyRef])),
+            List(TypeTree(anyRefTpe)),
             emptyValDef,
-            constructor :: contents
+            mkConstructor :: defns
           )
         )
 
       Block(
         List(module),
-        Select(Ident(name), select)
+        Select(Ident(name), member)
       )
     }
 
-    def mkDummyClass(contents: List[Tree], supertpe: Type): Tree = {
+    def mkClass(parent: Type, defns: List[Tree]): Tree = {
       val name = newTypeName(c.fresh())
 
       val clazz =
@@ -233,9 +294,9 @@ object GenericMacros {
           name,
           List(),
           Template(
-            List(TypeTree(supertpe)),
+            List(TypeTree(parent)),
             emptyValDef,
-            constructor :: contents
+            mkConstructor :: defns
           )
         )
 
@@ -245,426 +306,287 @@ object GenericMacros {
       )
     }
 
-    def mkImplicitly(typ: Type): Tree =
-      TypeApply(
-        Select(Ident(definitions.PredefModule), newTermName("implicitly")),
-        List(TypeTree(typ))
+    def mkConstructor =
+      DefDef(
+        Modifiers(),
+        nme.CONSTRUCTOR,
+        List(),
+        List(List()),
+        TypeTree(),
+        Block(
+          List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())),
+          Literal(Constant(()))
+        )
       )
-
-    def mkImplicitlyAndAssign(name: TermName, typ: Type): ValDef =
-      ValDef(
-        Modifiers(LAZY),
-        name,
-        TypeTree(typ),
-        mkImplicitly(typ)
-      )
-
-    def mkCompoundTpe[Parent, Nil <: Parent, Cons[_, _ <: Parent] <: Parent](
-      items: List[Type])(implicit
-      nil: c.WeakTypeTag[Nil],
-      cons: c.WeakTypeTag[Cons[Any, Nothing]]
-    ): Type =
-      items.foldRight(nil.tpe) { case (tpe, acc) =>
-        appliedType(cons.tpe, List(tpe, acc))
-      }
-
-    def mkFieldTpe(name: Name, tpe: Type): Type = {
-      val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
-      val symTpe = typeOf[scala.Symbol]
-      val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
-
-      val kTpe = appliedType(atatTpe, List(symTpe, ConstantType(constantOfName(name))))
-      appliedType(fieldTypeTpe, List(kTpe, tpe))
-    }
 
     def mkElem(elem: Tree, name: Name, tpe: Type): Tree =
-      if(labelled)
+      if(labelledRepr)
         TypeApply(Select(elem, newTermName("asInstanceOf")), List(TypeTree(mkFieldTpe(name, tpe))))
       else
         elem
 
-    def mkHListTpe(items: List[Type]): Type =
-      mkCompoundTpe[HList, HNil, ::](items)
+    type ProductCaseFn = Type => CaseDef
+    type CaseFn = (Type, Int) => CaseDef
+    
+    def mkProductCases(toRepr: ProductCaseFn, fromRepr: ProductCaseFn): (List[CaseDef], List[CaseDef]) =
+      (List(toRepr(fromTpe)), List(fromRepr(fromTpe)))
 
-    def mkRecordTpe(fields: List[(Name, Type)]): Type = {
-      val items = fields.map { case (k, v) => mkFieldTpe(k, v) }
-      mkCompoundTpe[HList, HNil, ::](items)
+    def mkCases(toRepr: CaseFn, fromRepr: CaseFn): (List[CaseDef], List[CaseDef]) = {
+      val to = fromCtors zip (Stream from 0) map toRepr.tupled
+      val from = fromCtors zip (Stream from 0) map fromRepr.tupled
+      val redundantCatchAllCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, absurdValueTree)
+      (to, from :+ redundantCatchAllCase)
     }
 
-    def mkCoproductTpe(items: List[Type]): Type =
-      mkCompoundTpe[Coproduct, CNil, :+:](items)
+    def mkTrans(name: TermName, inputTpe: Type, outputTpe: Type, cases: List[CaseDef]): Tree = {
+      val param = newTermName(c.fresh("param"))
 
-    def mkUnionTpe(fields: List[(Name, Type)]): Type = {
-      val items = fields.map { case (k, v) => mkFieldTpe(k, v) }
-      mkCompoundTpe[Coproduct, CNil, :+:](items)
+      DefDef(
+        Modifiers(),
+        name,
+        List(),
+        List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
+        TypeTree(outputTpe),
+        Match(Ident(param), cases)
+      )
     }
 
-    def anyNothing =
-      TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
+    def mkCoproductValue(tree: Tree, index: Int): Tree = {
+      val inl = Apply(inlValueTree, List(tree))
+      (0 until index).foldLeft(inl: Tree) { case (acc, _) =>
+        Apply(inrValueTree, List(acc))
+      }
+    }
 
-    def constantOfName(name: Name): Constant =
-      Constant(name.decoded.trim)
+    def mkToCoproductCase(tpe: Type, index: Int): CaseDef = {
+      val name = newTermName(c.fresh("pat"))
+      CaseDef(
+        Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(tpe))),
+        EmptyTree,
+        mkCoproductValue(mkElem(Ident(name), nameOf(tpe), tpe), index)
+      )
+    }
 
-    def literalOfName(name: Name): Tree =
-      Literal(constantOfName(name))
+    def mkFromCoproductCase(tpe: Type, index: Int): CaseDef = {
+      val name = newTermName(c.fresh("pat"))
+      CaseDef(
+        mkCoproductValue(Bind(name, Ident(nme.WILDCARD)), index),
+        EmptyTree,
+        Ident(name)
+      )
+    }
 
-    sealed trait ADT {
-      def tpe: Type
-      def classSym: ClassSymbol
-      def cases: List[ADTCase]
+    def mkBinder(boundName: Name, name: Name, tpe: Type) = Bind(boundName, Ident(nme.WILDCARD))
+    def mkValue(boundName: Name, name: Name, tpe: Type) = mkElem(Ident(boundName), name, tpe)
 
-      def usesCoproduct: Boolean
+    def mkTransCase(
+      tpe: Type,
+      bindFrom: (Name, Name, Type) => Tree,
+      bindRepr: (Name, Name, Type) => Tree
+    )(mkCaseDef: (Tree, Tree) => CaseDef): CaseDef = {
+      val boundFields = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) }
 
-      def mkCtor(index: Int)(tree: Tree): Tree
-      def mkDtor(index: Int)(tree: Tree): Tree
+      val fromTree =
+        if(tpe =:= unitTpe) unitValueTree
+        else Apply(Ident(tpe.typeSymbol.companionSymbol.asTerm), boundFields.map(bindFrom.tupled))
 
-      def reprTpe: Type
+      val reprTree =
+        boundFields.foldRight(hnilValueTree) {
+          case (bf, acc) => Apply(hconsValueTree, List(bindRepr.tupled(bf), acc))
+        }
 
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]): Tree
+      mkCaseDef(fromTree, reprTree)
+    }
 
-      lazy val allFieldTypes: List[Type] =
-        cases.flatMap(_.fieldTypes).filterNot(tpe =:= _).distinct
+    def mkToProductReprCase(tpe: Type): CaseDef =
+      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) => CaseDef(lhs, EmptyTree, rhs) }
 
-      def mkToOrFrom(
-        name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean,
-        mkCase: (ADTCase, Tree => Tree, Tree => Tree) => CaseDef
-      ): Tree = {
-        val param = newTermName(c.fresh("param"))
+    def mkFromProductReprCase(tpe: Type): CaseDef =
+      mkTransCase(tpe, mkValue, mkBinder) { case (rhs, lhs) => CaseDef(lhs, EmptyTree, rhs) }
 
-        val clauses =
-          cases zip (Stream from 0) map { case (c, index) => mkCase(c, mkDtor(index), mkCtor(index)) }
+    def mkToReprCase(tpe: Type, index: Int): CaseDef =
+      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) => 
+        CaseDef(lhs, EmptyTree, mkCoproductValue(mkElem(rhs, nameOf(tpe), tpe), index))
+      }
 
+    def mkFromReprCase(tpe: Type, index: Int): CaseDef =
+      mkTransCase(tpe, mkValue, mkBinder) { case (rhs, lhs) =>
+        CaseDef(mkCoproductValue(lhs, index), EmptyTree, rhs)
+      }
+
+    def materializeGeneric = {
+      val genericTypeConstructor: Type = if(toLabelled) labelledGenericTpe else genericTpe
+
+      val reprTpe =
+        if(fromProduct) reprOf(fromTpe)
+        else if(toLabelled) {
+          val labelledCases = fromCtors.map(tpe => (nameOf(tpe), tpe))
+          mkUnionTpe(labelledCases)
+        } else
+          mkCoproductTpe(fromCtors)
+
+      val (toCases, fromCases) = 
+        if(fromProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
+        else mkCases(mkToCoproductCase, mkFromCoproductCase)
+
+      mkClass(
+        appliedType(
+          genericTypeConstructor,
+          List(fromTpe)
+        ),
+        List(
+          TypeDef(Modifiers(), reprName, List(), TypeTree(reprTpe)),
+          mkTrans(toName, fromTpe, reprTpe, toCases),
+          mkTrans(fromName, reprTpe, fromTpe, fromCases)
+        )
+      )
+    }
+
+    def materializeIdentityGeneric = {
+      def mkIdentityDef(name: TermName) = {
+        val param = newTermName("t")
         DefDef(
           Modifiers(),
           name,
           List(),
-          List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
-          TypeTree(outputTpe),
-          Match(Ident(param), if (exhaust) clauses :+ absurdCase else clauses)
+          List(List(ValDef(Modifiers(PARAM), param, TypeTree(fromTpe), EmptyTree))),
+          TypeTree(fromTpe),
+          Ident(param)
         )
       }
 
-      def mkToRepr(name: TermName): Tree =
-        mkToOrFrom(
-          name,
-          tpe,
-          reprTpe,
-          false,
-          _.mkToReprCase(_, _)
+      mkClass(
+        appliedType(genericTpe, List(fromTpe)),
+        List(
+          TypeDef(Modifiers(), reprName, List(), TypeTree(fromTpe)),
+          mkIdentityDef(toName),
+          mkIdentityDef(fromName)
         )
+      )
+    }
 
-      def mkFromRepr(name: TermName): Tree =
-        mkToOrFrom(
-          name,
-          reprTpe,
-          tpe,
-          usesCoproduct,
-          _.mkFromReprCase(_, _)
-        )
+    def deriveInstance(tc: Type): Tree = {
+      fromSym.baseClasses.find(sym => sym != fromSym && sym.isClass && sym.asClass.isSealed) match {
+        case Some(sym) if c.inferImplicitValue(deriveCtorsTpe) == EmptyTree =>
+          val msg =
+            s"Attempting to derive a type class instance for class `${fromSym.name.decoded}` with "+
+            s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
+            s"this warning, import `TypeClass.ignoreParent`"
 
-      def mkInstances(resName: TermName, tc: Type, to: Tree, from: Tree): List[Tree] = {
-        val reprName, capabilityName = newTermName(c.fresh("inst"))
-        val count = allFieldTypes.length
-        val freshs = List.fill(count)(newTermName(c.fresh("inst")))
-
-        val baseMapping = (allFieldTypes zip freshs).toMap
-        val mapping = baseMapping.mapValues(Ident(_)) + (tpe → Ident(resName))
-
-        val capability =
-          if (usesCoproduct)
-            typeOf[TypeClass[Any]]
+          if (c.compilerSettings contains "-Xfatal-warnings")
+            c.error(c.enclosingPosition, msg)
           else
-            typeOf[ProductTypeClass[Any]]
-
-        val capabilityInstance =
-          mkImplicitlyAndAssign(capabilityName, appliedType(capability, List(tc)))
-
-        val baseInstances = baseMapping map { case (tpe, name) =>
-          mkImplicitlyAndAssign(name, appliedType(tc, List(tpe)))
-        }
-
-        val reprInstance =
-          ValDef(
-            Modifiers(LAZY),
-            reprName,
-            TypeTree(appliedType(tc, List(reprTpe))),
-            combineCaseInstances(Ident(capabilityName), mapping)
-          )
-
-        val resInstance =
-          ValDef(
-            Modifiers(LAZY),
-            resName,
-            TypeTree(appliedType(tc, List(tpe))),
-            Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
-          )
-
-        capabilityInstance :: baseInstances.toList ::: List(reprInstance, resInstance)
-      }
-
-      def deriveInstance(tc: Type): Tree = {
-        val toName, fromName, resName = newTermName(c.fresh())
-
-        mkDummyObject(
-          mkToRepr(toName) :: mkFromRepr(fromName) :: mkInstances(resName, tc, Ident(toName), Ident(fromName)),
-          resName
-        )
-      }
-      
-      def outerTypeConstructor: Type =
-        (if(labelled) typeOf[LabelledGeneric[_]] else typeOf[Generic[_]]).typeConstructor
-
-      def materializeGeneric = {
-        val toName = newTermName("to")
-        val fromName = newTermName("from")
-
-        mkDummyClass(
-          List(
-            TypeDef(Modifiers(), newTypeName("Repr"), List(), TypeTree(reprTpe)),
-            mkToRepr(toName),
-            mkFromRepr(fromName)
-          ),
-          appliedType(
-            outerTypeConstructor,
-            List(tpe)
-          )
-        )
-      }
-
-      def materializeIdentityGeneric = {
-        val toName = newTermName("to")
-        val fromName = newTermName("from")
-
-        def mkIdentityDef(name: TermName) = {
-          val param = newTermName("t")
-          DefDef(
-            Modifiers(),
-            name,
-            List(),
-            List(List(ValDef(Modifiers(PARAM), param, TypeTree(tpe), EmptyTree))),
-            TypeTree(tpe),
-            Ident(param)
-          )
-        }
-
-        mkDummyClass(
-          List(
-            TypeDef(Modifiers(), newTypeName("Repr"), List(), TypeTree(tpe)),
-            mkIdentityDef(toName),
-            mkIdentityDef(fromName)
-          ),
-          appliedType(
-            outerTypeConstructor,
-            List(tpe)
-          )
-        )
-      }
-    }
-
-    case class ADTSingle(tpe: Type, classSym: ClassSymbol, cse: ADTCase) extends ADT {
-
-      if (cse.fieldTypes contains tpe)
-        exit("Single-case recursive ADTs are not supported")
-
-      def cases = List(cse)
-
-      def reprTpe = cse.reprTpe
-
-      def mkDtor(index: Int)(tree: Tree) = tree
-      def mkCtor(index: Int)(tree: Tree) = tree
-
-      def usesCoproduct = false
-
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) =
-        Apply(Select(tc, newTermName("namedCase")), List(cse.mkInstance(tc, mapping), literalOfName(classSym.name)))
-
-    }
-
-    case class ADTMulti(tpe: Type, classSym: ClassSymbol, cases: List[ADTCase]) extends ADT {
-
-      val (init, last) = cases match {
-        case Nil    => exit(s"$tpe appears to have no cases")
-        case i :+ l => (i, l)
-      }
-
-      def reprTpe =
-        if(labelled) {
-          val labelledCases = cases.map(cse => (cse.name, cse.reprTpe))
-          mkUnionTpe(labelledCases)
-        }
-        else
-          mkCoproductTpe(cases.map(_.reprTpe))
-
-      def mkCDtor(index: Int, tree: Tree): Tree = {
-        val inl = Apply(reify { Inl }.tree, List(tree))
-        (0 until index).foldLeft(inl: Tree) { case (acc, _) =>
-          Apply(reify { Inr }.tree, List(acc))
-        }
-      }
-
-      def mkDtor(index: Int)(tree: Tree): Tree = mkCDtor(index, tree)
-
-      def mkCtor(index: Int)(tree: Tree): Tree = {
-        val cse = cases(index)
-        val elem = mkElem(tree, cse.name, cse.tpe)
-        mkCDtor(index, elem)
-      }
-
-      def usesCoproduct = true
-
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) = {
-        val lastInstance =
-          Apply(Select(tc, newTermName("namedCoproduct1")), List(last.mkInstance(tc, mapping), literalOfName(last.name)))
-
-        init.foldRight(lastInstance) { case (cse, acc) =>
-          val instance = cse.mkInstance(tc, mapping)
-          Apply(Select(tc, newTermName("namedCoproduct")), List(instance, literalOfName(cse.name), acc))
-        }
-      }
-
-    }
-
-    sealed trait ADTCase {
-      def tpe: Type
-      def fieldTypes: List[Type]
-      def reprTpe: Type
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree
-      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef
-      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef
-
-      def name = tpe.typeSymbol.name
-    }
-
-    case class SimpleADTCase(tpe: Type) extends ADTCase {
-      def fieldTypes: List[Type] = List(tpe)
-      def reprTpe = tpe
-
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
-        mapping(tpe)
-
-      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
-        val name = newTermName(c.fresh("x"))
-        CaseDef(
-          Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(tpe))),
-          EmptyTree,
-          mkCtor(Ident(name))
-        )
-      }
-
-      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
-        val name = newTermName(c.fresh("x"))
-        CaseDef(
-          mkDtor(Bind(name, Ident(nme.WILDCARD))),
-          EmptyTree,
-          Ident(name)
-        )
-      }
-
-    }
-
-    case class UnitADTCase() extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
-      def unitValueTree = reify { () }.tree
-
-      val tpe = typeOf[Unit]
-      val fieldTypes = Nil
-      val reprTpe = typeOf[HNil]
-
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
-        Select(tc, newTermName("emptyProduct"))
-
-      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef =
-        CaseDef(
-          unitValueTree,
-          EmptyTree,
-          mkCtor(hNilValueTree)
-        )
-
-      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef =
-        CaseDef(
-          mkDtor(hNilValueTree),
-          EmptyTree,
-          unitValueTree
-        )
-    }
-
-    case class ExpandingADTCase(tpe: Type, companion: TermSymbol) extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
-      def hConsValueTree = reify {  ::  }.tree
-
-      lazy val fields = tpe.declarations.toList collect {
-        case x: TermSymbol if x.isVal && x.isCaseAccessor => x
-      }
-
-      def fieldFreshs(): List[TermName] =
-        List.fill(fields.length)(newTermName(c.fresh("pat")))
-
-      def fieldTypes =
-        fields.map(fieldType)
-
-      def fieldType(sym: TermSymbol): Type =
-        sym.typeSignatureIn(tpe)
-
-      def labelledFields: List[(Name, Type)] =
-        fields.map { sym => (sym.name, fieldType(sym)) }
-
-      def fieldNames: List[Name] =
-        fields.map { sym => sym.name }
-
-      def reprTpe = fieldTypes match {
-        case List(tpe) if optimizeSingleItem =>
-          tpe
-        case tpes =>
-          if(labelled)
-            mkRecordTpe(labelledFields)
-          else
-            mkHListTpe(tpes)
-      }
-
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = fields match {
-        case List(sym) if optimizeSingleItem =>
-          Apply(Select(tc, newTermName("namedField")), List(mapping(fieldType(sym)), literalOfName(sym.name)))
+            c.warning(c.enclosingPosition, msg)
         case _ =>
-          val empty: Tree = Select(tc, newTermName("emptyProduct"))
-          val cons:  Tree = Select(tc, newTermName("namedProduct"))
-          fields.foldRight(empty) { case (sym, acc) =>
-            Apply(cons, List(mapping(fieldType(sym)), literalOfName(sym.name), acc))
+      }
+
+      val deriverName = newTermName(c.fresh("inst"))
+
+      def mkImplicitlyAndAssign(name: TermName, typ: Type): ValDef = {
+        def mkImplicitly(typ: Type): Tree =
+          TypeApply(
+            Select(Ident(definitions.PredefModule), newTermName("implicitly")),
+            List(TypeTree(typ))
+          )
+
+        ValDef(
+          Modifiers(LAZY),
+          name,
+          TypeTree(typ),
+          mkImplicitly(typ)
+        )
+      }
+
+      val elemTpes: List[Type] = fromCtors.flatMap(fieldsOf(_).map(_._2)).filterNot(fromTpe =:= _).distinct
+      val elemInstanceNames = List.fill(elemTpes.length)(newTermName(c.fresh("inst")))
+      val elemInstanceMap = (elemTpes zip elemInstanceNames).toMap
+      val elemInstanceDecls = (elemInstanceMap map { case (tpe, name) =>
+        mkImplicitlyAndAssign(name, appliedType(tc, List(tpe)))
+      }).toList
+
+      val tpeInstanceName = newTermName(c.fresh())
+      val instanceMap = elemInstanceMap.mapValues(Ident(_)) + (fromTpe -> Ident(tpeInstanceName))
+
+      val deriverTpe: Type = (toProduct, toLabelled) match {
+        case (false, false) => typeClassTpe
+        case (false, true)  => labelledTypeClassTpe
+        case (true, false)  => productTypeClassTpe
+        case (true, true)   => labelledProductTypeClassTpe
+      }
+
+      val deriverInstanceDecl =
+        mkImplicitlyAndAssign(deriverName, appliedType(deriverTpe, List(tc)))
+
+      val reprInstance = {
+        val tc = Ident(deriverName)
+
+        val emptyProduct: Tree = Select(tc, newTermName("emptyProduct"))
+        val product: Tree = Select(tc, newTermName("product"))
+
+        val emptyCoproduct: Tree = Select(tc, newTermName("emptyCoproduct"))
+        val coproduct: Tree = Select(tc, newTermName("coproduct"))
+
+        def mkCompoundValue(nil: Tree, cons: Tree, items: List[(Name, Tree)]): Tree =
+          items.foldRight(nil) { case ((name, instance), acc) =>
+            Apply(
+              cons,
+              (if(toLabelled) List(nameAsLiteral(name)) else Nil) ++ List(instance, acc)
+            )
           }
+
+        def mkInstance(tpe: Type): Tree =
+          mkCompoundValue(
+            emptyProduct, product,
+            fieldsOf(tpe).map { case (name, tpe) => (name, instanceMap(tpe)) }
+          )
+
+        if(toProduct)
+          mkInstance(fromTpe)
+        else
+          mkCompoundValue(
+            emptyCoproduct, coproduct,
+            fromCtors.map { tpe => (tpe.typeSymbol.name, mkInstance(tpe)) }
+          )
       }
 
-      def mkToReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
-        val freshs = fieldFreshs() zip labelledFields
-        val res = freshs match {
-          case List((name, _)) if optimizeSingleItem =>
-            Ident(name)
-          case names =>
-            names.foldRight(hNilValueTree) { case ((sym, (name, tpe)), acc) =>
-              Apply(hConsValueTree, List(mkElem(Ident(sym), name, tpe), acc))
-            }
-        }
-        CaseDef(
-          Apply(Ident(companion), freshs.map(f => Bind(f._1, Ident(nme.WILDCARD)))),
-          EmptyTree,
-          mkCtor(res)
-        )
-      }
+      val reprTpe =
+        if(toProduct)
+          reprOf(fromTpe)
+        else
+          mkCoproductTpe(fromCtors.map(reprOf))
 
-      def mkFromReprCase(mkDtor: Tree => Tree, mkCtor: Tree => Tree): CaseDef = {
-        val freshs = fieldFreshs()
-        val pat = freshs match {
-          case List(name) if optimizeSingleItem =>
-            Bind(name, Ident(nme.WILDCARD))
-          case names =>
-            names.foldRight(Ident(nme.WILDCARD): Tree) { case (sym, acc) =>
-              Apply(hConsValueTree, List(Bind(sym, Ident(nme.WILDCARD)), acc))
-            }
-        }
-        CaseDef(
-          mkDtor(pat),
-          EmptyTree,
-          Apply(Ident(companion), freshs.map(Ident(_)))
+      val reprName = newTermName(c.fresh("inst"))
+      val reprInstanceDecl =
+        ValDef(
+          Modifiers(LAZY),
+          reprName,
+          TypeTree(appliedType(tc, List(reprTpe))),
+          reprInstance
         )
-      }
+
+      val toName, fromName = newTermName(c.fresh())
+
+      val tpeInstanceDecl =
+        ValDef(
+          Modifiers(LAZY),
+          tpeInstanceName,
+          TypeTree(appliedType(tc, List(fromTpe))),
+          Apply(
+            Select(Ident(deriverName), newTermName("project")),
+            List(Ident(reprName), Ident(toName), Ident(fromName))
+          )
+        )
+
+      val instanceDecls = deriverInstanceDecl :: elemInstanceDecls ::: List(reprInstanceDecl, tpeInstanceDecl)
+
+      val (toCases, fromCases) =
+        if(toProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
+        else mkCases(mkToReprCase, mkFromReprCase)
+
+      mkObjectSelection(
+        mkTrans(toName, fromTpe, reprTpe, toCases) :: mkTrans(fromName, reprTpe, fromTpe, fromCases) :: instanceDecls,
+        tpeInstanceName
+      )
     }
   }
 }

@@ -25,7 +25,7 @@ package MonoidAux {
     def append(a : T, b : T) : T
   }
 
-  object Monoid extends TypeClassCompanion[Monoid] {
+  object Monoid extends ProductTypeClassCompanion[Monoid] {
     def mzero[T](implicit mt : Monoid[T]) = mt.zero
     
     implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -87,8 +87,8 @@ class MonoidTests {
 
   @Test
   def testBasics {
-    implicit val fooInstance = TypeClass[Monoid, Foo]
-    implicit val barInstance = TypeClass[Monoid, Bar]
+    implicit val fooInstance = Monoid[Foo]
+    implicit val barInstance = Monoid[Bar]
 
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
