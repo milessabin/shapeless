@@ -330,7 +330,10 @@ object GenericMacros {
             Modifiers(LAZY),
             resName,
             TypeTree(appliedType(tc, List(tpe))),
-            Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
+            if (tpe =:= reprTpe)
+              Ident(reprName)
+            else
+              Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
           )
 
         capabilityInstance :: baseInstances.toList ::: List(reprInstance, resInstance)
@@ -485,8 +488,13 @@ object GenericMacros {
 
       def usesCoproduct = false
 
-      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]) =
-        Apply(Select(tc, newTermName("namedCase")), List(cse.mkInstance(tc, mapping), literalOfName(classSym.name)))
+      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]) = {
+        val inst = cse.mkInstance(tc, mapping)
+        if (tpe <:< typeOf[HList])
+          inst
+        else
+          Apply(Select(tc, newTermName("namedCase")), List(inst, literalOfName(classSym.name)))
+      }
 
       protected def wrap(index: Int)(tree: Tree) = tree
 
