@@ -50,9 +50,9 @@ package TypeClassAux {
     override def namedCoproduct[L, R <: Coproduct](l: => Dummy[L], name: String, r: => Dummy[R]) = Sum(l, name, r)
     override def namedCoproduct1[L](l: => Dummy[L], name: String) = Sum1(l, name)
 
-    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = sys.error("unexpected call to product")
-    def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = sys.error("unexpected call to coproduct")
-    override def coproduct1[L](l: => Dummy[L]) = sys.error("unexpected call to coproduct1")
+    def product[H, T <: HList](h: Dummy[H], t: Dummy[T]) = Product(h, "<unnamed>", t)
+    def coproduct[L, R <: Coproduct](l: => Dummy[L], r: => Dummy[R]) = Sum(l, "<unnamed>", r)
+    override def coproduct1[L](l: => Dummy[L]) = Sum1(l, "<unnamed>")
   }
 }
 
@@ -71,6 +71,9 @@ class TypeClassTests {
   val tupleResult = Project(NamedCase(Product(Base("int"), "_1", Product(Base("string"), "_2", EmptyProduct)), "Tuple2"))
   val unitResult = Project(NamedCase(EmptyProduct, "Unit"))
 
+  val hlistResult = Product(Base("int"), "<unnamed>", Product(Base("string"), "<unnamed>", EmptyProduct))
+  val coproductResult = Sum(Base("int"), "<unnamed>", Sum1(Base("string"), "<unnamed>"))
+
   sealed trait Cases[A, B]
   case class CaseA[A, B](a: A) extends Cases[A, B]
   case class CaseB[A, B](b1: B, b2: B) extends Cases[A, B]
@@ -87,14 +90,12 @@ class TypeClassTests {
   def testManualSingle {
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(fooResult, tc.derive[Foo])
-    illTyped("""tc.derive[Cases[Int, String]]""")
   }
 
   @Test
   def testManualEmpty {
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(barResult, tc.derive[Bar])
-    illTyped("""tc.derive[Cases[Int, String]]""")
   }
 
   @Test
@@ -104,17 +105,39 @@ class TypeClassTests {
   }
 
   @Test
+  def testManualMultiInvalid {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    illTyped("""tc.derive[Cases[Int, String]]""")
+  }
+
+  @Test
   def testManualTuple {
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(tupleResult, tc.derive[(Int, String)])
-    illTyped("""tc.derive[Cases[Int, String]]""")
   }
 
   @Test
   def testManualUnit {
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(unitResult, tc.derive[Unit])
-    illTyped("""tc.derive[Cases[Int, String]]""")
+  }
+
+  @Test
+  def testManualProduct {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(hlistResult, tc.derive[Int :: String :: HNil])
+  }
+
+  @Test
+  def testManualCoproduct {
+    implicit val tc: TypeClass[Dummy] = DummyInstance
+    assertEquals(coproductResult, tc.derive[Int :+: String :+: CNil])
+  }
+
+  @Test
+  def testManualCoproductInvalid {
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    illTyped("""tc.derive[Int :+: String :+: CNil]""")
   }
 
   @Test
@@ -135,7 +158,6 @@ class TypeClassTests {
     import Dummy.auto._
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(fooResult, implicitly[Dummy[Foo]])
-    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
     assertEquals(fooResult, Foo(23, "foo").frobnicate)
   }
 
@@ -144,7 +166,6 @@ class TypeClassTests {
     import Dummy.auto._
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(barResult, implicitly[Dummy[Bar]])
-    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
     assertEquals(barResult, Bar().frobnicate)
   }
 
@@ -157,11 +178,18 @@ class TypeClassTests {
   }
 
   @Test
+  def testAutoMultiInvalid {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    illTyped("""tc.derive[Cases[Int, String]]""",
+      "could not find implicit value for parameter e: shapeless.TypeClass.*")
+  }
+
+  @Test
   def testAutoTuple {
     import Dummy.auto._
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(tupleResult, implicitly[Dummy[(Int, String)]])
-    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
     assertEquals(tupleResult, (23, "foo").frobnicate)
   }
 
@@ -170,9 +198,29 @@ class TypeClassTests {
     import Dummy.auto._
     implicit val tc: ProductTypeClass[Dummy] = DummyInstance
     assertEquals(unitResult, implicitly[Dummy[Unit]])
-    illTyped("""implicitly[Dummy[Cases[Int, String]]]""")
     assertEquals(unitResult, ().frobnicate)
+  }
+
+  @Test
+  def testAutoProduct {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    assertEquals(hlistResult, implicitly[Dummy[Int :: String :: HNil]])
+    assertEquals(hlistResult, (3 :: "foo" :: HNil).frobnicate)
+  }
+
+  @Test
+  def testAutoCoproduct {
+    import Dummy.auto._
+    implicit val tc: TypeClass[Dummy] = DummyInstance
+    assertEquals(coproductResult, implicitly[Dummy[Int :+: String :+: CNil]])
+  }
+
+  @Test
+  def testAutoCoproductInvalid {
+    import Dummy.auto._
+    implicit val tc: ProductTypeClass[Dummy] = DummyInstance
+    illTyped("""implicitly[Dummy[Int :+: String :+: CNil]]""")
   }
 }
 
-// vim: expandtab:ts=2:sw=2
