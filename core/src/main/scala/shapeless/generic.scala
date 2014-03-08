@@ -146,8 +146,10 @@ object GenericMacros {
       val classSym = sym.asClass
       classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
 
-      if(tpe =:= typeOf[Unit])
+      if (tpe =:= typeOf[Unit])
         ADTSingle(tpe, classSym, UnitADTCase())
+      else if (tpe <:< typeOf[HList])
+        ADTSingle(tpe, classSym, HListADTCase(tpe))
       else {
         if (checkParent)
           classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
@@ -177,7 +179,7 @@ object GenericMacros {
           })
         }
         else
-          exit(s"$classSym is not a case class, a sealed trait or Unit")
+          exit(s"$classSym is not a case class, a sealed trait, an HList, a Coproduct or Unit")
       }
     }
 
@@ -299,7 +301,6 @@ object GenericMacros {
 
     sealed trait ADT {
       def tpe: Type
-      def classSym: ClassSymbol
       def cases: List[ADTCase]
 
       def usesCoproduct: Boolean
@@ -495,6 +496,9 @@ object GenericMacros {
 
     }
 
+    def hNilValueTree  = reify { HNil }.tree
+    def hConsValueTree = reify {  ::  }.tree
+
     sealed trait ADTCase {
       def tpe: Type
       def fieldTypes: List[Type]
@@ -506,12 +510,8 @@ object GenericMacros {
       def name = tpe.typeSymbol.name
     }
 
-    case class SimpleADTCase(tpe: Type) extends ADTCase {
-      def fieldTypes: List[Type] = List(tpe)
+    trait IdentityCase { self: ADTCase =>
       def reprTpe = tpe
-
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
-        mapping(tpe)
 
       def mkToReprCase(wrap: Tree => Tree): CaseDef = {
         val name = newTermName(c.fresh("x"))
@@ -530,11 +530,40 @@ object GenericMacros {
           Ident(name)
         )
       }
+    }
+
+    case class SimpleADTCase(tpe: Type) extends ADTCase with IdentityCase {
+      def fieldTypes: List[Type] = List(tpe)
+
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
+        mapping(tpe)
+    }
+
+    case class HListADTCase(tpe: Type) extends ADTCase with IdentityCase {
+      def fieldTypes: List[Type] = unpack(tpe)
+
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = {
+        val empty: Tree = Select(tc, newTermName("emptyProduct"))
+        val cons:  Tree = Select(tc, newTermName("product"))
+        fieldTypes.foldRight(empty) { case (tpe, acc) =>
+          Apply(cons, List(mapping(tpe), acc))
+        }
+      }
+
+      private def unpack(tpe: Type): List[Type] =
+        if (tpe <:< typeOf[HNil])
+          Nil
+        else
+          tpe match {
+            case TypeRef(_, _, List(h, t)) =>
+              h :: unpack(t)
+            case _ =>
+              exit(s"bad type $tpe")
+          }
 
     }
 
     case class UnitADTCase() extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
       def unitValueTree = reify { () }.tree
 
       val tpe = typeOf[Unit]
@@ -560,8 +589,6 @@ object GenericMacros {
     }
 
     case class ExpandingADTCase(tpe: Type, companion: TermSymbol) extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
-      def hConsValueTree = reify {  ::  }.tree
 
       lazy val fields = tpe.declarations.toList collect {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
