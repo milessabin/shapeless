@@ -111,34 +111,6 @@ object GenericMacros {
 
 
     def ADT: ADT = {
-      def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
-        classSym.knownDirectSubclasses.toList flatMap { child0 =>
-          val child = child0.asClass
-          child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-          if (child.isCaseClass)
-            List(child)
-          else if (child.isSealed)
-            collectCases(child)
-          else
-            exit(s"$child is not a case class or a sealed trait")
-        }
-      }
-
-      // We're using an extremely optimistic strategy here, basically ignoring
-      // the existence of any existential types.
-      def normalize(classSym: ClassSymbol): Type = tpe match {
-        case base: TypeRef =>
-          val subTpe = classSym.asType.toType
-          classSym.typeParams match {
-            case Nil =>
-              subTpe
-            case tpes =>
-              appliedType(subTpe, base.args)
-          }
-        case _ =>
-          exit(s"bad type $tpe")
-      }
-
       val sym = tpe.typeSymbol
       if (!sym.isClass)
         exit(s"$sym is not a class or trait")
@@ -146,8 +118,12 @@ object GenericMacros {
       val classSym = sym.asClass
       classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
 
-      if(tpe =:= typeOf[Unit])
-        ADTSingle(tpe, classSym, UnitADTCase())
+      if (tpe =:= typeOf[Unit])
+        ADTSingle(tpe, classSym, UnitADTCase)
+      else if (tpe <:< typeOf[HList])
+        ADTSingle(tpe, classSym, HListADTCase(tpe))
+      else if (tpe <:< typeOf[Coproduct])
+        ADTCoproduct(tpe)
       else {
         if (checkParent)
           classSym.baseClasses.find(sym => sym != classSym && sym.isClass && sym.asClass.isSealed) match {
@@ -166,18 +142,10 @@ object GenericMacros {
 
         if (classSym.isCaseClass) // one-case ADT
           ADTSingle(tpe, classSym, ExpandingADTCase(tpe, classSym.companionSymbol.asTerm))
-        else if (classSym.isSealed) { // multiple cases
-          val cases = collectCases(classSym).sortBy(_.fullName)
-          ADTMulti(tpe, classSym, cases map { sym =>
-            val normalized = normalize(sym)
-            if (expandInner)
-              ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
-            else
-              SimpleADTCase(normalized)
-          })
-        }
+        else if (classSym.isSealed) // multiple cases
+          ADTMulti(tpe, classSym)
         else
-          exit(s"$classSym is not a case class, a sealed trait or Unit")
+          exit(s"$classSym is not a case class, a sealed trait, an HList, a Coproduct or Unit")
       }
     }
 
@@ -271,6 +239,26 @@ object GenericMacros {
     def mkHListTpe(items: List[Type]): Type =
       mkCompoundTpe[HList, HNil, ::](items)
 
+    def mkCoproductTpe(items: List[Type]): Type =
+      mkCompoundTpe[Coproduct, CNil, :+:](items)
+
+    def destCompoundTpe[Parent, Nil <: Parent, Cons[_, _ <: Parent] <: Parent](tpe: Type)(implicit nil: c.WeakTypeTag[Nil]): List[Type] =
+      if (tpe <:< nil.tpe)
+        Nil
+      else
+        tpe match {
+          case TypeRef(_, _, List(h, t)) =>
+            h :: destCompoundTpe[Parent, Nil, Cons](t)
+          case _ =>
+            exit(s"bad type $tpe")
+        }
+
+    def destHListTpe(tpe: Type): List[Type] =
+      destCompoundTpe[HList, HNil, ::](tpe)
+
+    def destCoproductTpe(tpe: Type): List[Type] =
+      destCompoundTpe[Coproduct, CNil, :+:](tpe)
+
     def mkFieldTpe(name: Name, tpe: Type): Type = {
       val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
       val symTpe = typeOf[scala.Symbol]
@@ -285,9 +273,6 @@ object GenericMacros {
       mkCompoundTpe[HList, HNil, ::](items)
     }
 
-    def mkCoproductTpe(items: List[Type]): Type =
-      mkCompoundTpe[Coproduct, CNil, :+:](items)
-
     def anyNothing =
       TypeBoundsTree(Ident(typeOf[Nothing].typeSymbol), Ident(typeOf[Any].typeSymbol))
 
@@ -299,53 +284,17 @@ object GenericMacros {
 
     sealed trait ADT {
       def tpe: Type
-      def classSym: ClassSymbol
-      def cases: List[ADTCase]
 
       def usesCoproduct: Boolean
 
-      def wrap(index: Int)(tree: Tree): Tree
-
       def reprTpe: Type
 
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]): Tree
+      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]): Tree
 
-      lazy val allFieldTypes: List[Type] =
-        cases.flatMap(_.fieldTypes).filterNot(tpe =:= _).distinct
+      def allFieldTypes: List[Type]
 
-      def mkToOrFrom(name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean, mkCase: (ADTCase, Tree => Tree) => CaseDef): Tree = {
-        val param = newTermName(c.fresh("param"))
-
-        val clauses =
-          cases zip (Stream from 0) map { case (c, index) => mkCase(c, wrap(index)) }
-
-        DefDef(
-          Modifiers(),
-          name,
-          List(),
-          List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
-          TypeTree(outputTpe),
-          Match(Ident(param), if (exhaust) clauses :+ absurdCase else clauses)
-        )
-      }
-
-      def mkToRepr(name: TermName): Tree =
-        mkToOrFrom(
-          name,
-          tpe,
-          reprTpe,
-          false,
-          _.mkToReprCase(_)
-        )
-
-      def mkFromRepr(name: TermName): Tree =
-        mkToOrFrom(
-          name,
-          reprTpe,
-          tpe,
-          usesCoproduct,
-          _.mkFromReprCase(_)
-        )
+      def mkToRepr(name: TermName): Tree
+      def mkFromRepr(name: TermName): Tree
 
       def mkInstances(resName: TermName, tc: Type, to: Tree, from: Tree): List[Tree] = {
         val reprName, capabilityName = newTermName(c.fresh("inst"))
@@ -373,7 +322,7 @@ object GenericMacros {
             Modifiers(LAZY),
             reprName,
             TypeTree(appliedType(tc, List(reprTpe))),
-            combineCaseInstances(Ident(capabilityName), mapping)
+            combineAllInstances(Ident(capabilityName), mapping)
           )
 
         val resInstance =
@@ -381,7 +330,10 @@ object GenericMacros {
             Modifiers(LAZY),
             resName,
             TypeTree(appliedType(tc, List(tpe))),
-            Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
+            if (tpe =:= reprTpe)
+              Ident(reprName)
+            else
+              Apply(Select(Ident(capabilityName), newTermName("project")), List(Ident(reprName), to, from))
           )
 
         capabilityInstance :: baseInstances.toList ::: List(reprInstance, resInstance)
@@ -446,7 +398,86 @@ object GenericMacros {
       }
     }
 
-    case class ADTSingle(tpe: Type, classSym: ClassSymbol, cse: ADTCase) extends ADT {
+    case class ADTCoproduct(tpe: Type) extends ADT {
+
+      val cases = destCoproductTpe(tpe)
+
+      val (init, last) = cases match {
+        case Nil    => exit("$tpe appears to be CNil")
+        case i :+ l => (i, l)
+      }
+
+      def reprTpe = tpe
+
+      def usesCoproduct = true
+
+      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]) = {
+        val lastInstance =
+          Apply(Select(tc, newTermName("coproduct1")), List(mapping(last)))
+
+        init.foldRight(lastInstance) { case (tpe, acc) =>
+          Apply(Select(tc, newTermName("coproduct")), List(mapping(tpe), acc))
+        }
+      }
+
+      def allFieldTypes = cases
+
+      private def mkToOrFrom(name: TermName, inputTpe: Type, outputTpe: Type): Tree = {
+        val param = newTermName(c.fresh("param"))
+
+        DefDef(
+          Modifiers(),
+          name,
+          List(),
+          List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
+          TypeTree(outputTpe),
+          Ident(param)
+        )
+      }
+
+      def mkToRepr(name: TermName) =
+        mkToOrFrom(name, tpe, reprTpe)
+
+      def mkFromRepr(name: TermName) =
+        mkToOrFrom(name, reprTpe, tpe)
+
+    }
+
+    def inlValueTree = reify { Inl }.tree
+    def inrValueTree = reify { Inr }.tree
+
+
+    trait ADTComposed { self: ADT =>
+      protected def cases: List[ADTCase]
+      protected def wrap(index: Int)(tree: Tree): Tree
+
+      def allFieldTypes =
+        cases.flatMap(_.fieldTypes).filterNot(tpe =:= _).distinct
+
+      private def mkToOrFrom(name: TermName, inputTpe: Type, outputTpe: Type, exhaust: Boolean, mkCase: (ADTCase, Tree => Tree) => CaseDef): Tree = {
+        val param = newTermName(c.fresh("param"))
+
+        val clauses =
+          cases zip (Stream from 0) map { case (c, index) => mkCase(c, wrap(index)) }
+
+        DefDef(
+          Modifiers(),
+          name,
+          List(),
+          List(List(ValDef(Modifiers(PARAM), param, TypeTree(inputTpe), EmptyTree))),
+          TypeTree(outputTpe),
+          Match(Ident(param), if (exhaust) clauses :+ absurdCase else clauses)
+        )
+      }
+
+      def mkToRepr(name: TermName) =
+        mkToOrFrom(name, tpe, reprTpe, false, _.mkToReprCase(_))
+
+      def mkFromRepr(name: TermName) =
+        mkToOrFrom(name, reprTpe, tpe, usesCoproduct, _.mkFromReprCase(_))
+    }
+
+    case class ADTSingle(tpe: Type, classSym: ClassSymbol, cse: ADTCase) extends ADT with ADTComposed {
 
       if (cse.fieldTypes contains tpe)
         exit("Single-case recursive ADTs are not supported")
@@ -455,35 +486,69 @@ object GenericMacros {
 
       def reprTpe = cse.reprTpe
 
-      def wrap(index: Int)(tree: Tree) = tree
-
       def usesCoproduct = false
 
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) =
-        Apply(Select(tc, newTermName("namedCase")), List(cse.mkInstance(tc, mapping), literalOfName(classSym.name)))
+      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]) = {
+        val inst = cse.mkInstance(tc, mapping)
+        if (tpe <:< typeOf[HList])
+          inst
+        else
+          Apply(Select(tc, newTermName("namedCase")), List(inst, literalOfName(classSym.name)))
+      }
+
+      protected def wrap(index: Int)(tree: Tree) = tree
 
     }
 
-    case class ADTMulti(tpe: Type, classSym: ClassSymbol, cases: List[ADTCase]) extends ADT {
+    case class ADTMulti(tpe: Type, classSym: ClassSymbol) extends ADT with ADTComposed {
+
+      private def collectCases(classSym: ClassSymbol): List[ClassSymbol] = {
+        classSym.knownDirectSubclasses.toList flatMap { child0 =>
+          val child = child0.asClass
+          child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+          if (child.isCaseClass)
+            List(child)
+          else if (child.isSealed)
+            collectCases(child)
+          else
+            exit(s"$child is not a case class or a sealed trait")
+        }
+      }
+
+      // We're using an extremely optimistic strategy here, basically ignoring
+      // the existence of any existential types.
+      private def normalize(classSym: ClassSymbol): Type = tpe match {
+        case base: TypeRef =>
+          val subTpe = classSym.asType.toType
+          classSym.typeParams match {
+            case Nil =>
+              subTpe
+            case tpes =>
+              appliedType(subTpe, base.args)
+          }
+        case _ =>
+          exit(s"bad type $tpe")
+      }
+
+      val cases = collectCases(classSym).sortBy(_.fullName) map { sym =>
+        val normalized = normalize(sym)
+        if (expandInner)
+          ExpandingADTCase(normalized, sym.companionSymbol.asTerm)
+        else
+          SimpleADTCase(normalized)
+      }
 
       val (init, last) = cases match {
-        case Nil    => exit(s"$tpe appears to have no cases")
+        case Nil    => exit("$tpe appears to have no cases")
         case i :+ l => (i, l)
       }
 
       def reprTpe =
         mkCoproductTpe(cases.map(_.reprTpe))
 
-      def wrap(index: Int)(tree: Tree): Tree = {
-        val inl = Apply(reify { Inl }.tree, List(tree))
-        (0 until index).foldLeft(inl: Tree) { case (acc, _) =>
-          Apply(reify { Inr }.tree, List(acc))
-        }
-      }
-
       def usesCoproduct = true
 
-      def combineCaseInstances(tc: Tree, mapping: Map[Type, Tree]) = {
+      def combineAllInstances(tc: Tree, mapping: Map[Type, Tree]) = {
         val lastInstance =
           Apply(Select(tc, newTermName("namedCoproduct1")), List(last.mkInstance(tc, mapping), literalOfName(last.name)))
 
@@ -493,7 +558,17 @@ object GenericMacros {
         }
       }
 
+      protected def wrap(index: Int)(tree: Tree): Tree = {
+        val inl = Apply(inlValueTree, List(tree))
+        (0 until index).foldLeft(inl: Tree) { case (acc, _) =>
+          Apply(inrValueTree, List(acc))
+        }
+      }
+
     }
+
+    def hNilValueTree  = reify { HNil }.tree
+    def hConsValueTree = reify {  ::  }.tree
 
     sealed trait ADTCase {
       def tpe: Type
@@ -506,12 +581,8 @@ object GenericMacros {
       def name = tpe.typeSymbol.name
     }
 
-    case class SimpleADTCase(tpe: Type) extends ADTCase {
-      def fieldTypes: List[Type] = List(tpe)
+    trait IdentityCase { self: ADTCase =>
       def reprTpe = tpe
-
-      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
-        mapping(tpe)
 
       def mkToReprCase(wrap: Tree => Tree): CaseDef = {
         val name = newTermName(c.fresh("x"))
@@ -530,11 +601,28 @@ object GenericMacros {
           Ident(name)
         )
       }
-
     }
 
-    case class UnitADTCase() extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
+    case class SimpleADTCase(tpe: Type) extends ADTCase with IdentityCase {
+      def fieldTypes: List[Type] = List(tpe)
+
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree =
+        mapping(tpe)
+    }
+
+    case class HListADTCase(tpe: Type) extends ADTCase with IdentityCase {
+      def fieldTypes: List[Type] = destHListTpe(tpe)
+
+      def mkInstance(tc: Tree, mapping: Map[Type, Tree]): Tree = {
+        val empty: Tree = Select(tc, newTermName("emptyProduct"))
+        val cons:  Tree = Select(tc, newTermName("product"))
+        fieldTypes.foldRight(empty) { case (tpe, acc) =>
+          Apply(cons, List(mapping(tpe), acc))
+        }
+      }
+    }
+
+    case object UnitADTCase extends ADTCase {
       def unitValueTree = reify { () }.tree
 
       val tpe = typeOf[Unit]
@@ -560,8 +648,6 @@ object GenericMacros {
     }
 
     case class ExpandingADTCase(tpe: Type, companion: TermSymbol) extends ADTCase {
-      def hNilValueTree  = reify { HNil }.tree
-      def hConsValueTree = reify {  ::  }.tree
 
       lazy val fields = tpe.declarations.toList collect {
         case x: TermSymbol if x.isVal && x.isCaseAccessor => x
