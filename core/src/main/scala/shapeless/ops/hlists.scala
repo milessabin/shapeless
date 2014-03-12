@@ -1496,4 +1496,37 @@ object hlist {
           def apply(c: C, l: L) = zipper(l :: mapper(c, l) :: HNil)
         }
   }
+
+  /**
+   * Type class supporting zipping an 'HList' with another 'HList' using a 'Poly2' resulting in an HList
+   *
+   * @author Stacy Curl
+   */
+  trait ZipWith[L <: HList, R <: HList, P <: Poly2] extends DepFn2[L, R] { type Out <: HList }
+
+  object ZipWith {
+    def apply[L <: HList, R <: HList, P <: Poly2]
+      (implicit zipWith: ZipWith[L, R, P]): Aux[L, R, P, zipWith.Out] = zipWith
+
+    type Aux[L <: HList, R <: HList, P <: Poly2, Out0 <: HList] = ZipWith[L, R, P] { type Out = Out0 }
+
+    implicit def hnilZipWithHNil[P <: Poly2]: Aux[HNil, HNil, P, HNil] = constZipWith[HNil, HNil, P]
+    implicit def hnilZipWithHList[R <: HList, P <: Poly2]: Aux[HNil, R, P, HNil] = constZipWith[HNil, R, P]
+    implicit def hlistZipWithHNil[L <: HList, P <: Poly2]: Aux[L, HNil, P, HNil] = constZipWith[L, HNil, P]
+
+    implicit def hlistZipWithHList[LH, RH, LT <: HList, RT <: HList, P <: Poly2]
+      (implicit zipWith: ZipWith[LT, RT, P], clr: Case2[P, LH, RH])
+        : Aux[LH :: LT, RH :: RT, P, clr.Result :: zipWith.Out] =
+          new ZipWith[LH :: LT, RH :: RT, P] {
+            type Out = clr.Result :: zipWith.Out
+            def apply(l: LH :: LT, r: RH :: RT): Out =
+              clr(l.head, r.head) :: zipWith(l.tail, r.tail)
+          }
+
+    private def constZipWith[L <: HList, R <: HList, P <: Poly2]: Aux[L, R, P, HNil] =
+      new ZipWith[L, R, P] {
+        type Out = HNil
+        def apply(l: L, r: R): HNil = HNil
+      }
+  }
 }
