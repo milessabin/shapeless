@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import record.{ FieldType, field }
 
 trait Lens[C, F] {
   outer =>
+
+  type Gen[O] = LabelledGeneric.Aux[F, O]
+
   def get(c : C) : F
   def set(c : C)(f : F) : C
   def modify(c : C)(f : F => F) : C = set(c)(f(get(c)))
-  
+
   def compose[D](g : Lens[D, C]) = new Lens[D, F] {
     def get(d : D) : F = outer.get(g.get(d))
     def set(d : D)(f : F) : D = g.set(d)(outer.set(g.get(d))(f))
@@ -37,7 +40,15 @@ trait Lens[C, F] {
       def get(c : C) : lens.Elem = lens.get(gen.to(outer.get(c)))
       def set(c : C)(f : lens.Elem) = outer.set(c)(gen.from(lens.set(gen.to(outer.get(c)))(f)))
     }
-  
+
+  def >>[Out0 <: HList : Gen, V](k: Witness)(implicit s: RSelector.Aux[Out0, k.T, V], u: Updater.Aux[Out0, FieldType[k.T, V], Out0]) =
+    new Lens[C, V] {
+      import shapeless.syntax
+      val gen = implicitly[LabelledGeneric.Aux[F, Out0]]
+      def get(c : C): V = s(gen.to(outer.get(c)))
+      def set(c : C)(f : V): C = outer.set(c)(gen.from(record.recordOps(gen.to(outer.get(c))).updated(k, f)))
+    }
+
   def ~[G](other : Lens[C, G]) = new ProductLens[C, (F, G)] {
     def get(c : C) : (F, G) = (outer.get(c), other.get(c))
     def set(c : C)(fg : (F, G)) = other.set(outer.set(c)(fg._1))(fg._2)
@@ -66,7 +77,7 @@ trait ProductLens[C, P <: Product] extends Lens[C, P] {
 
 object Lens {
   def apply[C] = id[C]
-  
+
   object compose extends Poly2 {
     implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
   }
@@ -75,20 +86,20 @@ object Lens {
     def get(c : C) : C = c
     def set(c : C)(f : C) : C = f
   }
-  
+
   def setLens[E](e : E) = new Lens[Set[E], Boolean] {
     def get(s : Set[E]) = s contains e
     def set(s : Set[E])(b : Boolean) = if(b) s+e else s-e
   }
-  
+
   def mapLens[K, V](k : K) = new Lens[Map[K, V], Option[V]] {
     def get(m : Map[K, V]) = m get k
     def set(m : Map[K, V])(ov : Option[V]) = ov match {
       case Some(v) => m+(k -> v)
       case None => m-k
-    } 
+    }
   }
-  
+
   /** The lens of an element of `L`, chosen by the element type, `U`.
     */
   def hlistSelectLens[L <: HList, U](implicit selector : Selector[L, U],
@@ -134,7 +145,7 @@ trait HListNthLensAux[L <: HList, N <: Nat, E] extends Lens[L, E]
 object HListNthLensAux {
   implicit def hlistNthLens[L <: HList, N <: Nat, E](implicit atx : At.Aux[L, N, E], replace : ReplaceAt.Aux[L, N, E, (E, L)]) =
     new HListNthLensAux[L, N, E] {
-      def get(l : L) : E = l[N] 
+      def get(l : L) : E = l[N]
       def set(l : L)(e : E) : L = l.updatedAt[N](e)
     }
 }

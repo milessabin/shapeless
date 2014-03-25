@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Lars Hupel, Miles Sabin 
+ * Copyright (c) 2012-14 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ trait LowPriorityLabelledGeneric {
 object LabelledGeneric extends LowPriorityLabelledGeneric {
   // Refinement for products, here we can provide the calling context with
   // a proof that the resulting Repr is a record
+  type Aux[T, Out0] = LabelledGeneric[T]{ type Repr = Out0 }
+
   implicit def product[T <: Product]: LabelledGeneric[T] = macro GenericMacros.materializeLabelledForProduct[T]
 }
 
@@ -395,7 +397,7 @@ object GenericMacros {
           resName
         )
       }
-      
+
       def outerTypeConstructor: Type =
         (if(labelled) typeOf[LabelledGeneric[_]] else typeOf[Generic[_]]).typeConstructor
 
