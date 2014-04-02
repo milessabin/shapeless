@@ -23,26 +23,13 @@ import scala.reflect.macros.whitebox
 /**
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
- *
- * Name hints can be safely ignored.
  */
 trait ProductTypeClass[C[_]] {
-
-  final def derive[T]: C[T] = macro TypeClass.derive_impl[C, T]
-
   /**
    * Given a type class instance for `H`, and a type class instance for a
    * product, produce a type class instance for the product prepended with `H`.
    */
   def product[H, T <: HList](CHead: C[H], CTail: C[T]): C[H :: T]
-
-  /**
-   * Similar to [[shapeless.ProductTypeClass#product]], but with a name hint
-   * for the `H` instance. Called by [[shapeless.GenericMacros.materialize]]
-   * with the name of the field with type `H`.
-   */
-  def namedProduct[H, T <: HList](CHead: C[H], name: String, CTail: C[T]): C[H :: T] =
-    product(CHead, CTail)
 
   /**
    * The empty product.
@@ -54,23 +41,72 @@ trait ProductTypeClass[C[_]] {
    * produce a type class instance for `F`.
    */
   def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
+}
+
+trait ProductTypeClassCompanion[C[_]] {
+  object auto {
+    implicit def derive[T]: C[T] = macro GenericMacros.deriveProductInstance[C, T]
+  }
+
+  def apply[T]: C[T] = macro GenericMacros.deriveProductInstance[C, T]
+}
+
+/**
+ * A type class abstracting over the `product` operation of type classes over
+ * types of kind `*`, as well as deriving instances using an isomorphism.
+ * Refines ProductTypeClass with the addition of runtime `String` labels
+ * corresponding to the names of the product elements.
+ */
+trait LabelledProductTypeClass[C[_]] {
+  /**
+   * Given a type class instance for `H`, and a type class instance for a
+   * product, produce a type class instance for the product prepended with `H`.
+   */
+  def product[H, T <: HList](name: String, CHead: C[H], CTail: C[T]): C[H :: T]
 
   /**
-   * Name hint for a field name. Called by
-   * [[shapeless.GenericMacros.materialize]] when constructing an instance for
-   * a case class with just one field.
+   * The empty product.
    */
-  def namedField[F](instance: C[F], name: String): C[F] =
-    instance
+  def emptyProduct: C[HNil]
 
   /**
-   * Name hint for a case name. Called by
-   * [[shapeless.GenericMacros.materialize]] when constructing an instance for
-   * an ADT with just a single case.
+   * Given an isomorphism between `F` and `G`, and a type class instance for `G`,
+   * produce a type class instance for `F`.
    */
-  def namedCase[F](instance: C[F], name: String): C[F] =
-    instance
+  def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
+}
 
+trait LabelledProductTypeClassCompanion[C[_]] {
+  object auto {
+    implicit def derive[T]: C[T] = macro GenericMacros.deriveLabelledProductInstance[C, T]
+  }
+
+  def apply[T]: C[T] = macro GenericMacros.deriveLabelledProductInstance[C, T]
+}
+
+/**
+ * A type class additinally abstracting over the `coproduct` operation of type
+ * classes over types of kind `*`.
+ */
+trait TypeClass[C[_]] extends ProductTypeClass[C] {
+  /**
+   * Given two type class instances for `L` and `R`, produce a type class
+   * instance for the coproduct `L :+: R`.
+   */
+  def coproduct[L, R <: Coproduct](CL: => C[L], CR: => C[R]): C[L :+: R]
+
+  /**
+   * The empty coproduct
+   */
+  def emptyCoproduct: C[CNil]
+}
+
+trait TypeClassCompanion[C[_]] {
+  object auto {
+    implicit def derive[T]: C[T] = macro GenericMacros.deriveInstance[C, T]
+  }
+
+  def apply[T]: C[T] = macro GenericMacros.deriveInstance[C, T]
 }
 
 /**
@@ -79,76 +115,29 @@ trait ProductTypeClass[C[_]] {
  *
  * Name hints can be safely ignored.
  */
-trait TypeClass[C[_]] extends ProductTypeClass[C] {
-
+trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
   /**
    * Given two type class instances for `L` and `R`, produce a type class
    * instance for the coproduct `L :+: R`.
    */
-  def coproduct[L, R <: Coproduct](CL: => C[L], CR: => C[R]): C[L :+: R]
+  def coproduct[L, R <: Coproduct](name: String, CL: => C[L], CR: => C[R]): C[L :+: R]
 
   /**
-   * Similar to [[shapeless.TypeClass#coproduct]], but with a name hint
-   * for the `L` instance. Called by [[shapeless.GenericMacros.materialize]]
-   * with the name of the case class associated with type `L`.
+   * The empty coproduct
    */
-  def namedCoproduct[L, R <: Coproduct](CL: => C[L], name: String, CR: => C[R]): C[L :+: R] =
-    coproduct(CL, CR)
-
-  /**
-   * Given a type class instances for `L`, produce a type class instance
-   * for the coproduct `L :+: CNil`. Called by
-   * [[shapeless.GenericMacros.materialize]] when constructing the first
-   * instance in a coproduct.
-   *
-   * Since `CNil` is uninhabited, there is a safe default implementation.
-   * Overriding can be useful for performance reasons.
-   */
-  def coproduct1[L](CL: => C[L]): C[L :+: CNil] = {
-    def from(l: L): L :+: CNil = Inl(l)
-    def to(cp: L :+: CNil) = cp match {
-      case Inl(l) => l
-      case Inr(_) => sys.error("absurd")
-    }
-    project(CL, to, from)
-  }
-
-  /**
-   * Similar to [[shapeless.TypeClass#coproduct1]], but with a name hint
-   * for the `L` instance. Called by [[shapeless.GenericMacros.materialize]]
-   * with the name of the case class associated with type `L`.
-   */
-  def namedCoproduct1[L](CL: => C[L], name: String): C[L :+: CNil] =
-    coproduct1(CL)
-
+  def emptyCoproduct: C[CNil]
 }
 
-trait TypeClassCompanion[C[_]] {
+trait LabelledTypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T]: C[T] = macro TypeClass.derive_impl[C, T]
+    implicit def derive[T]: C[T] = macro GenericMacros.deriveLabelledInstance[C, T]
   }
+
+  def apply[T]: C[T] = macro GenericMacros.deriveLabelledInstance[C, T]
 }
 
-final class IgnoreParent
+final class DeriveConstructors
 
 object TypeClass {
-
-  implicit def ignoreParent: IgnoreParent = new IgnoreParent()
-
-  def apply[C[_], T]: C[T] = macro derive_impl[C, T]
-
-  def derive_impl[C[_], T](context: whitebox.Context)(implicit tTag: context.WeakTypeTag[T], cTag: context.WeakTypeTag[C[Any]]): context.Expr[C[T]] = {
-    val helper = new GenericMacros.Helper[context.type] {
-      val c: context.type = context
-      val expandInner = true
-      val optimizeSingleItem = true
-      val checkParent = true
-      val tpe = tTag.tpe
-      val labelled = false
-    }
-    context.Expr[C[T]](helper.ADT.deriveInstance(cTag.tpe.typeConstructor))
-  }
-
+  implicit val deriveConstructors: DeriveConstructors = new DeriveConstructors()
 }
-
-// vim: expandtab:ts=2:sw=2

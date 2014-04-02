@@ -24,7 +24,7 @@ case class Bar(i : Int) extends Super
 case class BarRec(i : Int, rec: Super) extends Super
 
 object Super {
-  implicit val instance = TypeClass[Show, Super]
+  implicit val instance = Show[Super]
 }
 
 sealed trait MutualA
@@ -32,7 +32,7 @@ case class MutualA1(x: Int) extends MutualA
 case class MutualA2(b: MutualB) extends MutualA
 
 object MutualA {
-  implicit val aInstance: Show[MutualA] = TypeClass[Show, MutualA]
+  implicit val aInstance: Show[MutualA] = Show[MutualA]
 }
 
 sealed trait MutualB
@@ -40,7 +40,7 @@ case class MutualB1(x: Int) extends MutualB
 case class MutualB2(b: MutualA) extends MutualB
 
 object MutualB {
-  implicit val bInstance: Show[MutualB] = TypeClass[Show, MutualB]
+  implicit val bInstance: Show[MutualB] = Show[MutualB]
 }
 
 object ShowExamples extends App {
@@ -71,7 +71,7 @@ trait Show[T] {
   def show(t: T): String
 }
 
-object Show extends TypeClassCompanion[Show] {
+object Show extends LabelledTypeClassCompanion[Show] {
   implicit def stringShow: Show[String] = new Show[String] {
     def show(t: String) = t
   }
@@ -80,16 +80,12 @@ object Show extends TypeClassCompanion[Show] {
     def show(n: Int) = n.toString
   }
 
-  implicit def showInstance: TypeClass[Show] = new TypeClass[Show] {
+  implicit def showInstance: LabelledTypeClass[Show] = new LabelledTypeClass[Show] {
     def emptyProduct = new Show[HNil] {
       def show(t: HNil) = ""
     }
 
-    def product[F, T <: HList](FHead : Show[F], FTail : Show[T]) = new Show[F :: T] {
-      def show(ft: F :: T) = s"${FHead.show(ft.head)} :: ${FTail.show(ft.tail)}"
-    }
-
-    override def namedProduct[F, T <: HList](FHead : Show[F], name : String, FTail : Show[T]) = new Show[F :: T] {
+    def product[F, T <: HList](name : String, FHead : Show[F], FTail : Show[T]) = new Show[F :: T] {
       def show(ft: F :: T) = {
         val head = FHead.show(ft.head)
         val tail = FTail.show(ft.tail)
@@ -100,40 +96,15 @@ object Show extends TypeClassCompanion[Show] {
       }
     }
 
-    override def coproduct1[L](CL: => Show[L]) = new Show[L :+: CNil] {
-      def show(l: L :+: CNil) = l match {
-        case Inl(l) => s"Inl(${CL.show(l)})"
-        case Inr(_) => sys.error("absurd")
-      }
+    def emptyCoproduct = new Show[CNil] {
+      def show(t: CNil) = ""
     }
 
-    override def namedCoproduct1[L](CL: => Show[L], name: String) = new Show[L :+: CNil] {
-      def show(l: L :+: CNil) = l match {
-        case Inl(l) => s"$name(${CL.show(l)})"
-        case Inr(_) => sys.error("absurd")
-      }
-    }
-
-    def coproduct[L, R <: Coproduct](CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
-      def show(lr: L :+: R) = lr match {
-        case Inl(l) => s"Inl(${CL.show(l)})"
-        case Inr(r) => s"Inr(${CR.show(r)})"
-      }
-    }
-
-    override def namedCoproduct[L, R <: Coproduct](CL: => Show[L], name: String, CR: => Show[R]) = new Show[L :+: R] {
+    def coproduct[L, R <: Coproduct](name: String, CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
       def show(lr: L :+: R) = lr match {
         case Inl(l) => s"$name(${CL.show(l)})"
         case Inr(r) => s"${CR.show(r)}"
       }
-    }
-
-    override def namedField[F](instance: Show[F], name: String) = new Show[F] {
-      def show(f: F) = s"$name = ${instance.show(f)}"
-    }
-
-    override def namedCase[F](instance: Show[F], name: String) = new Show[F] {
-      def show(f: F) = s"$name(${instance.show(f)})"
     }
 
     def project[F, G](instance : => Show[G], to : F => G, from : G => F) = new Show[F] {
@@ -141,5 +112,3 @@ object Show extends TypeClassCompanion[Show] {
     }
   }
 }
-
-// vim: expandtab:ts=2:sw=2

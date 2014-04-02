@@ -43,6 +43,10 @@ object LabelledGenericTestsAux {
   type BookRec = bookSchema.Record
   type BookKeys = bookSchema.Keys
   type BookValues = bookSchema.Values
+
+  sealed trait Tree
+  case class Node(left: Tree, right: Tree) extends Tree
+  case class Leaf(value: Int) extends Tree
 }
 
 class LabelledGenericTests {
@@ -173,5 +177,14 @@ class LabelledGenericTests {
     val b2 = gen2.from(b1)
     typed[ExtendedBook](b2)
     assertEquals(taplExt, b2)
+  }
+
+  @Test
+  def testCoproductBasics {
+    val gen = LabelledGeneric[Tree]
+
+    val t = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
+    val gt = gen.to(t)
+    //println(showType(gt))
   }
 }
