@@ -1241,4 +1241,90 @@ class HListTests {
     typed[WithConst](zipped3)
     assertEquals(expected, zipped3)
   }
+
+  @Test
+  def testZipWith {
+    import poly._
+
+    { // HNil zipWith HNil (emptyFn)
+      object zipFn extends Poly2
+
+      val left: HNil = HNil
+      val right: HNil = HNil
+      val result = left.zipWith(right)(zipFn)
+      typed[HNil](result)
+      assertEquals(HNil, result)
+    }
+
+    { // HNil zipWith nonEmpty (emptyFn)
+      object zipFn extends Poly2
+
+      val left: HNil = HNil
+      val right = 1 :: HNil
+      val result = left.zipWith(right)(zipFn)
+      typed[HNil](result)
+      assertEquals(HNil, result)
+    }
+
+    { // nonEmpty zipWith HNil (emptyFn)
+      object zipFn extends Poly2
+
+      val left = 1 :: HNil
+      val right: HNil = HNil
+      val result = left.zipWith(right)(zipFn)
+      typed[HNil](result)
+      assertEquals(HNil, result)
+    }
+
+    { // singleton zipWith singleton
+      object zipFn extends Poly2 {
+        implicit val caseIntInt = at[Int, Int](_ + _)
+      }
+
+      val left  = 1 :: HNil
+      val right = 2 :: HNil
+      val result = left.zipWith(right)(zipFn)
+      typed[Int :: HNil](result)
+      assertEquals(3 :: HNil, result)
+    }
+
+    { // longList zipWith longerList
+      type Left  = Int :: String :: Double :: HNil
+      type Right = Int :: Double :: String :: Boolean :: HNil
+
+      val left: Left   = 1 :: "foo" :: 1.2 :: HNil
+      val right: Right = 2 :: 2.3 :: "3.4" :: true :: HNil
+
+      object zipFn extends Poly2 {
+        implicit val caseIntInt       = at[Int, Int](_ + _)
+        implicit val caseStringDouble = at[String, Double](_ + " -> " + _.toString)
+        implicit val caseDoubleString = at[Double, String](_ + _.toDouble)
+      }
+
+      val result = left.zipWith(right)(zipFn)
+      typed[Int :: String :: Double :: HNil](result)
+
+      assertEquals(3 :: "foo -> 2.3" :: 4.6 :: HNil, result)
+    }
+
+    { // invalid polys
+      object emptyFn extends Poly2
+
+      illTyped("""
+        (1 :: HNil).zipWith(2 :: HNil)(emptyFn)
+      """)
+
+      object noIntFn extends Poly2 {
+        implicit val caseDoubleDouble = at[Double, Double](_ + _)
+      }
+
+      illTyped("""
+        (1 :: HNil).zipWith(2 :: HNil)(noIntFn)
+      """)
+
+      illTyped("""
+        (1.0 :: 2 :: HNil).zipWith(2.0 :: 3 :: HNil)(noIntFn)
+      """)
+    }
+  }
 }

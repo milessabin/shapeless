@@ -376,7 +376,15 @@ final class HListOps[L <: HList](l : L) {
    * ({element from this `HList`}, {supplied constant})
    */
   def zipConst[C](c: C)(implicit zipConst: ZipConst[C, L]): zipConst.Out = zipConst(c, l)
-  
+
+  /**
+   * Zips this 'HList' with its argument 'HList' using argument 'Poly2', returning an 'HList'.
+   * Doesn't require this to be the same length as its 'HList' argument, but does require evidence that its
+   * 'Poly2' argument is defined at their intersection.
+   */
+  def zipWith[R <: HList, P <: Poly2](r: R)(p: P)(implicit zipWith: ZipWith[L, R, P]): zipWith.Out =
+    zipWith(l, r)
+
   /**
    * Transposes this `HList`.
    */
