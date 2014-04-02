@@ -211,6 +211,29 @@ object hlist {
   }
 
   /**
+   * Type class computing the coproduct type corresponding to this `HList`.
+   *
+   * @author Miles Sabin
+   */
+  trait Union[L <: HList] { type Out <: Coproduct }
+
+  object Union {
+    def apply[L <: HList](implicit union: Union[L]): Aux[L, union.Out] = union
+
+    type Aux[L <: HList, Out0 <: Coproduct] = Union[L] { type Out = Out0 }
+
+    implicit def hnilUnion[H]: Aux[HNil, CNil] =
+      new Union[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistUnion[H, T <: HList](implicit ut: Union[T]): Aux[H :: T, H :+: ut.Out] =
+      new Union[H :: T] {
+        type Out = H :+: ut.Out
+      }
+  }
+
+  /**
    * Type class supporting computing the type-level Nat corresponding to the length of this `HList`. 
    * 
    * @author Miles Sabin

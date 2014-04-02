@@ -34,7 +34,7 @@ object MonoidExamples extends App {
 
   // ... or explicitly
   {
-    implicit val barInstance = TypeClass[Monoid, Bar]
+    implicit val barInstance = Monoid[Bar]
 
     val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
     assert(b == Bar(true, "foobar", 4.0))
@@ -49,7 +49,7 @@ trait Monoid[T] {
   def append(a : T, b : T) : T
 }
 
-object Monoid extends TypeClassCompanion[Monoid] {
+object Monoid extends ProductTypeClassCompanion[Monoid] {
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
   
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {

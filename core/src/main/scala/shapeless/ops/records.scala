@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ package record {
 
   /**
    * Type class supporting record field selection.
-   * 
+   *
    * @author Miles Sabin
    */
   @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
@@ -58,14 +58,14 @@ package record {
 
   /**
    * Type class supporting record update and extension.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Updater[L <: HList, F] extends DepFn2[L, F] { type Out <: HList }
 
   trait LowPriorityUpdater {
     type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
-    
+
     implicit def hlistUpdater1[H, T <: HList, K, V]
       (implicit ut : Updater[T, FieldType[K, V]]): Aux[H :: T, FieldType[K, V], H :: ut.Out] =
         new Updater[H :: T, FieldType[K, V]] {
@@ -92,7 +92,7 @@ package record {
 
   /**
    * Type class supporting modification of a record field by given function.
-   * 
+   *
    * @author Joni Freeman
    */
   @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
@@ -108,7 +108,7 @@ package record {
         type Out = FieldType[F, B] :: T
         def apply(l: FieldType[F, A] :: T, f: A => B): Out = field[F](f(l.head)) :: l.tail
       }
-    
+
     implicit def hlistModify[H, T <: HList, F, A, B]
       (implicit mt: Modifier[T, F, A, B]): Aux[H :: T, F, A, B, H :: mt.Out] =
         new Modifier[H :: T, F, A, B] {
@@ -119,7 +119,7 @@ package record {
 
   /**
    * Type class supporting record field removal.
-   * 
+   *
    * @author Miles Sabin
    */
   @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
@@ -127,7 +127,7 @@ package record {
 
   trait LowPriorityRemover {
     type Aux[L <: HList, K, Out0] = Remover[L, K] { type Out = Out0 }
-    
+
     implicit def hlistRemove[H, T <: HList, K, V, OutT <: HList]
       (implicit rt: Aux[T, K, (V, OutT)]): Aux[H :: T, K, (V, H :: OutT)] =
         new Remover[H :: T, K] {
@@ -151,7 +151,7 @@ package record {
 
   /**
    * Type class supporting renaming of a record field.
-   * 
+   *
    * @author Joni Freeman
    */
   @annotation.implicitNotFound(msg = "No field ${K1} in record ${L}")
@@ -167,7 +167,7 @@ package record {
         type Out = FieldType[K2, V] :: T
         def apply(l: FieldType[K1, V] :: T): Out = field[K2](l.head : V) :: l.tail
       }
-    
+
     implicit def hlistRenamer[H, T <: HList, K1, K2, V]
       (implicit rn: Renamer[T, K1, K2]): Aux[H :: T, K1, K2, H :: rn.Out] =
         new Renamer[H :: T, K1, K2] {
@@ -178,7 +178,7 @@ package record {
 
   /**
    * Type class supporting collecting the keys of a record as an `HList`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Keys[L <: HList] extends DepFn0 { type Out <: HList }
@@ -203,7 +203,7 @@ package record {
 
   /**
    * Type class supporting collecting the value of a record as an `HList`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Values[L <: HList] extends DepFn1[L] { type Out <: HList }

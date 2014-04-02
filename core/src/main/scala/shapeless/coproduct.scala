@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,4 +41,35 @@ object Coproduct {
   def apply[C <: Coproduct] = new MkCoproduct[C]
 
   implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
+}
+
+object union {
+  import ops.union.{ Keys, Values }
+  import syntax.UnionOps
+
+  implicit def unionOps[C <: Coproduct](u : C) : UnionOps[C] = new UnionOps(u)
+
+  trait UnionType {
+    type Union <: Coproduct
+    type Keys <: HList
+    type Values <: Coproduct
+  }
+
+  object UnionType {
+    type Aux[U, K, V] = UnionType { type Union = U ; type Keys = K ; type Values = V }
+
+    def apply[U <: Coproduct](implicit keys: Keys[U], values: Values[U]): Aux[U, keys.Out, values.Out] = 
+      new UnionType {
+        type Union = U
+        type Keys = keys.Out
+        type Values = values.Out
+      }
+
+    def like[U <: Coproduct](u: U)(implicit keys: Keys[U], values: Values[U]): Aux[U, keys.Out, values.Out] = 
+      new UnionType {
+        type Union = U
+        type Keys = keys.Out
+        type Values = values.Out
+      }
+  }
 }

@@ -22,6 +22,7 @@ package shapeless
  * @author Miles Sabin
  */
 object record {
+  import ops.hlist.Union
   import ops.record.{ Keys, Values }
   import syntax.RecordOps
 
@@ -48,26 +49,33 @@ object record {
    */
   trait RecordType {
     type Record <: HList
+    type Union <: Coproduct
     type Keys <: HList
     type Values <: HList
   }
 
   object RecordType {
-    type Aux[L, K, V] = RecordType { type Record = L ; type Keys = K ; type Values = V }
+    type Aux[L <: HList, C <: Coproduct, K, V] = RecordType {
+      type Record = L ; type Union = C; type Keys = K ; type Values = V 
+    }
 
-    def apply[L <: HList](implicit keys: Keys[L], values: Values[L]): RecordType.Aux[L, keys.Out, values.Out] =
-      new RecordType {
-        type Record = L
-        type Keys = keys.Out
-        type Values = values.Out
-      }
+    def apply[L <: HList](implicit union: Union[L], keys: Keys[L], values: Values[L]):
+      Aux[L, union.Out, keys.Out, values.Out] =
+        new RecordType {
+          type Record = L
+          type Union = union.Out
+          type Keys = keys.Out
+          type Values = values.Out
+        }
 
-    def like[L <: HList](l: L)(implicit keys: Keys[L], values: Values[L]): RecordType.Aux[L, keys.Out, values.Out] =
-      new RecordType {
-        type Record = L
-        type Keys = keys.Out
-        type Values = values.Out
-      }
+    def like[L <: HList](l: => L)(implicit union: Union[L], keys: Keys[L], values: Values[L]):
+      Aux[L, union.Out, keys.Out, values.Out] =
+        new RecordType {
+          type Record = L
+          type Union = union.Out
+          type Keys = keys.Out
+          type Values = values.Out
+        }
   }
 }
 
