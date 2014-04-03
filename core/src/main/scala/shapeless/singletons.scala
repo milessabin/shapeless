@@ -35,6 +35,18 @@ object Witness {
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
+
+  implicit val witness0: Witness.Aux[_0] =
+    new Witness {
+      type T = _0
+      val value = Nat._0
+    }
+
+  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
+    new Witness {
+      type T = Succ[P]
+      val value = new Succ[P]()
+    }
 }
 
 trait WitnessWith[TC[_]] extends Witness {
