@@ -68,7 +68,7 @@ object ShapelessBuild extends Build {
         
         libraryDependencies <++= scalaVersion { sv =>
           Seq(
-            "org.scala-lang" % "scala-compiler" % sv,
+            "org.scala-lang" % "scala-reflect" % sv % "provided",
             "com.novocode" % "junit-interface" % "0.7" % "test"
         )},
         
@@ -123,7 +123,8 @@ object ShapelessBuild extends Build {
     settings = commonSettings ++ Seq(
       libraryDependencies <++= scalaVersion { sv =>
         Seq(
-          "org.scala-lang" % "scala-compiler" % sv,
+          // needs compiler for `scala.tools.reflect.Eval`
+          "org.scala-lang" % "scala-compiler" % sv % "provided",
           "com.novocode" % "junit-interface" % "0.7" % "test"
       )},
 
