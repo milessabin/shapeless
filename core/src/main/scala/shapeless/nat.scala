@@ -65,18 +65,6 @@ object Nat extends Nats {
 
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
-  implicit val witness0: Witness.Aux[_0] =
-    new Witness {
-      type T = _0
-      val value = _0
-    }
-
-  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
-    new Witness {
-      type T = Succ[P]
-      val value = new Succ[P]()
-    }
-
   implicit def materialize(i: Int): Nat = macro NatMacros.materializeSingleton
 }
 
