@@ -101,23 +101,23 @@ object GenericMacros {
   }
 
   def deriveProductInstance[C[_], T]
-    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(true, false, tTag, cTag)
+    (c: Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(ev.tree, true, false, tTag, cTag)
 
   def deriveLabelledProductInstance[C[_], T]
-    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(true, true, tTag, cTag)
+    (c: Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(ev.tree, true, true, tTag, cTag)
 
   def deriveInstance[C[_], T]
-    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(false, false, tTag, cTag)
+    (c: Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(ev.tree, false, false, tTag, cTag)
 
   def deriveLabelledInstance[C[_], T]
-    (c: Context)(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(false, true, tTag, cTag)
+    (c: Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
+    deriveInstanceAux(c)(ev.tree, false, true, tTag, cTag)
 
   def deriveInstanceAux[C[_], T](c0: Context)
-    (product0: Boolean, labelled0: Boolean, tTag: c0.WeakTypeTag[T], cTag: c0.WeakTypeTag[C[Any]]): c0.Expr[C[T]] = {
+    (deriver: c0.Tree, product0: Boolean, labelled0: Boolean, tTag: c0.WeakTypeTag[T], cTag: c0.WeakTypeTag[C[Any]]): c0.Expr[C[T]] = {
     import c0.Expr
     val helper = new Helper[c0.type] {
       val c: c0.type = c0
@@ -128,7 +128,7 @@ object GenericMacros {
     }
 
     Expr[C[T]] {
-      helper.deriveInstance(cTag.tpe.typeConstructor)
+      helper.deriveInstance(deriver, cTag.tpe.typeConstructor)
     }
   }
 
@@ -467,13 +467,13 @@ object GenericMacros {
       )
     }
 
-    def deriveInstance(tc: Type): Tree = {
+    def deriveInstance(deriver: Tree, tc: Type): Tree = {
       fromSym.baseClasses.find(sym => sym != fromSym && sym.isClass && sym.asClass.isSealed) match {
         case Some(sym) if c.inferImplicitValue(deriveCtorsTpe) == EmptyTree =>
           val msg =
             s"Attempting to derive a type class instance for class `${fromSym.name.decoded}` with "+
             s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
-            s"this warning, import `TypeClass.ignoreParent`"
+            s"this warning, import `TypeClass.deriveConstructors`"
 
           if (c.compilerSettings contains "-Xfatal-warnings")
             c.error(c.enclosingPosition, msg)
@@ -481,8 +481,6 @@ object GenericMacros {
             c.warning(c.enclosingPosition, msg)
         case _ =>
       }
-
-      val deriverName = newTermName(c.fresh("inst"))
 
       def mkImplicitlyAndAssign(name: TermName, typ: Type): ValDef = {
         def mkImplicitly(typ: Type): Tree =
@@ -509,24 +507,12 @@ object GenericMacros {
       val tpeInstanceName = newTermName(c.fresh())
       val instanceMap = elemInstanceMap.mapValues(Ident(_)) + (fromTpe -> Ident(tpeInstanceName))
 
-      val deriverTpe: Type = (toProduct, toLabelled) match {
-        case (false, false) => typeClassTpe
-        case (false, true)  => labelledTypeClassTpe
-        case (true, false)  => productTypeClassTpe
-        case (true, true)   => labelledProductTypeClassTpe
-      }
-
-      val deriverInstanceDecl =
-        mkImplicitlyAndAssign(deriverName, appliedType(deriverTpe, List(tc)))
-
       val reprInstance = {
-        val tc = Ident(deriverName)
+        val emptyProduct: Tree = Select(deriver, newTermName("emptyProduct"))
+        val product: Tree = Select(deriver, newTermName("product"))
 
-        val emptyProduct: Tree = Select(tc, newTermName("emptyProduct"))
-        val product: Tree = Select(tc, newTermName("product"))
-
-        val emptyCoproduct: Tree = Select(tc, newTermName("emptyCoproduct"))
-        val coproduct: Tree = Select(tc, newTermName("coproduct"))
+        val emptyCoproduct: Tree = Select(deriver, newTermName("emptyCoproduct"))
+        val coproduct: Tree = Select(deriver, newTermName("coproduct"))
 
         def mkCompoundValue(nil: Tree, cons: Tree, items: List[(Name, Tree)]): Tree =
           items.foldRight(nil) { case ((name, instance), acc) =>
@@ -574,12 +560,12 @@ object GenericMacros {
           tpeInstanceName,
           TypeTree(appliedType(tc, List(fromTpe))),
           Apply(
-            Select(Ident(deriverName), newTermName("project")),
+            Select(deriver, newTermName("project")),
             List(Ident(reprName), Ident(toName), Ident(fromName))
           )
         )
 
-      val instanceDecls = deriverInstanceDecl :: elemInstanceDecls ::: List(reprInstanceDecl, tpeInstanceDecl)
+      val instanceDecls = elemInstanceDecls ::: List(reprInstanceDecl, tpeInstanceDecl)
 
       val (toCases, fromCases) =
         if(toProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
