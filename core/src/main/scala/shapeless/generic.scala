@@ -471,7 +471,7 @@ object GenericMacros {
           val msg =
             s"Attempting to derive a type class instance for class `${fromSym.name.decoded}` with "+
             s"sealed superclass `${sym.name.decoded}`; this is most likely unintended. To silence "+
-            s"this warning, import `TypeClass.ignoreParent`"
+            s"this warning, import `TypeClass.deriveConstructors`"
 
           if (c.compilerSettings contains "-Xfatal-warnings")
             c.error(c.enclosingPosition, msg)
