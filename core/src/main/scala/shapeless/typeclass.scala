@@ -45,10 +45,12 @@ trait ProductTypeClass[C[_]] {
 
 trait ProductTypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T]: C[T] = macro GenericMacros.deriveProductInstance[C, T]
+    implicit def derive[T](implicit ev: ProductTypeClass[C]): C[T] =
+      macro GenericMacros.deriveProductInstance[C, T]
   }
 
-  def apply[T]: C[T] = macro GenericMacros.deriveProductInstance[C, T]
+  def apply[T](implicit ev: ProductTypeClass[C]): C[T] =
+    macro GenericMacros.deriveProductInstance[C, T]
 }
 
 /**
@@ -78,10 +80,12 @@ trait LabelledProductTypeClass[C[_]] {
 
 trait LabelledProductTypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T]: C[T] = macro GenericMacros.deriveLabelledProductInstance[C, T]
+    implicit def derive[T](implicit ev: LabelledProductTypeClass[C]): C[T] =
+      macro GenericMacros.deriveLabelledProductInstance[C, T]
   }
 
-  def apply[T]: C[T] = macro GenericMacros.deriveLabelledProductInstance[C, T]
+  def apply[T](implicit ev: LabelledProductTypeClass[C]): C[T] =
+    macro GenericMacros.deriveLabelledProductInstance[C, T]
 }
 
 /**
@@ -103,10 +107,12 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
 
 trait TypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T]: C[T] = macro GenericMacros.deriveInstance[C, T]
+    implicit def derive[T](implicit ev: TypeClass[C]): C[T] =
+      macro GenericMacros.deriveInstance[C, T]
   }
 
-  def apply[T]: C[T] = macro GenericMacros.deriveInstance[C, T]
+  def apply[T](implicit ev: TypeClass[C]): C[T] =
+    macro GenericMacros.deriveInstance[C, T]
 }
 
 /**
@@ -130,10 +136,12 @@ trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
 
 trait LabelledTypeClassCompanion[C[_]] {
   object auto {
-    implicit def derive[T]: C[T] = macro GenericMacros.deriveLabelledInstance[C, T]
+    implicit def derive[T](implicit ev: LabelledTypeClass[C]): C[T] =
+      macro GenericMacros.deriveLabelledInstance[C, T]
   }
 
-  def apply[T]: C[T] = macro GenericMacros.deriveLabelledInstance[C, T]
+  def apply[T](implicit ev: LabelledTypeClass[C]): C[T] =
+    macro GenericMacros.deriveLabelledInstance[C, T]
 }
 
 final class DeriveConstructors
