@@ -1552,4 +1552,33 @@ object hlist {
         def apply(l: L, r: R): HNil = HNil
       }
   }
+
+  /**
+   * Type class supporting zipping an `HList` of values with an `HList` of keys to create a record.
+   *
+   * @author Cody Allen
+   */
+  trait ZipWithKeys[K <: HList, V <: HList] extends DepFn2[K, V] { type Out <: HList }
+
+  object ZipWithKeys {
+    import shapeless.record._
+
+    def apply[K <: HList, V <: HList]
+      (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
+
+    type Aux[K <: HList, V <: HList, Out0 <: HList] = ZipWithKeys[K, V] { type Out = Out0 }
+
+    implicit val hnilZipWithKeys: Aux[HNil, HNil, HNil] = new ZipWithKeys[HNil, HNil] {
+      type Out = HNil
+      def apply(k: HNil, v: HNil) = HNil
+    }
+
+    implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList] (implicit zipWithKeys: ZipWithKeys[KT, VT], wkh: Witness.Aux[KH])
+        : Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: zipWithKeys.Out] =
+          new ZipWithKeys[KH :: KT, VH :: VT] {
+            type Out = FieldType[KH, VH] :: zipWithKeys.Out
+            def apply(k: KH :: KT, v: VH :: VT): Out =
+              field[wkh.T](v.head) :: zipWithKeys(k.tail, v.tail)
+          }
+  }
 }

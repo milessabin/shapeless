@@ -437,4 +437,9 @@ final class HListOps[L <: HList](l : L) {
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
   def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(runtimeLength, l, 0)
+
+  /**
+   * Converts this `HList` of values into a record with the provided keys.
+   */
+  def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(keys, l)
 }
