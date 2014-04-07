@@ -38,8 +38,8 @@ package shapeless.examples
  */
 object ZipperExamples extends App {
   import shapeless._
+  import syntax.zipper._
   import test._
-  import Zipper._
 
   case class Dept[E <: HList](manager : Employee, employees : E)
   case class Employee(name : String, salary : Int)

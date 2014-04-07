@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,9 @@ package object shapeless {
   // Quantifiers
   type ∃[P[_]] = P[T] forSome { type T }
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
+
+  /** `Lens` definitions */
+  val lens = LensDefns
 
   /** `Nat` literals */
   val nat = Nat
