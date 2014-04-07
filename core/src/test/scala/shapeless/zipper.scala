@@ -20,10 +20,9 @@ import org.junit.Test
 import org.junit.Assert._
 
 import test._
+import syntax.zipper._
 
 class ZipperTests {
-  import Zipper._
-  
   @Test
   def testTraversal {
     val l = 1 :: "foo" :: 3.0 :: HNil
