@@ -190,4 +190,38 @@ class CoproductTests {
     val f3b = f3.unify 
     typed[Fruit](f3b)
   }
+
+  @Test
+  def testWithKeys {
+    import syntax.singleton._
+    import record.RecordType
+    import union._
+    import ops.union._
+
+    val uSchema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
+    val cKeys = Keys[uSchema.Union].apply()
+
+    val u1 = Coproduct[ISB](23).zipWithKeys(cKeys)
+    val v1 = u1.get('i)
+    typed[Option[Int]](v1)
+    assertEquals(Some(23), v1)
+    assertEquals(None, u1.get('s))
+
+    val u2 = Coproduct[ISB]("foo").zipWithKeys(cKeys)
+    val v2 = u2.get('s)
+    typed[Option[String]](v2)
+    assertEquals(Some("foo"), v2)
+    assertEquals(None, u2.get('b))
+
+    val u3 = Coproduct[ISB](true).zipWithKeys(cKeys)
+    val v3 = u3.get('b)
+    typed[Option[Boolean]](v3)
+    assertEquals(Some(true), v3)
+    assertEquals(None, u3.get('i))
+
+    illTyped("v3.get('d)")
+
+    // key/value lengths must match up
+    illTyped("u1.zipWithKeys(uKeys.tail)")
+  }
 }

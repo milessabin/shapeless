@@ -24,6 +24,7 @@ package shapeless.examples
 object LabelledGenericExamples extends App {
   import shapeless._
   import record._
+  import ops.record._
   import syntax.singleton._
 
   case class Book(author: String, title: String, id: Int, price: Double)
@@ -50,4 +51,15 @@ object LabelledGenericExamples extends App {
   val extended = bookExtGen.from(rec + ('inPrint ->> true)) // Static type is ExtendedBook
   println(extended)
   println
+
+  // internationalization Shapeless style?
+  case class Libro(autor: String, `título`: String, id: Int, precio: Double)
+
+  val libroGen = LabelledGeneric[Libro]
+  val libroKeys = Keys[libroGen.Repr]
+  val libroRec = rec.values.zipWithKeys(libroKeys())
+  val libro = libroGen.from(libroRec) // static type is Libro
+  println(libro)
+  println
+
 }
