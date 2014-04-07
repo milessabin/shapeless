@@ -33,4 +33,6 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
   
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
+
+  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
 }
