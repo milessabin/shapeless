@@ -71,19 +71,19 @@ resolvers ++= Seq(
 ### shapeless-2.0.0-M1
 
 Builds are available for Scala 2.10.2 and later and Scala 2.11.0-M8. Note that you must specify a Scala version of at
-least 2.10.2, and that you must add either `cross CrossVersion.full` or an explicit Scala version suffix to your
-shapeless dependency,
+least 2.10.2, and that you must add either `cross CrossVersion.full` (for 2.11.0-x) or an explicit Scala version suffix (for 2.10.x) to your shapeless dependency:
 
 ```scala
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 // scalaVersion := "2.11.0-M8" // alternatively ...
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full
-//  "com.chuusai" % "shapeless_2.10.3" % "2.0.0-M1" // alternatively ...
+  "com.chuusai" % "shapeless_2.10.3" % "2.0.0-M1" // for 2.10.x >= 2.10.2
+  //"com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full //for 2.11.x
 )
 ```
 
+2.10.x releases are compatible with each other starting from 2.10.2, so the mismatch in minor versions above is fine.
 
 ### shapeless-2.0.0-SNAPSHOT
 
