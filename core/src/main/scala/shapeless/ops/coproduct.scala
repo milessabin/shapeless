@@ -108,4 +108,30 @@ object coproduct {
           }
         }
   }
+
+  trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn2[K, V] { type Out <: Coproduct }
+
+  object ZipWithKeys {
+    import shapeless.record._
+
+    def apply[K <: HList, V <: Coproduct]
+      (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
+
+    type Aux[K <: HList, V <: Coproduct, Out0 <: Coproduct] = ZipWithKeys[K, V] { type Out = Out0 }
+
+    implicit val cnilZipWithKeys: Aux[HNil, CNil, CNil] = new ZipWithKeys[HNil, CNil] {
+      type Out = CNil
+      def apply(k: HNil, v: CNil) = v
+    }
+
+    implicit def cpZipWithKeys[KH, VH, KT <: HList, VT <: Coproduct] (implicit zipWithKeys: ZipWithKeys[KT, VT], wkh: Witness.Aux[KH])
+        : Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out] =
+          new ZipWithKeys[KH :: KT, VH :+: VT] {
+            type Out = FieldType[KH, VH] :+: zipWithKeys.Out
+            def apply(k: KH :: KT, v: VH :+: VT): Out = v match {
+              case Inl(vh) => Inl(field[wkh.T](vh))
+              case Inr(vt) => Inr(zipWithKeys(k.tail, vt))
+            }
+          }
+  }
 }
