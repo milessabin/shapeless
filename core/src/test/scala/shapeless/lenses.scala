@@ -24,7 +24,7 @@ case class Person(name : String, age : Int, address : Address)
 
 trait LensTests {
   import test._
-  import Lens._
+  import lens._
 
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
   val person = Person("Joe Grey", 37, address)
@@ -55,8 +55,8 @@ trait LensTests {
 
   @Test
   def testCompose {
-    val addressLens = Lens[Person] >> 2
-    val streetLens = Lens[Address] >> 0
+    val addressLens = lens[Person] >> 2
+    val streetLens = lens[Address] >> 0
 
     val personStreetLens1 = streetLens compose addressLens
     val personStreetLens2 = compose(streetLens, addressLens)
@@ -81,12 +81,12 @@ trait LensTests {
 
     val tp = (23, ("foo", (2.0, false)))
 
-    val lens0 = Lens[ISDB] >> 0
-    val lens1 = Lens[ISDB] >> 1
-    val lens10 = Lens[ISDB] >> 1 >> 0
-    val lens11 = Lens[ISDB] >> 1 >> 1
-    val lens110 = Lens[ISDB] >> 1 >> 1 >> 0
-    val lens111 = Lens[ISDB] >> 1 >> 1 >> 1
+    val lens0 = lens[ISDB] >> 0
+    val lens1 = lens[ISDB] >> 1
+    val lens10 = lens[ISDB] >> 1 >> 0
+    val lens11 = lens[ISDB] >> 1 >> 1
+    val lens110 = lens[ISDB] >> 1 >> 1 >> 0
+    val lens111 = lens[ISDB] >> 1 >> 1 >> 1
 
     val i = lens0.get(tp)
     typed[Int](i)
@@ -259,24 +259,20 @@ trait LensTests {
 }
 
 class LensTestsNat extends LensTests {
-  import Lens._
-
-  val nameLens     = Lens[Person] >> 0
-  val ageLens      = Lens[Person] >> 1
-  val addressLens  = Lens[Person] >> 2
-  val streetLens   = Lens[Person] >> 2 >> 0
-  val cityLens     = Lens[Person] >> 2 >> 1
-  val postcodeLens = Lens[Person] >> 2 >> 2
+  val nameLens     = lens[Person] >> 0
+  val ageLens      = lens[Person] >> 1
+  val addressLens  = lens[Person] >> 2
+  val streetLens   = lens[Person] >> 2 >> 0
+  val cityLens     = lens[Person] >> 2 >> 1
+  val postcodeLens = lens[Person] >> 2 >> 2
 }
 
 class LensTestsKey extends LensTests {
-  import Lens._
-
-  val nameLens     = Lens[Person] >> 'name
-  val ageLens      = Lens[Person] >> 'age
-  val addressLens  = Lens[Person] >> 'address
-  val streetLens   = Lens[Person] >> 'address >> 'street
-  val cityLens     = Lens[Person] >> 'address >> 'city
-  val postcodeLens = Lens[Person] >> 'address >> 'postcode
+  val nameLens     = lens[Person] >> 'name
+  val ageLens      = lens[Person] >> 'age
+  val addressLens  = lens[Person] >> 'address
+  val streetLens   = lens[Person] >> 'address >> 'street
+  val cityLens     = lens[Person] >> 'address >> 'city
+  val postcodeLens = lens[Person] >> 'address >> 'postcode
 }
 

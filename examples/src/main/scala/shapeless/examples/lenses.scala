@@ -24,19 +24,18 @@ package shapeless.examples
 object LenseExamples extends App {
   import shapeless._
   import test._
-  import Lens._
 
   // A pair of ordinary case classes ...
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
   
   // Some lenses over Person/Address ...
-  val nameLens     = Lens[Person] >> 0
-  val ageLens      = Lens[Person] >> 1
-  val addressLens  = Lens[Person] >> 2
-  val streetLens   = Lens[Person] >> 2 >> 0
-  val cityLens     = Lens[Person] >> 2 >> 1
-  val postcodeLens = Lens[Person] >> 2 >> 2
+  val nameLens     = lens[Person] >> 'name
+  val ageLens      = lens[Person] >> 'age
+  val addressLens  = lens[Person] >> 'address
+  val streetLens   = lens[Person] >> 'address >> 'street
+  val cityLens     = lens[Person] >> 'address >> 'city
+  val postcodeLens = lens[Person] >> 'address >> 'postcode
 
   // Starting value
   val person = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
