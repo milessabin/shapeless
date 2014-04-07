@@ -1327,4 +1327,29 @@ class HListTests {
       """)
     }
   }
+
+  @Test
+  def testWithKeys {
+    import syntax.singleton._
+
+    val orig =
+      ("intField" ->> 1) ::
+      ("boolField" ->> true) ::
+      HNil
+
+    val result = orig.values.zipWithKeys(orig.keys)
+    sameTyped(orig)(result)
+    assertEquals(orig, result)
+    val int = result.get("intField")
+    typed[Int](int)
+    assertEquals(1, int)
+    val bool = result.get("boolField")
+    typed[Boolean](bool)
+    assertEquals(true, bool)
+    illTyped("""result.get("otherField")""")
+
+    // key/value lengths must match up
+    illTyped("orig.tail.values.zipWithKeys(orig.keys)")
+    illTyped("orig.values.zipWithKeys(orig.keys.tail)")
+  }
 }
