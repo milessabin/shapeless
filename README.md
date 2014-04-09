@@ -177,7 +177,7 @@ compatibility.
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
-+ Cody Allen <ceedubs@gmail.com>
++ Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/FouriersTrick)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Huw Giddens <hgiddens@gmail.com>
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
