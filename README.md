@@ -123,8 +123,8 @@ libraryDependencies ++= Seq(
 
 ### shapeless-1.2.4
 
-Builds are available for Scala 2.9 and 2.10. If you are working with Scala 2.10.2 or later you should use
-shapeless-2.0.0 instead.
+Builds are available for Scala 2.9, 2.10 and 2.11.0-RC4. If you are working with Scala 2.10.2 or later you
+should use shapeless-2.0.0 instead.
 
 If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
 compiler flag,
@@ -143,14 +143,14 @@ This option isn't necessary or supported in Scala 2.10, so you should omit it if
 later,
 
 ```scala
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "1.2.4"
 )
 ```
 
-If you want to be able to support building relative to both 2.9.3 and 2.10.3 then you should use the 2.10.3
+If you want to be able to support building relative to both 2.9.3 and 2.10.x then you should use the 2.10.4
 configuration above and add the following,
  
 ```scala
@@ -168,7 +168,7 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 shapeless is built with SBT 0.13.1. The master branch is built with Scala 2.10.4 by default. To build with Scala 2.11.0
 you should check out the scala-2.11.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.10.3 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
+and Scala 2.10.4 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
 compatibility.
 
 ## Contributors
