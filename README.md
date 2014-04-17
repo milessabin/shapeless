@@ -123,8 +123,8 @@ libraryDependencies ++= Seq(
 
 ### shapeless-1.2.4
 
-Builds are available for Scala 2.9 and 2.10. If you are working with Scala 2.10.2 or later you should use
-shapeless-2.0.0 instead.
+Builds are available for Scala 2.9, 2.10 and 2.11.0-RC4. If you are working with Scala 2.10.2 or later you
+should use shapeless-2.0.0 instead.
 
 If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
 compiler flag,
@@ -143,14 +143,14 @@ This option isn't necessary or supported in Scala 2.10, so you should omit it if
 later,
 
 ```scala
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "1.2.4"
 )
 ```
 
-If you want to be able to support building relative to both 2.9.3 and 2.10.3 then you should use the 2.10.3
+If you want to be able to support building relative to both 2.9.3 and 2.10.x then you should use the 2.10.4
 configuration above and add the following,
  
 ```scala
@@ -168,7 +168,7 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 shapeless is built with SBT 0.13.1. The master branch is built with Scala 2.10.4 by default. To build with Scala 2.11.0
 you should check out the scala-2.11.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.10.3 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
+and Scala 2.10.4 and merged into the scala-2.11.x branch with only the minimal changes needed for forwards
 compatibility.
 
 ## Contributors
@@ -177,11 +177,14 @@ compatibility.
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
-+ Cody Allen <ceedubs@gmail.com>
++ Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/FouriersTrick)
++ Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Huw Giddens <hgiddens@gmail.com>
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
++ Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
++ Julien Tournay <jto boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
 + Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
@@ -189,7 +192,9 @@ compatibility.
 + Michael Pilquist <mpilquist@gmail.com> [@mpilquist](https://twitter.com/mpilquist)
 + Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
 + Nikolas Evangelopoulos <nikolas@jkl.gr> 
++ Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Stacy Curl <stacy.curl@gmail.com>
++ Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
 
