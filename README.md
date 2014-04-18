@@ -184,7 +184,7 @@ compatibility.
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
-+ Julien Tournay <jto boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
++ Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
 + Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
