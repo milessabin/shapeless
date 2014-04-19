@@ -104,7 +104,7 @@ class GenericMacros(val c: whitebox.Context) {
   }
 
   class Helper(val fromTpe: Type, val toProduct: Boolean, val toLabelled: Boolean, val labelledRepr: Boolean) {
-    import internal._
+    import internal.constantType
     import Flag._
 
     def unitValueTree = reify { () }.tree
