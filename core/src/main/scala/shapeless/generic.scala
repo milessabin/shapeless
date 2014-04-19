@@ -20,7 +20,7 @@ import scala.language.experimental.macros
 
 import scala.collection.breakOut
 import scala.collection.immutable.ListMap
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
 trait Generic[T] {
   type Repr
@@ -58,88 +58,52 @@ object LabelledGeneric extends LowPriorityLabelledGeneric {
   implicit def product[T <: Product]: LabelledGeneric[T] = macro GenericMacros.materializeLabelledForProduct[T]
 }
 
-object GenericMacros {
-  import shapeless.record.FieldType
+class GenericMacros(val c: whitebox.Context) {
+  import c.universe._
 
-  def materialize[T]
-    (c: whitebox.Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T]] =
-      materializeAux[Generic[T]](c)(false, false, tT.tpe)
+  def materialize[T](implicit tT: WeakTypeTag[T]) =
+    materializeAux(false, false, tT.tpe)
 
-  def materializeForProduct[T <: Product]
-    (c: whitebox.Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T] { type Repr <: HList }] =
-      materializeAux[Generic[T] { type Repr <: HList }](c)(true, false, tT.tpe)
+  def materializeForProduct[T <: Product](implicit tT: WeakTypeTag[T]) =
+    materializeAux(true, false, tT.tpe)
 
-  def materializeLabelled[T]
-    (c: whitebox.Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[LabelledGeneric[T]] =
-      materializeAux[LabelledGeneric[T]](c)(false, true, tT.tpe)
+  def materializeLabelled[T](implicit tT: WeakTypeTag[T]) =
+    materializeAux(false, true, tT.tpe)
 
-  def materializeLabelledForProduct[T <: Product]
-    (c: whitebox.Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[LabelledGeneric[T] { type Repr <: HList }] =
-      materializeAux[LabelledGeneric[T] { type Repr <: HList }](c)(true, true, tT.tpe)
+  def materializeLabelledForProduct[T <: Product](implicit tT: WeakTypeTag[T]) =
+    materializeAux(true, true, tT.tpe)
 
-  def materializeAux[G]
-    (c0 : whitebox.Context)(product0: Boolean, labelled0: Boolean, tpe0: c0.Type): c0.Expr[G] = {
-    import c0.{ abort, enclosingPosition, typeOf, Expr }
+  def materializeAux(product: Boolean, labelled: Boolean, tpe: Type): Tree = {
+    import c.{ abort, enclosingPosition, typeOf }
 
-    if (product0 && tpe0 <:< typeOf[Coproduct])
-      abort(enclosingPosition, s"Cannot materialize Coproduct $tpe0 as a Product")
+    if (product && tpe <:< typeOf[Coproduct])
+      abort(enclosingPosition, s"Cannot materialize Coproduct $tpe as a Product")
 
-    val helper = new Helper[c0.type] {
-      val c: c0.type = c0
-      val fromTpe = tpe0
-      val toProduct = product0
-      val toLabelled = labelled0
-      val labelledRepr = labelled0
-    }
-
-    Expr[G] {
-      if (tpe0 <:< typeOf[HList] || tpe0 <:< typeOf[Coproduct])
-        helper.materializeIdentityGeneric
-      else
-        helper.materializeGeneric
-    }
+    val helper = new Helper(tpe, product, labelled, labelled)
+    if (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
+      helper.materializeIdentityGeneric
+    else
+      helper.materializeGeneric
   }
 
-  def deriveProductInstance[C[_], T]
-    (c: whitebox.Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(ev.tree, true, false, tTag, cTag)
+  def deriveProductInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
+    deriveInstanceAux(ev, true, false, tTag.tpe, cTag.tpe)
 
-  def deriveLabelledProductInstance[C[_], T]
-    (c: whitebox.Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(ev.tree, true, true, tTag, cTag)
+  def deriveLabelledProductInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
+    deriveInstanceAux(ev, true, true, tTag.tpe, cTag.tpe)
 
-  def deriveInstance[C[_], T]
-    (c: whitebox.Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(ev.tree, false, false, tTag, cTag)
+  def deriveInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
+    deriveInstanceAux(ev, false, false, tTag.tpe, cTag.tpe)
 
-  def deriveLabelledInstance[C[_], T]
-    (c: whitebox.Context)(ev: c.Expr[_])(implicit tTag: c.WeakTypeTag[T], cTag: c.WeakTypeTag[C[Any]]): c.Expr[C[T]] =
-    deriveInstanceAux(c)(ev.tree, false, true, tTag, cTag)
+  def deriveLabelledInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
+    deriveInstanceAux(ev, false, true, tTag.tpe, cTag.tpe)
 
-  def deriveInstanceAux[C[_], T](c0: whitebox.Context)
-    (deriver: c0.Tree, product0: Boolean, labelled0: Boolean, tTag: c0.WeakTypeTag[T], cTag: c0.WeakTypeTag[C[Any]]): c0.Expr[C[T]] = {
-    import c0.Expr
-    val helper = new Helper[c0.type] {
-      val c: c0.type = c0
-      val fromTpe = tTag.tpe
-      val toProduct = product0
-      val toLabelled = labelled0
-      val labelledRepr = false
-    }
-
-    Expr[C[T]] {
-      helper.deriveInstance(deriver, cTag.tpe.typeConstructor)
-    }
+  def deriveInstanceAux(deriver: Tree, product: Boolean, labelled: Boolean, tTpe: Type, cTpe: Type): Tree = {
+    val helper = new Helper(tTpe, product, labelled, false)
+    helper.deriveInstance(deriver, cTpe.typeConstructor)
   }
 
-  trait Helper[+C <: blackbox.Context] {
-    val c: C
-    val fromTpe: c.Type
-    val toProduct: Boolean
-    val toLabelled: Boolean
-    val labelledRepr: Boolean
-
-    import c.universe._
+  class Helper(val fromTpe: Type, val toProduct: Boolean, val toLabelled: Boolean, val labelledRepr: Boolean) {
     import internal._
     import Flag._
 
@@ -158,7 +122,7 @@ object GenericMacros {
     def cnilTpe = typeOf[CNil]
     def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
     def symTpe = typeOf[scala.Symbol]
-    def fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
+    def fieldTypeTpe = typeOf[shapeless.record.FieldType[_, _]].typeConstructor
     def genericTpe = typeOf[Generic[_]].typeConstructor
     def labelledGenericTpe = typeOf[LabelledGeneric[_]].typeConstructor
     def typeClassTpe = typeOf[TypeClass[Any]].typeConstructor
