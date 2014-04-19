@@ -330,7 +330,7 @@ object GenericMacros {
 
     type ProductCaseFn = Type => CaseDef
     type CaseFn = (Type, Int) => CaseDef
-    
+
     def mkProductCases(toRepr: ProductCaseFn, fromRepr: ProductCaseFn): (List[CaseDef], List[CaseDef]) =
       (List(toRepr(fromTpe)), List(fromRepr(fromTpe)))
 
@@ -408,7 +408,7 @@ object GenericMacros {
       mkTransCase(tpe, mkValue, mkBinder) { case (rhs, lhs) => CaseDef(lhs, EmptyTree, rhs) }
 
     def mkToReprCase(tpe: Type, index: Int): CaseDef =
-      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) => 
+      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) =>
         CaseDef(lhs, EmptyTree, mkCoproductValue(mkElem(rhs, nameOf(tpe), tpe), index))
       }
 
@@ -428,7 +428,7 @@ object GenericMacros {
         } else
           mkCoproductTpe(fromCtors)
 
-      val (toCases, fromCases) = 
+      val (toCases, fromCases) =
         if(fromProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
         else mkCases(mkToCoproductCase, mkFromCoproductCase)
 
