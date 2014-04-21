@@ -40,6 +40,7 @@ class SizedOps[A, Repr, L <: Nat](r : GenTraversableLike[A, Repr]) { outer =>
   import nat._
   import ops.nat._
   import LT._
+  import ops.sized._
   import Sized.wrap
   
   /**
@@ -132,6 +133,11 @@ class SizedOps[A, Repr, L <: Nat](r : GenTraversableLike[A, Repr]) { outer =>
    * as this collection.
    */
   def map[B, That](f : A => B)(implicit cbf : CanBuildFrom[Repr, B, That]) = wrap[That, L](r map f)
+
+  /**
+   * Convert this collection to an `HList`.
+   */
+  def toHList[Out <: HList](implicit fs: FromSized.Aux[Repr, L, Out]): Out = fs(wrap[Repr, L](r.repr))
 }
 
 trait LowPrioritySized {
@@ -139,6 +145,9 @@ trait LowPrioritySized {
 }
 
 object Sized extends LowPrioritySized {
+  import ops.hlist.Tupler
+  import ops.sized.FromSized
+
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
     (implicit itl: IsTraversableLike[Repr]): SizedOps[itl.A, Repr, L] =
       new SizedOps[itl.A, Repr, L](itl.conversion(s.unsized))
@@ -151,5 +160,7 @@ object Sized extends LowPrioritySized {
   
   def wrap[Repr, L <: Nat](r : Repr) = new Sized[Repr, L](r)
 
-  def unapplySeq[Repr, L <: Nat](x : Sized[Repr, L]) = Some(x.unsized)
+  def unapply[Repr, L <: Nat, Out <: HList, T <: Product](x: Sized[Repr, L])
+    (implicit itl: IsTraversableLike[Repr], fs: FromSized.Aux[Repr, L, Out], t: Tupler.Aux[Out, T]): Option[T] =
+      Some(fs(x).tupled)
 }
