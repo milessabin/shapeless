@@ -4,7 +4,7 @@ scala:
 jdk:
 - oraclejdk7
 - openjdk6
-script: sbt ++${TRAVIS_SCALA_VERSION} test
+script: sbt ++${TRAVIS_SCALA_VERSION} test $(if [[ "${TRAVIS_PULL_REQUEST}" == "false" && ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) && ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.11.x")]]; then echo "publish";  fi)
 env:
   global:
   - secure: "Yi/MWSvXrePnkVbiGxh9ZaRnh4EAayheY9fE8kHz+WOFYDA2cdBER60KDLZFC8T3U0lvpx1e7rbCyGu46Z9ypqQ50VgDMk+49N3NYvP2RAfnqecSyaDEzq5r093Hby+jEQUPApmTun8/pPiJTEO5sHCb+aiAGIA4zg8+ealZa2g="
