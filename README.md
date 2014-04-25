@@ -36,7 +36,7 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 
 [features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [features124]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-1.2.4
-[relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0-M1
+[relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0 
 [milessabin]: https://twitter.com/milessabin
 [syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
