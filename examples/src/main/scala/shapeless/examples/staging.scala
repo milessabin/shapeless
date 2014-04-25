@@ -16,20 +16,22 @@
 
 package shapeless.examples
 
+import scala.language.existentials
+
 object ReflectionUtils {
   import scala.reflect.api.{ Mirror => APIMirror, TreeCreator, Universe }
   import scala.reflect.runtime.currentMirror
   import scala.reflect.runtime.universe._
   import scala.tools.reflect.Eval
 
-  val byteTypeId    = Select(Ident(newTermName("scala")), newTypeName("Byte"))
-  val charTypeId    = Select(Ident(newTermName("scala")), newTypeName("Char"))
-  val shortTypeId   = Select(Ident(newTermName("scala")), newTypeName("Short"))
-  val intTypeId     = Select(Ident(newTermName("scala")), newTypeName("Int"))
-  val longTypeId    = Select(Ident(newTermName("scala")), newTypeName("Long"))
-  val floatTypeId   = Select(Ident(newTermName("scala")), newTypeName("Float"))
-  val doubleTypeId  = Select(Ident(newTermName("scala")), newTypeName("Double"))
-  val booleanTypeId = Select(Ident(newTermName("scala")), newTypeName("Boolean"))
+  val byteTypeId    = Select(Ident(TermName("scala")), TypeName("Byte"))
+  val charTypeId    = Select(Ident(TermName("scala")), TypeName("Char"))
+  val shortTypeId   = Select(Ident(TermName("scala")), TypeName("Short"))
+  val intTypeId     = Select(Ident(TermName("scala")), TypeName("Int"))
+  val longTypeId    = Select(Ident(TermName("scala")), TypeName("Long"))
+  val floatTypeId   = Select(Ident(TermName("scala")), TypeName("Float"))
+  val doubleTypeId  = Select(Ident(TermName("scala")), TypeName("Double"))
+  val booleanTypeId = Select(Ident(TermName("scala")), TypeName("Boolean"))
 
   def anyToTypeId(a : Any) = a match {
     case _ : Byte    => byteTypeId
@@ -42,12 +44,12 @@ object ReflectionUtils {
     case _ : Boolean => booleanTypeId
     case other =>
       other.getClass.getName.split('.') match {
-        case Array(unpackaged) => Ident(newTypeName(unpackaged))
+        case Array(unpackaged) => Ident(TypeName(unpackaged))
         case Array(root, suffix @ _*) =>
           val (pathSuffix, typeName) = (suffix.init, suffix.last)
           Select(
-            pathSuffix.map(newTermName).foldLeft(Ident(newTermName(root)) : Tree)(Select.apply),
-            newTypeName(typeName)
+            pathSuffix.map(TermName.apply).foldLeft(Ident(TermName(root)) : Tree)(Select.apply),
+            TypeName(typeName)
           )
       }
   }
@@ -88,13 +90,13 @@ object StagedTypeClassExample extends App {
     val tupleTree =
       TypeApply(
         Select(
-          Ident(newTermName("rawTuple")),
-          newTermName("asInstanceOf")),
+          Ident(TermName("rawTuple")),
+          TermName("asInstanceOf")),
         List(
           AppliedTypeTree(
             Select(
-              Ident(newTermName("scala")),
-              newTypeName("Tuple2")),
+              Ident(TermName("scala")),
+              TypeName("Tuple2")),
             List(tpe1, tpe2))))
 
     val consumeTree =
@@ -102,10 +104,10 @@ object StagedTypeClassExample extends App {
         Select(
           Select(
             Select(
-              Ident(newTermName("shapeless")),
-              newTermName("examples")),
-            newTermName("StagedTypeClassExample")),
-          newTermName("consumeTuple")),
+              Ident(TermName("shapeless")),
+              TermName("examples")),
+            TermName("StagedTypeClassExample")),
+          TermName("consumeTuple")),
         List(tupleTree))
 
     val consumeExpr = mkExpr[String](currentMirror)(consumeTree)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,20 @@ package shapeless
 
 import language.existentials
 import language.experimental.macros
- 
-import reflect.macros.Context
+
+import reflect.macros.whitebox
 
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
   /**
    * Type-specific case of a polymorphic function.
-   * 
+   *
    * @author Miles Sabin
    */
   abstract class Case[P, L <: HList] {
     type Result
     val value : L => Result
-    
+
     def apply(t : L) = value(t)
     def apply()(implicit ev: HNil =:= L) = value(HNil)
     def apply[T](t: T)(implicit ev: (T :: HNil) =:= L) = value(t :: HNil)
@@ -41,7 +41,7 @@ object PolyDefns extends Cases {
   object Case extends CaseInst {
     type Aux[P, L <: HList, Result0] = Case[P, L] { type Result = Result0 }
     type Hom[P, T] = Aux[P, T :: HNil, T]
-    
+
     def apply[P, L <: HList, R](v : L => R): Aux[P, L, R] = new Case[P, L] {
       type Result = R
       val value = v
@@ -51,7 +51,7 @@ object PolyDefns extends Cases {
     implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] = macro materializeFromValueImpl[P, T, T]
 
     def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
-      (c: Context): c.Expr[Case[P, FT :: HNil]] = {
+      (c: whitebox.Context): c.Expr[Case[P, FT :: HNil]] = {
       import c.universe._
 
       val pTpe = weakTypeOf[P]
@@ -59,7 +59,7 @@ object PolyDefns extends Cases {
       val tTpe = weakTypeOf[T]
 
       val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-      if(c.openImplicits.tail.exists(_._1=:= recTpe))
+      if(c.openImplicits.tail.exists(_.pt =:= recTpe))
         c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
 
       val value = pTpe match {
@@ -68,7 +68,7 @@ object PolyDefns extends Cases {
       }
 
       c.Expr[Case[P, FT :: HNil]] {
-        TypeApply(Select(Ident(value), newTermName("caseUniv")), List(TypeTree(tTpe)))
+        TypeApply(Select(Ident(value), TermName("caseUniv")), List(TypeTree(tTpe)))
       }
     }
   }
@@ -84,7 +84,7 @@ object PolyDefns extends Cases {
 
   /**
    * Represents the composition of two polymorphic function values.
-   *  
+   *
    * @author Miles Sabin
    */
   class Compose[F, G](f : F, g : G) extends Poly
@@ -110,7 +110,7 @@ object PolyDefns extends Cases {
 
   /**
    * Base class for lifting a `Function1` to a `Poly1` over the universal domain, yielding an `HList` with the result as
-   * its only element if the argument is in the original functions domain, `HNil` otherwise. 
+   * its only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
     implicit def subT[U <: T] = at[U](f(_) :: HNil)
@@ -125,18 +125,18 @@ object PolyDefns extends Cases {
 
   /**
    * Base class for lifting a `Poly` to a `Poly` over the universal domain, yielding an `HList` with the result as it's
-   * only element if the argument is in the original functions domain, `HNil` otherwise. 
+   * only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class LiftU[P <: Poly](p : P)  extends LowPriorityLiftU {
     implicit def defined[L <: HList](implicit caseT : Case[P, L]) = new ProductCase[L] {
       type Result = caseT.Result :: HNil
       val value = (l : L) => caseT(l) :: HNil
-    } 
+    }
   }
 
   /**
    * Base trait for natural transformations.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ~>[F[_], G[_]] extends Poly1 {
@@ -165,14 +165,14 @@ object PolyDefns extends Cases {
 
 /**
  * Base trait for polymorphic values.
- * 
+ *
  * @author Miles Sabin
  */
 trait Poly extends PolyApply {
   import poly._
 
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
-  
+
   def andThen(f: Poly) = new Compose[f.type, this.type](f, this)
 
   /** The type of the case representing this polymorphic function at argument types `L`. */
@@ -180,7 +180,7 @@ trait Poly extends PolyApply {
   object ProductCase {
     /** The type of a case of this polymorphic function of the form `L => R` */
     type Aux[L <: HList, Result0] = ProductCase[L] { type Result = Result0 }
-    
+
     /** The type of a case of this polymorphic function of the form `T => T` */
     type Hom[T] = Aux[T :: HNil, T]
 
@@ -189,20 +189,20 @@ trait Poly extends PolyApply {
       val value = v
     }
   }
-  
+
   def use[T, L <: HList, R](t : T)(implicit cb: CaseBuilder[T, L, R]) = cb(t)
 
   trait CaseBuilder[T, L <: HList, R] {
     def apply(t: T): ProductCase.Aux[L, R]
   }
-  
+
   trait LowPriorityCaseBuilder {
     implicit def valueCaseBuilder[T]: CaseBuilder[T, HNil, T] =
       new CaseBuilder[T, HNil, T] {
         def apply(t: T) = ProductCase((_: HNil) => t)
       }
   }
-  
+
   object CaseBuilder extends LowPriorityCaseBuilder {
     import ops.function.FnToProduct
     implicit def fnCaseBuilder[F, H, T <: HList, Result]
@@ -211,7 +211,7 @@ trait Poly extends PolyApply {
           def apply(f: F) = ProductCase((l : H :: T) => fntp(f)(l))
         }
   }
-  
+
   def caseAt[L <: HList](implicit c: ProductCase[L]) = c
 
   def apply[R](implicit c : ProductCase.Aux[HNil, R]) : R = c()
@@ -220,21 +220,22 @@ trait Poly extends PolyApply {
 /**
  * Provides implicit conversions from polymorphic function values to monomorphic function values, eg. for use as
  * arguments to ordinary higher order functions.
- *  
+ *
  * @author Miles Sabin
  */
 object Poly extends PolyInst {
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
-  
-  implicit def apply(f : Any): Poly = macro liftFnImpl
-  
-  def liftFnImpl(c: Context)(f: c.Expr[Any]): c.Expr[Poly] = {
-    import c.universe._
-    import Flag._
-    
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
 
-    val moduleName = newTermName(c.fresh)
+  implicit def apply(f : Any): Poly = macro liftFnImpl
+
+  def liftFnImpl(c: whitebox.Context)(f: c.Expr[Any]): c.Expr[Poly] = {
+    import c.universe._
+    import internal.decorators._
+    import Flag._
+
+    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
+
+    val moduleName = TermName(c.freshName)
 
     val anySym = c.mirror.staticClass("scala.Any")
     val anyTpe = anySym.asType.toType
@@ -242,8 +243,8 @@ object Poly extends PolyInst {
     val nothingTpe = nothingSym.asType.toType
 
     val typeOpsSym = c.mirror.staticPackage("shapeless")
-    val idSym = typeOpsSym.newTypeSymbol(newTypeName("Id"))
-    val constSym = typeOpsSym.newTypeSymbol(newTypeName("Const"))
+    val idSym = typeOpsSym.newTypeSymbol(TypeName("Id"))
+    val constSym = typeOpsSym.newTypeSymbol(TypeName("Const"))
 
     val natTSym = c.mirror.staticClass("shapeless.PolyDefns.$tilde$greater")
     val natTTpe = natTSym.asClass.toTypeConstructor
@@ -258,7 +259,7 @@ object Poly extends PolyInst {
           AppliedTypeTree(Ident(sym.name), List(Ident(targ)))
 
       DefDef(
-        Modifiers(), newTermName("apply"),
+        Modifiers(), TermName("apply"),
         List(TypeDef(Modifiers(PARAM), targ, List(), TypeBoundsTree(TypeTree(nothingTpe), TypeTree(anyTpe)))),
         List(List(ValDef(Modifiers(PARAM), arg, mkTargRef(fSym), EmptyTree))),
         mkTargRef(gSym),
@@ -267,7 +268,7 @@ object Poly extends PolyInst {
     }
 
     def destructureMethod(methodSym: MethodSymbol) = {
-      val paramSym = methodSym.paramss match {
+      val paramSym = methodSym.paramLists match {
         case List(List(ps)) => ps
         case _ => c.abort(c.enclosingPosition, "Expression $f has the wrong shape to be converted to a polymorphic function value")
       }
@@ -278,7 +279,7 @@ object Poly extends PolyInst {
         else tpe.typeConstructor.typeSymbol
       }
 
-      (extractTc(paramSym.typeSignature), extractTc(methodSym.returnType))
+      (extractTc(paramSym.info), extractTc(methodSym.returnType))
     }
 
     def stripSymbolsAndTypes(tree: Tree, internalSyms: List[Symbol]) = {
@@ -291,12 +292,12 @@ object Poly extends PolyInst {
             case _          =>
               val hasSymbol: Boolean = {
                 val reflectInternalTree = tree.asInstanceOf[symtab.Tree forSome { val symtab: reflect.internal.SymbolTable }]
-                reflectInternalTree.hasSymbol
+                reflectInternalTree.hasSymbolField
               }
               val dupl = tree.duplicate
               if (hasSymbol)
-                dupl.symbol = NoSymbol
-              dupl.tpe = null
+                dupl.setSymbol(NoSymbol)
+              dupl.setType(null)
               dupl
           }
         }
@@ -305,23 +306,23 @@ object Poly extends PolyInst {
       (new StripSymbolsAndTypes).transform(tree)
     }
 
-    val (fSym, gSym, dd) = 
+    val (fSym, gSym, dd) =
       f.tree match {
         case Block(List(), Function(List(_), Apply(TypeApply(fun, _), _))) =>
           val methodSym = fun.symbol.asMethod
 
           val (fSym1, gSym1) = destructureMethod(methodSym)
-          val body = Apply(TypeApply(Ident(methodSym), List(Ident(newTypeName("T")))), List(Ident(newTermName("t"))))
+          val body = Apply(TypeApply(Ident(methodSym), List(Ident(TypeName("T")))), List(Ident(TermName("t"))))
 
-          (fSym1, gSym1, mkApply(fSym1, gSym1, newTypeName("T"), newTermName("t"), body))
+          (fSym1, gSym1, mkApply(fSym1, gSym1, TypeName("T"), TermName("t"), body))
 
         case Block(List(), Function(List(_), Apply(fun, _))) =>
           val methodSym = fun.symbol.asMethod
 
           val (fSym1, gSym1) = destructureMethod(methodSym)
-          val body = Apply(Ident(methodSym), List(Ident(newTermName("t"))))
+          val body = Apply(Ident(methodSym), List(Ident(TermName("t"))))
 
-          (fSym1, gSym1, mkApply(fSym1, gSym1, newTypeName("T"), newTermName("t"), body))
+          (fSym1, gSym1, mkApply(fSym1, gSym1, TypeName("T"), TermName("t"), body))
 
         case Block(List(df @ DefDef(mods, _, List(tp), List(List(vp)), tpt, rhs)), Literal(Constant(()))) =>
           val methodSym = df.symbol.asMethod
@@ -337,7 +338,7 @@ object Poly extends PolyInst {
 
           val (fSym1, gSym1) = destructureMethod(methodSym)
 
-          val body = mkApply(fSym1, gSym1, newTypeName("T"), vp.name, stripSymbolsAndTypes(rhs, List()))
+          val body = mkApply(fSym1, gSym1, TypeName("T"), vp.name, stripSymbolsAndTypes(rhs, List()))
           (fSym1, gSym1, body)
 
         case _ =>
@@ -346,14 +347,14 @@ object Poly extends PolyInst {
 
     def mkTargTree(sym: Symbol) =
       if(sym == idSym)
-        Select(Ident(newTermName("shapeless")), newTypeName("Id"))
+        Select(Ident(TermName("shapeless")), TypeName("Id"))
       else if(sym.asType.typeParams.isEmpty)
         SelectFromTypeTree(
           AppliedTypeTree(
-            Select(Ident(newTermName("shapeless")), newTypeName("Const")),
+            Select(Ident(TermName("shapeless")), TypeName("Const")),
             List(Ident(sym.name))
           ),
-          newTypeName("λ")
+          TypeName("λ")
         )
       else
         Ident(sym.name)
@@ -368,10 +369,10 @@ object Poly extends PolyInst {
       ModuleDef(Modifiers(), moduleName,
         Template(
           List(liftedTypeTree),
-          emptyValDef,
+          noSelfType,
           List(
             DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
+              Modifiers(), termNames.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(())))),
@@ -395,7 +396,7 @@ object Poly extends PolyInst {
  */
 trait Poly0 extends Poly {
   type Case0[T] = ProductCase.Aux[HNil, T]
-  
+
   def at[T](t: T) = new ProductCase[HNil] {
     type Result = T
     val value = (l : HNil) => t

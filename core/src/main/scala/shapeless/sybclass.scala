@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox
 
 import poly._
 
 /**
- * An implementation of [http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/ 
+ * An implementation of [http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
  * "Scrap your boilerplate with class"] in Scala.
- * 
+ *
  * @author Miles Sabin
  */
 
@@ -46,7 +46,7 @@ trait LowPriorityData {
 
   /**
    * Data type class instance for types with associated `Generic`s.
-   * 
+   *
    * The use of a macro here is essential to support resolution of recursive references.
    */
   implicit def genericData[F <: Poly, T, R, U](implicit gen : Generic.Aux[T, R]): Data[F, T, U] =
@@ -62,7 +62,7 @@ object Data extends LowPriorityData {
   implicit def listData[F <: Poly, T, R](implicit qt : Case1.Aux[F, T, R]): Data[F, List[T], R] = new Data[F, List[T], R] {
     def gmapQ(t : List[T]) = t.map(qt)
   }
-  
+
   /**
    * Data type class instance for `HList`s.
    */
@@ -74,7 +74,7 @@ object Data extends LowPriorityData {
   // Use of macro here is solely to prevent spurious implicit divergence
   implicit def hlistData[F <: Poly, H, T <: HList, R](implicit qh : Case1.Aux[F, H, R], ct : Data[F, T, R]): Data[F, H :: T, R] =
     macro DataMacros.hlistDataImpl[F, H, T, R]
-  
+
   /**
    * Data type class instance for `Coproducts`s.
    */
@@ -90,13 +90,13 @@ object Data extends LowPriorityData {
 
 object DataMacros {
   def genericDataImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag, U: c.WeakTypeTag]
-    (c: Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[Data[F, T, U]] = {
+    (c: blackbox.Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[Data[F, T, U]] = {
     import c.universe._
     import Flag._
 
     val hlistSym = c.mirror.staticClass("shapeless.HList")
     val hlistTpe = hlistSym.asClass.toType
-    
+
     val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
     val coproductTpe = coproductSym.asClass.toType
 
@@ -111,7 +111,7 @@ object DataMacros {
 
     val dataSym = c.mirror.staticClass("shapeless.Data")
 
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
 
     val thisDataTypeTree =
       AppliedTypeTree(
@@ -119,36 +119,36 @@ object DataMacros {
         List(TypeTree(fTpe), TypeTree(tTpe), TypeTree(uTpe))
       )
 
-    val reprDataTypeTree = 
+    val reprDataTypeTree =
       AppliedTypeTree(
         Ident(dataSym),
         List(TypeTree(fTpe), TypeTree(rTpe), TypeTree(uTpe))
       )
 
-    val recName = newTermName(c.fresh)
-    val className = newTypeName(c.fresh)
-    val genericName = newTermName(c.fresh)
-    val reprDataName = newTermName(c.fresh)
+    val recName = TermName(c.freshName)
+    val className = TypeName(c.freshName)
+    val genericName = TermName(c.freshName)
+    val reprDataName = TermName(c.freshName)
 
     val recClass =
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(thisDataTypeTree),
-          emptyValDef,
+          noSelfType,
           List(
              // Implicit publication of this to tie the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisDataTypeTree, This(tpnme.EMPTY)), 
+            ValDef(Modifiers(IMPLICIT), recName, thisDataTypeTree, This(typeNames.EMPTY)),
 
             DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
+              Modifiers(), termNames.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(())))
             ),
 
             DefDef(
-              Modifiers(), newTermName("gmapQ"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(tTpe), EmptyTree))),
+              Modifiers(), TermName("gmapQ"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("t"), TypeTree(tTpe), EmptyTree))),
               TypeTree(),
               Block(
                 List(
@@ -158,18 +158,18 @@ object DataMacros {
                   // resolution of recursive references
                   ValDef(Modifiers(), reprDataName, reprDataTypeTree,
                     TypeApply(
-                      Select(Ident(definitions.PredefModule), newTermName("implicitly")),
+                      Select(Ident(definitions.PredefModule), TermName("implicitly")),
                       List(reprDataTypeTree)
                     )
                   )
                 ),
                 Apply(
-                  Select(Ident(reprDataName), newTermName("gmapQ")),
+                  Select(Ident(reprDataName), TermName("gmapQ")),
                   List(
                     Apply(
-                      Select(Ident(genericName), newTermName("to")),
+                      Select(Ident(genericName), TermName("to")),
                       List(
-                        Ident(newTermName("t"))
+                        Ident(TermName("t"))
                       )
                     )
                   )
@@ -183,14 +183,14 @@ object DataMacros {
     val block =
       Block(
         List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
+        Apply(Select(New(Ident(className)), termNames.CONSTRUCTOR), List())
       )
 
     c.Expr[Data[F, T, U]](block)
   }
-  
+
   def hlistDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: Context)(qh: c.Expr[Case1.Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
+    (c: blackbox.Context)(qh: c.Expr[Case1.Aux[F, H, R]], ct: c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :: T, R]] = {
     import c.universe._
 
     reify {
@@ -203,9 +203,9 @@ object DataMacros {
   }
 
   def coproductDataImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: Context)(qh : c.Expr[Case1.Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = { 
+    (c: blackbox.Context)(qh : c.Expr[Case1.Aux[F, H, R]], ct : c.Expr[Data[F, T, R]]): c.Expr[Data[F, H :+: T, R]] = {
     import c.universe._
-    
+
     reify {
       new Data[F, H :+: T, R] {
         val qhs = qh.splice
@@ -236,7 +236,7 @@ trait LowPriorityDataT {
 
   /**
    * DataT type class instance for type with associated `Generics`s.
-   * 
+   *
    * The use of a macro here is essential to support resolution of recursive references.
    */
   implicit def genericDataT[F <: Poly, T, R](implicit gen : Generic.Aux[T, R]): DataT[F, T, T] =
@@ -253,7 +253,7 @@ object DataT extends LowPriorityDataT {
     new DataT[F, List[T], List[U]] {
       def gmapT(t : List[T]) = t.map(ft)
     }
-  
+
   /**
    * DataT type class instance for `HList`s.
    */
@@ -283,13 +283,13 @@ object DataT extends LowPriorityDataT {
 
 object DataTMacros {
   def genericDataTImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag]
-    (c: Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[DataT[F, T, T]] = {
+    (c: blackbox.Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[DataT[F, T, T]] = {
     import c.universe._
     import Flag._
 
     val hlistSym = c.mirror.staticClass("shapeless.HList")
     val hlistTpe = hlistSym.asClass.toType
-    
+
     val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
     val coproductTpe = coproductSym.asClass.toType
 
@@ -303,7 +303,7 @@ object DataTMacros {
 
     val dataTSym = c.mirror.staticClass("shapeless.DataT")
 
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
 
     val thisDataTTypeTree =
       AppliedTypeTree(
@@ -311,36 +311,36 @@ object DataTMacros {
         List(TypeTree(fTpe), TypeTree(tTpe), TypeTree(tTpe))
       )
 
-    val reprDataTTypeTree = 
+    val reprDataTTypeTree =
       AppliedTypeTree(
         Ident(dataTSym),
         List(TypeTree(fTpe), TypeTree(rTpe), TypeTree(rTpe))
       )
 
-    val recName = newTermName(c.fresh)
-    val className = newTypeName(c.fresh)
-    val genericName = newTermName(c.fresh)
-    val reprDataTName = newTermName(c.fresh)
+    val recName = TermName(c.freshName)
+    val className = TypeName(c.freshName)
+    val genericName = TermName(c.freshName)
+    val reprDataTName = TermName(c.freshName)
 
     val recClass =
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(thisDataTTypeTree),
-          emptyValDef,
+          noSelfType,
           List(
              // Implicit publication of this to tie the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisDataTTypeTree, This(tpnme.EMPTY)), 
+            ValDef(Modifiers(IMPLICIT), recName, thisDataTTypeTree, This(typeNames.EMPTY)),
 
             DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
+              Modifiers(), termNames.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(())))
             ),
 
             DefDef(
-              Modifiers(), newTermName("gmapT"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(tTpe), EmptyTree))),
+              Modifiers(), TermName("gmapT"), List(),
+              List(List(ValDef(Modifiers(PARAM), TermName("t"), TypeTree(tTpe), EmptyTree))),
               TypeTree(),
               Block(
                 List(
@@ -350,21 +350,21 @@ object DataTMacros {
                   // resolution of recursive references
                   ValDef(Modifiers(), reprDataTName, reprDataTTypeTree,
                     TypeApply(
-                      Select(Ident(definitions.PredefModule), newTermName("implicitly")),
+                      Select(Ident(definitions.PredefModule), TermName("implicitly")),
                       List(reprDataTTypeTree)
                     )
                   )
                 ),
                 Apply(
-                  Select(Ident(genericName), newTermName("from")),
+                  Select(Ident(genericName), TermName("from")),
                   List(
                     Apply(
-                      Select(Ident(reprDataTName), newTermName("gmapT")),
+                      Select(Ident(reprDataTName), TermName("gmapT")),
                       List(
                         Apply(
-                          Select(Ident(genericName), newTermName("to")),
+                          Select(Ident(genericName), TermName("to")),
                           List(
-                            Ident(newTermName("t"))
+                            Ident(TermName("t"))
                           )
                         )
                       )
@@ -380,14 +380,14 @@ object DataTMacros {
     val block =
       Block(
         List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
+        Apply(Select(New(Ident(className)), termNames.CONSTRUCTOR), List())
       )
 
     c.Expr[DataT[F, T, T]](block)
   }
-  
+
   def hlistDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: HList: c.WeakTypeTag, U: c.WeakTypeTag, V <: HList: c.WeakTypeTag]
-    (c: Context)(fh: c.Expr[Case1.Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
+    (c: blackbox.Context)(fh: c.Expr[Case1.Aux[F, H, U]], ct: c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :: T, U :: V]] = {
     import c.universe._
 
     reify {
@@ -400,9 +400,9 @@ object DataTMacros {
   }
 
   def coproductDataTImpl[F: c.WeakTypeTag, H: c.WeakTypeTag, T <: Coproduct: c.WeakTypeTag, U: c.WeakTypeTag, V <: Coproduct: c.WeakTypeTag]
-    (c: Context)(fh : c.Expr[Case1.Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = { 
+    (c: blackbox.Context)(fh : c.Expr[Case1.Aux[F, H, U]], ct : c.Expr[DataT[F, T, V]]): c.Expr[DataT[F, H :+: T, U :+: V]] = {
     import c.universe._
-    
+
     reify {
       new DataT[F, H :+: T, U :+: V] {
         val fhs = fh.splice

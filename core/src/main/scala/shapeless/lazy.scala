@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox
 
 trait Lazy[T] {
   val value: T
@@ -31,11 +31,11 @@ object Lazy {
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
-  def mkLazyImpl[T: c.WeakTypeTag](c: Context): c.Expr[Lazy[T]] = {
+  def mkLazyImpl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[Lazy[T]] = {
     import c.universe._
     import Flag._
 
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
 
     val lazySym = c.mirror.staticClass("shapeless.Lazy")
 
@@ -45,30 +45,30 @@ object Lazy {
         List(TypeTree(weakTypeOf[T]))
       )
 
-    val recName = newTermName(c.fresh)
-    val className = newTypeName(c.fresh)
+    val recName = TermName(c.freshName)
+    val className = TypeName(c.freshName)
     val recClass =
       ClassDef(Modifiers(FINAL), className, List(),
         Template(
           List(thisLazyTypeTree),
-          emptyValDef,
+          noSelfType,
           List(
             DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
+              Modifiers(), termNames.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(())))
             ),
 
             // Implicit self-publication ties the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisLazyTypeTree, This(tpnme.EMPTY)), 
+            ValDef(Modifiers(IMPLICIT), recName, thisLazyTypeTree, This(typeNames.EMPTY)),
 
-            ValDef(Modifiers(LAZY), newTermName("value"), TypeTree(weakTypeOf[T]),
+            ValDef(Modifiers(LAZY), TermName("value"), TypeTree(weakTypeOf[T]),
               TypeApply(
-                Select(Ident(definitions.PredefModule), newTermName("implicitly")),
+                Select(Ident(definitions.PredefModule), TermName("implicitly")),
                 List(TypeTree(weakTypeOf[T]))
               )
-              
+
             )
           )
         )
@@ -77,7 +77,7 @@ object Lazy {
     val block =
       Block(
         List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
+        Apply(Select(New(Ident(className)), termNames.CONSTRUCTOR), List())
       )
 
     c.Expr[Lazy[T]] { block }

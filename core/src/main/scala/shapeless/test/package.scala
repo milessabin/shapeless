@@ -23,7 +23,7 @@ package object test {
 
   def sameTyped[T](t1: => T)(t2: => T) {}
 
-  def showType[T: TypeTag]: String = typeOf[T].normalize.toString
+  def showType[T: TypeTag]: String = typeOf[T].dealias.toString
 
-  def showType[T: TypeTag](t: => T): String = typeOf[T].normalize.toString
+  def showType[T: TypeTag](t: => T): String = typeOf[T].dealias.toString
 }

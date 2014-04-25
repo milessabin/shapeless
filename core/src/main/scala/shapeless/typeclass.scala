@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox
 
 /**
  * A type class abstracting over the `product` operation of type classes over
