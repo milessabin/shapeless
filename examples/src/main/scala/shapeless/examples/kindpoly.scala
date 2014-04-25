@@ -46,7 +46,7 @@ object KindPolyExamples {
   def sameTypeCtor[T, U, TC](t: T, u: U)(implicit evt: TyApp[T, TC, _], evu: TyApp[U, TC, _]) = {}
 
   sameTypeCtor(List(23), List("foo"))
-  sameTypeCtor(Map(23 -> "foo"), Map(true -> ((): Unit)))
+  sameTypeCtor(Map(23 -> "foo"), Map(true -> ()))
   sameTypeCtor((x : Int, y: Int) => Boolean, (x : Double, y : Double) => Boolean) 
   // sameTypeCtor(23, true)                           // Does not compile
   // sameTypeCtor(List(23), Set(13))                  // Does not compile

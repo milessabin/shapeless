@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Base trait for type level natural numbers.
- *
+ * 
  * @author Miles Sabin
  */
 trait Nat {
@@ -31,7 +31,7 @@ trait Nat {
 
 /**
  * Encoding of successor.
- *
+ * 
  * @author Miles Sabin
  */
 case class Succ[P <: Nat]() extends Nat {
@@ -40,7 +40,7 @@ case class Succ[P <: Nat]() extends Nat {
 
 /**
  * Encoding of zero.
- *
+ * 
  * @author Miles Sabin
  */
 class _0 extends Nat {
@@ -49,7 +49,7 @@ class _0 extends Nat {
 
 /**
  * Type level encoding of the natural numbers.
- *
+ * 
  * @author Miles Sabin
  */
 object Nat extends Nats {
@@ -61,7 +61,7 @@ object Nat extends Nats {
   type _0 = shapeless._0
   val _0: _0 = new _0
 
-  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN()
+  def toInt[N <: Nat](implicit toIntN : ToInt[N]) = toIntN() 
 
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
@@ -69,7 +69,7 @@ object Nat extends Nats {
 }
 
 object NatMacros {
-  def mkNatTpt(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
+  def mkNatTpt(c: Context)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
 
     val n = i.tree match {
@@ -92,22 +92,22 @@ object NatMacros {
     mkNatTpt(n)
   }
 
-  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeSingleton(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
 
     val natTpt = mkNatTpt(c)(i)
 
-    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
+    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
 
-    val moduleName = TermName(c.freshName("nat_"))
+    val moduleName = newTermName(c.fresh("nat_"))
     val moduleDef =
       ModuleDef(Modifiers(), moduleName,
         Template(
           List(natTpt),
-          noSelfType,
+          emptyValDef,
           List(
             DefDef(
-              Modifiers(), termNames.CONSTRUCTOR, List(),
+              Modifiers(), nme.CONSTRUCTOR, List(),
               List(List()),
               TypeTree(),
               Block(List(pendingSuperCall), Literal(Constant(()))))
@@ -123,15 +123,15 @@ object NatMacros {
     }
   }
 
-  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeWidened(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
     val natTpt = mkNatTpt(c)(i)
 
-    val valName = TermName(c.freshName("nat_"))
+    val valName = newTermName(c.fresh("nat_"))
     val valDef =
       ValDef(Modifiers(), valName,
         natTpt,
-        Apply(Select(New(natTpt), termNames.CONSTRUCTOR), List())
+        Apply(Select(New(natTpt), nme.CONSTRUCTOR), List())
       )
 
     c.Expr[Nat] {
