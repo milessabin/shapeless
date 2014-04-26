@@ -66,9 +66,14 @@ object ShapelessBuild extends Build {
         
         EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
         
+        resolvers += Resolver.sonatypeRepo("releases"),
+
+        addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+
         libraryDependencies <++= scalaVersion { sv =>
           Seq(
             "org.scala-lang" % "scala-reflect" % sv % "provided",
+            "org.scalamacros" % "quasiquotes_2.10" % "2.0.0",
             "com.novocode" % "junit-interface" % "0.7" % "test"
         )},
         
