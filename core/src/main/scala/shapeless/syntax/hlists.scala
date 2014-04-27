@@ -275,6 +275,18 @@ final class HListOps[L <: HList](l : L) {
   def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.Out = splitRight(l)
 
   /**
+   * Permutes this `HList` into the same order as another `HList`. An explicit type argument must be supplied.
+   * Available only if both `HList`s have elements of the same types.
+   */
+  def align[M <: HList](implicit align: Align[L, M]): M = align(l)
+
+  /**
+   * Permutes this `HList` into the same order as the supplied `HList` with the same element types. Available only if
+   * both `HList`s have elements of the same types.
+   */
+  def align[M <: HList](m: M)(implicit align: Align[L, M]): M = align(l)
+
+  /**
    * Reverses this `HList`.
    */
   def reverse(implicit reverse : Reverse[L]) : reverse.Out = reverse(l)

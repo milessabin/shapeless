@@ -1284,6 +1284,32 @@ object hlist {
   }
 
   /**
+   * Type class supporting permuting this `HList` into the same order as another `HList` with
+   * the same element types.
+   *
+   * @author Miles Sabin
+   */
+  trait Align[L <: HList, M <: HList] extends (L => M) {
+    def apply(l: L): M
+  }
+
+  object Align {
+    def apply[L <: HList, M <: HList](implicit alm: Align[L, M]): Align[L, M] = alm
+
+    implicit val hnilAlign: Align[HNil, HNil] = new Align[HNil, HNil] {
+      def apply(l: HNil): HNil = l
+    }
+
+    implicit def hlistAlign[L <: HList, MH, MT <: HList, R <: HList]
+      (implicit select: Remove.Aux[L, MH, (MH, R)], alignTail: Align[R, MT]): Align[L, MH :: MT] = new Align[L, MH :: MT] {
+      def apply(l: L): MH :: MT = {
+        val (h, t) = l.removeElem[MH]
+        h :: alignTail(t)
+      }
+    }
+  }
+
+  /**
    * Type class supporting prepending to this `HList`.
    * 
    * @author Miles Sabin

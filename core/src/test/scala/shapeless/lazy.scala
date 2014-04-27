@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.experimental.macros
-
 import org.junit.Test
 import org.junit.Assert._
 
