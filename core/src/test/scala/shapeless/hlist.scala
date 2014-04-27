@@ -222,6 +222,94 @@ class HListTests {
   }
   
   @Test
+  def testAlign {
+    type M0 = Int :: String :: Boolean :: HNil
+    type M1 = Int :: Boolean :: String :: HNil
+    type M2 = String :: Int :: Boolean :: HNil
+    type M3 = String :: Boolean :: Int :: HNil
+    type M4 = Boolean :: Int :: String :: HNil
+    type M5 = Boolean :: String :: Int :: HNil
+
+    val m0 = 13 :: "bar" :: false :: HNil
+    val m1 = 13 :: false :: "bar" :: HNil
+    val m2 = "bar" :: 13 :: false :: HNil
+    val m3 = "bar" :: false :: 13 :: HNil
+    val m4 = false :: 13 :: "bar" :: HNil
+    val m5 = false :: "bar" :: 13 :: HNil
+
+    val l = 23 :: "foo" :: true :: HNil
+
+    val a0 = l.align(m0)
+    typed[M0](a0)
+    assertEquals(23 :: "foo" :: true :: HNil, a0)
+
+    val a1 = l.align(m1)
+    typed[M1](a1)
+    assertEquals(23 :: true :: "foo" :: HNil, a1)
+
+    val a2 = l.align(m2)
+    typed[M2](a2)
+    assertEquals("foo" :: 23 :: true :: HNil, a2)
+
+    val a3 = l.align(m3)
+    typed[M3](a3)
+    assertEquals("foo" :: true :: 23 :: HNil, a3)
+
+    val a4 = l.align(m4)
+    typed[M4](a4)
+    assertEquals(true :: 23 :: "foo" :: HNil, a4)
+
+    val a5 = l.align(m5)
+    typed[M5](a5)
+    assertEquals(true :: "foo" :: 23 :: HNil, a5)
+
+    val b0 = l.align[M0]
+    typed[M0](b0)
+    assertEquals(23 :: "foo" :: true :: HNil, b0)
+
+    val b1 = l.align[M1]
+    typed[M1](b1)
+    assertEquals(23 :: true :: "foo" :: HNil, b1)
+
+    val b2 = l.align[M2]
+    typed[M2](b2)
+    assertEquals("foo" :: 23 :: true :: HNil, b2)
+
+    val b3 = l.align[M3]
+    typed[M3](b3)
+    assertEquals("foo" :: true :: 23 :: HNil, b3)
+
+    val b4 = l.align[M4]
+    typed[M4](b4)
+    assertEquals(true :: 23 :: "foo" :: HNil, b4)
+
+    val b5 = l.align[M5]
+    typed[M5](b5)
+    assertEquals(true :: "foo" :: 23 :: HNil, b5)
+
+    val c0 = (HNil: HNil).align[HNil]
+    typed[HNil](c0)
+
+    val c1 = (23 :: HNil).align[Int :: HNil]
+    typed[Int :: HNil](c1)
+
+    val c2 = (23 :: "foo" :: HNil).align[String :: Int :: HNil]
+    typed[String :: Int :: HNil](c2)
+
+    illTyped("""
+      (HNil: HNil).align[Int :: HNil]
+    """)
+
+    illTyped("""
+      (23 :: HNil).align[String :: HNil]
+    """)
+
+    illTyped("""
+      (23 :: "foo" :: HNil).align[String :: String :: HNil]
+    """)
+  }
+
+  @Test
   def testReverse {
     val pbpa = apbp.reverse
     typed[PBPA](pbpa)
