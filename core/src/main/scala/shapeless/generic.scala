@@ -246,11 +246,6 @@ class GenericMacros(val c: whitebox.Context) {
       (to, from :+ cq"_ => $absurdValueTree")
     }
 
-    def mkTrans(name: TermName, inputTpe: Type, outputTpe: Type, cases: List[CaseDef]): Tree = {
-      val param = TermName(c.freshName("param"))
-      q"def $name($param: $inputTpe): $outputTpe = $param match { case ..$cases }"
-    }
-
     def mkCoproductValue(tree: Tree, index: Int): Tree =
       (0 until index).foldLeft(q"$inlValueTree($tree)": Tree) { case (acc, _) => q"$inrValueTree($acc)" }
 
@@ -323,8 +318,8 @@ class GenericMacros(val c: whitebox.Context) {
       q"""
         final class $clsName extends ${genericTypeConstructor.typeSymbol}[$fromTpe] {
           type $reprName = $reprTpe
-          ${mkTrans(toName, fromTpe, reprTpe, toCases)}
-          ${mkTrans(fromName, reprTpe, fromTpe, fromCases)}
+          def $toName(p: $fromTpe): $reprTpe = p match { case ..$toCases }
+          def $fromName(p: $reprTpe): $fromTpe = p match { case ..$fromCases }
         }
         new $clsName()
       """
@@ -335,8 +330,8 @@ class GenericMacros(val c: whitebox.Context) {
       q"""
         final class $clsName extends ${genericTpe.typeSymbol}[$fromTpe] {
           type $reprName = $fromTpe
-          def $toName(t: $fromTpe): $fromTpe = t
-          def $fromName(t: $fromTpe): $fromTpe = t
+          def $toName(p: $fromTpe): $fromTpe = p
+          def $fromName(p: $fromTpe): $fromTpe = p
         }
         new $clsName()
       """
@@ -405,8 +400,8 @@ class GenericMacros(val c: whitebox.Context) {
       val objName, reprName, toName, fromName = TermName(c.freshName())
       q"""
         object $objName {
-          ${mkTrans(toName, fromTpe, reprTpe, toCases)}
-          ${mkTrans(fromName, reprTpe, fromTpe, fromCases)}
+          def $toName(p: $fromTpe): $reprTpe = p match { case ..$toCases }
+          def $fromName(p: $reprTpe): $fromTpe = p match { case ..$fromCases }
           ..$elemInstanceDecls
           lazy val $reprName: ${tc.typeSymbol}[$reprTpe] = $reprInstance
           lazy val $tpeInstanceName: ${tc.typeSymbol}[$fromTpe] = $deriver.project($reprName, $toName, $fromName)
