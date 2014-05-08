@@ -30,14 +30,18 @@ trait Generic[T] {
 
 trait LowPriorityGeneric {
   implicit def apply[T]: Generic[T] = macro GenericMacros.materialize[T]
+  // Refinement for products, here we can provide the calling context with
+  // a proof that the resulting Repr <: HList
+  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
+
 }
 
 object Generic extends LowPriorityGeneric {
   type Aux[T, Repr0] = Generic[T] { type Repr = Repr0 }
 
-  // Refinement for products, here we can provide the calling context with
-  // a proof that the resulting Repr <: HList
-  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
+  // Refinement for coproducts, here we can provide the calling context with
+  // a proof that the resulting Repr <: Coproduct
+  implicit def coproduct[T <: Coproduct]: Generic[T] = macro GenericMacros.materializeForCoproduct[T]
 }
 
 trait LabelledGeneric[T] {
@@ -65,6 +69,9 @@ class GenericMacros(val c: whitebox.Context) {
     materializeAux(false, false, tT.tpe)
 
   def materializeForProduct[T <: Product](implicit tT: WeakTypeTag[T]) =
+    materializeAux(true, false, tT.tpe)
+
+  def materializeForCoproduct[T <: Coproduct](implicit tT: WeakTypeTag[T]) =
     materializeAux(true, false, tT.tpe)
 
   def materializeLabelled[T](implicit tT: WeakTypeTag[T]) =
@@ -209,7 +216,7 @@ class GenericMacros(val c: whitebox.Context) {
 
         // We're using an extremely optimistic strategy here, basically ignoring
         // the existence of any existential types.
-        val baseTpe: TypeRef = fromTpe match {
+        val baseTpe: TypeRef = fromTpe.dealias match {
           case tr: TypeRef => tr
           case _ => abort(s"bad type $fromTpe")
         }
