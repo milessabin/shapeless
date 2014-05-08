@@ -18,33 +18,33 @@ package shapeless.examples
 
 import shapeless._
 
-sealed trait Super
-case class Foo(i : Int, s : String) extends Super
-case class Bar(i : Int) extends Super
-case class BarRec(i : Int, rec: Super) extends Super
-
-object Super {
-  implicit val instance = Show[Super]
-}
-
-sealed trait MutualA
-case class MutualA1(x: Int) extends MutualA
-case class MutualA2(b: MutualB) extends MutualA
-
-object MutualA {
-  implicit val aInstance: Show[MutualA] = Show[MutualA]
-}
-
-sealed trait MutualB
-case class MutualB1(x: Int) extends MutualB
-case class MutualB2(b: MutualA) extends MutualB
-
-object MutualB {
-  implicit val bInstance: Show[MutualB] = Show[MutualB]
-}
-
 object ShowExamples extends App {
   import ShowSyntax._
+
+  sealed trait Super
+  case class Foo(i : Int, s : String) extends Super
+  case class Bar(i : Int) extends Super
+  case class BarRec(i : Int, rec: Super) extends Super
+
+  object Super {
+    implicit val instance = Show[Super]
+  }
+
+  sealed trait MutualA
+  case class MutualA1(x: Int) extends MutualA
+  case class MutualA2(b: MutualB) extends MutualA
+
+  object MutualA {
+    implicit val aInstance: Show[MutualA] = Show[MutualA]
+  }
+
+  sealed trait MutualB
+  case class MutualB1(x: Int) extends MutualB
+  case class MutualB2(b: MutualA) extends MutualB
+
+  object MutualB {
+    implicit val bInstance: Show[MutualB] = Show[MutualB]
+  }
 
   val bar: Super = Bar(0)
   val rec: Super = BarRec(1, Foo(0, "foo"))
