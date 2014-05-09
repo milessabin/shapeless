@@ -55,8 +55,11 @@ package object shapeless {
   type ∃[P[_]] = P[T] forSome { type T }
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
-  /** `Lens` definitions */
-  val lens = LensDefns
+  /** `Optic` definitions */
+  val optic = OpticDefns
+  val lens = OpticDefns
+  val prism = OpticDefns
+  val ^ = Path
 
   /** `Nat` literals */
   val nat = Nat

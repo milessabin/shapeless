@@ -30,14 +30,18 @@ trait Generic[T] {
 
 trait LowPriorityGeneric {
   implicit def apply[T]: Generic[T] = macro GenericMacros.materialize[T]
+  // Refinement for products, here we can provide the calling context with
+  // a proof that the resulting Repr <: HList
+  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
+
 }
 
 object Generic extends LowPriorityGeneric {
   type Aux[T, Repr0] = Generic[T] { type Repr = Repr0 }
 
-  // Refinement for products, here we can provide the calling context with
-  // a proof that the resulting Repr <: HList
-  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
+  // Refinement for coproducts, here we can provide the calling context with
+  // a proof that the resulting Repr <: Coproduct
+  implicit def coproduct[T <: Coproduct]: Generic[T] = macro GenericMacros.materializeForCoproduct[T]
 }
 
 trait LabelledGeneric[T] {
@@ -68,6 +72,10 @@ object GenericMacros {
   def materializeForProduct[T <: Product]
     (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T] { type Repr <: HList }] =
       materializeAux[Generic[T] { type Repr <: HList }](c)(true, false, tT.tpe)
+
+  def materializeForCoproduct[T <: Coproduct]
+    (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T] { type Repr <: Coproduct}] =
+    materializeAux[Generic[T] { type Repr <: Coproduct}](c)(true, false, tT.tpe)
 
   def materializeLabelled[T]
     (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[LabelledGeneric[T]] =
@@ -244,7 +252,7 @@ object GenericMacros {
 
         // We're using an extremely optimistic strategy here, basically ignoring
         // the existence of any existential types.
-        val baseTpe: TypeRef = fromTpe match {
+        val baseTpe: TypeRef = fromTpe.normalize match {
           case tr: TypeRef => tr
           case _ => abort(s"bad type $fromTpe")
         }
@@ -279,11 +287,6 @@ object GenericMacros {
       val to = fromCtors zip (Stream from 0) map toRepr.tupled
       val from = fromCtors zip (Stream from 0) map fromRepr.tupled
       (to, from :+ cq"_ => $absurdValueTree")
-    }
-
-    def mkTrans(name: TermName, inputTpe: Type, outputTpe: Type, cases: List[CaseDef]): Tree = {
-      val param = newTermName(c.fresh("param"))
-      q"def $name($param: $inputTpe): $outputTpe = $param match { case ..$cases }"
     }
 
     def mkCoproductValue(tree: Tree, index: Int): Tree =
@@ -358,8 +361,8 @@ object GenericMacros {
       q"""
         final class $clsName extends ${genericTypeConstructor.typeSymbol}[$fromTpe] {
           type $reprName = $reprTpe
-          ${mkTrans(toName, fromTpe, reprTpe, toCases)}
-          ${mkTrans(fromName, reprTpe, fromTpe, fromCases)}
+          def $toName(p: $fromTpe): $reprTpe = p match { case ..$toCases }
+          def $fromName(p: $reprTpe): $fromTpe = p match { case ..$fromCases }
         }
         new $clsName()
       """
@@ -370,8 +373,8 @@ object GenericMacros {
       q"""
         final class $clsName extends ${genericTpe.typeSymbol}[$fromTpe] {
           type $reprName = $fromTpe
-          def $toName(t: $fromTpe): $fromTpe = t
-          def $fromName(t: $fromTpe): $fromTpe = t
+          def $toName(p: $fromTpe): $fromTpe = p
+          def $fromName(p: $fromTpe): $fromTpe = p
         }
         new $clsName()
       """
@@ -440,8 +443,8 @@ object GenericMacros {
       val objName, reprName, toName, fromName = newTermName(c.fresh())
       q"""
         object $objName {
-          ${mkTrans(toName, fromTpe, reprTpe, toCases)}
-          ${mkTrans(fromName, reprTpe, fromTpe, fromCases)}
+          def $toName(p: $fromTpe): $reprTpe = p match { case ..$toCases }
+          def $fromName(p: $reprTpe): $fromTpe = p match { case ..$fromCases }
           ..$elemInstanceDecls
           lazy val $reprName: ${tc.typeSymbol}[$reprTpe] = $reprInstance
           lazy val $tpeInstanceName: ${tc.typeSymbol}[$fromTpe] = $deriver.project($reprName, $toName, $fromName)
