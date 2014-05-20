@@ -18,6 +18,7 @@ package shapeless
 package syntax
 
 import scala.language.dynamics
+import tag.@@
 
 /**
  * Record operations on `HList`'s with field-like elements.
@@ -25,7 +26,7 @@ import scala.language.dynamics
  * @author Miles Sabin
  */
 final class RecordOps[L <: HList](l : L) {
-  import record._
+  import shapeless.record._
   import ops.record._
 
   /**
@@ -92,7 +93,7 @@ final class RecordOps[L <: HList](l : L) {
   /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
-  def dynamic: DynamicRecordOps[L] = DynamicRecordOps(l)
+  def record: DynamicRecordOps[L] = DynamicRecordOps(l)
 }
 
 /**
@@ -104,7 +105,7 @@ final case class DynamicRecordOps[L <: HList](l : L) extends Dynamic {
   import ops.record.Selector
 
   /**
-   * Allows dynamic-style access to fields of the record whose keys are strings.
+   * Allows dynamic-style access to fields of the record whose keys are Symbols.
    */
-  def selectDynamic(key: String)(implicit selector: Selector[L, key.type]): selector.Out = selector(l)
+  def selectDynamic(key: String)(implicit selector: Selector[L, Symbol @@ key.type]): selector.Out = selector(l)
 }

@@ -555,8 +555,8 @@ class RecordTests {
 
   @Test
   def testSelectDynamic {
-    val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
-    val d = r.dynamic
+    val r = ('foo ->> 23) :: ('bar ->> true) :: HNil
+    val d = r.record
 
     val v1 = d.foo
     typed[Int](v1)
