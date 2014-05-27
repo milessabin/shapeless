@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-4 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,64 +22,39 @@ import scala.reflect.macros.Context
 
 trait Lazy[T] {
   val value: T
+
+  def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
+  def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
 object Lazy {
-  def apply[T](t: => T) = new Lazy[T] {
+  implicit def apply[T](t: => T): Lazy[T] = new Lazy[T] {
     lazy val value = t
   }
+
+  def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
   def mkLazyImpl[T: c.WeakTypeTag](c: Context): c.Expr[Lazy[T]] = {
     import c.universe._
-    import Flag._
 
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
+    val tpe = weakTypeOf[T]
 
-    val lazySym = c.mirror.staticClass("shapeless.Lazy")
-
-    val thisLazyTypeTree =
-      AppliedTypeTree(
-        Ident(lazySym),
-        List(TypeTree(weakTypeOf[T]))
-      )
-
-    val recName = newTermName(c.fresh)
     val className = newTypeName(c.fresh)
-    val recClass =
-      ClassDef(Modifiers(FINAL), className, List(),
-        Template(
-          List(thisLazyTypeTree),
-          emptyValDef,
-          List(
-            DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(())))
-            ),
-
-            // Implicit self-publication ties the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisLazyTypeTree, This(tpnme.EMPTY)), 
-
-            ValDef(Modifiers(LAZY), newTermName("value"), TypeTree(weakTypeOf[T]),
-              TypeApply(
-                Select(Ident(definitions.PredefModule), newTermName("implicitly")),
-                List(TypeTree(weakTypeOf[T]))
-              )
-              
-            )
-          )
-        )
-      )
+    val recName = newTermName(c.fresh)
 
     val block =
-      Block(
-        List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
-      )
+      q"""
+        {
+          final class $className extends Lazy[$tpe] {
+            implicit val $recName: Lazy[$tpe] = this   // implicit self-publication ties the knot
+            lazy val value: $tpe = implicitly[$tpe]
+          }
+          new $className
+        }
+      """
 
-    c.Expr[Lazy[T]] { block }
+    c.Expr[Lazy[T]](block)
   }
 }

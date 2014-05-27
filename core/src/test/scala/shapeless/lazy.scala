@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-4 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,82 @@ import scala.collection.mutable.ListBuffer
 
 class LazyTests {
 
-  val effects = ListBuffer[Int]()
+  @Test
+  def testEffectOrder {
+    val effects = ListBuffer[Int]()
 
-  implicit def lazyInt = Lazy[Int]{ effects += 3 ; 23 }
+    implicit def lazyInt: Lazy[Int] = Lazy[Int]{ effects += 3 ; 23 }
 
-  def summonLazyInt(implicit li: Lazy[Int]): Int = {
-    effects += 2
-    val i = li.value
-    effects += 4
-    i
+    def summonLazyInt(implicit li: Lazy[Int]): Int = {
+      effects += 2
+      val i = li.value
+      effects += 4
+      i
+    }
+
+    effects += 1
+    val i = summonLazyInt
+    effects += 5
+
+    assertEquals(23, i)
+    assertEquals(List(1, 2, 3, 4, 5), effects.toList)
   }
 
   @Test
-  def testEffectOrder {
+  def testDefConversion {
+    val effects = ListBuffer[Int]()
+
+    def effectfulInt: Int = { effects += 3 ; 23 }
+
+    def useEffectfulInt(li: Lazy[Int]): Int = {
+      effects += 2
+      val i = li.value
+      effects += 4
+      i
+    }
+
     effects += 1
-    val i = summonLazyInt
+    val i = useEffectfulInt(effectfulInt)
+    effects += 5
+
+    assertEquals(23, i)
+    assertEquals(List(1, 2, 3, 4, 5), effects.toList)
+  }
+
+  @Test
+  def testLazyConversion {
+    val effects = ListBuffer[Int]()
+
+    lazy val effectfulInt: Int = { effects += 3 ; 23 }
+
+    def useEffectfulInt(li: Lazy[Int]): Int = {
+      effects += 2
+      val i = li.value
+      effects += 4
+      i
+    }
+
+    effects += 1
+    val i = useEffectfulInt(effectfulInt)
+    effects += 5
+
+    assertEquals(23, i)
+    assertEquals(List(1, 2, 3, 4, 5), effects.toList)
+  }
+
+  @Test
+  def testInlineConversion {
+    val effects = ListBuffer[Int]()
+
+    def useEffectfulInt(li: Lazy[Int]): Int = {
+      effects += 3
+      val i = li.value
+      effects += 4
+      i
+    }
+
+    effects += 1
+    val i = useEffectfulInt({ effects += 2 ; 23 })
     effects += 5
 
     assertEquals(23, i)
