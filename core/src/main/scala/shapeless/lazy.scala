@@ -36,55 +36,22 @@ object Lazy {
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
-  def mkLazyImpl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[Lazy[T]] = {
+  def mkLazyImpl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = {
     import c.universe._
-    import Flag._
 
-    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
+    val tpe = weakTypeOf[T]
 
-    val lazySym = c.mirror.staticClass("shapeless.Lazy")
-
-    val thisLazyTypeTree =
-      AppliedTypeTree(
-        Ident(lazySym),
-        List(TypeTree(weakTypeOf[T]))
-      )
-
-    val recName = TermName(c.freshName)
     val className = TypeName(c.freshName)
-    val recClass =
-      ClassDef(Modifiers(FINAL), className, List(),
-        Template(
-          List(thisLazyTypeTree),
-          noSelfType,
-          List(
-            DefDef(
-              Modifiers(), termNames.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(())))
-            ),
+    val recName = TermName(c.freshName)
 
-            // Implicit self-publication ties the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisLazyTypeTree, This(typeNames.EMPTY)),
-
-            ValDef(Modifiers(LAZY), TermName("value"), TypeTree(weakTypeOf[T]),
-              TypeApply(
-                Select(Ident(definitions.PredefModule), TermName("implicitly")),
-                List(TypeTree(weakTypeOf[T]))
-              )
-
-            )
-          )
-        )
-      )
-
-    val block =
-      Block(
-        List(recClass),
-        Apply(Select(New(Ident(className)), termNames.CONSTRUCTOR), List())
-      )
-
-    c.Expr[Lazy[T]] { block }
+    q"""
+      {
+        final class $className extends Lazy[$tpe] {
+          implicit val $recName: Lazy[$tpe] = this   // implicit self-publication ties the knot
+          lazy val value: $tpe = implicitly[$tpe]
+        }
+        new $className
+      }
+    """
   }
 }
