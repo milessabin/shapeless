@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin
+ * Copyright (c) 2013-4 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,17 @@ import scala.reflect.macros.blackbox
 
 trait Lazy[T] {
   val value: T
+
+  def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
+  def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
 object Lazy {
-  def apply[T](t: => T) = new Lazy[T] {
+  implicit def apply[T](t: => T): Lazy[T] = new Lazy[T] {
     lazy val value = t
   }
+
+  def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
   implicit def mkLazy[T]: Lazy[T] = macro mkLazyImpl[T]
 
