@@ -159,7 +159,7 @@ object ShapelessBuild extends Build {
     enableCrossBuild = true
   )
 
-  def commonSettings = Defaults.defaultSettings ++
+  def commonSettings =
     Seq(
       organization        := "com.chuusai",
       scalaVersion        := "2.11.1",
