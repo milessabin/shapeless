@@ -92,13 +92,9 @@ object DataMacros {
   def genericDataImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[Data[F, T, U]] = {
     import c.universe._
-    import Flag._
 
-    val hlistSym = c.mirror.staticClass("shapeless.HList")
-    val hlistTpe = hlistSym.asClass.toType
-    
-    val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
-    val coproductTpe = coproductSym.asClass.toType
+    val hlistTpe = typeOf[HList]
+    val coproductTpe = typeOf[Coproduct]
 
     val fTpe = weakTypeOf[F]
     val tTpe = weakTypeOf[T]
@@ -109,82 +105,26 @@ object DataMacros {
       c.abort(c.enclosingPosition, "HLists and Coproducts not handled here")
     }
 
-    val dataSym = c.mirror.staticClass("shapeless.Data")
-
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
-
-    val thisDataTypeTree =
-      AppliedTypeTree(
-        Ident(dataSym),
-        List(TypeTree(fTpe), TypeTree(tTpe), TypeTree(uTpe))
-      )
-
-    val reprDataTypeTree = 
-      AppliedTypeTree(
-        Ident(dataSym),
-        List(TypeTree(fTpe), TypeTree(rTpe), TypeTree(uTpe))
-      )
-
     val recName = newTermName(c.fresh)
     val className = newTypeName(c.fresh)
     val genericName = newTermName(c.fresh)
     val reprDataName = newTermName(c.fresh)
 
-    val recClass =
-      ClassDef(Modifiers(FINAL), className, List(),
-        Template(
-          List(thisDataTypeTree),
-          emptyValDef,
-          List(
-             // Implicit publication of this to tie the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisDataTypeTree, This(tpnme.EMPTY)), 
-
-            DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(())))
-            ),
-
-            DefDef(
-              Modifiers(), newTermName("gmapQ"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(tTpe), EmptyTree))),
-              TypeTree(),
-              Block(
-                List(
-                  ValDef(Modifiers(), genericName, TypeTree(), gen.tree),
-                  // Resolve the Data instance for the representation here, within the
-                  // scope of the implicit self-publication above, allowing successful
-                  // resolution of recursive references
-                  ValDef(Modifiers(), reprDataName, reprDataTypeTree,
-                    TypeApply(
-                      Select(Ident(definitions.PredefModule), newTermName("implicitly")),
-                      List(reprDataTypeTree)
-                    )
-                  )
-                ),
-                Apply(
-                  Select(Ident(reprDataName), newTermName("gmapQ")),
-                  List(
-                    Apply(
-                      Select(Ident(genericName), newTermName("to")),
-                      List(
-                        Ident(newTermName("t"))
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-
     val block =
-      Block(
-        List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
-      )
+      q"""
+        {
+          final class $className extends Data[$fTpe, $tTpe, $uTpe] {
+            implicit val $recName: Data[$fTpe, $tTpe, $uTpe] = this
+
+            def gmapQ(t: $tTpe): List[$uTpe] = {
+              val $genericName = ${gen.tree}
+              val $reprDataName: Data[$fTpe, $rTpe, $uTpe] = implicitly[Data[$fTpe, $rTpe, $uTpe]]
+              $reprDataName.gmapQ($genericName.to(t))
+            }
+          }
+          new $className
+        }
+      """
 
     c.Expr[Data[F, T, U]](block)
   }
@@ -285,13 +225,9 @@ object DataTMacros {
   def genericDataTImpl[F: c.WeakTypeTag, T: c.WeakTypeTag, R: c.WeakTypeTag]
     (c: Context)(gen: c.Expr[Generic.Aux[T, R]]): c.Expr[DataT[F, T, T]] = {
     import c.universe._
-    import Flag._
 
-    val hlistSym = c.mirror.staticClass("shapeless.HList")
-    val hlistTpe = hlistSym.asClass.toType
-    
-    val coproductSym = c.mirror.staticClass("shapeless.Coproduct")
-    val coproductTpe = coproductSym.asClass.toType
+    val hlistTpe = typeOf[HList]
+    val coproductTpe = typeOf[Coproduct]
 
     val fTpe = weakTypeOf[F]
     val tTpe = weakTypeOf[T]
@@ -301,87 +237,23 @@ object DataTMacros {
       c.abort(c.enclosingPosition, "HLists and Coproducts not handled here")
     }
 
-    val dataTSym = c.mirror.staticClass("shapeless.DataT")
-
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
-
-    val thisDataTTypeTree =
-      AppliedTypeTree(
-        Ident(dataTSym),
-        List(TypeTree(fTpe), TypeTree(tTpe), TypeTree(tTpe))
-      )
-
-    val reprDataTTypeTree = 
-      AppliedTypeTree(
-        Ident(dataTSym),
-        List(TypeTree(fTpe), TypeTree(rTpe), TypeTree(rTpe))
-      )
-
     val recName = newTermName(c.fresh)
     val className = newTypeName(c.fresh)
     val genericName = newTermName(c.fresh)
     val reprDataTName = newTermName(c.fresh)
 
-    val recClass =
-      ClassDef(Modifiers(FINAL), className, List(),
-        Template(
-          List(thisDataTTypeTree),
-          emptyValDef,
-          List(
-             // Implicit publication of this to tie the knot
-            ValDef(Modifiers(IMPLICIT), recName, thisDataTTypeTree, This(tpnme.EMPTY)), 
-
-            DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(())))
-            ),
-
-            DefDef(
-              Modifiers(), newTermName("gmapT"), List(),
-              List(List(ValDef(Modifiers(PARAM), newTermName("t"), TypeTree(tTpe), EmptyTree))),
-              TypeTree(),
-              Block(
-                List(
-                  ValDef(Modifiers(), genericName, TypeTree(), gen.tree),
-                  // Resolve the DataT instance for the representation here, within the
-                  // scope of the implicit self-publication above, allowing successful
-                  // resolution of recursive references
-                  ValDef(Modifiers(), reprDataTName, reprDataTTypeTree,
-                    TypeApply(
-                      Select(Ident(definitions.PredefModule), newTermName("implicitly")),
-                      List(reprDataTTypeTree)
-                    )
-                  )
-                ),
-                Apply(
-                  Select(Ident(genericName), newTermName("from")),
-                  List(
-                    Apply(
-                      Select(Ident(reprDataTName), newTermName("gmapT")),
-                      List(
-                        Apply(
-                          Select(Ident(genericName), newTermName("to")),
-                          List(
-                            Ident(newTermName("t"))
-                          )
-                        )
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-
     val block =
-      Block(
-        List(recClass),
-        Apply(Select(New(Ident(className)), nme.CONSTRUCTOR), List())
-      )
+      q"""
+        final class $className extends DataT[$fTpe, $tTpe, $tTpe] {
+          implicit val $recName: DataT[$fTpe, $tTpe, $tTpe] = this
+          def gmapT(t: $tTpe): $tTpe = {
+            val $genericName = ${gen.tree}
+            val $reprDataTName: DataT[$fTpe, $rTpe, $rTpe] = implicitly[DataT[$fTpe, $rTpe, $rTpe]]
+            $genericName.from($reprDataTName.gmapT($genericName.to(t)))
+          }
+        }
+        new $className
+      """
 
     c.Expr[DataT[F, T, T]](block)
   }

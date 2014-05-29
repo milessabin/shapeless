@@ -164,7 +164,7 @@ object ShapelessBuild extends Build {
     enableCrossBuild = true
   )
 
-  def commonSettings = Defaults.defaultSettings ++
+  def commonSettings =
     Seq(
       organization        := "com.chuusai",
 
