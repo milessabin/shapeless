@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
+import scala.annotation.tailrec
 import scala.reflect.macros.whitebox
 
 /**
@@ -84,61 +85,31 @@ object NatMacros {
     val succSym = typeOf[Succ[_]].typeConstructor.typeSymbol
     val _0Sym = typeOf[_0].typeSymbol
 
-    def mkNatTpt(n: Int): Tree = {
-      if(n == 0) Ident(_0Sym)
-      else AppliedTypeTree(Ident(succSym), List(mkNatTpt(n-1)))
+    @tailrec
+    def mkNatTpt(n: Int, acc: Tree): Tree = {
+      if(n == 0) acc
+      else mkNatTpt(n-1, AppliedTypeTree(Ident(succSym), List(acc)))
     }
 
-    mkNatTpt(n)
+    mkNatTpt(n, Ident(_0Sym))
   }
 
-  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
 
     val natTpt = mkNatTpt(c)(i)
-
-    val pendingSuperCall = Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())
-
     val moduleName = TermName(c.freshName("nat_"))
-    val moduleDef =
-      ModuleDef(Modifiers(), moduleName,
-        Template(
-          List(natTpt),
-          noSelfType,
-          List(
-            DefDef(
-              Modifiers(), termNames.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(()))))
-          )
-        )
-      )
 
-    c.Expr[Nat] {
-      Block(
-        List(moduleDef),
-        Ident(moduleName)
-      )
-    }
+    q"""
+      object $moduleName extends $natTpt
+      $moduleName
+    """
   }
 
-  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Expr[Nat] = {
+  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
     val natTpt = mkNatTpt(c)(i)
 
-    val valName = TermName(c.freshName("nat_"))
-    val valDef =
-      ValDef(Modifiers(), valName,
-        natTpt,
-        Apply(Select(New(natTpt), termNames.CONSTRUCTOR), List())
-      )
-
-    c.Expr[Nat] {
-      Block(
-        List(valDef),
-        Ident(valName)
-      )
-    }
+    q""" new $natTpt """
   }
 }
