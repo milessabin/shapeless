@@ -72,6 +72,46 @@ class HListTests {
   val apap : APAP = a :: p :: a :: p :: HNil
   val apbp : APBP = a :: p :: b :: p :: HNil
 
+  trait Ctv[-T]
+  type CICSCICICD = Ctv[Int] :: Ctv[String] :: Ctv[Int] :: Ctv[Int] :: Ctv[Double] :: HNil
+
+  val ci: Ctv[Int] = new Ctv[Int] {}
+  val cs: Ctv[String] = new Ctv[String] {}
+  val cd: Ctv[Double] = new Ctv[Double] {}
+  val cicscicicdList = ci :: cs :: ci :: ci :: cd :: Nil
+  val cicscicicd: CICSCICICD = ci :: cs :: ci :: ci :: cd :: HNil
+
+  trait M[T]
+  type MIMSMIMIMD = M[Int] :: M[String] :: M[Int] :: M[Int] :: M[Double] :: HNil
+
+  val mi: M[Int] = new M[Int] {}
+  val ms: M[String] = new M[String] {}
+  val md: M[Double] = new M[Double] {}
+  val mimsmimimdList = mi :: ms :: mi :: mi :: md :: Nil
+  val mimsmimimd: MIMSMIMIMD = mi :: ms :: mi :: mi :: md :: HNil
+
+  import language.existentials
+  val mExist: M[_] = new M[Double] {}
+  type MIMSMIMEMD = M[Int] :: M[String] :: M[Int] :: M[_] :: M[Double] :: HNil
+  val mimsmimemdList = mi :: ms :: mi :: mExist :: md :: Nil
+  val mimsmimemd: MIMSMIMEMD = mi :: ms :: mi :: mExist :: md :: HNil
+
+  trait M2[A,B]
+  type M2IM2SM2IM2IM2D = M2[Int, Unit] :: M2[String, Unit] :: M2[Int, Unit] :: M2[Int, Unit] :: M2[Double, Unit] :: HNil
+
+  val m2i: M2[Int, Unit] = new M2[Int, Unit] {}
+  val m2s: M2[String, Unit] = new M2[String, Unit] {}
+  val m2d: M2[Double, Unit] = new M2[Double, Unit] {}
+  val m2im2sm2im2im2dList = m2i :: m2s :: m2i :: m2i :: m2d :: Nil
+  val m2im2sm2im2im2d: M2IM2SM2IM2IM2D = m2i :: m2s :: m2i :: m2i :: m2d :: HNil
+
+  val m2iExist: M2[Int, _] = new M2[Int, Unit] {}
+  val m2sExist: M2[String, _] = new M2[String, Unit] {}
+  val m2dExist: M2[Double, _] = new M2[Double, Unit] {}
+  type M2EIM2ESM2EIM2EEM2ED = M2[Int, _] :: M2[String, _] :: M2[Int, _] :: M2[Int, _] :: M2[Double, _] :: HNil
+  val m2eim2esm2eim2eem2edList = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: Nil
+  val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
+
   object mkString extends (Any -> String)(_.toString)
   object fruit extends (Fruit -> Fruit)(f => f)
   object incInt extends (Int >-> Int)(_ + 1)
@@ -494,6 +534,41 @@ class HListTests {
 
     val moreStuff = (a :: "foo" :: p :: HNil).toList
     typed[List[Any]](moreStuff)
+
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val ctv = cicscicicd.toList
+    equalInferredTypes(cicscicicdList, ctv)
+    typed[List[Ctv[Int with String with Double]]](ctv)
+    assertEquals(cicscicicdList, ctv)
+
+    val m = mimsmimimd.toList
+    equalInferredTypes(mimsmimimdList, m)
+    typed[List[M[_ >: Int with String with Double]]](m)
+    assertEquals(mimsmimimdList, m)
+
+    // With existentials, it gets more tricky
+    val mWithEx = mimsmimemd.toList
+    // Compiler fails complaining that it 
+    //    Cannot prove that List[HListTests.this.M[_ >: Double with _$1 with Int with String]] =:= List[HListTests.this.M[_]]
+    //  equalType(mimsmimemdList, mWithEx)
+    typed[List[M[_]]](mWithEx)
+    assertEquals(mimsmimemdList, mWithEx)
+
+    // Second order higher kinded types are ok...
+    val m2 = m2im2sm2im2im2d.toList
+    equalInferredTypes(m2im2sm2im2im2dList, m2)
+    typed[List[M2[_ >: Int with String with Double, Unit]]](m2)
+    assertEquals(m2im2sm2im2im2dList, m2)
+
+    // ...as long as existentials are not involved. 
+    val m2e = m2eim2esm2eim2eem2ed.toList
+    // Compiler complains that it
+    //    Cannot prove that List[HListTests.this.M2[_ >: Double with Int with Int with String with Int, _ >: _$5 with _$3 with _$3 with _$4 with _$3]] =:= List[HListTests.this.M2[_35,_36] forSome { type _$10; type _$9; type _34 >: _$10 with _$9; type _$8; type _$7; type _32 >: _$8 with _$7; type _35 >: Double with Int with Int with String; type _36 >: _34 with _32 }]
+    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    typed[List[M2[_ >: Int with String with Double, _]]](m2e)
+    assertEquals(m2eim2esm2eim2eem2edList, m2e)
   }
   
   @Test
