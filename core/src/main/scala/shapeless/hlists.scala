@@ -55,6 +55,8 @@ object HList {
   import syntax.HListOps
 
   def apply() = HNil
+
+  def apply[T](t: T) = t :: HNil
   
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
   
