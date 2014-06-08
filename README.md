@@ -171,6 +171,7 @@ compatibility.
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
++ Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/FouriersTrick)
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
