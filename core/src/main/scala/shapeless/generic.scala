@@ -18,8 +18,6 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.collection.breakOut
-import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
 
 trait Generic[T] {
