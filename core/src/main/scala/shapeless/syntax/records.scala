@@ -51,7 +51,8 @@ final class RecordOps[L <: HList](l : L) {
   /**
    * Updates a field having a value with type A by given function.
    */
-  def updateWith[W](k: WitnessWith[FSL])(f: k.Out => W)(implicit modifier: Modifier[L, k.T, k.Out, W]): modifier.Out = modifier(l, f)
+  def updateWith[W](k: WitnessWith[FSL])(f: k.instance.Out => W)
+    (implicit modifier: Modifier[L, k.T, k.instance.Out, W]): modifier.Out = modifier(l, f)
   type FSL[K] = Selector[L, K]
 
   /**
