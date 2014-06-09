@@ -167,6 +167,7 @@ compatibility.
 
 ## Contributors
 
++ Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)

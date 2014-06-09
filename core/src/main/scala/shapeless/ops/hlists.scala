@@ -566,11 +566,11 @@ object hlist {
         def apply(l : T :: HNil): Out = List(l.head)
       }
     
-    implicit def hlistToList[H1, H2, T <: HList, L]
-      (implicit u : Lub[H1, H2, L], ttl : ToList[H2 :: T, L]): ToList[H1 :: H2 :: T, L] =
+    implicit def hlistToList[H1, H2, T <: HList, L12, L2, L]
+      (implicit u : Lub[H1, H2, L12], ttl : ToList[H2 :: T, L2], ul : Lub[L12, L2, L]): ToList[H1 :: H2 :: T, L] =
         new ToList[H1 :: H2 :: T, L] {
           type Out = List[L]
-          def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: ttl(l.tail)
+          def apply(l : H1 :: H2 :: T): Out = ul.left(u.left(l.head)) :: ttl(l.tail).map(ul.right)
         }
   }
 
