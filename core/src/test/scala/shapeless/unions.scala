@@ -50,4 +50,41 @@ class UnionTests {
       u1.get('foo)
     """)
   }
+
+  @Test
+  def testSelectDynamic {
+    val schema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
+    type U = schema.Union
+    val u1 = Coproduct[U]('i ->> 23).union
+    val u2 = Coproduct[U]('s ->> "foo").union
+    val u3 = Coproduct[U]('b ->> true).union
+    
+    val v1 = u1.i
+    typed[Option[Int]](v1)
+    assertEquals(Some(23), v1)
+
+    val n1 = u1.s
+    typed[Option[String]](n1)
+    assertEquals(None, n1)
+
+    val v2 = u2.s
+    typed[Option[String]](v2)
+    assertEquals(Some("foo"), v2)
+
+    val n2 = u2.b
+    typed[Option[Boolean]](n2)
+    assertEquals(None, n2)
+
+    val v3 = u3.b
+    typed[Option[Boolean]](v3)
+    assertEquals(Some(true), v3)
+
+    /*
+     * illTyped gives a false positive here, but `u1.foo` does in fact fail to compile
+     * however, it fails in a weird way: 
+     *   Unknown type: <error>, <error> [class scala.reflect.internal.Types$ErrorType$,
+     *   class scala.reflect.internal.Types$ErrorType$] TypeRef? false
+     */
+    //illTyped("u1.foo")
+  }
 }

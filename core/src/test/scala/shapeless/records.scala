@@ -552,4 +552,21 @@ class RecordTests {
     typed[Boolean](v2)
     assertEquals(true, v2)
   }
+
+  @Test
+  def testSelectDynamic {
+    val r = ('foo ->> 23) :: ('bar ->> true) :: HNil
+    val d = r.record
+
+    val v1 = d.foo
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = d.bar
+    typed[Boolean](v2)
+    assertEquals(true, v2)
+
+    // illTyped gives a false positive here, but `d.baz` does in fact fail to compile
+    //illTyped("d.baz") 
+  }
 }
