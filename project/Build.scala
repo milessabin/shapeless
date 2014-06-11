@@ -34,22 +34,25 @@ import sbtrelease.ReleasePlugin.ReleaseKeys._
 import sbtrelease.ReleaseStateTransformations._
 import sbtrelease.Utilities._
 
+import scala.scalajs.sbtplugin.ScalaJSPlugin._
+import ScalaJSKeys._
+
 object ShapelessBuild extends Build {
-  
+
   override lazy val settings = super.settings :+ (
     EclipseKeys.skipParents := false
   )
 
   lazy val shapeless = Project(
-    id = "shapeless", 
+    id = "shapeless",
     base = file("."),
     aggregate = Seq(shapelessCore, shapelessExamples),
     settings = commonSettings ++ Seq(
       moduleName := "shapeless-root",
-        
+
       (unmanagedSourceDirectories in Compile) := Nil,
       (unmanagedSourceDirectories in Test) := Nil,
-      
+
       publish := (),
       publishLocal := ()
     )
@@ -57,21 +60,21 @@ object ShapelessBuild extends Build {
 
   lazy val shapelessCore =
     Project(
-      id = "shapeless-core", 
+      id = "shapeless-core",
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ scalaJSSettings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
         moduleName := "shapeless",
-        
+
         managedSourceDirectories in Test := Nil,
-        
+
         EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
-        
+
         libraryDependencies <++= scalaVersion { sv =>
           Seq(
             "org.scala-lang" % "scala-reflect" % sv % "provided",
             "com.novocode" % "junit-interface" % "0.7" % "test"
         )},
-        
+
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
         (sourceGenerators in Compile) <+= buildInfo,
 
@@ -81,7 +84,7 @@ object ShapelessBuild extends Build {
           (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
             (srcs pair (Path.relativeTo(base) | Path.flat))
           },
-          
+
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
 
@@ -111,7 +114,9 @@ object ShapelessBuild extends Build {
           setNextVersion,
           commitNextVersion,
           pushChanges
-        )
+        ),
+
+        sources in (Compile,doc) := Seq.empty
       )
     )
 
@@ -119,7 +124,7 @@ object ShapelessBuild extends Build {
     id = "shapeless-examples",
     base = file("examples"),
     dependencies = Seq(shapelessCore),
-    
+
     settings = commonSettings ++ Seq(
       libraryDependencies <++= scalaVersion { sv =>
         Seq(
@@ -134,11 +139,11 @@ object ShapelessBuild extends Build {
       publishLocal := ()
     )
   )
-  
-  lazy val runAll = TaskKey[Unit]("run-all") 
-  
+
+  lazy val runAll = TaskKey[Unit]("run-all")
+
   def runAllIn(config: Configuration) = {
-    runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map { 
+    runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map {
       (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
     }
   }
