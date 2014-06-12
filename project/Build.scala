@@ -35,7 +35,6 @@ import sbtrelease.ReleaseStateTransformations._
 import sbtrelease.Utilities._
 
 import scala.scalajs.sbtplugin.ScalaJSPlugin._
-import ScalaJSKeys._
 
 object ShapelessBuild extends Build {
 
@@ -62,7 +61,9 @@ object ShapelessBuild extends Build {
     Project(
       id = "shapeless-core",
       base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ scalaJSSettings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
+      settings = commonSettings ++ Publishing.settings ++ scalaJSSettings ++ bintray.Plugin.bintrayPublishSettings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
+        licenses += ("Apache-2.0", url("http://www.apache.org/licenses/")),
+
         moduleName := "shapeless",
 
         managedSourceDirectories in Test := Nil,
