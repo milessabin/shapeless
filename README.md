@@ -191,4 +191,4 @@ compatibility.
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
-
++ Alexander Myltsev <alexander.myltsev@phystech.edu> [@alex_myltsev](https://twitter.com/alex_myltsev) [linkedin.com/in/alexandermyltsev](http://www.linkedin.com/in/alexandermyltsev)
