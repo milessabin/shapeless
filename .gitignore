@@ -1,14 +1,33 @@
-.DS_Store
-.cache
-.target
-.classpath
-.project
+# SBT
+boot/
+lib_managed/
+src_managed/
+test-output/
+target/
 .history
 .lib
-.settings
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.cache
+.classpath
+.project
 .scala_dependencies
+.settings
+.target/
 .worksheet
-target/
+
+# Mac
+.DS_Store
+
+# Other
 *.swp
 *.swo
 tags
+*.pyc
