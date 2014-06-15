@@ -529,29 +529,11 @@ object hlist {
    * 
    * @author Miles Sabin
    */
-  trait ToList[-L <: HList, Lub] {
+  trait ToList[L <: HList, Lub] {
     def apply(l: L): List[Lub]
   }
 
-  trait LowPriorityToList {
-    implicit def hlistToListAny[L <: HList]: ToList[L, Any] =
-      new ToList[L, Any] {
-        type Out = List[Any]
-        val b = scala.collection.mutable.ListBuffer.empty[Any]
-        
-        def apply(l : L): Out = {
-          @tailrec
-          def loop(l : HList): Unit = l match {
-            case hd :: tl => b += hd ; loop(tl)
-            case _ =>
-          }
-          loop(l)
-          b.toList
-        }
-      }
-  }
-
-  object ToList extends LowPriorityToList {
+  object ToList {
     def apply[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
     implicit def hnilToList[T] : ToList[HNil, T] =
