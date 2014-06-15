@@ -79,6 +79,7 @@ class HListTests {
   val cs: Ctv[String] = new Ctv[String] {}
   val cd: Ctv[Double] = new Ctv[Double] {}
   val cicscicicdList = ci :: cs :: ci :: ci :: cd :: Nil
+  val cicscicicdArray = Array(ci, cs, ci, ci, cd)
   val cicscicicd: CICSCICICD = ci :: cs :: ci :: ci :: cd :: HNil
 
   trait M[T]
@@ -88,6 +89,7 @@ class HListTests {
   val ms: M[String] = new M[String] {}
   val md: M[Double] = new M[Double] {}
   val mimsmimimdList = mi :: ms :: mi :: mi :: md :: Nil
+  val mimsmimimdArray = Array(mi, ms, mi, mi, md)
   val mimsmimimd: MIMSMIMIMD = mi :: ms :: mi :: mi :: md :: HNil
 
   import language.existentials
@@ -576,6 +578,10 @@ class HListTests {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
     
+    val emptySizedArray = HNil.toArray
+    typed[Array[Nothing]](emptySizedArray)
+    assertArrayEquals2(Array[Nothing](), emptySizedArray)
+    
     val fruits1 = apap.toArray[Fruit]
     typed[Array[Fruit]](fruits1)
     assertArrayEquals2(Array[Fruit](a, p, a, p), fruits1)
@@ -611,6 +617,18 @@ class HListTests {
     val moreStuff = (a :: "foo" :: p :: HNil).toArray[AnyRef]
     typed[Array[AnyRef]](moreStuff)
     assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val ctv = cicscicicd.toArray
+    equalInferredTypes(cicscicicdArray, ctv)
+    typed[Array[Ctv[Int with String with Double]]](ctv)
+    assertArrayEquals2(cicscicicdArray, ctv)
+
+    val m = mimsmimimd.toArray
+    equalInferredTypes(mimsmimimdArray, m)
+    typed[Array[M[_ >: Int with String with Double]]](m)
+    assertArrayEquals2(mimsmimimdArray, m)
   }
   
   @Test

@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import scala.reflect.ClassTag
+
 object tuple {
   import shapeless.ops.{ hlist => hl }
 
@@ -839,7 +841,7 @@ object tuple {
 
     type Aux[T, Lub, Out0] = ToArray[T, Lub] { type Out = Out0 }
     
-    implicit def toArray[T, L <: HList, Lub]
+    implicit def toArray[T, L <: HList, Lub : ClassTag]
       (implicit gen: Generic.Aux[T, L], toArray: hl.ToArray[L, Lub]): Aux[T, Lub, Array[Lub]] =
         new ToArray[T, Lub] {
           type Out = Array[Lub]
