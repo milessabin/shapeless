@@ -500,6 +500,10 @@ class HListTests {
 
   @Test
   def testToList {
+    val emptySizedList = HNil.toList
+    typed[List[Nothing]](emptySizedList)
+    assertEquals(Nil, emptySizedList)
+
     val fruits1 = apap.toList
     typed[List[Fruit]](fruits1)
     assertEquals(List(a, p, a, p), fruits1)

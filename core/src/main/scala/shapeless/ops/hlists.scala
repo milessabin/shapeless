@@ -536,10 +536,10 @@ object hlist {
   object ToList {
     def apply[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
-    implicit def hnilToList[T] : ToList[HNil, T] =
-      new ToList[HNil, T] {
-        type Out = List[T]
-        def apply(l : HNil): Out = Nil
+    implicit def hnilToList[L <: HNil]: ToList[L, Nothing] =
+      new ToList[L, Nothing] {
+        type Out = List[Nothing]
+        def apply(l : L) = Nil
       }
     
     implicit def hsingleToList[T] : ToList[T :: HNil, T] =
