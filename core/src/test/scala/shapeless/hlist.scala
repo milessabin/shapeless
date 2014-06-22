@@ -251,6 +251,10 @@ class HListTests {
   
   @Test
   def testLength {
+    val l0 = HNil
+    typed[Nat._0](l0.length)
+    assertEquals(0, Nat toInt l0.length)
+    
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
     typed[Nat._4](l1.length)
     assertEquals(4, Nat toInt l1.length)
