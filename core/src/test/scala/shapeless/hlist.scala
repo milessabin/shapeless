@@ -250,6 +250,33 @@ class HListTests {
   }
   
   @Test
+  def testLength {
+    val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
+    typed[Nat._4](l1.length)
+    assertEquals(4, Nat toInt l1.length)
+
+    val ap = a :: p :: HNil
+    typed[Nat._2](ap.length)
+    assertEquals(2, Nat toInt ap.length)
+    
+    val bp = b :: p :: HNil
+    typed[Nat._2](bp.length)
+    assertEquals(2, Nat toInt bp.length)
+    
+    val apap = a :: p :: a :: p :: HNil
+    typed[Nat._4](apap.length)
+    assertEquals(4, Nat toInt apap.length)
+    
+    val apbp = a :: p :: b :: p :: HNil
+    typed[Nat._4](apbp.length)
+    assertEquals(4, Nat toInt apbp.length)
+    
+    val ffff : FFFF = apap
+    typed[Nat._4](ffff.length)
+    assertEquals(4, Nat toInt ffff.length)
+  }
+
+  @Test
   def testInitLast {
     
     val lp = apbp.last
