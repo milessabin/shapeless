@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import poly._
 
+import scala.collection.GenTraversableLike
+import scala.collection.generic.CanBuildFrom
+
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -571,6 +574,40 @@ object hlist {
         new ToList[H1 :: H2 :: T, L] {
           type Out = List[L]
           def apply(l : H1 :: H2 :: T): Out = ul.left(u.left(l.head)) :: ttl(l.tail).map(ul.right)
+        }
+  }
+
+  /**
+   * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToSized[L <: HList, +Lub, N <: Nat, M[+_]] {
+    def apply(l: L): Sized[M[Lub], N]
+  }
+
+  object ToSized {
+    def apply[L <: HList, Lub, N <: Nat, M[+_]](implicit toSized: ToSized[L, Lub, N, M]) = toSized
+    
+    implicit def hnilToSized[L <: HNil, M[+_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : ToSized[L, Nothing, Nat._0, M] =
+        new ToSized[L, Nothing, Nat._0, M] {
+          type Out = Sized[M[Nothing], Nat._0]
+          def apply(l : L) = Sized[M]()
+        }
+
+    implicit def hconsToSized[H, T <: HList, LT, L, N <: Nat, M[+_]]
+      (implicit
+        tts  : ToSized[T, LT, N, M],
+        u    : Lub[H, LT, L],
+        ttvs : M[LT] => GenTraversableLike[LT, M[LT]],  // ttvs and tcbf are required for the call to map below
+        tcbf : CanBuildFrom[M[LT], L, M[L]],
+        tvs  : M[L] => GenTraversableLike[L, M[L]],     // tvs and cbf are required for the call to +: below
+        cbf  : CanBuildFrom[M[L], L, M[L]]): ToSized[H :: T, L, Succ[N], M] =
+        new ToSized[H :: T, L, Succ[N], M] {
+          type Out = Sized[M[L], Succ[N]]
+          def apply(l : H :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
         }
   }
 

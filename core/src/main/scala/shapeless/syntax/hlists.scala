@@ -440,6 +440,17 @@ final class HListOps[L <: HList](l : L) {
    */
   def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
   
+
+  case class HListSizedBuilder[M[+_]]() {
+    def apply[Lub, N <: Nat]()(implicit toSized : ToSized[L, Lub, N, M]) : Sized[M[Lub], N] = toSized(l)
+  }
+  
+  /**
+   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * of this `HList`.
+   */
+  def toSized[M[+_]] : HListSizedBuilder[M] = HListSizedBuilder[M]()
+  
   /**
    * Converts this `HList` to an `Array` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
