@@ -17,6 +17,9 @@
 package shapeless
 package ops
 
+import hlist.ToSized
+import sized.ToHList
+
 object tuple {
   import shapeless.ops.{ hlist => hl }
 
@@ -756,11 +759,11 @@ object tuple {
 
     type Aux[T, Out0] = Unifier[T] { type Out = Out0 }
     
-    implicit def unifier[T, L1 <: HList, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], unifier: hl.Unifier.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
+    implicit def unifier[T, L1 <: HList, L2 <: HList, Lub, N <: Nat]
+      (implicit gen: Generic.Aux[T, L1], toSized: ToSized[L1, Lub, N, List], s: ToHList.Aux[List[Lub], N, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
         new Unifier[T] {
           type Out = tp.Out
-          def apply(t: T): Out = unifier(gen.to(t)).tupled
+          def apply(t: T): Out = gen.to(t).unify.tupled
         }
   }
 

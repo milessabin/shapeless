@@ -462,37 +462,6 @@ object hlist {
   }
 
   /**
-   * Type class supporting unification of this `HList`. 
-   * 
-   * @author Miles Sabin
-   */
-  trait Unifier[L <: HList] extends DepFn1[L] { type Out <: HList }
-
-  object Unifier {
-    def apply[L <: HList](implicit unifier: Unifier[L]): Aux[L, unifier.Out] = unifier
-
-    type Aux[L <: HList, Out0 <: HList] = Unifier[L] { type Out = Out0 }
-
-    implicit val hnilUnifier: Aux[HNil, HNil] = new Unifier[HNil] {
-      type Out = HNil
-      def apply(l : HNil): Out = l
-    }
-    
-    implicit def hsingleUnifier[T]: Aux[T :: HNil, T :: HNil] =
-      new Unifier[T :: HNil] {
-        type Out = T :: HNil
-        def apply(l : T :: HNil): Out = l
-      }
-    
-    implicit def hlistUnifier[H1, H2, L, T <: HList]
-      (implicit u : Lub[H1, H2, L], lt : Unifier[L :: T]): Aux[H1 :: H2 :: T, L :: lt.Out] =
-        new Unifier[H1 :: H2 :: T] {
-          type Out = L :: lt.Out
-          def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
-        }
-  }
-
-  /**
    * Type class supporting unification of all elements that are subtypes of `B` in this `HList` to `B`, with all other
    * elements left unchanged.
    * 

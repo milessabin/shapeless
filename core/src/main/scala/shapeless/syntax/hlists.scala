@@ -405,7 +405,7 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns an `HList` typed as a repetition of the least upper bound of the types of the elements of this `HList`.
    */
-  def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
+  def unify[Lub, N <: Nat](implicit toSized : ToSized[L, Lub, N, List], uhl : ops.sized.ToHList[List[Lub], N]) : uhl.Out  = uhl(toSized(l))
 
   /**
    * Returns an `HList` with all elements that are subtypes of `B` typed as `B`.
