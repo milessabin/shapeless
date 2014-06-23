@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,30 +47,11 @@ object PolyDefns extends Cases {
       val value = v
     }
 
-    implicit def materializeFromValue1[P, F[_], T]: Case[P, F[T] :: HNil] = macro materializeFromValueImpl[P, F[T], T]
-    implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] = macro materializeFromValueImpl[P, T, T]
+    implicit def materializeFromValue1[P, F[_], T]: Case[P, F[T] :: HNil] =
+      macro PolyMacros.materializeFromValueImpl[P, F[T], T]
 
-    def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
-      (c: Context): c.Expr[Case[P, FT :: HNil]] = {
-      import c.universe._
-
-      val pTpe = weakTypeOf[P]
-      val ftTpe = weakTypeOf[FT]
-      val tTpe = weakTypeOf[T]
-
-      val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-      if(c.openImplicits.tail.exists(_._1=:= recTpe))
-        c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
-
-      val value = pTpe match {
-        case SingleType(_, f) => f
-        case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
-      }
-
-      c.Expr[Case[P, FT :: HNil]] {
-        TypeApply(Select(Ident(value), newTermName("caseUniv")), List(TypeTree(tTpe)))
-      }
-    }
+    implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] =
+      macro PolyMacros.materializeFromValueImpl[P, T, T]
   }
 
   type Case0[P] = Case[P, HNil]
@@ -225,169 +206,10 @@ trait Poly extends PolyApply {
  */
 object Poly extends PolyInst {
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
-  
-  implicit def apply(f : Any): Poly = macro liftFnImpl
-  
-  def liftFnImpl(c: Context)(f: c.Expr[Any]): c.Expr[Poly] = {
-    import c.universe._
-    import Flag._
-    
-    val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
 
-    val moduleName = newTermName(c.fresh)
+  def apply(f : Any): Poly = macro PolyMacros.applyImpl
 
-    val anySym = c.mirror.staticClass("scala.Any")
-    val anyTpe = anySym.asType.toType
-    val nothingSym = c.mirror.staticClass("scala.Nothing")
-    val nothingTpe = nothingSym.asType.toType
-
-    val typeOpsSym = c.mirror.staticPackage("shapeless")
-    val idSym = typeOpsSym.newTypeSymbol(newTypeName("Id"))
-    val constSym = typeOpsSym.newTypeSymbol(newTypeName("Const"))
-
-    val natTSym = c.mirror.staticClass("shapeless.PolyDefns.$tilde$greater")
-    val natTTpe = natTSym.asClass.toTypeConstructor
-
-    def mkApply(fSym: Symbol, gSym: Symbol, targ: TypeName, arg: TermName, body: Tree) = {
-      def mkTargRef(sym: Symbol) =
-        if(sym == idSym)
-          Ident(targ)
-        else if(sym.asType.typeParams.isEmpty)
-          Ident(sym.name)
-        else
-          AppliedTypeTree(Ident(sym.name), List(Ident(targ)))
-
-      DefDef(
-        Modifiers(), newTermName("apply"),
-        List(TypeDef(Modifiers(PARAM), targ, List(), TypeBoundsTree(TypeTree(nothingTpe), TypeTree(anyTpe)))),
-        List(List(ValDef(Modifiers(PARAM), arg, mkTargRef(fSym), EmptyTree))),
-        mkTargRef(gSym),
-        body
-      )
-    }
-
-    def destructureMethod(methodSym: MethodSymbol) = {
-      val paramSym = methodSym.paramss match {
-        case List(List(ps)) => ps
-        case _ => c.abort(c.enclosingPosition, "Expression $f has the wrong shape to be converted to a polymorphic function value")
-      }
-
-      def extractTc(tpe: Type): Symbol = {
-        val owner = tpe.typeSymbol.owner
-        if(owner == methodSym) idSym
-        else tpe.typeConstructor.typeSymbol
-      }
-
-      (extractTc(paramSym.typeSignature), extractTc(methodSym.returnType))
-    }
-
-    def stripSymbolsAndTypes(tree: Tree, internalSyms: List[Symbol]) = {
-      // Adapted from https://github.com/scala/async/blob/master/src/main/scala/scala/async/TransformUtils.scala#L226
-      final class StripSymbolsAndTypes extends Transformer {
-        override def transform(tree: Tree): Tree = super.transform {
-          tree match {
-            case TypeApply(fn, args) if args.map(t => transform(t)) exists (_.isEmpty) => transform(fn)
-            case EmptyTree  => tree
-            case _          =>
-              val hasSymbol: Boolean = {
-                val reflectInternalTree = tree.asInstanceOf[symtab.Tree forSome { val symtab: reflect.internal.SymbolTable }]
-                reflectInternalTree.hasSymbol
-              }
-              val dupl = tree.duplicate
-              if (hasSymbol)
-                dupl.symbol = NoSymbol
-              dupl.tpe = null
-              dupl
-          }
-        }
-      }
-
-      (new StripSymbolsAndTypes).transform(tree)
-    }
-
-    val (fSym, gSym, dd) = 
-      f.tree match {
-        case Block(List(), Function(List(_), Apply(TypeApply(fun, _), _))) =>
-          val methodSym = fun.symbol.asMethod
-
-          val (fSym1, gSym1) = destructureMethod(methodSym)
-          val body = Apply(TypeApply(Ident(methodSym), List(Ident(newTypeName("T")))), List(Ident(newTermName("t"))))
-
-          (fSym1, gSym1, mkApply(fSym1, gSym1, newTypeName("T"), newTermName("t"), body))
-
-        case Block(List(), Function(List(_), Apply(fun, _))) =>
-          val methodSym = fun.symbol.asMethod
-
-          val (fSym1, gSym1) = destructureMethod(methodSym)
-          val body = Apply(Ident(methodSym), List(Ident(newTermName("t"))))
-
-          (fSym1, gSym1, mkApply(fSym1, gSym1, newTypeName("T"), newTermName("t"), body))
-
-        case Block(List(df @ DefDef(mods, _, List(tp), List(List(vp)), tpt, rhs)), Literal(Constant(()))) =>
-          val methodSym = df.symbol.asMethod
-
-          val (fSym1, gSym1) = destructureMethod(methodSym)
-
-          val body = mkApply(fSym1, gSym1, tp.name, vp.name, stripSymbolsAndTypes(rhs, List()))
-
-          (fSym1, gSym1, body)
-
-        case Block(List(df @ DefDef(_, _, List(), List(List(vp)), tpt, rhs)), Literal(Constant(()))) =>
-          val methodSym = df.symbol.asMethod
-
-          val (fSym1, gSym1) = destructureMethod(methodSym)
-
-          val body = mkApply(fSym1, gSym1, newTypeName("T"), vp.name, stripSymbolsAndTypes(rhs, List()))
-          (fSym1, gSym1, body)
-
-        case _ =>
-          c.abort(c.enclosingPosition, s"Unable to convert expression $f to a polymorphic function value")
-      }
-
-    def mkTargTree(sym: Symbol) =
-      if(sym == idSym)
-        Select(Ident(newTermName("shapeless")), newTypeName("Id"))
-      else if(sym.asType.typeParams.isEmpty)
-        SelectFromTypeTree(
-          AppliedTypeTree(
-            Select(Ident(newTermName("shapeless")), newTypeName("Const")),
-            List(Ident(sym.name))
-          ),
-          newTypeName("λ")
-        )
-      else
-        Ident(sym.name)
-
-    val liftedTypeTree =
-      AppliedTypeTree(
-        Ident(natTSym),
-        List(mkTargTree(fSym), mkTargTree(gSym))
-      )
-
-    val moduleDef =
-      ModuleDef(Modifiers(), moduleName,
-        Template(
-          List(liftedTypeTree),
-          emptyValDef,
-          List(
-            DefDef(
-              Modifiers(), nme.CONSTRUCTOR, List(),
-              List(List()),
-              TypeTree(),
-              Block(List(pendingSuperCall), Literal(Constant(())))),
-
-            dd
-          )
-        )
-      )
-
-    c.Expr[Poly] {
-      Block(
-        List(moduleDef),
-        Ident(moduleName)
-      )
-    }
-  }
+  implicit def lift1(f: Nothing => Any): Poly = macro PolyMacros.lift1Impl
 }
 
 /**
@@ -395,9 +217,113 @@ object Poly extends PolyInst {
  */
 trait Poly0 extends Poly {
   type Case0[T] = ProductCase.Aux[HNil, T]
-  
+
   def at[T](t: T) = new ProductCase[HNil] {
     type Result = T
     val value = (l : HNil) => t
   }
+}
+
+class PolyMacros[C <: Context](val c: C) {
+  import c.universe._
+
+  import PolyDefns.Case
+
+  def materializeFromValueImpl[P: WeakTypeTag, FT: WeakTypeTag, T: WeakTypeTag]: Tree = {
+    val pTpe = weakTypeOf[P]
+    val ftTpe = weakTypeOf[FT]
+    val tTpe = weakTypeOf[T]
+
+    val recTpe = weakTypeOf[Case[P, FT :: HNil]]
+    if(c.openImplicits.tail.exists(_._1 =:= recTpe))
+      c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
+
+    val value = pTpe match {
+      case SingleType(_, f) => f
+      case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
+    }
+
+    q""" $value.caseUniv[$tTpe] """
+  }
+
+  def liftAux(f: Expr[Any]): Tree = {
+    def wrongShape =
+      c.abort(
+        c.enclosingPosition,
+        s"Expression ${f.tree} has the wrong shape to be converted to a polymorphic function value"
+      )
+
+    def mkModule(mSym: Symbol, df: Tree): Tree = {
+      val methodTpe = mSym.typeSignature
+      val mTArgs = mSym.asMethod.typeParams.map(_ => tq"T")
+
+      val paramSym = mSym.asMethod.paramss match {
+        case List(List(ps)) => ps
+        case _ => wrongShape
+      }
+
+      def extractTc(tpe: Type): (Tree, Tree) = {
+        mSym.asMethod.typeParams match {
+          case List() =>
+            val sym = tpe.typeSymbol
+            (tq"_root_.shapeless.Const[$sym]#λ", tq"$sym")
+
+          case List(mTParam) if tpe.typeSymbol == mTParam =>
+            (tq"_root_.shapeless.Id", tq"T")
+
+          case List(mTParam) if !tpe.contains(mTParam) =>
+            val sym = tpe.typeSymbol
+            (tq"_root_.shapeless.Const[$sym]#λ", tq"$sym")
+
+          case List(mTParam) if !tpe.typeConstructor.contains(mTParam) =>
+            val sym = tpe.typeConstructor.typeSymbol
+            (tq"$sym", tq"$sym[T]")
+
+          case _ => wrongShape
+        }
+      }
+
+      val (fTc, fTa) = extractTc(paramSym.typeSignature)
+      val (gTc, gTa) = extractTc(mSym.asMethod.returnType)
+
+      val moduleName = newTermName(c.fresh)
+
+      q"""
+        {
+          $df
+          object $moduleName extends _root_.shapeless.poly.~>[$fTc, $gTc] {
+            def apply[T](t: $fTa): $gTa = $mSym[..$mTArgs](t)
+          }
+          $moduleName
+        }
+      """
+    }
+
+    f.tree match {
+      //case q""" { ($_) => $m[..$_]($_) } """ =>
+      case Block(List(), q""" ($a) => $m[..$ta]($e) """) =>
+        mkModule(m.symbol, EmptyTree)
+
+      case q""" { ${df: DefDef} } """ =>
+        mkModule(df.symbol, df)
+
+      case _ => wrongShape
+    }
+  }
+}
+
+object PolyMacros {
+  import PolyDefns.Case
+
+  def inst(c: Context) = new PolyMacros[c.type](c)
+
+  def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
+    (c: Context): c.Expr[Case[P, FT :: HNil]] =
+      c.Expr[Case[P, FT :: HNil]](inst(c).materializeFromValueImpl[P, FT, T])
+
+  def applyImpl(c: Context)(f: c.Expr[Any]): c.Expr[Poly] =
+    c.Expr[Poly](inst(c).liftAux(f))
+
+  def lift1Impl(c: Context)(f: c.Expr[Nothing => Any]): c.Expr[Poly] =
+    c.Expr[Poly](inst(c).liftAux(f))
 }
