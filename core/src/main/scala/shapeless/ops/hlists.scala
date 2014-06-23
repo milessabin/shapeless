@@ -527,50 +527,26 @@ object hlist {
    * Type class supporting conversion of this `HList` to an ordinary `List` with elements typed as the least upper bound
    * of the types of the elements of this `HList`.
    * 
-   * @author Miles Sabin
+   * @author Miles Sabin, Alexandre Archambault
    */
-  trait ToList[-L <: HList, Lub] {
+  trait ToList[L <: HList, +Lub] {
     def apply(l: L): List[Lub]
   }
 
-  trait LowPriorityToList {
-    implicit def hlistToListAny[L <: HList]: ToList[L, Any] =
-      new ToList[L, Any] {
-        type Out = List[Any]
-        val b = scala.collection.mutable.ListBuffer.empty[Any]
-        
-        def apply(l : L): Out = {
-          @tailrec
-          def loop(l : HList): Unit = l match {
-            case hd :: tl => b += hd ; loop(tl)
-            case _ =>
-          }
-          loop(l)
-          b.toList
-        }
-      }
-  }
-
-  object ToList extends LowPriorityToList {
+  object ToList {
     def apply[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
-    implicit def hnilToList[T] : ToList[HNil, T] =
-      new ToList[HNil, T] {
-        type Out = List[T]
-        def apply(l : HNil): Out = Nil
+    implicit def hnilToList[L <: HNil]: ToList[L, Nothing] =
+      new ToList[L, Nothing] {
+        type Out = List[Nothing]
+        def apply(l : L) = Nil
       }
     
-    implicit def hsingleToList[T] : ToList[T :: HNil, T] =
-      new ToList[T :: HNil, T] {
-        type Out = List[T]
-        def apply(l : T :: HNil): Out = List(l.head)
-      }
-    
-    implicit def hlistToList[H1, H2, T <: HList, L12, L2, L]
-      (implicit u : Lub[H1, H2, L12], ttl : ToList[H2 :: T, L2], ul : Lub[L12, L2, L]): ToList[H1 :: H2 :: T, L] =
-        new ToList[H1 :: H2 :: T, L] {
+    implicit def hlistToList[H, T <: HList, LT, L]
+      (implicit ttl : ToList[T, LT], u : Lub[H, LT, L]): ToList[H :: T, L] =
+        new ToList[H :: T, L] {
           type Out = List[L]
-          def apply(l : H1 :: H2 :: T): Out = ul.left(u.left(l.head)) :: ttl(l.tail).map(ul.right)
+          def apply(l : H :: T) = u.left(l.head) :: ttl(l.tail).map(u.right)
         }
   }
 
