@@ -36,11 +36,12 @@ final class Sized[+Repr, L <: Nat](val unsized : Repr) extends AnyVal
  * 
  * @author Miles Sabin
  */
-class SizedOps[A, Repr, L <: Nat](r : GenTraversableLike[A, Repr]) { outer =>
+class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, Repr]) { outer =>
   import nat._
   import ops.nat._
   import LT._
   import Sized.wrap
+  import ops.sized._
   
   /**
    * Returns the head of this collection. Available only if there is evidence that this collection has at least one
@@ -132,6 +133,11 @@ class SizedOps[A, Repr, L <: Nat](r : GenTraversableLike[A, Repr]) { outer =>
    * as this collection.
    */
   def map[B, That](f : A => B)(implicit cbf : CanBuildFrom[Repr, B, That]) = wrap[That, L](r map f)
+
+  /**
+   * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
+   */
+  def toHList(implicit hl: ToHList[Repr, L]): hl.Out = hl(s)
 }
 
 trait LowPrioritySized {
@@ -141,7 +147,7 @@ trait LowPrioritySized {
 object Sized extends LowPrioritySized {
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
     (implicit itl: IsTraversableLike[Repr]): SizedOps[itl.A, Repr, L] =
-      new SizedOps[itl.A, Repr, L](itl.conversion(s.unsized))
+      new SizedOps[itl.A, Repr, L](s, itl.conversion(s.unsized))
   
   def apply[CC[_]] = new SizedBuilder[CC]
   
