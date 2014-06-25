@@ -23,6 +23,7 @@ import poly._
 
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 
 object hlist {
   /**
@@ -606,8 +607,64 @@ object hlist {
             val arr = tta(len, l.tail, i+1)
             arr(i) = u.left(l.head)
             arr
-          }
+        }
       }
+  }
+
+  /**
+   * Type class supporting conversion of this `HList` to a `M` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToTraversable[L <: HList, M[_]] extends DepFn1[L] {
+    type Lub
+    def builder(): mutable.Builder[Lub, M[Lub]]
+    def append[LLub](l: L, b: mutable.Builder[LLub, M[LLub]], f: Lub => LLub): Unit
+
+    type Out = M[Lub]
+    def apply(l: L): Out = {
+      val b = builder()
+      append(l, b, identity)
+      b.result()
+    }
+  }
+
+  object ToTraversable {
+    def apply[L <: HList, M[_]](implicit toTraversable: ToTraversable[L, M]) = toTraversable
+
+    type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
+
+    implicit def hnilToTraversable[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
+        new ToTraversable[L, M] {
+          type Lub = Nothing
+          def builder() = cbf()
+          def append[LLub](l : L, b : mutable.Builder[LLub, M[LLub]], f : Lub => LLub) = {}
+        }
+
+    implicit def hsingleToTraversable[T, M[_]]
+      (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T] =
+        new ToTraversable[T :: HNil, M] {
+          type Lub = T
+          def builder() = cbf()
+          def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : T => LLub) = {
+            b += f(l.head)
+          }
+        }
+
+    implicit def hlistToTraversable[H1, H2, T <: HList, LubT, Lub0, M[_]]
+      (implicit
+       tttvs  : Aux[H2 :: T, M, LubT],
+       u      : Lub[H1, LubT, Lub0],
+       cbf    : CanBuildFrom[M[Lub0], Lub0, M[Lub0]]) : Aux[H1 :: H2 :: T, M, Lub0] =
+        new ToTraversable[H1 :: H2 :: T, M] {
+          type Lub = Lub0
+          def builder() = cbf()
+          def append[LLub](l : H1 :: H2 :: T, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub): Unit = {
+            b += f(u.left(l.head)); tttvs.append[LLub](l.tail, b, f compose u.right)
+          }
+        }
   }
 
   /**

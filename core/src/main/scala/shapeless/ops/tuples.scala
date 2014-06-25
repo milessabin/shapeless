@@ -806,6 +806,27 @@ object tuple {
   }
 
   /**
+   * Type class supporting conversion of this tuple to a `M` with elements typed as the least upper bound
+   * of the types of the elements of this tuple.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToTraversable[T, M[_]] extends DepFn1[T]
+
+  object ToTraversable {
+    def apply[T, M[_]](implicit toTraversable: ToTraversable[T, M]) = toTraversable
+
+    type Aux[T, M[_], Out0] = ToTraversable[T, M] { type Out = Out0 }
+
+    implicit def toTraversable[T, L <: HList, M[_]]
+      (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable[L, M]): Aux[T, M, toTraversable.Out] =
+        new ToTraversable[T, M] {
+          type Out = toTraversable.Out
+          def apply(t: T) = gen.to(t).to[M]
+        }
+  }
+
+  /**
    * Type class supporting conversion of this tuple to a `List` with elements typed as the least upper bound
    * of the types of the elements of this tuple.
    * 

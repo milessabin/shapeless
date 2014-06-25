@@ -391,6 +391,12 @@ final class TupleOps[T](t: T) {
   def length(implicit length : Length[T]) : length.Out = length(t)
 
   /**
+   * Converts this tuple to a `M` of elements typed as the least upper bound of the types of the elements
+   * of this tuple.
+   */
+  def to[M[_]](implicit toTraversable : ToTraversable[T, M]) : toTraversable.Out = toTraversable(t)
+
+  /**
    * Converts this tuple to a `List` of elements typed as the least upper bound of the types of the elements
    * of this tuple.
    */

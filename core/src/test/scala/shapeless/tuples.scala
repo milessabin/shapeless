@@ -444,6 +444,62 @@ class TupleTests {
   }
 
   @Test
+  def testToTraversableList {
+    val fruits1 = apap.to[List]
+    typed[List[Fruit]](fruits1)
+    assertEquals(List(a, p, a, p), fruits1)
+
+    val fruits2 = apbp.to[List]
+    typed[List[Fruit]](fruits2)
+    assertEquals(List(a, p, b, p), fruits2)
+
+    val l1 = (1, "foo", 2, 3)
+
+    val stuff = l1.to[List]
+    typed[List[Any]](stuff)
+    assertEquals(List(1, "foo", 2, 3), stuff)
+
+    val l4 = (Option(1), Option("foo"), Option(2), Option(3))
+    val l7 = l4 map isDefined
+    typed[BBBB](l7)
+    assertEquals((true, true, true, true), l7)
+
+    val ll2 = l7.to[List]
+    typed[Boolean](ll2.head)
+
+    val moreStuff = (a, "foo", p).to[List]
+    typed[List[Any]](moreStuff)
+
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val ctv = cicscicicd.to[List]
+    equalInferredTypes(cicscicicdList, ctv)
+    typed[List[Ctv[Int with String with Double]]](ctv)
+    assertEquals(cicscicicdList, ctv)
+
+    val m = mimsmimimd.to[List]
+    equalInferredTypes(mimsmimimdList, m)
+    typed[List[M[_ >: Int with String with Double]]](m)
+    assertEquals(mimsmimimdList, m)
+
+    val mWithEx = mimsmimemd.to[List]
+    //  equalType(mimsmimemdList, mWithEx)
+    typed[List[M[_]]](mWithEx)
+    assertEquals(mimsmimemdList, mWithEx)
+
+    val m2 = m2im2sm2im2im2d.to[List]
+    equalInferredTypes(m2im2sm2im2im2dList, m2)
+    typed[List[M2[_ >: Int with String with Double, Unit]]](m2)
+    assertEquals(m2im2sm2im2im2dList, m2)
+
+    val m2e = m2eim2esm2eim2eem2ed.to[List]
+    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    typed[List[M2[_ >: Int with String with Double, _]]](m2e)
+    assertEquals(m2eim2esm2eim2eem2edList, m2e)
+  }
+
+  @Test
   def testToList {
     val fruits1 = apap.toList
     typed[List[Fruit]](fruits1)
@@ -469,8 +525,98 @@ class TupleTests {
 
     val moreStuff = (a, "foo", p).toList
     typed[List[Any]](moreStuff)
+
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val ctv = cicscicicd.toList
+    equalInferredTypes(cicscicicdList, ctv)
+    typed[List[Ctv[Int with String with Double]]](ctv)
+    assertEquals(cicscicicdList, ctv)
+
+    val m = mimsmimimd.toList
+    equalInferredTypes(mimsmimimdList, m)
+    typed[List[M[_ >: Int with String with Double]]](m)
+    assertEquals(mimsmimimdList, m)
+
+    val mWithEx = mimsmimemd.toList
+    //  equalType(mimsmimemdList, mWithEx)
+    typed[List[M[_]]](mWithEx)
+    assertEquals(mimsmimemdList, mWithEx)
+
+    val m2 = m2im2sm2im2im2d.toList
+    equalInferredTypes(m2im2sm2im2im2dList, m2)
+    typed[List[M2[_ >: Int with String with Double, Unit]]](m2)
+    assertEquals(m2im2sm2im2im2dList, m2)
+ 
+    val m2e = m2eim2esm2eim2eem2ed.toList
+    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    typed[List[M2[_ >: Int with String with Double, _]]](m2e)
+    assertEquals(m2eim2esm2eim2eem2edList, m2e)
   }
   
+  @Test
+  def testToTraversableArray {
+    def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+
+    val fruits1 = apap.to[Array].map(x => x : Fruit)
+    typed[Array[Fruit]](fruits1)
+    assertArrayEquals2(Array[Fruit](a, p, a, p), fruits1)
+
+    val fruits2 = apbp.to[Array].map(x => x : Fruit)
+    typed[Array[Fruit]](fruits2)
+    assertArrayEquals2(Array[Fruit](a, p, b, p), fruits2)
+
+    val l1 = (1, "foo", 2, 3)
+
+    val stuff = l1.to[Array]
+    typed[Array[Any]](stuff)
+    assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
+
+    val l4 = (Option(1), Option("foo"), Option(2), Option(3))
+    val l7 = l4 map isDefined
+    typed[BBBB](l7)
+    assertEquals((true, true, true, true), l7)
+
+    val ll2 = l7.to[Array]
+    typed[Boolean](ll2(0))
+
+    val moreStuff = (a, "foo", p).to[Array].map(x => x : AnyRef)
+    typed[Array[AnyRef]](moreStuff)
+    assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
+
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val ctv = cicscicicd.to[Array]
+    equalInferredTypes(cicscicicdArray, ctv)
+    typed[Array[Ctv[Int with String with Double]]](ctv)
+    assertArrayEquals2(cicscicicdArray, ctv)
+
+    val m = mimsmimimd.to[Array]
+    equalInferredTypes(mimsmimimdArray, m)
+    typed[Array[M[_ >: Int with String with Double]]](m)
+    assertArrayEquals2(mimsmimimdArray, m)
+
+    val mWithEx = mimsmimemd.to[Array]
+    // equalInferredTypes(mimsmimemdArray, mWithEx)
+    // typed[Array[M[_]]](mWithEx)
+    // The line above compiles when mimsmimemd is an HList, not when it it a tuple, as in testToSizedArray
+    assertArrayEquals2(mimsmimemdArray.map(x => x : Any), mWithEx.map(x => x : Any))
+
+    val m2 = m2im2sm2im2im2d.to[Array]
+    equalInferredTypes(m2im2sm2im2im2dArray, m2)
+    typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
+    assertArrayEquals2(m2im2sm2im2im2dArray, m2)
+
+    val m2e = m2eim2esm2eim2eem2ed.to[Array]
+    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
+    // Same remark as above
+    assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
+  }
+
   @Test
   def testToArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
@@ -501,6 +647,38 @@ class TupleTests {
     val moreStuff = (a, "foo", p).toArray[AnyRef]
     typed[Array[AnyRef]](moreStuff)
     assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
+
+
+    // def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    // Do not pass yet
+    // val ctv = cicscicicd.toArray
+    // equalInferredTypes(cicscicicdArray, ctv)
+    // typed[Array[Ctv[Int with String with Double]]](ctv)
+    // assertArrayEquals2(cicscicicdArray, ctv)
+
+    // Do not pass yet
+    // val m = mimsmimimd.toArray
+    // equalInferredTypes(mimsmimimdArray, m)
+    // typed[Array[M[_ >: Int with String with Double]]](m)
+    // assertArrayEquals2(mimsmimimdArray, m)
+
+    val mWithEx = mimsmimemd.toArray[M[_]]
+    //  equalType(mimsmimemdArray, mWithEx)
+    typed[Array[M[_]]](mWithEx)
+    assertArrayEquals2(mimsmimemdArray, mWithEx)
+
+    // Do not pass yet
+    // val m2 = m2im2sm2im2im2d.toArray
+    // equalInferredTypes(m2im2sm2im2im2dArray, m2)
+    // typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
+    // assertArrayEquals2(m2im2sm2im2im2dArray, m2)
+
+    // Do not pass yet
+    // val m2e = m2eim2esm2eim2eem2ed.toArray
+    // // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
+    // assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
   }
   
   @Test
