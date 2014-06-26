@@ -224,4 +224,24 @@ class CoproductTests {
     // key/value lengths must match up
     illTyped("u1.zipWithKeys(uKeys.tail)")
   }
+
+  @Test
+  def testPartialOrdering {
+    val (one, two, abc, xyz) =
+      (Coproduct[ISB](1), Coproduct[ISB](2), Coproduct[ISB]("abc"), Coproduct[ISB]("xyz"))
+
+    def assertPOEquals(expected: Option[Int], l: ISB, r: ISB)(implicit po: PartialOrdering[ISB]) =
+      assertEquals(s"${l} ${r}", expected, po.tryCompare(l, r))
+
+    assertPOEquals(Some(0),  one, one)
+    assertPOEquals(Some(-1), one, two)
+    assertPOEquals(Some(1),  two, one)
+
+    assertPOEquals(Some(0),  abc, abc)
+    assertPOEquals(Some(-23), abc, xyz)
+    assertPOEquals(Some(23),  xyz, abc)
+
+    assertPOEquals(None, one, abc)
+    assertPOEquals(None, abc, one)
+  }
 }
