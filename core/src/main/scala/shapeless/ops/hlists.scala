@@ -1674,4 +1674,18 @@ object hlist {
           def apply(l: LH :: LT): Out = collect(l.tail)
         }
   }
+
+  implicit object hnilOrdering extends Ordering[HNil] {
+    def compare(x: HNil, y: HNil): Int = 0
+  }
+
+  implicit def hlistOrdering[H, T <: HList]
+    (implicit hOrdering: Ordering[H], tOrdering: Ordering[T]): Ordering[H :: T] =
+      new Ordering[H :: T] {
+        def compare(x: H :: T, y: H :: T): Int = {
+          val compareH = hOrdering.compare(x.head, y.head)
+
+          if (compareH != 0) compareH else tOrdering.compare(x.tail, y.tail)
+        }
+      }
 }
