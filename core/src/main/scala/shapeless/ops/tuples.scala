@@ -846,4 +846,26 @@ object tuple {
           def apply(t: T): Out = gen.to(t).toArray[Lub]
         }
   }
+
+
+  /**
+   * Type Class witnessing that this tuple can be collected with a 'Poly' to produce a new tuple
+   *
+   * @author Stacy Curl
+   */
+  trait Collect[T, P <: Poly] extends DepFn1[T]
+
+  object Collect {
+    def apply[T, P <: Poly](implicit collect: Collect[T, P]) = collect
+
+    type Aux[T, P <: Poly, Out0] = Collect[T, P] { type Out = Out0 }
+
+    implicit def collect[T, L <: HList, L2 <: HList, P <: Poly]
+      (implicit gen: Generic.Aux[T, L], collect: hl.Collect.Aux[L, P, L2], tp: hl.Tupler[L2])
+        : Aux[T, P, tp.Out] = new Collect[T, P] {
+          type Out = tp.Out
+
+          def apply(t: T): tp.Out = tp(collect(gen.to(t)))
+        }
+  }
 }

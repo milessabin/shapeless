@@ -305,7 +305,12 @@ final class HListOps[L <: HList](l : L) {
    * Replaces each element of this `HList` with a constant value.
    */
   def mapConst[C](c : C)(implicit mapper : ConstMapper[C, L]) : mapper.Out = mapper(c, l)
-  
+
+  /**
+   * Collect a higher rank function across this `HList`.
+   */
+  def collect(p: Poly)(implicit collect: Collect[L, p.type]): collect.Out = collect(l)
+
   /**
    * Maps a higher rank function ''f'' across this `HList` and folds the result using monomorphic combining operator
    * `op`. Available only if there is evidence that the result type of `f` at each element conforms to the argument

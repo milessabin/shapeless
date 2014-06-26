@@ -297,6 +297,11 @@ final class TupleOps[T](t: T) {
   def mapConst[C](c: C)(implicit mapper: ConstMapper[T, C]): mapper.Out = mapper(t, c)
 
   /**
+   * Collect a higher rank function across this tuple
+   */
+  def collect(p: Poly)(implicit collect: Collect[T, p.type]): collect.Out = collect(t)
+
+  /**
    * Maps a higher rank function ''f'' across this tuple and folds the result using monomorphic combining operator
    * `op`. Available only if there is evidence that the result type of `f` at each element conforms to the argument
    * type of ''op''.
