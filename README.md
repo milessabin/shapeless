@@ -7,6 +7,7 @@ experimental project into library which, while still testing the limits of what'
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped. 
 
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+[![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 
 ## Finding out more about the project
 
