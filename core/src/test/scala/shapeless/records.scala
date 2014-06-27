@@ -86,6 +86,22 @@ class RecordTests {
   }
 
   @Test
+  def testGetField {
+    val r1 =
+      (intField1    ->>  "toto") ::
+      (boolField1   ->>  true)   ::
+      HNil
+
+    val v1 = r1.getField(intField1)
+    val v2 = r1.getField(boolField1)
+    typed[FieldType[intField1.type, String]](v1)
+    typed[FieldType[boolField1.type, Boolean]](v2)
+    assertEquals("toto", v1)
+    assertEquals(true, v2)
+    assertEquals(r1, v1 :: v2 :: HNil)
+  }
+
+  @Test
   def testAt {
     val r1 =
       (intField1    ->>    23) ::
