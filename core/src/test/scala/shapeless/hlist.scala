@@ -71,6 +71,8 @@ class HListTests {
   val bp : BP = b :: p :: HNil
   val apap : APAP = a :: p :: a :: p :: HNil
   val apbp : APBP = a :: p :: b :: p :: HNil
+  val apapList = a :: p :: a :: p :: Nil
+  val apbpList = a :: p :: b :: p :: Nil
 
   trait Ctv[-T]
   type CICSCICICD = Ctv[Int] :: Ctv[String] :: Ctv[Int] :: Ctv[Int] :: Ctv[Double] :: HNil
@@ -250,6 +252,37 @@ class HListTests {
   }
   
   @Test
+  def testLength {
+    val l0 = HNil
+    typed[Nat._0](l0.length)
+    assertEquals(0, Nat toInt l0.length)
+    
+    val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
+    typed[Nat._4](l1.length)
+    assertEquals(4, Nat toInt l1.length)
+
+    val ap = a :: p :: HNil
+    typed[Nat._2](ap.length)
+    assertEquals(2, Nat toInt ap.length)
+    
+    val bp = b :: p :: HNil
+    typed[Nat._2](bp.length)
+    assertEquals(2, Nat toInt bp.length)
+    
+    val apap = a :: p :: a :: p :: HNil
+    typed[Nat._4](apap.length)
+    assertEquals(4, Nat toInt apap.length)
+    
+    val apbp = a :: p :: b :: p :: HNil
+    typed[Nat._4](apbp.length)
+    assertEquals(4, Nat toInt apbp.length)
+    
+    val ffff : FFFF = apap
+    typed[Nat._4](ffff.length)
+    assertEquals(4, Nat toInt ffff.length)
+  }
+
+  @Test
   def testInitLast {
     
     val lp = apbp.last
@@ -392,6 +425,55 @@ class HListTests {
   }
     
   @Test
+  def testToSized {
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val hnil = HNil
+    val snil = hnil.toSized[List]()
+    assertEquals(Nat toInt hnil.length, snil.length)
+    val expectedUnsized = List.empty[Nothing]
+    equalInferredTypes(expectedUnsized, snil.unsized)
+    assertEquals(expectedUnsized, snil.unsized)
+
+    val sizedApap = apap.toSized[List]()
+    assertEquals(Nat toInt apap.length, sizedApap.length)
+    equalInferredTypes(apapList, sizedApap.unsized)
+    assertEquals(apapList, sizedApap.unsized)
+
+    val sizedApbp = apbp.toSized[List]()
+    assertEquals(Nat toInt apbp.length, sizedApbp.length)
+    equalInferredTypes(apbpList, sizedApbp.unsized)
+    assertEquals(apbpList, sizedApbp.unsized)
+
+    val sizedCicscicicd = cicscicicd.toSized[List]()
+    assertEquals(Nat toInt cicscicicd.length, sizedCicscicicd.length)
+    equalInferredTypes(cicscicicdList, sizedCicscicicd.unsized)
+    assertEquals(cicscicicdList, sizedCicscicicd.unsized)
+
+    val sizedMimsmimimd = mimsmimimd.toSized[List]()
+    assertEquals(Nat toInt mimsmimimd.length, sizedMimsmimimd.length)
+    equalInferredTypes(mimsmimimdList, sizedMimsmimimd.unsized)
+    assertEquals(mimsmimimdList, sizedMimsmimimd.unsized)
+    
+    val sizedMimsmimemd = mimsmimemd.toSized[List]()
+    assertEquals(Nat toInt mimsmimemd.length, sizedMimsmimemd.length)
+    // equalInferredTypes(mimsmimemdList, sizedMimsmimemd.unsized)
+    typed[List[M[_]]](sizedMimsmimemd.unsized)
+    assertEquals(mimsmimemdList, sizedMimsmimemd.unsized)
+    
+    val sizedM2im2sm2im2im2d = m2im2sm2im2im2d.toSized[List]()
+    assertEquals(Nat toInt m2im2sm2im2im2d.length, sizedM2im2sm2im2im2d.length)
+    equalInferredTypes(m2im2sm2im2im2dList, sizedM2im2sm2im2im2d.unsized)
+    assertEquals(m2im2sm2im2im2dList, sizedM2im2sm2im2im2d.unsized)
+
+    val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]()
+    assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
+    // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[List[M2[_ >: Double with Int with String, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    assertEquals(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+  }
+    
+  @Test
   def testUnifier {
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
     
@@ -431,58 +513,259 @@ class HListTests {
     val u35 = lub(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     typed[(Int :: Any :: Int :: Int :: HNil, Int :: Any :: Int :: Int :: HNil)](u35)
     
-    implicitly[Unifier.Aux[Apple :: HNil, Apple :: HNil]]
-    implicitly[Unifier.Aux[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
     
-    implicitly[Unifier.Aux[Int :: String :: Int :: Int :: HNil, YYYY]]
-    
-    val uapap = implicitly[Unifier.Aux[Apple :: Pear :: Apple :: Pear :: HNil, FFFF]]
-    val unified1 = uapap(apap)
-    typed[FFFF](unified1)
-    val unified2 = apap.unify
-    typed[FFFF](unified2)
-    
-    val ununified1 = unified2.cast[APAP]
-    assertTrue(ununified1.isDefined)
-    typed[APAP](ununified1.get)
-    val ununified2 = unified2.cast[APBP]
-    assertFalse(ununified2.isDefined)
-    typed[Option[APBP]](ununified2)
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
-    def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : Unifier.Aux[L, Out]) = u
     
-    val u2 = getUnifier(a :: HNil)
-    typed[Unifier.Aux[Apple :: HNil, Apple :: HNil]](u2)
-    val u3 = getUnifier(a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: HNil, Apple :: Apple :: HNil]](u3)
-    val u4 = getUnifier(a :: a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: HNil]](u4)
-    val u5 = getUnifier(a :: a :: a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: Apple :: HNil]](u5)
-    val u6 = getUnifier(a :: p :: HNil)
-    //typed[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]](u6)
-    val u7 = getUnifier(a :: f :: HNil)
-    typed[Unifier.Aux[Apple :: Fruit :: HNil, Fruit :: Fruit :: HNil]](u7)
-    val u8 = getUnifier(f :: a :: HNil)
-    typed[Unifier.Aux[Fruit :: Apple :: HNil, Fruit :: Fruit :: HNil]](u8)
-    val u9a = getUnifier(a :: f :: HNil)
-    typed[Unifier.Aux[Apple :: Fruit :: HNil, FF]](u9a)
-    val u9b = getUnifier(a :: p :: HNil)
-    typed[Unifier.Aux[Apple :: Pear :: HNil, PWS :: PWS :: HNil]](u9b)
-    val u10 = getUnifier(apap)
-    typed[Unifier.Aux[APAP, PWS :: PWS :: PWS :: PWS :: HNil]](u10)
-    val u11 = getUnifier(apbp)
-    typed[Unifier.Aux[APBP, PWS :: PWS :: PWS :: PWS :: HNil]](u11)
+    val hnil = HNil
+    val unil = hnil.unify
+    equalInferredTypes(hnil.length, unil.length)
+    
+    // Uniform hlists
+    
+    val hl2 = a :: HNil
+    val u2 = hl2.unify
+    equalInferredTypes(hl2.length, u2.length)
+    equalInferredTypes(hl2(Nat._0), u2(Nat._0))
+    assertEquals(hl2(Nat._0), u2(Nat._0))
+    
+    val hl3 = a :: a :: HNil
+    val u3 = hl3.unify
+    equalInferredTypes(hl3.length, u3.length)
+    equalInferredTypes(hl3(Nat._0), u3(Nat._0))
+    equalInferredTypes(hl3(Nat._1), u3(Nat._1))
+    assertEquals(hl3(Nat._0), u3(Nat._0))
+    assertEquals(hl3(Nat._1), u3(Nat._1))
+    
+    val hl4 = a :: a :: a :: HNil
+    val u4 = hl4.unify
+    equalInferredTypes(hl4.length, u4.length)
+    equalInferredTypes(hl4(Nat._0), u4(Nat._0))
+    equalInferredTypes(hl4(Nat._1), u4(Nat._1))
+    equalInferredTypes(hl4(Nat._2), u4(Nat._2))
+    assertEquals(hl4(Nat._0), u4(Nat._0))
+    assertEquals(hl4(Nat._1), u4(Nat._1))
+    assertEquals(hl4(Nat._2), u4(Nat._2))
+    
+    val hl5 = a :: a :: a :: a :: HNil
+    val u5 = hl5.unify
+    equalInferredTypes(hl5.length, u5.length)
+    equalInferredTypes(hl5(Nat._0), u5(Nat._0))
+    equalInferredTypes(hl5(Nat._1), u5(Nat._1))
+    equalInferredTypes(hl5(Nat._2), u5(Nat._2))
+    equalInferredTypes(hl5(Nat._3), u5(Nat._3))
+    assertEquals(hl5(Nat._0), u5(Nat._0))
+    assertEquals(hl5(Nat._1), u5(Nat._1))
+    assertEquals(hl5(Nat._2), u5(Nat._2))
+    assertEquals(hl5(Nat._3), u5(Nat._3))
+
+    // Non uniform hlists
+
+    val hl6 = a :: p :: HNil
+    val l6 = a :: p :: Nil // Checking that unify gives the same LUB as when one gives scalac a standard list
+    val u6 = hl6.unify
+    equalInferredTypes(hl6.length, u6.length)
+    equalInferredTypes(l6.head, u6(Nat._0))
+    equalInferredTypes(l6.head, u6(Nat._1))
+    assertEquals(hl6(Nat._0), u6(Nat._0))
+    assertEquals(hl6(Nat._1), u6(Nat._1))
+    
+    val hl7 = a :: f :: HNil
+    val l7 = a :: f :: Nil
+    val u7 = hl7.unify
+    equalInferredTypes(hl7.length, u7.length)
+    equalInferredTypes(l7.head, u7(Nat._0))
+    equalInferredTypes(l7.head, u7(Nat._1))
+    assertEquals(hl7(Nat._0), u7(Nat._0))
+    assertEquals(hl7(Nat._1), u7(Nat._1))
+    
+    val hl8 = f :: a :: HNil
+    val l8 = f :: a :: Nil
+    val u8 = hl8.unify
+    equalInferredTypes(hl8.length, u8.length)
+    equalInferredTypes(l8.head, u8(Nat._0))
+    equalInferredTypes(l8.head, u8(Nat._1))
+    assertEquals(hl8(Nat._0), u8(Nat._0))
+    assertEquals(hl8(Nat._1), u8(Nat._1))
+    
+    val hl9a = a :: f :: HNil
+    val l9a = a :: f :: Nil
+    val u9a = hl9a.unify
+    equalInferredTypes(hl9a.length, u9a.length)
+    equalInferredTypes(l9a.head, u9a(Nat._0))
+    equalInferredTypes(l9a.head, u9a(Nat._1))
+    assertEquals(hl9a(Nat._0), u9a(Nat._0))
+    assertEquals(hl9a(Nat._1), u9a(Nat._1))
+    
+    val hl9b = a :: p :: HNil
+    val l9b = a :: p :: Nil
+    val u9b = hl9b.unify
+    equalInferredTypes(hl9b.length, u9b.length)
+    equalInferredTypes(l9b.head, u9b(Nat._0))
+    equalInferredTypes(l9b.head, u9b(Nat._1))
+    assertEquals(hl9b(Nat._0), u9b(Nat._0))
+    assertEquals(hl9b(Nat._1), u9b(Nat._1))
+    
+    val apapUnified = apap.unify
+    equalInferredTypes(apap.length, apapUnified.length)
+    equalInferredTypes(apapList.head, apapUnified(Nat._0))
+    equalInferredTypes(apapList.head, apapUnified(Nat._1))
+    equalInferredTypes(apapList.head, apapUnified(Nat._2))
+    equalInferredTypes(apapList.head, apapUnified(Nat._3))
+    assertEquals(apap(Nat._0), apapUnified(Nat._0))
+    assertEquals(apap(Nat._1), apapUnified(Nat._1))
+    assertEquals(apap(Nat._2), apapUnified(Nat._2))
+    assertEquals(apap(Nat._3), apapUnified(Nat._3))
+    typed[FFFF](apapUnified)
+
+    val apapUnunified1 = apapUnified.cast[APAP]
+    assertTrue(apapUnunified1.isDefined)
+    typed[APAP](apapUnunified1.get)
+    val apapUnunified2 = apapUnified.cast[APBP]
+    assertFalse(apapUnunified2.isDefined)
+    typed[Option[APBP]](apapUnunified2)
+
+    val apbpUnified = apbp.unify
+    equalInferredTypes(apbp.length, apbpUnified.length)
+    equalInferredTypes(apbpList.head, apbpUnified(Nat._0))
+    equalInferredTypes(apbpList.head, apbpUnified(Nat._1))
+    equalInferredTypes(apbpList.head, apbpUnified(Nat._2))
+    equalInferredTypes(apbpList.head, apbpUnified(Nat._3))
+    assertEquals(apbp(Nat._0), apbpUnified(Nat._0))
+    assertEquals(apbp(Nat._1), apbpUnified(Nat._1))
+    assertEquals(apbp(Nat._2), apbpUnified(Nat._2))
+    assertEquals(apbp(Nat._3), apbpUnified(Nat._3))
+    
     
     val invar1 = Set(23) :: Set("foo") :: HNil
+    // val linvar1 = Set(23) :: Set("foo") :: Nil
     val uinvar1 = invar1.unify
-    typed[Set[_ >: Int with String] :: Set[_ >: Int with String] :: HNil](uinvar1)
+    equalInferredTypes(invar1.length, uinvar1.length)
+    // scalac complains that it
+    //   Cannot prove that scala.collection.immutable.Set[_16] =:= scala.collection.immutable.Set[_19]
+    // equalInferredTypes(linvar1.head, uinvar1(Nat._0))
+    // equalInferredTypes(linvar1.head, uinvar1(Nat._1))
+    equalInferredTypes(invar1.length, uinvar1.length)
+    assertEquals(invar1(Nat._0), uinvar1(Nat._0))
+    assertEquals(invar1(Nat._1), uinvar1(Nat._1))
+    // These do not really test unification as they also pass for invar1... 
+    typed[Set[_ >: Int with String]](uinvar1(Nat._0))
+    typed[Set[_ >: Int with String]](uinvar1(Nat._1))
 
-    // Unifying three or more elements which have an invariant outer type constructor and differing type
-    // arguments fails, presumably due to a failure to compute a sensble LUB.
-    //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
-    //val uinvar2 = invar.unify
+    val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
+    // val linvar2 = Set(23) :: Set("foo") :: Set(true) :: Nil
+    val uinvar2 = invar2.unify
+    // Same compiler error as above
+    // equalInferredTypes(linvar2.head, uinvar2(Nat._0))
+    // equalInferredTypes(linvar2.head, uinvar2(Nat._1))
+    // equalInferredTypes(linvar2.head, uinvar2(Nat._2))
+    equalInferredTypes(invar2.length, uinvar2.length)
+    assertEquals(invar2(Nat._0), uinvar2(Nat._0))
+    assertEquals(invar2(Nat._1), uinvar2(Nat._1))
+    assertEquals(invar2(Nat._2), uinvar2(Nat._2))
+    // Same remark as above
+    typed[Set[_ >: Int with String with Boolean]](uinvar2(Nat._0))
+    typed[Set[_ >: Int with String with Boolean]](uinvar2(Nat._1))
+    typed[Set[_ >: Int with String with Boolean]](uinvar2(Nat._2))
+    
+    val cicscicicdUnified = cicscicicd.unify
+    equalInferredTypes(cicscicicd.length, cicscicicdUnified.length)
+    equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._0))
+    equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._1))
+    equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._2))
+    equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._3))
+    equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._4))
+    assertEquals(cicscicicd(Nat._0), cicscicicdUnified(Nat._0))
+    assertEquals(cicscicicd(Nat._1), cicscicicdUnified(Nat._1))
+    assertEquals(cicscicicd(Nat._2), cicscicicdUnified(Nat._2))
+    assertEquals(cicscicicd(Nat._3), cicscicicdUnified(Nat._3))
+    assertEquals(cicscicicd(Nat._4), cicscicicdUnified(Nat._4))
+    // Same remark as above
+    typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._0))
+    typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._1))
+    typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._2))
+    typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._3))
+    typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._4))
+
+    val mimsmimimdUnified = mimsmimimd.unify
+    equalInferredTypes(mimsmimimd.length, mimsmimimdUnified.length)
+    // Same compiler error as above
+    // equalInferredTypes(mimsmimimdList.head, mimsmimimdUnified(Nat._0))
+    // equalInferredTypes(mimsmimimdList.head, mimsmimimdUnified(Nat._1))
+    // equalInferredTypes(mimsmimimdList.head, mimsmimimdUnified(Nat._2))
+    // equalInferredTypes(mimsmimimdList.head, mimsmimimdUnified(Nat._3))
+    // equalInferredTypes(mimsmimimdList.head, mimsmimimdUnified(Nat._4))
+    assertEquals(mimsmimimd(Nat._0), mimsmimimdUnified(Nat._0))
+    assertEquals(mimsmimimd(Nat._1), mimsmimimdUnified(Nat._1))
+    assertEquals(mimsmimimd(Nat._2), mimsmimimdUnified(Nat._2))
+    assertEquals(mimsmimimd(Nat._3), mimsmimimdUnified(Nat._3))
+    assertEquals(mimsmimimd(Nat._4), mimsmimimdUnified(Nat._4))
+    // Same remark as above
+    typed[M[_ >: Int with String with Double]](mimsmimimdUnified(Nat._0))
+    typed[M[_ >: Int with String with Double]](mimsmimimdUnified(Nat._1))
+    typed[M[_ >: Int with String with Double]](mimsmimimdUnified(Nat._2))
+    typed[M[_ >: Int with String with Double]](mimsmimimdUnified(Nat._3))
+    typed[M[_ >: Int with String with Double]](mimsmimimdUnified(Nat._4))
+    
+    val mimsmimemdUnified = mimsmimemd.unify
+    equalInferredTypes(mimsmimemd.length, mimsmimemdUnified.length)
+    // Same compiler error as above
+    // equalInferredTypes(mimsmimemdList.head, mimsmimemdUnified(Nat._0))
+    // equalInferredTypes(mimsmimemdList.head, mimsmimemdUnified(Nat._1))
+    // equalInferredTypes(mimsmimemdList.head, mimsmimemdUnified(Nat._2))
+    // equalInferredTypes(mimsmimemdList.head, mimsmimemdUnified(Nat._3))
+    // equalInferredTypes(mimsmimemdList.head, mimsmimemdUnified(Nat._4))
+    assertEquals(mimsmimemd(Nat._0), mimsmimemdUnified(Nat._0))
+    assertEquals(mimsmimemd(Nat._1), mimsmimemdUnified(Nat._1))
+    assertEquals(mimsmimemd(Nat._2), mimsmimemdUnified(Nat._2))
+    assertEquals(mimsmimemd(Nat._3), mimsmimemdUnified(Nat._3))
+    assertEquals(mimsmimemd(Nat._4), mimsmimemdUnified(Nat._4))
+    // Same remark as above
+    typed[M[_]](mimsmimemdUnified(Nat._0))
+    typed[M[_]](mimsmimemdUnified(Nat._1))
+    typed[M[_]](mimsmimemdUnified(Nat._2))
+    typed[M[_]](mimsmimemdUnified(Nat._3))
+    typed[M[_]](mimsmimemdUnified(Nat._4))
+    
+    val m2im2sm2im2im2dUnified = m2im2sm2im2im2d.unify
+    equalInferredTypes(m2im2sm2im2im2d.length, m2im2sm2im2im2dUnified.length)
+    // Same compiler error as above
+    // equalInferredTypes(m2im2sm2im2im2dList.head, m2im2sm2im2im2dUnified(Nat._0))
+    // equalInferredTypes(m2im2sm2im2im2dList.head, m2im2sm2im2im2dUnified(Nat._1))
+    // equalInferredTypes(m2im2sm2im2im2dList.head, m2im2sm2im2im2dUnified(Nat._2))
+    // equalInferredTypes(m2im2sm2im2im2dList.head, m2im2sm2im2im2dUnified(Nat._3))
+    // equalInferredTypes(m2im2sm2im2im2dList.head, m2im2sm2im2im2dUnified(Nat._4))
+    assertEquals(m2im2sm2im2im2d(Nat._0), m2im2sm2im2im2dUnified(Nat._0))
+    assertEquals(m2im2sm2im2im2d(Nat._1), m2im2sm2im2im2dUnified(Nat._1))
+    assertEquals(m2im2sm2im2im2d(Nat._2), m2im2sm2im2im2dUnified(Nat._2))
+    assertEquals(m2im2sm2im2im2d(Nat._3), m2im2sm2im2im2dUnified(Nat._3))
+    assertEquals(m2im2sm2im2im2d(Nat._4), m2im2sm2im2im2dUnified(Nat._4))
+    // Same remark as above
+    typed[M2[_ >: Int with String with Double, Unit]](m2im2sm2im2im2dUnified(Nat._0))
+    typed[M2[_ >: Int with String with Double, Unit]](m2im2sm2im2im2dUnified(Nat._1))
+    typed[M2[_ >: Int with String with Double, Unit]](m2im2sm2im2im2dUnified(Nat._2))
+    typed[M2[_ >: Int with String with Double, Unit]](m2im2sm2im2im2dUnified(Nat._3))
+    typed[M2[_ >: Int with String with Double, Unit]](m2im2sm2im2im2dUnified(Nat._4))
+    
+    val m2eim2esm2eim2eem2edUnified = m2eim2esm2eim2eem2ed.unify
+    equalInferredTypes(m2eim2esm2eim2eem2ed.length, m2eim2esm2eim2eem2edUnified.length)
+    // Same compiler error as above
+    // equalInferredTypes(m2eim2esm2eim2eem2edList.head, m2eim2esm2eim2eem2edUnified(Nat._0))
+    // equalInferredTypes(m2eim2esm2eim2eem2edList.head, m2eim2esm2eim2eem2edUnified(Nat._1))
+    // equalInferredTypes(m2eim2esm2eim2eem2edList.head, m2eim2esm2eim2eem2edUnified(Nat._2))
+    // equalInferredTypes(m2eim2esm2eim2eem2edList.head, m2eim2esm2eim2eem2edUnified(Nat._3))
+    // equalInferredTypes(m2eim2esm2eim2eem2edList.head, m2eim2esm2eim2eem2edUnified(Nat._4))
+    assertEquals(m2eim2esm2eim2eem2ed(Nat._0), m2eim2esm2eim2eem2edUnified(Nat._0))
+    assertEquals(m2eim2esm2eim2eem2ed(Nat._1), m2eim2esm2eim2eem2edUnified(Nat._1))
+    assertEquals(m2eim2esm2eim2eem2ed(Nat._2), m2eim2esm2eim2eem2edUnified(Nat._2))
+    assertEquals(m2eim2esm2eim2eem2ed(Nat._3), m2eim2esm2eim2eem2edUnified(Nat._3))
+    assertEquals(m2eim2esm2eim2eem2ed(Nat._4), m2eim2esm2eim2eem2edUnified(Nat._4))
+    // Same remark as above
+    typed[M2[_ >: Int with String with Double, _]](m2eim2esm2eim2eem2edUnified(Nat._0))
+    typed[M2[_ >: Int with String with Double, _]](m2eim2esm2eim2eem2edUnified(Nat._1))
+    typed[M2[_ >: Int with String with Double, _]](m2eim2esm2eim2eem2edUnified(Nat._2))
+    typed[M2[_ >: Int with String with Double, _]](m2eim2esm2eim2eem2edUnified(Nat._3))
+    typed[M2[_ >: Int with String with Double, _]](m2eim2esm2eim2eem2edUnified(Nat._4))
   }
 
   @Test

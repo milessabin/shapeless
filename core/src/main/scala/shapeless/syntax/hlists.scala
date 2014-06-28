@@ -410,7 +410,7 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns an `HList` typed as a repetition of the least upper bound of the types of the elements of this `HList`.
    */
-  def unify(implicit unifier : Unifier[L]) : unifier.Out = unifier(l)
+  def unify[Lub, N <: Nat](implicit toSized : ToSized[L, Lub, N, List], uhl : ops.sized.ToHList[List[Lub], N]) : uhl.Out  = uhl(toSized(l))
 
   /**
    * Returns an `HList` with all elements that are subtypes of `B` typed as `B`.
@@ -444,6 +444,17 @@ final class HListOps[L <: HList](l : L) {
    * of this `HList`.
    */
   def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
+  
+
+  case class HListSizedBuilder[M[+_]]() {
+    def apply[Lub, N <: Nat]()(implicit toSized : ToSized[L, Lub, N, M]) : Sized[M[Lub], N] = toSized(l)
+  }
+  
+  /**
+   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * of this `HList`.
+   */
+  def toSized[M[+_]] : HListSizedBuilder[M] = HListSizedBuilder[M]()
   
   /**
    * Converts this `HList` to an `Array` of elements typed as the least upper bound of the types of the elements

@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import poly._
 
+import scala.collection.GenTraversableLike
+import scala.collection.generic.CanBuildFrom
+
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -245,7 +248,7 @@ object hlist {
 
     import shapeless.nat._
     type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
-    implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
+    implicit def hnilLength[L <: HNil]: Aux[L, _0] = new Length[L] {
       type Out = _0
       def apply(): Out = _0
     }
@@ -459,37 +462,6 @@ object hlist {
   }
 
   /**
-   * Type class supporting unification of this `HList`. 
-   * 
-   * @author Miles Sabin
-   */
-  trait Unifier[L <: HList] extends DepFn1[L] { type Out <: HList }
-
-  object Unifier {
-    def apply[L <: HList](implicit unifier: Unifier[L]): Aux[L, unifier.Out] = unifier
-
-    type Aux[L <: HList, Out0 <: HList] = Unifier[L] { type Out = Out0 }
-
-    implicit val hnilUnifier: Aux[HNil, HNil] = new Unifier[HNil] {
-      type Out = HNil
-      def apply(l : HNil): Out = l
-    }
-    
-    implicit def hsingleUnifier[T]: Aux[T :: HNil, T :: HNil] =
-      new Unifier[T :: HNil] {
-        type Out = T :: HNil
-        def apply(l : T :: HNil): Out = l
-      }
-    
-    implicit def hlistUnifier[H1, H2, L, T <: HList]
-      (implicit u : Lub[H1, H2, L], lt : Unifier[L :: T]): Aux[H1 :: H2 :: T, L :: lt.Out] =
-        new Unifier[H1 :: H2 :: T] {
-          type Out = L :: lt.Out
-          def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
-        }
-  }
-
-  /**
    * Type class supporting unification of all elements that are subtypes of `B` in this `HList` to `B`, with all other
    * elements left unchanged.
    * 
@@ -547,6 +519,40 @@ object hlist {
         new ToList[H :: T, L] {
           type Out = List[L]
           def apply(l : H :: T) = u.left(l.head) :: ttl(l.tail).map(u.right)
+        }
+  }
+
+  /**
+   * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToSized[L <: HList, +Lub, N <: Nat, M[+_]] {
+    def apply(l: L): Sized[M[Lub], N]
+  }
+
+  object ToSized {
+    def apply[L <: HList, Lub, N <: Nat, M[+_]](implicit toSized: ToSized[L, Lub, N, M]) = toSized
+    
+    implicit def hnilToSized[L <: HNil, M[+_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : ToSized[L, Nothing, Nat._0, M] =
+        new ToSized[L, Nothing, Nat._0, M] {
+          type Out = Sized[M[Nothing], Nat._0]
+          def apply(l : L) = Sized[M]()
+        }
+
+    implicit def hconsToSized[H, T <: HList, LT, L, N <: Nat, M[+_]]
+      (implicit
+        tts  : ToSized[T, LT, N, M],
+        u    : Lub[H, LT, L],
+        ttvs : M[LT] => GenTraversableLike[LT, M[LT]],  // ttvs and tcbf are required for the call to map below
+        tcbf : CanBuildFrom[M[LT], L, M[L]],
+        tvs  : M[L] => GenTraversableLike[L, M[L]],     // tvs and cbf are required for the call to +: below
+        cbf  : CanBuildFrom[M[L], L, M[L]]): ToSized[H :: T, L, Succ[N], M] =
+        new ToSized[H :: T, L, Succ[N], M] {
+          type Out = Sized[M[L], Succ[N]]
+          def apply(l : H :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
         }
   }
 
