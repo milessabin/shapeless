@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import poly._
 
+import scala.collection.GenTraversableLike
+import scala.collection.generic.CanBuildFrom
+
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -245,7 +248,7 @@ object hlist {
 
     import shapeless.nat._
     type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
-    implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
+    implicit def hnilLength[L <: HNil]: Aux[L, _0] = new Length[L] {
       type Out = _0
       def apply(): Out = _0
     }
@@ -604,6 +607,55 @@ object hlist {
             arr(i) = u.left(l.head)
             arr
           }
+      }
+  }
+
+  /**
+   * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToSized[L <: HList, M[_]] extends DepFn1[L] {
+    type Lub
+    type N <: Nat
+    type Out = Sized[M[Lub], N]
+    def apply(l: L): Out
+  }
+
+  object ToSized {
+    def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]) = toSized
+    
+    type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
+    
+    implicit def hnilToSized[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+        new ToSized[L, M] {
+          type Lub = Nothing
+          type N = Nat._0
+          def apply(l : L) = Sized[M]()
+        }
+
+    implicit def hsingleToSized[T, M[_]]
+    (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T, Nat._1] =
+      new ToSized[T :: HNil, M] {
+        type Lub = T
+        type N = Nat._1
+        def apply(l : T :: HNil) = Sized[M](l.head)
+      }
+
+    implicit def hlistToSized[H1, H2, T <: HList, LT, L, N0 <: Nat, M[_]]
+      (implicit
+       tts  : Aux[H2 :: T, M, LT, N0],
+       u    : Lub[H1, LT, L],
+       tvs2 : M[LT] => GenTraversableLike[LT, M[LT]], // tvs2 and tcbf are required for the call to map below 
+       tcbf : CanBuildFrom[M[LT], L, M[L]],
+       tvs  : M[L] => GenTraversableLike[L, M[L]], // tvs and cbf are required for the call to +: below
+       cbf  : CanBuildFrom[M[L], L, M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
+        new ToSized[H1 :: H2 :: T, M] {
+          type Lub = L
+          type N = Succ[N0]
+          def apply(l : H1 :: H2 :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
         }
   }
 
