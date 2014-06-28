@@ -554,54 +554,29 @@ object hlist {
    * Type class supporting conversion of this `HList` to an `Array` with elements typed as the least upper bound
    * of the types of the elements of this `HList`.
    * 
-   * @author Miles Sabin
+   * @author Miles Sabin, Alexandre Archambault
    */
-  trait ToArray[-L <: HList, Lub] {
-    def apply(len : Int, l : L, i : Int) : Array[Lub]
+  trait ToArray[L <: HList, +Lub] {
+    import scala.reflect.ClassTag
+    def apply[T : ClassTag](len : Int, l : L, i : Int, f: Lub => T) : Array[T]
   }
 
-  trait LowPriorityToArray {
-    implicit def hlistToArrayAnyRef[L <: HList]: ToArray[L, Any] =
-      new ToArray[L, Any] {
-        def apply(len: Int, l : L, i : Int) : Array[Any] = {
-          val arr = Array[Any](len)
-          
-          @tailrec
-          def loop(l : HList, i: Int): Unit = l match {
-            case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
-            case _ =>
-          }
-          loop(l, 0)
-          arr
-        }
-      }
-  }
-
-  object ToArray extends LowPriorityToArray {
+  object ToArray {
     def apply[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
 
     import scala.reflect.ClassTag
     
-    implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] =
-      new ToArray[HNil, T] {
-        def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
+    implicit def hnilToArray[L <: HNil, Lub] : ToArray[L, Lub] =
+      new ToArray[L, Lub] {
+        def apply[T : ClassTag](len : Int, l : L, i : Int, f : Lub => T) = Array.ofDim[T](len)
       }
-    
-    implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] =
-      new ToArray[T :: HNil, T] {
-        def apply(len : Int, l : T :: HNil, i : Int) = {
-          val arr = Array.ofDim[T](len)
-          arr(i) = l.head
-          arr
-        }
-      }
-    
-    implicit def hlistToArray[H1, H2, T <: HList, L]
-      (implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]): ToArray[H1 :: H2 :: T, L] =
-        new ToArray[H1 :: H2 :: T, L] {
-          def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
-            val arr = tta(len, l.tail, i+1)
-            arr(i) = u.left(l.head)
+
+    implicit def hlistToArray[H, T <: HList, LT, L]
+      (implicit tta : ToArray[T, LT], u : Lub[H, LT, L]) : ToArray[H :: T, L] =
+        new ToArray[H :: T, L] {
+          def apply[LLub : ClassTag](len : Int, l : H :: T, i : Int, f : L => LLub) = {
+            val arr = tta[LLub](len, l.tail, i+1, f compose u.right) 
+            arr(i) = f(u.left(l.head))
             arr
           }
         }

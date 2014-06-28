@@ -18,6 +18,7 @@ package shapeless
 package syntax
 
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 /**
  * Carrier for `HList` operations.
@@ -453,7 +454,7 @@ final class HListOps[L <: HList](l : L) {
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
-  def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(runtimeLength, l, 0)
+  def toArray[Lub : ClassTag](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray[Lub](runtimeLength, l, 0, identity)
 
   /**
    * Converts this `HList` of values into a record with the provided keys.
