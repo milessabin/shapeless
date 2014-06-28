@@ -1024,4 +1024,56 @@ class TupleTests {
     val h = useHead((23, "foo", true))
     typed[Int](h)
   }
+
+  @Test
+  def collect {
+    import poly._
+
+    object empty extends Poly1
+
+    object complex extends Poly1 {
+      implicit val caseInt    = at[Int](_.toDouble)
+      implicit val caseString = at[String](_ => 1)
+    }
+
+    { // () collect p
+      val in: Unit = ()
+
+      val emptyResult = in.collect(empty)
+      typed[Unit](emptyResult)
+      assertEquals((), emptyResult)
+
+      val identityResult = in.collect(poly.identity)
+      typed[Unit](identityResult)
+      assertEquals((), identityResult)
+
+      val complexResult = in.collect(complex)
+      typed[Unit](complexResult)
+      assertEquals((), complexResult)
+    }
+
+    { // non-() collect empty
+      val in: (Int, String, Double) = (1, "foo", 2.2)
+
+      val result = in.collect(empty)
+      typed[Unit](result)
+      assertEquals((), result)
+    }
+
+    { // t collect identity
+      val in: (Int, String, Double) = (1, "foo", 2.2)
+
+      val result = in.collect(identity)
+      typed[(Int, String, Double)](result)
+      assertEquals(in, result)
+    }
+
+    { // t collect complex
+      val in: (Int, String, Double) = (1, "foo", 2.2)
+
+      val result = in.collect(complex)
+      typed[(Double, Int)](result)
+      assertEquals((1.0, 1), result)
+    }
+  }
 }

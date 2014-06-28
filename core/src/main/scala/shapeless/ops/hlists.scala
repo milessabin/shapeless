@@ -1583,4 +1583,43 @@ object hlist {
               field[wkh.T](v.head) :: zipWithKeys(k.tail, v.tail)
           }
   }
+
+  /**
+   * Type Class witnessing that an 'HList' can be collected with a 'Poly' to produce an 'HList'
+   *
+   * @author Stacy Curl
+   */
+  trait Collect[I <: HList, P <: Poly] extends DepFn1[I] { type Out <: HList }
+
+  object Collect extends LowPriorityCollect {
+    def apply[L <: HList, P <: Poly]
+      (implicit collect: Collect[L, P]): Aux[L, P, collect.Out] = collect
+
+    type Aux[L <: HList, P <: Poly, Out0 <: HList] = Collect[L, P] { type Out = Out0 }
+
+    implicit def hnilCollect[P <: Poly]: Aux[HNil, P, HNil] = new Collect[HNil, P] {
+      type Out = HNil
+
+      def apply(l: HNil): Out = HNil
+    }
+
+    implicit def hlistCollect[LH, LT <: HList, P <: Poly]
+      (implicit collect: Collect[LT, P], clr: Case1[P, LH])
+        : Aux[LH :: LT, P, clr.Result :: collect.Out] =
+          new Collect[LH :: LT, P] {
+            type Out = clr.Result :: collect.Out
+
+            def apply(l: LH :: LT): Out = clr(l.head) :: collect(l.tail)
+          }
+  }
+
+  trait LowPriorityCollect {
+    implicit def hlistNoPolyCase[LH, LT <: HList, P <: Poly]
+      (implicit collect: Collect[LT, P]): Collect.Aux[LH :: LT, P, collect.Out] =
+        new Collect[LH :: LT, P] {
+          type Out = collect.Out
+
+          def apply(l: LH :: LT): Out = collect(l.tail)
+        }
+  }
 }
