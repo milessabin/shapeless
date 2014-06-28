@@ -411,4 +411,9 @@ final class TupleOps[T](t: T) {
    * of this tuple.
    */
   def toSized[M[_]](implicit toSized : ToSized[T, M]) : toSized.Out = toSized(t)
+
+  /**
+   * Returns all permutations of this tuple.
+   */
+  def permutations(implicit permutations: Permutations[T]): permutations.Out = permutations(t)
 }
