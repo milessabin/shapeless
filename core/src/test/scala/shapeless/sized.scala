@@ -136,8 +136,12 @@ class SizedTests {
     val s = cl.get.size
     val evens = cl.get.filter(_ % 2 == 0)
     
+    illTyped("""
+    val Sized(cl1, cl2, cl3, cl4, cl5) = cl.get
+    """)
+
     val p = cl.get match {
-      case Sized(a, b, _*) => {
+      case Sized(a, b, _, _, _, _) => {
         typed[Int](a)
         typed[Int](b)
         (a-b, a+b)
