@@ -1724,4 +1724,79 @@ class HListTests {
       List(2 :: "abc" :: HNil, 1 :: "def" :: HNil, 2 :: "def" :: HNil, 1 :: "abc" :: HNil).sorted
     )
   }
+
+  @Test
+  def testMapCons {
+    assertEquals(HNil, (HNil: HNil).mapCons('a'))
+
+    assertEquals((('a' :: HNil) :: HNil), (HNil :: HNil).mapCons('a'))
+
+    assertEquals(
+      ('a' :: 1 :: HNil) :: ('a' :: "foo" :: HNil) :: ('a' :: 2.0 :: HNil) :: HNil,
+      ((1 :: HNil) :: ("foo" :: HNil) :: (2.0 :: HNil) :: HNil).mapCons('a')
+    )
+  }
+
+  @Test
+  def testInterleave {
+    assertEquals(('i' :: HNil) :: HNil, Interleave[Char, HNil].apply('i', HNil))
+
+    assertEquals(('i' :: 1 :: HNil) :: (1 :: 'i' :: HNil) :: HNil,
+      Interleave[Char, Int :: HNil].apply('i', 1 :: HNil)
+    )
+
+    assertEquals(
+      ('i' :: 1 :: "foo" :: HNil) ::
+      (1 :: 'i' :: "foo" :: HNil) ::
+      (1 :: "foo" :: 'i' :: HNil) :: HNil,
+      Interleave[Char, Int :: String :: HNil].apply('i', 1 :: "foo" :: HNil)
+    )
+
+    assertEquals(
+      ('i' :: 1 :: "foo" :: 2.0 :: HNil) ::
+      (1 :: 'i' :: "foo" :: 2.0 :: HNil) ::
+      (1 :: "foo" :: 'i' :: 2.0 :: HNil) ::
+      (1 :: "foo" :: 2.0 :: 'i' :: HNil) :: HNil,
+      Interleave[Char, Int :: String :: Double :: HNil].apply('i', 1 :: "foo" :: 2.0 :: HNil)
+    )
+  }
+
+  @Test
+  def testFlatMapInterleave {
+    assertEquals(HNil, FlatMapInterleave[Char, HNil].apply('i', HNil))
+
+    assertEquals(('i' :: HNil) :: HNil, FlatMapInterleave[Char, HNil :: HNil].apply('i', HNil :: HNil))
+
+    assertEquals(
+      ('i' :: 1 :: HNil) ::
+      (1 :: 'i' :: HNil) ::
+      ('i' :: 2 :: HNil) ::
+      (2 :: 'i' :: HNil) :: HNil,
+      FlatMapInterleave[Char, (Int :: HNil) :: (Int :: HNil) :: HNil]
+        .apply('i', (1 :: HNil) :: (2 :: HNil) :: HNil)
+    )
+  }
+
+  @Test
+  def testPermutations {
+    assertEquals(HNil :: HNil, HNil.permutations)
+
+    assertEquals((1 :: HNil) :: HNil, (1 :: HNil).permutations)
+
+    assertEquals(
+      (1 :: "foo" :: HNil) ::
+      ("foo" :: 1 :: HNil) :: HNil,
+      (1 :: "foo" :: HNil).permutations
+    )
+
+    assertEquals(
+      (1 :: "foo" :: 2.0 :: HNil) ::
+      ("foo" :: 1 :: 2.0 :: HNil) ::
+      ("foo" :: 2.0 :: 1 :: HNil) ::
+      (1 :: 2.0 :: "foo" :: HNil) ::
+      (2.0 :: 1 :: "foo" :: HNil) ::
+      (2.0 :: "foo" :: 1 :: HNil) :: HNil,
+      (1 :: "foo" :: 2.0 :: HNil).permutations
+    )
+  }
 }

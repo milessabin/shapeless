@@ -888,4 +888,26 @@ object tuple {
           def apply(t: T): tp.Out = tp(collect(gen.to(t)))
         }
   }
+
+  /**
+   * Typer class supporting the calculation of every permutation of this tuple
+   *
+   * @author Stacy Curl
+   */
+  trait Permutations[T] extends DepFn1[T]
+
+  object Permutations {
+    def apply[T](implicit permutations: Permutations[T]): Permutations[T] = permutations
+
+    type Aux[T, Out0] = Permutations[T] { type Out = Out0 }
+
+    implicit def permutations[T, L <: HList, L2 <: HList, L3 <: HList]
+      (implicit gen: Generic.Aux[T, L], collect: hl.Permutations.Aux[L, L2],
+        mapper: hl.Mapper.Aux[tupled.type, L2, L3], tp: hl.Tupler[L3]
+      ): Aux[T, tp.Out] = new Permutations[T] {
+        type Out = tp.Out
+
+        def apply(t: T): Out = tp(collect(gen.to(t)).map(tupled))
+      }
+  }
 }

@@ -1222,4 +1222,14 @@ class TupleTests {
       assertEquals((1.0, 1), result)
     }
   }
+
+  @Test
+  def testPermutations {
+    assertEquals(((1, "foo"), ("foo", 1)), (1, "foo").permutations)
+
+    assertEquals((
+      (1, "foo", 2.0), ("foo", 1, 2.0), ("foo", 2.0, 1),
+      (1, 2.0, "foo"), (2.0, 1, "foo"), (2.0, "foo", 1)
+    ), (1, "foo", 2.0).permutations)
+  }
 }
