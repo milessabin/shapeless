@@ -1712,4 +1712,16 @@ class HListTests {
       assertEquals(1.0 :: 1 :: HNil, result)
     }
   }
+
+  @Test
+  def testOrdering {
+    assertEquals(List(HNil: HNil, HNil), List(HNil: HNil, HNil).sorted)
+
+    assertEquals(List(1 :: HNil, 2 :: HNil, 3 :: HNil), List(2 :: HNil, 1 :: HNil, 3 :: HNil).sorted)
+
+    assertEquals(
+      List(1 :: "abc" :: HNil, 1 :: "def" :: HNil, 2 :: "abc" :: HNil, 2 :: "def" :: HNil),
+      List(2 :: "abc" :: HNil, 1 :: "def" :: HNil, 2 :: "def" :: HNil, 1 :: "abc" :: HNil).sorted
+    )
+  }
 }
