@@ -528,90 +528,6 @@ object hlist {
   }
 
   /**
-   * Type class supporting conversion of this `HList` to an ordinary `List` with elements typed as the least upper bound
-   * of the types of the elements of this `HList`.
-   * 
-   * @author Miles Sabin, Alexandre Archambault
-   */
-  trait ToList[L <: HList, +Lub] {
-    def apply(l: L): List[Lub]
-  }
-
-  object ToList {
-    def apply[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
-
-    implicit def hnilToList[L <: HNil]: ToList[L, Nothing] =
-      new ToList[L, Nothing] {
-        type Out = List[Nothing]
-        def apply(l : L) = Nil
-      }
-    
-    implicit def hlistToList[H, T <: HList, LT, L]
-      (implicit ttl : ToList[T, LT], u : Lub[H, LT, L]): ToList[H :: T, L] =
-        new ToList[H :: T, L] {
-          type Out = List[L]
-          def apply(l : H :: T) = u.left(l.head) :: ttl(l.tail).map(u.right)
-        }
-  }
-
-  /**
-   * Type class supporting conversion of this `HList` to an `Array` with elements typed as the least upper bound
-   * of the types of the elements of this `HList`.
-   * 
-   * @author Miles Sabin
-   */
-  trait ToArray[-L <: HList, Lub] {
-    def apply(len : Int, l : L, i : Int) : Array[Lub]
-  }
-
-  trait LowPriorityToArray {
-    implicit def hlistToArrayAnyRef[L <: HList]: ToArray[L, Any] =
-      new ToArray[L, Any] {
-        def apply(len: Int, l : L, i : Int) : Array[Any] = {
-          val arr = Array[Any](len)
-          
-          @tailrec
-          def loop(l : HList, i: Int): Unit = l match {
-            case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
-            case _ =>
-          }
-          loop(l, 0)
-          arr
-        }
-      }
-  }
-
-  object ToArray extends LowPriorityToArray {
-    def apply[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
-
-    import scala.reflect.ClassTag
-    
-    implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] =
-      new ToArray[HNil, T] {
-        def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
-      }
-    
-    implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] =
-      new ToArray[T :: HNil, T] {
-        def apply(len : Int, l : T :: HNil, i : Int) = {
-          val arr = Array.ofDim[T](len)
-          arr(i) = l.head
-          arr
-        }
-      }
-    
-    implicit def hlistToArray[H1, H2, T <: HList, L]
-      (implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]): ToArray[H1 :: H2 :: T, L] =
-        new ToArray[H1 :: H2 :: T, L] {
-          def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
-            val arr = tta(len, l.tail, i+1)
-            arr(i) = u.left(l.head)
-            arr
-        }
-      }
-  }
-
-  /**
    * Type class supporting conversion of this `HList` to a `M` with elements typed
    * as the least upper bound Lub of the types of the elements of this `HList`.
    *
@@ -666,6 +582,12 @@ object hlist {
           }
         }
   }
+
+  /**
+   * Type aliases provided for backward compatibility 
+   **/
+  type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
+  type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
 
   /**
    * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed

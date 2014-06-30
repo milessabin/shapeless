@@ -811,17 +811,20 @@ object tuple {
    *
    * @author Alexandre Archambault
    */
-  trait ToTraversable[T, M[_]] extends DepFn1[T]
+  trait ToTraversable[T, M[_]] extends DepFn1[T] {
+    type Lub
+    type Out = M[Lub]
+  }
 
   object ToTraversable {
     def apply[T, M[_]](implicit toTraversable: ToTraversable[T, M]) = toTraversable
 
-    type Aux[T, M[_], Out0] = ToTraversable[T, M] { type Out = Out0 }
+    type Aux[T, M[_], Lub0] = ToTraversable[T, M] { type Lub = Lub0 }
 
-    implicit def toTraversable[T, L <: HList, M[_]]
-      (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable[L, M]): Aux[T, M, toTraversable.Out] =
+    implicit def toTraversable[T, L <: HList, M[_], Lub]
+      (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable.Aux[L, M, Lub]): Aux[T, M, Lub] =
         new ToTraversable[T, M] {
-          type Out = toTraversable.Out
+          type Lub = toTraversable.Lub
           def apply(t: T) = gen.to(t).to[M]
         }
   }
@@ -830,20 +833,20 @@ object tuple {
    * Type class supporting conversion of this tuple to a `List` with elements typed as the least upper bound
    * of the types of the elements of this tuple.
    * 
+   * Provided for backward compatibility.
+   * 
    * @author Miles Sabin
    */
   trait ToList[T, Lub] extends DepFn1[T]
 
   object ToList {
-    def apply[T, Lub](implicit toList: ToList[T, Lub]) = toList
-
     type Aux[T, Lub, Out0] = ToList[T, Lub] { type Out = Out0 }
     
     implicit def toList[T, L <: HList, Lub]
-      (implicit gen: Generic.Aux[T, L], toList: hl.ToList[L, Lub]): Aux[T, Lub, List[Lub]] =
+      (implicit toTraversable: ToTraversable.Aux[T, List, Lub]): Aux[T, Lub, List[Lub]] =
         new ToList[T, Lub] {
           type Out = List[Lub]
-          def apply(t: T): Out = gen.to(t).toList[Lub]
+          def apply(t: T) = toTraversable(t)
         }
   }
 
@@ -851,20 +854,20 @@ object tuple {
    * Type class supporting conversion of this tuple to an `Array` with elements typed as the least upper bound
    * of the types of the elements of this tuple.
    * 
+   * Provided for backward compatibility.
+   *
    * @author Miles Sabin
    */
   trait ToArray[T, Lub] extends DepFn1[T]
 
   object ToArray {
-    def apply[T, Lub](implicit toArray: ToArray[T, Lub]) = toArray
-
     type Aux[T, Lub, Out0] = ToArray[T, Lub] { type Out = Out0 }
     
     implicit def toArray[T, L <: HList, Lub]
-      (implicit gen: Generic.Aux[T, L], toArray: hl.ToArray[L, Lub]): Aux[T, Lub, Array[Lub]] =
+      (implicit toTraversable: ToTraversable.Aux[T, Array, Lub]): Aux[T, Lub, Array[Lub]] =
         new ToArray[T, Lub] {
           type Out = Array[Lub]
-          def apply(t: T): Out = gen.to(t).toArray[Lub]
+          def apply(t: T) = toTraversable(t)
         }
   }
 
