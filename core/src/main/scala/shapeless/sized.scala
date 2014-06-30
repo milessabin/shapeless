@@ -138,6 +138,30 @@ class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, 
    * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
    */
   def toHList(implicit hl: ToHList[Repr, L]): hl.Out = hl(s)
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
+   * elements.
+   */
+  def at[N <: Nat](implicit at: At[Repr, L, N]) = at(s)
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
+   * elements.
+   */
+  def at(n: Nat)(implicit at: At[Repr, L, n.N]) = at(s)
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
+   * elements.
+   */
+  def apply[N <: Nat](implicit at: At[Repr, L, N]) = at(s)
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
+   * elements.
+   */
+  def apply(n: Nat)(implicit at: At[Repr, L, n.N]) = at(s)
 }
 
 trait LowPrioritySized {

@@ -357,4 +357,19 @@ class SizedTests {
     typed[M2[_ >: Double with Int with String, _]](hlM2eim2esm2eim2eem2ed(Nat._4))
     assertEquals(m2eim2esm2eim2eem2ed, hlM2eim2esm2eim2eem2ed)
   }
+
+  @Test
+  def testAt {
+    val ss = Sized[List](0, 1, 2)
+    // at[_0] equiv to head
+    assertEquals(ss.at[_0], ss.head)
+    assertEquals(ss[_0], ss.head)
+    assertEquals(ss.at(_0), ss.head)
+    assertEquals(ss.apply[_0], ss.head)
+
+    assertEquals(ss.at[_1], 1)
+    assertEquals(ss.at[_2], 2)
+    assertEquals(ss.apply(_1), 1)
+    assertEquals(ss.apply(_2), 2)
+  }
 }
