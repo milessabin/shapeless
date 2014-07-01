@@ -30,32 +30,4 @@ object sized {
           def apply(s: Sized[Repr, Succ[L]]) = s.head :: ts(s.tail)
         }
   }
-
-  /**
-   * Type class supporting access to the ''nth'' element of this `Sized`. Available only if this `Sized` has at least
-   * ''n'' elements. 
-   * 
-   * @author Owein Reese
-   */
-  trait At[Repr, L <: Nat, N <: Nat] extends DepFn1[Sized[Repr, L]]{
-    type Out = IsTraversableLike[Repr]#A
-  }
-
-  object At {
-    import nat._
-    import LT._
-
-    def apply[Repr, L <: Nat, N <: Nat](implicit at: At[Repr, L, N]) = at
-
-    implicit def sizedAt1[Repr, L <: Nat](implicit itl: IsTraversableLike[Repr], ev: _0 < L) =
-      new At[Repr, L, _0] {
-        def apply(s: Sized[Repr, L]) = s.head
-      }
-
-    implicit def sizedAt2[Repr, L <: Nat, N <: Nat]
-      (implicit at: At[Repr, L, N], itl: IsTraversableLike[Repr]) =
-        new At[Repr, Succ[L], Succ[N]] {
-          def apply(s: Sized[Repr, Succ[L]]) = at(s.tail)
-        }
-  }
 }
