@@ -361,15 +361,31 @@ class SizedTests {
   @Test
   def testAt {
     val ss = Sized[List](0, 1, 2)
-    // at[_0] equiv to head
-    assertEquals(ss.at[_0], ss.head)
-    assertEquals(ss[_0], ss.head)
-    assertEquals(ss.at(_0), ss.head)
-    assertEquals(ss.apply[_0], ss.head)
+    typed[Int](ss(0))
+    typed[Int](ss(1))
+    typed[Int](ss(2))
 
+    assertEquals(ss[_0], 0)
+    assertEquals(ss(0), 0)
+    assertEquals(ss.at[_0], 0)
+    assertEquals(ss.at(0), 0)
+
+    assertEquals(ss[_1], 1)
+    assertEquals(ss(1), 1)
     assertEquals(ss.at[_1], 1)
+    assertEquals(ss.at(1), 1)
+
+    assertEquals(ss[_2], 2)
+    assertEquals(ss(2), 2)
     assertEquals(ss.at[_2], 2)
-    assertEquals(ss.apply(_1), 1)
-    assertEquals(ss.apply(_2), 2)
+    assertEquals(ss.at(2), 2)
+
+    illTyped("""
+      ss(-1)
+    """)
+
+    illTyped("""
+      ss(3)
+    """)
   }
 }

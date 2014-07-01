@@ -36,51 +36,77 @@ final class Sized[+Repr, L <: Nat](val unsized : Repr) extends AnyVal
  * 
  * @author Miles Sabin
  */
-class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, Repr]) { outer =>
+class SizedOps[A0, Repr, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Repr] { type A = A0 }) { outer =>
   import nat._
   import ops.nat._
   import LT._
   import Sized.wrap
   import ops.sized._
+
+  private implicit def conv(repr: Repr): GenTraversableLike[A0, Repr] = itl.conversion(repr)
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
+   * elements.
+   */
+  def apply[N <: Nat](implicit diff: Diff[L, Succ[N]], ev: ToInt[N]): A0 = s.unsized.drop(toInt[N]).head
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
+   * elements.
+   */
+  def apply(n: Nat)(implicit diff: Diff[L, Succ[n.N]], ev: ToInt[n.N]): A0 = apply[n.N]
   
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
+   * elements.
+   */
+  def at[N <: Nat](implicit diff: Diff[L, Succ[N]], ev: ToInt[N]): A0 = apply[N]
+
+  /**
+   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
+   * elements.
+   */
+  def at(n: Nat)(implicit diff: Diff[L, Succ[n.N]], ev: ToInt[n.N]): A0 = apply[n.N]
+
   /**
    * Returns the head of this collection. Available only if there is evidence that this collection has at least one
    * element.
    */
-  def head(implicit ev : _0 < L) : A = r.head
+  def head(implicit ev : _0 < L) : A0 = s.unsized.head
   
   /**
    * Returns the tail of this collection. Available only if there is evidence that this collection has at least one
    * element.
    */
-  def tail(implicit pred : Pred[L]) = wrap[Repr, pred.Out](r.tail)
+  def tail(implicit pred : Pred[L]) = wrap[Repr, pred.Out](s.unsized.tail)
   
   /**
    * Returns the first ''m'' elements of this collection. An explicit type argument must be provided. Available only if
    * there is evidence that this collection has at least ''m'' elements. The resulting collection will be statically
    * known to have ''m'' elements.
    */
-  def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, M](r.take(toInt[M]))
+  def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, M](s.unsized.take(toInt[M]))
   
   /**
    * Returns the first ''m'' elements of this collection. Available only if there is evidence that this collection has
    * at least ''m'' elements. The resulting collection will be statically known to have ''m'' elements.
    */
-  def take(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, m.N](r.take(toInt[m.N]))
+  def take(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, m.N](s.unsized.take(toInt[m.N]))
 
   /**
    * Returns all but the  first ''m'' elements of this collection. An explicit type argument must be provided. Available
    * only if there is evidence that this collection has at least ''m'' elements. The resulting collection will be 
    * statically known to have ''m'' less elements than this collection.
    */
-  def drop[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, diff.Out](r.drop(toInt[M]))
+  def drop[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, diff.Out](s.unsized.drop(toInt[M]))
   
   /**
    * Returns all but the  first ''m'' elements of this collection. Available only if there is evidence that this
    * collection has at least ''m'' elements. The resulting collection will be statically known to have ''m'' less
    * elements than this collection.
    */
-  def drop(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, diff.Out](r.drop(toInt[m.N]))
+  def drop(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, diff.Out](s.unsized.drop(toInt[m.N]))
   
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. An explicit type argument
@@ -100,10 +126,10 @@ class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, 
    * Prepend the argument element to this collection. The resulting collection will be statically known to have a size
    * one greater than this collection.
    */
-  def +:(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) = {
-    val builder = cbf.apply(r.repr)
+  def +:(elem : A0)(implicit cbf : CanBuildFrom[Repr, A0, Repr]) = {
+    val builder = cbf.apply(s.unsized)
     builder += elem
-    builder ++= r.toIterator
+    builder ++= s.unsized.toIterator
     wrap[Repr, Succ[L]](builder.result)
   }
   
@@ -111,9 +137,9 @@ class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, 
    * Append the argument element to this collection. The resulting collection will be statically known to have a size
    * one greater than this collection.
    */
-   def :+(elem : A)(implicit cbf : CanBuildFrom[Repr, A, Repr]) = {
-    val builder = cbf.apply(r.repr)
-    builder ++= r.toIterator
+   def :+(elem : A0)(implicit cbf : CanBuildFrom[Repr, A0, Repr]) = {
+    val builder = cbf.apply(s.unsized)
+    builder ++= s.unsized.toIterator
     builder += elem
     wrap[Repr, Succ[L]](builder.result)
   }
@@ -122,46 +148,22 @@ class SizedOps[A, Repr, L <: Nat](s : Sized[Repr, L], r : GenTraversableLike[A, 
    * Append the argument collection to this collection. The resulting collection will be statically known to have
    * ''m+n'' elements.
    */
-  def ++[B >: A, That, M <: Nat](that : Sized[That, M])
+  def ++[B >: A0, That, M <: Nat](that : Sized[That, M])
     (implicit
       sum : Sum[L, M],
       cbf : CanBuildFrom[Repr, B, That],
-      convThat : That => GenTraversableLike[B, That]) = wrap[That, sum.Out](r ++ that.unsized)
+      convThat : That => GenTraversableLike[B, That]) = wrap[That, sum.Out](s.unsized ++ that.unsized)
     
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
    * as this collection.
    */
-  def map[B, That](f : A => B)(implicit cbf : CanBuildFrom[Repr, B, That]) = wrap[That, L](r map f)
+  def map[B, That](f : A0 => B)(implicit cbf : CanBuildFrom[Repr, B, That]) = wrap[That, L](s.unsized map f)
 
   /**
    * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
    */
   def toHList(implicit hl: ToHList[Repr, L]): hl.Out = hl(s)
-
-  /**
-   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
-   * elements.
-   */
-  def at[N <: Nat](implicit at: At[Repr, L, N]) = at(s)
-
-  /**
-   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
-   * elements.
-   */
-  def at(n: Nat)(implicit at: At[Repr, L, n.N]) = at(s)
-
-  /**
-   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
-   * elements.
-   */
-  def apply[N <: Nat](implicit at: At[Repr, L, N]) = at(s)
-
-  /**
-   * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `SIzed` has at least ''n''
-   * elements.
-   */
-  def apply(n: Nat)(implicit at: At[Repr, L, n.N]) = at(s)
 }
 
 trait LowPrioritySized {
@@ -171,7 +173,7 @@ trait LowPrioritySized {
 object Sized extends LowPrioritySized {
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
     (implicit itl: IsTraversableLike[Repr]): SizedOps[itl.A, Repr, L] =
-      new SizedOps[itl.A, Repr, L](s, itl.conversion(s.unsized))
+      new SizedOps[itl.A, Repr, L](s, itl)
   
   def apply[CC[_]] = new SizedBuilder[CC]
   
