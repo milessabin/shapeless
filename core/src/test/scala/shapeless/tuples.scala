@@ -71,6 +71,50 @@ class TupleTests {
   val bp : BP = (b, p)
   val apap : APAP = (a, p, a, p)
   val apbp : APBP = (a, p, b, p)
+  val apapList = List(a, p, a, p)
+  val apbpList = List(a, p, b, p)
+  val apapArray = Array(a, p, a, p)
+  val apbpArray = Array(a, p, b, p)
+
+  trait Ctv[-T]
+
+  val ci: Ctv[Int] = new Ctv[Int] {}
+  val cs: Ctv[String] = new Ctv[String] {}
+  val cd: Ctv[Double] = new Ctv[Double] {}
+  val cicscicicdList = List(ci, cs, ci, ci, cd)
+  val cicscicicdArray = Array(ci, cs, ci, ci, cd)
+  val cicscicicd = (ci, cs, ci, ci, cd)
+
+  trait M[T]
+
+  val mi: M[Int] = new M[Int] {}
+  val ms: M[String] = new M[String] {}
+  val md: M[Double] = new M[Double] {}
+  val mimsmimimdList = List(mi, ms, mi, mi, md)
+  val mimsmimimdArray = Array(mi, ms, mi, mi, md)
+  val mimsmimimd = (mi, ms, mi, mi, md)
+
+  import language.existentials
+  val mExist: M[_] = new M[Double] {}
+  val mimsmimemdList = List(mi, ms, mi, mExist, md)
+  val mimsmimemdArray = Array[M[_]](mi, ms, mi, mExist, md)  
+  val mimsmimemd = (mi, ms, mi, mExist, md)
+
+  trait M2[A,B]
+
+  val m2i: M2[Int, Unit] = new M2[Int, Unit] {}
+  val m2s: M2[String, Unit] = new M2[String, Unit] {}
+  val m2d: M2[Double, Unit] = new M2[Double, Unit] {}
+  val m2im2sm2im2im2dList = List(m2i, m2s, m2i, m2i, m2d)
+  val m2im2sm2im2im2dArray = Array(m2i, m2s, m2i, m2i, m2d)
+  val m2im2sm2im2im2d = (m2i, m2s, m2i, m2i, m2d)
+
+  val m2iExist: M2[Int, _] = new M2[Int, Unit] {}
+  val m2sExist: M2[String, _] = new M2[String, Unit] {}
+  val m2dExist: M2[Double, _] = new M2[Double, Unit] {}
+  val m2eim2esm2eim2eem2edList = List(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
+  val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
+  val m2eim2esm2eim2eem2ed = (m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
 
   object mkString extends (Any -> String)(_.toString)
   object fruit extends (Fruit -> Fruit)(f => f)
@@ -224,6 +268,108 @@ class TupleTests {
     val pabp = ap reverse_::: bp
     typed[PABP](pabp)
     assertEquals((p, a, b, p), pabp)
+  }
+
+  @Test
+  def testToSizedList {
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val unit = ()
+    val sunit = unit.toSized[List]
+    assertEquals(0, sunit.length)
+    val expectedUnsized = List.empty[Nothing]
+    equalInferredTypes(expectedUnsized, sunit.unsized)
+    assertEquals(expectedUnsized, sunit.unsized)
+
+    val sizedApap = apap.toSized[List]
+    assertEquals(Nat toInt apap.length, sizedApap.length)
+    equalInferredTypes(apapList, sizedApap.unsized)
+    assertEquals(apapList, sizedApap.unsized)
+
+    val sizedApbp = apbp.toSized[List]
+    assertEquals(Nat toInt apbp.length, sizedApbp.length)
+    equalInferredTypes(apbpList, sizedApbp.unsized)
+    assertEquals(apbpList, sizedApbp.unsized)
+
+    val sizedCicscicicd = cicscicicd.toSized[List]
+    assertEquals(Nat toInt cicscicicd.length, sizedCicscicicd.length)
+    equalInferredTypes(cicscicicdList, sizedCicscicicd.unsized)
+    assertEquals(cicscicicdList, sizedCicscicicd.unsized)
+
+    val sizedMimsmimimd = mimsmimimd.toSized[List]
+    assertEquals(Nat toInt mimsmimimd.length, sizedMimsmimimd.length)
+    equalInferredTypes(mimsmimimdList, sizedMimsmimimd.unsized)
+    assertEquals(mimsmimimdList, sizedMimsmimimd.unsized)
+
+    val sizedMimsmimemd = mimsmimemd.toSized[List]
+    assertEquals(Nat toInt mimsmimemd.length, sizedMimsmimemd.length)
+    // equalInferredTypes(mimsmimemdList, sizedMimsmimemd.unsized)
+    typed[List[M[_]]](sizedMimsmimemd.unsized)
+    assertEquals(mimsmimemdList, sizedMimsmimemd.unsized)
+
+    val sizedM2im2sm2im2im2d = m2im2sm2im2im2d.toSized[List]
+    assertEquals(Nat toInt m2im2sm2im2im2d.length, sizedM2im2sm2im2im2d.length)
+    equalInferredTypes(m2im2sm2im2im2dList, sizedM2im2sm2im2im2d.unsized)
+    assertEquals(m2im2sm2im2im2dList, sizedM2im2sm2im2im2d.unsized)
+
+    val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]
+    assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
+    // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[List[M2[_ >: Double with Int with String, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    assertEquals(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+  }
+
+  @Test
+  def testToSizedArray {
+    def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    val unit = ()
+    val snil = unit.toSized[Array]
+    assertEquals(Nat toInt unit.length, snil.length)
+    val expectedUnsized = Array.empty[Nothing]
+    equalInferredTypes(expectedUnsized, snil.unsized)
+    assertArrayEquals2(expectedUnsized, snil.unsized)
+
+    val sizedApap = apap.toSized[Array]
+    assertEquals(Nat toInt apap.length, sizedApap.length)
+    equalInferredTypes(apapArray, sizedApap.unsized)
+    assertArrayEquals2(apapArray, sizedApap.unsized)
+
+    val sizedApbp = apbp.toSized[Array]
+    assertEquals(Nat toInt apbp.length, sizedApbp.length)
+    equalInferredTypes(apbpArray, sizedApbp.unsized)
+    assertArrayEquals2(apbpArray, sizedApbp.unsized)
+
+    val sizedCicscicicd = cicscicicd.toSized[Array]
+    assertEquals(Nat toInt cicscicicd.length, sizedCicscicicd.length)
+    equalInferredTypes(cicscicicdArray, sizedCicscicicd.unsized)
+    assertArrayEquals2(cicscicicdArray, sizedCicscicicd.unsized)
+
+    val sizedMimsmimimd = mimsmimimd.toSized[Array]
+    assertEquals(Nat toInt mimsmimimd.length, sizedMimsmimimd.length)
+    equalInferredTypes(mimsmimimdArray, sizedMimsmimimd.unsized)
+    assertArrayEquals2(mimsmimimdArray, sizedMimsmimimd.unsized)
+
+    val sizedMimsmimemd = mimsmimemd.toSized[Array]
+    assertEquals(Nat toInt mimsmimemd.length, sizedMimsmimemd.length)
+    // equalInferredTypes(mimsmimemdArray, sizedMimsmimemd.unsized)
+    // typed[Array[M[_]]](sizedMimsmimemd.unsized)
+    // The line above compiles when mimsmimemd is an HList, not when it it a tuple...
+    assertArrayEquals2(mimsmimemdArray.map(x => x: Any), sizedMimsmimemd.unsized.map(x => x: Any))
+
+    val sizedM2im2sm2im2im2d = m2im2sm2im2im2d.toSized[Array]
+    assertEquals(Nat toInt m2im2sm2im2im2d.length, sizedM2im2sm2im2im2d.length)
+    equalInferredTypes(m2im2sm2im2im2dArray, sizedM2im2sm2im2im2d.unsized)
+    assertArrayEquals2(m2im2sm2im2im2dArray, sizedM2im2sm2im2im2d.unsized)
+
+    val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[Array]
+    assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
+    // equalInferredTypes(m2eim2esm2eim2eem2edArray, sizedM2eim2esm2eim2eem2ed.unsized)
+    // typed[Array[M2[_ >: Double with Int with String, _]]](sizedM2eim2esm2eim2eem2ed.unsized)  // Same remark as above
+    assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x: Any), sizedM2eim2esm2eim2eem2ed.unsized.map(x => x: Any))
   }
 
   @Test
@@ -1075,5 +1221,15 @@ class TupleTests {
       typed[(Double, Int)](result)
       assertEquals((1.0, 1), result)
     }
+  }
+
+  @Test
+  def testPermutations {
+    assertEquals(((1, "foo"), ("foo", 1)), (1, "foo").permutations)
+
+    assertEquals((
+      (1, "foo", 2.0), ("foo", 1, 2.0), ("foo", 2.0, 1),
+      (1, 2.0, "foo"), (2.0, 1, "foo"), (2.0, "foo", 1)
+    ), (1, "foo", 2.0).permutations)
   }
 }

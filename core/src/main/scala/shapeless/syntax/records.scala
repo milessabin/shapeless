@@ -46,6 +46,12 @@ final class RecordOps[L <: HList](l : L) {
   def apply(k: Witness)(implicit selector : Selector[L, k.T]): selector.Out = selector(l)
 
   /**
+   * Returns the value associated with the singleton typed key k. Only available if this record has a field with
+   * with keyType equal to the singleton type k.T.
+   */
+  def fieldAt(k: Witness)(implicit selector : Selector[L, k.T]): FieldType[k.T, selector.Out] = field[k.T](selector(l))
+
+  /**
    * Updates or adds to this record a field with key type F and value type F#valueType.
    */
   def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))

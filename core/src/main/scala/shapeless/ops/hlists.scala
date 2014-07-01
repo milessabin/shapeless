@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import poly._
 
+import scala.collection.GenTraversableLike
+import scala.collection.generic.CanBuildFrom
+
 object hlist {
   /**
    * Type class witnessing that this `HList` is composite and providing access to head and tail. 
@@ -245,7 +248,7 @@ object hlist {
 
     import shapeless.nat._
     type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
-    implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
+    implicit def hnilLength[L <: HNil]: Aux[L, _0] = new Length[L] {
       type Out = _0
       def apply(): Out = _0
     }
@@ -604,6 +607,55 @@ object hlist {
             arr(i) = u.left(l.head)
             arr
           }
+      }
+  }
+
+  /**
+   * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToSized[L <: HList, M[_]] extends DepFn1[L] {
+    type Lub
+    type N <: Nat
+    type Out = Sized[M[Lub], N]
+    def apply(l: L): Out
+  }
+
+  object ToSized {
+    def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]) = toSized
+    
+    type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
+    
+    implicit def hnilToSized[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+        new ToSized[L, M] {
+          type Lub = Nothing
+          type N = Nat._0
+          def apply(l : L) = Sized[M]()
+        }
+
+    implicit def hsingleToSized[T, M[_]]
+    (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T, Nat._1] =
+      new ToSized[T :: HNil, M] {
+        type Lub = T
+        type N = Nat._1
+        def apply(l : T :: HNil) = Sized[M](l.head)
+      }
+
+    implicit def hlistToSized[H1, H2, T <: HList, LT, L, N0 <: Nat, M[_]]
+      (implicit
+       tts  : Aux[H2 :: T, M, LT, N0],
+       u    : Lub[H1, LT, L],
+       tvs2 : M[LT] => GenTraversableLike[LT, M[LT]], // tvs2 and tcbf are required for the call to map below 
+       tcbf : CanBuildFrom[M[LT], L, M[L]],
+       tvs  : M[L] => GenTraversableLike[L, M[L]], // tvs and cbf are required for the call to +: below
+       cbf  : CanBuildFrom[M[L], L, M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
+        new ToSized[H1 :: H2 :: T, M] {
+          type Lub = L
+          type N = Succ[N0]
+          def apply(l : H1 :: H2 :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
         }
   }
 
@@ -1621,5 +1673,148 @@ object hlist {
 
           def apply(l: LH :: LT): Out = collect(l.tail)
         }
+  }
+
+  implicit object hnilOrdering extends Ordering[HNil] {
+    def compare(x: HNil, y: HNil): Int = 0
+  }
+
+  implicit def hlistOrdering[H, T <: HList]
+    (implicit hOrdering: Ordering[H], tOrdering: Ordering[T]): Ordering[H :: T] =
+      new Ordering[H :: T] {
+        def compare(x: H :: T, y: H :: T): Int = {
+          val compareH = hOrdering.compare(x.head, y.head)
+
+          if (compareH != 0) compareH else tOrdering.compare(x.tail, y.tail)
+        }
+      }
+
+  /*
+   * Type class supporting consing an element onto each row of this HMatrix (HList of HLists)
+   *
+   * @author Stacy Curl
+   */
+  trait MapCons[A, M <: HList] {
+    type Out <: HList
+
+    def apply(a: A, m: M): Out
+  }
+
+  object MapCons {
+    def apply[A, M <: HList](implicit mapCons: MapCons[A, M]): MapCons[A, M] = mapCons
+
+    type Aux[A, M <: HList, Out0 <: HList] = MapCons[A, M] { type Out = Out0 }
+
+    implicit def hnilMapCons[A]: Aux[A, HNil, HNil] =
+      new MapCons[A, HNil] {
+        type Out = HNil
+
+        def apply(a: A, m: HNil): Out = HNil
+      }
+
+    implicit def hlistMapCons[A, H <: HList, TM <: HList]
+      (implicit mapCons: MapCons[A, TM]): Aux[A, H :: TM, (A :: H) :: mapCons.Out] =
+        new MapCons[A, H :: TM] {
+          type Out = (A :: H) :: mapCons.Out
+
+          def apply(a: A, l: H :: TM): Out = (a :: l.head) :: mapCons(a, l.tail)
+        }
+  }
+
+  /**
+   * Type class supporting adding an element to each possible position in this HList
+   *
+   * @author Stacy Curl
+   */
+  trait Interleave[A, L <: HList] {
+    type Out <: HList
+
+    def apply(a: A, l: L): Out
+  }
+
+  object Interleave {
+    def apply[A , L <: HList](implicit interleave: Interleave[A, L]): Interleave[A, L] = interleave
+
+    type Aux[A, L <: HList, Out0 <: HList] = Interleave[A, L] { type Out = Out0 }
+
+    implicit def hnilInterleave[A, L <: HNil]: Aux[A, L, (A :: HNil) :: HNil] =
+      new Interleave[A, L] {
+        type Out = (A :: HNil) :: HNil
+
+        def apply(a: A, l: L): Out = (a :: HNil) :: HNil
+      }
+
+    implicit def hlistInterleave[A, H, T <: HList, LI <: HList]
+      (implicit interleave: Interleave.Aux[A, T, LI], mapCons: MapCons[H, LI])
+        : Aux[A, H :: T, (A :: H :: T) :: mapCons.Out] = new Interleave[A, H :: T] {
+          type Out = (A :: H :: T) :: mapCons.Out
+
+          def apply(a: A, l: H :: T): Out = (a :: l) :: mapCons(l.head, interleave(a, l.tail))
+        }
+  }
+
+  /**
+   * Type class supporting interleaving an element into each row of this HMatrix (HList of HLists)
+   *
+   * @author Stacy Curl
+   */
+  trait FlatMapInterleave[A, M <: HList] {
+    type Out <: HList
+
+    def apply(a: A, m: M): Out
+  }
+
+  object FlatMapInterleave {
+    def apply[A, M <: HList](implicit flatMapInterleave: FlatMapInterleave[A, M]): FlatMapInterleave[A, M] =
+      flatMapInterleave
+
+    type Aux[A, M <: HList, Out0 <: HList] = FlatMapInterleave[A, M] { type Out = Out0 }
+
+    implicit def hnilFlatMapInterleave[A, M <: HNil]: Aux[A, M, HNil]
+      = new FlatMapInterleave[A, M] {
+        type Out = HNil
+
+        def apply(a: A, m: M): Out = HNil
+      }
+
+    implicit def hlistFlatMapInterleave[A, H <: HList, TM <: HList, HO <: HList, TMO <: HList]
+      (implicit interleave: Interleave.Aux[A, H, HO],
+         flatMapInterleave: FlatMapInterleave.Aux[A, TM, TMO],
+         prepend: Prepend[HO, TMO]
+       ): Aux[A, H :: TM, prepend.Out] =
+          new FlatMapInterleave[A, H :: TM] {
+            type Out = prepend.Out
+
+            def apply(a: A, m: H :: TM): Out =
+              prepend(interleave(a, m.head), flatMapInterleave(a, m.tail))
+          }
+  }
+
+  /**
+   * Type class supporting the calculation of every permutation of this 'HList'
+   *
+   * @author Stacy Curl
+   */
+  trait Permutations[L <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object Permutations {
+    def apply[L <: HList](implicit permutations: Permutations[L]): Permutations[L] = permutations
+
+    type Aux[L <: HList, Out0] = Permutations[L] { type Out = Out0 }
+
+    implicit def hnilPermutations[L <: HNil]: Aux[L, HNil :: HNil] = new Permutations[L] {
+      type Out = HNil :: HNil
+
+      def apply(l: L): Out = HNil :: HNil
+    }
+
+    implicit def hlistPermutations[H, T <: HList, TP <: HList]
+      (implicit permutations: Permutations.Aux[T, TP], flatMapInterleave: FlatMapInterleave[H, TP])
+        : Aux[H :: T, flatMapInterleave.Out] =
+          new Permutations[H :: T] {
+            type Out = flatMapInterleave.Out
+
+            def apply(l: H :: T): Out = flatMapInterleave(l.head, permutations(l.tail))
+          }
   }
 }

@@ -405,4 +405,15 @@ final class TupleOps[T](t: T) {
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
   def toArray[Lub](implicit toArray : ToArray[T, Lub]) : toArray.Out = toArray(t)
+  
+  /**
+   * Converts this tuple to a `M` of elements typed as the least upper bound of the types of the elements
+   * of this tuple.
+   */
+  def toSized[M[_]](implicit toSized : ToSized[T, M]) : toSized.Out = toSized(t)
+
+  /**
+   * Returns all permutations of this tuple.
+   */
+  def permutations(implicit permutations: Permutations[T]): permutations.Out = permutations(t)
 }

@@ -134,4 +134,24 @@ object coproduct {
             }
           }
   }
+
+  implicit object cnilOrdering extends Ordering[CNil] {
+    def compare(x: CNil, y: CNil) = 0
+  }
+
+  implicit def coproductPartialOrdering[H, T <: Coproduct]
+    (implicit ordering: Ordering[H], partialOrdering: PartialOrdering[T]): PartialOrdering[H :+: T] =
+      new PartialOrdering[H :+: T] {
+        def lteq(x: H :+: T, y: H :+: T): Boolean = (x, y) match {
+          case (Inl(xh), Inl(yh)) => ordering.compare(xh, yh) <= 0
+          case (Inr(xt), Inr(yt)) => partialOrdering.tryCompare(xt, yt).fold(false)(_ <= 0)
+          case _                  => false
+        }
+
+        def tryCompare(x: H :+: T, y: H :+: T): Option[Int] = (x, y) match {
+          case (Inl(xh), Inl(yh)) => Some(ordering.compare(xh, yh))
+          case (Inr(xt), Inr(yt)) => partialOrdering.tryCompare(xt, yt)
+          case _                  => None
+        }
+      }
 }

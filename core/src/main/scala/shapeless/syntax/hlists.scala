@@ -302,6 +302,11 @@ final class HListOps[L <: HList](l : L) {
   def flatMap(f : Poly)(implicit mapper : FlatMapper[f.type, L]) : mapper.Out = mapper(l)
 
   /**
+   * Conses an element onto each row of this HMatrix (HList of HLists).
+   */
+  def mapCons[A](a: A)(implicit mapCons: MapCons[A, L]): mapCons.Out = mapCons(a, l)
+
+  /**
    * Replaces each element of this `HList` with a constant value.
    */
   def mapConst[C](c : C)(implicit mapper : ConstMapper[C, L]) : mapper.Out = mapper(c, l)
@@ -456,7 +461,18 @@ final class HListOps[L <: HList](l : L) {
   def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(runtimeLength, l, 0)
 
   /**
+   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * of this `HList`.
+   */
+  def toSized[M[_]](implicit ts : ToSized[L, M]) : ts.Out = ts(l)
+
+  /**
    * Converts this `HList` of values into a record with the provided keys.
    */
   def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(keys, l)
+
+  /**
+   * Returns all permutations of this 'HList'
+   */
+  def permutations(implicit permutations: Permutations[L]): permutations.Out = permutations(l)
 }

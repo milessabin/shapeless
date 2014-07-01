@@ -847,6 +847,26 @@ object tuple {
         }
   }
 
+  /**
+   * Type class supporting conversion of this tuple to a `Sized[M[Lub], N]` with elements typed as 
+   * the least upper bound Lub of the types of the elements of this tuple.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToSized[T, M[_]] extends DepFn1[T]
+
+  object ToSized {
+    def apply[T, M[_]](implicit toSized: ToSized[T, M]) = toSized
+
+    type Aux[T, M[_], Out0] = ToSized[T, M] { type Out = Out0 }
+
+    implicit def toSized[T, L <: HList, M[_]]
+      (implicit gen: Generic.Aux[T, L], toSized: hl.ToSized[L, M]): Aux[T, M, toSized.Out] =
+        new ToSized[T, M] {
+          type Out = toSized.Out
+          def apply(t: T) = gen.to(t).toSized[M]
+        }
+  }
 
   /**
    * Type Class witnessing that this tuple can be collected with a 'Poly' to produce a new tuple
@@ -867,5 +887,27 @@ object tuple {
 
           def apply(t: T): tp.Out = tp(collect(gen.to(t)))
         }
+  }
+
+  /**
+   * Typer class supporting the calculation of every permutation of this tuple
+   *
+   * @author Stacy Curl
+   */
+  trait Permutations[T] extends DepFn1[T]
+
+  object Permutations {
+    def apply[T](implicit permutations: Permutations[T]): Permutations[T] = permutations
+
+    type Aux[T, Out0] = Permutations[T] { type Out = Out0 }
+
+    implicit def permutations[T, L <: HList, L2 <: HList, L3 <: HList]
+      (implicit gen: Generic.Aux[T, L], collect: hl.Permutations.Aux[L, L2],
+        mapper: hl.Mapper.Aux[tupled.type, L2, L3], tp: hl.Tupler[L3]
+      ): Aux[T, tp.Out] = new Permutations[T] {
+        type Out = tp.Out
+
+        def apply(t: T): Out = tp(collect(gen.to(t)).map(tupled))
+      }
   }
 }
