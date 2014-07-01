@@ -23,6 +23,7 @@ import poly._
 
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 
 object hlist {
   /**
@@ -527,88 +528,69 @@ object hlist {
   }
 
   /**
-   * Type class supporting conversion of this `HList` to an ordinary `List` with elements typed as the least upper bound
-   * of the types of the elements of this `HList`.
-   * 
-   * @author Miles Sabin, Alexandre Archambault
+   * Type class supporting conversion of this `HList` to a `M` with elements typed
+   * as the least upper bound Lub of the types of the elements of this `HList`.
+   *
+   * @author Alexandre Archambault
    */
-  trait ToList[L <: HList, +Lub] {
-    def apply(l: L): List[Lub]
+  trait ToTraversable[L <: HList, M[_]] extends DepFn1[L] {
+    type Lub
+    def builder(): mutable.Builder[Lub, M[Lub]]
+    def append[LLub](l: L, b: mutable.Builder[LLub, M[LLub]], f: Lub => LLub): Unit
+
+    type Out = M[Lub]
+    def apply(l: L): Out = {
+      val b = builder()
+      append(l, b, identity)
+      b.result()
+    }
   }
 
-  object ToList {
-    def apply[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
+  object ToTraversable {
+    def apply[L <: HList, M[_]](implicit toTraversable: ToTraversable[L, M]) = toTraversable
 
-    implicit def hnilToList[L <: HNil]: ToList[L, Nothing] =
-      new ToList[L, Nothing] {
-        type Out = List[Nothing]
-        def apply(l : L) = Nil
-      }
-    
-    implicit def hlistToList[H, T <: HList, LT, L]
-      (implicit ttl : ToList[T, LT], u : Lub[H, LT, L]): ToList[H :: T, L] =
-        new ToList[H :: T, L] {
-          type Out = List[L]
-          def apply(l : H :: T) = u.left(l.head) :: ttl(l.tail).map(u.right)
+    type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
+
+    implicit def hnilToTraversable[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
+        new ToTraversable[L, M] {
+          type Lub = Nothing
+          def builder() = cbf()
+          def append[LLub](l : L, b : mutable.Builder[LLub, M[LLub]], f : Lub => LLub) = {}
+        }
+
+    implicit def hsingleToTraversable[T, M[_]]
+      (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T] =
+        new ToTraversable[T :: HNil, M] {
+          type Lub = T
+          def builder() = cbf()
+          def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : T => LLub) = {
+            b += f(l.head)
+          }
+        }
+
+    implicit def hlistToTraversable[H1, H2, T <: HList, LubT, Lub0, M[_]]
+      (implicit
+       tttvs  : Aux[H2 :: T, M, LubT],
+       u      : Lub[H1, LubT, Lub0],
+       cbf    : CanBuildFrom[M[Lub0], Lub0, M[Lub0]]) : Aux[H1 :: H2 :: T, M, Lub0] =
+        new ToTraversable[H1 :: H2 :: T, M] {
+          type Lub = Lub0
+          def builder() = cbf()
+          def append[LLub](l : H1 :: H2 :: T, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub): Unit = {
+            b += f(u.left(l.head)); tttvs.append[LLub](l.tail, b, f compose u.right)
+          }
         }
   }
 
   /**
-   * Type class supporting conversion of this `HList` to an `Array` with elements typed as the least upper bound
-   * of the types of the elements of this `HList`.
-   * 
-   * @author Miles Sabin
-   */
-  trait ToArray[-L <: HList, Lub] {
-    def apply(len : Int, l : L, i : Int) : Array[Lub]
-  }
+   * Type aliases and constructors provided for backward compatibility 
+   **/
+  type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
+  def ToArray[L <: HList, Lub](l: L)(implicit toArray: ToArray[L, Lub]) = toArray
 
-  trait LowPriorityToArray {
-    implicit def hlistToArrayAnyRef[L <: HList]: ToArray[L, Any] =
-      new ToArray[L, Any] {
-        def apply(len: Int, l : L, i : Int) : Array[Any] = {
-          val arr = Array[Any](len)
-          
-          @tailrec
-          def loop(l : HList, i: Int): Unit = l match {
-            case hd :: tl => arr(i) = hd ; loop(tl, i+1)  
-            case _ =>
-          }
-          loop(l, 0)
-          arr
-        }
-      }
-  }
-
-  object ToArray extends LowPriorityToArray {
-    def apply[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
-
-    import scala.reflect.ClassTag
-    
-    implicit def hnilToArray[T : ClassTag] : ToArray[HNil, T] =
-      new ToArray[HNil, T] {
-        def apply(len : Int, l : HNil, i : Int) = Array.ofDim[T](len)
-      }
-    
-    implicit def hsingleToArray[T : ClassTag] : ToArray[T :: HNil, T] =
-      new ToArray[T :: HNil, T] {
-        def apply(len : Int, l : T :: HNil, i : Int) = {
-          val arr = Array.ofDim[T](len)
-          arr(i) = l.head
-          arr
-        }
-      }
-    
-    implicit def hlistToArray[H1, H2, T <: HList, L]
-      (implicit u : Lub[H1, H2, L], tta : ToArray[H2 :: T, L]): ToArray[H1 :: H2 :: T, L] =
-        new ToArray[H1 :: H2 :: T, L] {
-          def apply(len : Int, l : H1 :: H2 :: T, i : Int) = {
-            val arr = tta(len, l.tail, i+1)
-            arr(i) = u.left(l.head)
-            arr
-          }
-      }
-  }
+  type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
+  def ToList[L <: HList, Lub](l: L)(implicit toList: ToList[L, Lub]) = toList
 
   /**
    * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed

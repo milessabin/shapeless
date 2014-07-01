@@ -445,10 +445,16 @@ final class HListOps[L <: HList](l : L) {
   }
 
   /**
+   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * of this `HList`.
+   */
+  def to[M[_]](implicit ts : ToTraversable[L, M]) : ts.Out = ts(l)
+
+  /**
    * Converts this `HList` to an ordinary `List` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
-  def toList[Lub](implicit toList : ToList[L, Lub]) : List[Lub] = toList(l)
+  def toList[Lub](implicit toTraversableAux : ToTraversable.Aux[L, List, Lub]) : toTraversableAux.Out = toTraversableAux(l)
   
   /**
    * Converts this `HList` to an `Array` of elements typed as the least upper bound of the types of the elements
@@ -458,7 +464,7 @@ final class HListOps[L <: HList](l : L) {
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
-  def toArray[Lub](implicit toArray : ToArray[L, Lub]) : Array[Lub] = toArray(runtimeLength, l, 0)
+  def toArray[Lub](implicit toTraversableAux : ToTraversable.Aux[L, Array, Lub]) : toTraversableAux.Out = toTraversableAux(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements

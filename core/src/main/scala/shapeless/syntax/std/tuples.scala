@@ -391,10 +391,16 @@ final class TupleOps[T](t: T) {
   def length(implicit length : Length[T]) : length.Out = length(t)
 
   /**
+   * Converts this tuple to a `M` of elements typed as the least upper bound of the types of the elements
+   * of this tuple.
+   */
+  def to[M[_]](implicit toTraversable : ToTraversable[T, M]) : toTraversable.Out = toTraversable(t)
+
+  /**
    * Converts this tuple to a `List` of elements typed as the least upper bound of the types of the elements
    * of this tuple.
    */
-  def toList[Lub](implicit toList : ToList[T, Lub]) : toList.Out = toList(t)
+  def toList[Lub](implicit toTraversable : ToTraversable.Aux[T, List, Lub]) : toTraversable.Out = toTraversable(t)
   
   /**
    * Converts this tuple to an `Array` of elements typed as the least upper bound of the types of the elements
@@ -404,7 +410,7 @@ final class TupleOps[T](t: T) {
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
-  def toArray[Lub](implicit toArray : ToArray[T, Lub]) : toArray.Out = toArray(t)
+  def toArray[Lub](implicit toTraversable : ToTraversable.Aux[T, Array, Lub]) : toTraversable.Out = toTraversable(t)
   
   /**
    * Converts this tuple to a `M` of elements typed as the least upper bound of the types of the elements
