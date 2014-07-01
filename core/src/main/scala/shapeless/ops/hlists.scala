@@ -584,10 +584,13 @@ object hlist {
   }
 
   /**
-   * Type aliases provided for backward compatibility 
+   * Type aliases and constructors provided for backward compatibility 
    **/
   type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
+  def ToArray[L <: HList, Lub](l: L)(implicit toArray: ToArray[L, Lub]) = toArray
+
   type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
+  def ToList[L <: HList, Lub](l: L)(implicit toList: ToList[L, Lub]) = toList
 
   /**
    * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
