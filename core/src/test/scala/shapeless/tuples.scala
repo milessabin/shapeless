@@ -1347,7 +1347,7 @@ class TupleTests {
   }
 
   @Test
-  def collect {
+  def testCollect {
     import poly._
 
     object empty extends Poly1
@@ -1406,5 +1406,10 @@ class TupleTests {
       (1, "foo", 2.0), ("foo", 1, 2.0), ("foo", 2.0, 1),
       (1, 2.0, "foo"), (2.0, 1, "foo"), (2.0, "foo", 1)
     ), (1, "foo", 2.0).permutations)
+  }
+
+  @Test
+  def testMkString {
+    assertEquals("<1;foo;2.0>", (1, "foo", 2.0).mkString("<", ";", ">"))
   }
 }

@@ -422,4 +422,11 @@ final class TupleOps[T](t: T) {
    * Returns all permutations of this tuple.
    */
   def permutations(implicit permutations: Permutations[T]): permutations.Out = permutations(t)
+
+  /**
+   * Displays all elements of this tuple in a string using start, end, and separator strings.
+   */
+  def mkString(start: String, sep: String, end: String)
+    (implicit toTraversable: ToTraversable.Aux[T, List, Any]): String =
+      this.toList.mkString(start, sep, end)
 }

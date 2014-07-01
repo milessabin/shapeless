@@ -473,6 +473,12 @@ final class HListOps[L <: HList](l : L) {
   def toSized[M[_]](implicit ts : ToSized[L, M]) : ts.Out = ts(l)
 
   /**
+   * Displays all elements of this hlist in a string using start, end, and separator strings.
+   */
+  def mkString(start: String, sep: String, end: String)
+    (implicit toTraversable: ToTraversable.Aux[L, List, Any]): String = this.toList.mkString(start, sep, end)
+
+  /**
    * Converts this `HList` of values into a record with the provided keys.
    */
   def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(keys, l)
