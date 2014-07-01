@@ -1519,4 +1519,56 @@ class HListTests {
     illTyped("orig.tail.values.zipWithKeys(orig.keys)")
     illTyped("orig.values.zipWithKeys(orig.keys.tail)")
   }
+
+  @Test
+  def collect {
+    import poly._
+
+    object empty extends Poly1
+
+    object complex extends Poly1 {
+      implicit val caseInt    = at[Int](_.toDouble)
+      implicit val caseString = at[String](_ => 1)
+    }
+
+    { // HNil collect p
+      val in: HNil = HNil
+
+      val emptyResult = in.collect(empty)
+      typed[HNil](emptyResult)
+      assertEquals(HNil, emptyResult)
+
+      val identityResult = in.collect(poly.identity)
+      typed[HNil](identityResult)
+      assertEquals(HNil, identityResult)
+
+      val complexResult = in.collect(complex)
+      typed[HNil](complexResult)
+      assertEquals(HNil, complexResult)
+    }
+
+    { // non-HNil collect empty
+      val in: Int :: String :: Double :: HNil = 1 :: "foo" :: 2.2 :: HNil
+
+      val result = in.collect(empty)
+      typed[HNil](result)
+      assertEquals(HNil, result)
+    }
+
+    { // h collect identity
+      val in: Int :: String :: Double :: HNil = 1 :: "foo" :: 2.2 :: HNil
+
+      val result = in.collect(identity)
+      typed[Int :: String :: Double :: HNil](result)
+      assertEquals(in, result)
+    }
+
+    { // h collect complex
+      val in: Int :: String :: Double :: HNil = 1 :: "foo" :: 2.2 :: HNil
+
+      val result = in.collect(complex)
+      typed[Double :: Int :: HNil](result)
+      assertEquals(1.0 :: 1 :: HNil, result)
+    }
+  }
 }
