@@ -26,7 +26,8 @@ import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
  * 
  * @author Miles Sabin
  */
-final class Sized[+Repr, L <: Nat](val unsized : Repr) extends AnyVal
+final class Sized[+Repr, L <: Nat](val unsized : Repr) // Sized cannot extend AnyVal to 2.10.x
+                                                       // See https://issues.scala-lang.org/browse/SI-6260
 
 /**
  * Carrier for `Sized` operations.
