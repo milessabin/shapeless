@@ -22,7 +22,7 @@ object Publishing extends Sonatype(ShapelessBuild) {
   def developerId   = "milessabin"
   def developerName = "Miles Sabin"
   def licenseName   = "Apache License"
-  def licenseUrl    = "http://www.apache.org/licenses/"
+  def licenseUrl    = "http://www.apache.org/licenses/LICENSE-2.0.txt"
 }
 
 /* Sonatype Publishing */
