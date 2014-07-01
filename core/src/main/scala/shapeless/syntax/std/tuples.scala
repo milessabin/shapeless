@@ -429,4 +429,24 @@ final class TupleOps[T](t: T) {
   def mkString(start: String, sep: String, end: String)
     (implicit toTraversable: ToTraversable.Aux[T, List, Any]): String =
       this.toList.mkString(start, sep, end)
+
+  /**
+   * Rotate this tuple left by N
+   */
+  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[T, N]): rotateLeft.Out = rotateLeft(t)
+
+  /**
+   * Rotate this tuple left by N
+   */
+  def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[T, N]): rotateLeft.Out = rotateLeft(t)
+
+  /**
+   * Rotate this tuple right by N
+   */
+  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[T, N]): rotateRight.Out = rotateRight(t)
+
+  /**
+   * Rotate this tuple right by N
+   */
+  def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[T, N]): rotateRight.Out = rotateRight(t)
 }
