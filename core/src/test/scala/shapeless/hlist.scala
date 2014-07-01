@@ -1839,7 +1839,7 @@ class HListTests {
   }
 
   @Test
-  def collect {
+  def testCollect {
     import poly._
 
     object empty extends Poly1
@@ -1975,5 +1975,10 @@ class HListTests {
       (2.0 :: "foo" :: 1 :: HNil) :: HNil,
       (1 :: "foo" :: 2.0 :: HNil).permutations
     )
+  }
+
+  @Test
+  def testMkString {
+    assertEquals("⸨1, foo, 2.0⸩", (1 :: "foo" :: 2.0 :: HNil).mkString("⸨", ", ", "⸩"))
   }
 }
