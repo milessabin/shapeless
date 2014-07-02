@@ -23,10 +23,10 @@ package object shapeless {
     type λ[T] = C
   }
 
-  type ¬[T] = T => Nothing
+  trait ¬[-T]
   type ¬¬[T] = ¬[¬[T]]
   type ∧[T, U] = T with U
-  type ∨[T, U] = ¬[¬[T] ∧ ¬[U]]
+  type ∨[T, U] = ¬[¬[T] with ¬[U]]
   
   // Type-lambda for context bound
   type |∨|[T, U] = {
