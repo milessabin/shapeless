@@ -177,6 +177,13 @@ class SingletonTypeMacros(val c: whitebox.Context) {
 
   def convertImpl[T](t: Expr[T]): Tree = extractResult(t)(mkWitness)
 
+  def inferInstance(tci: Type): Tree = {
+    val i = c.inferImplicitValue(tci)
+    if(i == EmptyTree)
+      c.abort(c.enclosingPosition, s"Unable to resolve implicit value of type $tci")
+    i
+  }
+
   def convertInstanceImpl1[TC[_], T](t: Expr[T])
     (implicit tcTag: WeakTypeTag[TC[_]]): Tree =
       extractResult(t) { (sTpe, value) =>
@@ -184,7 +191,7 @@ class SingletonTypeMacros(val c: whitebox.Context) {
         val wwTC = typeOf[WitnessWith[Nothing]].typeConstructor
         val parent = appliedType(wwTC, List(tc))
         val tci = appliedType(tc, List(sTpe))
-        val i = c.inferImplicitValue(tci, silent = false)
+        val i = inferInstance(tci)
         mkWitnessWith(parent, sTpe, value, i)
       }
 
@@ -201,7 +208,7 @@ class SingletonTypeMacros(val c: whitebox.Context) {
         }
 
         val tci = appliedType(tc2, List(s, sTpe))
-        val i = c.inferImplicitValue(tci, silent = false)
+        val i = inferInstance(tci)
         mkWitnessWith(parent, sTpe, value, i)
       }
 
