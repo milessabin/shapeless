@@ -400,7 +400,7 @@ object Boilerplate {
         -    (implicit ${implicitArgs})
         -  = new Typeable[${`(A..N)`}] {
         -    def cast(t : Any) : Option[${`(A..N)`}] = {
-        -      if(t == null) Some(t.asInstanceOf[${`(A..N)`}])
+        -      if(t == null) None
         -      else if(t.isInstanceOf[${`(_.._)`}]) {
         -        val p = t.asInstanceOf[${`(_.._)`}]
         -        for(${enumerators})
