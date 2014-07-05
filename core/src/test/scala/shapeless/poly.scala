@@ -456,6 +456,78 @@ class PolyTests {
     val l7 = li.map(mCnCn2 _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+
+  @Test
+  def testRotateLeft {
+    object isd extends Poly3 {
+      implicit val default = at[Int, String, Double] {
+        case (i, s, d) => s"i: $i, s: $s, d: $d"
+      }
+    }
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", isd(1, "foo", 2.0))
+
+    val sdi = isd.rotateLeft[Nat._1]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", sdi("foo", 2.0, 1))
+
+    val dis  = isd.rotateLeft[Nat._2]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", dis(2.0, 1, "foo"))
+
+    object isdc extends Poly4 {
+      implicit val default = at[Int, String, Double, Char] {
+        case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
+      }
+    }
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", isdc(1, "foo", 2.0, 'a'))
+
+    val sdci = isdc.rotateLeft[Nat._1]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", sdci("foo", 2.0, 'a', 1))
+
+    val dcis = isdc.rotateLeft[Nat._2]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", dcis(2.0, 'a', 1, "foo"))
+  }
+
+  @Test
+  def testRotateRight {
+    object isd extends Poly3 {
+      implicit val default = at[Int, String, Double] {
+        case (i, s, d) => s"i: $i, s: $s, d: $d"
+      }
+    }
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", isd(1, "foo", 2.0))
+
+    val dis = isd.rotateRight[Nat._1]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", dis(2.0, 1, "foo"))
+
+    val sdi  = isd.rotateRight[Nat._2]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", sdi("foo", 2.0, 1))
+
+    object isdc extends Poly4 {
+      implicit val default = at[Int, String, Double, Char] {
+        case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
+      }
+    }
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", isdc(1, "foo", 2.0, 'a'))
+
+    val cisd = isdc.rotateRight[Nat._1]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", cisd('a', 1, "foo", 2.0))
+
+    val dcis = isdc.rotateRight[Nat._2]
+
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", dcis(2.0, 'a', 1, "foo"))
+  }
+
+  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
 }
 
 object LiftMethods {
