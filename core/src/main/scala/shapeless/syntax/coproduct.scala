@@ -35,4 +35,14 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
+
+  def length(implicit length: Length[C]): length.Out = length()
+
+  def append[T](implicit append: Append[C, T]): append.Out = append(c)
+
+  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
+  def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
+
+  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
+  def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
 }
