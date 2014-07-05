@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.blackbox
+import scala.reflect.macros.Context
 
 /**
  * Type class supporting type safe cast.
@@ -278,7 +278,7 @@ object TypeCase {
   }
 }
 
-class TypeableMacros(val c: blackbox.Context) {
+class TypeableMacros[C <: Context](val c: C) {
   import c.universe._
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
@@ -289,17 +289,19 @@ class TypeableMacros(val c: blackbox.Context) {
     val AC = definitions.AnyClass
     val NC = definitions.NothingClass
 
-    val dealiased = tpe.dealias
+    val dealiased = tpe match {
+      case existential: ExistentialType => existential
+      case other => other.normalize
+    }
+
     dealiased match {
-      case TypeRef(_, NC, _) =>
+      case TypeRef(_, nc, _) if nc == NC =>
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
-      case ExistentialType(quantified, underlying) =>
-        val tArgs = dealiased.typeArgs
+      case ExistentialType(_, underlying) =>
+        val TypeRef(_, _, tArgs0) = underlying
+        val tArgs = tArgs0.map { tpe => if(tpe.typeSymbol.asType.isExistential) typeOf[Any] else tpe }
         val normalized = appliedType(dealiased.typeConstructor, tArgs)
-
-        if(normalized =:= dealiased)
-          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
 
         val normalizedTypeable = c.inferImplicitValue(appliedType(typeableTpe, List(normalized)))
         if(normalizedTypeable == EmptyTree)
@@ -315,9 +317,9 @@ class TypeableMacros(val c: blackbox.Context) {
 
         q"""_root_.shapeless.Typeable.intersectionTypeable(List(..$parentTypeables))"""
 
-      case pTpe if pTpe.typeArgs.nonEmpty =>
+      case TypeRef(_, _, tArgs) if tArgs.nonEmpty =>
         val pSym = {
-          val sym = pTpe.typeSymbol
+          val sym = tpe.typeSymbol
           if (!sym.isClass)
             c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
 
@@ -329,7 +331,7 @@ class TypeableMacros(val c: blackbox.Context) {
 
         if(!pSym.isCaseClass)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
-        val fields = tpe.decls.toList collect {
+        val fields = tpe.declarations.toList collect {
           case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
         }
         val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }
@@ -342,4 +344,11 @@ class TypeableMacros(val c: blackbox.Context) {
         q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
     }
   }
+}
+
+object TypeableMacros {
+  def inst(c: Context) = new TypeableMacros[c.type](c)
+
+  def dfltTypeableImpl[T: c.WeakTypeTag](c: Context): c.Expr[Typeable[T]] =
+    c.Expr[Typeable[T]](inst(c).dfltTypeableImpl[T])
 }
