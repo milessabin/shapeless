@@ -1412,4 +1412,66 @@ class TupleTests {
   def testMkString {
     assertEquals("<1;foo;2.0>", (1, "foo", 2.0).mkString("<", ";", ">"))
   }
+
+  @Test
+  def testRotateLeft {
+    val in2 = (1, "foo")
+    val in3 = (1, "foo", 2.0)
+    val in4 = (1, "foo", 2.0, 'a')
+    type S = String; type I = Int; type D = Double; type C = Char
+
+    // rotateLeft[_0]
+    assertTypedEquals[(I, S)](in2, in2.rotateLeft[_0])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateLeft[_0])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateLeft[_0])
+
+    // rotateLeft[N % Size == 0]
+    assertTypedEquals[(I, S)](in2, in2.rotateLeft[_2])
+    assertTypedEquals[(I, S)](in2, in2.rotateLeft[_4])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateLeft[_3])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateLeft[_6])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateLeft[_4])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateLeft[_8])
+
+    // other
+    assertTypedEquals[(S, I)](("foo", 1), in2.rotateLeft[_1])
+    assertTypedEquals[(S, D, I)](("foo", 2.0, 1), in3.rotateLeft[_1])
+    assertTypedEquals[(S, D, C, I)](("foo", 2.0, 'a', 1), in4.rotateLeft[_1])
+    assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateLeft[_2])
+    assertTypedEquals[(C, I, S, D)](('a', 1, "foo", 2.0), in4.rotateLeft[_3])
+    assertTypedEquals[(S, D, C, I)](("foo", 2.0, 'a', 1), in4.rotateLeft[_5])
+    assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateLeft[_6])
+  }
+
+  @Test
+  def testRotateRight {
+    val in2 = (1, "foo")
+    val in3 = (1, "foo", 2.0)
+    val in4 = (1, "foo", 2.0, 'a')
+    type S = String; type I = Int; type D = Double; type C = Char
+
+    // rotateRight[_0]
+    assertTypedEquals[(I, S)](in2, in2.rotateRight[_0])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateRight[_0])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateRight[_0])
+
+    // rotateRight[N % Size == 0]
+    assertTypedEquals[(I, S)](in2, in2.rotateRight[_2])
+    assertTypedEquals[(I, S)](in2, in2.rotateRight[_4])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateRight[_3])
+    assertTypedEquals[(I, S, D)](in3, in3.rotateRight[_6])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateRight[_4])
+    assertTypedEquals[(I, S, D, C)](in4, in4.rotateRight[_8])
+
+    // others
+    assertTypedEquals[(S, I)](("foo", 1), in2.rotateRight[_1])
+    assertTypedEquals[(D, I, S)]((2.0, 1, "foo"), in3.rotateRight[_1])
+    assertTypedEquals[(C, I, S, D)](('a', 1, "foo", 2.0), in4.rotateRight[_1])
+    assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateRight[_2])
+    assertTypedEquals[(S, D, C, I)](("foo", 2.0, 'a', 1), in4.rotateRight[_3])
+    assertTypedEquals[(C, I, S, D)](('a', 1, "foo", 2.0), in4.rotateRight[_5])
+    assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateRight[_6])
+  }
+
+  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
 }

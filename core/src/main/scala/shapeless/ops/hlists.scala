@@ -1799,4 +1799,77 @@ object hlist {
             def apply(l: H :: T): Out = flatMapInterleave(l.head, permutations(l.tail))
           }
   }
+
+  /**
+   * Type class supporting rotating a HList left
+   *
+   * @author Stacy Curl
+   */
+  trait RotateLeft[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
+
+  object RotateLeft extends LowPriorityRotateLeft {
+    def apply[L <: HList, N <: Nat](implicit rotateLeft: RotateLeft[L, N]): RotateLeft[L, N] =
+      rotateLeft
+
+    implicit def hlistRotateLeft[
+      L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Before <: HList, After <: HList
+    ](implicit
+      length: Length.Aux[L, Size],
+      mod: nat.Mod.Aux[N, Size, NModSize],
+      split: Split.Aux[L, NModSize, (Before, After)],
+      prepend: Prepend[After, Before]
+    ): Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
+      type Out = prepend.Out
+
+      def apply(l: L): Out = {
+        val (before, after) = split(l)
+
+        prepend(after, before)
+      }
+    }
+  }
+
+  trait LowPriorityRotateLeft {
+    type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
+
+    implicit def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
+      type Out = L
+
+      def apply(l: L): Out = l
+    }
+  }
+
+  /**
+   * Type class supporting rotating a HList right
+   *
+   * @author Stacy Curl
+   */
+  trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] { type Out } //<: HList }
+
+  object RotateRight extends LowPriorityRotateRight {
+    def apply[L <: HList, N <: Nat](implicit rotateRight: RotateRight[L, N]): RotateRight[L, N] = rotateRight
+
+    implicit def hlistRotateRightt[
+      L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
+    ](implicit
+      length: Length.Aux[L, Size],
+      mod: nat.Mod.Aux[N, Size, NModSize],
+      diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
+      rotateLeft: RotateLeft[L, Size_Diff_NModSize]
+    ): Aux[L, N, rotateLeft.Out] = new RotateRight[L, N] {
+      type Out = rotateLeft.Out
+
+      def apply(l: L): Out = rotateLeft(l)
+    }
+  }
+
+  trait LowPriorityRotateRight {
+    type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
+
+    implicit def noopRotateRight[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateRight[L, N] {
+      type Out = L
+
+      def apply(l: L): Out = l
+    }
+  }
 }

@@ -934,4 +934,46 @@ object tuple {
         def apply(t: T): Out = tp(collect(gen.to(t)).map(tupled))
       }
   }
+
+  /**
+   * Type class supporting rotating a tuple left
+   *
+   * @author Stacy Curl
+   */
+  trait RotateLeft[T, N <: Nat] extends DepFn1[T]
+
+  object RotateLeft {
+    def apply[T, N <: Nat](implicit rotateLeft: RotateLeft[T, N]): RotateLeft[T, N] = rotateLeft
+
+    type Aux[T, N <: Nat, Out0] = RotateLeft[T, N] { type Out = Out0 }
+
+    implicit def tupleRotateLeft[T, N <: Nat, L <: HList, L2 <: HList]
+      (implicit gen: Generic.Aux[T, L], rotateLeft: hl.RotateLeft.Aux[L, N, L2], tp: hl.Tupler[L2])
+        : Aux[T, N, tp.Out] = new RotateLeft[T, N] {
+          type Out = tp.Out
+
+          def apply(t: T): Out = tp(rotateLeft(gen.to(t)))
+        }
+  }
+
+  /**
+   * Type class supporting rotating a tuple right
+   *
+   * @author Stacy Curl
+   */
+  trait RotateRight[T, N <: Nat] extends DepFn1[T]
+
+  object RotateRight {
+    def apply[T, N <: Nat](implicit rotateRight: RotateRight[T, N]): RotateRight[T, N] = rotateRight
+
+    type Aux[T, N <: Nat, Out0] = RotateRight[T, N] { type Out = Out0 }
+
+    implicit def tupleRotateRight[T, N <: Nat, L <: HList, L2 <: HList]
+      (implicit gen: Generic.Aux[T, L], rotateRight: hl.RotateRight.Aux[L, N, L2], tp: hl.Tupler[L2])
+        : Aux[T, N, tp.Out] = new RotateRight[T, N] {
+          type Out = tp.Out
+
+          def apply(t: T): Out = tp(rotateRight(gen.to(t)))
+        }
+  }
 }
