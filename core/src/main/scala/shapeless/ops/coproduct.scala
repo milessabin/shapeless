@@ -135,6 +135,158 @@ object coproduct {
           }
   }
 
+  /**
+   * Type class supporting computing the type-level Nat corresponding to the length of this `Coproduct'.
+   *
+   * @author Stacy Curl
+   */
+  trait Length[C <: Coproduct] extends DepFn0 { type Out <: Nat }
+
+  object Length {
+    def apply[C <: Coproduct](implicit length: Length[C]): Length[C] = length
+
+    type Aux[C <: Coproduct, Out0 <: Nat] = Length[C] { type Out = Out0 }
+
+    implicit def cnilLength: Aux[CNil, Nat._0] = new Length[CNil] {
+      type Out = Nat._0
+
+      def apply(): Out = Nat._0
+    }
+
+    implicit def coproductLength[H, T <: Coproduct, N <: Nat]
+      (implicit lt: Aux[T, N], sn: Witness.Aux[Succ[N]]): Aux[H :+: T, Succ[N]] = new Length[H :+: T] {
+        type Out = Succ[N]
+
+        def apply(): Out = sn.value
+      }
+
+  }
+
+  /**
+   * Type class supporting appending a type to a coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait Append[C <: Coproduct, T] extends DepFn1[C] { type Out <: Coproduct }
+
+  object Append {
+    def apply[C <: Coproduct, T](implicit append: Append[C, T]): Append[C, T] = append
+
+    type Aux[C <: Coproduct, T, Out0 <: Coproduct] = Append[C, T] { type Out = Out0 }
+
+    implicit def appendSingleton[H, A]: Aux[H :+: CNil, A, H :+: A :+: CNil] =
+      new Append[H :+: CNil, A] {
+        type Out = H :+: A :+: CNil
+
+        def apply(c: H :+: CNil): Out = c match {
+          case Inl(h) => Inl(h)
+          case Inr(t) => Inr(Inr(t))
+        }
+      }
+
+    implicit def appendCoproduct[H, T <: Coproduct, A, AT <: Coproduct]
+      (implicit append: Aux[T, A, AT]): Aux[H :+: T, A, H :+: AT] =
+        new Append[H :+: T, A] {
+          type Out = H :+: AT
+
+          def apply(c: H :+: T) = c match {
+            case Inl(h) => Inl(h)
+            case Inr(t) => Inr(append(t))
+          }
+        }
+  }
+
+  /**
+   * Type class supporting rotating a Coproduct left
+   *
+   * @author Stacy Curl
+   */
+  trait RotateLeft[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+
+  object RotateLeft extends LowPriorityRotateLeft {
+    def apply[C <: Coproduct, N <: Nat](implicit rotateLeft: RotateLeft[C, N]): RotateLeft[C, N] = rotateLeft
+
+    implicit def implToRotateLeft[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_]]
+      (implicit
+       length: Length.Aux[C, Size],
+       mod: nat.Mod.Aux[N, Size, NModSize],
+       impl: Impl[C, NModSize]
+      ): Aux[C, N, impl.Out] = new RotateLeft[C, N] {
+        type Out = impl.Out
+
+        def apply(c: C): Out = impl(c)
+      }
+
+    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+
+    object Impl {
+      type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] { type Out = Out0 }
+
+      implicit def rotateCoproductOne[H, T <: Coproduct, TH <: Coproduct]
+        (implicit append: Append.Aux[T, H, TH], inject: Inject[TH, H]): Aux[H :+: T, Nat._1, TH] =
+         new Impl[H :+: T, Nat._1] {
+           type Out = TH
+
+           def apply(c: H :+: T): Out = c match {
+             case Inl(a)    => inject(a)
+             case Inr(tail) => append(tail)
+           }
+         }
+
+      implicit def rotateCoproductN[C <: Coproduct, N <: Nat, CN <: Coproduct, CSN <: Coproduct]
+        (implicit rotateN: Aux[C, N, CN], rotate1: Aux[CN, Nat._1, CSN]): Aux[C, Succ[N], CSN] =
+          new Impl[C, Succ[N]] {
+            type Out = CSN
+
+            def apply(c: C): Out = rotate1(rotateN(c))
+          }
+    }
+  }
+
+  trait LowPriorityRotateLeft {
+    type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = RotateLeft[C, N] { type Out = Out0 }
+
+    implicit def noopRotateLeftImpl[C <: Coproduct, N <: Nat]: Aux[C, N, C] = new RotateLeft[C, N] {
+      type Out = C
+
+      def apply(c: C): Out = c
+    }
+  }
+
+  /**
+   * Type class supporting rotating a Coproduct right
+   *
+   * @author Stacy Curl
+   */
+  trait RotateRight[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+
+  object RotateRight extends LowPriorityRotateRight {
+    def apply[C <: Coproduct, N <: Nat](implicit rotateRight: RotateRight[C, N]): RotateRight[C, N] = rotateRight
+
+    implicit def hlistRotateRightt[
+      C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
+    ](implicit
+      length: Length.Aux[C, Size],
+      mod: nat.Mod.Aux[N, Size, NModSize],
+      diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
+      rotateLeft: RotateLeft.Impl[C, Size_Diff_NModSize]
+    ): Aux[C, N, rotateLeft.Out] = new RotateRight[C, N] {
+      type Out = rotateLeft.Out
+
+      def apply(c: C): Out = rotateLeft(c)
+    }
+  }
+
+  trait LowPriorityRotateRight {
+    type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = RotateRight[C, N] { type Out = Out0 }
+
+    implicit def noopRotateRight[C <: Coproduct, N <: Nat]: Aux[C, N, C] = new RotateRight[C, N] {
+      type Out = C
+
+      def apply(c: C): Out = c
+    }
+  }
+
   implicit object cnilOrdering extends Ordering[CNil] {
     def compare(x: CNil, y: CNil) = 0
   }
