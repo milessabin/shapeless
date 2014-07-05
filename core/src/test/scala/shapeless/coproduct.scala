@@ -244,4 +244,98 @@ class CoproductTests {
     assertPOEquals(None, one, abc)
     assertPOEquals(None, abc, one)
   }
+
+  @Test
+  def testLength {
+    assertTypedEquals[Nat._1](Nat._1, Coproduct[Int :+: CNil](123).length)
+    assertTypedEquals[Nat._2](Nat._2, Coproduct[Int :+: String :+: CNil](123).length)
+    assertTypedEquals[Nat._3](Nat._3, Coproduct[Int :+: String :+: Double :+: CNil](123).length)
+    assertTypedEquals[Nat._4](Nat._4, Coproduct[Int :+: String :+: Double :+: Char :+: CNil](123).length)
+  }
+
+  @Test
+  def testAppend {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoIS   = I :+: S :+: CNil
+    type CoISD  = I :+: S :+: D :+: CNil
+    type CoISDC = I :+: S :+: D :+: C :+: CNil
+
+    assertTypedEquals[CoIS](Coproduct[CoIS](1), Coproduct[CoI](1).append[S])
+    assertTypedEquals[CoISD](Coproduct[CoISD](1), Coproduct[CoIS](1).append[D])
+    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), Coproduct[CoISD](1).append[C])
+  }
+
+  @Test
+  def testRotateLeft {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val in2 = Coproduct[I :+: S :+: CNil](1)
+    val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
+    val in4 = Coproduct[I :+: S :+: D :+: C :+: CNil](1)
+
+    // rotateLeft[_0]
+    assertTypedSame[I :+: CNil](in1, in1.rotateLeft[_0])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateLeft[_0])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateLeft[_0])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateLeft[_0])
+
+    // rotateLeft[N % Size == 0]
+    assertTypedSame[I :+: CNil](in1, in1.rotateLeft[_1])
+    assertTypedSame[I :+: CNil](in1, in1.rotateLeft[_2])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateLeft[_2])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateLeft[_4])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateLeft[_3])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateLeft[_6])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateLeft[_4])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateLeft[_8])
+
+    // other
+    assertTypedEquals[S :+: I :+: CNil](Coproduct[S :+: I :+: CNil](1), in2.rotateLeft[_1])
+    assertTypedEquals[S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](1), in3.rotateLeft[_1])
+    assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), in4.rotateLeft[_1])
+    assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateLeft[_2])
+    assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), in4.rotateLeft[_3])
+    assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), in4.rotateLeft[_5])
+    assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateLeft[_6])
+  }
+
+  @Test
+  def testRotateRight {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val in2 = Coproduct[I :+: S :+: CNil](1)
+    val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
+    val in4 = Coproduct[I :+: S :+: D :+: C :+: CNil](1)
+
+    // rotateRight[_0]
+    assertTypedSame[I :+: CNil](in1, in1.rotateRight[_0])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateRight[_0])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateRight[_0])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateRight[_0])
+
+    // rotateRight[N % Size == 0]
+    assertTypedSame[I :+: CNil](in1, in1.rotateRight[_1])
+    assertTypedSame[I :+: CNil](in1, in1.rotateRight[_2])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateRight[_2])
+    assertTypedSame[I :+: S :+: CNil](in2, in2.rotateRight[_4])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateRight[_3])
+    assertTypedSame[I :+: S :+: D :+: CNil](in3, in3.rotateRight[_6])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateRight[_4])
+    assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, in4.rotateRight[_8])
+
+    // other
+    assertTypedEquals[S :+: I :+: CNil](Coproduct[S :+: I :+: CNil](1), in2.rotateRight[_1])
+    assertTypedEquals[D :+: I :+: S :+: CNil](Coproduct[D :+: I :+: S :+: CNil](1), in3.rotateRight[_1])
+    assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), in4.rotateRight[_1])
+    assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateRight[_2])
+    assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), in4.rotateRight[_3])
+    assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), in4.rotateRight[_5])
+    assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateRight[_6])
+  }
+
+  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
+  private def assertTypedSame[A](expected: A, actual: A) = assertSame(expected, actual)
 }

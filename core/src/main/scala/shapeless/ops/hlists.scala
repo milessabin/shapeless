@@ -1844,7 +1844,7 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] { type Out } //<: HList }
+  trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object RotateRight extends LowPriorityRotateRight {
     def apply[L <: HList, N <: Nat](implicit rotateRight: RotateRight[L, N]): RotateRight[L, N] = rotateRight
