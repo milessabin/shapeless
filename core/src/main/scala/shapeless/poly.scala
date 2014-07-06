@@ -23,6 +23,8 @@ import reflect.macros.Context
 
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
+  import shapeless.ops.{ hlist => hl }
+
   /**
    * Type-specific case of a polymorphic function.
    * 
@@ -76,6 +78,40 @@ object PolyDefns extends Cases {
       type Result = V
       val value = (t : T :: HNil) => cF(cG.value(t))
     }
+  }
+
+  /**
+   * Represents rotating a polymorphic function by N places to the left
+   *
+   * @author Stacy Curl
+   */
+  class RotateLeft[P, N](p: P) extends Poly
+
+  object RotateLeft {
+    implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
+      (implicit unpack: Unpack2[C, RotateLeft, P, N], cP: Case.Aux[P, L, LOut], rotateRight: hl.RotateRight.Aux[RL, N, L])
+        : Case.Aux[C, RL, LOut] = new Case[C, RL] {
+        type Result = LOut
+
+        val value = (rl: RL) => cP(rotateRight(rl))
+      }
+  }
+
+  /**
+   * Represents rotating a polymorphic function by N places to the right
+   *
+   * @author Stacy Curl
+   */
+  class RotateRight[P, N](p: P) extends Poly
+
+  object RotateRight {
+    implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
+      (implicit unpack: Unpack2[C, RotateRight, P, N], cP: Case.Aux[P, L, LOut], rotateLeft: hl.RotateLeft.Aux[RL, N, L])
+        : Case.Aux[C, RL, LOut] = new Case[C, RL] {
+        type Result = LOut
+
+        val value = (rl: RL) => cP(rotateLeft(rl))
+      }
   }
 
   /**
@@ -155,6 +191,10 @@ trait Poly extends PolyApply {
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
   
   def andThen(f: Poly) = new Compose[f.type, this.type](f, this)
+
+  def rotateLeft[N <: Nat] = new RotateLeft[this.type, N](this)
+
+  def rotateRight[N <: Nat] = new RotateRight[this.type, N](this)
 
   /** The type of the case representing this polymorphic function at argument types `L`. */
   type ProductCase[L <: HList] = Case[this.type, L]
