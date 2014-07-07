@@ -26,58 +26,37 @@ trait Generic[T] {
   def from(r : Repr) : T
 }
 
-trait LowPriorityGeneric {
-  implicit def apply[T]: Generic[T] = macro GenericMacros.materialize[T]
-}
-
-object Generic extends LowPriorityGeneric {
+object Generic {
   type Aux[T, Repr0] = Generic[T] { type Repr = Repr0 }
 
-  // Refinement for products, here we can provide the calling context with
-  // a proof that the resulting Repr <: HList
-  implicit def product[T <: Product]: Generic[T] = macro GenericMacros.materializeForProduct[T]
+  def apply[T](implicit gen: Generic[T]): Aux[T, gen.Repr] = gen
+
+  implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materialize[T, R]
 }
 
-trait LabelledGeneric[T] {
-  type Repr
-  def to(t : T) : Repr
-  def from(r : Repr) : T
-}
+trait LabelledGeneric[T] extends Generic[T]
 
-trait LowPriorityLabelledGeneric {
-  implicit def apply[T]: LabelledGeneric[T] = macro GenericMacros.materializeLabelled[T]
-}
+object LabelledGeneric {
+  type Aux[T, Repr0] = LabelledGeneric[T]{ type Repr = Repr0 }
 
-object LabelledGeneric extends LowPriorityLabelledGeneric {
-  type Aux[T, Out0] = LabelledGeneric[T]{ type Repr = Out0 }
+  def apply[T](implicit lgen: LabelledGeneric[T]): Aux[T, lgen.Repr] = lgen
 
-  // Refinement for products, here we can provide the calling context with
-  // a proof that the resulting Repr is a record
-  implicit def product[T <: Product]: LabelledGeneric[T] = macro GenericMacros.materializeLabelledForProduct[T]
+  implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materializeLabelled[T, R]
 }
 
 class GenericMacros(val c: whitebox.Context) {
   import c.universe._
 
-  def materialize[T](implicit tT: WeakTypeTag[T]) =
-    materializeAux(false, false, tT.tpe)
+  def materialize[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeAux(false, weakTypeOf[T], weakTypeOf[R])
 
-  def materializeForProduct[T <: Product](implicit tT: WeakTypeTag[T]) =
-    materializeAux(true, false, tT.tpe)
+  def materializeLabelled[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeAux(true, weakTypeOf[T], weakTypeOf[R])
 
-  def materializeLabelled[T](implicit tT: WeakTypeTag[T]) =
-    materializeAux(false, true, tT.tpe)
-
-  def materializeLabelledForProduct[T <: Product](implicit tT: WeakTypeTag[T]) =
-    materializeAux(true, true, tT.tpe)
-
-  def materializeAux(product: Boolean, labelled: Boolean, tpe: Type): Tree = {
+  def materializeAux(labelled: Boolean, tpe: Type, rTpe: Type): Tree = {
     import c.{ abort, enclosingPosition, typeOf }
 
-    if (product && tpe <:< typeOf[Coproduct])
-      abort(enclosingPosition, s"Cannot materialize Coproduct $tpe as a Product")
-
-    val helper = new Helper(tpe, product, labelled, labelled)
+    val helper = new Helper(tpe, false, labelled, labelled)
     if (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
       helper.materializeIdentityGeneric
     else
