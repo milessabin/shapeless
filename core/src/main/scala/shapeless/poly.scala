@@ -81,6 +81,27 @@ object PolyDefns extends Cases {
   }
 
   /**
+   * Represents the merge of two polymorphic function values.
+   *
+   * @author Pascal Voitot (@mandubian)
+   */
+  class Merge[F, G](f: F, g: G) extends Poly
+
+  object Merge {
+    implicit def mergeCaseF[C, F <: Poly, G <: Poly, L <: HList, R](
+      implicit unpack: Unpack2[C, Merge, F, G], cF : Case.Aux[F, L, R]) = new Case[C, L] {
+      type Result = R
+      val value = (t : L) => cF(t)
+    }
+
+    implicit def mergeCaseG[C, F <: Poly, G <: Poly, L <: HList, R](
+      implicit unpack: Unpack2[C, Merge, F, G], cG : Case.Aux[G, L, R]) = new Case[C, L] {
+      type Result = R
+      val value = (t : L) => cG(t)
+    }
+  }
+
+  /**
    * Represents rotating a polymorphic function by N places to the left
    *
    * @author Stacy Curl
@@ -195,6 +216,9 @@ trait Poly extends PolyApply {
   def rotateLeft[N <: Nat] = new RotateLeft[this.type, N](this)
 
   def rotateRight[N <: Nat] = new RotateRight[this.type, N](this)
+
+  def merge(f: Poly) = new Merge[this.type, f.type](this, f)
+  def |+|(f: Poly) = merge(f)
 
   /** The type of the case representing this polymorphic function at argument types `L`. */
   type ProductCase[L <: HList] = Case[this.type, L]
