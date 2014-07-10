@@ -258,8 +258,8 @@ class PolyTests {
         at[T, U]{ (t, u) => sz(t) + sz(u) }
     }
 
-    val m1 = sz |+| sz2
-    val m = m1 |+| sz3
+    val m = sz |+| sz2 |+| sz3
+
     assertEquals(m(5), 1)
     assertEquals(m("toto"), 4)
     assertEquals(m(5 -> "toto"), 5)

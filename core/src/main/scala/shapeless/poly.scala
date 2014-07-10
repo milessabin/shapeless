@@ -85,19 +85,47 @@ object PolyDefns extends Cases {
    *
    * @author Pascal Voitot (@mandubian)
    */
-  class Merge[F, G](f: F, g: G) extends Poly
+  class Merge[+F, G](f: F, g: G) extends Poly
 
-  object Merge {
-    implicit def mergeCaseF[C, F <: Poly, G <: Poly, L <: HList, R](
-      implicit unpack: Unpack2[C, Merge, F, G], cF : Case.Aux[F, L, R]) = new Case[C, L] {
-      type Result = R
-      val value = (t : L) => cF(t)
+  object Merge extends Merge2
+
+  trait Merge1 {
+    implicit def mergeCase1A[MG, A <: Poly, B <: Poly, ML <: HList, MR](
+      implicit unpack: Unpack2[MG, Merge, A, B],
+               c : Case.Aux[A, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
     }
 
-    implicit def mergeCaseG[C, F <: Poly, G <: Poly, L <: HList, R](
-      implicit unpack: Unpack2[C, Merge, F, G], cG : Case.Aux[G, L, R]) = new Case[C, L] {
-      type Result = R
-      val value = (t : L) => cG(t)
+    implicit def mergeCase1B[MG, A <: Poly, B <: Poly, ML <: HList, MR](
+      implicit unpack: Unpack2[MG, Merge, A, B],
+               c : Case.Aux[B, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+  }
+
+
+  trait Merge2 extends Merge1 {
+    implicit def mergeCase2A[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[A, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+
+    implicit def mergeCase2B[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[B, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+
+    implicit def mergeCase2C[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[C, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
     }
   }
 
