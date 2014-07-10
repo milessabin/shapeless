@@ -1860,6 +1860,11 @@ object hlist {
     }
   }
 
+  /**
+   * Type class supporting left scanning of this `HList` with a binary polymorphic function.
+   *
+   * @author Owein Reese
+   */
   trait LeftScanner[L <: HList, In, P <: Poly] extends DepFn2[L, In]{
     type Out <: HList
   }
@@ -1885,6 +1890,11 @@ object hlist {
         }
   }
 
+  /**
+   * Type class supporting right scanning of this `HList` with a binary polymorphic function.
+   *
+   * @author Owein Reese
+   */
   trait RightScanner[L <: HList, In, P <: Poly] extends DepFn2[L, In]{
     type Out <: HList
   }
@@ -1892,17 +1902,16 @@ object hlist {
   object RightScanner{
     def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]) = scanR
 
-    trait RightScanner0[L <: HList, V, P <: Poly]{
+    trait RightScanner0[L <: HList, V, P <: Poly] extends DepFn2[L, V]{
       type Out <: HList
-      def apply(l: L, v: V): Out
     }
 
-    implicit def hlistRS0[H, H0, T <: HList, P <: Poly](implicit ev: Case2[P, H0, H]) =
+    implicit def hlistRightScanner0[H, H0, T <: HList, P <: Poly](implicit ev: Case2[P, H0, H]) =
       new RightScanner0[H :: T, H0, P]{
         type Out = ev.Result :: H :: T
 
         def apply(l: H :: T, h: H0) = ev(h, l.head) :: l
-      } 
+      }
 
     implicit def hnilRightScanner[In, P <: Poly]: Aux[HNil, In, P, In :: HNil] =
       new RightScanner[HNil, In, P]{

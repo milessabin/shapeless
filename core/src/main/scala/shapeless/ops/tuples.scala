@@ -977,4 +977,52 @@ object tuple {
           def apply(t: T): Out = tp(rotateRight(gen.to(t)))
         }
   }
+
+  /**
+   * Type class supporting left-scanning a binary polymorphic function over this tuple.
+   *
+   * @author Owein Reese
+   */
+  trait LeftScanner[T, In, P <: Poly] extends DepFn2[T, In]
+
+  object LeftScanner{
+    def apply[T, In, P <: Poly](implicit scanL: LeftScanner[T, In, P]): Aux[T, In, P, scanL.Out] = scanL
+
+    type Aux[T, In, P <: Poly, Out0] = LeftScanner[T, In, P] { type Out = Out0 }
+    
+    implicit def scanner[T, L <: HList, In, P <: Poly, R <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        scanL: hl.LeftScanner.Aux[L, In, P, R], 
+        tp: hl.Tupler[R]
+      ): Aux[T, In, P, tp.Out] =
+        new LeftScanner[T, In, P] {
+          type Out = tp.Out
+
+          def apply(t: T, in: In): Out = tp(scanL(gen.to(t), in))
+        }
+  }
+
+  /**
+   * Type class supporting right-scanning a binary polymorphic function over this tuple.
+   *
+   * @author Owein Reese
+   */
+  trait RightScanner[T, In, P <: Poly] extends DepFn2[T, In]
+
+  object RightScanner{
+    def apply[T, In, P <: Poly](implicit scanR: RightScanner[T, In, P]): Aux[T, In, P, scanR.Out] = scanR
+
+    type Aux[T, In, P <: Poly, Out0] = RightScanner[T, In, P] { type Out = Out0 }
+    
+    implicit def scanner[T, L <: HList, In, P <: Poly, R <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        scanR: hl.RightScanner.Aux[L, In, P, R], 
+        tp: hl.Tupler[R]
+      ): Aux[T, In, P, tp.Out] =
+        new RightScanner[T, In, P] {
+          type Out = tp.Out
+
+          def apply(t: T, in: In): Out = tp(scanR(gen.to(t), in))
+        }
+  }
 }
