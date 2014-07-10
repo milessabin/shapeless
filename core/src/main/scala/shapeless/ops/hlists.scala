@@ -1859,4 +1859,66 @@ object hlist {
       def apply(l: L): Out = l
     }
   }
+
+  trait LeftScanner[L <: HList, In, P <: Poly] extends DepFn2[L, In]{
+    type Out <: HList
+  }
+  
+  object LeftScanner{
+    def apply[L <: HList, In, P <: Poly](implicit scan: LeftScanner[L, In, P]): Aux[L, In, P, scan.Out] = scan
+
+    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = LeftScanner[L, In, P]{ type Out = Out0 }
+
+    implicit def hnilLeftScanner[In, P <: Poly]: Aux[HNil, In, P, In :: HNil] =
+      new LeftScanner[HNil, In, P]{
+        type Out = In :: HNil
+
+        def apply(l: HNil, in: In) = in :: HNil
+      }
+
+    implicit def hlistLeftScanner[H, T <: HList, In, P <: Poly, OutP]
+      (implicit ev: Case2.Aux[P, H, In, OutP], scan: LeftScanner[T, OutP, P]): Aux[H :: T, In, P, In :: scan.Out] =
+        new LeftScanner[H :: T, In, P]{
+          type Out = In :: scan.Out
+
+          def apply(l: H :: T, in: In) = in :: scan(l.tail, ev(l.head, in)) // check it's (h, in) vs (in, h)
+        }
+  }
+
+  trait RightScanner[L <: HList, In, P <: Poly] extends DepFn2[L, In]{
+    type Out <: HList
+  }
+
+  object RightScanner{
+    def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]) = scanR
+
+    trait RightScanner0[L <: HList, V, P <: Poly]{
+      type Out <: HList
+      def apply(l: L, v: V): Out
+    }
+
+    implicit def hlistRS0[H, H0, T <: HList, P <: Poly](implicit ev: Case2[P, H0, H]) =
+      new RightScanner0[H :: T, H0, P]{
+        type Out = ev.Result :: H :: T
+
+        def apply(l: H :: T, h: H0) = ev(h, l.head) :: l
+      } 
+
+    implicit def hnilRightScanner[In, P <: Poly]: Aux[HNil, In, P, In :: HNil] =
+      new RightScanner[HNil, In, P]{
+        type Out = In :: HNil
+
+        def apply(l: HNil, in: In): Out = in :: HNil
+      }
+
+    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = RightScanner[L, In, P]{ type Out = Out0 }
+
+    implicit def hlistRightScanner[H, T <: HList, In, P <: Poly, R <: HList]
+      (implicit scanR: Aux[T, In, P, R], scan0: RightScanner0[R, H, P]) =
+        new RightScanner[H :: T, In, P]{
+          type Out = scan0.Out
+
+          def apply(l: H :: T, in: In) = scan0(scanR(l.tail, in), l.head)
+        }
+  }
 }

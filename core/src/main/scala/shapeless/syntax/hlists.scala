@@ -507,4 +507,8 @@ final class HListOps[L <: HList](l : L) {
    * Rotate this 'HList' right by N
    */
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[L, n.N]): rotateRight.Out = rotateRight(l)
+
+  def scanLeft[A, P <: Poly](z: A)(p: Poly)(implicit scanL: LeftScanner[L, A, p.type]): scanL.Out = scanL(l, z)
+
+  def scanRight[A, P <: Poly](z: A)(p: Poly)(implicit scanR: RightScanner[L, A, p.type]): scanR.Out = scanR(l, z)
 }
