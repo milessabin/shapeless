@@ -268,6 +268,19 @@ class CoproductTests {
   }
 
   @Test
+  def testExtendLeft {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoSI   = S :+: I :+: CNil
+    type CoDSI  = D :+: S :+: I :+: CNil
+    type CoCDSI = C :+: D :+: S :+: I :+: CNil
+
+    assertTypedEquals[CoSI](Coproduct[CoSI](1), Coproduct[CoI](1).extendLeft[S])
+    assertTypedEquals[CoDSI](Coproduct[CoDSI](1), Coproduct[CoSI](1).extendLeft[D])
+    assertTypedEquals[CoCDSI](Coproduct[CoCDSI](1), Coproduct[CoDSI](1).extendLeft[C])
+  }
+
+  @Test
   def testRotateLeft {
     import Nat._
     type S = String; type I = Int; type D = Double; type C = Char
