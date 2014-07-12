@@ -391,4 +391,22 @@ class CoproductTests {
     assertTypedEquals[Option[String]](Some("foo"), Coproduct[Int :+: String :+: CNil]("foo").last)
     assertTypedEquals[Option[String]](None,        Coproduct[Int :+: String :+: CNil](1).last)
   }
+
+  @Test
+  def testAt {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val in2 = Coproduct[I :+: S :+: CNil](1)
+    val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
+
+    assertTypedEquals[Option[I]](Some(1), in1.at[_0])
+    assertTypedEquals[Option[I]](Some(1), in2.at[_0])
+    assertTypedEquals[Option[I]](Some(1), in3.at[_0])
+
+    assertTypedEquals[Option[S]](None, in2.at[_1])
+    assertTypedEquals[Option[S]](None, in3.at[_1])
+
+    assertTypedEquals[Option[D]](None, in3.at[_2])
+  }
 }

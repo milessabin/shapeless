@@ -58,6 +58,37 @@ object coproduct {
     }
   }
 
+  trait At[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type A
+    type Out = Option[A]
+  }
+
+  object At {
+    def apply[C <: Coproduct, N <: Nat](implicit at: At[C, N]): Aux[C, N, at.A] = at
+
+    type Aux[C <: Coproduct, N <: Nat, A0] = At[C, N] { type A = A0 }
+
+    implicit def coproductAt0[H, T <: Coproduct]: Aux[H :+: T, Nat._0, H] = new At[H :+: T, Nat._0] {
+      type A = H
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => Some(h)
+        case _      => None
+      }
+    }
+
+    implicit def coproductAtN[H, T <: Coproduct, N <: Nat](
+      implicit att: At[T, N]
+    ): Aux[H :+: T, Succ[N], att.A] = new At[H :+: T, Succ[N]] {
+      type A = att.A
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(_)    => None
+        case Inr(tail) => att(tail)
+      }
+    }
+  }
+
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
 
   object Mapper {
