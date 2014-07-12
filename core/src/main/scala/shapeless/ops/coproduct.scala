@@ -291,7 +291,7 @@ object coproduct {
   }
 
   /**
-   * Type class providing access to head and tail of this Coproduct
+   * Type class providing access to head and tail of a Coproduct
    *
    * @author Stacy Curl
    */
@@ -356,6 +356,35 @@ object coproduct {
         case Inl(h) => inject(h)
         case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
       }
+    }
+  }
+
+  /**
+   * Type class providing access to init and last of a Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait InitLast[C <: Coproduct] {
+    type I <: Coproduct
+    type L
+
+    def init(c: C): Option[I]
+    def last(c: C): Option[L]
+  }
+
+  object InitLast {
+    def apply[C <: Coproduct](implicit initLast: InitLast[C]): Aux[C, initLast.I, initLast.L] = initLast
+
+    type Aux[C <: Coproduct, I0 <: Coproduct, L0] = InitLast[C] { type I = I0; type L = L0 }
+
+    implicit def initLastCoproduct[C <: Coproduct, ReverseC <: Coproduct, H, T <: Coproduct](
+      implicit reverse: Reverse.Aux[C, ReverseC], isCCons: IsCCons.Aux[ReverseC, H, T]
+    ): Aux[C, T, H] = new InitLast[C] {
+      type I = T
+      type L = H
+
+      def init(c: C): Option[I] = isCCons.tail(reverse(c))
+      def last(c: C): Option[L] = isCCons.head(reverse(c))
     }
   }
 
