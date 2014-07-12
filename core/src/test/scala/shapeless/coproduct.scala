@@ -255,16 +255,16 @@ class CoproductTests {
   }
 
   @Test
-  def testAppend {
+  def testExtendRight {
     type S = String; type I = Int; type D = Double; type C = Char
     type CoI    = I :+: CNil
     type CoIS   = I :+: S :+: CNil
     type CoISD  = I :+: S :+: D :+: CNil
     type CoISDC = I :+: S :+: D :+: C :+: CNil
 
-    assertTypedEquals[CoIS](Coproduct[CoIS](1), Coproduct[CoI](1).append[S])
-    assertTypedEquals[CoISD](Coproduct[CoISD](1), Coproduct[CoIS](1).append[D])
-    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), Coproduct[CoISD](1).append[C])
+    assertTypedEquals[CoIS](Coproduct[CoIS](1), Coproduct[CoI](1).extendRight[S])
+    assertTypedEquals[CoISD](Coproduct[CoISD](1), Coproduct[CoIS](1).extendRight[D])
+    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), Coproduct[CoISD](1).extendRight[C])
   }
 
   @Test
