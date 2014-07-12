@@ -36,6 +36,16 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
 
+  /**
+   * Returns the head of this `Coproduct`
+   */
+  def head(implicit cc: IsCCons[C]): Option[cc.H] = cc.head(c)
+
+  /**
+   * Returns the tail of this `Coproduct`
+   */
+  def tail(implicit cc: IsCCons[C]): Option[cc.T] = cc.tail(c)
+
   def length(implicit length: Length[C]): length.Out = length()
 
   def append[T](implicit append: Append[C, T]): append.Out = append(c)

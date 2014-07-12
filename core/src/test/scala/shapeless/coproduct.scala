@@ -336,4 +336,20 @@ class CoproductTests {
     assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), in4.rotateRight[_5])
     assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateRight[_6])
   }
+
+  @Test
+  def testHead {
+    assertTypedEquals[Option[Int]](Some(1), Coproduct[Int :+: CNil](1).head)
+    assertTypedEquals[Option[Int]](Some(1), Coproduct[Int :+: String :+: CNil](1).head)
+    assertTypedEquals[Option[Int]](None,    Coproduct[Int :+: String :+: CNil]("foo").head)
+  }
+
+  @Test
+  def testTail {
+    assertTypedEquals[Option[CNil]](None, Coproduct[Int :+: CNil](1).tail)
+    assertTypedEquals[Option[String :+: CNil]](None, Coproduct[Int :+: String :+: CNil](1).tail)
+
+    assertTypedEquals[Option[String :+: CNil]](
+      Some(Coproduct[String :+: CNil]("foo")), Coproduct[Int :+: String :+: CNil]("foo").tail)
+  }
 }
