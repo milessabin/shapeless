@@ -572,13 +572,13 @@ class HListTests {
     val u35 = lub(1 :: "two" :: 3 :: 4 :: HNil, 1 :: 2 :: 3 :: 4 :: HNil) 
     typed[(Int :: Any :: Int :: Int :: HNil, Int :: Any :: Int :: Int :: HNil)](u35)
     
-    implicitly[Unifier.Aux[Apple :: HNil, Apple :: HNil]]
-    implicitly[Unifier.Aux[Fruit :: Pear :: HNil, Fruit :: Fruit :: HNil]]
-    implicitly[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]]
+    implicitly[Unifier[Apple :: HNil, Apple]]
+    implicitly[Unifier[Fruit :: Pear :: HNil, Fruit]]
+    implicitly[Unifier[Apple :: Pear :: HNil, Fruit]]
     
-    implicitly[Unifier.Aux[Int :: String :: Int :: Int :: HNil, YYYY]]
+    implicitly[Unifier[Int :: String :: Int :: Int :: HNil, Any]]
     
-    val uapap = implicitly[Unifier.Aux[Apple :: Pear :: Apple :: Pear :: HNil, FFFF]]
+    val uapap = Unifier[Apple :: Pear :: Apple :: Pear :: HNil, Fruit]
     val unified1 = uapap(apap)
     typed[FFFF](unified1)
     val unified2 = apap.unify
@@ -591,30 +591,70 @@ class HListTests {
     assertFalse(ununified2.isDefined)
     typed[Option[APBP]](ununified2)
 
-    def getUnifier[L <: HList, Out <: HList](l : L)(implicit u : Unifier.Aux[L, Out]) = u
+    def getUnifier[L <: HList, Lub](l : L)(implicit u : Unifier[L, Lub]): u.type = u
     
     val u2 = getUnifier(a :: HNil)
-    typed[Unifier.Aux[Apple :: HNil, Apple :: HNil]](u2)
+    typed[Unifier[Apple :: HNil, Apple]](u2)
     val u3 = getUnifier(a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: HNil, Apple :: Apple :: HNil]](u3)
+    typed[Unifier[Apple :: Apple :: HNil, Apple]](u3)
     val u4 = getUnifier(a :: a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: HNil]](u4)
+    typed[Unifier[Apple :: Apple :: Apple :: HNil, Apple]](u4)
     val u5 = getUnifier(a :: a :: a :: a :: HNil)
-    typed[Unifier.Aux[Apple :: Apple :: Apple :: Apple :: HNil, Apple :: Apple :: Apple :: Apple :: HNil]](u5)
-    val u6 = getUnifier(a :: p :: HNil)
-    //typed[Unifier.Aux[Apple :: Pear :: HNil, Fruit :: Fruit :: HNil]](u6)
+    typed[Unifier[Apple :: Apple :: Apple :: Apple :: HNil, Apple]](u5)
+    val u6 = getUnifier[Apple :: Pear :: HNil, Fruit](a :: p :: HNil)
+    typed[Unifier[Apple :: Pear :: HNil, Fruit]](u6)
     val u7 = getUnifier(a :: f :: HNil)
-    typed[Unifier.Aux[Apple :: Fruit :: HNil, Fruit :: Fruit :: HNil]](u7)
+    typed[Unifier[Apple :: Fruit :: HNil, Fruit]](u7)
     val u8 = getUnifier(f :: a :: HNil)
-    typed[Unifier.Aux[Fruit :: Apple :: HNil, Fruit :: Fruit :: HNil]](u8)
+    typed[Unifier[Fruit :: Apple :: HNil, Fruit]](u8)
     val u9a = getUnifier(a :: f :: HNil)
-    typed[Unifier.Aux[Apple :: Fruit :: HNil, FF]](u9a)
+    typed[Unifier[Apple :: Fruit :: HNil, Fruit]](u9a)
     val u9b = getUnifier(a :: p :: HNil)
-    typed[Unifier.Aux[Apple :: Pear :: HNil, PWS :: PWS :: HNil]](u9b)
+    typed[Unifier[Apple :: Pear :: HNil, PWS]](u9b)
     val u10 = getUnifier(apap)
-    typed[Unifier.Aux[APAP, PWS :: PWS :: PWS :: PWS :: HNil]](u10)
+    typed[Unifier[APAP, PWS]](u10)
     val u11 = getUnifier(apbp)
-    typed[Unifier.Aux[APBP, PWS :: PWS :: PWS :: PWS :: HNil]](u11)
+    typed[Unifier[APBP, PWS]](u11)
+    
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+
+    {
+      val hnil = HNil
+      val unil = hnil.unify
+      equalInferredTypes(hnil.length, unil.length)
+    }
+
+    {
+      val hl = a :: "a" :: 2 :: 3 :: 0.0 :: HNil
+      val l = a :: "a" :: 2 :: 3 :: 0.0 :: Nil
+      val u = hl.unify
+      equalInferredTypes(hl.length, u.length)
+      equalInferredTypes(l.head, u(Nat._0))
+      equalInferredTypes(l.head, u(Nat._1))
+      equalInferredTypes(l.head, u(Nat._2))
+      equalInferredTypes(l.head, u(Nat._3))
+      equalInferredTypes(l.head, u(Nat._4))
+      assertEquals(hl(Nat._0), u(Nat._0))
+      assertEquals(hl(Nat._1), u(Nat._1))
+      assertEquals(hl(Nat._2), u(Nat._2))
+      assertEquals(hl(Nat._3), u(Nat._3))
+      assertEquals(hl(Nat._4), u(Nat._4))
+    }
+
+    {
+      // Explicitly provided upper bound
+      val apbpList = List[Fruit](a, p, b, p)
+      val apbpUnified = apbp.unify[Fruit]
+      equalInferredTypes(apbp.length, apbpUnified.length)
+      equalInferredTypes(apbpList.head, apbpUnified(Nat._0))
+      equalInferredTypes(apbpList.head, apbpUnified(Nat._1))
+      equalInferredTypes(apbpList.head, apbpUnified(Nat._2))
+      equalInferredTypes(apbpList.head, apbpUnified(Nat._3))
+      assertEquals(apbp(Nat._0), apbpUnified(Nat._0))
+      assertEquals(apbp(Nat._1), apbpUnified(Nat._1))
+      assertEquals(apbp(Nat._2), apbpUnified(Nat._2))
+      assertEquals(apbp(Nat._3), apbpUnified(Nat._3))
+    }
     
     val invar1 = Set(23) :: Set("foo") :: HNil
     val uinvar1 = invar1.unify
@@ -624,6 +664,29 @@ class HListTests {
     // arguments fails, presumably due to a failure to compute a sensble LUB.
     //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
     //val uinvar2 = invar.unify
+
+    {
+      val cicscicicdUnified = cicscicicd.unify
+      equalInferredTypes(cicscicicd.length, cicscicicdUnified.length)
+      equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._0))
+      equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._1))
+      equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._2))
+      equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._3))
+      equalInferredTypes(cicscicicdList.head, cicscicicdUnified(Nat._4))
+      assertEquals(cicscicicd(Nat._0), cicscicicdUnified(Nat._0))
+      assertEquals(cicscicicd(Nat._1), cicscicicdUnified(Nat._1))
+      assertEquals(cicscicicd(Nat._2), cicscicicdUnified(Nat._2))
+      assertEquals(cicscicicd(Nat._3), cicscicicdUnified(Nat._3))
+      assertEquals(cicscicicd(Nat._4), cicscicicdUnified(Nat._4))
+      typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._0))
+      typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._1))
+      typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._2))
+      typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._3))
+      typed[Ctv[Int with String with Double]](cicscicicdUnified(Nat._4))
+    }
+
+    // mimsmimimd, mimsmimemd, m2im2sm2im2im2d, and m2eim2esm2eim2eem2ed unification works
+    // but cannot be properly tested as their output types involve existentials  
   }
 
   @Test
