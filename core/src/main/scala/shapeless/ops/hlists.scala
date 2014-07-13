@@ -1995,4 +1995,35 @@ object hlist {
           def apply(elem: A) = fill(subFill(elem))
         }
   }
+
+  /**
+   * Type class supporting the patching of an `HList`
+   *
+   * @author Owein Reese
+   */
+  trait Patcher[N <: Nat, M <: Nat, L <: HList, In <: HList] extends DepFn2[L, In]{
+    type Out <: HList
+  }
+
+  object Patcher{
+    def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](implicit patch: Patcher[N, M, L, In]) = patch
+
+    type Aux[N <: Nat, M <: Nat, L <: HList, In <: HList, Out0 <: HList] = Patcher[N, M, L, In]{ type Out = Out0 }
+
+    implicit def hlistPatch1[N <: Nat, M <: Nat, H, T <: HList, In <: HList]
+      (implicit patch: Patcher[N, M, T, In]) =
+        new Patcher[Succ[N], M, H :: T, In]{
+          type Out = H :: patch.Out
+
+          def apply(l: H :: T, in: In) = l.head :: patch(l.tail, in)
+        }
+
+    implicit def hlistPatch2[M <: Nat, L <: HList, In <: HList, OutL <: HList]
+      (implicit drop: Drop.Aux[L, M, OutL], prepend: Prepend[In, OutL]) =
+        new Patcher[_0, M, L, In]{
+          type Out = prepend.Out
+
+          def apply(l: L, in: In) = prepend(in, drop(l))
+        }
+  }
 }
