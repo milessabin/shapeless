@@ -29,7 +29,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
   import ops.coproduct._
 
   def map(f: Poly)(implicit mapper: Mapper[f.type, C]): mapper.Out = mapper(c)
-  
+
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
 
   /**
@@ -43,6 +43,16 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */
   def at[N <: Nat](n: N)(implicit at: At[C, n.N]): Option[at.A] = at(c)
+
+  /**
+   * Returns all elements of type `U` of this `Coproduct`. An explicit type argument must be provided.
+   */
+  def filter[U](implicit filter: Filter[C, U]): Option[filter.A]  = filter(c)
+
+  /**
+   * Returns all elements of type different than `U` of this `Coproduct`. An explicit type argument must be provided.
+   */
+  def filterNot[U](implicit filterNot: FilterNot[C, U]): Option[filterNot.A] = filterNot(c)
 
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
