@@ -432,6 +432,84 @@ object coproduct {
       }
     }
   }
+  /**
+   * Type class supporting splitting this `Coproduct` at the ''nth'' element returning prefix and suffix as a coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Left  <: Coproduct
+    type Right <: Coproduct
+    type Out = Left :+: Right :+: CNil
+  }
+
+  object Split {
+    def apply[C <: Coproduct, N <: Nat](implicit split: Split[C, N]): Aux[C, N, split.Left, split.Right] = split
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
+      Split[C, N] { type Left = L; type Right = R }
+
+    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+      type Left  <: Coproduct
+      type Right <: Coproduct
+      type Out = Left :+: Right :+: CNil
+
+      protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
+      protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
+    }
+
+    implicit def coproductSplit[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat](
+      implicit
+      length: Length.Aux[C, Size],
+      mod: nat.Mod.Aux[N, Succ[Size], NModSize],
+      impl: Impl[C, NModSize]
+    ): Aux[C, N, impl.Left, impl.Right] = new Split[C, N] {
+      type Left = impl.Left
+      type Right = impl.Right
+
+      def apply(c: C): Out = impl(c)
+    }
+
+    object Impl {
+      type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
+        Impl[C, N] { type Left = L; type Right = R }
+
+      implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] = new Impl[C, Nat._0] {
+        type Left  = CNil
+        type Right = C
+
+        def apply(c: C): Out = right(c)
+      }
+
+      implicit def splitOne[H1, T <: Coproduct]
+        : Aux[H1 :+: T, Nat._1, H1 :+: CNil, T] = new Impl[H1 :+: T, Nat._1] {
+
+        type Left  = H1 :+: CNil
+        type Right = T
+
+        def apply(c: H1 :+: T): Out = c match {
+          case Inl(h1) => left(Inl[H1, CNil](h1))
+          case Inr(t)  => right(t)
+        }
+      }
+
+      implicit def coproductImpl[H, T <: Coproduct, N <: Nat, L0 <: Coproduct, R0 <: Coproduct](
+        implicit splitN: Aux[T, N, L0, R0]
+      ): Aux[H :+: T, Succ[N], H :+: L0, R0] = new Impl[H :+: T, Succ[N]] {
+        type Left  = H :+: L0
+        type Right = R0
+
+        def apply(c: H :+: T): Out = c match {
+          case Inl(h) => left(Inl[H, L0](h))
+          case Inr(t) => splitN(t) match {
+            case Inl(l0) => left(Inr[H, L0](l0))
+            case Inr(Inl(r0)) => right(r0)
+            case other        => sys.error("unreachable: " + other)
+          }
+        }
+      }
+    }
+  }
 
   /**
    * Type class supporting reversing a Coproduct
