@@ -197,10 +197,7 @@ object hlist {
     def apply[L <: HList](l: L)(implicit mk: HKernelAux[L]): mk.Out = mk()
   }
 
-  trait HKernelAux[L <: HList] {
-    type Out <: HKernel
-    def apply(): Out
-  }
+  trait HKernelAux[L <: HList] extends DepFn0 { type Out <: HKernel }
 
   object HKernelAux {
     implicit def mkHNilHKernel = new HKernelAux[HNil] {
@@ -1676,11 +1673,7 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  trait MapCons[A, M <: HList] {
-    type Out <: HList
-
-    def apply(a: A, m: M): Out
-  }
+  trait MapCons[A, M <: HList] extends DepFn2[A, M] { type Out <: HList }
 
   object MapCons {
     def apply[A, M <: HList](implicit mapCons: MapCons[A, M]): MapCons[A, M] = mapCons
@@ -1708,11 +1701,7 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  trait Interleave[A, L <: HList] {
-    type Out <: HList
-
-    def apply(a: A, l: L): Out
-  }
+  trait Interleave[A, L <: HList] extends DepFn2[A, L] { type Out <: HList }
 
   object Interleave {
     def apply[A , L <: HList](implicit interleave: Interleave[A, L]): Interleave[A, L] = interleave
@@ -1740,11 +1729,7 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  trait FlatMapInterleave[A, M <: HList] {
-    type Out <: HList
-
-    def apply(a: A, m: M): Out
-  }
+  trait FlatMapInterleave[A, M <: HList] extends DepFn2[A, M] { type Out <: HList }
 
   object FlatMapInterleave {
     def apply[A, M <: HList](implicit flatMapInterleave: FlatMapInterleave[A, M]): FlatMapInterleave[A, M] =
