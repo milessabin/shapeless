@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import test._
+import testutil._
 
 class HListTests {
   import nat._
@@ -2053,7 +2054,4 @@ class HListTests {
     assertTypedEquals[C :: I :: S :: D :: HNil]('a' :: 1 :: "foo" :: 2.0 :: HNil, in4.rotateRight[_5])
     assertTypedEquals[D :: C :: I :: S :: HNil](2.0 :: 'a' :: 1 :: "foo" :: HNil, in4.rotateRight[_6])
   }
-
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
-  private def assertTypedSame[A](expected: A, actual: A) = assertSame(expected, actual)
 }

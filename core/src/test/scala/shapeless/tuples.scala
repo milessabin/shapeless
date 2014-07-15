@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import shapeless.test._
+import testutil._
 
 class TupleTests {
   import nat._
@@ -1472,6 +1473,4 @@ class TupleTests {
     assertTypedEquals[(C, I, S, D)](('a', 1, "foo", 2.0), in4.rotateRight[_5])
     assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateRight[_6])
   }
-
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
 }

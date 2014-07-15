@@ -22,6 +22,7 @@ import org.junit.Assert._
 import poly._
 import ops.hlist.Mapper
 import test._
+import testutil._
 
 /** Polymorphic singleton function. */
 object singleton extends (Id ~> Set) {
@@ -526,8 +527,6 @@ class PolyTests {
 
     assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", dcis(2.0, 'a', 1, "foo"))
   }
-
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
 }
 
 object LiftMethods {
