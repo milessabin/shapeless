@@ -350,7 +350,7 @@ object hlist {
   }
     
   object MapFolder {
-    def apply[L <: HList, R, F](implicit folder: MapFolder[L, R, F]) = folder
+    def apply[L <: HList, R, F](implicit folder: MapFolder[L, R, F]): MapFolder[L, R, F] = folder
 
     implicit def hnilMapFolder[R, HF]: MapFolder[HNil, R, HF] = new MapFolder[HNil, R, HF] {
       def apply(l : HNil, in : R, op : (R, R) => R): R = in
@@ -544,7 +544,8 @@ object hlist {
   }
 
   object ToTraversable {
-    def apply[L <: HList, M[_]](implicit toTraversable: ToTraversable[L, M]) = toTraversable
+    def apply[L <: HList, M[_]]
+      (implicit toTraversable: ToTraversable[L, M]): Aux[L, M, toTraversable.Lub] = toTraversable
 
     type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
 
@@ -603,10 +604,10 @@ object hlist {
   }
 
   object ToSized {
-    def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]) = toSized
-    
+    def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]): Aux[L, M, toSized.Lub, toSized.N] = toSized
+
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
-    
+
     implicit def hnilToSized[L <: HNil, M[_]]
       (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
         new ToSized[L, M] {
@@ -1676,7 +1677,7 @@ object hlist {
   trait MapCons[A, M <: HList] extends DepFn2[A, M] { type Out <: HList }
 
   object MapCons {
-    def apply[A, M <: HList](implicit mapCons: MapCons[A, M]): MapCons[A, M] = mapCons
+    def apply[A, M <: HList](implicit mapCons: MapCons[A, M]): Aux[A, M, mapCons.Out] = mapCons
 
     type Aux[A, M <: HList, Out0 <: HList] = MapCons[A, M] { type Out = Out0 }
 
@@ -1704,7 +1705,7 @@ object hlist {
   trait Interleave[A, L <: HList] extends DepFn2[A, L] { type Out <: HList }
 
   object Interleave {
-    def apply[A , L <: HList](implicit interleave: Interleave[A, L]): Interleave[A, L] = interleave
+    def apply[A , L <: HList](implicit interleave: Interleave[A, L]): Aux[A, L, interleave.Out] = interleave
 
     type Aux[A, L <: HList, Out0 <: HList] = Interleave[A, L] { type Out = Out0 }
 
@@ -1732,8 +1733,8 @@ object hlist {
   trait FlatMapInterleave[A, M <: HList] extends DepFn2[A, M] { type Out <: HList }
 
   object FlatMapInterleave {
-    def apply[A, M <: HList](implicit flatMapInterleave: FlatMapInterleave[A, M]): FlatMapInterleave[A, M] =
-      flatMapInterleave
+    def apply[A, M <: HList]
+      (implicit flatMapInterleave: FlatMapInterleave[A, M]): Aux[A, M, flatMapInterleave.Out] = flatMapInterleave
 
     type Aux[A, M <: HList, Out0 <: HList] = FlatMapInterleave[A, M] { type Out = Out0 }
 
@@ -1765,7 +1766,7 @@ object hlist {
   trait Permutations[L <: HList] extends DepFn1[L] { type Out <: HList }
 
   object Permutations {
-    def apply[L <: HList](implicit permutations: Permutations[L]): Permutations[L] = permutations
+    def apply[L <: HList](implicit permutations: Permutations[L]): Aux[L, permutations.Out] = permutations
 
     type Aux[L <: HList, Out0] = Permutations[L] { type Out = Out0 }
 
@@ -1793,8 +1794,8 @@ object hlist {
   trait RotateLeft[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object RotateLeft extends LowPriorityRotateLeft {
-    def apply[L <: HList, N <: Nat](implicit rotateLeft: RotateLeft[L, N]): RotateLeft[L, N] =
-      rotateLeft
+    def apply[L <: HList, N <: Nat]
+      (implicit rotateLeft: RotateLeft[L, N]): Aux[L, N, rotateLeft.Out] = rotateLeft
 
     implicit def hlistRotateLeft[
       L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Before <: HList, After <: HList
@@ -1832,7 +1833,8 @@ object hlist {
   trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object RotateRight extends LowPriorityRotateRight {
-    def apply[L <: HList, N <: Nat](implicit rotateRight: RotateRight[L, N]): RotateRight[L, N] = rotateRight
+    def apply[L <: HList, N <: Nat]
+      (implicit rotateRight: RotateRight[L, N]): Aux[L, N, rotateRight.Out] = rotateRight
 
     implicit def hlistRotateRightt[
       L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
