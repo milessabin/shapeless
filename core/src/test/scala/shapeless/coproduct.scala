@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import test._
+import testutil._
 
 import ops.coproduct._
 
@@ -335,7 +336,4 @@ class CoproductTests {
     assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), in4.rotateRight[_5])
     assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateRight[_6])
   }
-
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
-  private def assertTypedSame[A](expected: A, actual: A) = assertSame(expected, actual)
 }
