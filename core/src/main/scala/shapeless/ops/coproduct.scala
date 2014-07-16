@@ -289,6 +289,40 @@ object coproduct {
     }
   }
 
+  /**
+   * Type class providing access to head and tail of this Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait IsCCons[C <: Coproduct] {
+    type H
+    type T <: Coproduct
+
+    def head(c: C): Option[H]
+    def tail(c: C): Option[T]
+  }
+
+  object IsCCons {
+    def apply[C <: Coproduct](implicit isCCons: IsCCons[C]): Aux[C, isCCons.H, isCCons.T] = isCCons
+
+    type Aux[C <: Coproduct, H0, T0 <: Coproduct] = IsCCons[C] { type H = H0; type T = T0 }
+
+    implicit def coproductCCons[H0, T0 <: Coproduct]: Aux[H0 :+: T0, H0, T0] = new IsCCons[H0 :+: T0] {
+      type H = H0
+      type T = T0
+
+      def head(c: H0 :+: T0): Option[H0] = c match {
+        case Inl(h) => Some(h)
+        case _      => None
+      }
+
+      def tail(c: H0 :+: T0): Option[T0] = c match {
+        case Inr(t) => Some(t)
+        case _      => None
+      }
+    }
+  }
+
   implicit object cnilOrdering extends Ordering[CNil] {
     def compare(x: CNil, y: CNil) = 0
   }
