@@ -2078,4 +2078,145 @@ class HListTests {
     typed[Int :: Int :: Int :: HNil](out)
     assertEquals(4 :: 3 :: 1 :: HNil, out)
   }
+  
+  @Test
+  def testFill {
+    {
+      val empty = HList.fill(0)(true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val empty = HList.fill(0)[Boolean](true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val single = HList.fill(1)(None)
+      typed[_1](single.length)
+      typed[None.type](single.head)
+      assertEquals(None, single.head)
+    }
+
+    {
+      val single = HList.fill(1)[None.type](None)
+      typed[_1](single.length)
+      typed[None.type](single.head)
+      assertEquals(None, single.head)
+    }
+
+    {
+      val three = HList.fill(3)(m2i)
+      typed[_3](three.length)
+      typed[M2[Int, Unit]](three(_0))
+      typed[M2[Int, Unit]](three(_1))
+      typed[M2[Int, Unit]](three(_2))
+      assertEquals(m2i, three(_0))
+      assertEquals(m2i, three(_1))
+      assertEquals(m2i, three(_2))
+    }
+
+    {
+      val three = HList.fill(3)[M2[Int, Unit]](m2i)
+      typed[_3](three.length)
+      typed[M2[Int, Unit]](three(_0))
+      typed[M2[Int, Unit]](three(_1))
+      typed[M2[Int, Unit]](three(_2))
+      assertEquals(m2i, three(_0))
+      assertEquals(m2i, three(_1))
+      assertEquals(m2i, three(_2))
+    }
+
+    {
+      val empty = HList.fill(0, 0)(true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val empty = HList.fill(0, 0)[Boolean](true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val empty = HList.fill(2, 0)(true)
+      typed[_2](empty.length)
+      typed[_0](empty(_0).length)
+      typed[_0](empty(_1).length)
+    }
+
+    {
+      val empty = HList.fill(2, 0)[Boolean](true)
+      typed[_2](empty.length)
+      typed[_0](empty(_0).length)
+      typed[_0](empty(_1).length)
+    }
+
+    {
+      val empty = HList.fill(0, 2)(true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val empty = HList.fill(0, 2)[Boolean](true)
+      typed[_0](empty.length)
+    }
+
+    {
+      val oneByTwo = HList.fill(1, 2)(None)
+      typed[_1](oneByTwo.length)
+      typed[_2](oneByTwo.head.length)
+      typed[None.type](oneByTwo.head(_0))
+      typed[None.type](oneByTwo.head(_1))
+      assertEquals(None, oneByTwo.head(_0))
+      assertEquals(None, oneByTwo.head(_1))
+    }
+
+    {
+      val oneByTwo = HList.fill(1, 2)[None.type](None)
+      typed[_1](oneByTwo.length)
+      typed[_2](oneByTwo.head.length)
+      typed[None.type](oneByTwo.head(_0))
+      typed[None.type](oneByTwo.head(_1))
+      assertEquals(None, oneByTwo.head(_0))
+      assertEquals(None, oneByTwo.head(_1))
+    }
+
+    {
+      val twoByThree = HList.fill(2, 3)(None)
+      typed[_2](twoByThree.length)
+      typed[_3](twoByThree(_0).length)
+      typed[_3](twoByThree(_1).length)
+      typed[None.type](twoByThree.at[_0].at[_0])
+      typed[None.type](twoByThree.at[_0].at[_1])
+      typed[None.type](twoByThree.at[_0].at[_2])
+      typed[None.type](twoByThree.at[_1].at[_0])
+      typed[None.type](twoByThree.at[_1].at[_1])
+      typed[None.type](twoByThree.at[_1].at[_2])
+      assertEquals(None, twoByThree.at[_0].at[_0])
+      assertEquals(None, twoByThree.at[_0].at[_1])
+      assertEquals(None, twoByThree.at[_0].at[_2])
+      assertEquals(None, twoByThree.at[_1].at[_0])
+      assertEquals(None, twoByThree.at[_1].at[_1])
+      assertEquals(None, twoByThree.at[_1].at[_2])
+    }
+
+    {
+      val twoByThree = HList.fill(2, 3)[None.type](None)
+      typed[_2](twoByThree.length)
+      typed[_3](twoByThree(_0).length)
+      typed[_3](twoByThree(_1).length)
+      typed[None.type](twoByThree.at[_0].at[_0])
+      typed[None.type](twoByThree.at[_0].at[_1])
+      typed[None.type](twoByThree.at[_0].at[_2])
+      typed[None.type](twoByThree.at[_1].at[_0])
+      typed[None.type](twoByThree.at[_1].at[_1])
+      typed[None.type](twoByThree.at[_1].at[_2])
+      assertEquals(None, twoByThree.at[_0].at[_0])
+      assertEquals(None, twoByThree.at[_0].at[_1])
+      assertEquals(None, twoByThree.at[_0].at[_2])
+      assertEquals(None, twoByThree.at[_1].at[_0])
+      assertEquals(None, twoByThree.at[_1].at[_1])
+      assertEquals(None, twoByThree.at[_1].at[_2])
+    }
+  } 
 }

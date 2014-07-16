@@ -52,6 +52,7 @@ sealed trait HNil extends HList {
 case object HNil extends HNil
 
 object HList {
+  import ops.hlist._
   import syntax.HListOps
 
   def apply() = HNil
@@ -59,6 +60,20 @@ object HList {
   def apply[T](t: T) = t :: HNil
   
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
+
+  case class FillBuilder[N]() {
+    def apply[A](elem: A)(implicit fill: Fill[N, A]) : fill.Out = fill(elem)
+  }
+
+  /**
+   * Produces a HList of length `N` filled with `elem`.
+   */
+  def fill(n: Nat) = FillBuilder[n.N]()
+
+  /**
+   * Produces a `N1`-length HList made of `N2`-length HLists filled with `elem`.
+   */
+  def fill(n1: Nat, n2: Nat) = FillBuilder[(n1.N, n2.N)]()
   
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 

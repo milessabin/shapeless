@@ -1930,4 +1930,37 @@ object hlist {
           def apply(l: H :: T, in: In) = scan0(scanR(l.tail, in), l.head)
         }
   }
+
+  /**
+   * Type class supporting producing a HList of shape `N` filled with elements of type `A`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fill[N, A] extends DepFn1[A] { type Out <: HList }
+
+  object Fill {
+    def apply[N, A](implicit fill: Fill[N, A]) = fill
+
+    type Aux[N, A, Out0] = Fill[N, A] { type Out = Out0 }
+
+    implicit def fill1Zero[A]: Aux[Nat._0, A, HNil] =
+      new Fill[Nat._0, A] {
+        type Out = HNil
+        def apply(elem: A) = HNil
+      }
+
+    implicit def fill1Succ[N <: Nat, A]
+      (implicit prev: Fill[N, A]): Aux[Succ[N], A, A :: prev.Out] =
+        new Fill[Succ[N], A] {
+          type Out = A :: prev.Out
+          def apply(elem: A) = elem :: prev(elem)
+        }
+
+    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut]
+      (implicit subFill: Fill.Aux[N2, A, SubOut], fill: Fill[N1, SubOut]): Aux[(N1, N2), A, fill.Out] =
+        new Fill[(N1, N2), A] {
+          type Out = fill.Out
+          def apply(elem: A) = fill(subFill(elem))
+        }
+  }
 }
