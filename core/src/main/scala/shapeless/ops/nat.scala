@@ -133,7 +133,7 @@ object nat {
   trait LT[A <: Nat, B <: Nat]
 
   object LT {
-    def apply[A <: Nat, B <: Nat](implicit lt: A < B) = lt
+    def apply[A <: Nat, B <: Nat](implicit lt: A < B): LT[A, B] = lt
 
     type <[A <: Nat, B <: Nat] = LT[A, B]
 
@@ -149,7 +149,7 @@ object nat {
   trait LTEq[A <: Nat, B <: Nat]
 
   object LTEq {
-    def apply[A <: Nat, B <: Nat](implicit lteq: A <= B) = lteq
+    def apply[A <: Nat, B <: Nat](implicit lteq: A <= B): LTEq[A, B] = lteq
 
     type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 

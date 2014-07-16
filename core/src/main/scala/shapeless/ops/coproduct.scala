@@ -25,7 +25,7 @@ object coproduct {
   }
 
   object Inject {
-    def apply[C <: Coproduct, I](implicit inject: Inject[C, I]) = inject
+    def apply[C <: Coproduct, I](implicit inject: Inject[C, I]): Inject[C, I] = inject
 
     implicit def tlInject[H, T <: Coproduct, I](implicit tlInj : Inject[T, I]): Inject[H :+: T, I] = new Inject[H :+: T, I] {
       def apply(i: I): H :+: T = Inr(tlInj(i))
@@ -41,7 +41,7 @@ object coproduct {
   }
 
   object Selector {
-    def apply[C <: Coproduct, T](implicit select: Selector[C, T]) = select
+    def apply[C <: Coproduct, T](implicit select: Selector[C, T]): Selector[C, T] = select
 
     implicit def tlSelector1[H, T <: Coproduct, S](implicit st: Selector[T, S]): Selector[H :+: T, S] = new Selector[H :+: T, S] {
       def apply(c: H :+: T): Option[S] = c match {
@@ -143,7 +143,7 @@ object coproduct {
   trait Length[C <: Coproduct] extends DepFn0 { type Out <: Nat }
 
   object Length {
-    def apply[C <: Coproduct](implicit length: Length[C]): Length[C] = length
+    def apply[C <: Coproduct](implicit length: Length[C]): Aux[C, length.Out] = length
 
     type Aux[C <: Coproduct, Out0 <: Nat] = Length[C] { type Out = Out0 }
 
@@ -163,19 +163,20 @@ object coproduct {
   }
 
   /**
-   * Type class supporting appending a type to a coproduct
+   * Type class supporting extending a coproduct on the right
    *
    * @author Stacy Curl
    */
-  trait Append[C <: Coproduct, T] extends DepFn1[C] { type Out <: Coproduct }
+  trait ExtendRight[C <: Coproduct, T] extends DepFn1[C] { type Out <: Coproduct }
 
-  object Append {
-    def apply[C <: Coproduct, T](implicit append: Append[C, T]): Append[C, T] = append
+  object ExtendRight {
+    def apply[C <: Coproduct, T]
+      (implicit extendRight: ExtendRight[C, T]): Aux[C, T, extendRight.Out] = extendRight
 
-    type Aux[C <: Coproduct, T, Out0 <: Coproduct] = Append[C, T] { type Out = Out0 }
+    type Aux[C <: Coproduct, T, Out0 <: Coproduct] = ExtendRight[C, T] { type Out = Out0 }
 
-    implicit def appendSingleton[H, A]: Aux[H :+: CNil, A, H :+: A :+: CNil] =
-      new Append[H :+: CNil, A] {
+    implicit def extendRightSingleton[H, A]: Aux[H :+: CNil, A, H :+: A :+: CNil] =
+      new ExtendRight[H :+: CNil, A] {
         type Out = H :+: A :+: CNil
 
         def apply(c: H :+: CNil): Out = c match {
@@ -184,14 +185,14 @@ object coproduct {
         }
       }
 
-    implicit def appendCoproduct[H, T <: Coproduct, A, AT <: Coproduct]
-      (implicit append: Aux[T, A, AT]): Aux[H :+: T, A, H :+: AT] =
-        new Append[H :+: T, A] {
+    implicit def extendRightCoproduct[H, T <: Coproduct, A, AT <: Coproduct]
+      (implicit extendRight: Aux[T, A, AT]): Aux[H :+: T, A, H :+: AT] =
+        new ExtendRight[H :+: T, A] {
           type Out = H :+: AT
 
           def apply(c: H :+: T) = c match {
             case Inl(h) => Inl(h)
-            case Inr(t) => Inr(append(t))
+            case Inr(t) => Inr(extendRight(t))
           }
         }
   }
@@ -204,7 +205,8 @@ object coproduct {
   trait RotateLeft[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
 
   object RotateLeft extends LowPriorityRotateLeft {
-    def apply[C <: Coproduct, N <: Nat](implicit rotateLeft: RotateLeft[C, N]): RotateLeft[C, N] = rotateLeft
+    def apply[C <: Coproduct, N <: Nat]
+      (implicit rotateLeft: RotateLeft[C, N]): Aux[C, N, rotateLeft.Out] = rotateLeft
 
     implicit def implToRotateLeft[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_]]
       (implicit
@@ -223,13 +225,13 @@ object coproduct {
       type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] { type Out = Out0 }
 
       implicit def rotateCoproductOne[H, T <: Coproduct, TH <: Coproduct]
-        (implicit append: Append.Aux[T, H, TH], inject: Inject[TH, H]): Aux[H :+: T, Nat._1, TH] =
+        (implicit extendRight: ExtendRight.Aux[T, H, TH], inject: Inject[TH, H]): Aux[H :+: T, Nat._1, TH] =
          new Impl[H :+: T, Nat._1] {
            type Out = TH
 
            def apply(c: H :+: T): Out = c match {
              case Inl(a)    => inject(a)
-             case Inr(tail) => append(tail)
+             case Inr(tail) => extendRight(tail)
            }
          }
 
@@ -261,7 +263,8 @@ object coproduct {
   trait RotateRight[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
 
   object RotateRight extends LowPriorityRotateRight {
-    def apply[C <: Coproduct, N <: Nat](implicit rotateRight: RotateRight[C, N]): RotateRight[C, N] = rotateRight
+    def apply[C <: Coproduct, N <: Nat]
+      (implicit rotateRight: RotateRight[C, N]): Aux[C, N, rotateRight.Out] = rotateRight
 
     implicit def hlistRotateRightt[
       C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
@@ -284,6 +287,40 @@ object coproduct {
       type Out = C
 
       def apply(c: C): Out = c
+    }
+  }
+
+  /**
+   * Type class providing access to head and tail of this Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait IsCCons[C <: Coproduct] {
+    type H
+    type T <: Coproduct
+
+    def head(c: C): Option[H]
+    def tail(c: C): Option[T]
+  }
+
+  object IsCCons {
+    def apply[C <: Coproduct](implicit isCCons: IsCCons[C]): Aux[C, isCCons.H, isCCons.T] = isCCons
+
+    type Aux[C <: Coproduct, H0, T0 <: Coproduct] = IsCCons[C] { type H = H0; type T = T0 }
+
+    implicit def coproductCCons[H0, T0 <: Coproduct]: Aux[H0 :+: T0, H0, T0] = new IsCCons[H0 :+: T0] {
+      type H = H0
+      type T = T0
+
+      def head(c: H0 :+: T0): Option[H0] = c match {
+        case Inl(h) => Some(h)
+        case _      => None
+      }
+
+      def tail(c: H0 :+: T0): Option[T0] = c match {
+        case Inr(t) => Some(t)
+        case _      => None
+      }
     }
   }
 

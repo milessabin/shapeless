@@ -817,7 +817,8 @@ object tuple {
   }
 
   object ToTraversable {
-    def apply[T, M[_]](implicit toTraversable: ToTraversable[T, M]) = toTraversable
+    def apply[T, M[_]]
+      (implicit toTraversable: ToTraversable[T, M]): Aux[T, M, toTraversable.Lub] = toTraversable
 
     type Aux[T, M[_], Lub0] = ToTraversable[T, M] { type Lub = Lub0 }
 
@@ -880,7 +881,7 @@ object tuple {
   trait ToSized[T, M[_]] extends DepFn1[T]
 
   object ToSized {
-    def apply[T, M[_]](implicit toSized: ToSized[T, M]) = toSized
+    def apply[T, M[_]](implicit toSized: ToSized[T, M]): Aux[T, M, toSized.Out] = toSized
 
     type Aux[T, M[_], Out0] = ToSized[T, M] { type Out = Out0 }
 
@@ -900,7 +901,7 @@ object tuple {
   trait Collect[T, P <: Poly] extends DepFn1[T]
 
   object Collect {
-    def apply[T, P <: Poly](implicit collect: Collect[T, P]) = collect
+    def apply[T, P <: Poly](implicit collect: Collect[T, P]): Aux[T, P, collect.Out] = collect
 
     type Aux[T, P <: Poly, Out0] = Collect[T, P] { type Out = Out0 }
 
@@ -921,7 +922,7 @@ object tuple {
   trait Permutations[T] extends DepFn1[T]
 
   object Permutations {
-    def apply[T](implicit permutations: Permutations[T]): Permutations[T] = permutations
+    def apply[T](implicit permutations: Permutations[T]): Aux[T, permutations.Out] = permutations
 
     type Aux[T, Out0] = Permutations[T] { type Out = Out0 }
 
@@ -943,7 +944,7 @@ object tuple {
   trait RotateLeft[T, N <: Nat] extends DepFn1[T]
 
   object RotateLeft {
-    def apply[T, N <: Nat](implicit rotateLeft: RotateLeft[T, N]): RotateLeft[T, N] = rotateLeft
+    def apply[T, N <: Nat](implicit rotateLeft: RotateLeft[T, N]): Aux[T, N, rotateLeft.Out] = rotateLeft
 
     type Aux[T, N <: Nat, Out0] = RotateLeft[T, N] { type Out = Out0 }
 
@@ -964,7 +965,7 @@ object tuple {
   trait RotateRight[T, N <: Nat] extends DepFn1[T]
 
   object RotateRight {
-    def apply[T, N <: Nat](implicit rotateRight: RotateRight[T, N]): RotateRight[T, N] = rotateRight
+    def apply[T, N <: Nat](implicit rotateRight: RotateRight[T, N]): Aux[T, N, rotateRight.Out] = rotateRight
 
     type Aux[T, N <: Nat, Out0] = RotateRight[T, N] { type Out = Out0 }
 
@@ -974,6 +975,54 @@ object tuple {
           type Out = tp.Out
 
           def apply(t: T): Out = tp(rotateRight(gen.to(t)))
+        }
+  }
+
+  /**
+   * Type class supporting left-scanning a binary polymorphic function over this tuple.
+   *
+   * @author Owein Reese
+   */
+  trait LeftScanner[T, In, P <: Poly] extends DepFn2[T, In]
+
+  object LeftScanner{
+    def apply[T, In, P <: Poly](implicit scanL: LeftScanner[T, In, P]): Aux[T, In, P, scanL.Out] = scanL
+
+    type Aux[T, In, P <: Poly, Out0] = LeftScanner[T, In, P] { type Out = Out0 }
+    
+    implicit def scanner[T, L <: HList, In, P <: Poly, R <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        scanL: hl.LeftScanner.Aux[L, In, P, R], 
+        tp: hl.Tupler[R]
+      ): Aux[T, In, P, tp.Out] =
+        new LeftScanner[T, In, P] {
+          type Out = tp.Out
+
+          def apply(t: T, in: In): Out = tp(scanL(gen.to(t), in))
+        }
+  }
+
+  /**
+   * Type class supporting right-scanning a binary polymorphic function over this tuple.
+   *
+   * @author Owein Reese
+   */
+  trait RightScanner[T, In, P <: Poly] extends DepFn2[T, In]
+
+  object RightScanner{
+    def apply[T, In, P <: Poly](implicit scanR: RightScanner[T, In, P]): Aux[T, In, P, scanR.Out] = scanR
+
+    type Aux[T, In, P <: Poly, Out0] = RightScanner[T, In, P] { type Out = Out0 }
+    
+    implicit def scanner[T, L <: HList, In, P <: Poly, R <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        scanR: hl.RightScanner.Aux[L, In, P, R], 
+        tp: hl.Tupler[R]
+      ): Aux[T, In, P, tp.Out] =
+        new RightScanner[T, In, P] {
+          type Out = tp.Out
+
+          def apply(t: T, in: In): Out = tp(scanR(gen.to(t), in))
         }
   }
 }

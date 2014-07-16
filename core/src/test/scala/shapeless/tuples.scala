@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import shapeless.test._
+import testutil._
 
 class TupleTests {
   import nat._
@@ -1472,6 +1473,28 @@ class TupleTests {
     assertTypedEquals[(C, I, S, D)](('a', 1, "foo", 2.0), in4.rotateRight[_5])
     assertTypedEquals[(D, C, I, S)]((2.0, 'a', 1, "foo"), in4.rotateRight[_6])
   }
+  
+  object smear extends Poly {
+    implicit val caseIntInt    = use((x: Int, y: Int) => x + y)
+    implicit val caseStringInt = use((x: String, y: Int) => x.toInt + y)
+    implicit val caseIntString = use((x: Int, y: String) => x + y.toInt)
+  }
 
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
+  @Test
+  def testScanLeft {
+    val in = (1, "2", 3)
+    val out = in.scanLeft(1)(smear)
+
+    typed[(Int, Int, Int, Int)](out)
+    assertEquals((1, 2, 4, 7), out)
+  }
+
+  @Test
+  def testScanRight {
+    val in = (1, "2", 3)
+    val out = in.scanRight(1)(smear)
+
+    typed[(Int, Int, Int, Int)](out)
+    assertEquals((7, 6, 4, 1), out)
+  }
 }

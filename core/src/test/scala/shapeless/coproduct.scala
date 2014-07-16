@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import test._
+import testutil._
 
 import ops.coproduct._
 
@@ -254,16 +255,29 @@ class CoproductTests {
   }
 
   @Test
-  def testAppend {
+  def testExtendRight {
     type S = String; type I = Int; type D = Double; type C = Char
     type CoI    = I :+: CNil
     type CoIS   = I :+: S :+: CNil
     type CoISD  = I :+: S :+: D :+: CNil
     type CoISDC = I :+: S :+: D :+: C :+: CNil
 
-    assertTypedEquals[CoIS](Coproduct[CoIS](1), Coproduct[CoI](1).append[S])
-    assertTypedEquals[CoISD](Coproduct[CoISD](1), Coproduct[CoIS](1).append[D])
-    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), Coproduct[CoISD](1).append[C])
+    assertTypedEquals[CoIS](Coproduct[CoIS](1), Coproduct[CoI](1).extendRight[S])
+    assertTypedEquals[CoISD](Coproduct[CoISD](1), Coproduct[CoIS](1).extendRight[D])
+    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), Coproduct[CoISD](1).extendRight[C])
+  }
+
+  @Test
+  def testExtendLeft {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoSI   = S :+: I :+: CNil
+    type CoDSI  = D :+: S :+: I :+: CNil
+    type CoCDSI = C :+: D :+: S :+: I :+: CNil
+
+    assertTypedEquals[CoSI](Coproduct[CoSI](1), Coproduct[CoI](1).extendLeft[S])
+    assertTypedEquals[CoDSI](Coproduct[CoDSI](1), Coproduct[CoSI](1).extendLeft[D])
+    assertTypedEquals[CoCDSI](Coproduct[CoCDSI](1), Coproduct[CoDSI](1).extendLeft[C])
   }
 
   @Test
@@ -336,6 +350,19 @@ class CoproductTests {
     assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), in4.rotateRight[_6])
   }
 
-  private def assertTypedEquals[A](expected: A, actual: A) = assertEquals(expected, actual)
-  private def assertTypedSame[A](expected: A, actual: A) = assertSame(expected, actual)
+  @Test
+  def testHead {
+    assertTypedEquals[Option[Int]](Some(1), Coproduct[Int :+: CNil](1).head)
+    assertTypedEquals[Option[Int]](Some(1), Coproduct[Int :+: String :+: CNil](1).head)
+    assertTypedEquals[Option[Int]](None,    Coproduct[Int :+: String :+: CNil]("foo").head)
+  }
+
+  @Test
+  def testTail {
+    assertTypedEquals[Option[CNil]](None, Coproduct[Int :+: CNil](1).tail)
+    assertTypedEquals[Option[String :+: CNil]](None, Coproduct[Int :+: String :+: CNil](1).tail)
+
+    assertTypedEquals[Option[String :+: CNil]](
+      Some(Coproduct[String :+: CNil]("foo")), Coproduct[Int :+: String :+: CNil]("foo").tail)
+  }
 }
