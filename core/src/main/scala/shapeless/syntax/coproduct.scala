@@ -56,4 +56,6 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
   def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
+
+  def reverse(implicit reverse: Reverse[C]): reverse.Out = reverse(c)
 }

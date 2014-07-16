@@ -324,6 +324,41 @@ object coproduct {
     }
   }
 
+  /**
+   * Type class supporting reversing a Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait Reverse[C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
+
+  object Reverse {
+    def apply[C <: Coproduct](implicit reverse: Reverse[C]): Aux[C, reverse.Out] = reverse
+
+    type Aux[C <: Coproduct, Out0 <: Coproduct] = Reverse[C] { type Out = Out0 }
+
+    implicit val reverseCNil: Aux[CNil, CNil] = new Reverse[CNil] {
+      type Out = CNil
+
+      def apply(c: CNil): Out = c
+    }
+
+    implicit def reverseCoproduct[
+      H, T <: Coproduct, ReverseT <: Coproduct, RotateL_HReverseT <: Coproduct
+    ](
+      implicit
+      reverse: Aux[T, ReverseT],
+      rotateLeft: RotateLeft.Aux[H :+: ReverseT, Nat._1, RotateL_HReverseT],
+      inject: Inject[RotateL_HReverseT, H]
+    ): Aux[H :+: T, RotateL_HReverseT] = new Reverse[H :+: T] {
+      type Out = RotateL_HReverseT
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => inject(h)
+        case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
+      }
+    }
+  }
+
   implicit object cnilOrdering extends Ordering[CNil] {
     def compare(x: CNil, y: CNil) = 0
   }

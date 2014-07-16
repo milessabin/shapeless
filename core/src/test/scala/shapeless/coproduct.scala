@@ -365,4 +365,14 @@ class CoproductTests {
     assertTypedEquals[Option[String :+: CNil]](
       Some(Coproduct[String :+: CNil]("foo")), Coproduct[Int :+: String :+: CNil]("foo").tail)
   }
+
+  @Test
+  def testReverse {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil
+
+    assertTypedEquals[I :+: CNil](Coproduct[I :+: CNil](1), Coproduct[I :+: CNil](1).reverse)
+    assertTypedEquals[SI](Coproduct[SI](1), Coproduct[IS](1).reverse)
+    assertTypedEquals[SI](Coproduct[SI]("foo"), Coproduct[IS]("foo").reverse)
+  }
 }
