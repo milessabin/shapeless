@@ -507,4 +507,16 @@ final class HListOps[L <: HList](l : L) {
    * Rotate this 'HList' right by N
    */
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[L, n.N]): rotateRight.Out = rotateRight(l)
+
+  /**
+   * Computes a left scan over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the results of the appropriate types.
+   */
+  def scanLeft[A, P <: Poly](z: A)(op: Poly)(implicit scanL: LeftScanner[L, A, op.type]): scanL.Out = scanL(l, z)
+
+  /**
+   * Computes a right scan over this `HList` using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the results of the appropriate types.
+   */
+  def scanRight[A, P <: Poly](z: A)(op: Poly)(implicit scanR: RightScanner[L, A, op.type]): scanR.Out = scanR(l, z)
 }

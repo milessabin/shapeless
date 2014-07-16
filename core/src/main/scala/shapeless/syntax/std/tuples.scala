@@ -449,4 +449,16 @@ final class TupleOps[T](t: T) {
    * Rotate this tuple right by N
    */
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[T, N]): rotateRight.Out = rotateRight(t)
+
+  /**
+   * Computes a left scan over this tuple using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the results of the appropriate types.
+   */
+   def scanLeft[Z, P <: Poly](z: Z)(op: Poly)(implicit scanL: LeftScanner[T, Z, op.type]): scanL.Out = scanL(t, z)
+
+   /**
+   * Computes a left scan over this tuple using the polymorphic binary combining operator `op`. Available only if
+   * there is evidence `op` can consume/produce all the results of the appropriate types.
+   */
+   def scanRight[Z, P <: Poly](z: Z)(op: Poly)(implicit scanR: RightScanner[T, Z, op.type]): scanR.Out = scanR(t, z)
 }

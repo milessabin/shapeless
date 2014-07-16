@@ -2054,4 +2054,28 @@ class HListTests {
     assertTypedEquals[C :: I :: S :: D :: HNil]('a' :: 1 :: "foo" :: 2.0 :: HNil, in4.rotateRight[_5])
     assertTypedEquals[D :: C :: I :: S :: HNil](2.0 :: 'a' :: 1 :: "foo" :: HNil, in4.rotateRight[_6])
   }
+
+  object smear extends Poly {
+    implicit val caseIntInt    = use((x: Int, y: Int) => x + y)
+    implicit val caseStringInt = use((x: String, y: Int) => x.toInt + y)
+    implicit val caseIntString = use((x: Int, y: String) => x + y.toInt)
+  }
+
+  @Test
+  def testScanLeft{  
+    val in = 1 :: "2" :: HNil
+    val out = in.scanLeft(1)(smear)
+
+    typed[Int :: Int :: Int :: HNil](out)
+    assertEquals(1 :: 2 :: 4 :: HNil, out)
+  }
+
+  @Test
+  def testScanRight{
+    val in = 1 :: "2" :: HNil
+    val out = in.scanRight(1)(smear)
+
+    typed[Int :: Int :: Int :: HNil](out)
+    assertEquals(4 :: 3 :: 1 :: HNil, out)
+  }
 }
