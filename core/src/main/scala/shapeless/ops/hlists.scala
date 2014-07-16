@@ -1039,38 +1039,40 @@ object hlist {
   /**
    * Type class supporting splitting this `HList` at the ''nth'' element returning the prefix and suffix as a pair.
    * Available only if this `HList` has at least ''n'' elements.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Split[L <: HList, N <: Nat] extends DepFn1[L]
-    
+
   object Split {
     def apply[L <: HList, N <: Nat](implicit split: Split[L, N]): Aux[L, N, split.Out] = split
 
     type Aux[L <: HList, N <: Nat, Out0] = Split[L, N] { type Out = Out0 }
 
     implicit def split[L <: HList, N <: Nat, P <: HList, S <: HList]
-      (implicit split : Split0[HNil, L, N, P, S]): Aux[L, N, (P, S)] =
+      (implicit split : Split0[HNil, L, N, P, S]): Aux[L, N, P :: S :: HNil] =
         new Split[L, N] {
-          type Out = (P, S)
+          type Out = P :: S :: HNil
           def apply(l : L): Out = split(HNil, l)
         }
 
     trait Split0[AccP <: HList, AccS <: HList, N <: Nat, P <: HList, S <: HList] {
-      def apply(accP : AccP, accS : AccS) : (P, S)
+      def apply(accP : AccP, accS : AccS) : P :: S :: HNil
     }
 
     object Split0 {
       implicit def hlistSplit1[P <: HList, S <: HList]: Split0[P, S, _0, P, S] =
         new Split0[P, S, _0, P, S] {
-          def apply(accP : P, accS : S) : (P, S) = (accP, accS)
+          def apply(accP : P, accS : S) : P :: S :: HNil = accP :: accS :: HNil
         }
 
       implicit def hlistSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P <: HList, S <: HList]
         (implicit st : Split0[AccP, AccST, N, P, S]): Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] =
           new Split0[AccP, AccSH :: AccST, Succ[N], AccSH :: P, S] {
-            def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P, S) =
-              st(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+            def apply(accP : AccP, accS : AccSH :: AccST) : (AccSH :: P) :: S :: HNil =
+              st(accP, accS.tail) match {
+                case prefix :: suffix :: HNil => (accS.head :: prefix) :: suffix :: HNil
+              }
           }
     }
   }
@@ -1078,7 +1080,7 @@ object hlist {
   /**
    * Type class supporting splitting this `HList` at the ''nth'' element returning the reverse prefix and suffix as a
    * pair. Available only if this `HList` has at least ''n'' elements.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L]
@@ -1089,26 +1091,26 @@ object hlist {
     type Aux[L <: HList, N <: Nat, Out0] = ReverseSplit[L, N] { type Out = Out0 }
 
     implicit def reverseSplit[L <: HList, N <: Nat, P <: HList, S <: HList]
-      (implicit split : ReverseSplit0[HNil, L, N, P, S]): Aux[L, N, (P, S)] =
+      (implicit split : ReverseSplit0[HNil, L, N, P, S]): Aux[L, N, P :: S :: HNil] =
         new ReverseSplit[L, N] {
-          type Out = (P, S)
+          type Out = P :: S :: HNil
           def apply(l : L): Out = split(HNil, l)
         }
 
     trait ReverseSplit0[AccP <: HList, AccS <: HList, N <: Nat, P, S] {
-      def apply(accP : AccP, accS : AccS): (P, S)
+      def apply(accP : AccP, accS : AccS): P :: S :: HNil
     }
 
     object ReverseSplit0 {
       implicit def hlistReverseSplit1[P <: HList, S <: HList]: ReverseSplit0[P, S, _0, P, S] =
         new ReverseSplit0[P, S, _0, P, S] {
-          def apply(accP : P, accS : S): (P, S) = (accP, accS)
+          def apply(accP : P, accS : S): P :: S :: HNil = accP :: accS :: HNil
         }
-      
+
       implicit def hlistReverseSplit2[AccP <: HList, AccSH, AccST <: HList, N <: Nat, P, S]
         (implicit st : ReverseSplit0[AccSH :: AccP, AccST, N, P, S]): ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] =
           new ReverseSplit0[AccP, AccSH :: AccST, Succ[N], P, S] {
-            def apply(accP : AccP, accS : AccSH :: AccST): (P, S) = st(accS.head :: accP, accS.tail)
+            def apply(accP : AccP, accS : AccSH :: AccST): P :: S :: HNil = st(accS.head :: accP, accS.tail)
           }
     }
   }
@@ -1116,7 +1118,7 @@ object hlist {
   /**
    * Type class supporting splitting this `HList` at the first occurence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this `HList` contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait SplitLeft[L <: HList, U] extends DepFn1[L]
@@ -1127,29 +1129,31 @@ object hlist {
     type Aux[L <: HList, U, Out0] = SplitLeft[L, U] { type Out = Out0 }
 
     implicit def splitLeft[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitLeft : SplitLeft0[HNil, L, U, P, S]): Aux[L, U, (P, S)] =
+      (implicit splitLeft : SplitLeft0[HNil, L, U, P, S]): Aux[L, U, P :: S :: HNil] =
         new SplitLeft[L, U] {
-          type Out = (P, S)
+          type Out =  P :: S :: HNil
           def apply(l : L): Out = splitLeft(HNil, l)
         }
-    
+
     trait SplitLeft0[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
-      def apply(accP : AccP, accS : AccS) : (P, S)
+      def apply(accP : AccP, accS : AccS) : P :: S :: HNil
     }
 
     trait LowPrioritySplitLeft0 {
       implicit def hlistSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P <: HList, S <: HList]
         (implicit slt : SplitLeft0[AccP, AccST, U, P, S]): SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] =
           new SplitLeft0[AccP, AccSH :: AccST, U, AccSH :: P, S] {
-            def apply(accP : AccP, accS : AccSH :: AccST): (AccSH :: P, S) =
-              slt(accP, accS.tail) match { case (prefix, suffix) => (accS.head :: prefix, suffix) }
+            def apply(accP : AccP, accS : AccSH :: AccST): (AccSH :: P) :: S :: HNil =
+              slt(accP, accS.tail) match {
+                case prefix :: suffix :: HNil => (accS.head :: prefix) :: suffix :: HNil
+              }
           }
     }
 
     object SplitLeft0 extends LowPrioritySplitLeft0 {
       implicit def hlistSplitLeft2[P <: HList, SH, ST <: HList]: SplitLeft0[P, SH :: ST, SH, P, SH :: ST] =
         new SplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-          def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+          def apply(accP : P, accS : SH :: ST) : P :: (SH :: ST) :: HNil = accP :: accS :: HNil
         }
     }
   }
@@ -1157,7 +1161,7 @@ object hlist {
   /**
    * Type class supporting splitting this `HList` at the first occurence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this `HList` contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L]
@@ -1168,36 +1172,36 @@ object hlist {
     type Aux[L <: HList, U, Out0] = ReverseSplitLeft[L, U] { type Out = Out0 }
 
     implicit def reverseSplitLeft[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P, S]): Aux[L, U, (P, S)] =
+      (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P, S]): Aux[L, U, P :: S :: HNil] =
         new ReverseSplitLeft[L, U] {
-          type Out = (P, S)
+          type Out = P :: S :: HNil
           def apply(l : L): Out = splitLeft(HNil, l)
         }
-    
+
     trait ReverseSplitLeft0[AccP <: HList, AccS <: HList, U, P, S] {
-      def apply(accP : AccP, accS : AccS): (P, S)
+      def apply(accP : AccP, accS : AccS): P :: S :: HNil
     }
 
     trait LowPriorityReverseSplitLeft0 {
       implicit def hlistReverseSplitLeft1[AccP <: HList, AccSH, AccST <: HList, U, P, S]
         (implicit slt : ReverseSplitLeft0[AccSH :: AccP, AccST, U, P, S]): ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] =
           new ReverseSplitLeft0[AccP, AccSH :: AccST, U, P, S] {
-            def apply(accP : AccP, accS : AccSH :: AccST): (P, S) = slt(accS.head :: accP, accS.tail)
+            def apply(accP : AccP, accS : AccSH :: AccST): P :: S :: HNil = slt(accS.head :: accP, accS.tail)
           }
     }
 
     object ReverseSplitLeft0 extends LowPriorityReverseSplitLeft0 {
       implicit def hlistReverseSplitLeft2[P <: HList, SH, ST <: HList]: ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] =
         new ReverseSplitLeft0[P, SH :: ST, SH, P, SH :: ST] {
-          def apply(accP : P, accS : SH :: ST) : (P, SH :: ST) = (accP, accS)
+          def apply(accP : P, accS : SH :: ST) : P :: (SH :: ST) :: HNil = accP :: accS :: HNil
         }
-    }  
+    }
   }
 
   /**
    * Type class supporting splitting this `HList` at the last occurence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this `HList` contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait SplitRight[L <: HList, U] extends DepFn1[L]
@@ -1208,27 +1212,27 @@ object hlist {
     type Aux[L <: HList, U, Out0] = SplitRight[L, U] { type Out = Out0 }
 
     implicit def splitRight[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitRight : SplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, (P, S)] =
+      (implicit splitRight : SplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P :: S :: HNil] =
         new SplitRight[L, U] {
-          type Out = (P, S)
+          type Out = P :: S :: HNil
           def apply(l : L): Out = splitRight(l, HNil, HNil)
         }
-    
+
     trait SplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
-      def apply(rev : Rev, accP : AccP, accS : AccS): (P, S)
+      def apply(rev : Rev, accP : AccP, accS : AccS): P :: S :: HNil
     }
 
     trait LowPrioritySplitRight0 {
       implicit def hlistSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
         (implicit srt : SplitRight0[RevT, RevH :: AccP, HNil, U, P, S]): SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] =
           new SplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-            def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): (P, S) = srt(rev.tail, rev.head :: accP, accS)
+            def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): P :: S :: HNil = srt(rev.tail, rev.head :: accP, accS)
           }
 
       implicit def hlistSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
         (implicit srt : SplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]): SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] =
           new SplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-            def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): (P, S) = srt(rev, accP.tail, accP.head :: accS)
+            def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): P :: S :: HNil = srt(rev, accP.tail, accP.head :: accS)
           }
     }
 
@@ -1236,7 +1240,7 @@ object hlist {
       implicit def hlistSplitRight3[PH, PT <: HList, S <: HList]
         (implicit reverse : Reverse[PH :: PT]): SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] =
           new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
-            def apply(rev : HNil, accP : PH :: PT, accS : S): (reverse.Out, S) = (accP.reverse, accS)
+            def apply(rev : HNil, accP : PH :: PT, accS : S): reverse.Out :: S :: HNil = accP.reverse :: accS :: HNil
           }
     }
   }
@@ -1244,7 +1248,7 @@ object hlist {
   /**
    * Type class supporting splitting this `HList` at the last occurence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this `HList` contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplitRight[L <: HList, U] extends DepFn1[L]
@@ -1255,34 +1259,34 @@ object hlist {
     type Aux[L <: HList, U, Out0] = ReverseSplitRight[L, U] { type Out = Out0 }
 
     implicit def reverseSplitRight[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, (P, S)] =
+      (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P :: S :: HNil] =
         new ReverseSplitRight[L, U] {
-          type Out = (P, S)
+          type Out = P :: S :: HNil
           def apply(l : L): Out = splitRight(l, HNil, HNil)
         }
-    
+
     trait ReverseSplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P, S] {
-      def apply(rev : Rev, accP : AccP, accS : AccS): (P, S)
+      def apply(rev : Rev, accP : AccP, accS : AccS): P :: S :: HNil
     }
 
     trait LowPriorityReverseSplitRight0 {
       implicit def hlistReverseSplitRight1[RevH, RevT <: HList, AccP <: HList, U, P <: HList, S <: HList]
         (implicit srt : ReverseSplitRight0[RevT, RevH :: AccP, HNil, U, P, S]): ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] =
           new ReverseSplitRight0[RevH :: RevT, AccP, HNil, U, P, S] {
-            def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): (P, S) = srt(rev.tail, rev.head :: accP, accS)
+            def apply(rev : RevH :: RevT, accP : AccP, accS : HNil): P :: S :: HNil = srt(rev.tail, rev.head :: accP, accS)
           }
-      
+
       implicit def hlistReverseSplitRight2[AccPH, AccPT <: HList, AccS <: HList, U, P <: HList, S <: HList]
         (implicit srt : ReverseSplitRight0[HNil, AccPT, AccPH :: AccS, U, P, S]): ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] =
           new ReverseSplitRight0[HNil, AccPH :: AccPT, AccS, U, P, S] {
-            def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): (P, S) = srt(rev, accP.tail, accP.head :: accS)
+            def apply(rev : HNil, accP : AccPH :: AccPT, accS : AccS): P :: S :: HNil = srt(rev, accP.tail, accP.head :: accS)
           }
     }
 
     object ReverseSplitRight0 extends LowPriorityReverseSplitRight0 {
       implicit def hlistReverseSplitRight3[PH, PT <: HList, S <: HList]: ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] =
         new ReverseSplitRight0[HNil, PH :: PT, S, PH, PH :: PT, S] {
-          def apply(rev : HNil, accP : PH :: PT, accS : S): (PH :: PT, S) = (accP, accS)
+          def apply(rev : HNil, accP : PH :: PT, accS : S): (PH :: PT) :: S :: HNil = accP :: accS :: HNil
         }
     }
   }
@@ -1834,13 +1838,13 @@ object hlist {
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
-      split: Split.Aux[L, NModSize, (Before, After)],
+      split: Split.Aux[L, NModSize, Before :: After :: HNil],
       prepend: Prepend[After, Before]
     ): Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
       type Out = prepend.Out
 
       def apply(l: L): Out = {
-        val (before, after) = split(l)
+        val before :: after :: HNil = split(l)
 
         prepend(after, before)
       }
