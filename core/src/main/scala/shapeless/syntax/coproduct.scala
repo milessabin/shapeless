@@ -48,7 +48,8 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
   def length(implicit length: Length[C]): length.Out = length()
 
-  def append[T](implicit append: Append[C, T]): append.Out = append(c)
+  def extendLeft[T]: T :+: C = Inr(c)
+  def extendRight[T](implicit extendRight: ExtendRight[C, T]): extendRight.Out = extendRight(c)
 
   def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
   def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
