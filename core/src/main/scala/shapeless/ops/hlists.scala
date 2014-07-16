@@ -894,6 +894,38 @@ object hlist {
   }
 
   /**
+   * Type class supporting replacement of the first element of type U from this `HList` with the result of
+   * its transformation via a given function into a new element of type V.
+   * Available only if this `HList` contains an element of type `U`.
+   * 
+   * @author Jules Gosnell
+   */
+  trait Modifier[L <: HList, U, V] extends DepFn2[L, U => V]
+
+  object Modifier {
+    def apply[L <: HList, U, V](implicit modifier: Modifier[L, U, V]): Aux[L, U, V, modifier.Out] = modifier
+
+    type Aux[L <: HList, U, V, Out0] = Modifier[L, U, V] { type Out = Out0 }
+
+    implicit def hlistModify1[T <: HList, U, V]: Aux[U :: T, U, V, (U, V :: T)] =
+      new Modifier[U :: T, U, V] {
+        type Out = (U, V :: T)
+        def apply(l : U :: T, f : U => V): Out = {val u = l.head; (u, f(u) :: l.tail)}
+      }
+    
+    implicit def hlistModify2[H, T <: HList, U, V, OutT <: HList]
+      (implicit ut : Aux[T, U, V, (U, OutT)]): Aux[H :: T, U, V, (U, H :: OutT)] =
+        new Modifier[H :: T, U, V] {
+          type Out = (U, H :: OutT)
+
+          def apply(l : H :: T, f : U => V): Out = {
+            val (u, outT) = ut(l.tail, f)
+            (u, l.head :: outT)
+          }
+        }
+  }
+
+  /**
    * Type class supporting replacement of the Nth element of this `HList` with an element of type V. Available only if
    * this `HList` contains at least N elements.
    * 

@@ -170,11 +170,18 @@ final class HListOps[L <: HList](l : L) {
   def updatedElem[U, Out <: HList](u : U)
     (implicit replacer : Replacer.Aux[L, U, U, (U, Out)]) : Out = replacer(l, u)._2
   
+  /**
+   * Replaces the first element of type `U` of this `HList` with the result of its transformation to a `V` via the
+   * supplied function. Available only if there is evidence that this `HList` has an element of type `U`.
+   */
+  def updateWith[U, V, Out <: HList](f : U => V)
+    (implicit replacer : Modifier.Aux[L, U, V, (U, Out)]) : Out = replacer.apply(l, f)._2
+  
   class UpdatedTypeAux[U] {
     def apply[V, Out <: HList](v : V)
       (implicit replacer : Replacer.Aux[L, U, V, (U, Out)]) : Out = replacer(l, v)._2
   }
-  
+
   /**
    * Replaces the first element of type `U` of this `HList` with the supplied value of type `V`. An explicit type
    * argument must be provided for `U`. Available only if there is evidence that this `HList` has an element of

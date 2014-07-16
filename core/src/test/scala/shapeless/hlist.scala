@@ -1322,7 +1322,31 @@ class HListTests {
 
     val r8 = sl.updatedType[Double]('*')
     assertEquals(1 :: true :: "foo" :: '*' :: HNil, r8)
+
+    val r9 = sl.updateWith((i : Int) => i * 2)
+    assertEquals(2 :: true :: "foo" :: 2.0 :: HNil, r9)
     
+    val r10 = sl.updateWith((b : Boolean) => !b)
+    assertEquals(1 :: false :: "foo" :: 2.0 :: HNil, r10)
+
+    val r11 = sl.updateWith((s : String) => s.toUpperCase)
+    assertEquals(1 :: true :: "FOO" :: 2.0 :: HNil, r11)
+
+    val r12 = sl.updateWith((d : Double) => d / 2.0)
+    assertEquals(1 :: true :: "foo" :: 1.0 :: HNil, r12)
+
+    val r13 = sl.updateWith((i : Int) => i.toString)
+    assertEquals("1" :: true :: "foo" :: 2.0 :: HNil, r13)
+    
+    val r14 = sl.updateWith((b : Boolean) => b.toString)
+    assertEquals(1 :: "true" :: "foo" :: 2.0 :: HNil, r14)
+
+    val r15 = sl.updateWith((_ : String) => 0xF00)
+    assertEquals(1 :: true :: 0xF00 :: 2.0 :: HNil, r15)
+
+    val r16 = sl.updateWith((d : Double) => d.toString)
+    assertEquals(1 :: true :: "foo" :: "2.0" :: HNil, r16)
+
     val fruits = a :: p :: a :: f :: HNil
     
     val rr1 = fruits.updatedType[Pear](a)
