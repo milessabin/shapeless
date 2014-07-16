@@ -1025,4 +1025,32 @@ object tuple {
           def apply(t: T, in: In): Out = tp(scanR(gen.to(t), in))
         }
   }
+
+  /**
+   * Type class supporting producing a tuple of shape `N` filled with elements of type `A`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fill[N, A] extends DepFn1[A]
+
+  object Fill {
+    def apply[N, A](implicit fill: Fill[N, A]) = fill
+
+    type Aux[N, A, Out0] = Fill[N, A] { type Out = Out0 }
+
+    implicit def fill1[N <: Nat, A, L <: HList, P]
+      (implicit fill: hlist.Fill.Aux[N, A, L], tupler: hlist.Tupler[L]): Aux[N, A, tupler.Out] =
+        new Fill[N, A] {
+          type Out = tupler.Out
+          def apply(elem: A) = tupler(fill(elem))
+        }
+
+    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut]
+      (implicit subFill: Fill.Aux[N2, A, SubOut], fill: Fill[N1, SubOut]): Aux[(N1, N2), A, fill.Out] =
+        new Fill[(N1, N2), A] {
+          type Out = fill.Out
+          def apply(elem: A) = fill(subFill(elem))
+        }
+
+  }
 }
