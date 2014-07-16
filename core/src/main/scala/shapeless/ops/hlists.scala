@@ -462,31 +462,38 @@ object hlist {
   /**
    * Type class supporting unification of this `HList`. 
    * 
-   * @author Miles Sabin
+   * @author Alexandre Archambault
    */
-  trait Unifier[L <: HList] extends DepFn1[L] { type Out <: HList }
+  trait Unifier[L <: HList, Lub] extends DepFn1[L] {
+    type OutT[UB] <: HList
+    def unify[UB](l: L, f: Lub => UB): OutT[UB]
 
+    type Out = OutT[Lub]
+    def apply(l: L): Out = unify[Lub](l, identity)
+  }
   object Unifier {
-    def apply[L <: HList](implicit unifier: Unifier[L]): Aux[L, unifier.Out] = unifier
+    def apply[L <: HList, Lub](implicit unifier: Unifier[L, Lub]): unifier.type = unifier
 
-    type Aux[L <: HList, Out0 <: HList] = Unifier[L] { type Out = Out0 }
+    type Aux[L <: HList, Lub, OutT0[UB] <: HList] = Unifier[L, Lub] { type OutT[UB] = OutT0[UB] }
 
-    implicit val hnilUnifier: Aux[HNil, HNil] = new Unifier[HNil] {
-      type Out = HNil
-      def apply(l : HNil): Out = l
-    }
-    
-    implicit def hsingleUnifier[T]: Aux[T :: HNil, T :: HNil] =
-      new Unifier[T :: HNil] {
-        type Out = T :: HNil
-        def apply(l : T :: HNil): Out = l
+    implicit def hnilUnifier[L <: HNil, T]: Aux[L, T, Const[HNil.type]#λ] =
+      new Unifier[L, T] {
+        type OutT[UB] = HNil.type
+        def unify[UB](l: L, f: T => UB) = HNil
       }
     
-    implicit def hlistUnifier[H1, H2, L, T <: HList]
-      (implicit u : Lub[H1, H2, L], lt : Unifier[L :: T]): Aux[H1 :: H2 :: T, L :: lt.Out] =
-        new Unifier[H1 :: H2 :: T] {
-          type Out = L :: lt.Out
-          def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
+    implicit def hsingleUnifier[T]: Aux[T :: HNil, T, ({ type OutT[UB] = UB :: HNil })#OutT] =
+      new Unifier[T :: HNil, T] {
+        type OutT[UB] = UB :: HNil
+        def unify[UB](l: T :: HNil, f: T => UB) = f(l.head) :: HNil
+      }
+    
+    implicit def hlistUnifier[H1, H2, T <: HList, LT, L]
+      (implicit lt: Unifier[H2 :: T, LT], u: Lub[H1, LT, L])
+      : Aux[H1 :: H2 :: T, L, ({ type OutT[UB] = UB :: lt.OutT[UB] })#OutT] =
+        new Unifier[H1 :: H2 :: T, L] {
+          type OutT[UB] = UB :: lt.OutT[UB]
+          def unify[UB](l: H1 :: H2 :: T, f: L => UB) = f(u.left(l.head)) :: lt.unify(l.tail, f compose u.right)
         }
   }
 

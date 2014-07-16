@@ -747,21 +747,51 @@ object tuple {
   /**
    * Type class supporting unification of this tuple. 
    * 
-   * @author Miles Sabin
+   * @author Alexandre Archambault
    */
-  trait Unifier[T] extends DepFn1[T]
+  trait Unifier[-T,+Lub] {
+    type OutT[UB]
+    def apply[UB >: Lub](t: T): OutT[UB]
+  }
 
   object Unifier {
-    def apply[T](implicit unifier: Unifier[T]): Aux[T, unifier.Out] = unifier
-
-    type Aux[T, Out0] = Unifier[T] { type Out = Out0 }
+    // These implicits should be automatically generated for all tuple lengths 
     
-    implicit def unifier[T, L1 <: HList, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], unifier: hl.Unifier.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
-        new Unifier[T] {
-          type Out = tp.Out
-          def apply(t: T): Out = unifier(gen.to(t)).tupled
-        }
+    implicit def unifier0: Unifier[Unit,Nothing] { type OutT[UB] = Unit } =
+      new Unifier[Unit,Nothing] {
+        type OutT[UB] = Unit
+        def apply[UB >: Nothing](t: Unit) = t
+      }
+    
+    implicit def unifier1[T]: Unifier[Tuple1[T],T] { type OutT[UB] = Tuple1[UB] } =
+      new Unifier[Tuple1[T],T] {
+        type OutT[UB] = Tuple1[UB]
+        def apply[UB >: T](t: Tuple1[T]) = t
+      }
+    
+    implicit def unifier2[T]: Unifier[(T,T),T] { type OutT[UB] = (UB,UB) } =
+      new Unifier[(T,T),T] {
+        type OutT[UB] = (UB,UB)
+        def apply[UB >: T](t: (T,T)) = t
+      }
+
+    implicit def unifier3[T]: Unifier[(T,T,T),T] { type OutT[UB] = (UB,UB,UB) } =
+      new Unifier[(T,T,T),T] {
+        type OutT[UB] = (UB,UB,UB)
+        def apply[UB >: T](t: (T,T,T)) = t
+      }
+
+    implicit def unifier4[T]: Unifier[(T,T,T,T),T] { type OutT[UB] = (UB,UB,UB,UB) } =
+      new Unifier[(T,T,T,T),T] {
+        type OutT[UB] = (UB,UB,UB,UB)
+        def apply[UB >: T](t: (T,T,T,T)) = t
+      }
+
+    implicit def unifier5[T]: Unifier[(T,T,T,T,T),T] { type OutT[UB] = (UB,UB,UB,UB,UB) } =
+      new Unifier[(T,T,T,T,T),T] {
+        type OutT[UB] = (UB,UB,UB,UB,UB)
+        def apply[UB >: T](t: (T,T,T,T,T)) = t
+      }
   }
 
   /**

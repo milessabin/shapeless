@@ -378,7 +378,7 @@ final class TupleOps[T](t: T) {
   /**
    * Returns a tuple typed as a repetition of the least upper bound of the types of the elements of this tuple.
    */
-  def unify(implicit unifier : Unifier[T]) : unifier.Out = unifier(t)
+  def unify[Lub](implicit unifier : Unifier[T, Lub]) : unifier.OutT[Lub] = unifier(t)
 
   /**
    * Returns a tuple with all elements that are subtypes of `B` typed as `B`.
