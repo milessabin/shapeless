@@ -1497,4 +1497,95 @@ class TupleTests {
     typed[(Int, Int, Int, Int)](out)
     assertEquals((7, 6, 4, 1), out)
   }
+
+  @Test
+  def testFill {
+    {
+      val empty = Tuple.fill(0)(true)
+      typed[Unit](empty)
+    }
+
+    {
+      val empty = Tuple.fill(0)[Boolean](true)
+      typed[Unit](empty)
+    }
+
+    {
+      val single = Tuple.fill(1)(None)
+      typed[Tuple1[None.type]](single)
+      assertEquals(Tuple1(None), single)
+    }
+
+    {
+      val single = Tuple.fill(1)[None.type](None)
+      typed[Tuple1[None.type]](single)
+      assertEquals(Tuple1(None), single)
+    }
+
+    {
+      val three = Tuple.fill(3)(m2i)
+      typed[(M2[Int, Unit], M2[Int, Unit], M2[Int, Unit])](three)
+      assertEquals((m2i, m2i, m2i), three)
+    }
+
+    {
+      val three = Tuple.fill(3)[M2[Int, Unit]](m2i)
+      typed[(M2[Int, Unit], M2[Int, Unit], M2[Int, Unit])](three)
+      assertEquals((m2i, m2i, m2i), three)
+    }
+    
+    {
+      val empty = Tuple.fill(0, 0)(true)
+      typed[Unit](empty)
+    }
+
+    {
+      val empty = Tuple.fill(0, 0)[Boolean](true)
+      typed[Unit](empty)
+    }
+
+    {
+      val empty = Tuple.fill(2, 0)(true)
+      typed[(Unit, Unit)](empty)
+    }
+
+    {
+      val empty = Tuple.fill(2, 0)[Boolean](true)
+      typed[(Unit, Unit)](empty)
+    }
+
+    {
+      val empty = Tuple.fill(0, 2)(true)
+      typed[Unit](empty)
+    }
+
+    {
+      val empty = Tuple.fill(0, 2)[Boolean](true)
+      typed[Unit](empty)
+    }
+
+    {
+      val oneByTwo = Tuple.fill(1, 2)(None)
+      typed[Tuple1[(None.type, None.type)]](oneByTwo)
+      assertEquals(Tuple1((None, None)), oneByTwo)
+    }
+
+    {
+      val oneByTwo = Tuple.fill(1, 2)[None.type](None)
+      typed[Tuple1[(None.type, None.type)]](oneByTwo)
+      assertEquals(Tuple1((None, None)), oneByTwo)
+    }
+
+    {
+      val twoByThree = Tuple.fill(2, 3)(None)
+      typed[((None.type, None.type, None.type), (None.type, None.type, None.type))](twoByThree)
+      assertEquals(((None, None, None), (None, None, None)), twoByThree)
+    }
+
+    {
+      val twoByThree = Tuple.fill(2, 3)[None.type](None)
+      typed[((None.type, None.type, None.type), (None.type, None.type, None.type))](twoByThree)
+      assertEquals(((None, None, None), (None, None, None)), twoByThree)
+    }
+  }  
 }
