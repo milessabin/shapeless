@@ -31,7 +31,19 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def map(f: Poly)(implicit mapper: Mapper[f.type, C]): mapper.Out = mapper(c)
   
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
-  
+
+  /**
+   * Returns the ''nth'' element of this `Coproduct`. An explicit type must be provided.
+   * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def at[N <: Nat](implicit at: At[C, N]): Option[at.A] = at(c)
+
+  /**
+   * Returns the ''nth'' element of this `Coproduct`.
+   * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def at[N <: Nat](n: N)(implicit at: At[C, n.N]): Option[at.A] = at(c)
+
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
