@@ -37,48 +37,27 @@ object Boilerplate {
   }
 
   
-  def gen(dir : File) = { 
-    val tupler = dir / "shapeless" / "tupler.scala"
-    IO.write(tupler, GenTuplerInstances.body)
-    
-    val fntoproduct = dir / "shapeless" / "fntoproduct.scala"
-    IO.write(fntoproduct, GenFnToProductInstances.body)
-    
-    val fnfromproduct = dir / "shapeless" / "fnfromproduct.scala"
-    IO.write(fnfromproduct, GenFnFromProductInstances.body)
-    
-    val caseinst = dir / "shapeless" / "caseinst.scala"
-    IO.write(caseinst, GenCaseInst.body)
+  val templates: Seq[Template] = List(
+    GenTuplerInstances,
+    GenFnToProductInstances,
+    GenFnFromProductInstances,
+    GenCaseInst,
+    GenPolyApply,
+    GenPolyInst,
+    GenCases,
+    GenPolyNTraits,
+    GenNats,
+    GenTupleTypeableInstances,
+    GenSizedBuilder,
+    GenHMapBuilder,
+    GenUnpackInstances
+  )
 
-    val polyapply = dir / "shapeless" / "polyapply.scala"
-    IO.write(polyapply, GenPolyApply.body)
-
-    val polyinst = dir / "shapeless" / "polyinst.scala"
-    IO.write(polyinst, GenPolyInst.body)
-
-    val cases = dir / "shapeless" / "cases.scala"
-    IO.write(cases, GenCases.body)
-
-    val polyntraits = dir / "shapeless" / "polyntraits.scala"
-    IO.write(polyntraits, GenPolyNTraits.body)        
-
-    val nats = dir / "shapeless" / "nats.scala"
-    IO.write(nats, GenNats.body)
-    
-    val tupletypeables = dir / "shapeless" / "tupletypeables.scala"
-    IO.write(tupletypeables, GenTupleTypeableInstances.body)
-
-    val sizedbuilder = dir / "shapeless" / "sizedbuilder.scala"
-    IO.write(sizedbuilder, GenSizedBuilder.body)
-    
-    val hmapbuilder = dir / "shapeless" / "hmapbuilder.scala"
-    IO.write(hmapbuilder, GenHMapBuilder.body)
-    
-    Seq(
-      tupler, fntoproduct, fnfromproduct, caseinst, polyapply,
-      polyinst, cases, polyntraits, nats, tupletypeables, sizedbuilder,
-      hmapbuilder
-    )
+  /** Returns a seq of the generated files.  As a side-effect, it actually generates them... */
+  def gen(dir : File) = for(t <- templates) yield {
+    val tgtFile = dir / "shapeless" / t.filename
+    IO.write(tgtFile, t.body)
+    tgtFile
   }  
 
   val header = """
@@ -111,6 +90,7 @@ object Boilerplate {
     val `a..n`       = synVals.mkString(", ")
     val `A::N`       = (synTypes :+ "HNil") mkString "::"
     val `a::n`       = (synVals :+ "HNil") mkString "::"
+    val `_.._`       = Seq.fill(arity)("_").mkString(", ")
     val `(A..N)`     = if (arity == 1) "Tuple1[A]" else synTypes.mkString("(", ", ", ")")
     val `(_.._)`     = if (arity == 1) "Tuple1[_]" else Seq.fill(arity)("_").mkString("(", ", ", ")")
     val `(a..n)`     = if (arity == 1) "Tuple1(a)" else synVals.mkString("(", ", ", ")")
@@ -118,6 +98,7 @@ object Boilerplate {
   }
 
   trait Template {
+    def filename: String
     def content(tv: TemplateVals): String
     def range = 1 to 22
     def body: String = {
@@ -147,6 +128,7 @@ object Boilerplate {
   */
   
   object GenTuplerInstances extends Template {
+    val filename = "tupler.scala"
     def content(tv: TemplateVals) = {
       import tv._
       block"""
@@ -173,6 +155,8 @@ object Boilerplate {
   }
   
   object GenFnToProductInstances extends Template {
+    val filename = "fntoproduct.scala"
+
     override val range = 0 to 22
 
     def content(tv: TemplateVals) = {
@@ -207,6 +191,8 @@ object Boilerplate {
   }
   
   object GenFnFromProductInstances extends Template {
+    val filename = "fnfromproduct.scala"
+
     override val range = 0 to 22
 
     def content(tv: TemplateVals) = {
@@ -242,6 +228,8 @@ object Boilerplate {
   }
   
   object GenCaseInst extends Template {
+    val filename = "caseinst.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       block"""
@@ -262,6 +250,8 @@ object Boilerplate {
   }
 
   object GenPolyApply extends Template {
+    val filename = "polyapply.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       block"""
@@ -283,6 +273,8 @@ object Boilerplate {
   }
 
   object GenPolyInst extends Template {
+    val filename = "polyinst.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       block"""
@@ -302,6 +294,8 @@ object Boilerplate {
   }
 
   object GenCases extends Template {
+    val filename = "cases.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       block"""
@@ -337,6 +331,8 @@ object Boilerplate {
   }
 
   object GenPolyNTraits extends Template {
+    val filename = "polyntraits.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
@@ -371,6 +367,8 @@ object Boilerplate {
   }
   
   object GenNats extends Template {
+    val filename = "nats.scala"
+
     def content(tv: TemplateVals) = {
       val n = tv.arity
       block"""
@@ -385,6 +383,8 @@ object Boilerplate {
   }
   
   object GenTupleTypeableInstances extends Template {
+    val filename = "tupletypeables.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       val implicitArgs = (synTypes map(a => s"cast${a}:Typeable[${a}]")) mkString ", "
@@ -415,6 +415,8 @@ object Boilerplate {
   }
   
   object GenSizedBuilder extends Template {
+    val filename = "sizedbuilder.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       val `a:T..n:T` = synVals map (_ + ":T") mkString ", "
@@ -436,6 +438,8 @@ object Boilerplate {
   }
   
   object GenHMapBuilder extends Template {
+    val filename = "hmapbuilder.scala"
+
     def content(tv: TemplateVals) = {
       import tv._
       val typeArgs  = (0 until arity) map (n => s"K${n}, V${n}") mkString ", "
@@ -456,5 +460,29 @@ object Boilerplate {
       """
     }
   }
-
+ 
+  object GenUnpackInstances extends Template {
+    val filename = "unpack.scala"
+    def content(tv: TemplateVals) = {
+      import tv._
+      val typeblock = "FF[" + `A..N` + "], FF, " + `A..N`
+      val hktypeblock = "FF[" + `_.._` + "], " + `A..N`
+      val traitname = s"Unpack${arity}"
+      block"""
+        |
+        -
+        -/**
+        - * Type class witnessing that type `PP` is equal to `FF[${`A..N`}]` for some higher kinded type `FF[${`_.._`}]` and type(s) `${`A..N`}`.
+        - * 
+        - * @author Miles Sabin
+        - */
+        -trait $traitname[-PP, $hktypeblock]
+        -
+        -object $traitname {
+        -  implicit def unpack[$hktypeblock]: $traitname[$typeblock] = new $traitname[$typeblock] {}
+        -}
+        |
+      """
+    }      
+  }
 }
