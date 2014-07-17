@@ -1001,38 +1001,38 @@ class HListTests {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.split(_0)
-    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni0)
+    typed[(HNil) :: (Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni0)
     val sni1 = sn1.split(_1)
-    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni1)
+    typed[(Int :: HNil) :: (Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni1)
     val sni2 = sn1.split(_2)
-    typed[(Int :: Double :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](sni2)
+    typed[(Int :: Double :: HNil) :: (String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni2)
     val sni3 = sn1.split(_3)
-    typed[(Int :: Double :: String :: HNil, Unit :: String :: Boolean :: Long :: HNil)](sni3)
+    typed[(Int :: Double :: String :: HNil) :: (Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni3)
     val sni4 = sn1.split(_4)
-    typed[(Int :: Double :: String :: Unit :: HNil, String :: Boolean :: Long :: HNil)](sni4)
+    typed[(Int :: Double :: String :: Unit :: HNil) :: (String :: Boolean :: Long :: HNil) :: HNil](sni4)
     val sni5 = sn1.split(_5)
-    typed[(Int :: Double :: String :: Unit :: String :: HNil, Boolean :: Long :: HNil)](sni5)
+    typed[(Int :: Double :: String :: Unit :: String :: HNil) :: (Boolean :: Long :: HNil) :: HNil](sni5)
     val sni6 = sn1.split(_6)
-    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: HNil, Long :: HNil)](sni6)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: HNil) :: (Long :: HNil) :: HNil](sni6)
     val sni7 = sn1.split(_7)
-    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil, HNil)](sni7)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: (HNil) :: HNil](sni7)
 
     val snri0 = sn1.reverse_split(_0)
-    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri0)
+    typed[(HNil) :: (Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri0)
     val snri1 = sn1.reverse_split(_1)
-    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri1)
+    typed[(Int :: HNil) :: (Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri1)
     val snri2 = sn1.reverse_split(_2)
-    typed[(Double :: Int :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](snri2)
+    typed[(Double :: Int :: HNil) :: (String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri2)
     val snri3 = sn1.reverse_split(_3)
-    typed[(String :: Double :: Int :: HNil, Unit :: String :: Boolean :: Long :: HNil)](snri3)
+    typed[(String :: Double :: Int :: HNil) :: (Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri3)
     val snri4 = sn1.reverse_split(_4)
-    typed[(Unit :: String :: Double :: Int :: HNil, String :: Boolean :: Long :: HNil)](snri4)
+    typed[(Unit :: String :: Double :: Int :: HNil) :: (String :: Boolean :: Long :: HNil) :: HNil](snri4)
     val snri5 = sn1.reverse_split(_5)
-    typed[(String :: Unit :: String :: Double :: Int :: HNil, Boolean :: Long :: HNil)](snri5)
+    typed[(String :: Unit :: String :: Double :: Int :: HNil) :: (Boolean :: Long :: HNil) :: HNil](snri5)
     val snri6 = sn1.reverse_split(_6)
-    typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil, Long :: HNil)](snri6)
+    typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil) :: (Long :: HNil) :: HNil](snri6)
     val snri7 = sn1.reverse_split(_7)
-    typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil, HNil)](snri7)
+    typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil) :: (HNil) :: HNil](snri7)
   }
 
   @Test
@@ -1040,38 +1040,38 @@ class HListTests {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.split(0)
-    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni0)
+    typed[(HNil) :: (Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni0)
     val sni1 = sn1.split(1)
-    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](sni1)
+    typed[(Int :: HNil) :: (Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni1)
     val sni2 = sn1.split(2)
-    typed[(Int :: Double :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](sni2)
+    typed[(Int :: Double :: HNil) :: (String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni2)
     val sni3 = sn1.split(3)
-    typed[(Int :: Double :: String :: HNil, Unit :: String :: Boolean :: Long :: HNil)](sni3)
+    typed[(Int :: Double :: String :: HNil) :: (Unit :: String :: Boolean :: Long :: HNil) :: HNil](sni3)
     val sni4 = sn1.split(4)
-    typed[(Int :: Double :: String :: Unit :: HNil, String :: Boolean :: Long :: HNil)](sni4)
+    typed[(Int :: Double :: String :: Unit :: HNil) :: (String :: Boolean :: Long :: HNil) :: HNil](sni4)
     val sni5 = sn1.split(5)
-    typed[(Int :: Double :: String :: Unit :: String :: HNil, Boolean :: Long :: HNil)](sni5)
+    typed[(Int :: Double :: String :: Unit :: String :: HNil) :: (Boolean :: Long :: HNil) :: HNil](sni5)
     val sni6 = sn1.split(6)
-    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: HNil, Long :: HNil)](sni6)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: HNil) :: (Long :: HNil) :: HNil](sni6)
     val sni7 = sn1.split(7)
-    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil, HNil)](sni7)
+    typed[(Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: (HNil) :: HNil](sni7)
 
     val snri0 = sn1.reverse_split(0)
-    typed[(HNil, Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri0)
+    typed[(HNil) :: (Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri0)
     val snri1 = sn1.reverse_split(1)
-    typed[(Int :: HNil, Double :: String :: Unit :: String :: Boolean :: Long :: HNil)](snri1)
+    typed[(Int :: HNil) :: (Double :: String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri1)
     val snri2 = sn1.reverse_split(2)
-    typed[(Double :: Int :: HNil, String :: Unit :: String :: Boolean :: Long :: HNil)](snri2)
+    typed[(Double :: Int :: HNil) :: (String :: Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri2)
     val snri3 = sn1.reverse_split(3)
-    typed[(String :: Double :: Int :: HNil, Unit :: String :: Boolean :: Long :: HNil)](snri3)
+    typed[(String :: Double :: Int :: HNil) :: (Unit :: String :: Boolean :: Long :: HNil) :: HNil](snri3)
     val snri4 = sn1.reverse_split(4)
-    typed[(Unit :: String :: Double :: Int :: HNil, String :: Boolean :: Long :: HNil)](snri4)
+    typed[(Unit :: String :: Double :: Int :: HNil) :: (String :: Boolean :: Long :: HNil) :: HNil](snri4)
     val snri5 = sn1.reverse_split(5)
-    typed[(String :: Unit :: String :: Double :: Int :: HNil, Boolean :: Long :: HNil)](snri5)
+    typed[(String :: Unit :: String :: Double :: Int :: HNil) :: (Boolean :: Long :: HNil) :: HNil](snri5)
     val snri6 = sn1.reverse_split(6)
-    typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil, Long :: HNil)](snri6)
+    typed[(Boolean :: String :: Unit :: String :: Double :: Int :: HNil) :: (Long :: HNil) :: HNil](snri6)
     val snri7 = sn1.reverse_split(7)
-    typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil, HNil)](snri7)
+    typed[(Long :: Boolean :: String :: Unit :: String :: Double :: Int :: HNil) :: (HNil) :: HNil](snri7)
   }
 
   @Test
@@ -1258,22 +1258,22 @@ class HListTests {
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2: SL2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
-    val (sp1, sp2) = sl.splitLeft[String]
+    val sp1 :: sp2 :: HNil = sl.splitLeft[String]
     typed[String :: Double :: HNil](sp2)
     typed[Int :: Boolean :: HNil](sp1)
     assertTypedEquals[SL]((sp1 ::: sp2), sl)
 
-    val (sli1, sli2) = sl2.splitLeft[String]
+    val sli1 :: sli2 :: HNil = sl2.splitLeft[String]
     typed[Int :: Double :: HNil](sli1)
     typed[String :: Unit :: String :: Boolean :: Long :: HNil](sli2)
     assertTypedEquals[SL2]((sli1 ::: sli2), sl2)
 
-    val (rsp1, rsp2) = sl.reverse_splitLeft[String]
+    val rsp1 :: rsp2 :: HNil = sl.reverse_splitLeft[String]
     typed[Boolean :: Int :: HNil](rsp1)
     typed[String :: Double :: HNil](rsp2)
     assertTypedEquals[SL]((rsp1 reverse_::: rsp2), sl)
 
-    val (rsli1, rsli2) = sl2.reverse_splitLeft[String]
+    val rsli1 :: rsli2 :: HNil = sl2.reverse_splitLeft[String]
     typed[Double :: Int :: HNil](rsli1)
     typed[String :: Unit :: String :: Boolean :: Long :: HNil](rsli2)
     assertTypedEquals[SL2]((rsli1 reverse_::: rsli2), sl2)
@@ -1286,22 +1286,22 @@ class HListTests {
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2: SL2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
-    val (srp1, srp2) = sl.splitRight[String]
+    val srp1 :: srp2 :: HNil = sl.splitRight[String]
     typed[Int :: Boolean :: String :: HNil](srp1)
     typed[Double :: HNil](srp2)
     assertTypedEquals[SL]((srp1 ::: srp2), sl)
 
-    val (srli1, srli2) = sl2.splitRight[String]
+    val srli1 :: srli2 :: HNil = sl2.splitRight[String]
     typed[Int :: Double :: String :: Unit :: String :: HNil](srli1)
     typed[Boolean :: Long :: HNil](srli2)
     assertTypedEquals[SL2](sl2, srli1 ::: srli2)
 
-    val (rsrp1, rsrp2) = sl.reverse_splitRight[String]
+    val rsrp1 :: rsrp2 :: HNil = sl.reverse_splitRight[String]
     typed[String :: Boolean :: Int :: HNil](rsrp1)
     typed[Double :: HNil](rsrp2)
     assertTypedEquals[SL]((rsrp1 reverse_::: rsrp2), sl)
 
-    val (rsrli1, rsrli2) = sl2.reverse_splitRight[String]
+    val rsrli1 :: rsrli2 :: HNil = sl2.reverse_splitRight[String]
     typed[String :: Unit :: String :: Double :: Int :: HNil](rsrli1)
     typed[Boolean :: Long :: HNil](rsrli2)
     assertTypedEquals[SL2]((rsrli1 reverse_::: rsrli2), sl2)
