@@ -409,4 +409,62 @@ class CoproductTests {
 
     assertTypedEquals[Option[D]](None, in3.at[_2])
   }
+
+  @Test
+  def testFilter {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1   = Coproduct[I :+: CNil](1)
+    val in2   = Coproduct[I :+: S :+: CNil](1)
+    val in3   = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdi1 = Coproduct[I :+: S :+: D :+: I :+: CNil](1)
+
+    val isdi2: I :+: S :+: D :+: I :+: CNil =
+      Inr[I, S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](2))
+
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in1.filter[I])
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in2.filter[I])
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in3.filter[I])
+
+    assertTypedEquals[Option[S :+: CNil]](None, in2.filter[S])
+    assertTypedEquals[Option[S :+: CNil]](None, in3.filter[S])
+    assertTypedEquals[Option[D :+: CNil]](None, in3.filter[D])
+
+    assertTypedEquals[Option[CNil]](None, in1.filter[C])
+    assertTypedEquals[Option[CNil]](None, in2.filter[C])
+    assertTypedEquals[Option[CNil]](None, in3.filter[C])
+
+    assertTypedEquals[Option[I :+: I :+: CNil]](Some(Inl[I, I :+: CNil](1)), isdi1.filter[I])
+    assertTypedEquals[Option[I :+: I :+: CNil]](Some(Inr[I, I :+: CNil](Inl[I, CNil](2))), isdi2.filter[I])
+  }
+
+  @Test
+  def testFilterNot {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i     = Coproduct[I :+: CNil](1)
+    val is    = Coproduct[I :+: S :+: CNil](1)
+    val isd   = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdi1 = Coproduct[I :+: S :+: D :+: I :+: CNil](1)
+
+    val isdi2: I :+: S :+: D :+: I :+: CNil =
+      Inr[I, S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](2))
+
+    assertTypedEquals[Option[CNil]](None, i.filterNot[I])
+    assertTypedEquals[Option[S :+: CNil]](None, is.filterNot[I])
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isd.filterNot[I])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[S])
+    assertTypedEquals[Option[I :+: CNil]](Some(i), is.filterNot[S])
+    assertTypedEquals[Option[I :+: D :+: CNil]](Some(Coproduct[I :+: D :+: CNil](1)), isd.filterNot[S])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[D])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), is.filterNot[D])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), isd.filterNot[D])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[C])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), is.filterNot[C])
+    assertTypedEquals[Option[I :+: S :+: D :+: CNil]](Some(isd), isd.filterNot[C])
+
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi1.filterNot[I])
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi2.filterNot[I])
+  }
 }
