@@ -526,4 +526,21 @@ final class HListOps[L <: HList](l : L) {
    * there is evidence `op` can consume/produce all the results of the appropriate types.
    */
   def scanRight[A, P <: Poly](z: A)(op: Poly)(implicit scanR: RightScanner[L, A, op.type]): scanR.Out = scanR(l, z)
+
+  /**
+   * 
+   * Produces a new `HList` where a slice of this `HList` is replaced by another. Available only if there are at least 
+   * ``n`` plus ``m`` elements.
+   */
+  def patch[In <: HList](n: Nat, in: In, m: Nat)(implicit patcher: Patcher[n.N, m.N, L, In]): patcher.Out = patcher(l, in)
+
+  /**
+   * Produces a new `HList` where a slice of this `HList` is replaced by another. Two explicit type arguments must be 
+   * provided. Available only if there are at least `N` plus `M` elements.
+   */
+  def patch[N <: Nat, M <: Nat] = new PatchAux[N, M]
+
+  class PatchAux[N <: Nat, M <: Nat]{
+    def apply[In <: HList](in: In)(implicit patcher: Patcher[N, M, L, In]): patcher.Out = patcher(l, in)
+  }
 }

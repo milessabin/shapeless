@@ -2049,4 +2049,57 @@ class HListTests {
       assertEquals(None, twoByThree.at[_1].at[_2])
     }
   } 
+
+  @Test
+  def testPatch{
+    val basehl = 1 :: 2 :: "three" :: HNil
+
+    { //patch an empty hlist
+      val out = HNil.patch(0, basehl, 0)
+      val out2 = HNil.patch[_0,_0](basehl)
+
+      typed[Int :: Int :: String :: HNil](out)
+      assertEquals(out, basehl)
+      assertTypedEquals[Int :: Int :: String :: HNil](out, out2)
+    }
+
+    { //single patch w/ nothing removed
+      val out = basehl.patch(1, 4 :: HNil, 0)
+      val out2 = basehl.patch[_1,_0](4 :: HNil)
+
+      typed[Int :: Int :: Int :: String :: HNil](out)
+      assertEquals(1 :: 4 :: 2 :: "three" :: HNil, out)
+      assertTypedEquals[Int :: Int :: Int :: String :: HNil](out, out2)
+    }
+
+    { //single patch w/ 2 elements removed
+      val out = basehl.patch(1, 3 :: HNil, 2)
+      val out2 = basehl.patch[_1,_2](3 :: HNil)
+
+      typed[Int :: Int :: HNil](out)
+      assertEquals(1 :: 3 :: HNil, out)
+      assertTypedEquals[Int :: Int :: HNil](out, out2)
+    }
+
+    { //essentially append
+      val p = 4 :: 5 :: "six" :: HNil
+      val out = basehl.patch(3, p, 0)
+      val out2 = basehl.patch[_3,_0](p)
+
+      typed[Int :: Int :: String :: Int :: Int :: String :: HNil](out)
+      assertEquals(1 :: 2 :: "three" :: 4 :: 5 :: "six" :: HNil, out)
+      assertTypedEquals[Int :: Int :: String :: Int :: Int :: String :: HNil](out, out2)
+    }
+
+    { //several patched w/ everything from original removed
+      val sub = 4 :: "five" :: "six" :: HNil
+      val out = basehl.patch(0, sub, 3)
+      val out2 = basehl.patch[_0,_3](sub)
+
+      typed[Int :: String :: String :: HNil](out)
+      assertEquals(sub, out)
+      assertTypedEquals[Int :: String :: String :: HNil](out, out2)
+    }
+  }
+
 }

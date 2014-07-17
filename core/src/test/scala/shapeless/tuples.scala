@@ -1588,4 +1588,46 @@ class TupleTests {
       assertEquals(((None, None, None), (None, None, None)), twoByThree)
     }
   }  
+
+  @Test
+  def testPatch{
+    val in = (1, "two", 3)
+
+    { //single patch w/ nothing removed
+      val out = in.patch(1, (4,5), 0)
+      val out2 = in.patch[_1, _0]((4,5))
+
+      typed[(Int, Int, Int, String, Int)](out)
+      assertEquals((1, 4, 5, "two", 3), out)
+      assertTypedEquals[(Int, Int, Int, String, Int)](out, out2)
+    }
+
+    { //single patch w/ 2 elements removed
+      val out = in.patch(1, (3, 4), 2)
+      val out2 = in.patch[_1,_2]((3,4))
+
+      typed[(Int, Int, Int)](out)
+      assertEquals((1, 3, 4), out)
+      assertTypedEquals[(Int, Int, Int)](out, out2)
+    }
+
+    { //essentially append
+      val out = in.patch(3, (4, 5, "six"), 0)
+      val out2 = in.patch[_3,_0]((4, 5, "six"))
+
+      typed[(Int, String, Int, Int, Int, String)](out)
+      assertEquals((1, "two", 3, 4, 5, "six"), out)
+      assertTypedEquals[(Int, String, Int, Int, Int, String)](out, out2)
+    }
+
+    { //several patched w/ everything from original removed
+      val sub = (4, "five", "six")
+      val out = in.patch(0, sub, 3)
+      val out2 = in.patch[_0,_3]((4, "five", "six"))
+
+      typed[(Int, String, String)](out)
+      assertEquals(sub, out)
+      assertTypedEquals[(Int, String, String)](out, out2)
+    }
+  }
 }

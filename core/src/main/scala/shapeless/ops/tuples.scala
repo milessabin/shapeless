@@ -1053,4 +1053,26 @@ object tuple {
         }
 
   }
+
+  /**
+   * Type class supporting the patching of a tuple.
+   *
+   * @author Owein Reese
+   */
+  trait Patcher[N <: Nat, M <: Nat, T, InT] extends DepFn2[T, InT]
+
+  object Patcher{
+    def apply[N <: Nat, M <: Nat, T, InT](implicit patch: Patcher[N, M, T, InT]) = patch
+
+    implicit def tuplePatch[N <: Nat, M <: Nat, T, L <: HList, InT, InL <: HList, OutL <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        genIn: Generic.Aux[InT, InL], 
+        patch: hl.Patcher.Aux[N, M, L, InL, OutL], 
+        tp: hl.Tupler[OutL]) =
+        new Patcher[N, M, T, InT]{
+          type Out = tp.Out
+
+          def apply(t: T, in: InT) = tp(patch(gen.to(t), genIn.to(in)))
+        }
+  }
 }
