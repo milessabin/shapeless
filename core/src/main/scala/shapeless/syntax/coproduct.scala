@@ -46,6 +46,16 @@ final class CoproductOps[C <: Coproduct](c: C) {
    */
   def tail(implicit cc: IsCCons[C]): Option[cc.T] = cc.tail(c)
 
+  /**
+   * Returns all elements except the last
+   */
+  def init(implicit il: InitLast[C]): Option[il.I] = il.init(c)
+
+  /**
+   * Returns the last element of this 'Coproduct'
+   */
+  def last(implicit il: InitLast[C]): Option[il.L] = il.last(c)
+
   def length(implicit length: Length[C]): length.Out = length()
 
   def extendLeft[T]: T :+: C = Inr(c)

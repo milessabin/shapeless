@@ -375,4 +375,20 @@ class CoproductTests {
     assertTypedEquals[SI](Coproduct[SI](1), Coproduct[IS](1).reverse)
     assertTypedEquals[SI](Coproduct[SI]("foo"), Coproduct[IS]("foo").reverse)
   }
+
+  @Test
+  def testInit {
+    assertTypedEquals[Option[CNil]](None, Coproduct[Int :+: CNil](1).init)
+    assertTypedEquals[Option[Int :+: CNil]](None, Coproduct[Int :+: String :+: CNil]("foo").init)
+
+    assertTypedEquals[Option[Int :+: CNil]](
+      Some(Coproduct[Int :+: CNil](1)), Coproduct[Int :+: String :+: CNil](1).init)
+  }
+
+  @Test
+  def testLast {
+    assertTypedEquals[Option[Int]](Some(1),     Coproduct[Int :+: CNil](1).last)
+    assertTypedEquals[Option[String]](Some("foo"), Coproduct[Int :+: String :+: CNil]("foo").last)
+    assertTypedEquals[Option[String]](None,        Coproduct[Int :+: String :+: CNil](1).last)
+  }
 }
