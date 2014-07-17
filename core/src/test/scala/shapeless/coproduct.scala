@@ -136,7 +136,40 @@ class CoproductTests {
       foo3.select[Double]
     """)
   }
-  
+
+  @Test
+  def testFlatMap {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+
+    object coIdentity extends Poly1 {
+      implicit def default[A] = at[A](a => Coproduct[A :+: CNil](a))
+    }
+
+    assertTypedEquals[I :+: CNil](in1, in1.flatMap(coIdentity))
+    assertTypedEquals[I :+: S :+: CNil](is, is.flatMap(coIdentity))
+
+    object coSquare extends Poly1 {
+      implicit def default[A] = at[A](a => Coproduct[A :+: A :+: CNil](a))
+    }
+
+    assertTypedEquals[I :+: I :+: CNil](Coproduct[I :+:I :+: CNil](1), in1.flatMap(coSquare))
+
+    assertTypedEquals[I :+: I :+: S :+: S :+: CNil](
+      Coproduct[I :+: I :+: S :+: S :+: CNil](1), is.flatMap(coSquare))
+
+    object complex extends Poly1 {
+      implicit def caseInt    = at[Int](i => Coproduct[S :+: CNil](i.toString))
+      implicit def caseString = at[String](s => Coproduct[C :+: D :+: CNil](s(0)))
+      implicit def caseDouble = at[Double](d => Coproduct[I :+: S :+: CNil](d.toInt))
+    }
+
+    assertTypedEquals[S :+: C :+: D :+: I :+: S :+: CNil](
+      Coproduct[S :+: C :+: D :+: I :+: S :+: CNil]("1"), isd.flatMap(complex))
+  }
+
   @Test
   def testMap {
     val foo1 = Coproduct[ISB](23)
@@ -278,6 +311,36 @@ class CoproductTests {
     assertTypedEquals[CoSI](Coproduct[CoSI](1), Coproduct[CoI](1).extendLeft[S])
     assertTypedEquals[CoDSI](Coproduct[CoDSI](1), Coproduct[CoSI](1).extendLeft[D])
     assertTypedEquals[CoCDSI](Coproduct[CoCDSI](1), Coproduct[CoDSI](1).extendLeft[C])
+  }
+
+  @Test
+  def testExtendLeftBy {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoSI   = S :+: I :+: CNil
+    type CoDSI  = D :+: S :+: I :+: CNil
+    type CoCDSI = C :+: D :+: S :+: I :+: CNil
+    val coi = Coproduct[CoI](1)
+
+    assertTypedEquals[CoI](coi,                     coi.extendLeftBy[CNil])
+    assertTypedEquals[CoSI](Coproduct[CoSI](1),     coi.extendLeftBy[S :+: CNil])
+    assertTypedEquals[CoDSI](Coproduct[CoDSI](1),   coi.extendLeftBy[D :+: S :+: CNil])
+    assertTypedEquals[CoCDSI](Coproduct[CoCDSI](1), coi.extendLeftBy[C :+: D :+: S :+: CNil])
+  }
+
+  @Test
+  def testExtendRightBy {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoIS   = I :+: S :+: CNil
+    type CoISD  = I :+: S :+: D :+: CNil
+    type CoISDC = I :+: S :+: D :+: C :+: CNil
+    val coi = Coproduct[CoI](1)
+
+    assertTypedEquals[CoI](coi,                     coi.extendRightBy[CNil])
+    assertTypedEquals[CoIS](Coproduct[CoIS](1),     coi.extendRightBy[S :+: CNil])
+    assertTypedEquals[CoISD](Coproduct[CoISD](1),   coi.extendRightBy[S :+: D :+: CNil])
+    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), coi.extendRightBy[S :+: D :+: C :+: CNil])
   }
 
   @Test

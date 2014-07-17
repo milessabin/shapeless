@@ -167,6 +167,35 @@ object coproduct {
     }
   }
 
+  trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
+
+  object FlatMap {
+    def apply[C <: Coproduct, F <: Poly](implicit folder: FlatMap[C, F]): Aux[C, F, folder.Out] = folder
+
+    type Aux[C <: Coproduct, F <: Poly, Out0 <: Coproduct] = FlatMap[C, F] { type Out = Out0 }
+
+    implicit def cnilFlatMap[F <: Poly]: Aux[CNil, F, CNil] = new FlatMap[CNil, F] {
+      type Out = CNil
+
+      def apply(c: CNil): Out = c
+    }
+
+    implicit def cpFlatMap[H, T <: Coproduct, F <: Poly, OutH <: Coproduct, OutT <: Coproduct](
+      implicit
+       fh: Case1.Aux[F, H, OutH],
+       ft: FlatMap.Aux[T, F, OutT],
+       extendBy: ExtendBy[OutH, OutT]
+    ): Aux[H :+: T, F, extendBy.Out] = new FlatMap[H :+: T, F] {
+      type Out = extendBy.Out
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => extendBy.right(fh(h))
+        case Inr(t) => extendBy.left(ft(t))
+      }
+    }
+
+  }
+
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
 
   object Mapper {
@@ -304,6 +333,89 @@ object coproduct {
             case Inr(t) => Inr(extendRight(t))
           }
         }
+  }
+
+  trait ExtendBy[L <: Coproduct, R <: Coproduct] {
+    type Out <: Coproduct
+
+    def right(l: L): Out
+    def left(r: R): Out
+  }
+
+  object ExtendBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendBy: ExtendBy[L, R]): Aux[L, R, extendBy.Out] = extendBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendBy[L, R] { type Out = Out0 }
+
+    implicit def extendBy[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct](
+      implicit extendLeftBy: ExtendLeftBy.Aux[L, R, Out0], extendRightBy: ExtendRightBy.Aux[L, R, Out0]
+    ): ExtendBy.Aux[L, R, Out0] = new ExtendBy[L, R] {
+      type Out = Out0
+
+      def right(l: L): Out = extendRightBy(l)
+      def left(r: R): Out = extendLeftBy(r)
+    }
+  }
+
+  trait ExtendLeftBy[L <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+
+  object ExtendLeftBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendLeftBy: ExtendLeftBy[L, R]): Aux[L, R, extendLeftBy.Out] = extendLeftBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendLeftBy[L, R] { type Out = Out0 }
+
+    implicit def extendLeftByCoproduct[L <: Coproduct, R <: Coproduct, RevL <: Coproduct](
+      implicit reverseL: Reverse.Aux[L, RevL], impl: Impl[RevL, R]
+    ): Aux[L, R, impl.Out] = new ExtendLeftBy[L, R] {
+      type Out = impl.Out
+
+      def apply(r: R): Out = impl(r)
+    }
+
+    trait Impl[RevL <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+
+    object Impl {
+      type Aux[RevL <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = Impl[RevL, R] { type Out = Out0 }
+
+      implicit def extendLeftByCNilImpl[R <: Coproduct]: Aux[CNil, R, R] = new Impl[CNil, R] {
+        type Out = R
+
+        def apply(r: R): Out = r
+      }
+
+      implicit def extendLeftByCoproductImpl[H, T <: Coproduct, R <: Coproduct](
+        implicit extendLeftBy: Impl[T, H :+: R]
+      ): Aux[H :+: T, R, extendLeftBy.Out] = new Impl[H :+: T, R] {
+        type Out = extendLeftBy.Out
+
+        def apply(r: R): Out = extendLeftBy(Inr[H, R](r))
+      }
+    }
+  }
+
+  trait ExtendRightBy[L <: Coproduct, R <: Coproduct] extends DepFn1[L] { type Out <: Coproduct }
+
+  object ExtendRightBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendRightBy: ExtendRightBy[L, R]): Aux[L, R, extendRightBy.Out] = extendRightBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendRightBy[L, R] { type Out = Out0 }
+
+    implicit def extendRightByCNil[L <: Coproduct]: Aux[L, CNil, L] = new ExtendRightBy[L, CNil] {
+      type Out = L
+
+      def apply(l: L): Out = l
+    }
+
+    implicit def extendRightByCoproduct[L <: Coproduct, H, LH <: Coproduct, T <: Coproduct](
+      implicit extendRight: ExtendRight.Aux[L, H, LH], extendRightBy: ExtendRightBy[LH, T]
+    ): Aux[L, H :+: T, extendRightBy.Out] = new ExtendRightBy[L, H :+: T] {
+      type Out = extendRightBy.Out
+
+      def apply(l: L): Out = extendRightBy(extendRight(l))
+    }
   }
 
   /**
