@@ -90,4 +90,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
 
   def reverse(implicit reverse: Reverse[C]): reverse.Out = reverse(c)
+
+  def split[N <: Nat](implicit split: Split[C, N]): split.Out = split(c)
+  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Out = split(c)
 }

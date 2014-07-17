@@ -467,4 +467,44 @@ class CoproductTests {
     assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi1.filterNot[I])
     assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi2.filterNot[I])
   }
+
+  @Test
+  def testSplit {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val dc = Coproduct[D :+: C :+: CNil](2.0)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdc = Coproduct[I :+: S :+: D :+: C :+: CNil](2.0)
+
+    assertTypedEquals[CNil :+: (I :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: CNil) :+: CNil](in1), in1.split[_0])
+
+    assertTypedEquals[CNil :+: (I :+: S :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: S :+: CNil) :+: CNil](is), is.split[_0])
+
+
+    assertTypedEquals[(I :+: CNil) :+: CNil :+: CNil](
+      Coproduct[(I :+: CNil) :+: CNil :+: CNil](in1), in1.split[_1])
+
+    assertTypedEquals[(I :+: CNil) :+: (S :+: CNil) :+: CNil](
+      Coproduct[(I :+: CNil) :+: (S :+: CNil) :+: CNil](in1), is.split[_1])
+
+    assertTypedEquals[(I :+: CNil) :+: (S :+: D :+: CNil) :+: CNil](
+      Coproduct[(I :+: CNil) :+: (S :+: D :+: CNil) :+: CNil](in1), isd.split[_1])
+
+
+    assertTypedEquals[CNil :+: (I :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: CNil) :+: CNil](in1), in1.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: CNil :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: CNil :+: CNil](is), is.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: (D :+: CNil) :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: (D :+: CNil) :+: CNil](is), isd.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](dc), isdc.split[_2])
+  }
 }
