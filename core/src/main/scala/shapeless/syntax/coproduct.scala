@@ -30,6 +30,8 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
   def map(f: Poly)(implicit mapper: Mapper[f.type, C]): mapper.Out = mapper(c)
 
+  def flatMap(op: Poly)(implicit flatMap: FlatMap[C, op.type]): flatMap.Out = flatMap(c)
+
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
 
   /**
@@ -80,8 +82,14 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
   def length(implicit length: Length[C]): length.Out = length()
 
-  def extendLeft[T]: T :+: C = Inr(c)
+  def extendLeft[T]: T :+: C = Inr[T, C](c)
   def extendRight[T](implicit extendRight: ExtendRight[C, T]): extendRight.Out = extendRight(c)
+
+  def extendLeftBy[K <: Coproduct](implicit extendLeftBy: ExtendLeftBy[K, C]): extendLeftBy.Out =
+    extendLeftBy(c)
+
+  def extendRightBy[K <: Coproduct](implicit extendRightBy: ExtendRightBy[C, K]): extendRightBy.Out =
+    extendRightBy(c)
 
   def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
   def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
