@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import ops.coproduct._
 class CoproductTests {
   type ISB = Int :+: String :+: Boolean :+: CNil
   type III = Int :+: Int :+: Int :+: CNil
-  
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
   case class Banana() extends Fruit
-  
+
   type APB = Apple :+: Pear :+: Banana :+: CNil
 
   object size extends Poly1 {
@@ -52,7 +52,7 @@ class CoproductTests {
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
-  
+
     illTyped("""
       val foo4 = Coproduct[ISB](1.0)
     """)
@@ -72,7 +72,7 @@ class CoproductTests {
         typed[Boolean](x)
       case Inr(Inr(Inr(_))) => ??? // This impossible case required for exhaustivity
     }
-    
+
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
@@ -81,7 +81,7 @@ class CoproductTests {
     cpMatch(foo2)
     cpMatch(foo3)
   }
-  
+
   @Test
   def testSelect {
     val foo1 = Coproduct[ISB](23)
@@ -91,77 +91,110 @@ class CoproductTests {
     val sel1a = foo1.select[Int]
     typed[Option[Int]](sel1a)
     assertEquals(Some(23), sel1a)
-    
+
     val sel1b = foo1.select[String]
     typed[Option[String]](sel1b)
     assertEquals(None, sel1b)
-    
+
     val sel1c = foo1.select[Boolean]
     typed[Option[Boolean]](sel1c)
     assertEquals(None, sel1c)
-    
+
     illTyped("""
       foo1.select[Double]
     """)
-    
+
     val sel2a = foo2.select[Int]
     typed[Option[Int]](sel2a)
     assertEquals(None, sel2a)
-    
+
     val sel2b = foo2.select[String]
     typed[Option[String]](sel2b)
     assertEquals(Some("foo"), sel2b)
-    
+
     val sel2c = foo2.select[Boolean]
     typed[Option[Boolean]](sel2c)
     assertEquals(None, sel2c)
-    
+
     illTyped("""
       foo2.select[Double]
     """)
-    
+
     val sel3a = foo3.select[Int]
     typed[Option[Int]](sel3a)
     assertEquals(None, sel3a)
-    
+
     val sel3b = foo3.select[String]
     typed[Option[String]](sel3b)
     assertEquals(None, sel3b)
-    
+
     val sel3c = foo3.select[Boolean]
     typed[Option[Boolean]](sel3c)
     assertEquals(Some(true), sel3c)
-    
+
     illTyped("""
       foo3.select[Double]
     """)
   }
-  
+
+  @Test
+  def testFlatMap {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+
+    object coIdentity extends Poly1 {
+      implicit def default[A] = at[A](a => Coproduct[A :+: CNil](a))
+    }
+
+    assertTypedEquals[I :+: CNil](in1, in1.flatMap(coIdentity))
+    assertTypedEquals[I :+: S :+: CNil](is, is.flatMap(coIdentity))
+
+    object coSquare extends Poly1 {
+      implicit def default[A] = at[A](a => Coproduct[A :+: A :+: CNil](a))
+    }
+
+    assertTypedEquals[I :+: I :+: CNil](Coproduct[I :+:I :+: CNil](1), in1.flatMap(coSquare))
+
+    assertTypedEquals[I :+: I :+: S :+: S :+: CNil](
+      Coproduct[I :+: I :+: S :+: S :+: CNil](1), is.flatMap(coSquare))
+
+    object complex extends Poly1 {
+      implicit def caseInt    = at[Int](i => Coproduct[S :+: CNil](i.toString))
+      implicit def caseString = at[String](s => Coproduct[C :+: D :+: CNil](s(0)))
+      implicit def caseDouble = at[Double](d => Coproduct[I :+: S :+: CNil](d.toInt))
+    }
+
+    assertTypedEquals[S :+: C :+: D :+: I :+: S :+: CNil](
+      Coproduct[S :+: C :+: D :+: I :+: S :+: CNil]("1"), isd.flatMap(complex))
+  }
+
   @Test
   def testMap {
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
-    
+
     val foo1b = foo1 map size
     typed[III](foo1b)
     assertEquals(Inl(1), foo1b)
-    
+
     val foo2b = foo2 map size
     typed[III](foo2b)
     assertEquals(Inr(Inl(3)), foo2b)
-    
+
     val foo3b = foo3 map size
     typed[III](foo3b)
     assertEquals(Inr(Inr(Inl(1))), foo3b)
   }
-  
+
   @Test
   def testUnify {
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
-    
+
     val foo1b = foo1 map size
     val foo2b = foo2 map size
     val foo3b = foo3 map size
@@ -169,26 +202,61 @@ class CoproductTests {
     val foo1c = foo1b.unify
     typed[Int](foo1c)
     assertEquals(1, foo1c)
-    
+
     val foo2c = foo2b.unify
     typed[Int](foo2c)
     assertEquals(3, foo2c)
-    
+
     val foo3c = foo3b.unify
     typed[Int](foo3c)
     assertEquals(1, foo3c)
-    
+
     val f1 = Coproduct[APB](Apple())
     val f2 = Coproduct[APB](Pear())
     val f3 = Coproduct[APB](Banana())
-    
+
     val f1b = f1.unify
     typed[Fruit](f1b)
-    
-    val f2b = f2.unify 
+
+    val f2b = f2.unify
     typed[Fruit](f2b)
-    
-    val f3b = f3.unify 
+
+    val f3b = f3.unify
+    typed[Fruit](f3b)
+  }
+
+  @Test
+  def testFold {
+    import poly.identity
+
+    val foo1 = Coproduct[ISB](23)
+    val foo2 = Coproduct[ISB]("foo")
+    val foo3 = Coproduct[ISB](true)
+
+    val foo1b = foo1 fold size
+    val foo2b = foo2 fold size
+    val foo3b = foo3 fold size
+
+    typed[Int](foo1b)
+    assertEquals(1, foo1b)
+
+    typed[Int](foo2b)
+    assertEquals(3, foo2b)
+
+    typed[Int](foo3b)
+    assertEquals(1, foo3b)
+
+    val f1 = Coproduct[APB](Apple())
+    val f2 = Coproduct[APB](Pear())
+    val f3 = Coproduct[APB](Banana())
+
+    val f1b = f1 fold identity
+    typed[Fruit](f1b)
+
+    val f2b = f2 fold identity
+    typed[Fruit](f2b)
+
+    val f3b = f3 fold identity
     typed[Fruit](f3b)
   }
 
@@ -281,6 +349,36 @@ class CoproductTests {
   }
 
   @Test
+  def testExtendLeftBy {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoSI   = S :+: I :+: CNil
+    type CoDSI  = D :+: S :+: I :+: CNil
+    type CoCDSI = C :+: D :+: S :+: I :+: CNil
+    val coi = Coproduct[CoI](1)
+
+    assertTypedEquals[CoI](coi,                     coi.extendLeftBy[CNil])
+    assertTypedEquals[CoSI](Coproduct[CoSI](1),     coi.extendLeftBy[S :+: CNil])
+    assertTypedEquals[CoDSI](Coproduct[CoDSI](1),   coi.extendLeftBy[D :+: S :+: CNil])
+    assertTypedEquals[CoCDSI](Coproduct[CoCDSI](1), coi.extendLeftBy[C :+: D :+: S :+: CNil])
+  }
+
+  @Test
+  def testExtendRightBy {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type CoI    = I :+: CNil
+    type CoIS   = I :+: S :+: CNil
+    type CoISD  = I :+: S :+: D :+: CNil
+    type CoISDC = I :+: S :+: D :+: C :+: CNil
+    val coi = Coproduct[CoI](1)
+
+    assertTypedEquals[CoI](coi,                     coi.extendRightBy[CNil])
+    assertTypedEquals[CoIS](Coproduct[CoIS](1),     coi.extendRightBy[S :+: CNil])
+    assertTypedEquals[CoISD](Coproduct[CoISD](1),   coi.extendRightBy[S :+: D :+: CNil])
+    assertTypedEquals[CoISDC](Coproduct[CoISDC](1), coi.extendRightBy[S :+: D :+: C :+: CNil])
+  }
+
+  @Test
   def testRotateLeft {
     import Nat._
     type S = String; type I = Int; type D = Double; type C = Char
@@ -364,5 +462,147 @@ class CoproductTests {
 
     assertTypedEquals[Option[String :+: CNil]](
       Some(Coproduct[String :+: CNil]("foo")), Coproduct[Int :+: String :+: CNil]("foo").tail)
+  }
+
+  @Test
+  def testReverse {
+    type S = String; type I = Int; type D = Double; type C = Char
+    type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil
+
+    assertTypedEquals[I :+: CNil](Coproduct[I :+: CNil](1), Coproduct[I :+: CNil](1).reverse)
+    assertTypedEquals[SI](Coproduct[SI](1), Coproduct[IS](1).reverse)
+    assertTypedEquals[SI](Coproduct[SI]("foo"), Coproduct[IS]("foo").reverse)
+  }
+
+  @Test
+  def testInit {
+    assertTypedEquals[Option[CNil]](None, Coproduct[Int :+: CNil](1).init)
+    assertTypedEquals[Option[Int :+: CNil]](None, Coproduct[Int :+: String :+: CNil]("foo").init)
+
+    assertTypedEquals[Option[Int :+: CNil]](
+      Some(Coproduct[Int :+: CNil](1)), Coproduct[Int :+: String :+: CNil](1).init)
+  }
+
+  @Test
+  def testLast {
+    assertTypedEquals[Option[Int]](Some(1),     Coproduct[Int :+: CNil](1).last)
+    assertTypedEquals[Option[String]](Some("foo"), Coproduct[Int :+: String :+: CNil]("foo").last)
+    assertTypedEquals[Option[String]](None,        Coproduct[Int :+: String :+: CNil](1).last)
+  }
+
+  @Test
+  def testAt {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val in2 = Coproduct[I :+: S :+: CNil](1)
+    val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
+
+    assertTypedEquals[Option[I]](Some(1), in1.at[_0])
+    assertTypedEquals[Option[I]](Some(1), in2.at[_0])
+    assertTypedEquals[Option[I]](Some(1), in3.at[_0])
+
+    assertTypedEquals[Option[S]](None, in2.at[_1])
+    assertTypedEquals[Option[S]](None, in3.at[_1])
+
+    assertTypedEquals[Option[D]](None, in3.at[_2])
+  }
+
+  @Test
+  def testFilter {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1   = Coproduct[I :+: CNil](1)
+    val in2   = Coproduct[I :+: S :+: CNil](1)
+    val in3   = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdi1 = Coproduct[I :+: S :+: D :+: I :+: CNil](1)
+
+    val isdi2: I :+: S :+: D :+: I :+: CNil =
+      Inr[I, S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](2))
+
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in1.filter[I])
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in2.filter[I])
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), in3.filter[I])
+
+    assertTypedEquals[Option[S :+: CNil]](None, in2.filter[S])
+    assertTypedEquals[Option[S :+: CNil]](None, in3.filter[S])
+    assertTypedEquals[Option[D :+: CNil]](None, in3.filter[D])
+
+    assertTypedEquals[Option[CNil]](None, in1.filter[C])
+    assertTypedEquals[Option[CNil]](None, in2.filter[C])
+    assertTypedEquals[Option[CNil]](None, in3.filter[C])
+
+    assertTypedEquals[Option[I :+: I :+: CNil]](Some(Inl[I, I :+: CNil](1)), isdi1.filter[I])
+    assertTypedEquals[Option[I :+: I :+: CNil]](Some(Inr[I, I :+: CNil](Inl[I, CNil](2))), isdi2.filter[I])
+  }
+
+  @Test
+  def testFilterNot {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i     = Coproduct[I :+: CNil](1)
+    val is    = Coproduct[I :+: S :+: CNil](1)
+    val isd   = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdi1 = Coproduct[I :+: S :+: D :+: I :+: CNil](1)
+
+    val isdi2: I :+: S :+: D :+: I :+: CNil =
+      Inr[I, S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](2))
+
+    assertTypedEquals[Option[CNil]](None, i.filterNot[I])
+    assertTypedEquals[Option[S :+: CNil]](None, is.filterNot[I])
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isd.filterNot[I])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[S])
+    assertTypedEquals[Option[I :+: CNil]](Some(i), is.filterNot[S])
+    assertTypedEquals[Option[I :+: D :+: CNil]](Some(Coproduct[I :+: D :+: CNil](1)), isd.filterNot[S])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[D])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), is.filterNot[D])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), isd.filterNot[D])
+
+    assertTypedEquals[Option[I :+: CNil]](Some(i), i.filterNot[C])
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), is.filterNot[C])
+    assertTypedEquals[Option[I :+: S :+: D :+: CNil]](Some(isd), isd.filterNot[C])
+
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi1.filterNot[I])
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, isdi2.filterNot[I])
+  }
+
+  @Test
+  def testSplit {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val dc = Coproduct[D :+: C :+: CNil](2.0)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdc = Coproduct[I :+: S :+: D :+: C :+: CNil](2.0)
+
+    assertTypedEquals[CNil :+: (I :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: CNil) :+: CNil](in1), in1.split[_0])
+
+    assertTypedEquals[CNil :+: (I :+: S :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: S :+: CNil) :+: CNil](is), is.split[_0])
+
+
+    assertTypedEquals[(I :+: CNil) :+: CNil :+: CNil](
+      Coproduct[(I :+: CNil) :+: CNil :+: CNil](in1), in1.split[_1])
+
+    assertTypedEquals[(I :+: CNil) :+: (S :+: CNil) :+: CNil](
+      Coproduct[(I :+: CNil) :+: (S :+: CNil) :+: CNil](in1), is.split[_1])
+
+    assertTypedEquals[(I :+: CNil) :+: (S :+: D :+: CNil) :+: CNil](
+      Coproduct[(I :+: CNil) :+: (S :+: D :+: CNil) :+: CNil](in1), isd.split[_1])
+
+
+    assertTypedEquals[CNil :+: (I :+: CNil) :+: CNil](
+      Coproduct[CNil :+: (I :+: CNil) :+: CNil](in1), in1.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: CNil :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: CNil :+: CNil](is), is.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: (D :+: CNil) :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: (D :+: CNil) :+: CNil](is), isd.split[_2])
+
+    assertTypedEquals[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](
+      Coproduct[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](dc), isdc.split[_2])
   }
 }

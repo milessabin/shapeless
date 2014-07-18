@@ -337,7 +337,7 @@ object tuple {
   /**
    * Type class supporting splitting this tuple at the ''nth'' element returning the prefix and suffix as a pair.
    * Available only if this tuple has at least ''n'' elements.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Split[T, N <: Nat] extends DepFn1[T]
@@ -346,19 +346,24 @@ object tuple {
     def apply[T, N <: Nat](implicit split: Split[T, N]): Aux[T, N, split.Out] = split
 
     type Aux[T, N <: Nat, Out0] = Split[T, N] { type Out = Out0 }
-    
+
     implicit def tupleSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.Split.Aux[L, N, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, N, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.Split.Aux[L, N, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, N, (tpp.Out, tps.Out)] =
         new Split[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
   /**
    * Type class supporting splitting this tuple at the ''nth'' element returning the reverse prefix and suffix as a
    * pair. Available only if this tuple has at least ''n'' elements.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplit[T, N <: Nat] extends DepFn1[T]
@@ -367,19 +372,24 @@ object tuple {
     def apply[T, N <: Nat](implicit split: ReverseSplit[T, N]): Aux[T, N, split.Out] = split
 
     type Aux[T, N <: Nat, Out0] = ReverseSplit[T, N] { type Out = Out0 }
-    
+
     implicit def tupleReverseSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplit.Aux[L, N, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, N, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.ReverseSplit.Aux[L, N, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, N, (tpp.Out, tps.Out)] =
         new ReverseSplit[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
   /**
    * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait SplitLeft[T, U] extends DepFn1[T]
@@ -388,19 +398,24 @@ object tuple {
     def apply[T, U](implicit split: SplitLeft[T, U]): Aux[T, U, split.Out] = split
 
     type Aux[T, U, Out0] = SplitLeft[T, U] { type Out = Out0 }
-    
+
     implicit def tupleSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.SplitLeft.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.SplitLeft.Aux[L, U, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
   /**
    * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplitLeft[T, U] extends DepFn1[T]
@@ -409,19 +424,24 @@ object tuple {
     def apply[T, U](implicit split: ReverseSplitLeft[T, U]): Aux[T, U, split.Out] = split
 
     type Aux[T, U, Out0] = ReverseSplitLeft[T, U] { type Out = Out0 }
-    
+
     implicit def tupleReverseSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplitLeft.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.ReverseSplitLeft.Aux[L, U, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
   /**
    * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait SplitRight[T, U] extends DepFn1[T]
@@ -430,19 +450,24 @@ object tuple {
     def apply[T, U](implicit split: SplitRight[T, U]): Aux[T, U, split.Out] = split
 
     type Aux[T, U, Out0] = SplitRight[T, U] { type Out = Out0 }
-    
+
     implicit def tupleSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.SplitRight.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.SplitRight.Aux[L, U, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
   /**
    * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ReverseSplitRight[T, U] extends DepFn1[T]
@@ -451,12 +476,17 @@ object tuple {
     def apply[T, U](implicit split: ReverseSplitRight[T, U]): Aux[T, U, split.Out] = split
 
     type Aux[T, U, Out0] = ReverseSplitRight[T, U] { type Out = Out0 }
-    
+
     implicit def tupleReverseSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
-      (implicit gen: Generic.Aux[T, L], split: hl.ReverseSplitRight.Aux[L, U, (LP, LS)], tpp: hl.Tupler[LP], tps: hl.Tupler[LS]): Aux[T, U, (tpp.Out, tps.Out)] =
+      (implicit
+        gen: Generic.Aux[T, L],
+        split: hl.ReverseSplitRight.Aux[L, U, LP :: LS :: HNil],
+        tpp: hl.Tupler[LP],
+        tps: hl.Tupler[LS]
+      ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val (p, s) = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -1023,6 +1053,56 @@ object tuple {
           type Out = tp.Out
 
           def apply(t: T, in: In): Out = tp(scanR(gen.to(t), in))
+        }
+  }
+
+  /**
+   * Type class supporting producing a tuple of shape `N` filled with elements of type `A`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fill[N, A] extends DepFn1[A]
+
+  object Fill {
+    def apply[N, A](implicit fill: Fill[N, A]) = fill
+
+    type Aux[N, A, Out0] = Fill[N, A] { type Out = Out0 }
+
+    implicit def fill1[N <: Nat, A, L <: HList, P]
+      (implicit fill: hlist.Fill.Aux[N, A, L], tupler: hlist.Tupler[L]): Aux[N, A, tupler.Out] =
+        new Fill[N, A] {
+          type Out = tupler.Out
+          def apply(elem: A) = tupler(fill(elem))
+        }
+
+    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut]
+      (implicit subFill: Fill.Aux[N2, A, SubOut], fill: Fill[N1, SubOut]): Aux[(N1, N2), A, fill.Out] =
+        new Fill[(N1, N2), A] {
+          type Out = fill.Out
+          def apply(elem: A) = fill(subFill(elem))
+        }
+
+  }
+
+  /**
+   * Type class supporting the patching of a tuple.
+   *
+   * @author Owein Reese
+   */
+  trait Patcher[N <: Nat, M <: Nat, T, InT] extends DepFn2[T, InT]
+
+  object Patcher{
+    def apply[N <: Nat, M <: Nat, T, InT](implicit patch: Patcher[N, M, T, InT]) = patch
+
+    implicit def tuplePatch[N <: Nat, M <: Nat, T, L <: HList, InT, InL <: HList, OutL <: HList]
+      (implicit gen: Generic.Aux[T, L], 
+        genIn: Generic.Aux[InT, InL], 
+        patch: hl.Patcher.Aux[N, M, L, InL, OutL], 
+        tp: hl.Tupler[OutL]) =
+        new Patcher[N, M, T, InT]{
+          type Out = tp.Out
+
+          def apply(t: T, in: InT) = tp(patch(gen.to(t), genIn.to(in)))
         }
   }
 }

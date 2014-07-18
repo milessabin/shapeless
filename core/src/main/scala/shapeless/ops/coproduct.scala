@@ -58,6 +58,144 @@ object coproduct {
     }
   }
 
+  trait At[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type A
+    type Out = Option[A]
+  }
+
+  object At {
+    def apply[C <: Coproduct, N <: Nat](implicit at: At[C, N]): Aux[C, N, at.A] = at
+
+    type Aux[C <: Coproduct, N <: Nat, A0] = At[C, N] { type A = A0 }
+
+    implicit def coproductAt0[H, T <: Coproduct]: Aux[H :+: T, Nat._0, H] = new At[H :+: T, Nat._0] {
+      type A = H
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => Some(h)
+        case _      => None
+      }
+    }
+
+    implicit def coproductAtN[H, T <: Coproduct, N <: Nat](
+      implicit att: At[T, N]
+    ): Aux[H :+: T, Succ[N], att.A] = new At[H :+: T, Succ[N]] {
+      type A = att.A
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(_)    => None
+        case Inr(tail) => att(tail)
+      }
+    }
+  }
+
+  trait Filter[C <: Coproduct, U] extends DepFn1[C] {
+    type A <: Coproduct
+    type Out = Option[A]
+  }
+
+  object Filter {
+    def apply[C <: Coproduct, U](implicit filter: Filter[C, U]): Aux[C, U, filter.A] = filter
+
+    type Aux[C <: Coproduct, U, A0 <: Coproduct] = Filter[C, U] { type A = A0 }
+
+    implicit def cnilFilter[U]: Aux[CNil, U, CNil] = new Filter[CNil, U] {
+      type A = CNil
+
+      def apply(c: CNil): Option[A] = Some(c)
+    }
+
+    implicit def coproductFilter_Match[H, T <: Coproduct, FilterT <: Coproduct](
+      implicit filter: Aux[T, H, FilterT], inject: Inject[H :+: FilterT, H]
+    ): Aux[H :+: T, H, H :+: FilterT] = new Filter[H :+: T, H] {
+      type A = H :+: FilterT
+
+      def apply(c: H :+: T): Option[A] = c match {
+        case Inl(h) => Some(inject(h))
+        case Inr(t) => filter(t).map(Inr[H, FilterT](_))
+      }
+    }
+
+    implicit def coproductFilter_NonMatch[H, T <: Coproduct, FilterT <: Coproduct, U](
+      implicit filter: Aux[T, U, FilterT], e: U =:!= H
+    ): Aux[H :+: T, U, FilterT] = new Filter[H :+: T, U] {
+      type A = FilterT
+
+      def apply(c: H :+: T): Option[A] = c match {
+        case Inr(t) => filter(t)
+        case _      => None
+      }
+    }
+  }
+
+  trait FilterNot[C <: Coproduct, U] extends DepFn1[C] {
+    type A <: Coproduct
+    type Out = Option[A]
+  }
+
+  object FilterNot {
+    def apply[C <: Coproduct, U](implicit filterNot: FilterNot[C, U]): Aux[C, U, filterNot.A] = filterNot
+
+    type Aux[C <: Coproduct, U, A0 <: Coproduct] = FilterNot[C, U] { type A = A0 }
+
+    implicit def cnilFilterNot[U]: Aux[CNil, U, CNil] = new FilterNot[CNil, U] {
+      type A = CNil
+
+      def apply(c: CNil): Option[A] = Some(c)
+    }
+
+    implicit def coproductFilterNot_Match[H, T <: Coproduct, TFilterNotH <: Coproduct](
+      implicit filterNot: Aux[T, H, TFilterNotH]
+    ): Aux[H :+: T, H, TFilterNotH] = new FilterNot[H :+: T, H] {
+      type A = TFilterNotH
+
+      def apply(c: H :+: T): Option[A] = c match {
+        case Inr(t) => filterNot(t)
+        case _      => None
+      }
+    }
+
+    implicit def coproductFilterNot_NonMatch[H, T <: Coproduct, TFilterNotU <: Coproduct, U](
+      implicit filterNot: Aux[T, U, TFilterNotU], inject: Inject[H :+: TFilterNotU, H], e: U =:!= H
+    ): Aux[H :+: T, U, H :+: TFilterNotU] = new FilterNot[H :+: T, U] {
+      type A = H :+: TFilterNotU
+
+      def apply(c: H :+: T): Option[A] = c match {
+        case Inl(h) => Some(inject(h))
+        case Inr(t) => filterNot(t).map(Inr[H, TFilterNotU](_))
+      }
+    }
+  }
+
+  trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
+
+  object FlatMap {
+    def apply[C <: Coproduct, F <: Poly](implicit folder: FlatMap[C, F]): Aux[C, F, folder.Out] = folder
+
+    type Aux[C <: Coproduct, F <: Poly, Out0 <: Coproduct] = FlatMap[C, F] { type Out = Out0 }
+
+    implicit def cnilFlatMap[F <: Poly]: Aux[CNil, F, CNil] = new FlatMap[CNil, F] {
+      type Out = CNil
+
+      def apply(c: CNil): Out = c
+    }
+
+    implicit def cpFlatMap[H, T <: Coproduct, F <: Poly, OutH <: Coproduct, OutT <: Coproduct](
+      implicit
+       fh: Case1.Aux[F, H, OutH],
+       ft: FlatMap.Aux[T, F, OutT],
+       extendBy: ExtendBy[OutH, OutT]
+    ): Aux[H :+: T, F, extendBy.Out] = new FlatMap[H :+: T, F] {
+      type Out = extendBy.Out
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => extendBy.right(fh(h))
+        case Inr(t) => extendBy.left(ft(t))
+      }
+    }
+
+  }
+
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
 
   object Mapper {
@@ -106,6 +244,22 @@ object coproduct {
             case Inr(Inl(h2)) => u.right(h2)
             case Inr(Inr(t)) => lt(Inr(t))
           }
+        }
+  }
+
+  trait Folder[F <: Poly, C <: Coproduct] extends DepFn1[C]
+
+  object Folder {
+    def apply[F <: Poly, C <: Coproduct](implicit folder: Folder[F, C]): Aux[F, C, folder.Out] = folder
+    def apply[C <: Coproduct](f: Poly)(implicit folder: Folder[f.type, C]): Aux[f.type, C, folder.Out] = folder
+
+    type Aux[F <: Poly, C <: Coproduct, Out0] = Folder[F, C] { type Out = Out0 }
+
+    implicit def mkFolder[F <: Poly, C <: Coproduct, M <: Coproduct, Out0]
+      (implicit mapper: Mapper.Aux[F, C, M], unifier: Unifier.Aux[M, Out0]): Aux[F, C, Out0] =
+        new Folder[F, C] {
+          type Out = Out0
+          def apply(c: C): Out = unifier(mapper(c))
         }
   }
 
@@ -195,6 +349,89 @@ object coproduct {
             case Inr(t) => Inr(extendRight(t))
           }
         }
+  }
+
+  trait ExtendBy[L <: Coproduct, R <: Coproduct] {
+    type Out <: Coproduct
+
+    def right(l: L): Out
+    def left(r: R): Out
+  }
+
+  object ExtendBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendBy: ExtendBy[L, R]): Aux[L, R, extendBy.Out] = extendBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendBy[L, R] { type Out = Out0 }
+
+    implicit def extendBy[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct](
+      implicit extendLeftBy: ExtendLeftBy.Aux[L, R, Out0], extendRightBy: ExtendRightBy.Aux[L, R, Out0]
+    ): ExtendBy.Aux[L, R, Out0] = new ExtendBy[L, R] {
+      type Out = Out0
+
+      def right(l: L): Out = extendRightBy(l)
+      def left(r: R): Out = extendLeftBy(r)
+    }
+  }
+
+  trait ExtendLeftBy[L <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+
+  object ExtendLeftBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendLeftBy: ExtendLeftBy[L, R]): Aux[L, R, extendLeftBy.Out] = extendLeftBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendLeftBy[L, R] { type Out = Out0 }
+
+    implicit def extendLeftByCoproduct[L <: Coproduct, R <: Coproduct, RevL <: Coproduct](
+      implicit reverseL: Reverse.Aux[L, RevL], impl: Impl[RevL, R]
+    ): Aux[L, R, impl.Out] = new ExtendLeftBy[L, R] {
+      type Out = impl.Out
+
+      def apply(r: R): Out = impl(r)
+    }
+
+    trait Impl[RevL <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+
+    object Impl {
+      type Aux[RevL <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = Impl[RevL, R] { type Out = Out0 }
+
+      implicit def extendLeftByCNilImpl[R <: Coproduct]: Aux[CNil, R, R] = new Impl[CNil, R] {
+        type Out = R
+
+        def apply(r: R): Out = r
+      }
+
+      implicit def extendLeftByCoproductImpl[H, T <: Coproduct, R <: Coproduct](
+        implicit extendLeftBy: Impl[T, H :+: R]
+      ): Aux[H :+: T, R, extendLeftBy.Out] = new Impl[H :+: T, R] {
+        type Out = extendLeftBy.Out
+
+        def apply(r: R): Out = extendLeftBy(Inr[H, R](r))
+      }
+    }
+  }
+
+  trait ExtendRightBy[L <: Coproduct, R <: Coproduct] extends DepFn1[L] { type Out <: Coproduct }
+
+  object ExtendRightBy {
+    def apply[L <: Coproduct, R <: Coproduct]
+      (implicit extendRightBy: ExtendRightBy[L, R]): Aux[L, R, extendRightBy.Out] = extendRightBy
+
+    type Aux[L <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = ExtendRightBy[L, R] { type Out = Out0 }
+
+    implicit def extendRightByCNil[L <: Coproduct]: Aux[L, CNil, L] = new ExtendRightBy[L, CNil] {
+      type Out = L
+
+      def apply(l: L): Out = l
+    }
+
+    implicit def extendRightByCoproduct[L <: Coproduct, H, LH <: Coproduct, T <: Coproduct](
+      implicit extendRight: ExtendRight.Aux[L, H, LH], extendRightBy: ExtendRightBy[LH, T]
+    ): Aux[L, H :+: T, extendRightBy.Out] = new ExtendRightBy[L, H :+: T] {
+      type Out = extendRightBy.Out
+
+      def apply(l: L): Out = extendRightBy(extendRight(l))
+    }
   }
 
   /**
@@ -291,7 +528,7 @@ object coproduct {
   }
 
   /**
-   * Type class providing access to head and tail of this Coproduct
+   * Type class providing access to head and tail of a Coproduct
    *
    * @author Stacy Curl
    */
@@ -321,6 +558,148 @@ object coproduct {
         case Inr(t) => Some(t)
         case _      => None
       }
+    }
+  }
+  /**
+   * Type class supporting splitting this `Coproduct` at the ''nth'' element returning prefix and suffix as a coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Left  <: Coproduct
+    type Right <: Coproduct
+    type Out = Left :+: Right :+: CNil
+  }
+
+  object Split {
+    def apply[C <: Coproduct, N <: Nat](implicit split: Split[C, N]): Aux[C, N, split.Left, split.Right] = split
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
+      Split[C, N] { type Left = L; type Right = R }
+
+    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+      type Left  <: Coproduct
+      type Right <: Coproduct
+      type Out = Left :+: Right :+: CNil
+
+      protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
+      protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
+    }
+
+    implicit def coproductSplit[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat](
+      implicit
+      length: Length.Aux[C, Size],
+      mod: nat.Mod.Aux[N, Succ[Size], NModSize],
+      impl: Impl[C, NModSize]
+    ): Aux[C, N, impl.Left, impl.Right] = new Split[C, N] {
+      type Left = impl.Left
+      type Right = impl.Right
+
+      def apply(c: C): Out = impl(c)
+    }
+
+    object Impl {
+      type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
+        Impl[C, N] { type Left = L; type Right = R }
+
+      implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] = new Impl[C, Nat._0] {
+        type Left  = CNil
+        type Right = C
+
+        def apply(c: C): Out = right(c)
+      }
+
+      implicit def splitOne[H1, T <: Coproduct]
+        : Aux[H1 :+: T, Nat._1, H1 :+: CNil, T] = new Impl[H1 :+: T, Nat._1] {
+
+        type Left  = H1 :+: CNil
+        type Right = T
+
+        def apply(c: H1 :+: T): Out = c match {
+          case Inl(h1) => left(Inl[H1, CNil](h1))
+          case Inr(t)  => right(t)
+        }
+      }
+
+      implicit def coproductImpl[H, T <: Coproduct, N <: Nat, L0 <: Coproduct, R0 <: Coproduct](
+        implicit splitN: Aux[T, N, L0, R0]
+      ): Aux[H :+: T, Succ[N], H :+: L0, R0] = new Impl[H :+: T, Succ[N]] {
+        type Left  = H :+: L0
+        type Right = R0
+
+        def apply(c: H :+: T): Out = c match {
+          case Inl(h) => left(Inl[H, L0](h))
+          case Inr(t) => splitN(t) match {
+            case Inl(l0) => left(Inr[H, L0](l0))
+            case Inr(Inl(r0)) => right(r0)
+            case other        => sys.error("unreachable: " + other)
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Type class supporting reversing a Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait Reverse[C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
+
+  object Reverse {
+    def apply[C <: Coproduct](implicit reverse: Reverse[C]): Aux[C, reverse.Out] = reverse
+
+    type Aux[C <: Coproduct, Out0 <: Coproduct] = Reverse[C] { type Out = Out0 }
+
+    implicit val reverseCNil: Aux[CNil, CNil] = new Reverse[CNil] {
+      type Out = CNil
+
+      def apply(c: CNil): Out = c
+    }
+
+    implicit def reverseCoproduct[
+      H, T <: Coproduct, ReverseT <: Coproduct, RotateL_HReverseT <: Coproduct
+    ](
+      implicit
+      reverse: Aux[T, ReverseT],
+      rotateLeft: RotateLeft.Aux[H :+: ReverseT, Nat._1, RotateL_HReverseT],
+      inject: Inject[RotateL_HReverseT, H]
+    ): Aux[H :+: T, RotateL_HReverseT] = new Reverse[H :+: T] {
+      type Out = RotateL_HReverseT
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => inject(h)
+        case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
+      }
+    }
+  }
+
+  /**
+   * Type class providing access to init and last of a Coproduct
+   *
+   * @author Stacy Curl
+   */
+  trait InitLast[C <: Coproduct] {
+    type I <: Coproduct
+    type L
+
+    def init(c: C): Option[I]
+    def last(c: C): Option[L]
+  }
+
+  object InitLast {
+    def apply[C <: Coproduct](implicit initLast: InitLast[C]): Aux[C, initLast.I, initLast.L] = initLast
+
+    type Aux[C <: Coproduct, I0 <: Coproduct, L0] = InitLast[C] { type I = I0; type L = L0 }
+
+    implicit def initLastCoproduct[C <: Coproduct, ReverseC <: Coproduct, H, T <: Coproduct](
+      implicit reverse: Reverse.Aux[C, ReverseC], isCCons: IsCCons.Aux[ReverseC, H, T]
+    ): Aux[C, T, H] = new InitLast[C] {
+      type I = T
+      type L = H
+
+      def init(c: C): Option[I] = isCCons.tail(reverse(c))
+      def last(c: C): Option[L] = isCCons.head(reverse(c))
     }
   }
 

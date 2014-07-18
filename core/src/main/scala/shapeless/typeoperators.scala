@@ -70,24 +70,3 @@ object Lub {
   }
 }
 
-/**
- * Type class witnessing that type `P` is equal to `F[T]` for some higher kinded type `F[_]` and type `T`.
- * 
- * @author Miles Sabin
- */
-trait Unpack1[-P, F[_], T]
-
-object Unpack1 {
-  implicit def unpack1[F[_], T]: Unpack1[F[T], F, T] = new Unpack1[F[T], F, T] {}
-}
-
-/**
- * Type class witnessing that type `P` is equal to `F[T, U]` for some higher kinded type `F[_, _]` and types `T` and `U`.
- * 
- * @author Miles Sabin
- */
-trait Unpack2[-P, F[_, _], T, U]
-
-object Unpack2 {
-  implicit def unpack2[F[_, _], T, U]: Unpack2[F[T, U], F, T, U] = new Unpack2[F[T, U], F, T, U] {}
-}

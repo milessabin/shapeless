@@ -29,9 +29,35 @@ final class CoproductOps[C <: Coproduct](c: C) {
   import ops.coproduct._
 
   def map(f: Poly)(implicit mapper: Mapper[f.type, C]): mapper.Out = mapper(c)
+
+  def flatMap(op: Poly)(implicit flatMap: FlatMap[C, op.type]): flatMap.Out = flatMap(c)
   
+  def fold(f: Poly)(implicit folder: Folder[f.type, C]): folder.Out = folder(c)
+
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
-  
+
+  /**
+   * Returns the ''nth'' element of this `Coproduct`. An explicit type must be provided.
+   * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def at[N <: Nat](implicit at: At[C, N]): Option[at.A] = at(c)
+
+  /**
+   * Returns the ''nth'' element of this `Coproduct`.
+   * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def at[N <: Nat](n: N)(implicit at: At[C, n.N]): Option[at.A] = at(c)
+
+  /**
+   * Returns all elements of type `U` of this `Coproduct`. An explicit type argument must be provided.
+   */
+  def filter[U](implicit filter: Filter[C, U]): Option[filter.A]  = filter(c)
+
+  /**
+   * Returns all elements of type different than `U` of this `Coproduct`. An explicit type argument must be provided.
+   */
+  def filterNot[U](implicit filterNot: FilterNot[C, U]): Option[filterNot.A] = filterNot(c)
+
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
@@ -46,14 +72,35 @@ final class CoproductOps[C <: Coproduct](c: C) {
    */
   def tail(implicit cc: IsCCons[C]): Option[cc.T] = cc.tail(c)
 
+  /**
+   * Returns all elements except the last
+   */
+  def init(implicit il: InitLast[C]): Option[il.I] = il.init(c)
+
+  /**
+   * Returns the last element of this 'Coproduct'
+   */
+  def last(implicit il: InitLast[C]): Option[il.L] = il.last(c)
+
   def length(implicit length: Length[C]): length.Out = length()
 
-  def extendLeft[T]: T :+: C = Inr(c)
+  def extendLeft[T]: T :+: C = Inr[T, C](c)
   def extendRight[T](implicit extendRight: ExtendRight[C, T]): extendRight.Out = extendRight(c)
+
+  def extendLeftBy[K <: Coproduct](implicit extendLeftBy: ExtendLeftBy[K, C]): extendLeftBy.Out =
+    extendLeftBy(c)
+
+  def extendRightBy[K <: Coproduct](implicit extendRightBy: ExtendRightBy[C, K]): extendRightBy.Out =
+    extendRightBy(c)
 
   def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
   def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
 
   def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
   def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
+
+  def reverse(implicit reverse: Reverse[C]): reverse.Out = reverse(c)
+
+  def split[N <: Nat](implicit split: Split[C, N]): split.Out = split(c)
+  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Out = split(c)
 }
