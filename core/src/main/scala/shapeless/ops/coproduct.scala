@@ -247,6 +247,22 @@ object coproduct {
         }
   }
 
+  trait Folder[F <: Poly, C <: Coproduct] extends DepFn1[C]
+
+  object Folder {
+    def apply[F <: Poly, C <: Coproduct](implicit folder: Folder[F, C]): Aux[F, C, folder.Out] = folder
+    def apply[C <: Coproduct](f: Poly)(implicit folder: Folder[f.type, C]): Aux[f.type, C, folder.Out] = folder
+
+    type Aux[F <: Poly, C <: Coproduct, Out0] = Folder[F, C] { type Out = Out0 }
+
+    implicit def mkFolder[F <: Poly, C <: Coproduct, M <: Coproduct, Out0]
+      (implicit mapper: Mapper.Aux[F, C, M], unifier: Unifier.Aux[M, Out0]): Aux[F, C, Out0] =
+        new Folder[F, C] {
+          type Out = Out0
+          def apply(c: C): Out = unifier(mapper(c))
+        }
+  }
+
   trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn2[K, V] { type Out <: Coproduct }
 
   object ZipWithKeys {

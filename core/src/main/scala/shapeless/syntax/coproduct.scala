@@ -31,6 +31,8 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def map(f: Poly)(implicit mapper: Mapper[f.type, C]): mapper.Out = mapper(c)
 
   def flatMap(op: Poly)(implicit flatMap: FlatMap[C, op.type]): flatMap.Out = flatMap(c)
+  
+  def fold(f: Poly)(implicit folder: Folder[f.type, C]): folder.Out = folder(c)
 
   def select[T](implicit selector: Selector[C, T]): Option[T] = selector(c)
 
