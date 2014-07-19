@@ -1506,7 +1506,7 @@ class TupleTests {
     }
 
     {
-      val empty = Tuple.fill(0)[Boolean](true)
+      val empty = Tuple.fill[Boolean](0)(true)
       typed[Unit](empty)
     }
 
@@ -1517,7 +1517,7 @@ class TupleTests {
     }
 
     {
-      val single = Tuple.fill(1)[None.type](None)
+      val single = Tuple.fill[None.type](1)(None)
       typed[Tuple1[None.type]](single)
       assertEquals(Tuple1(None), single)
     }
@@ -1529,7 +1529,7 @@ class TupleTests {
     }
 
     {
-      val three = Tuple.fill(3)[M2[Int, Unit]](m2i)
+      val three = Tuple.fill[M2[Int, Unit]](3)(m2i)
       typed[(M2[Int, Unit], M2[Int, Unit], M2[Int, Unit])](three)
       assertEquals((m2i, m2i, m2i), three)
     }
@@ -1540,7 +1540,7 @@ class TupleTests {
     }
 
     {
-      val empty = Tuple.fill(0, 0)[Boolean](true)
+      val empty = Tuple.fill[Boolean](0, 0)(true)
       typed[Unit](empty)
     }
 
@@ -1550,7 +1550,7 @@ class TupleTests {
     }
 
     {
-      val empty = Tuple.fill(2, 0)[Boolean](true)
+      val empty = Tuple.fill[Boolean](2, 0)(true)
       typed[(Unit, Unit)](empty)
     }
 
@@ -1560,7 +1560,7 @@ class TupleTests {
     }
 
     {
-      val empty = Tuple.fill(0, 2)[Boolean](true)
+      val empty = Tuple.fill[Boolean](0, 2)(true)
       typed[Unit](empty)
     }
 
@@ -1571,7 +1571,7 @@ class TupleTests {
     }
 
     {
-      val oneByTwo = Tuple.fill(1, 2)[None.type](None)
+      val oneByTwo = Tuple.fill[None.type](1, 2)(None)
       typed[Tuple1[(None.type, None.type)]](oneByTwo)
       assertEquals(Tuple1((None, None)), oneByTwo)
     }
@@ -1583,7 +1583,7 @@ class TupleTests {
     }
 
     {
-      val twoByThree = Tuple.fill(2, 3)[None.type](None)
+      val twoByThree = Tuple.fill[None.type](2, 3)(None)
       typed[((None.type, None.type, None.type), (None.type, None.type, None.type))](twoByThree)
       assertEquals(((None, None, None), (None, None, None)), twoByThree)
     }
