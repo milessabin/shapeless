@@ -388,4 +388,18 @@ class SizedTests {
       ss(3)
     """)
   }
+
+  @Test
+  def testExact {
+    val ss = Sized[List](0, 1, 2)
+    val Sized.Exact(x, y, z) = ss
+
+    typed[Int](x)
+    typed[Int](y)
+    typed[Int](z)
+
+    assertEquals(x, 0)
+    assertEquals(y, 1)
+    assertEquals(z, 2)
+  }
 }

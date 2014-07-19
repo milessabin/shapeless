@@ -184,4 +184,16 @@ object Sized extends LowPrioritySized {
   def wrap[Repr, L <: Nat](r : Repr) = new Sized[Repr, L](r)
 
   def unapplySeq[Repr, L <: Nat](x : Sized[Repr, L]) = Some(x.unsized)
+
+  /**
+   * An extractor that guarantees that exactly the right number of patterns are provided.
+   */
+  object Exact {
+    import ops.hlist.Tupler
+    import ops.sized.ToHList
+
+    def unapply[Repr, L <: Nat, Out <: HList, T <: Product](x: Sized[Repr, L])
+      (implicit itl: IsTraversableLike[Repr], fs: ToHList.Aux[Repr, L, Out], t: Tupler.Aux[Out, T]): Option[T] =
+        Some(fs(x).tupled)
+  }
 }
