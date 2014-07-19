@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import shapeless.test._
+import testutil._
 
 class SizedTests {
   import nat._
@@ -387,5 +388,16 @@ class SizedTests {
     illTyped("""
       ss(3)
     """)
+  }
+
+  @Test
+  def testTupled {
+    val ss = Sized[List](0, 1, 2)
+    assertTypedEquals[(Int, Int, Int)]((0, 1, 2), ss.tupled)
+
+    val (x, y, z) = ss.tupled
+    assertTypedEquals[Int](0, x)
+    assertTypedEquals[Int](1, y)
+    assertTypedEquals[Int](2, z)
   }
 }
