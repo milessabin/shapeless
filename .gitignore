@@ -8,7 +8,9 @@
 .settings
 .scala_dependencies
 .worksheet
+scratch/
 target/
 *.swp
 *.swo
 tags
+
