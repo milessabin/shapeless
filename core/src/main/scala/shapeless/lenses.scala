@@ -48,6 +48,8 @@ trait Lens[S, A] extends Dynamic { outer =>
 
   def apply[B](implicit mkPrism: MkCtorPrism[A, B]): Prism[S, B] = mkPrism() compose this
 
+  def unapply(s: S): Option[A] = Some(get(s))
+
   def ~[B](other: Lens[S, B]) = new ProductLensBuilder[S, (A, B)] {
     def get(s: S): (A, B) = (outer.get(s), other.get(s))
     def set(s: S)(ab: (A, B)) = other.set(outer.set(s)(ab._1))(ab._2)
@@ -73,6 +75,8 @@ trait Prism[S, A] extends Dynamic { outer =>
     (implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, Symbol @@ k.type, B]): mkPrism.Out = mkPrism(this)
 
   def apply[B](implicit mkPrism: MkCtorPrism[A, B]): Prism[S, B] = mkPrism() compose this
+
+  def unapply(s: S): Option[Option[A]] = Some(get(s))
 }
 
 trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
