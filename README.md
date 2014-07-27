@@ -57,8 +57,8 @@ to the Sonatype OSS Snapshot repository. To include the Sonatype repositories in
 
 ```scala
 resolvers ++= Seq(
-  "Sonatype OSS Releases"  at "http://oss.sonatype.org/content/repositories/releases/",
-  "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots")
 )
 ```
 
