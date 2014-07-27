@@ -1917,7 +1917,7 @@ class HListTests {
     }
 
     {
-      val empty = HList.fill(0)[Boolean](true)
+      val empty = HList.fill[Boolean](0)(true)
       typed[_0](empty.length)
     }
 
@@ -1929,7 +1929,7 @@ class HListTests {
     }
 
     {
-      val single = HList.fill(1)[None.type](None)
+      val single = HList.fill[None.type](1)(None)
       typed[_1](single.length)
       typed[None.type](single.head)
       assertEquals(None, single.head)
@@ -1947,7 +1947,7 @@ class HListTests {
     }
 
     {
-      val three = HList.fill(3)[M2[Int, Unit]](m2i)
+      val three = HList.fill[M2[Int, Unit]](3)(m2i)
       typed[_3](three.length)
       typed[M2[Int, Unit]](three(_0))
       typed[M2[Int, Unit]](three(_1))
@@ -1963,7 +1963,7 @@ class HListTests {
     }
 
     {
-      val empty = HList.fill(0, 0)[Boolean](true)
+      val empty = HList.fill[Boolean](0, 0)(true)
       typed[_0](empty.length)
     }
 
@@ -1975,7 +1975,7 @@ class HListTests {
     }
 
     {
-      val empty = HList.fill(2, 0)[Boolean](true)
+      val empty = HList.fill[Boolean](2, 0)(true)
       typed[_2](empty.length)
       typed[_0](empty(_0).length)
       typed[_0](empty(_1).length)
@@ -1987,7 +1987,7 @@ class HListTests {
     }
 
     {
-      val empty = HList.fill(0, 2)[Boolean](true)
+      val empty = HList.fill[Boolean](0, 2)(true)
       typed[_0](empty.length)
     }
 
@@ -2002,7 +2002,7 @@ class HListTests {
     }
 
     {
-      val oneByTwo = HList.fill(1, 2)[None.type](None)
+      val oneByTwo = HList.fill[None.type](1, 2)(None)
       typed[_1](oneByTwo.length)
       typed[_2](oneByTwo.head.length)
       typed[None.type](oneByTwo.head(_0))
@@ -2031,7 +2031,7 @@ class HListTests {
     }
 
     {
-      val twoByThree = HList.fill(2, 3)[None.type](None)
+      val twoByThree = HList.fill[None.type](2, 3)(None)
       typed[_2](twoByThree.length)
       typed[_3](twoByThree(_0).length)
       typed[_3](twoByThree(_1).length)

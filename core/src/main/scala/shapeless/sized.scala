@@ -43,6 +43,7 @@ class SizedOps[A0, Repr, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Re
   import LT._
   import Sized.wrap
   import ops.sized._
+  import ops.hlist.Tupler
 
   private implicit def conv(repr: Repr): GenTraversableLike[A0, Repr] = itl.conversion(repr)
 
@@ -165,6 +166,11 @@ class SizedOps[A0, Repr, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Re
    * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
    */
   def toHList(implicit hl: ToHList[Repr, L]): hl.Out = hl(s)
+
+  /**
+   * Converts this `Sized` to a tuple whose elements have the same type as in `Repr`.
+   */
+  def tupled[L0 <: HList, T](implicit hl: ToHList.Aux[Repr, L, L0], t: Tupler.Aux[L0, T]): T = t(hl(s))
 }
 
 trait LowPrioritySized {
