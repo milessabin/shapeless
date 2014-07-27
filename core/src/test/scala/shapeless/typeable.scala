@@ -292,6 +292,31 @@ class TypeableTests {
   }
 
   @Test
+  def testNarrowTo {
+    trait A
+    trait B
+    class C extends A with B
+
+    val c: C = new C
+
+    val a: A = c
+    val cc1 = a.narrowTo[C]
+    assertTrue(cc1.isDefined)
+
+    val b: B = c
+    val cc2 = b.narrowTo[C]
+    assertTrue(cc2.isDefined)
+
+    illTyped("""
+    val ca = b.narrowTo[A]
+    """)
+
+    illTyped("""
+    val cb = a.narrowTo[B]
+    """)
+  }
+
+  @Test
   def testTuples {
     val p: Any = (23, "foo")
     val cp = p.cast[(Int, String)]
