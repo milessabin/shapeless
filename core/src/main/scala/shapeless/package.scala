@@ -64,6 +64,9 @@ package object shapeless {
   /** `Nat` literals */
   val nat = Nat
 
+  /** 'Fin' */
+  val fin = Fin
+
   /** `Poly` definitions */
   val poly = PolyDefns
   import poly._
