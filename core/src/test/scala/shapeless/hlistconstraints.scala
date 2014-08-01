@@ -31,6 +31,7 @@ class HListConstraintsTests {
     val l1 = Option(23) :: Option(true) :: Option("foo") :: HNil 
     val l2 = Option(23) :: true :: Option("foo") :: HNil
     
+    acceptOption(HNil) // Compiles
     acceptOption(l1)  // Compiles
 
     illTyped("""
@@ -65,6 +66,7 @@ class HListConstraintsTests {
     val l1 = 23 :: true :: 13 :: 7 :: 5 :: false :: "foo" :: "bar" :: HNil
     val l2 = 23 :: true :: 13 :: 7 :: 5 :: 2.0 :: "foo" :: "bar" :: HNil
 
+    acceptBasis(HNil) // Compiles
     acceptBasis(l1) // Compiles
     illTyped("""
     acceptBasis(l2)
@@ -84,6 +86,7 @@ class HListConstraintsTests {
     val l1 = Apple :: Pear :: Apple :: Pear :: HNil
     val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
 
+    acceptLUB(HNil) // Compiles
     acceptLUB(l1) // Compiles
     illTyped("""
     acceptLUB(l2)
@@ -116,6 +119,7 @@ class HListConstraintsTests {
 
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
     
+    acceptKeys(HNil)   // Compiles
     acceptKeys(summary)   // Compiles
     illTyped("""
     acceptKeys(book)
@@ -123,6 +127,7 @@ class HListConstraintsTests {
 
     def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
     
+    acceptValues(HNil) // Compiles
     acceptValues(summary) // Compiles
     illTyped("""
     acceptValues(book)
