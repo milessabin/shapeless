@@ -17,8 +17,6 @@
 import sbt._
 import Keys._
 
-import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
-
 import com.typesafe.sbt.pgp.PgpKeys._
 
 import com.typesafe.sbt.osgi.SbtOsgi._
@@ -36,10 +34,6 @@ import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
   
-  override lazy val settings = super.settings :+ (
-    EclipseKeys.skipParents := false
-  )
-
   lazy val shapeless = Project(
     id = "shapeless", 
     base = file("."),
@@ -63,8 +57,6 @@ object ShapelessBuild extends Build {
         moduleName := "shapeless",
         
         managedSourceDirectories in Test := Nil,
-        
-        EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
         
         libraryDependencies <++= scalaVersion { sv =>
           Seq(
