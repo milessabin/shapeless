@@ -167,6 +167,43 @@ object coproduct {
     }
   }
 
+  trait RemoveElem[C <: Coproduct, U] extends DepFn1[C] {
+    type Rest <: Coproduct
+    type Out = U :+: Rest
+
+    def either(c: C): Either[U, Rest] = apply(c) match {
+      case Inl(u) => Left(u)
+      case Inr(r) => Right(r)
+    }
+  }
+
+  object RemoveElem {
+    def apply[C <: Coproduct, U]
+      (implicit removeElem: RemoveElem[C, U]): Aux[C, U, removeElem.Rest] = removeElem
+
+    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = RemoveElem[C, U] { type Rest = Rest0 }
+
+    implicit def removeElemHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new RemoveElem[H :+: T, H] {
+      type Rest = T
+
+      def apply(c: H :+: T): Out = c
+    }
+
+    implicit def removeElemTail[H, T <: Coproduct, U, TRest <: Coproduct](
+      implicit removeElem: Aux[T, U, TRest]
+    ): Aux[H :+: T, U, H :+: TRest] = new RemoveElem[H :+: T, U] {
+      type Rest = H :+: TRest
+
+      def apply(c: H :+: T): Out = c match {
+        case Inl(h) => Inr[U, H :+: TRest](Inl[H, TRest](h))
+        case Inr(t) => removeElem(t) match {
+          case Inl(u) => Inl[U, H :+: TRest](u)
+          case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
+        }
+      }
+    }
+  }
+
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
 
   object FlatMap {

@@ -17,8 +17,6 @@
 import sbt._
 import Keys._
 
-import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
-
 import com.typesafe.sbt.pgp.PgpKeys._
 
 import com.typesafe.sbt.osgi.SbtOsgi._
@@ -36,10 +34,6 @@ import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
   
-  override lazy val settings = super.settings :+ (
-    EclipseKeys.skipParents := false
-  )
-
   lazy val shapeless = Project(
     id = "shapeless", 
     base = file("."),
@@ -64,10 +58,6 @@ object ShapelessBuild extends Build {
         
         managedSourceDirectories in Test := Nil,
         
-        EclipseKeys.createSrc := EclipseCreateSrc.Default+EclipseCreateSrc.Managed,
-        
-        resolvers += Resolver.sonatypeRepo("releases"),
-
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
         libraryDependencies <++= scalaVersion { sv =>
@@ -205,7 +195,8 @@ object ShapelessBuild extends Build {
 
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
-        "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+        Resolver.sonatypeRepo("releases"),
+        Resolver.sonatypeRepo("snapshots")
       )
     )
 }

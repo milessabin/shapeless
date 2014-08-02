@@ -78,6 +78,25 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def filterNot[U](implicit filterNot: FilterNot[C, U]): Option[filterNot.A] = filterNot(c)
 
   /**
+   * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
+   * An explicit type argument must be provided. Available only if there is evidence that this
+   * `Coproduct` has an element of type `U`.
+   *
+   * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#remove and should be removed if
+   * SI-5414 is resolved in a way which eliminates the ambiguity.
+   */
+  def removeElem[U](implicit removeElem: RemoveElem[C, U]): Either[U, removeElem.Rest] =
+    removeElem.either(c)
+
+  /**
+   * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
+   * An explicit type argument must be provided. Available only if there is evidence that this
+   * `Coproduct` has an element of type `U`.
+   */
+  def removeElemC[U](implicit removeElem: RemoveElem[C, U]): U :+: removeElem.Rest = removeElem(c)
+
+
+  /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type
    * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */

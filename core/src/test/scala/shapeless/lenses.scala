@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import lens._, nat._, test._
+import lens._, nat._, test._, testutil._
 
 package lensTestDataTypes {
   sealed trait Sum1
@@ -687,5 +687,33 @@ class OpticTests {
     typed[Bar](bar2)
     assertEquals(Bar(7, true), bar2)
   }
-}
 
+  
+  @Test
+  def testUnapply {
+    val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
+    val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
+
+    val llv = optic[Tree[Int]].left.left.value
+    val lrv = optic[Tree[Int]].left.right.value
+    val rv = optic[Tree[Int]].right.value
+
+    val llv(x) = t1
+    assertTypedEquals[Option[Int]](Some(1), x)
+
+    val lrv(y) = t1
+    assertTypedEquals[Option[Int]](Some(2), y)
+
+    val rv(z) = t1
+    assertTypedEquals[Option[Int]](Some(3), z)
+
+    val llv(x2) = t2
+    assertTypedEquals[Option[Int]](None, x2)
+
+    val lrv(y2) = t2
+    assertTypedEquals[Option[Int]](None, y2)
+
+    val rv(z2) = t2
+    assertTypedEquals[Option[Int]](None, z2)
+  }
+}
