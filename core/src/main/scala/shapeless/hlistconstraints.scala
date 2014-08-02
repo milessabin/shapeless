@@ -21,7 +21,7 @@ import ops.hlist.Selector
 /**
  * Type class witnessing that every element of `L` has `TC` as its outer type constructor. 
  */
-trait UnaryTCConstraint[L <: HList, TC[_]]
+trait UnaryTCConstraint[-L <: HList, TC[_]]
 
 object UnaryTCConstraint {
   type *->*[TC[_]] = {
@@ -42,7 +42,7 @@ object UnaryTCConstraint {
 /**
  * Type class witnessing that every element of `L` is an element of `M`.
  */
-trait BasisConstraint[L <: HList, M <: HList]
+trait BasisConstraint[-L <: HList, M <: HList]
 
 object BasisConstraint {
   type Basis[M <: HList] = {
@@ -57,7 +57,7 @@ object BasisConstraint {
 /**
  * Type class witnessing that every element of `L` is a subtype of `B`.
  */
-trait LUBConstraint[L <: HList, B]
+trait LUBConstraint[-L <: HList, B]
 
 object LUBConstraint {
   type <<:[B] = {
@@ -72,7 +72,7 @@ object LUBConstraint {
 /**
  * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `K` is an element of `M`.
  */
-trait KeyConstraint[L <: HList, M <: HList]
+trait KeyConstraint[-L <: HList, M <: HList]
 
 object KeyConstraint {
   import record._
@@ -89,7 +89,7 @@ object KeyConstraint {
 /**
  * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `V` is an element of `M`.
  */
-trait ValueConstraint[L <: HList, M <: HList]
+trait ValueConstraint[-L <: HList, M <: HList]
 
 object ValueConstraint {
   import record._
