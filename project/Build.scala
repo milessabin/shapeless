@@ -195,7 +195,8 @@ object ShapelessBuild extends Build {
 
       resolvers           ++= Seq(
         Classpaths.typesafeSnapshots,
-        "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+        Resolver.sonatypeRepo("releases"),
+        Resolver.sonatypeRepo("snapshots")
       )
     )
 }
