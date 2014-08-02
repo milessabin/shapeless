@@ -605,4 +605,20 @@ class CoproductTests {
     assertTypedEquals[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](
       Coproduct[(I :+: S :+: CNil) :+: (D :+: C :+: CNil) :+: CNil](dc), isdc.split[_2])
   }
+
+  @Test
+  def testRemoveElem {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+
+    assertTypedEquals[I :+: CNil](i, i.removeElemC[I])
+    assertTypedEquals[Either[I, CNil]](Left(1), i.removeElem[I])
+
+    assertTypedEquals[I :+: S :+: CNil](is, is.removeElemC[I])
+    assertTypedEquals[Either[I, S :+: CNil]](Left(1), is.removeElem[I])
+
+    assertTypedEquals[S :+: I :+: CNil](Coproduct[S :+: I :+: CNil](1), is.removeElemC[S])
+    assertTypedEquals[Either[S, I :+: CNil]](Right(i), is.removeElem[S])
+  }
 }
