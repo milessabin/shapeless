@@ -1042,7 +1042,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Split[L <: HList, N <: Nat] extends DepFn1[L]
+  trait Split[L <: HList, N <: Nat] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object Split {
     def apply[L <: HList, N <: Nat](implicit split: Split[L, N]): Aux[L, N, split.Out] = split
@@ -1083,7 +1085,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L]
+  trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object ReverseSplit {
     def apply[L <: HList, N <: Nat](implicit split: ReverseSplit[L, N]): Aux[L, N, split.Out] = split
@@ -1121,7 +1125,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait SplitLeft[L <: HList, U] extends DepFn1[L]
+  trait SplitLeft[L <: HList, U] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object SplitLeft {
     def apply[L <: HList, U](implicit split: SplitLeft[L, U]): Aux[L, U, split.Out] = split
@@ -1164,7 +1170,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L]
+  trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object ReverseSplitLeft {
     def apply[L <: HList, U](implicit split: ReverseSplitLeft[L, U]): Aux[L, U, split.Out] = split
@@ -1204,7 +1212,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait SplitRight[L <: HList, U] extends DepFn1[L]
+  trait SplitRight[L <: HList, U] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object SplitRight {
     def apply[L <: HList, U](implicit split: SplitRight[L, U]): Aux[L, U, split.Out] = split
@@ -1251,7 +1261,9 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplitRight[L <: HList, U] extends DepFn1[L]
+  trait ReverseSplitRight[L <: HList, U] extends DepFn1[L] {
+    type Out <: HList
+  }
 
   object ReverseSplitRight {
     def apply[L <: HList, U](implicit split: ReverseSplitRight[L, U]): Aux[L, U, split.Out] = split
