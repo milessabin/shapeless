@@ -89,7 +89,7 @@ trait LabelledProductTypeClassCompanion[C[_]] {
 }
 
 /**
- * A type class additinally abstracting over the `coproduct` operation of type
+ * A type class additionally abstracting over the `coproduct` operation of type
  * classes over types of kind `*`.
  */
 trait TypeClass[C[_]] extends ProductTypeClass[C] {
@@ -116,7 +116,7 @@ trait TypeClassCompanion[C[_]] {
 }
 
 /**
- * A type class additinally abstracting over the `coproduct` operation of type
+ * A type class additionally abstracting over the `coproduct` operation of type
  * classes over types of kind `*`.
  *
  * Name hints can be safely ignored.
