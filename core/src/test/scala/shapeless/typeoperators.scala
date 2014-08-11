@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 package shapeless
 
+import scala.util.Try
+
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
-import newtype._
-import tag._
+import newtype._, tag._, test._, testutil._
 
 class TypeOperatorTests {
 
   trait ATag
-  
+
   object ATag {
     implicit def taggedToString[T](value: T with Tagged[ATag]): String = message
-  
+
     val message = "This object has ATag tag type"
   }
 
@@ -39,20 +39,20 @@ class TypeOperatorTests {
     val s: String = x
     assertEquals(ATag.message, s)
   }
-  
+
   @Test
   def testNewtype {
     type MyString = Newtype[String, MyStringOps]
-    
+
     def MyString(s : String) : MyString = newtype(s)
-    
+
     case class MyStringOps(s : String) {
       def mySize = s.size
     }
     implicit val mkOps = MyStringOps
-    
+
     val ms = MyString("foo")
-    
+
     illTyped("""
       val s : String = ms
     """)
@@ -62,12 +62,105 @@ class TypeOperatorTests {
     illTyped("""
       ms.size
     """)
-    
+
     assertEquals(3, ms.mySize)
-    
+
     val s2 = "bar"
     val ms2 = MyString(s2)
-    
+
     assertTrue(ms2 eq (s2 : AnyRef))
+  }
+
+  trait Foo {
+    type T
+    val t: T
+  }
+
+  object Foo {
+    implicit def mkFoo: Foo { type T = Int } = new Foo { type T = Int ; val t = 23 }
+  }
+
+  trait Foo2[U] {
+    type T
+    val t: T
+  }
+
+  object Foo2 {
+    implicit def mkFoo2: Foo2[Char] { type T = Int } = new Foo2[Char] { type T = Int ; val t = 23 }
+  }
+
+  trait Bar[T] {
+    type U
+    val tu: Either[T, U]
+  }
+
+  object Bar {
+    implicit def mkBar1: Bar[Boolean] { type U = Int } = new Bar[Boolean] { type U = Int ; val tu = Right(23) }
+    implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
+  }
+
+  @Test
+  def testTheValues {
+    val foo = the[Foo]
+    typed[Foo](foo)
+    typed[Int](foo.t)
+
+    val bar1 = the[Bar[Boolean]]
+    typed[Bar[Boolean]](bar1)
+    typed[Either[Boolean, Int]](bar1.tu)
+
+    val bar2 = the[Bar[String]]
+    typed[Bar[String]](bar2)
+    typed[Either[String, Double]](bar2.tu)
+  }
+
+  @Test
+  def testTheTypes {
+    val t: the.Foo.T = 23
+    typed[Int](t)
+
+    val tu1: Either[Boolean, the.`Bar[Boolean]`.U] = Right(23)
+    typed[Either[Boolean, Int]](tu1)
+
+    val tu2: Either[String, the.`Bar[String]`.U] = Right(23)
+    typed[Either[String, Double]](tu2)
+  }
+
+  @Test
+  def testTheQuantifiers {
+    def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
+      val res = the[Bar[T]]
+      res
+    }
+
+    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
+      val res: Option[the.`Bar[T]`.U] = None
+      res
+    }
+
+    val b0 = bar0[Boolean, Int]
+    typed[Bar[Boolean] { type U = Int }](b0)
+
+    val b1 = bar1[Boolean, Int]
+    typed[Option[Int]](b1)
+  }
+
+  @Test
+  def testRejectBogus {
+    assert(Try(the.Foo).isFailure)
+
+    //the.Unit  // illTyped fails for this expression
+
+    implicit val u2: Unit = ()
+    //the.Unit  // illTyped fails for this expression
+
+    //the.Int   // illTyped fails for this expression
+
+    implicit val i2: Int = 23
+    //the.Int   // illTyped fails for this expression
+
+    illTyped("""
+    val blah = the.`package wibble`
+    """)
   }
 }
