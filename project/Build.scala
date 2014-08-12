@@ -183,12 +183,6 @@ object ShapelessBuild extends Build {
         "-language:implicitConversions",
         "-Xfatal-warnings",
         "-deprecation",
-        "-unchecked"),
-
-      resolvers           ++= Seq(
-        Classpaths.typesafeSnapshots,
-        Resolver.sonatypeRepo("releases"),
-        Resolver.sonatypeRepo("snapshots")
-      )
+        "-unchecked")
     )
 }
