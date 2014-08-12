@@ -180,7 +180,7 @@ object ShapelessBuild extends Build {
       scalaBinaryVersion  := scalaVersion.value,
 
       crossVersion        := CrossVersion.full,
-      crossScalaVersions  := Seq("2.10.2", "2.10.3", "2.10.4"),
+      crossScalaVersions  := Seq("2.10.3", "2.10.4"), // 2.10.2 removed due to Maven Central issues
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
