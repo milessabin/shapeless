@@ -58,11 +58,10 @@ object ShapelessBuild extends Build {
         
         managedSourceDirectories in Test := Nil,
         
-        libraryDependencies <++= scalaVersion { sv =>
-          Seq(
-            "org.scala-lang" % "scala-reflect" % sv % "provided",
-            "com.novocode" % "junit-interface" % "0.7" % "test"
-        )},
+        libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+          "com.novocode" % "junit-interface" % "0.7" % "test"
+        ),
         
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
         (sourceGenerators in Compile) <+= buildInfo,
@@ -113,12 +112,11 @@ object ShapelessBuild extends Build {
     dependencies = Seq(shapelessCore),
 
     settings = commonSettings ++ Seq(
-      libraryDependencies <++= scalaVersion { sv =>
-        Seq(
-          // needs compiler for `scala.tools.reflect.Eval`
-          "org.scala-lang" % "scala-compiler" % sv % "provided",
-          "com.novocode" % "junit-interface" % "0.7" % "test"
-      )},
+      libraryDependencies ++= Seq(
+        // needs compiler for `scala.tools.reflect.Eval`
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        "com.novocode" % "junit-interface" % "0.7" % "test"
+      ),
 
       publish := (),
       publishLocal := ()
