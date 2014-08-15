@@ -433,22 +433,12 @@ final class TupleOps[T](t: T) {
   /**
    * Rotate this tuple left by N
    */
-  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[T, N]): rotateLeft.Out = rotateLeft(t)
-
-  /**
-   * Rotate this tuple left by N
-   */
-  def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[T, N]): rotateLeft.Out = rotateLeft(t)
+  def rotateLeft(n: Nat)(implicit rotateLeft: RotateLeft[T, n.N]): rotateLeft.Out = rotateLeft(t)
 
   /**
    * Rotate this tuple right by N
    */
-  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[T, N]): rotateRight.Out = rotateRight(t)
-
-  /**
-   * Rotate this tuple right by N
-   */
-  def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[T, N]): rotateRight.Out = rotateRight(t)
+  def rotateRight(n: Nat)(implicit rotateRight: RotateRight[T, n.N]): rotateRight.Out = rotateRight(t)
 
   /**
    * Computes a left scan over this tuple using the polymorphic binary combining operator `op`. Available only if
