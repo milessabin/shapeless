@@ -129,12 +129,11 @@ object ShapelessBuild extends Build {
     dependencies = Seq(shapelessCore),
 
     settings = commonSettings ++ Seq(
-      libraryDependencies <++= scalaVersion { sv =>
-        Seq(
-          // needs compiler for `scala.tools.reflect.Eval`
-          "org.scala-lang" % "scala-compiler" % sv % "provided",
-          "com.novocode" % "junit-interface" % "0.7" % "test"
-      )},
+      libraryDependencies ++= Seq(
+        // needs compiler for `scala.tools.reflect.Eval`
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        "com.novocode" % "junit-interface" % "0.7" % "test"
+      ),
 
       runAllIn(Compile),
 
