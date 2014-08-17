@@ -72,7 +72,7 @@ object newtype {
  * defined trait Foo
  *
  * scala> implicit val intFoo: Foo { type T = Int } = new Foo { type T = Int ; val t = 23 }
- * intFoo: Foo{type T = Int} = $anon$1@6067b682
+ * intFoo: Foo{type T = Int} = \$anon\$1@6067b682
  *
  * scala> implicitly[Foo].t  // implicitly loses precision
  * res0: Foo#T = 23
