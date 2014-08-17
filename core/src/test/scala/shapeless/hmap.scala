@@ -111,4 +111,55 @@ class HMapTests {
     typed[(Option[String], Option[Int])](a1)
     assertEquals((Option("bar"), Option(13)), a1)
   }
+  
+  @Test
+  def testIdKeyNatTrans {
+    val nt = HMap[(Id ~?> Option)#λ]("foo" -> Option("bar"), 23 -> Option(13))
+    
+    illTyped("""
+      val nt2 = HMap[(Id ~?> Option)#λ]("foo" -> Option(13), 23 -> Option(13))
+    """)
+    illTyped("""
+      val nt3 = HMap[(Id ~?> Option)#λ]("foo" -> Option("bar"), Set(23) -> Option(13))
+    """)
+    
+    // Needed to allow V to be inferred in get
+    implicit object IO extends (Id ~?> Option)
+    
+    val o1 = nt.get("foo")
+    assertTrue(isDefined(o1))
+    typed[Option[Option[String]]](o1)
+    assertEquals(Some(Some("bar")), o1)
+    
+    val o2 = nt.get(23)
+    assertTrue(isDefined(o2))
+    typed[Option[Option[Int]]](o2)
+    assertEquals(Some(Some(13)), o2)
+  }  
+  
+  @Test
+  def testIdValueNatTrans {
+    val nt = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> 13)
+    
+    illTyped("""
+      val nt2 = HMap[(Option ~?> Id)#λ](Option("foo") -> 13, Option(23) -> 13)
+    """)
+    illTyped("""
+      val nt3 = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> Set(13))
+    """)
+
+    
+    // Needed to allow V to be inferred in get
+    implicit object IO extends (Id ~?> Option)
+    
+    val o1 = nt.get(Option("foo"))
+    assertTrue(isDefined(o1))
+    typed[Option[String]](o1)
+    assertEquals(Some("bar"), o1)
+    
+    val o2 = nt.get(Option(23))
+    assertTrue(isDefined(o2))
+    typed[Option[Int]](o2)
+    assertEquals(Some(13), o2)
+  }  
 }
