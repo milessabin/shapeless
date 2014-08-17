@@ -609,7 +609,7 @@ object hlist {
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
 
     implicit def hnilToSized[L <: HNil, M[_]]
-      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
         new ToSized[L, M] {
           type Lub = Nothing
           type N = Nat._0
@@ -617,7 +617,7 @@ object hlist {
         }
 
     implicit def hsingleToSized[T, M[_]]
-    (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T, Nat._1] =
+    (implicit cbf : CanBuildFrom[Nothing, T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[T :: HNil, M, T, Nat._1] =
       new ToSized[T :: HNil, M] {
         type Lub = T
         type N = Nat._1
@@ -628,10 +628,12 @@ object hlist {
       (implicit
        tts  : Aux[H2 :: T, M, LT, N0],
        u    : Lub[H1, LT, L],
-       tvs2 : M[LT] => GenTraversableLike[LT, M[LT]], // tvs2 and tcbf are required for the call to map below 
+       tvs2 : M[LT] => GenTraversableLike[LT, M[LT]], // tvs2, tev, and tcbf are required for the call to map below
+       tev  : AdditiveCollection[M[LT]],
        tcbf : CanBuildFrom[M[LT], L, M[L]],
-       tvs  : M[L] => GenTraversableLike[L, M[L]], // tvs and cbf are required for the call to +: below
-       cbf  : CanBuildFrom[M[L], L, M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
+       tvs  : M[L] => GenTraversableLike[L, M[L]], // tvs, cbf, and ev are required for the call to +: below
+       cbf  : CanBuildFrom[M[L], L, M[L]],
+       ev   : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
         new ToSized[H1 :: H2 :: T, M] {
           type Lub = L
           type N = Succ[N0]

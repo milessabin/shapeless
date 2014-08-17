@@ -197,6 +197,10 @@ class SizedTests {
     typed[Sized[Array[String], _1]](isa1)
     val isa2 = Sized[Array]("foo", "bar")
     typed[Sized[Array[String], _2]](isa2)
+
+    val set = Set(1, 2)
+    illTyped(""" set.sized(2) """)
+    illTyped(""" Sized[Set](1, 1, 1) """)
   }
 
   trait Fruit
