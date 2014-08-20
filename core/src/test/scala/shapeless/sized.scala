@@ -409,4 +409,23 @@ class SizedTests {
     assertTypedEquals[Int](1, y)
     assertTypedEquals[Int](2, z)
   }
+
+  @Test
+  def testAsString {
+    { // default
+      val exptd = "Sized[scala.collection.immutable.IndexedSeq[Int], 3](1, 2, 3)"
+      assertEquals(exptd, Sized(1, 2, 3).asString())
+    }
+
+    {
+      val exptd = "Sized[scala.Array[Double], 2](2.1, 3.2)"
+      assertEquals(exptd, Sized[Array](2.1, 3.2).asString())
+    }
+
+    {
+      val exptd = "Sized[List[java.lang.String], 4](The, quick, brown, fox)"
+      assertEquals(exptd, Sized[List]("The", "quick", "brown", "fox").asString())
+    }
+  }
+
 }
