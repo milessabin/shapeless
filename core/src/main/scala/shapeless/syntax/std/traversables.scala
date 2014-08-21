@@ -36,4 +36,7 @@ final class TraversableOps[T <% GenTraversable[_]](t : T) {
   import ops.traversable._
 
   def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+
+  def toNestedMap[L <: HList]
+    (implicit ev: T <:< Traversable[L], toNestedMap: ToNestedMap[L]): toNestedMap.Out = toNestedMap(t)
 }

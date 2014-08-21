@@ -2102,4 +2102,17 @@ class HListTests {
     }
   }
 
+  @Test
+  def testToNestedMap {
+    val nested2 = List(1 :: "a" :: HNil, 2 :: "b" :: HNil).toNestedMap
+    assertTypedEquals[Map[Int, String]](Map(1 -> "a", 2 -> "b"), nested2)
+
+    val nested3 =
+      Set(1 :: "a" :: 1.0 :: HNil, 1 :: "aa" :: 1.1 :: HNil, 2 :: "b" :: 2.0 :: HNil).toNestedMap
+
+    assertTypedEquals[Map[Int, Map[String, Double]]](
+      Map(1 -> Map("a" -> 1.0, "aa" -> 1.1), 2 -> Map("b" -> 2.0)),
+      nested3
+    )
+  }
 }
