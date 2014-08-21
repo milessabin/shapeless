@@ -466,15 +466,18 @@ class PolyTests {
       }
     }
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", isd(1, "foo", 2.0))
+    val r1 = isd(1, "foo", 2.0)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
 
     val sdi = isd.rotateLeft[Nat._1]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", sdi("foo", 2.0, 1))
+    val r2 = sdi("foo", 2.0, 1)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
 
     val dis  = isd.rotateLeft[Nat._2]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", dis(2.0, 1, "foo"))
+    val r3 = dis(2.0, 1, "foo")
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
 
     object isdc extends Poly4 {
       implicit val default = at[Int, String, Double, Char] {
@@ -482,15 +485,18 @@ class PolyTests {
       }
     }
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", isdc(1, "foo", 2.0, 'a'))
+    val r4 = isdc(1, "foo", 2.0, 'a')
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
 
     val sdci = isdc.rotateLeft[Nat._1]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", sdci("foo", 2.0, 'a', 1))
+    val r5 = sdci("foo", 2.0, 'a', 1)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
 
     val dcis = isdc.rotateLeft[Nat._2]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", dcis(2.0, 'a', 1, "foo"))
+    val r6 = dcis(2.0, 'a', 1, "foo")
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
   }
 
   @Test
@@ -501,15 +507,18 @@ class PolyTests {
       }
     }
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", isd(1, "foo", 2.0))
+    val r1 = isd(1, "foo", 2.0)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
 
     val dis = isd.rotateRight[Nat._1]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", dis(2.0, 1, "foo"))
+    val r2 = dis(2.0, 1, "foo")
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
 
     val sdi  = isd.rotateRight[Nat._2]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", sdi("foo", 2.0, 1))
+    val r3 = sdi("foo", 2.0, 1)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
 
     object isdc extends Poly4 {
       implicit val default = at[Int, String, Double, Char] {
@@ -517,15 +526,18 @@ class PolyTests {
       }
     }
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", isdc(1, "foo", 2.0, 'a'))
+    val r4 = isdc(1, "foo", 2.0, 'a')
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
 
     val cisd = isdc.rotateRight[Nat._1]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", cisd('a', 1, "foo", 2.0))
+    val r5 = cisd('a', 1, "foo", 2.0)
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
 
     val dcis = isdc.rotateRight[Nat._2]
 
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", dcis(2.0, 'a', 1, "foo"))
+    val r6 = dcis(2.0, 'a', 1, "foo")
+    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
   }
 }
 

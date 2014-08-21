@@ -30,8 +30,11 @@ class FinTests {
 
   @Test
   def testFromNats {
-    assertTypedEquals[FinZero[_1]](FinZero[_1](), Fin[_0, _1])
-    assertTypedEquals[FinZero[_1]](FinZero[_1](), Fin(_0, _1))
+    val r1 = Fin[_0, _1]
+    assertTypedEquals[FinZero[_1]](FinZero[_1](), r1)
+
+    val r2 = Fin(_0, _1)
+    assertTypedEquals[FinZero[_1]](FinZero[_1](), r2)
 
     illTyped("""
       Fin[_0, _0]
@@ -44,8 +47,13 @@ class FinTests {
 
   @Test
   def testToNat {
-    assertTypedEquals[_0](_0, Fin.toNat(Fin[_0, _3]))
-    assertTypedEquals[_1](_1, Fin.toNat(Fin[_1, _3]))
-    assertTypedEquals[_2](_2, Fin.toNat(Fin[_2, _3]))
+    val r1 = Fin.toNat(Fin[_0, _3])
+    assertTypedEquals[_0](_0, r1)
+
+    val r2 = Fin.toNat(Fin[_1, _3])
+    assertTypedEquals[_1](_1, r2)
+
+    val r3 = Fin.toNat(Fin[_2, _3])
+    assertTypedEquals[_2](_2, r3)
   }
 }
