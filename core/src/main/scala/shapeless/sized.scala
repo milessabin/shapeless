@@ -26,8 +26,8 @@ import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
  * 
  * @author Miles Sabin
  */
-final class Sized[+Repr, L <: Nat](val unsized : Repr) // Sized cannot extend AnyVal to 2.10.x
-                                                       // See https://issues.scala-lang.org/browse/SI-6260
+final class Sized[+Repr, L <: Nat] private (val unsized : Repr) // Sized cannot extend AnyVal in 2.10.x
+                                                    // See https://issues.scala-lang.org/browse/SI-6260
 
 /**
  * Carrier for `Sized` operations.
@@ -37,7 +37,7 @@ final class Sized[+Repr, L <: Nat](val unsized : Repr) // Sized cannot extend An
  * 
  * @author Miles Sabin
  */
-class SizedOps[A0, Repr, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Repr] { type A = A0 }) { outer =>
+class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Repr] { type A = A0 }) { outer =>
   import nat._
   import ops.nat._
   import LT._
@@ -154,13 +154,15 @@ class SizedOps[A0, Repr, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Re
     (implicit
       sum : Sum[L, M],
       cbf : CanBuildFrom[Repr, B, That],
-      convThat : That => GenTraversableLike[B, That]) = wrap[That, sum.Out](s.unsized ++ that.unsized)
+      convThat : That => GenTraversableLike[B, That],
+      ev : AdditiveCollection[That]) = wrap[That, sum.Out](s.unsized ++ that.unsized)
     
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
    * as this collection.
    */
-  def map[B, That](f : A0 => B)(implicit cbf : CanBuildFrom[Repr, B, That]) = wrap[That, L](s.unsized map f)
+  def map[B, That](f : A0 => B)(implicit cbf : CanBuildFrom[Repr, B, That], ev : AdditiveCollection[That]) =
+    wrap[That, L](s.unsized map f)
 
   /**
    * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
@@ -179,16 +181,58 @@ trait LowPrioritySized {
 
 object Sized extends LowPrioritySized {
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
-    (implicit itl: IsTraversableLike[Repr]): SizedOps[itl.A, Repr, L] =
+    (implicit itl: IsTraversableLike[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
       new SizedOps[itl.A, Repr, L](s, itl)
   
   def apply[CC[_]] = new SizedBuilder[CC]
   
   def apply[CC[_]]()
-    (implicit cbf : CanBuildFrom[Nothing, Nothing, CC[Nothing]]) =
+    (implicit cbf : CanBuildFrom[Nothing, Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
       new Sized[CC[Nothing], _0](cbf().result)
   
-  def wrap[Repr, L <: Nat](r : Repr) = new Sized[Repr, L](r)
+  def wrap[Repr, L <: Nat](r : Repr)(implicit ev : AdditiveCollection[Repr]) = new Sized[Repr, L](r)
 
   def unapplySeq[Repr, L <: Nat](x : Sized[Repr, L]) = Some(x.unsized)
+}
+
+/**
+ * Evidence that `Repr` instances can be nested in a `Sized`.
+ *
+ * Should assert that a `Builder[_, Repr]` given n elements will result in a Repr of length n.
+ *
+ * @author Alexandre Archambault
+ */
+trait AdditiveCollection[Repr]
+
+object AdditiveCollection {
+  import scala.collection.immutable.Queue
+  import scala.collection.LinearSeq
+
+  implicit def linearSeqAdditiveCollection[T]: AdditiveCollection[LinearSeq[T]] =
+    new AdditiveCollection[LinearSeq[T]] {}
+
+  implicit def vectorAdditiveCollection[T]: AdditiveCollection[Vector[T]] =
+    new AdditiveCollection[Vector[T]] {}
+
+  implicit def arrayAdditiveCollection[T]: AdditiveCollection[Array[T]] =
+    new AdditiveCollection[Array[T]] {}
+
+  implicit def stringAdditiveCollection: AdditiveCollection[String] =
+    new AdditiveCollection[String] {}
+
+  implicit def listAdditiveCollection[T]: AdditiveCollection[List[T]] =
+    new AdditiveCollection[List[T]] {}
+
+  implicit def streamAdditiveCollection[T]: AdditiveCollection[Stream[T]] =
+    new AdditiveCollection[Stream[T]] {}
+
+  implicit def queueAdditiveCollection[T]: AdditiveCollection[Queue[T]] =
+    new AdditiveCollection[Queue[T]] {}
+
+  implicit def indexedSeqAdditiveCollection[T]: AdditiveCollection[IndexedSeq[T]] =
+    new AdditiveCollection[IndexedSeq[T]] {}
+
+  implicit def defaultAdditiveCollection[T]: AdditiveCollection[collection.immutable.IndexedSeq[T]] =
+    new AdditiveCollection[collection.immutable.IndexedSeq[T]] {}
+
 }

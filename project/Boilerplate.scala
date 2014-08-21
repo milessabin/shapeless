@@ -429,7 +429,7 @@ object Boilerplate {
         |  import Sized.wrap
         |
         -  def apply[T](${`a:T..n:T`})
-        -    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]]) = 
+        -    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]], ev : AdditiveCollection[CC[T]]) =
         -    wrap[CC[T], _${arity}]((cbf() += (${`a..n`})).result)
         -
         |}

@@ -191,12 +191,21 @@ class SizedTests {
     val isl2 = Sized[List]("foo", "bar")
     typed[Sized[List[String], _2]](isl2)
 
+    // Checking that Sized constructor is private
+    illTyped(""" new Sized[List[String], _2](List("1", "2")) """)
+
     val isa0 = Sized[Array]()
     typed[Sized[Array[Nothing], _0]](isa0)
     val isa1 = Sized[Array]("foo")
     typed[Sized[Array[String], _1]](isa1)
     val isa2 = Sized[Array]("foo", "bar")
     typed[Sized[Array[String], _2]](isa2)
+
+    val set = Set(1, 2)
+    illTyped(""" set.sized(2) """)
+    illTyped(""" Sized[Set](1, 1, 1) """)
+
+    illTyped(""" new Sized[Set[Int], _3](Set(1, 1, 1)) """)
   }
 
   trait Fruit
