@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import ops.{ hlist => hl, coproduct => cp }
+import testutil.assertTypedEquals
 
 package GenericTestsAux {
   sealed trait Fruit
@@ -88,6 +89,21 @@ package GenericTestsAux {
       
     implicit def caseCoproduct[T, L <: Coproduct](implicit gen: Generic.Aux[T, L], mapper: cp.Mapper.Aux[this.type, L, L]) =
       at[T](t => gen.from(gen.to(t).map(inc)))
+  }
+
+  sealed trait AbstractNonCC
+  class NonCCA(val i: Int, val s: String) extends AbstractNonCC
+  class NonCCB(val b: Boolean, val d: Double) extends AbstractNonCC
+
+  class NonCCWithCompanion private (val i: Int, val s: String)
+  object NonCCWithCompanion {
+    def apply(i: Int, s: String) = new NonCCWithCompanion(i, s)
+    def unapply(s: NonCCWithCompanion): Option[(Int, String)] = Some((s.i, s.s))
+  }
+
+  class NonCCLazy(prev0: => NonCCLazy, next0: => NonCCLazy) {
+    lazy val prev = prev0
+    lazy val next = next0
   }
 }
 
@@ -359,5 +375,72 @@ class GenericTests {
     
     val l1 = gen.from(l0)
     typed[List[Int]](l1)
+  }
+
+  @Test
+  def testAbstractNonCC {
+    val ncca = new NonCCA(23, "foo")
+    val nccb = new NonCCB(true, 2.0)
+    val ancc: AbstractNonCC = ncca
+
+    val genA = Generic[NonCCA]
+    val genB = Generic[NonCCB]
+    val genAbs = Generic[AbstractNonCC]
+
+    val rA = genA.to(ncca)
+    assertTypedEquals[Int :: String :: HNil](23 :: "foo" :: HNil, rA)
+
+    val rB = genB.to(nccb)
+    assertTypedEquals[Boolean :: Double :: HNil](true :: 2.0 :: HNil, rB)
+
+    val rAbs = genAbs.to(ancc)
+    assertTypedEquals[NonCCA :+: NonCCB :+: CNil](Inl(ncca), rAbs)
+
+    val fA = genA.from(13 :: "bar" :: HNil)
+    typed[NonCCA](fA)
+    assertEquals(13, fA.i)
+    assertEquals("bar", fA.s)
+
+    val fB = genB.from(false :: 3.0 :: HNil)
+    typed[NonCCB](fB)
+    assertEquals(false, fB.b)
+    assertEquals(3.0, fB.d, Double.MinPositiveValue)
+
+    val fAbs = genAbs.from(Inr(Inl(nccb)))
+    typed[AbstractNonCC](fAbs)
+    assertTrue(fAbs.isInstanceOf[NonCCB])
+    assertEquals(true, fAbs.asInstanceOf[NonCCB].b)
+    assertEquals(2.0, fAbs.asInstanceOf[NonCCB].d, Double.MinPositiveValue)
+  }
+
+  @Test
+  def testNonCCWithCompanion {
+    val nccc = NonCCWithCompanion(23, "foo")
+
+    val gen = Generic[NonCCWithCompanion]
+
+    val r = gen.to(nccc)
+    assertTypedEquals[Int :: String :: HNil](23 :: "foo" :: HNil, r)
+
+    val f = gen.from(13 :: "bar" :: HNil)
+    typed[NonCCWithCompanion](f)
+    assertEquals(13, f.i)
+    assertEquals("bar", f.s)
+  }
+
+  @Test
+  def testNonCCLazy {
+    lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
+      (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
+
+    val gen = Generic[NonCCLazy]
+
+    val rB = gen.to(b)
+    assertTypedEquals[NonCCLazy :: NonCCLazy :: HNil](a :: c :: HNil, rB)
+
+    val fD = gen.from(a :: c :: HNil)
+    typed[NonCCLazy](fD)
+    assertEquals(a, fD.prev)
+    assertEquals(c, fD.next)
   }
 }

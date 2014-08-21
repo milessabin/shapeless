@@ -110,6 +110,8 @@ class GenericMacros(val c: whitebox.Context) {
     def toName = TermName("to")
     def fromName = TermName("from")
     def reprName = TypeName("Repr")
+    def applyName = TermName("apply")
+    def unapplyName = TermName("unapply")
 
     def nameAsValue(name: Name): Constant = Constant(name.decodedName.toString.trim)
 
@@ -119,7 +121,7 @@ class GenericMacros(val c: whitebox.Context) {
 
     def fieldsOf(tpe: Type): List[(TermName, Type)] =
       tpe.decls.toList collect {
-        case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => (sym.name, sym.typeSignatureIn(tpe))
+        case sym: TermSymbol if isCaseAccessorLike(sym) => (sym.name, sym.typeSignatureIn(tpe).finalResultType)
       }
 
     def reprOf(tpe: Type): Type = {
@@ -161,19 +163,29 @@ class GenericMacros(val c: whitebox.Context) {
       fromSym0
     }
 
-    lazy val fromProduct = fromTpe =:= unitTpe || fromSym.isCaseClass
+    def isCaseClassLike(sym: ClassSymbol): Boolean =
+      sym.isCaseClass ||
+      (!sym.isAbstract && !sym.isTrait && sym.knownDirectSubclasses.isEmpty && fieldsOf(sym.typeSignature).nonEmpty)
+
+    def isCaseAccessorLike(sym: TermSymbol): Boolean =
+      if(sym.owner.asClass.isCaseClass)
+        sym.isCaseAccessor && sym.isPublic
+      else
+        sym.isAccessor && sym.isPublic
+
+    lazy val fromProduct = fromTpe =:= unitTpe || isCaseClassLike(fromSym)
 
     lazy val fromCtors = {
       def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
         classSym.knownDirectSubclasses.toList flatMap { child0 =>
           val child = child0.asClass
           child.info // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-          if (child.isCaseClass)
+          if (isCaseClassLike(child))
             List(child)
           else if (child.isSealed)
             collectCtors(child)
           else
-            abort(s"$child is not a case class or a sealed trait")
+            abort(s"$child is not case class like or a sealed trait")
         }
       }
 
@@ -238,43 +250,76 @@ class GenericMacros(val c: whitebox.Context) {
       cq"$pat => $name"
     }
 
-    def mkBinder(boundName: TermName, name: TermName, tpe: Type) = pq"$boundName"
-    def mkValue(boundName: TermName, name: TermName, tpe: Type) = mkElem(q"$boundName", name, tpe)
+    def mkToReprCase(tpe: Type): CaseDef = mkToReprCase(tpe, -1)
 
-    def mkTransCase(
-      tpe: Type,
-      bindFrom: (TermName, TermName, Type) => Tree,
-      bindRepr: (TermName, TermName, Type) => Tree
-    )(mkCaseDef: (Tree, Tree) => CaseDef): CaseDef = {
-      val boundFields = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
+    def mkToReprCase(tpe: Type, index: Int): CaseDef = {
+      def mkCase(lhs: Tree, rhs: Tree) =
+        if(index == -1)
+          cq"$lhs => $rhs"
+        else
+          cq"$lhs => ${mkCoproductValue(mkElem(rhs, nameOf(tpe), tpe), index)}"
 
-      val fromTree =
-        if(tpe =:= unitTpe) q"()"
-        else q"${tpe.typeSymbol.companion.asTerm}(..${boundFields.map(bindFrom.tupled)})"
+      if(tpe =:= unitTpe)
+        mkCase(pq"()", hnilValueTree)
+      else {
+        val sym = tpe.typeSymbol
+        val isCaseClass = sym.asClass.isCaseClass
+        val hasUnapply = sym.companion.typeSignature.decl(unapplyName) != NoSymbol
 
-      val reprTree =
-        boundFields.foldRight(hnilValueTree) {
-          case (bf, acc) => q"$hconsValueTree(${bindRepr.tupled(bf)}, $acc)"
+        if(isCaseClass || hasUnapply) {
+          val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
+          val lhs = pq"${tpe.typeSymbol.companion.asTerm}(..${binders.map(x => pq"${x._1}")})"
+          val rhs = 
+            binders.foldRight(hnilValueTree) {
+              case ((bound, name, tpe), acc) => q"$hconsValueTree(${mkElem(q"$bound", name, tpe)}, $acc)"
+            }
+          mkCase(lhs, rhs)
+        } else {
+          val lhs = TermName(c.freshName("pat"))
+          val rhs =
+            fieldsOf(tpe).foldRight(hnilValueTree) {
+              case ((name, tpe), acc) =>
+                val elem = mkElem(q"$lhs.$name", name, tpe)
+                q"$hconsValueTree($elem, $acc)"
+            }
+          mkCase(pq"$lhs", rhs)
         }
-
-      mkCaseDef(fromTree, reprTree)
+      }
     }
 
-    def mkToProductReprCase(tpe: Type): CaseDef =
-      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) => cq"$lhs => $rhs" }
+    def mkFromReprCase(tpe: Type): CaseDef = mkFromReprCase(tpe, -1)
 
-    def mkFromProductReprCase(tpe: Type): CaseDef =
-      mkTransCase(tpe, mkValue, mkBinder) { case (rhs, lhs) => cq"$lhs => $rhs" }
+    def mkFromReprCase(tpe: Type, index: Int = -1): CaseDef = {
+      def mkCase(lhs: Tree, rhs: Tree) =
+        if(index == -1)
+          cq"$lhs => $rhs"
+        else
+          cq"${mkCoproductValue(lhs, index)} => $rhs"
 
-    def mkToReprCase(tpe: Type, index: Int): CaseDef =
-      mkTransCase(tpe, mkBinder, mkValue) { case (lhs, rhs) =>
-        cq"$lhs => ${mkCoproductValue(mkElem(rhs, nameOf(tpe), tpe), index)}"
+      if(tpe =:= unitTpe)
+        mkCase(hnilValueTree, q"()")
+      else {
+        val sym = tpe.typeSymbol
+        val isCaseClass = sym.asClass.isCaseClass
+        val hasApply = sym.companion.typeSignature.decl(applyName) != NoSymbol
+
+        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) } 
+        val ctorArgs = binders.map { case (bound, name, tpe) => mkElem(Ident(bound), name, tpe) }
+
+        val lhs =
+          binders.foldRight(hnilValueTree) {
+            case ((bound, _, _), acc) => pq"$hconsValueTree($bound, $acc)"
+          }
+
+        val rhs =
+          if(isCaseClass || hasApply)
+            q"${tpe.typeSymbol.companion.asTerm}(..$ctorArgs)"
+          else
+            q"new $tpe(..$ctorArgs)"
+
+        mkCase(lhs, rhs)
       }
-
-    def mkFromReprCase(tpe: Type, index: Int): CaseDef =
-      mkTransCase(tpe, mkValue, mkBinder) { case (rhs, lhs) =>
-        cq"${mkCoproductValue(lhs, index)} => $rhs"
-      }
+    }
 
     def materializeGeneric = {
       val genericTypeConstructor: Type = if(toLabelled) labelledGenericTpe else genericTpe
@@ -288,7 +333,7 @@ class GenericMacros(val c: whitebox.Context) {
           mkCoproductTpe(fromCtors)
 
       val (toCases, fromCases) =
-        if(fromProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
+        if(fromProduct) mkProductCases(mkToReprCase, mkFromReprCase)
         else mkCases(mkToCoproductCase, mkFromCoproductCase)
 
       val clsName = TypeName(c.freshName())
@@ -371,7 +416,7 @@ class GenericMacros(val c: whitebox.Context) {
           mkCoproductTpe(fromCtors.map(reprOf))
 
       val (toCases, fromCases) =
-        if(toProduct) mkProductCases(mkToProductReprCase, mkFromProductReprCase)
+        if(toProduct) mkProductCases(mkToReprCase, mkFromReprCase)
         else mkCases(mkToReprCase, mkFromReprCase)
 
       val objName, reprName, toName, fromName = TermName(c.freshName())
