@@ -54,6 +54,11 @@ trait Lens[S, A] extends Dynamic { outer =>
     def get(s: S): (A, B) = (outer.get(s), other.get(s))
     def set(s: S)(ab: (A, B)) = other.set(outer.set(s)(ab._1))(ab._2)
   }
+
+  def ~[B](other: Prism[S, B]) = new ProductPrismBuilder[S, (A, B)] {
+    def get(s: S): Option[(A, B)] = other.get(s).map((outer.get(s), _))
+    def set(s: S)(ab: (A, B)) = other.set(outer.set(s)(ab._1))(ab._2)
+  }
 }
 
 trait Prism[S, A] extends Dynamic { outer =>
@@ -76,7 +81,23 @@ trait Prism[S, A] extends Dynamic { outer =>
 
   def apply[B](implicit mkPrism: MkCtorPrism[A, B]): Prism[S, B] = mkPrism() compose this
 
-  def unapply(s: S): Option[Option[A]] = Some(get(s))
+  def unapply(s: S): Option[A] = get(s)
+
+  def ~[B](other: Lens[S, B]) = new ProductPrismBuilder[S, (A, B)] {
+    def get(s: S): Option[(A, B)] = outer.get(s).map((_, other.get(s)))
+
+    def set(s: S)(ab: (A, B)) = other.set(outer.set(s)(ab._1))(ab._2)
+  }
+
+  def ~[B](other: Prism[S, B]) = new ProductPrismBuilder[S, (A, B)] {
+    def get(s: S): Option[(A, B)] =
+      for {
+        fst <- outer.get(s)
+        snd <- other.get(s)
+      } yield (fst, snd)
+
+    def set(s: S)(ab: (A, B)) = other.set(outer.set(s)(ab._1))(ab._2)
+  }
 }
 
 trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
@@ -92,6 +113,31 @@ trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
       last: Last.Aux[QL, T]) =
       new ProductLensBuilder[C, Q] {
         def get(c: C): Q = (genp.to(outer.get(c)) :+ other.get(c)).tupled
+        def set(c: C)(q: Q) = {
+          val l = genq.to(q)
+          other.set(outer.set(c)(l.init.tupled))(l.last)
+        }
+      }
+}
+
+trait ProductPrismBuilder[C, P <: Product] extends Prism[C, P] {
+  outer =>
+  def ~[T, L <: HList, LT <: HList, Q <: Product, QL <: HList](other: Prism[C, T])
+    (implicit
+      genp: Generic.Aux[P, L],
+      tpp: Tupler.Aux[L, P],
+      pre: Prepend.Aux[L, T :: HNil, LT],
+      tpq: Tupler.Aux[LT, Q],
+      genq: Generic.Aux[Q, QL],
+      init: Init.Aux[QL, L],
+      last: Last.Aux[QL, T]) =
+      new ProductPrismBuilder[C, Q] {
+        def get(c: C): Option[Q] = 
+          for {
+            init <- outer.get(c)
+            last <- other.get(c)
+          } yield (genp.to(init) :+ last).tupled
+
         def set(c: C)(q: Q) = {
           val l = genq.to(q)
           other.set(outer.set(c)(l.init.tupled))(l.last)
@@ -255,7 +301,7 @@ trait MkSelectDynamicOptic[R, A, K, B] {
 trait LowPriorityMkSelectDynamicOptic {
   type Aux[R, A, K, B, Out0] = MkSelectDynamicOptic[R, A, K, B] { type Out = Out0 }
 
-  implicit def mkInferCtorSelField[R, A, C <: Coproduct, I <: Product, K, E]
+  implicit def mkInferCtorSelField[R, A, C <: Coproduct, I, K, E]
     (implicit
       gen: Generic.Aux[A, C],
       infer: InferProduct.Aux[C, K, I],

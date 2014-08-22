@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import lens._, nat._, test._, testutil._
+import lens._, nat._, record._, syntax.singleton._, tag.@@, test._, testutil._
 
 package lensTestDataTypes {
   sealed trait Sum1
@@ -39,6 +39,14 @@ package lensTestDataTypes {
 
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
+
+  sealed trait BGraph[T]
+  case class BTerm[T](value: T) extends BGraph[T]
+
+  class BNode[T](left0: => BGraph[T], right0: => BGraph[T]) extends BGraph[T] {
+    lazy val left = left0
+    lazy val right = right0
+  }
 }
 
 import lensTestDataTypes._
@@ -694,26 +702,72 @@ class OpticTests {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
 
-    val llv = optic[Tree[Int]].left.left.value
-    val lrv = optic[Tree[Int]].left.right.value
-    val rv = optic[Tree[Int]].right.value
+    val tOptic = optic[Tree[Int]]
+    val llv = tOptic.left.left.value
+    val lrv = tOptic.left.right.value
+    val rv = tOptic.right.value
 
     val llv(x) = t1
-    assertTypedEquals[Option[Int]](Some(1), x)
+    assertTypedEquals[Int](1, x)
 
     val lrv(y) = t1
-    assertTypedEquals[Option[Int]](Some(2), y)
+    assertTypedEquals[Int](2, y)
 
     val rv(z) = t1
-    assertTypedEquals[Option[Int]](Some(3), z)
+    assertTypedEquals[Int](3, z)
 
-    val llv(x2) = t2
+    val x2 = t2 match {
+      case llv(x2) => Some(x2)
+      case _ => None
+    }
     assertTypedEquals[Option[Int]](None, x2)
 
-    val lrv(y2) = t2
+    val y2 = t2 match {
+      case lrv(y2) => Some(y2)
+      case _ => None
+    }
     assertTypedEquals[Option[Int]](None, y2)
 
-    val rv(z2) = t2
+    val z2 = t2 match {
+      case rv(z2) => Some(z2)
+      case _ => None
+    }
     assertTypedEquals[Option[Int]](None, z2)
+
+    val llvrv = llv ~ lrv ~ rv
+    val llvrv(x3, y3, z3) = t1
+    assertTypedEquals[Int](1, x3)
+    assertTypedEquals[Int](2, y3)
+    assertTypedEquals[Int](3, z3)
+  }
+
+  @Test
+  def testLazyUnapply {
+    val g = optic[BGraph[Int]]
+    val l = g.left
+    val rl = g.right.left
+    val rll = rl ~ l
+    val rlg = rl ~ g
+    val rrlv = g.right.right.left.value
+    val rrrv = g.right.right.right.value
+    val rrlvrrrv = rrlv ~ rrrv
+    val rrrlv = g.right.right.right.left.value
+    val rrrrlv = g.right.right.right.right.left.value
+    val looped = rrrlv ~ rrrrlv
+
+    val rll(a, b) = new BNode(BTerm(1), new BNode(BTerm(2), BTerm(3)))
+    assertEquals(BTerm(2), a)
+    assertEquals(BTerm(1), b)
+
+    lazy val g0 @ rll(x: BTerm[Int], y: BTerm[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(x, y)))
+    val rrlvrrrv(x1, y1) = g0
+    assertEquals(2, x1)
+    assertEquals(1, y1)
+
+    lazy val rlg(z: BTerm[Int], g1: BGraph[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(z, g1)))
+
+    val looped(x2, y2) = g1
+    assertEquals(1, x2)
+    assertEquals(2, y2)
   }
 }
