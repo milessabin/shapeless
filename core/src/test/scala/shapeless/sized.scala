@@ -410,4 +410,19 @@ class SizedTests {
     assertTypedEquals[Int](1, y)
     assertTypedEquals[Int](2, z)
   }
+
+  @Test
+  def testToString {
+    { // default
+      val exptd = "Sized[Vector, 3](1, 2, 3)"
+      assertEquals(exptd, Sized(1, 2, 3).toString())
+    }
+
+    {
+      val exptd = "Sized[List, 4](The, quick, brown, fox)"
+      assertEquals(exptd, Sized[List]("The", "quick", "brown", "fox").toString())
+    }
+
+  }
+
 }

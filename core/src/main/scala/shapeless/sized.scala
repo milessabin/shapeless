@@ -16,7 +16,7 @@
 
 package shapeless
 
-import scala.collection.{ GenTraversable, GenTraversableLike }
+import scala.collection.{GenTraversableLike, GenTraversable}
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 
 /**
@@ -26,7 +26,31 @@ import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
  * 
  * @author Miles Sabin
  */
-final class Sized[+Repr, L <: Nat] private (val unsized : Repr) extends AnyVal
+final class Sized[+Repr , L <: Nat] private (val unsized : Repr) extends AnyVal {
+
+  def stringPrefix = "Sized"
+
+  import annotation.unchecked._
+  /*
+  * http://stackoverflow.com/questions/2454281/when-is-uncheckedvariance-needed-in-scala-and-why-is-it-used-in-generictravers
+  * rather than Kevin's
+  * final def toString[invRepr >: Repr](implicit itl: IsTraversableLike[invRepr]) : String = {
+  */
+
+  /**
+   * A String representation of the Sized collection in the form of the Scala collection
+   * classes toString method. Also gives the underlying runtime type and size of this Sized
+   * instance in the style of type parameters, such that it can be checked against
+   * the constraining value of Nat._x e.g.
+   */
+  final def toString()(implicit itl: IsTraversableLike[Repr @scala.annotation.unchecked.uncheckedVariance]) : String = {
+    val travRepr = itl.conversion(unsized)
+    val reprName = travRepr.stringPrefix
+    val reprSize = travRepr.size
+    travRepr.mkString(s"$stringPrefix[$reprName, $reprSize](",", ",")")
+  }
+
+}
 
 /**
  * Carrier for `Sized` operations.
