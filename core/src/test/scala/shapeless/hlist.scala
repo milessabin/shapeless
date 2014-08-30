@@ -2019,7 +2019,7 @@ class HListTests {
   }
 
   @Test
-  def testScanLeft{  
+  def testScanLeft {
     val in = 1 :: "2" :: HNil
     val out = in.scanLeft(1)(smear)
 
@@ -2035,7 +2035,7 @@ class HListTests {
     typed[Int :: Int :: Int :: HNil](out)
     assertEquals(4 :: 3 :: 1 :: HNil, out)
   }
-  
+
   @Test
   def testFill {
     {
@@ -2175,7 +2175,7 @@ class HListTests {
       assertEquals(None, twoByThree.at[_1].at[_1])
       assertEquals(None, twoByThree.at[_1].at[_2])
     }
-  } 
+  }
 
   @Test
   def testPatch{
