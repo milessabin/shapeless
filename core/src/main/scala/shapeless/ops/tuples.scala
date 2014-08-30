@@ -350,13 +350,13 @@ object tuple {
     implicit def tupleSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.Split.Aux[L, N, LP :: LS :: HNil],
+        split: hl.Split.Aux[L, N, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, N, (tpp.Out, tps.Out)] =
         new Split[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -376,13 +376,13 @@ object tuple {
     implicit def tupleReverseSplit[T, L <: HList, N <: Nat, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.ReverseSplit.Aux[L, N, LP :: LS :: HNil],
+        split: hl.ReverseSplit.Aux[L, N, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, N, (tpp.Out, tps.Out)] =
         new ReverseSplit[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -402,13 +402,13 @@ object tuple {
     implicit def tupleSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.SplitLeft.Aux[L, U, LP :: LS :: HNil],
+        split: hl.SplitLeft.Aux[L, U, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -428,13 +428,13 @@ object tuple {
     implicit def tupleReverseSplitLeft[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.ReverseSplitLeft.Aux[L, U, LP :: LS :: HNil],
+        split: hl.ReverseSplitLeft.Aux[L, U, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -454,13 +454,13 @@ object tuple {
     implicit def tupleSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.SplitRight.Aux[L, U, LP :: LS :: HNil],
+        split: hl.SplitRight.Aux[L, U, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 
@@ -480,13 +480,13 @@ object tuple {
     implicit def tupleReverseSplitRight[T, L <: HList, U, LP <: HList, LS <: HList]
       (implicit
         gen: Generic.Aux[T, L],
-        split: hl.ReverseSplitRight.Aux[L, U, LP :: LS :: HNil],
+        split: hl.ReverseSplitRight.Aux[L, U, LP, LS],
         tpp: hl.Tupler[LP],
         tps: hl.Tupler[LS]
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
         }
   }
 

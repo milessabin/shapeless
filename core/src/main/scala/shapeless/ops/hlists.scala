@@ -1038,6 +1038,7 @@ object hlist {
         }
   }
 
+
   /**
    * Type class supporting splitting this `HList` at the ''nth'' element returning the prefix and suffix as a pair.
    * Available only if this `HList` has at least ''n'' elements.
@@ -1045,19 +1046,28 @@ object hlist {
    * @author Miles Sabin
    */
   trait Split[L <: HList, N <: Nat] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object Split {
-    def apply[L <: HList, N <: Nat](implicit split: Split[L, N]): Aux[L, N, split.Out] = split
+    def apply[L <: HList, N <: Nat](implicit split: Split[L, N]): Aux[L, N, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, N <: Nat, Out0] = Split[L, N] { type Out = Out0 }
+    type Aux[L <: HList, N <: Nat, Prefix0 <: HList, Suffix0 <: HList] = Split[L, N] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def split[L <: HList, N <: Nat, P <: HList, S <: HList]
-      (implicit split : Split0[HNil, L, N, P, S]): Aux[L, N, P :: S :: HNil] =
+      (implicit split : Split0[HNil, L, N, P, S]): Aux[L, N, P, S] =
         new Split[L, N] {
-          type Out = P :: S :: HNil
-          def apply(l : L): Out = split(HNil, l)
+          type Prefix = P
+          type Suffix = S
+          def product(l : L): Prefix :: Suffix :: HNil = split(HNil, l)
         }
 
     trait Split0[AccP <: HList, AccS <: HList, N <: Nat, P <: HList, S <: HList] {
@@ -1088,19 +1098,29 @@ object hlist {
    * @author Miles Sabin
    */
   trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object ReverseSplit {
-    def apply[L <: HList, N <: Nat](implicit split: ReverseSplit[L, N]): Aux[L, N, split.Out] = split
+    def apply[L <: HList, N <: Nat]
+      (implicit split: ReverseSplit[L, N]): Aux[L, N, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, N <: Nat, Out0] = ReverseSplit[L, N] { type Out = Out0 }
+    type Aux[L <: HList, N <: Nat, Prefix0, Suffix0] = ReverseSplit[L, N] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def reverseSplit[L <: HList, N <: Nat, P <: HList, S <: HList]
-      (implicit split : ReverseSplit0[HNil, L, N, P, S]): Aux[L, N, P :: S :: HNil] =
+      (implicit split : ReverseSplit0[HNil, L, N, P, S]): Aux[L, N, P, S] =
         new ReverseSplit[L, N] {
-          type Out = P :: S :: HNil
-          def apply(l : L): Out = split(HNil, l)
+          type Prefix = P
+          type Suffix = S
+          def product(l : L): Prefix :: Suffix :: HNil = split(HNil, l)
         }
 
     trait ReverseSplit0[AccP <: HList, AccS <: HList, N <: Nat, P, S] {
@@ -1128,19 +1148,29 @@ object hlist {
    * @author Miles Sabin
    */
   trait SplitLeft[L <: HList, U] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object SplitLeft {
-    def apply[L <: HList, U](implicit split: SplitLeft[L, U]): Aux[L, U, split.Out] = split
+    def apply[L <: HList, U](implicit split: SplitLeft[L, U]): Aux[L, U, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, U, Out0] = SplitLeft[L, U] { type Out = Out0 }
+    type Aux[L <: HList, U, Prefix0 <: HList, Suffix0 <: HList] = SplitLeft[L, U] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def splitLeft[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitLeft : SplitLeft0[HNil, L, U, P, S]): Aux[L, U, P :: S :: HNil] =
+      (implicit splitLeft : SplitLeft0[HNil, L, U, P, S]): Aux[L, U, P, S] =
         new SplitLeft[L, U] {
-          type Out =  P :: S :: HNil
-          def apply(l : L): Out = splitLeft(HNil, l)
+          type Prefix = P
+          type Suffix = S
+
+          def product(l : L): Prefix :: Suffix :: HNil = splitLeft(HNil, l)
         }
 
     trait SplitLeft0[AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
@@ -1173,19 +1203,29 @@ object hlist {
    * @author Miles Sabin
    */
   trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object ReverseSplitLeft {
-    def apply[L <: HList, U](implicit split: ReverseSplitLeft[L, U]): Aux[L, U, split.Out] = split
+    def apply[L <: HList, U]
+      (implicit split: ReverseSplitLeft[L, U]): Aux[L, U, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, U, Out0] = ReverseSplitLeft[L, U] { type Out = Out0 }
+    type Aux[L <: HList, U, Prefix0 <: HList, Suffix0 <: HList] = ReverseSplitLeft[L, U] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def reverseSplitLeft[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P, S]): Aux[L, U, P :: S :: HNil] =
+      (implicit splitLeft : ReverseSplitLeft0[HNil, L, U, P, S]): Aux[L, U, P, S] =
         new ReverseSplitLeft[L, U] {
-          type Out = P :: S :: HNil
-          def apply(l : L): Out = splitLeft(HNil, l)
+          type Prefix = P
+          type Suffix = S
+          def product(l : L): Prefix :: Suffix :: HNil = splitLeft(HNil, l)
         }
 
     trait ReverseSplitLeft0[AccP <: HList, AccS <: HList, U, P, S] {
@@ -1215,19 +1255,28 @@ object hlist {
    * @author Miles Sabin
    */
   trait SplitRight[L <: HList, U] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object SplitRight {
-    def apply[L <: HList, U](implicit split: SplitRight[L, U]): Aux[L, U, split.Out] = split
+    def apply[L <: HList, U](implicit split: SplitRight[L, U]): Aux[L, U, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, U, Out0] = SplitRight[L, U] { type Out = Out0 }
+    type Aux[L <: HList, U, Prefix0 <: HList, Suffix0 <: HList] = SplitRight[L, U] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def splitRight[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitRight : SplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P :: S :: HNil] =
+      (implicit splitRight : SplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P, S] =
         new SplitRight[L, U] {
-          type Out = P :: S :: HNil
-          def apply(l : L): Out = splitRight(l, HNil, HNil)
+          type Prefix = P
+          type Suffix = S
+          def product(l : L): Prefix :: Suffix :: HNil = splitRight(l, HNil, HNil)
         }
 
     trait SplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P <: HList, S <: HList] {
@@ -1264,19 +1313,28 @@ object hlist {
    * @author Miles Sabin
    */
   trait ReverseSplitRight[L <: HList, U] extends DepFn1[L] {
-    type Out <: HList
+    type Prefix <: HList
+    type Suffix <: HList
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil
   }
 
   object ReverseSplitRight {
-    def apply[L <: HList, U](implicit split: ReverseSplitRight[L, U]): Aux[L, U, split.Out] = split
+    def apply[L <: HList, U](implicit split: ReverseSplitRight[L, U]): Aux[L, U, split.Prefix, split.Suffix] = split
 
-    type Aux[L <: HList, U, Out0] = ReverseSplitRight[L, U] { type Out = Out0 }
+    type Aux[L <: HList, U, Prefix0 <: HList, Suffix0 <: HList] = ReverseSplitRight[L, U] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
 
     implicit def reverseSplitRight[L <: HList, U, P <: HList, S <: HList]
-      (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P :: S :: HNil] =
+      (implicit splitRight : ReverseSplitRight0[L, HNil, HNil, U, P, S]): Aux[L, U, P, S] =
         new ReverseSplitRight[L, U] {
-          type Out = P :: S :: HNil
-          def apply(l : L): Out = splitRight(l, HNil, HNil)
+          type Prefix = P
+          type Suffix = S
+          def product(l : L): Prefix :: Suffix :: HNil = splitRight(l, HNil, HNil)
         }
 
     trait ReverseSplitRight0[Rev <: HList, AccP <: HList, AccS <: HList, U, P, S] {
@@ -1852,13 +1910,13 @@ object hlist {
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
-      split: Split.Aux[L, NModSize, Before :: After :: HNil],
+      split: Split.Aux[L, NModSize, Before, After],
       prepend: Prepend[After, Before]
     ): Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
       type Out = prepend.Out
 
       def apply(l: L): Out = {
-        val before :: after :: HNil = split(l)
+        val (before, after) = split(l)
 
         prepend(after, before)
       }
@@ -2044,4 +2102,7 @@ object hlist {
           def apply(l: L, in: In) = prepend(in, drop(l))
         }
   }
+
+  private def toTuple2[Prefix <: HList, Suffix <: HList](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) =
+    (l.head, l.tail.head)
 }

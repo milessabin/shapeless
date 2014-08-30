@@ -228,58 +228,74 @@ final class HListOps[L <: HList](l : L) {
    * has at least ''n'' elements.
    */
   def drop(n : Nat)(implicit drop : Drop[L, n.N]) : drop.Out = drop(l)
-  
+
   /**
    * Splits this `HList` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type argument
    * must be provided. Available only if there is evidence that this `HList` has at least ''n'' elements.
    */
-  def split[N <: Nat](implicit split : Split[L, N]) : split.Out = split(l)
+  def split[N <: Nat](implicit split : Split[L, N]) : (split.Prefix, split.Suffix) = split(l)
+  def splitP[N <: Nat](implicit split : Split[L, N]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if there is
    * evidence that this `HList` has at least ''n'' elements.
    */
-  def split(n : Nat)(implicit split : Split[L, n.N]) : split.Out = split(l)
-  
+  def split(n : Nat)(implicit split : Split[L, n.N]) : (split.Prefix, split.Suffix) = split(l)
+  def splitP(n : Nat)(implicit split : Split[L, n.N]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
+
   /**
    * Splits this `HList` at the ''nth'' element, returning the reverse of the prefix and suffix as a pair. An explicit
    * type argument must be provided. Available only if there is evidence that this `HList` has at least ''n'' elements.
    */
-  def reverse_split[N <: Nat](implicit split : ReverseSplit[L, N]) : split.Out = split(l)
+  def reverse_split[N <: Nat](implicit split : ReverseSplit[L, N]) : (split.Prefix, split.Suffix) = split(l)
+
+  def reverse_splitP[N <: Nat]
+    (implicit split : ReverseSplit[L, N]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the ''nth'' element, returning the reverse of the prefix and suffix as a pair. Available
    * only if there is evidence that this `HList` has at least ''n'' elements.
    */
-  def reverse_split(n : Nat)(implicit split : ReverseSplit[L, n.N]) : split.Out = split(l)
+  def reverse_split(n : Nat)(implicit split : ReverseSplit[L, n.N]) : (split.Prefix, split.Suffix) = split(l)
+
+  def reverse_splitP(n : Nat)
+    (implicit split : ReverseSplit[L, n.N]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the first occurrence of an element of type `U`, returning the prefix and suffix as a pair.
    * An explicit type argument must be provided. Available only if there is evidence that this `HList` has an element
    * of type `U`.
    */
-  def splitLeft[U](implicit splitLeft : SplitLeft[L, U]) : splitLeft.Out = splitLeft(l)
+  def splitLeft[U](implicit split : SplitLeft[L, U]) : (split.Prefix, split.Suffix) = split(l)
+  def splitLeftP[U](implicit split : SplitLeft[L, U]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the first occurrence of an element of type `U`, returning reverse of the prefix and suffix
    * as a pair. An explicit type argument must be provided. Available only if there is evidence that this `HList` has
    * an element of type `U`.
    */
-  def reverse_splitLeft[U](implicit splitLeft : ReverseSplitLeft[L, U]) : splitLeft.Out = splitLeft(l)
+  def reverse_splitLeft[U](implicit split : ReverseSplitLeft[L, U]) : (split.Prefix, split.Suffix) = split(l)
+
+  def reverse_splitLeftP[U]
+    (implicit split : ReverseSplitLeft[L, U]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the last occurrence of an element of type `U`, returning the prefix and suffix as a pair.
    * An explicit type argument must be provided. Available only if there is evidence that this `HList` has an element
    * of type `U`.
    */
-  def splitRight[U](implicit splitRight : SplitRight[L, U]) : splitRight.Out = splitRight(l)
+  def splitRight[U](implicit split : SplitRight[L, U]) : (split.Prefix, split.Suffix) = split(l)
+  def splitRightP[U](implicit split : SplitRight[L, U]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Splits this `HList` at the last occurrence of an element of type `U`, returning reverse of the prefix and suffix
    * as a pair. An explicit type argument must be provided. Available only if there is evidence that this `HList` has
    * an element of type `U`.
    */
-  def reverse_splitRight[U](implicit splitRight : ReverseSplitRight[L, U]) : splitRight.Out = splitRight(l)
+  def reverse_splitRight[U](implicit split : ReverseSplitRight[L, U]) : (split.Prefix, split.Suffix) = split(l)
+
+  def reverse_splitRightP[U]
+    (implicit split : ReverseSplitRight[L, U]) : split.Prefix :: split.Suffix :: HNil = split.product(l)
 
   /**
    * Permutes this `HList` into the same order as another `HList`. An explicit type argument must be supplied.

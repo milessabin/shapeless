@@ -605,7 +605,9 @@ object coproduct {
   trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
     type Left  <: Coproduct
     type Right <: Coproduct
-    type Out = Left :+: Right :+: CNil
+    type Out = Either[Left, Right]
+
+    def coproduct(c: C): Left :+: Right :+: CNil
   }
 
   object Split {
@@ -617,7 +619,15 @@ object coproduct {
     trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
       type Left  <: Coproduct
       type Right <: Coproduct
-      type Out = Left :+: Right :+: CNil
+      type Out = Either[Left, Right]
+
+      def apply(c: C): Out = coproduct(c) match {
+        case Inl(left)       => Left(left)
+        case Inr(Inl(right)) => Right(right)
+        case _               => sys.error("Impossible")
+      }
+
+      def coproduct(c: C): Left :+: Right :+: CNil
 
       protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
       protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
@@ -632,7 +642,8 @@ object coproduct {
       type Left = impl.Left
       type Right = impl.Right
 
-      def apply(c: C): Out = impl(c)
+      def apply(c: C): Either[Left, Right]         = impl(c)
+      def coproduct(c: C): Left :+: Right :+: CNil = impl.coproduct(c)
     }
 
     object Impl {
@@ -643,7 +654,7 @@ object coproduct {
         type Left  = CNil
         type Right = C
 
-        def apply(c: C): Out = right(c)
+        def coproduct(c: C): Left :+: Right :+: CNil = right(c)
       }
 
       implicit def splitOne[H1, T <: Coproduct]
@@ -652,7 +663,7 @@ object coproduct {
         type Left  = H1 :+: CNil
         type Right = T
 
-        def apply(c: H1 :+: T): Out = c match {
+        def coproduct(c: H1 :+: T): Left :+: Right :+: CNil = c match {
           case Inl(h1) => left(Inl[H1, CNil](h1))
           case Inr(t)  => right(t)
         }
@@ -664,9 +675,9 @@ object coproduct {
         type Left  = H :+: L0
         type Right = R0
 
-        def apply(c: H :+: T): Out = c match {
+        def coproduct(c: H :+: T): Left :+: Right :+: CNil = c match {
           case Inl(h) => left(Inl[H, L0](h))
-          case Inr(t) => splitN(t) match {
+          case Inr(t) => splitN.coproduct(t) match {
             case Inl(l0) => left(Inr[H, L0](l0))
             case Inr(Inl(r0)) => right(r0)
             case other        => sys.error("unreachable: " + other)

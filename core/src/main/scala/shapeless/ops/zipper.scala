@@ -62,11 +62,11 @@ object zipper {
   
   object RightBy {
     implicit def rightBy[C, L <: HList, R <: HList, P, N <: Nat, LP <: HList, RS <: HList]
-      (implicit split : Split.Aux[R, N, LP :: RS :: HNil], reverse : ReversePrepend[LP, L]) =
+      (implicit split : Split.Aux[R, N, LP, RS], reverse : ReversePrepend[LP, L]) =
         new RightBy[Zipper[C, L, R, P], N] {
           type Out = Zipper[C, reverse.Out, RS, P] 
           def apply(z : Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.suffix.split[N]
+            val p :: s :: HNil = z.suffix.splitP[N]
             Zipper(p reverse_::: z.prefix, s, z.parent)
           }
         }
@@ -76,11 +76,11 @@ object zipper {
 
   object LeftBy {
     implicit def leftBy[C, L <: HList, R <: HList, P, N <: Nat, RP <: HList, LS <: HList]
-      (implicit split : Split.Aux[L, N, RP :: LS :: HNil], reverse : ReversePrepend[RP, R]) =
+      (implicit split : Split.Aux[L, N, RP, LS], reverse : ReversePrepend[RP, R]) =
         new LeftBy[Zipper[C, L, R, P], N] {
           type Out = Zipper[C, LS, reverse.Out, P]
           def apply(z : Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.prefix.split[N]
+            val p :: s :: HNil = z.prefix.splitP[N]
             Zipper(s, p reverse_::: z.suffix, z.parent)
           }
         }
@@ -90,11 +90,11 @@ object zipper {
   
   object RightTo {
     implicit def rightTo[C, L <: HList, R <: HList, P, T, LP <: HList, RS <: HList]
-      (implicit split : SplitLeft.Aux[R, T, LP :: RS :: HNil], reverse : ReversePrepend[LP, L]) =
+      (implicit split : SplitLeft.Aux[R, T, LP, RS], reverse : ReversePrepend[LP, L]) =
         new RightTo[Zipper[C, L, R, P], T] {
           type Out = Zipper[C, reverse.Out, RS, P]
           def apply(z : Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.suffix.splitLeft[T]
+            val p :: s :: HNil = z.suffix.splitLeftP[T]
             Zipper(p reverse_::: z.prefix, s, z.parent)
           }
         }
@@ -104,11 +104,11 @@ object zipper {
 
   object LeftTo {
     implicit def leftTo[C, L <: HList, R <: HList, P, T, RP <: HList, R0 <: HList]
-      (implicit split : SplitLeft.Aux[L, T, RP :: R0 :: HNil], reverse : ReversePrepend[RP, R], cons : IsHCons[R0]) =
+      (implicit split : SplitLeft.Aux[L, T, RP, R0], reverse : ReversePrepend[RP, R], cons : IsHCons[R0]) =
         new LeftTo[Zipper[C, L, R, P], T] {
           type Out = Zipper[C, cons.T, cons.H :: reverse.Out, P]
           def apply(z : Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.prefix.splitLeft[T]
+            val p :: s :: HNil = z.prefix.splitLeftP[T]
             Zipper(s.tail, s.head :: (p reverse_::: z.suffix), z.parent)
           }
         }
