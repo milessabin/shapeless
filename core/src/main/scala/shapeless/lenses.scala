@@ -19,7 +19,7 @@ package shapeless
 import scala.language.dynamics
 
 import ops.coproduct.{ Inject, Selector => CSelector }
-import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
+import ops.hlist.{ At, InitLast, Prepend, Selector, ReplaceAt, Replacer, Tupler }
 import ops.record.{ Selector => RSelector, Updater }
 import record.{ FieldType, field }
 import tag.@@
@@ -109,8 +109,7 @@ trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
       pre: Prepend.Aux[L, T :: HNil, LT],
       tpq: Tupler.Aux[LT, Q],
       genq: Generic.Aux[Q, QL],
-      init: Init.Aux[QL, L],
-      last: Last.Aux[QL, T]) =
+      initLast: InitLast.Aux[QL, L, T]) =
       new ProductLensBuilder[C, Q] {
         def get(c: C): Q = (genp.to(outer.get(c)) :+ other.get(c)).tupled
         def set(c: C)(q: Q) = {
@@ -129,10 +128,9 @@ trait ProductPrismBuilder[C, P <: Product] extends Prism[C, P] {
       pre: Prepend.Aux[L, T :: HNil, LT],
       tpq: Tupler.Aux[LT, Q],
       genq: Generic.Aux[Q, QL],
-      init: Init.Aux[QL, L],
-      last: Last.Aux[QL, T]) =
+      initLast: InitLast.Aux[QL, L, T]) =
       new ProductPrismBuilder[C, Q] {
-        def get(c: C): Option[Q] = 
+        def get(c: C): Option[Q] =
           for {
             init <- outer.get(c)
             last <- other.get(c)

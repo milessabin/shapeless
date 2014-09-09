@@ -123,10 +123,10 @@ object tuple {
     type Aux[T, Out0] = Last[T] { type Out = Out0 }
 
     implicit def last[T, L <: HList]
-      (implicit gen: Generic.Aux[T, L], last: hl.Last[L]): Aux[T, last.Out] =
+      (implicit gen: Generic.Aux[T, L], initLast: hl.InitLast[L]): Aux[T, initLast.Suffix] =
         new Last[T] {
-          type Out = last.Out
-          def apply(t: T): Out = gen.to(t).last
+          type Out = initLast.Suffix
+          def apply(t: T): Out = initLast.last(gen.to(t))
         }
   }
 
@@ -143,11 +143,12 @@ object tuple {
 
     type Aux[T, Out0] = Init[T] { type Out = Out0 }
 
-    implicit def init[T, L1 <: HList, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], init: hl.Init.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
+    implicit def init[T, L <: HList, LInit <: HList, LLast](
+      implicit gen: Generic.Aux[T, L], initLast: hl.InitLast.Aux[L, LInit, LLast], tp: hl.Tupler[LInit]
+    ): Aux[T, tp.Out] =
         new Init[T] {
           type Out = tp.Out
-          def apply(t: T): Out = init(gen.to(t)).tupled
+          def apply(t: T): Out = initLast.init(gen.to(t)).tupled
         }
   }
 

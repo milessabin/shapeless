@@ -565,6 +565,27 @@ class CoproductTests {
   }
 
   @Test
+  def testHeadTail {
+    val r1 = Coproduct[Int :+: CNil](1).headTail
+    assertTypedEquals[Either[Int, CNil]](Left(1), r1)
+
+    val r2 = Coproduct[Int :+: String :+: CNil](1).headTail
+    assertTypedEquals[Either[Int, String :+: CNil]](Left(1), r2)
+
+    val r3 = Coproduct[Int :+: String :+: CNil]("foo").headTail
+    assertTypedEquals[Either[Int, String :+: CNil]](Right(Coproduct[String :+: CNil]("foo")), r3)
+
+    val r4 = Coproduct[Int :+: CNil](1).headTailC
+    assertTypedEquals[Int :+: CNil :+: CNil](Inl(1), r4)
+
+    val r5 = Coproduct[Int :+: String :+: CNil](1).headTailC
+    assertTypedEquals[Int :+: (String :+: CNil) :+: CNil](Inl(1), r5)
+
+    val r6 = Coproduct[Int :+: String :+: CNil]("foo").headTailC
+    assertTypedEquals[Int :+: (String :+: CNil) :+: CNil](Inr(Inl(Inl("foo"))), r6)
+  }
+
+  @Test
   def testReverse {
     type S = String; type I = Int; type D = Double; type C = Char
     type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil
@@ -601,6 +622,27 @@ class CoproductTests {
 
     val r3 = Coproduct[Int :+: String :+: CNil](1).last
     assertTypedEquals[Option[String]](None, r3)
+  }
+
+  @Test
+  def testInitLast {
+    val r1 = Coproduct[Int :+: CNil](1).initLast
+    assertTypedEquals[Either[CNil, Int]](Right(1), r1)
+
+    val r2 = Coproduct[Int :+: String :+: CNil]("foo").initLast
+    assertTypedEquals[Either[Int :+: CNil, String]](Right("foo"), r2)
+
+    val r3 = Coproduct[Int :+: String :+: CNil](1).initLast
+    assertTypedEquals[Either[Int :+: CNil, String]](Left(Coproduct[Int :+: CNil](1)), r3)
+
+    val r4 = Coproduct[Int :+: CNil](1).initLastC
+    assertTypedEquals[CNil :+: Int :+: CNil](Inr(Inl((1))), r4)
+
+    val r5 = Coproduct[Int :+: String :+: CNil]("foo").initLastC
+    assertTypedEquals[(Int :+: CNil) :+: String :+: CNil](Inr(Inl("foo")), r5)
+
+    val r6 = Coproduct[Int :+: String :+: CNil](1).initLastC
+    assertTypedEquals[(Int :+: CNil) :+: String :+: CNil](Inl(Inl(1)), r6)
   }
 
   @Test
