@@ -26,22 +26,22 @@ trait SMC {
 
   def nil: Nil
 
-  def intro[A](a: A): Cons[A, Nil]
+  def intro[A](a: A): A Cons Nil
   // braiding operator
-  def swap[A, B](p: Cons[A, B]): Cons[B, A]
+  def swap[A, B](p: A Cons B): B Cons A
   // unit coherence
-  def unitRight[A](p: Cons[A, Nil]): A
-  def unitLeft[B](p: Cons[Nil, B]): B
+  def unitRight[A](p: A Cons Nil): A
+  def unitLeft[B](p: Nil Cons B): B
   // associativity coherence
-  def assoc[A, B, C](p: Cons[Cons[A, B], C]): Cons[A, Cons[B, C]]
+  def assoc[A, B, C](p: (A Cons B) Cons C): A Cons (B Cons C)
 
-  def leftMap[A, B, C](p: Cons[A, B])(f: A => C): Cons[C, B]
-  def rightMap[A, B, C](p: Cons[A, B])(f: B => C): Cons[A, C] =
+  def leftMap[A, B, C](p: A Cons B)(f: A => C): C Cons B
+  def rightMap[A, B, C](p: A Cons B)(f: B => C): A Cons C =
     swap(leftMap(swap(p))(f))
-  def bimap[A, B, C, D](p: Cons[A, B])(fa: A => C, fb: B => D): Cons[C, D] =
+  def bimap[A, B, C, D](p: A Cons B)(fa: A => C, fb: B => D): C Cons D =
     rightMap(leftMap(p)(fa))(fb)
 
-  def shift[A, B, C](p: Cons[Cons[A, B], C]): Cons[B, Cons[A, C]] =
+  def shift[A, B, C](p: (A Cons B) Cons C): B Cons (A Cons C) =
     assoc(leftMap(p)(swap))
 
   trait Uncons[P] {
@@ -62,7 +62,7 @@ trait SMC {
 
     type Aux[P, In, F, Out0] = LeftFolder[P, In, F] { type Out = Out0 }
 
-    implicit def folder[P, In, F, Out0](implicit folder: LeftFolder0[Cons[P, Nil], In, F, P]): Aux[P, In, F, folder.Out] =
+    implicit def folder[P, In, F, Out0](implicit folder: LeftFolder0[P Cons Nil, In, F, P]): Aux[P, In, F, folder.Out] =
       new LeftFolder[P, In, F] {
         type Out = folder.Out
         def apply(p : P, in: In) : Out = folder(intro(p), in)
@@ -78,21 +78,21 @@ trait SMC {
 
       implicit def nilFolder[Rev, Acc, F, Out0]
         (implicit
-          fa: Case2.Aux[F, Cons[Nil, Rev], Acc, Out0]
-        ): Aux[Cons[Nil, Rev], Acc, F, Nil, Out0] =
-        new LeftFolder0[Cons[Nil, Rev], Acc, F, Nil] {
+          fa: Case2.Aux[F, Nil Cons Rev, Acc, Out0]
+        ): Aux[Nil Cons Rev, Acc, F, Nil, Out0] =
+        new LeftFolder0[Nil Cons Rev, Acc, F, Nil] {
           type Out = Out0
-          def apply(elem: Cons[Nil, Rev], acc: Acc): Out = fa(elem, acc)
+          def apply(elem: Nil Cons Rev, acc: Acc): Out = fa(elem, acc)
         }
 
       implicit def consFolder[A, B, C, Acc, F, OutA]
         (implicit
-          fa: Case2.Aux[F, Cons[Cons[A, B], C], Acc, OutA],
-          fb: LeftFolder0[Cons[B, Cons[A, C]], OutA, F, B]
-        ): Aux[Cons[Cons[A, B], C], Acc, F, Cons[A, B], fb.Out] =
-          new LeftFolder0[Cons[Cons[A, B], C], Acc, F, Cons[A, B]] {
+          fa: Case2.Aux[F, (A Cons B) Cons C, Acc, OutA],
+          fb: LeftFolder0[B Cons (A Cons C), OutA, F, B]
+        ): Aux[(A Cons B) Cons C, Acc, F, A Cons B, fb.Out] =
+          new LeftFolder0[(A Cons B) Cons C, Acc, F, A Cons B] {
             type Out = fb.Out
-            def apply(elem: Cons[Cons[A, B], C], acc: Acc) : Out =
+            def apply(elem: (A Cons B) Cons C, acc: Acc) : Out =
               fb(shift(elem), fa(elem, acc))
           }
     }
@@ -118,7 +118,7 @@ trait SMC {
       implicit def caseCons[Elem, N <: Nat] = at[Elem, N]((_, acc) => Succ[N])
     }
     object lengthp extends lengthp0 {
-      implicit def caseNil[Rev, N <: Nat] = at[Cons[Nil, Rev], N]((_, acc) => acc)
+      implicit def caseNil[Rev, N <: Nat] = at[Nil Cons Rev, N]((_, acc) => acc)
     }
   }
 
@@ -157,10 +157,10 @@ trait SMC {
       }
 
     implicit def consMapper1[F <: Poly, A, B]
-      (implicit fa: Case1[F, A], mb: Mapper[F, B]): Aux[F, Cons[A, B], Cons[fa.Result, mb.Out]] =
-        new Mapper[F, Cons[A, B]] {
-          type Out = Cons[fa.Result, mb.Out]
-          def apply(p: Cons[A, B]): Out = bimap(p)(fa(_), mb(_))
+      (implicit fa: Case1[F, A], mb: Mapper[F, B]): Aux[F, A Cons B, fa.Result Cons mb.Out] =
+        new Mapper[F, A Cons B] {
+          type Out = fa.Result Cons mb.Out
+          def apply(p: A Cons B): Out = bimap(p)(fa(_), mb(_))
         }
   }
 }
