@@ -167,36 +167,37 @@ object coproduct {
     }
   }
 
-  trait RemoveElem[C <: Coproduct, U] extends DepFn1[C] {
+  trait Remove[C <: Coproduct, U] extends DepFn1[C] {
     type Rest <: Coproduct
-    type Out = U :+: Rest
+    type Out = Either[U, Rest]
 
-    def either(c: C): Either[U, Rest] = apply(c) match {
+    def apply(c: C): Either[U, Rest] = coproduct(c) match {
       case Inl(u) => Left(u)
       case Inr(r) => Right(r)
     }
+
+    def coproduct(c: C): U :+: Rest
   }
 
-  object RemoveElem {
-    def apply[C <: Coproduct, U]
-      (implicit removeElem: RemoveElem[C, U]): Aux[C, U, removeElem.Rest] = removeElem
+  object Remove {
+    def apply[C <: Coproduct, U](implicit remove: Remove[C, U]): Aux[C, U, remove.Rest] = remove
 
-    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = RemoveElem[C, U] { type Rest = Rest0 }
+    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = Remove[C, U] { type Rest = Rest0 }
 
-    implicit def removeElemHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new RemoveElem[H :+: T, H] {
+    implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
       type Rest = T
 
-      def apply(c: H :+: T): Out = c
+      def coproduct(c: H :+: T): H :+: T = c
     }
 
-    implicit def removeElemTail[H, T <: Coproduct, U, TRest <: Coproduct](
-      implicit removeElem: Aux[T, U, TRest]
-    ): Aux[H :+: T, U, H :+: TRest] = new RemoveElem[H :+: T, U] {
+    implicit def removeTail[H, T <: Coproduct, U, TRest <: Coproduct](
+      implicit remove: Aux[T, U, TRest]
+    ): Aux[H :+: T, U, H :+: TRest] = new Remove[H :+: T, U] {
       type Rest = H :+: TRest
 
-      def apply(c: H :+: T): Out = c match {
+      def coproduct(c: H :+: T): U :+: Rest = c match {
         case Inl(h) => Inr[U, H :+: TRest](Inl[H, TRest](h))
-        case Inr(t) => removeElem(t) match {
+        case Inr(t) => remove.coproduct(t) match {
           case Inl(u) => Inl[U, H :+: TRest](u)
           case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
         }
