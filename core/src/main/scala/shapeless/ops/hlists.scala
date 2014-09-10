@@ -35,6 +35,8 @@ object hlist {
     type H
     type T <: HList
 
+    def apply(l: L): (H, T) = toTuple2(product(l))
+    def product(l : L): H :: T :: HNil = head(l) :: tail(l) :: HNil
     def head(l : L) : H
     def tail(l : L) : T
   }
@@ -659,6 +661,47 @@ object hlist {
   }
 
   /**
+   * Type class supporting access to the init and/or last element of this `HList`.
+   * Available only if this `HList` has at least one element.
+   *
+   * @author Stacy Curl
+   */
+  trait InitLast[L <: HList] extends DepFn1[L] {
+    type Prefix <: HList
+    type Suffix
+    type Out = (Prefix, Suffix)
+
+    def apply(l: L): Out = toTuple2(product(l))
+    def product(l: L): Prefix :: Suffix :: HNil = init(l) :: last(l) :: HNil
+    def init(l: L): Prefix
+    def last(l: L): Suffix
+  }
+
+  object InitLast {
+    def apply[L <: HList](implicit initLast: InitLast[L]): Aux[L, initLast.Prefix, initLast.Suffix] = initLast
+
+    type Aux[L <: HList, Prefix0 <: HList, Suffix0] = InitLast[L] { type Prefix = Prefix0; type Suffix = Suffix0 }
+
+    implicit def hsingleInitLast[H]: Aux[H :: HNil, HNil, H] = new InitLast[H :: HNil] {
+      type Prefix = HNil
+      type Suffix = H
+
+      def init(l: H :: HNil): Prefix = HNil
+      def last(l: H :: HNil): Suffix = l.head
+    }
+
+    implicit def hlistInitLast[H, T <: HList](
+      implicit initLast: InitLast[T]
+    ): Aux[H :: T, H :: initLast.Prefix, initLast.Suffix] = new InitLast[H :: T] {
+      type Prefix = H :: initLast.Prefix
+      type Suffix = initLast.Suffix
+
+      def init(l: H :: T): Prefix = l.head :: initLast.init(l.tail)
+      def last(l: H :: T): Suffix = initLast.last(l.tail)
+    }
+  }
+
+  /**
    * Type class supporting access to the last element of this `HList`. Available only if this `HList` has at least one
    * element.
    *
@@ -671,18 +714,13 @@ object hlist {
 
     type Aux[L <: HList, Out0] = Last[L] { type Out = Out0 }
 
-    implicit def hsingleLast[H]: Aux[H :: HNil, H] =
-      new Last[H :: HNil] {
-        type Out = H
-        def apply(l : H :: HNil): Out = l.head
-      }
+    implicit def hlistLast[P <: HList, I <: HList, L](
+      implicit initLast: InitLast.Aux[P, I, L]
+    ): Aux[P, L] = new Last[P] {
+      type Out = L
 
-    implicit def hlistLast[H, T <: HList]
-      (implicit lt : Last[T]): Aux[H :: T, lt.Out] =
-        new Last[H :: T] {
-          type Out = lt.Out
-          def apply(l : H :: T): Out = lt(l.tail)
-        }
+      def apply(p: P): Out = initLast.last(p)
+    }
   }
 
   /**
@@ -698,18 +736,13 @@ object hlist {
 
     type Aux[L <: HList, Out0 <: HList] = Init[L] { type Out = Out0 }
 
-    implicit def hsingleInit[H]: Aux[H :: HNil, HNil] =
-      new Init[H :: HNil] {
-        type Out = HNil
-        def apply(l : H :: HNil): Out = HNil
-      }
+    implicit def hlistInit[P <: HList, I <: HList, L <: HList](
+      implicit initLast: InitLast.Aux[P, I, L]
+    ): Aux[P, I] = new Init[P] {
+      type Out = I
 
-    implicit def hlistInit[H, T <: HList, OutH, OutT <: HList]
-      (implicit it : Init[T]): Aux[H :: T, H :: it.Out] =
-        new Init[H :: T] {
-          type Out = H :: it.Out
-          def apply(l : H :: T): Out = l.head :: it(l.tail)
-        }
+      def apply(p: P): Out = initLast.init(p)
+    }
   }
 
   /**
@@ -2103,6 +2136,5 @@ object hlist {
         }
   }
 
-  private def toTuple2[Prefix <: HList, Suffix <: HList](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) =
-    (l.head, l.tail.head)
+  private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
 }

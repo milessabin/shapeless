@@ -31,13 +31,15 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Returns the head of this `Coproduct`
    */
-  def head(implicit cc: IsCCons[C]): Option[cc.H] = cc.head(c)
+  def head(implicit cc: IsCCons[C]): Option[cc.Prefix] = cc.head(c)
 
   /**
    * Returns the tail of this `Coproduct`
    */
+  def tail(implicit cc: IsCCons[C]): Option[cc.Suffix] = cc.tail(c)
 
-  def tail(implicit cc: IsCCons[C]): Option[cc.T] = cc.tail(c)
+  def headTail(implicit cc: IsCCons[C]): Either[cc.Prefix, cc.Suffix] = cc(c)
+  def headTailC(implicit cc: IsCCons[C]): cc.Prefix :+: cc.Suffix :+: CNil = cc.coproduct(c)
 
   /**
    * Returns the ''nth'' element of this `Coproduct`. An explicit type must be provided.
@@ -54,12 +56,15 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Returns the last element of this 'Coproduct'
    */
-  def last(implicit il: InitLast[C]): Option[il.L] = il.last(c)
+  def last(implicit il: InitLast[C]): Option[il.Suffix] = il.last(c)
 
   /**
    * Returns all elements except the last
    */
-  def init(implicit il: InitLast[C]): Option[il.I] = il.init(c)
+  def init(implicit il: InitLast[C]): Option[il.Prefix] = il.init(c)
+
+  def initLast(implicit il: InitLast[C]): Either[il.Prefix, il.Suffix] = il(c)
+  def initLastC(implicit il: InitLast[C]): il.Prefix :+: il.Suffix :+: CNil = il.coproduct(c)
 
   /**
    * Returns the first element of type `U` of this `Coproduct`. An explicit type argument must be provided. Available

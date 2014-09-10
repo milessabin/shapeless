@@ -40,6 +40,9 @@ final class HListOps[L <: HList](l : L) {
    */
   def tail(implicit c : IsHCons[L]) : c.T = c.tail(l)
 
+  def headTail(implicit c: IsHCons[L]): (c.H, c.T) = c.apply(l)
+  def headTailP(implicit c: IsHCons[L]): c.H :: c.T :: HNil = c.product(l)
+
   /**
    * Prepend the argument element to this `HList`.
    */
@@ -102,13 +105,16 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns the last element of this `HList`. Available only if there is evidence that this `HList` is composite.
    */
-  def last(implicit last : Last[L]) : last.Out = last(l)
+  def last(implicit initLast : InitLast[L]) : initLast.Suffix = initLast.last(l)
 
   /**
    * Returns an `HList` consisting of all the elements of this `HList` except the last. Available only if there is
    * evidence that this `HList` is composite.
    */
-  def init(implicit init : Init[L]) : init.Out = init(l)
+  def init(implicit initLast : InitLast[L]) : initLast.Prefix = initLast.init(l)
+
+  def initLast(implicit initLast: InitLast[L]): (initLast.Prefix, initLast.Suffix) = initLast(l)
+  def initLastP(implicit initLast: InitLast[L]): initLast.Prefix :: initLast.Suffix :: HNil = initLast.product(l)
 
   /**
    * Returns the first element of type `U` of this `HList`. An explicit type argument must be provided. Available only

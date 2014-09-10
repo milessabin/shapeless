@@ -569,31 +569,30 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait IsCCons[C <: Coproduct] {
-    type H
-    type T <: Coproduct
+  trait IsCCons[C <: Coproduct] extends DepFn1[C] {
+    type Prefix
+    type Suffix <: Coproduct
+    type Out = Either[Prefix, Suffix]
 
-    def head(c: C): Option[H]
-    def tail(c: C): Option[T]
+    def head(c: C): Option[Prefix] = apply(c).left.toOption
+    def tail(c: C): Option[Suffix] = apply(c).right.toOption
+    def apply(c: C): Out = toEither(coproduct(c))
+    def coproduct(c: C): Prefix :+: Suffix :+: CNil
   }
 
   object IsCCons {
-    def apply[C <: Coproduct](implicit isCCons: IsCCons[C]): Aux[C, isCCons.H, isCCons.T] = isCCons
+    def apply[C <: Coproduct](implicit isCCons: IsCCons[C]): Aux[C, isCCons.Prefix, isCCons.Suffix] = isCCons
 
-    type Aux[C <: Coproduct, H0, T0 <: Coproduct] = IsCCons[C] { type H = H0; type T = T0 }
+    type Aux[C <: Coproduct, H0, T0 <: Coproduct] = IsCCons[C] { type Prefix = H0; type Suffix = T0 }
 
     implicit def coproductCCons[H0, T0 <: Coproduct]: Aux[H0 :+: T0, H0, T0] = new IsCCons[H0 :+: T0] {
-      type H = H0
-      type T = T0
+      type Prefix = H0
+      type Suffix = T0
 
-      def head(c: H0 :+: T0): Option[H0] = c match {
-        case Inl(h) => Some(h)
-        case _      => None
-      }
-
-      def tail(c: H0 :+: T0): Option[T0] = c match {
-        case Inr(t) => Some(t)
-        case _      => None
+      def coproduct(c: H0 :+: T0): H0 :+: T0 :+: CNil = c match {
+        case Inl(h) => Inl(h)
+        case Inr(t) => Inr(Inl(t))
+        case _      => sys.error("Impossible")
       }
     }
   }
@@ -727,27 +726,33 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait InitLast[C <: Coproduct] {
-    type I <: Coproduct
-    type L
+  trait InitLast[C <: Coproduct] extends DepFn1[C] {
+    type Prefix <: Coproduct
+    type Suffix
+    type Out = Either[Prefix, Suffix]
 
-    def init(c: C): Option[I]
-    def last(c: C): Option[L]
+    def init(c: C): Option[Prefix] = apply(c).left.toOption
+    def last(c: C): Option[Suffix] = apply(c).right.toOption
+    def apply(c: C): Out = toEither(coproduct(c))
+    def coproduct(c: C): Prefix :+: Suffix :+: CNil
   }
 
   object InitLast {
-    def apply[C <: Coproduct](implicit initLast: InitLast[C]): Aux[C, initLast.I, initLast.L] = initLast
+    def apply[C <: Coproduct](implicit initLast: InitLast[C]): Aux[C, initLast.Prefix, initLast.Suffix] = initLast
 
-    type Aux[C <: Coproduct, I0 <: Coproduct, L0] = InitLast[C] { type I = I0; type L = L0 }
+    type Aux[C <: Coproduct, I0 <: Coproduct, L0] = InitLast[C] { type Prefix = I0; type Suffix = L0 }
 
     implicit def initLastCoproduct[C <: Coproduct, ReverseC <: Coproduct, H, T <: Coproduct](
       implicit reverse: Reverse.Aux[C, ReverseC], isCCons: IsCCons.Aux[ReverseC, H, T]
     ): Aux[C, T, H] = new InitLast[C] {
-      type I = T
-      type L = H
+      type Prefix = T
+      type Suffix = H
 
-      def init(c: C): Option[I] = isCCons.tail(reverse(c))
-      def last(c: C): Option[L] = isCCons.head(reverse(c))
+      def coproduct(c: C): Prefix :+: Suffix :+: CNil = isCCons.coproduct(reverse(c)) match {
+        case Inl(suffix)      => Inr(Inl(suffix))
+        case Inr(Inl(prefix)) => Inl(prefix)
+        case _                => sys.error("Impossible")
+      }
     }
   }
 
@@ -770,4 +775,10 @@ object coproduct {
           case _                  => None
         }
       }
+
+  private def toEither[Prefix, Suffix](c: Prefix :+: Suffix :+: CNil): Either[Prefix, Suffix] = c match {
+    case Inl(left)       => Left(left)
+    case Inr(Inl(right)) => Right(right)
+    case _               => sys.error("Impossible")
+  }
 }

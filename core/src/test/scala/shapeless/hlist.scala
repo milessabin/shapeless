@@ -137,6 +137,12 @@ class HListTests {
     val r2 = l.tail.head
     assertTypedEquals[String]("foo", r2)
 
+    val r3 = l.headTail
+    assertTypedEquals[(Int, String :: Double :: HNil)]((1, "foo" :: 2.0 :: HNil), r3)
+
+    val r4 = l.headTailP
+    assertTypedEquals[Int :: (String :: Double :: HNil) :: HNil](1 :: ("foo" :: 2.0 :: HNil) :: HNil, r4)
+
     assertEquals(2.0, l.tail.tail.head, Double.MinPositiveValue)
 
     illTyped("""
@@ -145,6 +151,14 @@ class HListTests {
 
     illTyped("""
       HNil.tail
+    """)
+
+    illTyped("""
+      HNil.headTail
+    """)
+
+    illTyped("""
+      HNil.headTailP
     """)
 
     illTyped("""
@@ -278,12 +292,17 @@ class HListTests {
 
   @Test
   def testInitLast {
+    val r1 = apbp.last
+    assertTypedEquals[Pear](p, r1)
 
-    val lp = apbp.last
-    assertTypedEquals[Pear](p, lp)
+    val r2 = apbp.init
+    assertTypedEquals[APB](a :: p :: b :: HNil, r2)
 
-    val iapb = apbp.init
-    assertTypedEquals[APB](a :: p :: b :: HNil, iapb)
+    val r3 = apbp.initLast
+    assertTypedEquals[(APB, Pear)]((a :: p :: b :: HNil, p), r3)
+
+    val r4 = apbp.initLastP
+    assertTypedEquals[APB :: Pear :: HNil]((a :: p :: b :: HNil) :: p :: HNil, r4)
   }
 
   @Test
