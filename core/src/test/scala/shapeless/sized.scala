@@ -402,7 +402,8 @@ class SizedTests {
   @Test
   def testTupled {
     val ss = Sized[List](0, 1, 2)
-    assertTypedEquals[(Int, Int, Int)]((0, 1, 2), ss.tupled)
+    val r1 = ss.tupled
+    assertTypedEquals[(Int, Int, Int)]((0, 1, 2), r1)
 
     val (x, y, z) = ss.tupled
     assertTypedEquals[Int](0, x)

@@ -167,36 +167,37 @@ object coproduct {
     }
   }
 
-  trait RemoveElem[C <: Coproduct, U] extends DepFn1[C] {
+  trait Remove[C <: Coproduct, U] extends DepFn1[C] {
     type Rest <: Coproduct
-    type Out = U :+: Rest
+    type Out = Either[U, Rest]
 
-    def either(c: C): Either[U, Rest] = apply(c) match {
+    def apply(c: C): Either[U, Rest] = coproduct(c) match {
       case Inl(u) => Left(u)
       case Inr(r) => Right(r)
     }
+
+    def coproduct(c: C): U :+: Rest
   }
 
-  object RemoveElem {
-    def apply[C <: Coproduct, U]
-      (implicit removeElem: RemoveElem[C, U]): Aux[C, U, removeElem.Rest] = removeElem
+  object Remove {
+    def apply[C <: Coproduct, U](implicit remove: Remove[C, U]): Aux[C, U, remove.Rest] = remove
 
-    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = RemoveElem[C, U] { type Rest = Rest0 }
+    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = Remove[C, U] { type Rest = Rest0 }
 
-    implicit def removeElemHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new RemoveElem[H :+: T, H] {
+    implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
       type Rest = T
 
-      def apply(c: H :+: T): Out = c
+      def coproduct(c: H :+: T): H :+: T = c
     }
 
-    implicit def removeElemTail[H, T <: Coproduct, U, TRest <: Coproduct](
-      implicit removeElem: Aux[T, U, TRest]
-    ): Aux[H :+: T, U, H :+: TRest] = new RemoveElem[H :+: T, U] {
+    implicit def removeTail[H, T <: Coproduct, U, TRest <: Coproduct](
+      implicit remove: Aux[T, U, TRest]
+    ): Aux[H :+: T, U, H :+: TRest] = new Remove[H :+: T, U] {
       type Rest = H :+: TRest
 
-      def apply(c: H :+: T): Out = c match {
+      def coproduct(c: H :+: T): U :+: Rest = c match {
         case Inl(h) => Inr[U, H :+: TRest](Inl[H, TRest](h))
-        case Inr(t) => removeElem(t) match {
+        case Inr(t) => remove.coproduct(t) match {
           case Inl(u) => Inl[U, H :+: TRest](u)
           case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
         }
@@ -605,7 +606,9 @@ object coproduct {
   trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
     type Left  <: Coproduct
     type Right <: Coproduct
-    type Out = Left :+: Right :+: CNil
+    type Out = Either[Left, Right]
+
+    def coproduct(c: C): Left :+: Right :+: CNil
   }
 
   object Split {
@@ -617,7 +620,15 @@ object coproduct {
     trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
       type Left  <: Coproduct
       type Right <: Coproduct
-      type Out = Left :+: Right :+: CNil
+      type Out = Either[Left, Right]
+
+      def apply(c: C): Out = coproduct(c) match {
+        case Inl(left)       => Left(left)
+        case Inr(Inl(right)) => Right(right)
+        case _               => sys.error("Impossible")
+      }
+
+      def coproduct(c: C): Left :+: Right :+: CNil
 
       protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
       protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
@@ -632,7 +643,8 @@ object coproduct {
       type Left = impl.Left
       type Right = impl.Right
 
-      def apply(c: C): Out = impl(c)
+      def apply(c: C): Either[Left, Right]         = impl(c)
+      def coproduct(c: C): Left :+: Right :+: CNil = impl.coproduct(c)
     }
 
     object Impl {
@@ -643,7 +655,7 @@ object coproduct {
         type Left  = CNil
         type Right = C
 
-        def apply(c: C): Out = right(c)
+        def coproduct(c: C): Left :+: Right :+: CNil = right(c)
       }
 
       implicit def splitOne[H1, T <: Coproduct]
@@ -652,7 +664,7 @@ object coproduct {
         type Left  = H1 :+: CNil
         type Right = T
 
-        def apply(c: H1 :+: T): Out = c match {
+        def coproduct(c: H1 :+: T): Left :+: Right :+: CNil = c match {
           case Inl(h1) => left(Inl[H1, CNil](h1))
           case Inr(t)  => right(t)
         }
@@ -664,9 +676,9 @@ object coproduct {
         type Left  = H :+: L0
         type Right = R0
 
-        def apply(c: H :+: T): Out = c match {
+        def coproduct(c: H :+: T): Left :+: Right :+: CNil = c match {
           case Inl(h) => left(Inl[H, L0](h))
-          case Inr(t) => splitN(t) match {
+          case Inr(t) => splitN.coproduct(t) match {
             case Inl(l0) => left(Inr[H, L0](l0))
             case Inr(Inl(r0)) => right(r0)
             case other        => sys.error("unreachable: " + other)

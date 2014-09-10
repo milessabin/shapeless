@@ -81,32 +81,30 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
    * An explicit type argument must be provided. Available only if there is evidence that this
    * `Coproduct` has an element of type `U`.
-   *
-   * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#remove and should be removed if
-   * SI-5414 is resolved in a way which eliminates the ambiguity.
    */
-  def removeElem[U](implicit removeElem: RemoveElem[C, U]): Either[U, removeElem.Rest] =
-    removeElem.either(c)
+  def removeElem[U](implicit remove: Remove[C, U]): Either[U, remove.Rest] = remove(c)
 
   /**
    * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
    * An explicit type argument must be provided. Available only if there is evidence that this
    * `Coproduct` has an element of type `U`.
    */
-  def removeElemC[U](implicit removeElem: RemoveElem[C, U]): U :+: removeElem.Rest = removeElem(c)
+  def removeElemC[U](implicit remove: Remove[C, U]): U :+: remove.Rest = remove.coproduct(c)
 
 
   /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type
    * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def split[N <: Nat](implicit split: Split[C, N]): split.Out = split(c)
+  def split[N <: Nat](implicit split: Split[C, N]): Either[split.Left, split.Right] = split(c)
+  def splitC[N <: Nat](implicit split: Split[C, N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
   /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Out = split(c)
+  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): Either[split.Left, split.Right] = split(c)
+  def splitC[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
   /**
    * Reverses this `Coproduct`.

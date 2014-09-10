@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package object shapeless {
   def unexpected : Nothing = sys.error("Unexpected invocation")
-  
+
   // Basic definitions
   type Id[+T] = T
   type Const[C] = {
@@ -27,19 +27,19 @@ package object shapeless {
   type ¬¬[T] = ¬[¬[T]]
   type ∧[T, U] = T with U
   type ∨[T, U] = ¬[¬[T] ∧ ¬[U]]
-  
+
   // Type-lambda for context bound
   type |∨|[T, U] = {
-    type λ[X] = ¬¬[X] <:< (T ∨ U) 
+    type λ[X] = ¬¬[X] <:< (T ∨ U)
   }
 
   // Type inequalities
-  trait =:!=[A, B] 
+  trait =:!=[A, B]
 
   implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
   implicit def neqAmbig1[A] : A =:!= A = unexpected
   implicit def neqAmbig2[A] : A =:!= A = unexpected
-  
+
   trait <:!<[A, B]
 
   implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
@@ -91,11 +91,11 @@ package object shapeless {
 
   /** The SYB everything combinator */
   type Everything[F <: Poly, K <: Poly, T] = Case1[EverythingAux[F, K], T]
-  
+
   class ApplyEverything[F <: Poly] {
     def apply(k : Poly): EverythingAux[F, k.type] {} = new EverythingAux[F, k.type]
   }
-  
+
   def everything(f: Poly): ApplyEverything[f.type] {} = new ApplyEverything[f.type]
 
   /** The SYB everywhere combinator */
