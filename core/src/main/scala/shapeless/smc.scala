@@ -97,33 +97,27 @@ trait SMC {
   }
 
 
-  trait Length[P] extends DepFn0 { type Out <: Nat }
+  trait Length[P] extends DepFn1[P]
 
-  trait LowPriorityLength {
-    import shapeless.nat.{ _0, _1 }
-    type Aux[P, N <: Nat] = Length[P] { type Out = N }
-
-    implicit def nilLength: Aux[Nil, _0] = new Length[Nil] {
-      type Out = _0
-      def apply(): Out = _0
-    }
-  }
-
-  object Length extends LowPriorityLength {
+  object Length {
     def apply[P](implicit length: Length[P]): Aux[P, length.Out] = length
 
-    implicit def consLength[H, T, N <: Nat]
-      (implicit lt : Aux[T, N], sn : Witness.Aux[Succ[N]]): Aux[Cons[H, T], Succ[N]] = new Length[Cons[H, T]] {
-      type Out = Succ[N]
-      def apply(): Out = sn.value
-    }
-  }
+    import nat._0
 
-  trait lengthp0 extends Poly2 {
-    implicit def caseCons[Elem, N <: Nat] = at[Elem, N]((_, acc) => Succ[N])
-  }
-  object lengthp extends lengthp0 {
-    implicit def caseNil[Rev, N <: Nat] = at[Cons[Nil, Rev], N]((_, acc) => acc)
+    type Aux[P, Out0] = Length[P] { type Out = Out0 }
+
+    implicit def length[P](implicit folder: LeftFolder[P, _0, lengthp.type]): Aux[P, folder.Out] =
+      new Length[P] {
+        type Out = folder.Out
+        def apply(p: P): Out = folder(p, _0)
+      }
+
+    trait lengthp0 extends Poly2 {
+      implicit def caseCons[Elem, N <: Nat] = at[Elem, N]((_, acc) => Succ[N])
+    }
+    object lengthp extends lengthp0 {
+      implicit def caseNil[Rev, N <: Nat] = at[Cons[Nil, Rev], N]((_, acc) => acc)
+    }
   }
 
   trait Reverse[P] extends DepFn1[P]
@@ -277,7 +271,7 @@ class SMCOps[P, S <: SMC](p: P, val smc: S) {
   def head(implicit uncons: S#Uncons[P]): uncons.Head = uncons.head(p)
   def tail(implicit uncons: S#Uncons[P]): uncons.Tail = uncons.tail(p)
 
-  def length(implicit length: S#Length[P]): length.Out = length()
+  def length(implicit length: S#Length[P]): length.Out = length(p)
   def reverse(implicit reverse: S#Reverse[P]): reverse.Out = reverse(p)
   def map(f: Poly)(implicit mapper: S#Mapper[f.type, P]): mapper.Out = mapper(p)
   def foldLeft[Z](z: Z)(f: Poly2)(implicit folder: S#LeftFolder[P, Z, f.type]): folder.Out = folder(p, z)
@@ -326,8 +320,6 @@ object Demo {
   typed[(Option[String], (Option[Int], (Option[Boolean], Unit)))](popt)
   val pfoldrev = p.foldLeft(())(SMC.PairSMC.reversep)
   typed[(Boolean, (Int, (String, Unit)))](pfoldrev)
-  val pfoldlen = p.foldLeft(_0)(SMC.PairSMC.lengthp)
-  typed[_3](pfoldlen)
 
   val c: Either[String, Either[Int, Either[Boolean, Unit]]] = Left("foo")
   val cSmc = c.smc
@@ -350,6 +342,4 @@ object Demo {
   typed[Either[Option[String], Either[Option[Int], Either[Option[Boolean], Unit]]]](copt)
   val cfoldrev = c.foldLeft(())(SMC.EitherSMC.reversep)
   typed[Either[Boolean, Either[Int, Either[String, Unit]]]](cfoldrev)
-  val cfoldlen = c.foldLeft(_0)(SMC.EitherSMC.lengthp)
-  typed[_3](cfoldlen)
 }
