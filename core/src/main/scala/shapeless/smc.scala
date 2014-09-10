@@ -41,7 +41,7 @@ trait SMC {
   def bimap[A, B, C, D](p: A :#: B)(fa: A => C, fb: B => D): C :#: D =
     rightMap(leftMap(p)(fa))(fb)
 
-  def shift[A, B, C](p: (A :#: B) :#: C): B :#: (A :#: C) =
+  def shift[A, B, C](p: (A :#: B) :#: C): B :#: A :#: C =
     assoc(leftMap(p)(swap))
 
   trait Uncons[P] {
@@ -88,7 +88,7 @@ trait SMC {
       implicit def consFolder[A, B, C, Acc, F, OutA]
         (implicit
           fa: Case2.Aux[F, (A :#: B) :#: C, Acc, OutA],
-          fb: LeftFolder0[B :#: (A :#: C), OutA, F, B]
+          fb: LeftFolder0[B :#: A :#: C, OutA, F, B]
         ): Aux[(A :#: B) :#: C, Acc, F, A :#: B, fb.Out] =
           new LeftFolder0[(A :#: B) :#: C, Acc, F, A :#: B] {
             type Out = fb.Out
