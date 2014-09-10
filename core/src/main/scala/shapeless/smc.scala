@@ -24,6 +24,8 @@ trait SMC {
   type Cons[_, _]
   type Nil
 
+  def nil: Nil
+
   def intro[A](a: A): Cons[A, Nil]
   // braiding operator
   def swap[A, B](p: Cons[A, B]): Cons[B, A]
@@ -127,36 +129,18 @@ trait SMC {
 
     type Aux[P, Out0] = Reverse[P] { type Out = Out0 }
 
-    implicit def reverse[P, Out0](implicit reverse: Reverse0[Cons[P, Nil], Out0]): Aux[P, Out0] =
+    implicit def reverse[P](implicit folder: LeftFolder[P, Nil, reversep.type]): Aux[P, folder.Out] =
       new Reverse[P] {
-        type Out = Out0
-        def apply(p : P) : Out = reverse(intro(p))
+        type Out = folder.Out
+        def apply(p: P): Out = folder(p, nil)
       }
 
-    trait Reverse0[P, Out] {
-      def apply(p : P) : Out
+    trait reversep0 extends Poly2 {
+      implicit def caseCons[Elem, Acc] = at[Elem, Acc]((elem, _) => elem)
     }
-
-    object Reverse0 {
-      implicit def nilReverse[Out]: Reverse0[Cons[Nil, Out], Out] =
-        new Reverse0[Cons[Nil, Out], Out] {
-          def apply(p: Cons[Nil, Out]) : Out = unitLeft(p)
-        }
-
-      implicit def consReverse[A, B, C, Out]
-        (implicit rt : Reverse0[Cons[B, Cons[A, C]], Out]): Reverse0[Cons[Cons[A, B], C], Out] =
-          new Reverse0[Cons[Cons[A, B], C], Out] {
-            def apply(p: Cons[Cons[A, B], C]) : Out = rt(shift(p))
-          }
+    object reversep extends reversep0 {
+      implicit def caseNil[Rev, Acc] = at[Cons[Nil, Rev], Acc]((elem, _) => unitLeft(elem))
     }
-  }
-
-  /* We can replace the above with a foldLeft using the following */
-  trait reversep0 extends Poly2 {
-    implicit def caseCons[Elem, Acc] = at[Elem, Acc]((elem, _) => elem)
-  }
-  object reversep extends reversep0 {
-    implicit def caseNil[Rev, Acc] = at[Cons[Nil, Rev], Acc]((elem, _) => unitLeft(elem))
   }
 
   trait Mapper[F, P] extends DepFn1[P]
@@ -188,6 +172,8 @@ object SMC {
     type Cons[A, B] = (A, B)
     type Nil = Unit
 
+    def nil: Unit = ()
+
     def intro[A](a: A): (A, Nil) = (a, ())
     def swap[A, B](p: (A, B)): (B, A) = p.swap
     def unitRight[A](p: (A, Unit)): A = p._1
@@ -211,6 +197,8 @@ object SMC {
     // of Nothing is treated as signalling failure.
     type Cons[A, B] = Either[A, B]
     type Nil = Unit
+
+    def nil: Unit = ()
 
     def intro[A](a: A): Either[A, Nil] = Left(a)
     def swap[A, B](p: Either[A, B]): Either[B, A] = p.swap
@@ -318,8 +306,6 @@ object Demo {
   typed[(Boolean, (Int, (String, Unit)))](prev)
   val popt = p.map(option)
   typed[(Option[String], (Option[Int], (Option[Boolean], Unit)))](popt)
-  val pfoldrev = p.foldLeft(())(SMC.PairSMC.reversep)
-  typed[(Boolean, (Int, (String, Unit)))](pfoldrev)
 
   val c: Either[String, Either[Int, Either[Boolean, Unit]]] = Left("foo")
   val cSmc = c.smc
@@ -340,6 +326,4 @@ object Demo {
   typed[Either[Boolean, Either[Int, Either[String, Unit]]]](crev)
   val copt = c.map(option)
   typed[Either[Option[String], Either[Option[Int], Either[Option[Boolean], Unit]]]](copt)
-  val cfoldrev = c.foldLeft(())(SMC.EitherSMC.reversep)
-  typed[Either[Boolean, Either[Int, Either[String, Unit]]]](cfoldrev)
 }
