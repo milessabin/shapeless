@@ -58,27 +58,27 @@ trait SMC {
   object LeftFolder {
     def apply[P, In, F](implicit folder: LeftFolder[P, In, F]): Aux[P, In, F, folder.Out] = folder
 
-    type Aux[P, In, HF, Out0] = LeftFolder[P, In, HF] { type Out = Out0 }
+    type Aux[P, In, F, Out0] = LeftFolder[P, In, F] { type Out = Out0 }
 
-    implicit def folder[P, In, F, Out0](implicit folder: LeftFolder0[Cons[P, Nil], In, F]): Aux[P, In, F, folder.Out] =
+    implicit def folder[P, In, F, Out0](implicit folder: LeftFolder0[Cons[P, Nil], In, F, P]): Aux[P, In, F, folder.Out] =
       new LeftFolder[P, In, F] {
         type Out = folder.Out
         def apply(p : P, in: In) : Out = folder(intro(p), in)
       }
 
-    trait LeftFolder0[Elem, Acc, F] {
+    trait LeftFolder0[Elem, Acc, F, S] {
       type Out
       def apply(e: Elem, acc: Acc): Out
     }
 
     object LeftFolder0 {
-      type Aux[Elem, Acc, F, Out0] = LeftFolder0[Elem, Acc, F] { type Out = Out0 }
+      type Aux[Elem, Acc, F, S, Out0] = LeftFolder0[Elem, Acc, F, S] { type Out = Out0 }
 
       implicit def nilFolder[Rev, Acc, F, Out0]
         (implicit
           fa: Case2.Aux[F, Cons[Nil, Rev], Acc, Out0]
-        ): Aux[Cons[Nil, Rev], Acc, F, Out0] =
-        new LeftFolder0[Cons[Nil, Rev], Acc, F] {
+        ): Aux[Cons[Nil, Rev], Acc, F, Nil, Out0] =
+        new LeftFolder0[Cons[Nil, Rev], Acc, F, Nil] {
           type Out = Out0
           def apply(elem: Cons[Nil, Rev], acc: Acc): Out = fa(elem, acc)
         }
@@ -86,9 +86,9 @@ trait SMC {
       implicit def consFolder[A, B, C, Acc, F, OutA]
         (implicit
           fa: Case2.Aux[F, Cons[Cons[A, B], C], Acc, OutA],
-          fb: LeftFolder0[Cons[B, Cons[A, C]], OutA, F]
-        ): Aux[Cons[Cons[A, B], C], Acc, F, fb.Out] =
-          new LeftFolder0[Cons[Cons[A, B], C], Acc, F] {
+          fb: LeftFolder0[Cons[B, Cons[A, C]], OutA, F, B]
+        ): Aux[Cons[Cons[A, B], C], Acc, F, Cons[A, B], fb.Out] =
+          new LeftFolder0[Cons[Cons[A, B], C], Acc, F, Cons[A, B]] {
             type Out = fb.Out
             def apply(elem: Cons[Cons[A, B], C], acc: Acc) : Out =
               fb(shift(elem), fa(elem, acc))
@@ -326,11 +326,8 @@ object Demo {
   typed[(Option[String], (Option[Int], (Option[Boolean], Unit)))](popt)
   val pfoldrev = p.foldLeft(())(SMC.PairSMC.reversep)
   typed[(Boolean, (Int, (String, Unit)))](pfoldrev)
-  // Diverges due to result type expanding (ie. _0, Succ[_0], Succ[Succ[_0]] ...)
-  // Might be fixable using the same techniques as used in unfold, by a different
-  // definition of fold, or by a different definition of lengthp
-  //val pfoldlen = p.foldLeft(_0)(SMC.PairSMC.lengthp)
-  //typed[_3](pfoldlen)
+  val pfoldlen = p.foldLeft(_0)(SMC.PairSMC.lengthp)
+  typed[_3](pfoldlen)
 
   val c: Either[String, Either[Int, Either[Boolean, Unit]]] = Left("foo")
   val cSmc = c.smc
@@ -353,4 +350,6 @@ object Demo {
   typed[Either[Option[String], Either[Option[Int], Either[Option[Boolean], Unit]]]](copt)
   val cfoldrev = c.foldLeft(())(SMC.EitherSMC.reversep)
   typed[Either[Boolean, Either[Int, Either[String, Unit]]]](cfoldrev)
+  val cfoldlen = c.foldLeft(_0)(SMC.EitherSMC.lengthp)
+  typed[_3](cfoldlen)
 }
