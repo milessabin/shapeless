@@ -64,6 +64,9 @@ package object shapeless {
   /** `Nat` literals */
   val nat = Nat
 
+  /** `RInt` literals */ 
+  val rint = RInt
+
   /** 'Fin' */
   val fin = Fin
 
