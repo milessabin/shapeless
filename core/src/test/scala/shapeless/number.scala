@@ -35,6 +35,56 @@ class NumberTests {
     def pred(n: RInt)(implicit pred : Predecessor[n.N]) = new Check[pred.Out] {}
     val pd1 = pred(-18)
     check(-19)(pd1)
+    val pd2 = pred(0)
+    check(-1)(pd2)
+    val pd3 = pred(18)
+    check(17)(pd3)
+
+    implicitly[Successor.Aux[_m18, _m17]]
+
+    def succ(n: RInt)(implicit succ : Successor[n.N]) = new Check[succ.Out] {}
+    val sc1 = succ(-18)
+    check(-17)(sc1)
+    val sc2 = succ(-1)
+    check(0)(sc2)
+    val sc3 = succ(3)
+    check(4)(sc3)
+
+    implicitly[Sum.Aux[_m5, _1, _m4]]
+    implicitly[Sum.Aux[_m5, _m1, _m6]]
+    implicitly[Sum.Aux[_1,_0,_1]]
+
+    def sum(a: RInt, b: RInt)(implicit sum : Sum[a.N, b.N]) = new Check[sum.Out] {}
+    val s1 = sum(2, 3)
+    check(5)(s1)
+    val s2 = sum(-3, 5)
+    check(2)(s2)
+    val s3 = sum(-4,-4)
+    check(-8)(s3)
+
+    implicitly[Diff.Aux[_m5, _1, _m6]]
+    implicitly[Diff.Aux[_m5, _m1, _m4]]
+
+    def diff(a: RInt, b: RInt)(implicit diff : Diff[a.N, b.N]) = new Check[diff.Out] {}
+    val d1 = diff(2, 3)
+    check(-1)(d1)
+    val d2 = diff(-3, 5)
+    check(-8)(d2)
+    val d3 = diff(-4,-4)
+    check(0)(d3)
+    val d4 = diff(0,0)
+    check(0)(d4)
+
+    implicitly[Prod.Aux[_m5, _2, _m10]]
+    implicitly[Prod.Aux[_5, _m1, _m5]]
+    implicitly[Prod.Aux[_m4, _m2, _8]]
+
+    def prod(a: RInt, b: RInt)(implicit prod : Prod[a.N, b.N]) = new Check[prod.Out] {}
+    val p1 = prod(2, -3)
+    check(-6)(p1)
+    val p2 = prod(-4, -5)
+    check(20)(p2)
+
 
     // Type level
     assertEquals(-1, toInt[_m1])

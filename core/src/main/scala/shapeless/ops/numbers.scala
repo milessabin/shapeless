@@ -102,21 +102,17 @@
    	 */
    	 trait Sum[A <: Number, B <: Number] { type Out <: Number}
 
-   	 object Sum {
-   	 	def apply[A <: Number, B <: Number](implicit sum: Sum[A, B]): Aux[A, B, sum.Out] = sum
+     object Sum {
+      def apply[A <: Number, B <: Number](implicit sum: Sum[A, B]): Aux[A, B, sum.Out] = sum
 
-   	 	type Aux[A <: Number, B <: Number, C <: Number] = Sum[A, B] { type Out = C }
+      type Aux[A <: Number, B <: Number, C <: Number] = Sum[A, B] { type Out = C }
 
-   	 	implicit val sum00 = new Sum[_0,_0]{type Out = _0} 
-   	 	implicit def sum0Num[B <: Number]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
-   	 	implicit def sumNum0[B <: Number]: Aux[B, _0, B] = new Sum[B, _0] { type Out = B }
-   	 	implicit def sumNatInt[A <: Nat, B <: RInt, SA <: Nat, SB <: RInt]
-   	 	(implicit succA : Successor.Aux[A, SA], succB : Successor.Aux[B, SB], sum : Sum[A, SB]) : Aux[SA, B, sum.Out] = new Sum[SA, B]{type Out = sum.Out}
-
-   	 	implicit def sumNegInt[A <: Neg, B <: RInt, PA <: Neg, PB <: RInt]
-   	 	(implicit predA : Predecessor.Aux[A, PA], predB : Predecessor.Aux[B, PB], sum : Sum[A, PB]) : Aux[PA, B, sum.Out] = new Sum[PA, B]{type Out = sum.Out}
-   	 }
-
+      implicit def sum1[B <: Number]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
+      implicit def sum2[A <: SPos,  PA <: Nat, B <: RInt, SB <: RInt]
+      (implicit predA : Predecessor.Aux[A, PA], succB : Successor.Aux[B, SB], sum : Sum[PA, SB]) : Aux[A, B, sum.Out] = new Sum[A,B]{type Out = sum.Out}
+      implicit def sum3[A <: SNeg, OA <: SPos, B <: RInt, OB <: RInt, C <: RInt] 
+      (implicit oppA : Opposite.Aux[A, OA], oppB : Opposite.Aux[B, OB], sum : Sum.Aux[OA, OB, C], oppC : Opposite[C]) : Aux[A,B, oppC.Out] = new Sum[A,B]{type Out = oppC.Out}
+     }
 	/**
      * Type class witnessing that `C` is the sum of `A` and `B`.
      * 
@@ -139,17 +135,17 @@
      trait Prod[A <: Number, B <: Number] { type Out <: Number }
 
      object Prod {
-     	def apply[A <: Number, B <: Number](implicit prod: Prod[A, B]): Aux[A, B, prod.Out] = prod
+      def apply[A <: Number, B <: Number](implicit prod: Prod[A, B]): Aux[A, B, prod.Out] = prod
 
-     	type Aux[A <: Number, B <: Number, C <: Number] = Prod[A, B] { type Out = C }
+      type Aux[A <: Number, B <: Number, C <: Number] = Prod[A, B] { type Out = C }
 
-     	implicit def prod0[B <: Number]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
-     	//If a * b = c then (a + 1) * b = b + c 
-     	implicit def prodNatNum[A <: Nat, B <: Number, C <: Number] 
-     	(implicit prod: Prod.Aux[A, B, C], sum: Sum[B, C], succA : Successor[A]): Aux[succA.Out, B, sum.Out] = new Prod[succA.Out, B] { type Out = sum.Out }
-      implicit def prodNegNum[A <: Neg, OA <: Number, B <: Number, C <: Number] 
+      implicit def prod0Num[B <: Number]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
+      implicit def prodPosNum[A <: SPos, PA <: Nat,  B <: Number, C <: Number]
+      (implicit pred : Predecessor.Aux[A, PA], prod: Prod.Aux[PA, B, C], sum: Sum[B, C]): Aux[A, B, sum.Out] = new Prod[A, B] { type Out = sum.Out }
+      implicit def prodNegNum[A <: SNeg, OA <: Number, B <: Number, C <: Number] 
       (implicit oppA : Opposite.Aux[A, OA], prod: Prod.Aux[OA, B, C], oppC : Opposite[C]): Aux[A, B, oppC.Out] = new Prod[A, B] { type Out = oppC.Out }
-    }
+     }
+
 
   }
 

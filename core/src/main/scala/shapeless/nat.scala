@@ -90,7 +90,7 @@ case class Succ[P <: Nat]() extends SPos {
  *
  *  @author Olivier Mélois
  */
-case class Minus[P <: SPos]() extends Neg {
+case class Minus[P <: SPos]() extends SNeg {
     type N = Minus[P]
 }
 
