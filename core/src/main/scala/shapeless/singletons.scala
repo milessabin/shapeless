@@ -80,7 +80,7 @@ class SingletonTypeMacros(val c: whitebox.Context) {
 
     q"""
       {
-        final class $name extends Witness {
+        final class $name extends _root_.shapeless.Witness {
           type T = $sTpe
           val value: $sTpe = $s
         }
