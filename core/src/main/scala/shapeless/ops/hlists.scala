@@ -549,13 +549,17 @@ object hlist {
 
     type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
 
-    implicit def hnilToTraversable[L <: HNil, M[_]]
-      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
+    implicit def hnilToTraversable[L <: HNil, M[_], T]
+      (implicit cbf : CanBuildFrom[M[T], T, M[T]]) : Aux[L, M, T] =
         new ToTraversable[L, M] {
-          type Lub = Nothing
+          type Lub = T
           def builder() = cbf()
           def append[LLub](l : L, b : mutable.Builder[LLub, M[LLub]], f : Lub => LLub) = {}
         }
+
+    implicit def hnilToTraversableNothing[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
+        hnilToTraversable[L, M, Nothing]
 
     implicit def hsingleToTraversable[T, M[_]]
       (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T] =
