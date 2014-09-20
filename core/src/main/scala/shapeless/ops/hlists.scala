@@ -608,13 +608,18 @@ object hlist {
 
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
 
-    implicit def hnilToSized[L <: HNil, M[_]]
-      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+    implicit def hnilToSized[L <: HNil, M[_], T]
+      (implicit cbf : CanBuildFrom[M[T], T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[L, M, T, Nat._0] =
         new ToSized[L, M] {
-          type Lub = Nothing
+          type Lub = T
           type N = Nat._0
-          def apply(l : L) = Sized[M]()
+          /* Calling wrap here as Sized[M]() only returns a Sized[M[Nothing], _0] */
+          def apply(l : L) = Sized.wrap(cbf().result()) 
         }
+
+    implicit def hnilToSizedNothing[L <: HNil, M[_]]
+      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+        hnilToSized[L, M, Nothing]
 
     implicit def hsingleToSized[T, M[_]]
     (implicit cbf : CanBuildFrom[Nothing, T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[T :: HNil, M, T, Nat._1] =

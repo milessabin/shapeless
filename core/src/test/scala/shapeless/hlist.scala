@@ -417,6 +417,9 @@ class HListTests {
     equalInferredTypes(expectedUnsized, snil.unsized)
     assertEquals(expectedUnsized, snil.unsized)
 
+    implicitly[ToSized.Aux[HNil, List, Nothing, _0]]
+    implicitly[ToSized.Aux[HNil, List, Int, _0]]
+
     val sizedApap = apap.toSized[List]
     assertEquals(Nat toInt apap.length, sizedApap.length)
     equalInferredTypes(apapList, sizedApap.unsized)
@@ -468,6 +471,9 @@ class HListTests {
     val expectedUnsized = Array.empty[Nothing]
     equalInferredTypes(expectedUnsized, snil.unsized)
     assertArrayEquals2(expectedUnsized, snil.unsized)
+
+    implicitly[ToSized.Aux[HNil, Array, Nothing, _0]]
+    implicitly[ToSized.Aux[HNil, Array, Int, _0]]
 
     val sizedApap = apap.toSized[Array]
     assertEquals(Nat toInt apap.length, sizedApap.length)
