@@ -1857,6 +1857,7 @@ class HListTests {
 
   @Test
   def testWithKeys {
+    import record._
     import syntax.singleton._
 
     val orig =
@@ -2330,7 +2331,7 @@ class HListTests {
   }
 
   @Test
-  def testPatch{
+  def testPatch {
     val basehl = 1 :: 2 :: "three" :: HNil
 
     { //patch an empty hlist
@@ -2381,4 +2382,11 @@ class HListTests {
     }
   }
 
+  @Test
+  def testToCoproduct {
+    type PISB = Int :: String :: Boolean :: HNil
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    type CISBb = the.`ToCoproduct[PISB]`.Out
+    implicitly[CISBa =:= CISBb]
+  }
 }

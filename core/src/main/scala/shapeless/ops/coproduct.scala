@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -272,7 +272,7 @@ object coproduct {
           case Inl(h) => h
         }
       }
-    
+
     implicit def cpUnifier[H1, H2, T <: Coproduct, TL, L, Out0 >: L]
       (implicit u: Lub[H1, H2, L], lt: Aux[L :+: T, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
         new Unifier[H1 :+: H2 :+: T] {
@@ -304,7 +304,7 @@ object coproduct {
   trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn2[K, V] { type Out <: Coproduct }
 
   object ZipWithKeys {
-    import shapeless.record._
+    import shapeless.labelled._
 
     def apply[K <: HList, V <: Coproduct]
       (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
@@ -771,4 +771,27 @@ object coproduct {
           case _                  => None
         }
       }
+
+  /**
+   * Type class computing the `HList`  type corresponding to this `Coproduct`.
+   *
+   * @author Miles Sabin
+   */
+  trait ToHList[L <: Coproduct] { type Out <: HList }
+
+  object ToHList {
+    def apply[L <: Coproduct](implicit thl: ToHList[L]): Aux[L, thl.Out] = thl
+
+    type Aux[L <: Coproduct, Out0 <: HList] = ToHList[L] { type Out = Out0 }
+
+    implicit val cnilToHList: Aux[CNil, HNil] =
+      new ToHList[CNil] {
+        type Out = HNil
+      }
+
+    implicit def cconsToHList[H, T <: Coproduct](implicit ut: ToHList[T]): Aux[H :+: T, H :: ut.Out] =
+      new ToHList[H :+: T] {
+        type Out = H :: ut.Out
+      }
+  }
 }

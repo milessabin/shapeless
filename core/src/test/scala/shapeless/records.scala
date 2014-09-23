@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class RecordTests {
+  import labelled._
   import record._
   import syntax.singleton._
   import test._
@@ -237,6 +238,17 @@ class RecordTests {
     assertEquals(3.0, v6, Double.MinPositiveValue)
   }
   
+  @Test
+  def testMerge {
+    val r1 = 'a ->> 23 :: 'b ->> "foo" :: 'c ->> true :: HNil
+    val r2 = 'c ->> false :: 'a ->> 13 :: HNil
+    val rExp = 'a ->> 13 :: 'b ->> "foo" :: 'c ->> false :: HNil
+
+    val rm = r1.merge(r2)
+    typed[Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T](rm)
+    assertEquals(rExp, rm)
+  }
+
   @Test
   def testConcatenate {
     val r1 =
@@ -584,5 +596,62 @@ class RecordTests {
 
     // illTyped gives a false positive here, but `d.baz` does in fact fail to compile
     //illTyped("d.baz") 
+  }
+
+  @Test
+  def testRecordTypeSelector {
+    typed[Record.`'i -> Int`.T]('i ->> 23 :: HNil)
+
+    typed[Record.`'i -> Int, 's -> String`.T]('i ->> 23 :: 's ->> "foo" :: HNil)
+
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T]('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
+  }
+
+  @Test
+  def testNamedArgsInject {
+    val r = Record(i = 23, s = "foo", b = true)
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
+
+    val v1 = r.get('i)
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = r.get('s)
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = r.get('b)
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    illTyped("""
+      r.get('foo)
+    """)
+  }
+
+  object Foo extends RecordArgs {
+    def applyRecord[R <: HList](rec: R): R = rec
+  }
+
+  @Test
+  def testRecordArgs {
+    val r = Foo(i = 23, s = "foo", b = true)
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
+
+    val v1 = r.get('i)
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = r.get('s)
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = r.get('b)
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    illTyped("""
+      r.get('foo)
+    """)
   }
 }

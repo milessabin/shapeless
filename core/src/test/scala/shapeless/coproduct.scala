@@ -268,12 +268,11 @@ class CoproductTests {
   @Test
   def testWithKeys {
     import syntax.singleton._
-    import record.RecordType
     import union._
     import ops.union._
 
-    val uSchema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
-    val cKeys = Keys[uSchema.Union].apply()
+    type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+    val cKeys = Keys[U].apply()
 
     val u1 = Coproduct[ISB](23).zipWithKeys(cKeys)
     val v1 = u1.get('i)
@@ -839,5 +838,13 @@ class CoproductTests {
 
     val r6 = is.removeElem[S]
     assertTypedEquals[Either[S, I :+: CNil]](Right(i), r6)
+  }
+
+  @Test
+  def testToHList {
+    type CISB = Int :+: String :+: Boolean :+: CNil
+    type PISBa = Int :: String :: Boolean :: HNil
+    type PISBb = the.`ToHList[CISB]`.Out
+    implicitly[PISBa =:= PISBb]
   }
 }

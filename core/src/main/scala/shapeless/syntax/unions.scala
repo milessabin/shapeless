@@ -46,6 +46,16 @@ final class UnionOps[C <: Coproduct](c : C) {
   def apply(k: Witness)(implicit selector : Selector[C, k.T]): selector.Out = selector(c)
 
   /**
+   * Returns the keys of this union as an `HList` of singleton typed values.
+   */
+  def keys(implicit keys: Keys[C]): keys.Out = keys()
+
+  /**
+   * Returns a `Coproduct` of the values of this union.
+   */
+  def values(implicit values: Values[C]): values.Out = values(c)
+
+  /**
    * Returns a wrapped version of this union that provides `selectDynamic` access to fields.
    */
   def union: DynamicUnionOps[C] = DynamicUnionOps(c)

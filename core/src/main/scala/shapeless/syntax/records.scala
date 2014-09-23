@@ -26,7 +26,7 @@ import tag.@@
  * @author Miles Sabin
  */
 final class RecordOps[L <: HList](l : L) {
-  import shapeless.record._
+  import shapeless.labelled._
   import ops.record._
 
   /**
@@ -80,6 +80,8 @@ final class RecordOps[L <: HList](l : L) {
    */
   def -[V, Out <: HList](k: Witness)(implicit remover : Remover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
 
+  def merge[M <: HList](m: M)(implicit merger: Merger[L, M]): merger.Out = merger(l, m)
+
   /**
    * Rename the field associated with the singleton typed key oldKey. Only available if this
    * record has a field with keyType equal to the singleton type oldKey.T.
@@ -87,12 +89,12 @@ final class RecordOps[L <: HList](l : L) {
   def renameField(oldKey: Witness, newKey: Witness)(implicit renamer: Renamer[L, oldKey.T, newKey.T]): renamer.Out = renamer(l)
 
   /**
-   * Returns the keys of this record as an HList of singleton typed values.
+   * Returns the keys of this record as an `HList` of singleton typed values.
    */
   def keys(implicit keys: Keys[L]): keys.Out = keys()
 
   /**
-   * Returns an HList of the values of this record.
+   * Returns an `HList` of the values of this record.
    */
   def values(implicit values: Values[L]): values.Out = values(l)
 

@@ -22,7 +22,7 @@ package ops
 //  to trip bugs in implicit resolution which manifest in the use of WitnessWith
 //  in updateWith
 package record {
-  import shapeless.record._
+  import shapeless.labelled._
 
   /**
    * Type class supporting record field selection.
@@ -87,6 +87,48 @@ package record {
       new Updater[FieldType[K, V] :: T, FieldType[K, V]] {
         type Out = FieldType[K, V] :: T
         def apply(l: FieldType[K, V] :: T, f: FieldType[K, V]): Out = f :: l.tail
+      }
+  }
+
+  /**
+   * Type class support record merging.
+   *
+   * @author Miles Sabin
+   */
+  trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] { type Out <: HList }
+
+  trait LowPriorityMerger {
+    type Aux[L <: HList, M <: HList, Out0 <: HList] = Merger[L, M] { type Out = Out0 }
+
+    implicit def hlistMerger1[H, T <: HList, M <: HList]
+      (implicit mt : Merger[T, M]): Aux[H :: T, M, H :: mt.Out] =
+        new Merger[H :: T, M] {
+          type Out = H :: mt.Out
+          def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
+        }
+  }
+
+  object Merger extends LowPriorityMerger {
+    def apply[L <: HList, M <: HList](implicit merger: Merger[L, M]): Aux[L, M, merger.Out] = merger
+
+    implicit def hnilMerger[M <: HList]: Aux[HNil, M, M] =
+      new Merger[HNil, M] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
+      (implicit
+        rm: Remover.Aux[M, K, (V, MT)],
+        mt: Merger[T, MT]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
+      new Merger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](mv)
+          up :: mt(l.tail, mr)
+        }
       }
   }
 
