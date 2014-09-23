@@ -42,6 +42,7 @@ object ADTPartitionExampleTypes {
  */
 object ADTPartitionExample extends App {
   import shapeless._
+  import labelled._
   import ops.hlist.Tupler
   import record._
   import test._

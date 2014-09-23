@@ -27,7 +27,7 @@ object singleton {
 }
 
 trait SingletonOps {
-  import record._
+  import labelled._
 
   type T
 

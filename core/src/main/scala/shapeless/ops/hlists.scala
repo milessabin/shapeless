@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,20 +216,20 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Union[L <: HList] { type Out <: Coproduct }
+  trait ToCoproduct[L <: HList] { type Out <: Coproduct }
 
-  object Union {
-    def apply[L <: HList](implicit union: Union[L]): Aux[L, union.Out] = union
+  object ToCoproduct {
+    def apply[L <: HList](implicit tcp: ToCoproduct[L]): Aux[L, tcp.Out] = tcp
 
-    type Aux[L <: HList, Out0 <: Coproduct] = Union[L] { type Out = Out0 }
+    type Aux[L <: HList, Out0 <: Coproduct] = ToCoproduct[L] { type Out = Out0 }
 
-    implicit def hnilUnion[H]: Aux[HNil, CNil] =
-      new Union[HNil] {
+    implicit val hnilToCoproduct: Aux[HNil, CNil] =
+      new ToCoproduct[HNil] {
         type Out = CNil
       }
 
-    implicit def hlistUnion[H, T <: HList](implicit ut: Union[T]): Aux[H :: T, H :+: ut.Out] =
-      new Union[H :: T] {
+    implicit def hlistToCoproduct[H, T <: HList](implicit ut: ToCoproduct[T]): Aux[H :: T, H :+: ut.Out] =
+      new ToCoproduct[H :: T] {
         type Out = H :+: ut.Out
       }
   }
@@ -1712,7 +1712,7 @@ object hlist {
   trait ZipWithKeys[K <: HList, V <: HList] extends DepFn2[K, V] { type Out <: HList }
 
   object ZipWithKeys {
-    import shapeless.record._
+    import shapeless.labelled._
 
     def apply[K <: HList, V <: HList]
       (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
@@ -2090,7 +2090,7 @@ object hlist {
     type Out <: HList
   }
 
-  object Patcher{
+  object Patcher {
     def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](implicit patch: Patcher[N, M, L, In]) = patch
 
     type Aux[N <: Nat, M <: Nat, L <: HList, In <: HList, Out0 <: HList] = Patcher[N, M, L, In]{ type Out = Out0 }

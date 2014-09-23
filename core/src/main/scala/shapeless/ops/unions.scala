@@ -18,7 +18,7 @@ package shapeless
 package ops
 
 object union {
-  import shapeless.record.FieldType
+  import shapeless.labelled.FieldType
 
   /**
    * Type class supporting union member selection.
@@ -85,7 +85,7 @@ object union {
   }
 
   /**
-   * Type class supporting collecting the value of a union as an `Coproduct`.
+   * Type class supporting collecting the value of a union as a `Coproduct`.
    * 
    * @author Miles Sabin
    */

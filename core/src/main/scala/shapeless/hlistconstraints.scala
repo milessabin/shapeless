@@ -75,7 +75,7 @@ object LUBConstraint {
 trait KeyConstraint[L <: HList, M <: HList]
 
 object KeyConstraint {
-  import record._
+  import labelled._
 
   type Keys[M <: HList] = {
     type λ[L <: HList] = KeyConstraint[L, M] 
@@ -92,7 +92,7 @@ object KeyConstraint {
 trait ValueConstraint[L <: HList, M <: HList]
 
 object ValueConstraint {
-  import record._
+  import labelled._
 
   type Values[M <: HList] = {
     type λ[L <: HList] = ValueConstraint[L, M] 

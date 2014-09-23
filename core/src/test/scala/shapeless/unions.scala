@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,30 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import labelled.FieldType
+
 class UnionTests {
-  import record.RecordType
   import union._
   import syntax.singleton._
   import test._
 
-  val uSchema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
-  type U = uSchema.Union
+  val wI = Witness('i)
+  type i = wI.T
+
+  val wS = Witness('s)
+  type s = wS.T
+
+  val sB = Witness('b)
+  type b = sB.T
+
+  type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
   @Test
   def testGetLiterals {
     val u1 = Coproduct[U]('i ->> 23)
     val u2 = Coproduct[U]('s ->> "foo")
     val u3 = Coproduct[U]('b ->> true)
-    
+
     val v1 = u1.get('i)
     typed[Option[Int]](v1)
     assertEquals(Some(23), v1)
@@ -53,12 +62,10 @@ class UnionTests {
 
   @Test
   def testSelectDynamic {
-    val schema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
-    type U = schema.Union
     val u1 = Coproduct[U]('i ->> 23).union
     val u2 = Coproduct[U]('s ->> "foo").union
     val u3 = Coproduct[U]('b ->> true).union
-    
+
     val v1 = u1.i
     typed[Option[Int]](v1)
     assertEquals(Some(23), v1)
@@ -81,10 +88,45 @@ class UnionTests {
 
     /*
      * illTyped gives a false positive here, but `u1.foo` does in fact fail to compile
-     * however, it fails in a weird way: 
+     * however, it fails in a weird way:
      *   Unknown type: <error>, <error> [class scala.reflect.internal.Types$ErrorType$,
      *   class scala.reflect.internal.Types$ErrorType$] TypeRef? false
      */
     //illTyped("u1.foo")
+  }
+
+  @Test
+  def testUnionTypeSelector {
+    type ii = FieldType[i, Int] :+: CNil
+    typed[ii](Coproduct[Union.`'i -> Int`.T]('i ->> 23))
+
+    type iiss = FieldType[i, Int] :+: FieldType[s, String] :+: CNil
+    typed[iiss](Coproduct[Union.`'i -> Int, 's -> String`.T]('s ->> "foo"))
+
+    type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
+    typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T]('b ->> true))
+  }
+
+  @Test
+  def testNamedArgsInject {
+    val u1 = Union[U](i = 23)
+    val u2 = Union[U](s = "foo")
+    val u3 = Union[U](b = true)
+
+    val v1 = u1.get('i)
+    typed[Option[Int]](v1)
+    assertEquals(Some(23), v1)
+
+    val v2 = u2.get('s)
+    typed[Option[String]](v2)
+    assertEquals(Some("foo"), v2)
+
+    val v3 = u3.get('b)
+    typed[Option[Boolean]](v3)
+    assertEquals(Some(true), v3)
+
+    illTyped("""
+      u1.get('foo)
+    """)
   }
 }

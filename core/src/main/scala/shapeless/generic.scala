@@ -98,7 +98,7 @@ class GenericMacros(val c: whitebox.Context) {
     def cnilTpe = typeOf[CNil]
     def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
     def symTpe = typeOf[scala.Symbol]
-    def fieldTypeTpe = typeOf[shapeless.record.FieldType[_, _]].typeConstructor
+    def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
     def genericTpe = typeOf[Generic[_]].typeConstructor
     def labelledGenericTpe = typeOf[LabelledGeneric[_]].typeConstructor
     def typeClassTpe = typeOf[TypeClass[Any]].typeConstructor
