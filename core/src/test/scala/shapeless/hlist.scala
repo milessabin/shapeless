@@ -417,6 +417,9 @@ class HListTests {
     equalInferredTypes(expectedUnsized, snil.unsized)
     assertEquals(expectedUnsized, snil.unsized)
 
+    implicitly[ToSized.Aux[HNil, List, Nothing, _0]]
+    implicitly[ToSized.Aux[HNil, List, Int, _0]]
+
     val sizedApap = apap.toSized[List]
     assertEquals(Nat toInt apap.length, sizedApap.length)
     equalInferredTypes(apapList, sizedApap.unsized)
@@ -468,6 +471,9 @@ class HListTests {
     val expectedUnsized = Array.empty[Nothing]
     equalInferredTypes(expectedUnsized, snil.unsized)
     assertArrayEquals2(expectedUnsized, snil.unsized)
+
+    implicitly[ToSized.Aux[HNil, Array, Nothing, _0]]
+    implicitly[ToSized.Aux[HNil, Array, Int, _0]]
 
     val sizedApap = apap.toSized[Array]
     assertEquals(Nat toInt apap.length, sizedApap.length)
@@ -619,6 +625,9 @@ class HListTests {
     val r1 = HNil.to[List]
     assertTypedEquals[List[Nothing]](Nil, r1)
 
+    implicitly[ToList[HNil, Nothing]]
+    implicitly[ToList[HNil, Int]]
+
     val r2 = apap.to[List]
     assertTypedEquals[List[Fruit]](List(a, p, a, p), r2)
 
@@ -674,6 +683,9 @@ class HListTests {
   def testToList {
     val r1 = HNil.toList
     assertTypedEquals[List[Nothing]](Nil, r1)
+
+    implicitly[ToTraversable.Aux[HNil, List, Nothing]]
+    implicitly[ToTraversable.Aux[HNil, List, Int]]
 
     val fruits1 = apap.toList
     assertTypedEquals[List[Fruit]](List(a, p, a, p), fruits1)
@@ -743,6 +755,9 @@ class HListTests {
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
+    
+    implicitly[ToTraversable.Aux[HNil, Array, Nothing]]
+    implicitly[ToTraversable.Aux[HNil, Array, Int]]
 
     val fruits1 = apap.to[Array].map(x => x : Fruit) // Default inferred type is too precise
                                                      // (Product with Serializable with Fruit)
@@ -815,6 +830,9 @@ class HListTests {
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
+    
+    implicitly[ToArray[HNil, Nothing]]
+    implicitly[ToArray[HNil, Int]]
 
     val fruits1 = apap.toArray[Fruit]
     typed[Array[Fruit]](fruits1)

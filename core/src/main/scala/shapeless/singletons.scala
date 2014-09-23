@@ -79,7 +79,7 @@ class SingletonTypeMacros[C <: Context](val c: C) {
 
     q"""
       {
-        final class $name extends Witness {
+        final class $name extends _root_.shapeless.Witness {
           type T = $sTpe
           val value: $sTpe = $s
         }
