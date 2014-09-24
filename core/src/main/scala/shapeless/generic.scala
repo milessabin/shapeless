@@ -57,7 +57,7 @@ object LabelledGeneric extends LowPriorityLabelledGeneric {
 }
 
 object GenericMacros {
-  import shapeless.record.FieldType
+  import shapeless.labelled.FieldType
 
   def materialize[T]
     (c: Context)(implicit tT: c.WeakTypeTag[T]): c.Expr[Generic[T]] =

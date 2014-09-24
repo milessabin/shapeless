@@ -19,7 +19,7 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 object union {
   import syntax.UnionOps
@@ -57,9 +57,16 @@ object union {
   }
 }
 
-class UnionMacros(val c: whitebox.Context) {
+object UnionMacros {
+  def inst(c: Context) = new UnionMacros[c.type](c)
+
+  def mkUnionNamedImpl[U <: Coproduct: c.WeakTypeTag](c: Context)
+    (method: c.Expr[String])(elems: c.Expr[Any]*): c.Expr[U] =
+      c.Expr[U](inst(c).mkUnionNamedImpl(method.tree)(elems.map(_.tree): _*))
+}
+
+class UnionMacros[C <: Context](val c: C) {
   import c.universe._
-  import internal.constantType
   import labelled.FieldType
 
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
@@ -68,7 +75,7 @@ class UnionMacros(val c: whitebox.Context) {
 
   def mkUnionNamedImpl[U <: Coproduct : WeakTypeTag](method: Tree)(elems: Tree*): Tree = {
     def mkSingletonSymbolType(c: Constant): Type =
-      appliedType(atatTpe, List(SymTpe, constantType(c)))
+      appliedType(atatTpe, List(SymTpe, ConstantType(c)))
 
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
@@ -77,7 +84,8 @@ class UnionMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      //case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      case Apply(TypeApply(Select(_, _), List(_, _)), List(Literal(k: Constant), v)) => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }

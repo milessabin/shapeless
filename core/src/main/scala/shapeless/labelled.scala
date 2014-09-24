@@ -16,7 +16,7 @@
 
 package shapeless
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 import scala.util.Try
 
 import syntax.SingletonOps
@@ -72,10 +72,19 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-class LabelledMacros(val c: whitebox.Context) {
+object LabelledMacros {
+  def inst(c: Context) = new LabelledMacros[c.type](c)
+
+  def recordTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).recordTypeImpl(tpeSelector.tree))
+
+  def unionTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).unionTypeImpl(tpeSelector.tree))
+}
+
+class LabelledMacros[C <: Context](val c: C) {
   import labelled._
   import c.universe.{ Try => _, _ }
-  import internal.constantType
 
   val hconsTpe = typeOf[::[_, _]].typeConstructor
   val hnilTpe = typeOf[HNil]
@@ -95,14 +104,14 @@ class LabelledMacros(val c: whitebox.Context) {
 
   object SingletonKeyType {
     def mkSingletonSymbolType(c: Constant): Type =
-      appliedType(atatTpe, List(SymTpe, constantType(c)))
+      appliedType(atatTpe, List(SymTpe, ConstantType(c)))
 
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (Literal(k: Constant), _) => Some(ConstantType(k))
       case (LiteralSymbol(k: Constant), _) => Some(mkSingletonSymbolType(k))
       case (_, keyType: SingleType) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
-        Some(sops.tpe.member(TypeName("T")).typeSignature)
+        Some(sops.tpe.member(newTypeName("T")).typeSignature)
       case _ => None
     }
   }
@@ -115,7 +124,6 @@ class LabelledMacros(val c: whitebox.Context) {
 
   def labelledTypeImpl(tpeSelector: c.Tree, variety: String, nilTpe: Type, consTpe: Type): c.Tree = {
     import c.universe.{ Try => _, _ }
-    import internal._, decorators._
 
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
@@ -126,8 +134,8 @@ class LabelledMacros(val c: whitebox.Context) {
         val tpe =
           (for {
             parsed <- Try(c.parse(s"($key, null.asInstanceOf[$valueTpe])")).toOption
-            checked = c.typecheck(parsed, silent = true)
-            if checked.nonEmpty
+            checked = c.typeCheck(parsed, silent = true)
+            if !checked.isEmpty
           } yield
             checked match {
               case q""" (${SingletonKeyType(keyType)}, $v) """ => (keyType, v.tpe)
@@ -146,7 +154,7 @@ class LabelledMacros(val c: whitebox.Context) {
         appliedType(consTpe, List(fieldTpe, acc))
       }
 
-    val carrier = c.typecheck(tq"{ type T = $labelledTpe }", mode = c.TYPEmode).tpe
+    val carrier = c.typeCheck(q"null.asInstanceOf[{ type T = $labelledTpe }]", silent = true).tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
