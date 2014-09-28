@@ -673,6 +673,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Last[${L}]. ${L} is empty, so there is no last element.")
   trait Last[L <: HList] extends DepFn1[L]
 
   object Last {
@@ -700,6 +701,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Init[${L}]. {L} is empty, so there is no first element.")
   trait Init[L <: HList] extends DepFn1[L] { type Out <: HList }
 
   object Init {
@@ -727,6 +729,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Selector[${L}, ${U}]. You requested an element of type ${U}, but there is none in the HList ${L}.")
   trait Selector[L <: HList, U] extends DepFn1[L] { type Out = U }
 
   object Selector {
@@ -814,10 +817,11 @@ object hlist {
 
   /**
    * Type class supporting removal of an element from this `HList`. Available only if this `HList` contains an
-   * element of type `U`.
+   * element of type `E`.
    *
    * @author Stacy Curl
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Remove[${L}, ${E}]. You requested to remove an element of type ${E}, but there is none in the HList ${L}.")
   trait Remove[L <: HList, E] extends DepFn1[L]
 
   object Remove {
@@ -849,6 +853,7 @@ object hlist {
    *
    * @author Stacy Curl
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.RemoveAll[${L}, ${SL}]. You requested to remove elements of the types ${SL}, but not all were found in HList ${L}.")
   trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L]
 
   object RemoveAll {
@@ -880,6 +885,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Replacer[${L}, ${U}, ${V}]. You requested to replace an element of the type ${U}, but there is none in HList ${L}.")
   trait Replacer[L <: HList, U, V] extends DepFn2[L, V]
 
   object Replacer {
@@ -911,6 +917,7 @@ object hlist {
    *
    * @author Jules Gosnell
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Modifier[${L}, ${U}, ${V}]. You requested to modify an element of the type ${U}, but there is none in HList ${L}.")
   trait Modifier[L <: HList, U, V] extends DepFn2[L, U => V]
 
   object Modifier {
@@ -942,6 +949,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.ReplaceAt[${L}, ${N}, ${V}]. You requested to modify an element at the position ${N}, but the HList ${L} is too short.")
   trait ReplaceAt[L <: HList, N <: Nat, V] extends DepFn2[L, V]
 
   object ReplaceAt {
@@ -972,6 +980,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.At[${L}, ${N}]. You requested to access an element at the position ${N}, but the HList ${L} is too short.")
   trait At[L <: HList, N <: Nat] extends DepFn1[L]
 
   object At {
@@ -999,6 +1008,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Drop[${L}, ${N}]. You requested to drop an element at the position ${N}, but the HList ${L} is too short.")
   trait Drop[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object Drop {
@@ -1026,6 +1036,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Take[${L}, ${N}]. You requested to take ${N} elements, but the HList ${L} is too short.")
   trait Take[L <: HList, N <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object Take {
@@ -1054,6 +1065,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.Split[${L}, ${N}]. You requested to split at position ${N}, but the HList ${L} is too short.")
   trait Split[L <: HList, N <: Nat] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1106,6 +1118,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.ReverseSplit[${L}, ${N}]. You requested to split at position ${N}, but the HList ${L} is too short.")
   trait ReverseSplit[L <: HList, N <: Nat] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1156,6 +1169,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SplitLeft[${L}, ${U}]. You requested to split at an element of type ${U}, but there is none in the HList ${L}.")
   trait SplitLeft[L <: HList, U] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1211,6 +1225,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.ReverseSplitLeft[${L}, ${U}]. You requested to split at an element of type ${U}, but there is none in the HList ${L}.")
   trait ReverseSplitLeft[L <: HList, U] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1263,6 +1278,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SplitRight[${L}, ${U}]. You requested to split at an element of type ${U}, but there is none in the HList ${L}.")
   trait SplitRight[L <: HList, U] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1321,6 +1337,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.ReverseSplitRight[${L}, ${U}]. You requested to split at an element of type ${U}, but there is none in the HList ${L}.")
   trait ReverseSplitRight[L <: HList, U] extends DepFn1[L] {
     type Prefix <: HList
     type Suffix <: HList
@@ -1627,6 +1644,7 @@ object hlist {
    *
    * @author Miles Sabin
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.ZipApply[${FL}, ${AL}]. The types of ${FL} and ${AL} are not compatible.")
   trait ZipApply[FL <: HList, AL <: HList] extends DepFn2[FL, AL] { type Out <: HList }
 
   object ZipApply {
