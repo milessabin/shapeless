@@ -18,6 +18,7 @@ package shapeless
 package ops
 
 import scala.annotation.tailrec
+import scala.annotation.implicitNotFound
 
 import poly._
 
