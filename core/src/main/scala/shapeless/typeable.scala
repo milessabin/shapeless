@@ -106,6 +106,20 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       }
     }
 
+  /** Typeable instance for singleton value types */
+  def valueSingletonTypeable[T](value: T): Typeable[T] =
+    new Typeable[T] {
+      def cast(t: Any): Option[T] =
+        if(t == value) Some(value) else None
+    }
+
+  /** Typeable instance for singleton reference types */
+  def referenceSingletonTypeable[T <: AnyRef](value: T): Typeable[T] =
+    new Typeable[T] {
+      def cast(t: Any): Option[T] =
+        if(t.asInstanceOf[AnyRef] eq value) Some(value) else None
+    }
+
   /** Typeable instance for intersection types with typeable parents */
   def intersectionTypeable[T](parents: List[Typeable[_]]): Typeable[T] =
     new Typeable[T] {
@@ -278,7 +292,7 @@ object TypeCase {
   }
 }
 
-class TypeableMacros[C <: Context](val c: C) {
+class TypeableMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import c.universe._
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
@@ -307,6 +321,10 @@ class TypeableMacros[C <: Context](val c: C) {
         if(normalizedTypeable == EmptyTree)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         normalizedTypeable
+
+      case SingletonSymbolType(c) =>
+        val sym = mkSingletonSymbol(c)
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym)"""
 
       case RefinedType(parents, decls) =>
         if(decls.nonEmpty)
@@ -340,7 +358,13 @@ class TypeableMacros[C <: Context](val c: C) {
 
         q"""_root_.shapeless.Typeable.caseClassTypeable(classOf[$tpe], List(..$fieldTypeables))"""
 
-      case _ =>
+      case SingleType(_, v) if !v.isParameter =>
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe])"""
+
+      case ConstantType(c) =>
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe])"""
+
+      case other =>
         q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
     }
   }

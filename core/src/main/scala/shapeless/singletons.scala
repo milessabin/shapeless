@@ -66,13 +66,43 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
-class SingletonTypeMacros[C <: Context](val c: C) {
+trait SingletonTypeUtils[C <: Context] {
+  val c: C
+  import c.universe._
+
+  val SymTpe = typeOf[scala.Symbol]
+    
+  object LiteralSymbol {
+    def unapply(t: Tree): Option[Constant] = t match {
+      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
+      case _ => None
+    }
+  }
+
+  object SingletonSymbolType {
+    val atatTpe = typeOf[@@[_,_]].typeConstructor
+    val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
+
+    def apply(c: Constant): Type = appliedType(atatTpe, List(SymTpe, ConstantType(c)))
+
+    def unapply(t: Type): Option[Constant] =
+      t match {
+        case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(c)))), _) => Some(c)
+        case _ => None
+      }
+  }
+
+  def mkSingletonSymbol(c: Constant): Tree = {
+    val sTpe = SingletonSymbolType(c)
+    q"""_root_.scala.Symbol($c).asInstanceOf[$sTpe]"""
+  }
+}
+
+class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import syntax.SingletonOps
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
   import c.universe._
-
-  val SymTpe = typeOf[scala.Symbol]
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     val name = newTypeName(c.fresh())
@@ -125,31 +155,6 @@ class SingletonTypeMacros[C <: Context](val c: C) {
         new $name
       }
     """
-  }
-
-  object LiteralSymbol {
-    def unapply(t: Tree): Option[Constant] = t match {
-      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
-      case _ => None
-    }
-  }
-
-  object SingletonSymbolType {
-    val atatTpe = typeOf[@@[_,_]].typeConstructor
-    val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
-
-    def apply(c: Constant): Type = appliedType(atatTpe, List(SymTpe, ConstantType(c)))
-
-    def unapply(t: Type): Option[Constant] =
-      t match {
-        case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(c)))), _) => Some(c)
-        case _ => None
-      }
-  }
-
-  def mkSingletonSymbol(c: Constant): Tree = {
-    val sTpe = SingletonSymbolType(c)
-    q"""_root_.scala.Symbol($c).asInstanceOf[$sTpe]"""
   }
 
   def materializeImpl[T: WeakTypeTag]: Tree = {
