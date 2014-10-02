@@ -83,6 +83,7 @@ object record {
  * accepts a single record argument.
  */
 trait RecordArgs extends Dynamic {
+  def applyDynamic(method: String)(): Any = macro RecordMacros.forwardImpl
   def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
 }
 
@@ -91,6 +92,9 @@ object RecordMacros {
 
   def mkRecordNamedImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[HList] =
     c.Expr[HList](inst(c).mkRecordNamedImpl(method.tree)(rec.map(_.tree): _*))
+
+  def forwardImpl(c: Context)(method: c.Expr[String])(): c.Expr[Any] =
+    c.Expr[Any](inst(c).forwardNamedImpl(method.tree)())
 
   def forwardNamedImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[Any] =
     c.Expr[Any](inst(c).forwardNamedImpl(method.tree)(rec.map(_.tree): _*))
@@ -101,7 +105,7 @@ class RecordMacros[C <: Context](val c: C) {
   import labelled.FieldType
 
   val hconsValueTree = reify {  ::  }.tree
-  val hnilValueTree  = reify { HNil }.tree
+  val hnilValueTree  = reify { HNil: HNil }.tree
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
   val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
@@ -114,6 +118,8 @@ class RecordMacros[C <: Context](val c: C) {
     mkRecordImpl(rec: _*)
   }
 
+  def forwardImpl(method: Tree)(): Tree = forwardNamedImpl(method)()
+
   def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val q"${methodString: String}" = method
     val methodName = newTermName(methodString+"Record")
@@ -122,6 +128,7 @@ class RecordMacros[C <: Context](val c: C) {
 
     val lhs = app match {
       case q"$lhs.applyDynamicNamed($m)(..$args)" => lhs
+      case q"$lhs.applyDynamic($m)()" => lhs
       case other =>
         c.abort(c.enclosingPosition, s"bogus prefix '$other'")
     }
