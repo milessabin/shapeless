@@ -159,14 +159,15 @@ trait DefaultCaseClassDefns extends
 
   val ops: CaseClassOps
 
-  def Ops[Repr0 <: HList, LRepr0 <: HList, P0 <: Product, N <: Nat]
+  def Ops[Repr0 <: HList, Repr1 <: HList, LRepr0 <: HList, P0 <: Product, N <: Nat]
     (implicit
       gen0: Generic.Aux[C, Repr0],
       lgen0: LabelledGeneric.Aux[C, LRepr0],
       len: Length.Aux[Repr0, N],
       toInt: ToInt[N],
       tup: Tupler.Aux[Repr0, P0],
-      pgen0: Generic.Aux[P0, Repr0],
+      pgen0: Generic.Aux[P0, Repr1],
+      ev: Generic.Aux[P0, Repr1] =:= Generic.Aux[P0, Repr0],
       typ0: Typeable[C],
       tag0: ClassTag[C]
     ) =
@@ -176,7 +177,7 @@ trait DefaultCaseClassDefns extends
         type P = P0
         val gen = gen0
         val lgen = lgen0
-        val pgen = pgen0
+        val pgen = ev(pgen0)
         val typ = typ0
         val tag = tag0
         val productPrefix = tag0.runtimeClass.getSimpleName
