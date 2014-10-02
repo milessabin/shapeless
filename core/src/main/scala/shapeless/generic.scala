@@ -18,6 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
+import scala.annotation.StaticAnnotation
 import scala.reflect.macros.Context
 
 trait Generic[T] {
@@ -55,6 +56,8 @@ object LabelledGeneric extends LowPriorityLabelledGeneric {
   // a proof that the resulting Repr is a record
   implicit def product[T <: Product]: LabelledGeneric[T] = macro GenericMacros.materializeLabelledForProduct[T]
 }
+
+class nonGeneric extends StaticAnnotation
 
 object GenericMacros {
   import shapeless.labelled.FieldType
@@ -221,15 +224,27 @@ object GenericMacros {
       fromSym0
     }
 
+    def isNonGeneric(sym: Symbol): Boolean = {
+      def check(sym: Symbol): Boolean = {
+        // See https://issues.scala-lang.org/browse/SI-7424
+        sym.typeSignature                   // force loading method's signature
+        sym.annotations.foreach(_.tpe) // force loading all the annotations
+
+        sym.annotations.exists(_.tpe =:= typeOf[nonGeneric])
+      }
+
+      // See https://issues.scala-lang.org/browse/SI-7561
+      check(sym) ||
+      (sym.isTerm && sym.asTerm.isAccessor && check(sym.asTerm.accessed)) ||
+      sym.allOverriddenSymbols.exists(isNonGeneric)
+    }
+
     def isCaseClassLike(sym: ClassSymbol): Boolean =
       sym.isCaseClass ||
       (!sym.isAbstractClass && !sym.isTrait && sym.knownDirectSubclasses.isEmpty && fieldsOf(sym.typeSignature).nonEmpty)
 
     def isCaseAccessorLike(sym: TermSymbol): Boolean =
-      if(sym.owner.asClass.isCaseClass)
-        sym.isCaseAccessor && sym.isPublic
-      else
-        sym.isAccessor && sym.isPublic
+      !isNonGeneric(sym) && sym.isPublic && (if(sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isAccessor)
 
     lazy val fromProduct = fromTpe =:= unitTpe || isCaseClassLike(fromSym)
 
@@ -322,7 +337,10 @@ object GenericMacros {
       else {
         val sym = tpe.typeSymbol
         val isCaseClass = sym.asClass.isCaseClass
-        val hasUnapply = sym.companionSymbol.typeSignature.declaration(unapplyName) != NoSymbol
+        val hasUnapply = {
+          val unapplySym = sym.companionSymbol.typeSignature.member(unapplyName)
+          unapplySym != NoSymbol && !isNonGeneric(unapplySym)
+        }
 
         if(isCaseClass || hasUnapply) {
           val binders = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) }
@@ -359,7 +377,10 @@ object GenericMacros {
       else {
         val sym = tpe.typeSymbol
         val isCaseClass = sym.asClass.isCaseClass
-        val hasApply = sym.companionSymbol.typeSignature.declaration(applyName) != NoSymbol
+        val hasApply = {
+          val applySym = sym.companionSymbol.typeSignature.member(applyName)
+          applySym != NoSymbol && !isNonGeneric(applySym)
+        }
 
         val binders = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) } 
         val ctorArgs = binders.map { case (bound, name, tpe) => mkElem(Ident(bound), name, tpe) }
