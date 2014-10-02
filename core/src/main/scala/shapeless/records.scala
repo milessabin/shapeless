@@ -83,6 +83,7 @@ object record {
  * accepts a single record argument.
  */
 trait RecordArgs extends Dynamic {
+  def applyDynamic(method: String)(): Any = macro RecordMacros.forwardImpl
   def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
 }
 
@@ -92,7 +93,7 @@ class RecordMacros(val c: whitebox.Context) {
   import labelled.FieldType
 
   val hconsValueTree = reify {  ::  }.tree
-  val hnilValueTree  = reify { HNil }.tree
+  val hnilValueTree  = reify { HNil: HNil }.tree
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
   val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
@@ -105,6 +106,8 @@ class RecordMacros(val c: whitebox.Context) {
     mkRecordImpl(rec: _*)
   }
 
+  def forwardImpl(method: Tree)(): Tree = forwardNamedImpl(method)()
+
   def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val q"${methodString: String}" = method
     val methodName = TermName(methodString+"Record")
@@ -113,6 +116,7 @@ class RecordMacros(val c: whitebox.Context) {
 
     val lhs = app match {
       case q"$lhs.applyDynamicNamed($_)(..$_)" => lhs
+      case q"$lhs.applyDynamic($_)()" => lhs
       case other =>
         c.abort(c.enclosingPosition, s"bogus prefix '$other'")
     }
