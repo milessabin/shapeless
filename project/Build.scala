@@ -188,6 +188,8 @@ object ShapelessBuild extends Build {
         "-language:implicitConversions",
         "-Xfatal-warnings",
         "-deprecation",
-        "-unchecked")
+        "-unchecked"),
+
+      incOptions := incOptions.value.withNameHashing(false)
     )
 }

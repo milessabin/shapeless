@@ -92,7 +92,7 @@ object UnfoldExamples extends App {
         fsn : Case.Aux[Succ[N], (FSN, Succ[Succ[N]])],
         sum : Sum.Aux[FN, FSN, FSSN],
         fssn : Witness.Aux[FSSN]) =
-      at[Succ[Succ[N]]](_ => ((fssn.value: FSSN), Succ[Succ[Succ[N]]]))
+      at[Succ[Succ[N]]](_ => (fssn.value, Succ[Succ[Succ[N]]]))
   }
 
   object toInt extends Poly1 {
