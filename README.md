@@ -49,6 +49,13 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [irc]: http://freenode.net/
 [blog]: http://www.chuusai.com/blog
 
+## Code of conduct
+
+The shapeless project supports the [Typelevel][typelevel] [code of conduct][codeofconduct] and wants all of its
+channels (mailing list, IRC, github, etc.) to be welcoming environments for everyone.
+
+[codeofconduct]: http://typelevel.org/conduct.html
+
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
