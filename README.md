@@ -83,8 +83,8 @@ resolvers ++= Seq(
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4.
 
 ```scala
-// For Scala 2.11.0
-scalaVersion := "2.11.0"
+// For Scala 2.11.2
+scalaVersion := "2.11.2"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.0.0"
@@ -109,11 +109,11 @@ above would be fine.
 
 ### shapeless-2.1.0-SNAPSHOT
 
-Builds are available for Scala 2.11.0 and Scala 2.10.4. The main line of development for shapeless 2.1.0 will be Scala
-2.11.0 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
+shapeless 2.1.0 will be Scala 2.11.2 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.0"
+scalaVersion := "2.11.2"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.1.0-SNAPSHOT" changing()
@@ -132,7 +132,7 @@ libraryDependencies ++= Seq(
 
 ### shapeless-1.2.4
 
-Builds are available for Scala 2.9, 2.10 and 2.11.0. If you are working with Scala 2.10.2 or later you should use
+Builds are available for Scala 2.9, 2.10 and 2.11. If you are working with Scala 2.10.2 or later you should use
 shapeless-2.0.0 instead.
 
 If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
@@ -175,9 +175,9 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.2. The master branch is built with Scala 2.11.0 by default. To build with Scala 2.10.x
+shapeless is built with SBT 0.13.5. The master branch is built with Scala 2.11.2 by default. To build with Scala 2.10.x
 you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.11.0 and merged into the scala-2.10.x branch with only the minimal changes needed for forwards
+and Scala 2.11.2 and merged into the scala-2.10.x branch with only the minimal changes needed for forwards
 compatibility.
 
 ## Contributors
