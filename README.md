@@ -49,10 +49,16 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [irc]: http://freenode.net/
 [blog]: http://www.chuusai.com/blog
 
-## Code of conduct
+## Participation
 
 The shapeless project supports the [Typelevel][typelevel] [code of conduct][codeofconduct] and wants all of its
 channels (mailing list, IRC, github, etc.) to be welcoming environments for everyone.
+
+Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
+Contributors are usually available to field questions, give advice and discuss ideas on [#shapeless][irc] and
+the [mailing list][group], and for people wanting to take their first steps at contributing we have a selection
+of open issues flagged up as being good candidates to take on. No contribution is too small, and guidance is
+always available.
 
 [codeofconduct]: http://typelevel.org/conduct.html
 
