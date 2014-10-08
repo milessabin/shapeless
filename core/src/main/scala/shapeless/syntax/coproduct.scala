@@ -114,6 +114,12 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def take(n: Nat)(implicit take: Take[C, n.N]): take.Out = take(c)
   
   /**
+   * Drops the first `n` elements of this `Coproduct`. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def drop(n: Nat)(implicit drop: Drop[C, n.N]): drop.Out = drop(c)
+
+  /**
    * Reverses this `Coproduct`.
    */
   def reverse(implicit reverse: Reverse[C]): reverse.Out = reverse(c)
