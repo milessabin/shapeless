@@ -688,6 +688,38 @@ object coproduct {
   }
 
   /**
+   * Type class supporting taking the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Taken <: Coproduct
+    type Out = Option[Taken]
+  }
+
+  object Take {
+    def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
+    
+    implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
+      new Take[C, Nat._0] {
+        type Taken = CNil
+        def apply(c: C) = None
+      }
+    
+    implicit def takeSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
+      new Take[H :+: T, Succ[N]] {
+        type Taken = H :+: tail.Taken
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Some(Coproduct[H :+: tail.Taken](h))
+          case Inr(t) => tail(t).map(Inr[H, tail.Taken](_))
+        }
+      }
+  }
+
+  /**
    * Type class supporting reversing a Coproduct
    *
    * @author Stacy Curl

@@ -106,6 +106,13 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): Either[split.Left, split.Right] = split(c)
   def splitC[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
+
+  /**
+   * Takes the first `n` elements of this `Coproduct`. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def take(n: Nat)(implicit take: Take[C, n.N]): take.Out = take(c)
+  
   /**
    * Reverses this `Coproduct`.
    */
