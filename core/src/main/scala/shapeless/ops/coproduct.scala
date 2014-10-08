@@ -273,14 +273,13 @@ object coproduct {
         }
       }
 
-    implicit def cpUnifier[H1, H2, T <: Coproduct, TL, L, Out0 >: L]
-      (implicit u: Lub[H1, H2, L], lt: Aux[L :+: T, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
+    implicit def cpUnifier[H1, H2, T <: Coproduct, L, Out0]
+      (implicit lt: Aux[H2 :+: T, L], u: Lub[H1, L, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
         new Unifier[H1 :+: H2 :+: T] {
           type Out = Out0
           def apply(c: H1 :+: H2 :+: T): Out = c match {
             case Inl(h1) => u.left(h1)
-            case Inr(Inl(h2)) => u.right(h2)
-            case Inr(Inr(t)) => lt(Inr(t))
+            case Inr(t) => u.right(lt(t))
           }
         }
   }
