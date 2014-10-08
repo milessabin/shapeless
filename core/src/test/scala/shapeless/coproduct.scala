@@ -228,6 +228,14 @@ class CoproductTests {
 
     val f3b = f3.unify
     typed[Fruit](f3b)
+
+    // See https://github.com/milessabin/shapeless/issues/242
+    case class Foo[T](c: T)
+    val existentials1 = Coproduct[Foo[Double] :+: Foo[Float] :+: CNil](Foo(23F)).unify
+    val existentials2 = Coproduct[Foo[Double] :+: Foo[Float] :+: Foo[Int] :+: CNil](Foo(23F)).unify
+
+    typed[Foo[_ >: Float with Double <: AnyVal]](existentials1)
+    typed[Foo[_ >: Int with Float with Double <: AnyVal]](existentials2)
   }
 
   @Test
