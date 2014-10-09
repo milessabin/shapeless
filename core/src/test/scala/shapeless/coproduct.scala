@@ -824,6 +824,86 @@ class CoproductTests {
   }
 
   @Test
+  def testTake {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val dc = Coproduct[D :+: C :+: CNil](2.0)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdc = Coproduct[I :+: S :+: D :+: C :+: CNil](2.0)
+
+    val r1 = in1.take(0)
+    assertTypedEquals[Option[CNil]](None, r1)
+
+    val r2 = is.take(0)
+    assertTypedEquals[Option[CNil]](None, r2)
+
+
+    val r3 = in1.take(1)
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), r3)
+
+    val r4 = is.take(1)
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), r4)
+
+    val r5 = isd.take(1)
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), r5)
+
+
+    // Cannot take 2 elements out of a coproduct of length 1
+    illTyped(""" in1.take(2) """)
+
+    val r7 = is.take(2)
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), r7)
+
+    val r8 = isd.take(2)
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), r8)
+
+    val r9 = isdc.take(2)
+    assertTypedEquals[Option[I :+: S :+: CNil]](None, r9)
+  }
+
+  @Test
+  def testDrop {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val dc = Coproduct[D :+: C :+: CNil](2.0)
+    val isd = Coproduct[I :+: S :+: D :+: CNil](1)
+    val isdc = Coproduct[I :+: S :+: D :+: C :+: CNil](2.0)
+
+    val r1 = in1.drop(0)
+    assertTypedEquals[Option[I :+: CNil]](Some(in1), r1)
+
+    val r2 = is.drop(0)
+    assertTypedEquals[Option[I :+: S :+: CNil]](Some(is), r2)
+
+
+    val r3 = in1.drop(1)
+    assertTypedEquals[Option[CNil]](None, r3)
+
+    val r4 = is.drop(1)
+    assertTypedEquals[Option[S :+: CNil]](None, r4)
+
+    val r5 = isd.drop(1)
+    assertTypedEquals[Option[S :+: D :+: CNil]](None, r5)
+
+
+    // Cannot drop 2 elements out of a coproduct of length 1
+    illTyped(""" in1.drop(2) """) 
+
+    val r7 = is.drop(2)
+    assertTypedEquals[Option[CNil]](None, r7)
+
+    val r8 = isd.drop(2)
+    assertTypedEquals[Option[D :+: CNil]](None, r8)
+
+    val r9 = isdc.drop(2)
+    assertTypedEquals[Option[D :+: C :+: CNil]](Some(dc), r9)
+  }
+
+  @Test
   def testRemoveElem {
     type S = String; type I = Int; type D = Double; type C = Char
     val i = Coproduct[I :+: CNil](1)

@@ -688,6 +688,70 @@ object coproduct {
   }
 
   /**
+   * Type class supporting taking the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Taken <: Coproduct
+    type Out = Option[Taken]
+  }
+
+  object Take {
+    def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
+    
+    implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
+      new Take[C, Nat._0] {
+        type Taken = CNil
+        def apply(c: C) = None
+      }
+    
+    implicit def takeSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
+      new Take[H :+: T, Succ[N]] {
+        type Taken = H :+: tail.Taken
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Some(Coproduct[H :+: tail.Taken](h))
+          case Inr(t) => tail(t).map(Inr[H, tail.Taken](_))
+        }
+      }
+  }
+
+  /**
+   * Type class supporting dropping the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Drop[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Remaining <: Coproduct
+    type Out = Option[Remaining]
+  }
+
+  object Drop {
+    def apply[C <: Coproduct, N <: Nat](implicit drop: Drop[C, N]): Aux[C, N, drop.Remaining] = drop
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Drop[C, N] { type Remaining = L }
+
+    implicit def dropZero[C <: Coproduct]: Aux[C, Nat._0, C] =
+      new Drop[C, Nat._0] {
+        type Remaining = C
+        def apply(c: C) = Some(c)
+      }
+
+    implicit def dropSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Drop[T, N]): Aux[H :+: T, Succ[N], tail.Remaining] =
+      new Drop[H :+: T, Succ[N]] {
+        type Remaining = tail.Remaining
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => None
+          case Inr(t) => tail(t)
+        }
+      }
+  }
+
+  /**
    * Type class supporting reversing a Coproduct
    *
    * @author Stacy Curl
