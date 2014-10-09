@@ -431,55 +431,55 @@ class CoproductTests {
     val in4 = Coproduct[I :+: S :+: D :+: C :+: CNil](1)
 
     { // rotateLeft[_0]
-      val r1 = in1.rotateLeft[_0]
+      val r1 = in1.rotateLeft(0)
       assertTypedSame[I :+: CNil](in1, r1)
-      val r2 = in2.rotateLeft[_0]
+      val r2 = in2.rotateLeft(0)
       assertTypedSame[I :+: S :+: CNil](in2, r2)
-      val r3 = in3.rotateLeft[_0]
+      val r3 = in3.rotateLeft(0)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r3)
-      val r4 = in4.rotateLeft[_0]
+      val r4 = in4.rotateLeft(0)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r4)
     }
 
     { // rotateLeft[N % Size == 0]
-      val r1 = in1.rotateLeft[_1]
+      val r1 = in1.rotateLeft(1)
       assertTypedSame[I :+: CNil](in1, r1)
-      val r2 = in1.rotateLeft[_2]
+      val r2 = in1.rotateLeft(2)
       assertTypedSame[I :+: CNil](in1, r2)
-      val r3 = in2.rotateLeft[_2]
+      val r3 = in2.rotateLeft(2)
       assertTypedSame[I :+: S :+: CNil](in2, r3)
-      val r4 = in2.rotateLeft[_4]
+      val r4 = in2.rotateLeft(4)
       assertTypedSame[I :+: S :+: CNil](in2, r4)
-      val r5 = in3.rotateLeft[_3]
+      val r5 = in3.rotateLeft(3)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r5)
-      val r6 = in3.rotateLeft[_6]
+      val r6 = in3.rotateLeft(6)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r6)
-      val r7 = in4.rotateLeft[_4]
+      val r7 = in4.rotateLeft(4)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r7)
-      val r8 = in4.rotateLeft[_8]
+      val r8 = in4.rotateLeft(8)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r8)
     }
 
     { // other
-      val r1 = in2.rotateLeft[_1]
+      val r1 = in2.rotateLeft(1)
       assertTypedEquals[S :+: I :+: CNil](Coproduct[S :+: I :+: CNil](1), r1)
 
-      val r2 = in3.rotateLeft[_1]
+      val r2 = in3.rotateLeft(1)
       assertTypedEquals[S :+: D :+: I :+: CNil](Coproduct[S :+: D :+: I :+: CNil](1), r2)
 
-      val r3 = in4.rotateLeft[_1]
+      val r3 = in4.rotateLeft(1)
       assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), r3)
 
-      val r4 = in4.rotateLeft[_2]
+      val r4 = in4.rotateLeft(2)
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r4)
 
-      val r5 = in4.rotateLeft[_3]
+      val r5 = in4.rotateLeft(3)
       assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), r5)
 
-      val r6 = in4.rotateLeft[_5]
+      val r6 = in4.rotateLeft(5)
       assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), r6)
 
-      val r7 = in4.rotateLeft[_6]
+      val r7 = in4.rotateLeft(6)
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r7)
     }
   }
@@ -494,55 +494,55 @@ class CoproductTests {
     val in4 = Coproduct[I :+: S :+: D :+: C :+: CNil](1)
 
     { // rotateRight[_0]
-      val r1 = in1.rotateRight[_0]
+      val r1 = in1.rotateRight(0)
       assertTypedSame[I :+: CNil](in1, r1)
-      val r2 = in2.rotateRight[_0]
+      val r2 = in2.rotateRight(0)
       assertTypedSame[I :+: S :+: CNil](in2, r2)
-      val r3 = in3.rotateRight[_0]
+      val r3 = in3.rotateRight(0)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r3)
-      val r4 = in4.rotateRight[_0]
+      val r4 = in4.rotateRight(0)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r4)
     }
 
     { // rotateRight[N % Size == 0]
-      val r1 = in1.rotateRight[_1]
+      val r1 = in1.rotateRight(1)
       assertTypedSame[I :+: CNil](in1, r1)
-      val r2 = in1.rotateRight[_2]
+      val r2 = in1.rotateRight(2)
       assertTypedSame[I :+: CNil](in1, r2)
-      val r3 = in2.rotateRight[_2]
+      val r3 = in2.rotateRight(2)
       assertTypedSame[I :+: S :+: CNil](in2, r3)
-      val r4 = in2.rotateRight[_4]
+      val r4 = in2.rotateRight(4)
       assertTypedSame[I :+: S :+: CNil](in2, r4)
-      val r5 = in3.rotateRight[_3]
+      val r5 = in3.rotateRight(3)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r5)
-      val r6 = in3.rotateRight[_6]
+      val r6 = in3.rotateRight(6)
       assertTypedSame[I :+: S :+: D :+: CNil](in3, r6)
-      val r7 = in4.rotateRight[_4]
+      val r7 = in4.rotateRight(4)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r7)
-      val r8 = in4.rotateRight[_8]
+      val r8 = in4.rotateRight(8)
       assertTypedSame[I :+: S :+: D :+: C :+: CNil](in4, r8)
     }
 
     { // other
-      val r1 = in2.rotateRight[_1]
+      val r1 = in2.rotateRight(1)
       assertTypedEquals[S :+: I :+: CNil](Coproduct[S :+: I :+: CNil](1), r1)
 
-      val r2 = in3.rotateRight[_1]
+      val r2 = in3.rotateRight(1)
       assertTypedEquals[D :+: I :+: S :+: CNil](Coproduct[D :+: I :+: S :+: CNil](1), r2)
 
-      val r3 = in4.rotateRight[_1]
+      val r3 = in4.rotateRight(1)
       assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), r3)
 
-      val r4 = in4.rotateRight[_2]
+      val r4 = in4.rotateRight(2)
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r4)
 
-      val r5 = in4.rotateRight[_3]
+      val r5 = in4.rotateRight(3)
       assertTypedEquals[S :+: D :+: C :+: I :+: CNil](Coproduct[S :+: D :+: C :+: I :+: CNil](1), r5)
 
-      val r6 = in4.rotateRight[_5]
+      val r6 = in4.rotateRight(5)
       assertTypedEquals[C :+: I :+: S :+: D :+: CNil](Coproduct[C :+: I :+: S :+: D :+: CNil](1), r6)
 
-      val r7 = in4.rotateRight[_6]
+      val r7 = in4.rotateRight(6)
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r7)
     }
   }
