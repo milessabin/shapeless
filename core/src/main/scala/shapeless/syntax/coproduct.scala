@@ -93,18 +93,11 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
 
   /**
-   * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type
-   * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
-   */
-  def split[N <: Nat](implicit split: Split[C, N]): Either[split.Left, split.Right] = split(c)
-  def splitC[N <: Nat](implicit split: Split[C, N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
-
-  /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): Either[split.Left, split.Right] = split(c)
-  def splitC[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
+  def split(n: Nat)(implicit split: Split[C, n.N]): split.Out = split(c)
+  def splitC(n: Nat)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
 
   /**
@@ -159,22 +152,12 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Rotate this 'Coproduct' left by N
    */
-  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
-
-  /**
-   * Rotate this 'Coproduct' left by N
-   */
-  def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
+  def rotateLeft(n: Nat)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
 
   /**
    * Rotate this 'Coproduct' right by N
    */
-  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
-
-  /**
-   * Rotate this 'Coproduct' right by N
-   */
-  def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
+  def rotateRight(n: Nat)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
 
   /**
    * Extend this `Coproduct` on the left.
