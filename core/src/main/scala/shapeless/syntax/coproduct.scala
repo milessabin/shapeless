@@ -93,18 +93,11 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
 
   /**
-   * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type
-   * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
-   */
-  def split[N <: Nat](implicit split: Split[C, N]): Either[split.Left, split.Right] = split(c)
-  def splitC[N <: Nat](implicit split: Split[C, N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
-
-  /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): Either[split.Left, split.Right] = split(c)
-  def splitC[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
+  def split(n: Nat)(implicit split: Split[C, n.N]): split.Out = split(c)
+  def splitC(n: Nat)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
   /**
    * Reverses this `Coproduct`.
