@@ -600,14 +600,19 @@ object coproduct {
   /**
    * Type class supporting splitting this `Coproduct` at the ''nth'' element returning prefix and suffix as a coproduct
    *
-   * @author Stacy Curl
+   * @author Stacy Curl, Alexandre Archambault
    */
   trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
     type Left  <: Coproduct
     type Right <: Coproduct
     type Out = Either[Left, Right]
 
-    def coproduct(c: C): Left :+: Right :+: CNil
+    def coproduct(c: C): Left :+: Right :+: CNil = apply(c) match {
+      case Left(l) =>
+        Inl(l)
+      case Right(r) =>
+        Inr(Inl(r))
+    }
   }
 
   object Split {
@@ -616,75 +621,26 @@ object coproduct {
     type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
       Split[C, N] { type Left = L; type Right = R }
 
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
-      type Left  <: Coproduct
-      type Right <: Coproduct
-      type Out = Either[Left, Right]
-
-      def apply(c: C): Out = coproduct(c) match {
-        case Inl(left)       => Left(left)
-        case Inr(Inl(right)) => Right(right)
-        case _               => sys.error("Impossible")
-      }
-
-      def coproduct(c: C): Left :+: Right :+: CNil
-
-      protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
-      protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
-    }
-
-    implicit def coproductSplit[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat](
-      implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Succ[Size], NModSize],
-      impl: Impl[C, NModSize]
-    ): Aux[C, N, impl.Left, impl.Right] = new Split[C, N] {
-      type Left = impl.Left
-      type Right = impl.Right
-
-      def apply(c: C): Either[Left, Right]         = impl(c)
-      def coproduct(c: C): Left :+: Right :+: CNil = impl.coproduct(c)
-    }
-
-    object Impl {
-      type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
-        Impl[C, N] { type Left = L; type Right = R }
-
-      implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] = new Impl[C, Nat._0] {
+    implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] =
+      new Split[C, Nat._0] {
         type Left  = CNil
         type Right = C
-
-        def coproduct(c: C): Left :+: Right :+: CNil = right(c)
+        def apply(c: C) = Right(c)
       }
 
-      implicit def splitOne[H1, T <: Coproduct]
-        : Aux[H1 :+: T, Nat._1, H1 :+: CNil, T] = new Impl[H1 :+: T, Nat._1] {
-
-        type Left  = H1 :+: CNil
-        type Right = T
-
-        def coproduct(c: H1 :+: T): Left :+: Right :+: CNil = c match {
-          case Inl(h1) => left(Inl[H1, CNil](h1))
-          case Inr(t)  => right(t)
-        }
-      }
-
-      implicit def coproductImpl[H, T <: Coproduct, N <: Nat, L0 <: Coproduct, R0 <: Coproduct](
-        implicit splitN: Aux[T, N, L0, R0]
-      ): Aux[H :+: T, Succ[N], H :+: L0, R0] = new Impl[H :+: T, Succ[N]] {
-        type Left  = H :+: L0
-        type Right = R0
-
-        def coproduct(c: H :+: T): Left :+: Right :+: CNil = c match {
-          case Inl(h) => left(Inl[H, L0](h))
-          case Inr(t) => splitN.coproduct(t) match {
-            case Inl(l0) => left(Inr[H, L0](l0))
-            case Inr(Inl(r0)) => right(r0)
-            case other        => sys.error("unreachable: " + other)
+    implicit def splitSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Split[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Left, tail.Right] =
+      new Split[H :+: T, Succ[N]] {
+        type Left  = H :+: tail.Left
+        type Right = tail.Right
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Left(Inl(h))
+          case Inr(t) => tail(t) match {
+            case Left(l)  => Left(Inr(l))
+            case Right(r) => Right(r)
           }
         }
       }
-    }
   }
 
   /**

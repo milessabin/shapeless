@@ -761,8 +761,8 @@ class CoproductTests {
     assertTypedEquals[Either[I :+: CNil, S :+: D :+: CNil]](Left(in1), r5)
 
 
-    val r6 = in1.split(2)
-    assertTypedEquals[Either[CNil, I :+: CNil]](Right(in1), r6)
+    // Cannot split at index 2 a coproduct of length 1
+    illTyped(""" in1.split(2) """)
 
     val r7 = is.split(2)
     assertTypedEquals[Either[I :+: S :+: CNil, CNil]](Left(is), r7)
@@ -806,9 +806,8 @@ class CoproductTests {
       Coproduct[(I :+: CNil) :+: (S :+: D :+: CNil) :+: CNil](in1), r5)
 
 
-    val r6 = in1.splitC(2)
-    assertTypedEquals[CNil :+: (I :+: CNil) :+: CNil](
-      Coproduct[CNil :+: (I :+: CNil) :+: CNil](in1), r6)
+    // Cannot split at index 2 a coproduct of length 1
+    illTyped(""" in1.splitC(2) """)
 
     val r7 = is.splitC(2)
     assertTypedEquals[(I :+: S :+: CNil) :+: CNil :+: CNil](
