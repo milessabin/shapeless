@@ -273,14 +273,13 @@ object coproduct {
         }
       }
 
-    implicit def cpUnifier[H1, H2, T <: Coproduct, TL, L, Out0 >: L]
-      (implicit u: Lub[H1, H2, L], lt: Aux[L :+: T, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
+    implicit def cpUnifier[H1, H2, T <: Coproduct, L, Out0]
+      (implicit lt: Aux[H2 :+: T, L], u: Lub[H1, L, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
         new Unifier[H1 :+: H2 :+: T] {
           type Out = Out0
           def apply(c: H1 :+: H2 :+: T): Out = c match {
             case Inl(h1) => u.left(h1)
-            case Inr(Inl(h2)) => u.right(h2)
-            case Inr(Inr(t)) => lt(Inr(t))
+            case Inr(t) => u.right(lt(t))
           }
         }
   }
@@ -601,14 +600,19 @@ object coproduct {
   /**
    * Type class supporting splitting this `Coproduct` at the ''nth'' element returning prefix and suffix as a coproduct
    *
-   * @author Stacy Curl
+   * @author Stacy Curl, Alexandre Archambault
    */
   trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
     type Left  <: Coproduct
     type Right <: Coproduct
     type Out = Either[Left, Right]
 
-    def coproduct(c: C): Left :+: Right :+: CNil
+    def coproduct(c: C): Left :+: Right :+: CNil = apply(c) match {
+      case Left(l) =>
+        Inl(l)
+      case Right(r) =>
+        Inr(Inl(r))
+    }
   }
 
   object Split {
@@ -617,75 +621,90 @@ object coproduct {
     type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
       Split[C, N] { type Left = L; type Right = R }
 
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
-      type Left  <: Coproduct
-      type Right <: Coproduct
-      type Out = Either[Left, Right]
-
-      def apply(c: C): Out = coproduct(c) match {
-        case Inl(left)       => Left(left)
-        case Inr(Inl(right)) => Right(right)
-        case _               => sys.error("Impossible")
-      }
-
-      def coproduct(c: C): Left :+: Right :+: CNil
-
-      protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
-      protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
-    }
-
-    implicit def coproductSplit[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat](
-      implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Succ[Size], NModSize],
-      impl: Impl[C, NModSize]
-    ): Aux[C, N, impl.Left, impl.Right] = new Split[C, N] {
-      type Left = impl.Left
-      type Right = impl.Right
-
-      def apply(c: C): Either[Left, Right]         = impl(c)
-      def coproduct(c: C): Left :+: Right :+: CNil = impl.coproduct(c)
-    }
-
-    object Impl {
-      type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
-        Impl[C, N] { type Left = L; type Right = R }
-
-      implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] = new Impl[C, Nat._0] {
+    implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] =
+      new Split[C, Nat._0] {
         type Left  = CNil
         type Right = C
-
-        def coproduct(c: C): Left :+: Right :+: CNil = right(c)
+        def apply(c: C) = Right(c)
       }
 
-      implicit def splitOne[H1, T <: Coproduct]
-        : Aux[H1 :+: T, Nat._1, H1 :+: CNil, T] = new Impl[H1 :+: T, Nat._1] {
-
-        type Left  = H1 :+: CNil
-        type Right = T
-
-        def coproduct(c: H1 :+: T): Left :+: Right :+: CNil = c match {
-          case Inl(h1) => left(Inl[H1, CNil](h1))
-          case Inr(t)  => right(t)
-        }
-      }
-
-      implicit def coproductImpl[H, T <: Coproduct, N <: Nat, L0 <: Coproduct, R0 <: Coproduct](
-        implicit splitN: Aux[T, N, L0, R0]
-      ): Aux[H :+: T, Succ[N], H :+: L0, R0] = new Impl[H :+: T, Succ[N]] {
-        type Left  = H :+: L0
-        type Right = R0
-
-        def coproduct(c: H :+: T): Left :+: Right :+: CNil = c match {
-          case Inl(h) => left(Inl[H, L0](h))
-          case Inr(t) => splitN.coproduct(t) match {
-            case Inl(l0) => left(Inr[H, L0](l0))
-            case Inr(Inl(r0)) => right(r0)
-            case other        => sys.error("unreachable: " + other)
+    implicit def splitSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Split[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Left, tail.Right] =
+      new Split[H :+: T, Succ[N]] {
+        type Left  = H :+: tail.Left
+        type Right = tail.Right
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Left(Inl(h))
+          case Inr(t) => tail(t) match {
+            case Left(l)  => Left(Inr(l))
+            case Right(r) => Right(r)
           }
         }
       }
-    }
+  }
+
+  /**
+   * Type class supporting taking the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Taken <: Coproduct
+    type Out = Option[Taken]
+  }
+
+  object Take {
+    def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
+    
+    implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
+      new Take[C, Nat._0] {
+        type Taken = CNil
+        def apply(c: C) = None
+      }
+    
+    implicit def takeSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
+      new Take[H :+: T, Succ[N]] {
+        type Taken = H :+: tail.Taken
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Some(Coproduct[H :+: tail.Taken](h))
+          case Inr(t) => tail(t).map(Inr[H, tail.Taken](_))
+        }
+      }
+  }
+
+  /**
+   * Type class supporting dropping the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Drop[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Remaining <: Coproduct
+    type Out = Option[Remaining]
+  }
+
+  object Drop {
+    def apply[C <: Coproduct, N <: Nat](implicit drop: Drop[C, N]): Aux[C, N, drop.Remaining] = drop
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Drop[C, N] { type Remaining = L }
+
+    implicit def dropZero[C <: Coproduct]: Aux[C, Nat._0, C] =
+      new Drop[C, Nat._0] {
+        type Remaining = C
+        def apply(c: C) = Some(c)
+      }
+
+    implicit def dropSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Drop[T, N]): Aux[H :+: T, Succ[N], tail.Remaining] =
+      new Drop[H :+: T, Succ[N]] {
+        type Remaining = tail.Remaining
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => None
+          case Inr(t) => tail(t)
+        }
+      }
   }
 
   /**

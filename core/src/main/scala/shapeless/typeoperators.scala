@@ -153,7 +153,7 @@ object TheMacros {
  *
  * @author Miles Sabin
  */
-trait Lub[-A, -B, +Out] {
+trait Lub[-A, -B, Out] {
   def left(a : A): Out
   def right(b : B): Out
 }

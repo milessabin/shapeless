@@ -76,6 +76,16 @@ resolvers ++= Seq(
 )
 ```
 
+Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its new name hashing feature which when
+compiling with shapeless might cause SBT to loop indefinitely consuming all heap. Workarounds are to move to an
+earlier (0.13.5) or later (0.13.7-M3) SBT version or disable name hashing by adding,
+
+```scala
+incOptions := incOptions.value.withNameHashing(false)
+```
+
+to your settings.
+
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 ### shapeless-2.0.0
@@ -83,8 +93,8 @@ resolvers ++= Seq(
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4.
 
 ```scala
-// For Scala 2.11.2
-scalaVersion := "2.11.2"
+// For Scala 2.11.3
+scalaVersion := "2.11.3"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.0.0"
@@ -110,10 +120,10 @@ above would be fine.
 ### shapeless-2.1.0-SNAPSHOT
 
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
-shapeless 2.1.0 will be Scala 2.11.2 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.1.0 will be Scala 2.11.3 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.3"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.1.0-SNAPSHOT" changing()
@@ -175,10 +185,21 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.5. The master branch is built with Scala 2.11.2 by default. To build with Scala 2.10.x
-you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.11.2 and merged into the scala-2.10.x branch with only the minimal changes needed for forwards
-compatibility.
+shapeless is built with SBT 0.13.5 or 0.13.7-M3 or later. SBT 0.13.6 has an [issue][namehashing] related to its new
+name hashing feature which when compiling shapeless causes SBT to loop indefinitely consuming all heap. Workarounds
+are to move to an earlier or later SBT version or disable name hashing by adding,
+
+```scala
+incOptions := incOptions.value.withNameHashing(false)
+```
+
+to your settings.
+
+The master of shapeless branch is built with Scala 2.11.3 by default. To build with Scala 2.10.x you should check out
+the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.3 and
+merged into the scala-2.10.x branch with only the minimal changes needed for forwards compatibility.
+
+[namehashing]: https://github.com/sbt/sbt/issues/1640
 
 ## Contributors
 
