@@ -59,6 +59,7 @@ object ShapelessBuild extends Build {
         managedSourceDirectories in Test := Nil,
         
         libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),

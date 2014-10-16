@@ -135,6 +135,15 @@ class GenericMacros(val c: whitebox.Context) {
         mkHListTpe(fields.map(_._2))
     }
 
+    // See https://github.com/milessabin/shapeless/issues/212
+    def companionRef(tpe: Type): Tree = {
+      val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+      val gTpe = tpe.asInstanceOf[global.Type]
+      val pre = gTpe.prefix
+      val sym = gTpe.typeSymbol.companionSymbol
+      global.gen.mkAttributedRef(pre, sym).asInstanceOf[Tree]
+    }
+
     def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
       items.foldRight(nil) { case (tpe, acc) => appliedType(cons, List(tpe, acc)) }
 
@@ -286,7 +295,7 @@ class GenericMacros(val c: whitebox.Context) {
 
         if(isCaseClass || hasUnapply) {
           val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
-          val lhs = pq"${tpe.typeSymbol.companion.asTerm}(..${binders.map(x => pq"${x._1}")})"
+          val lhs = pq"${companionRef(tpe)}(..${binders.map(x => pq"${x._1}")})"
           val rhs = 
             binders.foldRight(hnilValueTree) {
               case ((bound, name, tpe), acc) => q"$hconsValueTree(${mkElem(q"$bound", name, tpe)}, $acc)"
@@ -334,7 +343,7 @@ class GenericMacros(val c: whitebox.Context) {
 
         val rhs =
           if(isCaseClass || hasApply)
-            q"${tpe.typeSymbol.companion.asTerm}(..$ctorArgs)"
+            q"${companionRef(tpe)}(..$ctorArgs)"
           else
             q"new $tpe(..$ctorArgs)"
 
