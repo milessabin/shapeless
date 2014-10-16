@@ -61,6 +61,7 @@ object ShapelessBuild extends Build {
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
         libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
           "org.scalamacros" % "quasiquotes_2.10" % "2.0.0",
           "com.novocode" % "junit-interface" % "0.7" % "test"
