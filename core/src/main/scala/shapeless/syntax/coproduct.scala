@@ -180,4 +180,10 @@ final class CoproductOps[C <: Coproduct](c: C) {
    */
   def extendRightBy[K <: Coproduct](implicit extendRightBy: ExtendRightBy[C, K]): extendRightBy.Out =
     extendRightBy(c)
+
+  /**
+   * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
+   */
+  def embed[Super <: Coproduct](implicit basis: Basis[C, Super]): basis.Out =
+    basis(c)
 }
