@@ -179,17 +179,10 @@ object coproduct {
     def coproduct(c: C): U :+: Rest
   }
 
-  object Remove {
-    def apply[C <: Coproduct, U](implicit remove: Remove[C, U]): Aux[C, U, remove.Rest] = remove
-
+  trait LowPriorityRemove {
     type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = Remove[C, U] { type Rest = Rest0 }
 
-    implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
-      type Rest = T
-
-      def coproduct(c: H :+: T): H :+: T = c
-    }
-
+    // Needs to be given a lower priority than removeHead, see https://github.com/milessabin/shapeless/issues/251
     implicit def removeTail[H, T <: Coproduct, U, TRest <: Coproduct](
       implicit remove: Aux[T, U, TRest]
     ): Aux[H :+: T, U, H :+: TRest] = new Remove[H :+: T, U] {
@@ -202,6 +195,16 @@ object coproduct {
           case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
         }
       }
+    }
+  }
+
+  object Remove extends LowPriorityRemove {
+    def apply[C <: Coproduct, U](implicit remove: Remove[C, U]): Aux[C, U, remove.Rest] = remove
+
+    implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
+      type Rest = T
+
+      def coproduct(c: H :+: T): H :+: T = c
     }
   }
 
