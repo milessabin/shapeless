@@ -814,6 +814,30 @@ object coproduct {
       }
   }
 
+  /**
+   * Type-class returning a coproduct of type `C` given an instance of `CNil`.
+   * Facilitates implicits definition of type-classes recursing on the coproduct elements.
+   * (Of course, no instance of `CNil` do exist, so the `apply` method will never be called at run-time.)
+   *
+   * @author Alexandre Archambault
+   */
+  trait CNilOf[C <: Coproduct] {
+    def apply(c: CNil): C
+  }
+
+  object CNilOf {
+
+    implicit val cnilOfCNil: CNilOf[CNil] = new CNilOf[CNil] {
+      def apply(c: CNil) = c
+    }
+
+    implicit def cnilOfCons[H, T <: Coproduct](implicit
+      cnilOfTail: CNilOf[T]
+    ): CNilOf[H :+: T] = new CNilOf[H :+: T] {
+      def apply(c: CNil) = Inr(cnilOfTail(c))
+    }
+
+  }
 
   /**
     * Typeclass checking that :

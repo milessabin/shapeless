@@ -936,6 +936,15 @@ class CoproductTests {
   }
 
   @Test
+  def testCNilOf {
+    implicitly[CNilOf[CNil]]
+    implicitly[CNilOf[Int :+: CNil]]
+    implicitly[CNilOf[Int :+: String :+: CNil]]
+    implicitly[CNilOf[Int :+: String :+: Boolean :+: CNil]]
+    implicitly[CNilOf[String :+: Boolean :+: CNil]]
+  }
+
+  @Test
   def testEmbed {
     type S1 = Int :+: CNil
     type S2 = Int :+: String :+: CNil
