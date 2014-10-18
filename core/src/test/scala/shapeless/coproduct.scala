@@ -978,20 +978,21 @@ class CoproductTests {
     type S2 = Int :+: String :+: CNil
     type S3 = Int :+: String :+: Boolean :+: CNil
     type S4 = String :+: Boolean :+: CNil
+    type S5 = Int :+: Int :+: Int :+: CNil
 
-    type S1a = the.`Basis[S1, S1]`.Out
+    type S1a = the.`S1 <:+:< S1`.Out
     implicitly[S1 =:= S1a]
 
-    type S2a = the.`Basis[S1, S2]`.Out
+    type S2a = the.`S1 <:+:< S2`.Out
     implicitly[S2 =:= S2a]
     
-    type S3a = the.`Basis[S1, S3]`.Out
+    type S3a = the.`S1 <:+:< S3`.Out
     implicitly[S3 =:= S3a]
 
-    type S3b = the.`Basis[S2, S3]`.Out
+    type S3b = the.`S2 <:+:< S3`.Out
     implicitly[S3 =:= S3b]
 
-    type S3c = the.`Basis[S3, S3]`.Out
+    type S3c = the.`S3 <:+:< S3`.Out
     implicitly[S3 =:= S3c]
     
     val c1 = Coproduct[S1](5).embed[S2]
@@ -1004,5 +1005,8 @@ class CoproductTests {
     assertTypedEquals[S3](c3, Coproduct[S3]("toto"))
 
     illTyped("Coproduct[S1](5).embed[S4]")
+
+    // See https://github.com/milessabin/shapeless/issues/253
+    illTyped("Coproduct[S5](3).embed[S1]")
   }
 }
