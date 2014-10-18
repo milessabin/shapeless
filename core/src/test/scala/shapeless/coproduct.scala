@@ -907,6 +907,7 @@ class CoproductTests {
     type S = String; type I = Int; type D = Double; type C = Char
     val i = Coproduct[I :+: CNil](1)
     val is = Coproduct[I :+: S :+: CNil](1)
+    val ii = Coproduct[I :+: I :+: CNil](1)
 
     val r1 = i.removeElemC[I]
     assertTypedEquals[I :+: CNil](i, r1)
@@ -925,6 +926,13 @@ class CoproductTests {
 
     val r6 = is.removeElem[S]
     assertTypedEquals[Either[S, I :+: CNil]](Right(i), r6)
+
+    // See https://github.com/milessabin/shapeless/issues/251
+    val r7 = ii.removeElemC[I]
+    assertTypedEquals[I :+: I :+: CNil](ii, r7)
+
+    val r8 = ii.removeElem[I]
+    assertTypedEquals[Either[I, I :+: CNil]](Left(1), r8)
   }
 
   @Test
