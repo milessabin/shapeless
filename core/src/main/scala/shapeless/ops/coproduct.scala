@@ -813,4 +813,50 @@ object coproduct {
         type Out = H :: ut.Out
       }
   }
+
+
+  /**
+    * Typeclass checking that :
+    * - coproduct is a sub-union of a bigger coproduct
+    * - embeds a sub-coproduct into a bigger coproduct
+    */
+  trait Basis[Sub <: Coproduct, Super <: Coproduct] extends DepFn1[Sub] {
+    type Out = Super
+  }
+
+  /** 
+    * Tricks the implicit resolution to make `ident` implicit 
+    * prioritary & not redundant with `single` when `ident` is 
+    * the expected implicit (better compile perf)
+    */
+  trait BasisLowerImpl {
+
+    implicit def single[H, Super <: Coproduct](
+      implicit inj: Inject[Super, H]
+    ) = new Basis[H :+: CNil, Super] {
+
+      def apply(c: H :+: CNil) = (c: @unchecked) match {
+        case Inl(h) => inj(h)
+      }
+    }
+
+    implicit def headTail[H, T <: Coproduct, Super <: Coproduct](
+      implicit inj: Inject[Super, H], basis: Basis[T, Super]
+    ) = new Basis[H :+: T, Super] {
+
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => inj(h)
+        case Inr(t) => basis(t)
+      }
+    }
+  }
+
+  object Basis extends BasisLowerImpl {
+    def apply[Sub <: Coproduct, Super <: Coproduct](implicit basis: Basis[Sub, Super]): Basis[Sub, Super] = basis
+
+    implicit def ident[C <: Coproduct] = new Basis[C, C] {
+      def apply(c: C) = c
+    }
+
+  }
 }
