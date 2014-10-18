@@ -184,6 +184,6 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
    */
-  def embed[Super <: Coproduct](implicit basis: Basis[C, Super]): basis.Out =
+  def embed[Super <: Coproduct](implicit basis: C <:+:< Super): Super =
     basis(c)
 }

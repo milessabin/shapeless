@@ -936,25 +936,63 @@ class CoproductTests {
   }
 
   @Test
+  def testCNilOf {
+    implicitly[CNilOf[CNil]]
+    implicitly[CNilOf[Int :+: CNil]]
+    implicitly[CNilOf[Int :+: String :+: CNil]]
+    implicitly[CNilOf[Int :+: String :+: Boolean :+: CNil]]
+    implicitly[CNilOf[String :+: Boolean :+: CNil]]
+  }
+
+  @Test
+  def testUnite = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val is0 = Coproduct[I :+: S :+: CNil]("a")
+    val iis = Coproduct[I :+: S :+: I :+: CNil](2)
+    val iis0 = Coproduct[I :+: S :+: I :+: CNil]("b")
+
+    val u1 = Unite[I :+: CNil, I]
+    val r1 = u1(Left(1))
+    assertTypedEquals[I :+: CNil](i, r1)
+
+    val u2 = Unite[I :+: S :+: CNil, I]
+    val r2 = u2(Left(1))
+    assertTypedEquals[I :+: S :+: CNil](is, r2)
+
+    val r2_0 = u2(Right(Inl("a")))
+    assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
+
+    val u3 = Unite[I :+: S :+: I :+: CNil, I]
+    val r3 = u3(Left(2))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
+
+    val r3_0 = u3(Right(Inl("b")))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis0, r3_0)
+  }
+
+  @Test
   def testEmbed {
     type S1 = Int :+: CNil
     type S2 = Int :+: String :+: CNil
     type S3 = Int :+: String :+: Boolean :+: CNil
     type S4 = String :+: Boolean :+: CNil
+    type S5 = Int :+: Int :+: Int :+: CNil
 
-    type S1a = the.`Basis[S1, S1]`.Out
+    type S1a = the.`S1 <:+:< S1`.Out
     implicitly[S1 =:= S1a]
 
-    type S2a = the.`Basis[S1, S2]`.Out
+    type S2a = the.`S1 <:+:< S2`.Out
     implicitly[S2 =:= S2a]
     
-    type S3a = the.`Basis[S1, S3]`.Out
+    type S3a = the.`S1 <:+:< S3`.Out
     implicitly[S3 =:= S3a]
 
-    type S3b = the.`Basis[S2, S3]`.Out
+    type S3b = the.`S2 <:+:< S3`.Out
     implicitly[S3 =:= S3b]
 
-    type S3c = the.`Basis[S3, S3]`.Out
+    type S3c = the.`S3 <:+:< S3`.Out
     implicitly[S3 =:= S3c]
     
     val c1 = Coproduct[S1](5).embed[S2]
@@ -967,5 +1005,8 @@ class CoproductTests {
     assertTypedEquals[S3](c3, Coproduct[S3]("toto"))
 
     illTyped("Coproduct[S1](5).embed[S4]")
+
+    // See https://github.com/milessabin/shapeless/issues/253
+    illTyped("Coproduct[S5](3).embed[S1]")
   }
 }

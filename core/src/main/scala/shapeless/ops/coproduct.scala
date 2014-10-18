@@ -814,49 +814,110 @@ object coproduct {
       }
   }
 
+  /**
+   * Type-class returning a coproduct of type `C` given an instance of `CNil`.
+   * Facilitates implicits definition of type-classes recursing on the coproduct elements.
+   * (Of course, no instance of `CNil` do exist, so the `apply` method will never be called at run-time.)
+   *
+   * @author Alexandre Archambault
+   */
+  trait CNilOf[C <: Coproduct] {
+    def apply(c: CNil): C
+  }
+
+  object CNilOf {
+
+    implicit val cnilOfCNil: CNilOf[CNil] = new CNilOf[CNil] {
+      def apply(c: CNil) = c
+    }
+
+    implicit def cnilOfCons[H, T <: Coproduct](implicit
+      cnilOfTail: CNilOf[T]
+    ): CNilOf[H :+: T] = new CNilOf[H :+: T] {
+      def apply(c: CNil) = Inr(cnilOfTail(c))
+    }
+
+  }
+
+  /**
+   * Type-class returning a coproduct `C` given either a `I` or a coproduct of type `Rest`,
+   * where `I` is a type from `C`, and `Rest` is `C` with the element of type `I` removed.
+   * Does the reverse of remove, which gives either a `I` or a `Rest` given a `C`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Unite[C <: Coproduct, I] {
+    type Rest <: Coproduct
+    def apply(r: Either[I, Rest]): C
+  }
+
+  trait LowPriorityUnite {
+    type Aux[C <: Coproduct, I, Rest0 <: Coproduct] = Unite[C, I] { type Rest = Rest0 }
+
+    // Given a lower priority than uniteHead, so that the two don't collide for coproducts with repeated types
+    implicit def uniteTail[H, T <: Coproduct, I](implicit
+      tailUnite: Unite[T, I]
+    ): Aux[H :+: T, I, H :+: tailUnite.Rest] = new Unite[H :+: T, I] {
+      type Rest = H :+: tailUnite.Rest
+      def apply(r: Either[I, H :+: tailUnite.Rest]) = r match {
+        case Left(i) => Inr(tailUnite(Left(i)))
+        case Right(Inl(h)) => Inl(h)
+        case Right(Inr(t)) => Inr(tailUnite(Right(t)))
+      }
+    }
+  }
+
+  object Unite extends LowPriorityUnite {
+    def apply[C <: Coproduct, I](implicit unite: Unite[C, I]): Aux[C, I, unite.Rest] = unite
+
+    implicit def uniteHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Unite[H :+: T, H] {
+      type Rest = T
+      def apply(r: Either[H, T]) = r match {
+        case Left(h) => Inl(h)
+        case Right(t) => Inr(t)
+      }
+    }
+  }
 
   /**
     * Typeclass checking that :
     * - coproduct is a sub-union of a bigger coproduct
     * - embeds a sub-coproduct into a bigger coproduct
     */
-  trait Basis[Sub <: Coproduct, Super <: Coproduct] extends DepFn1[Sub] {
-    type Out = Super
+  trait Basis[C <: Coproduct] extends DepFn1[C] {
+    type Out <: Coproduct
+    type Rest <: Coproduct
+    def fromRest(r: Rest): Out
   }
 
-  /** 
-    * Tricks the implicit resolution to make `ident` implicit 
-    * prioritary & not redundant with `single` when `ident` is 
-    * the expected implicit (better compile perf)
-    */
-  trait BasisLowerImpl {
+  type <:+:<[Sub0 <: Coproduct, Super <: Coproduct] = Basis[Sub0] { type Out = Super }
 
-    implicit def single[H, Super <: Coproduct](
-      implicit inj: Inject[Super, H]
-    ) = new Basis[H :+: CNil, Super] {
+  object Basis {
+    type Aux[C <: Coproduct, Out0 <: Coproduct, Rest0 <: Coproduct] =
+      Basis[C] { type Out = Out0; type Rest = Rest0 }
 
-      def apply(c: H :+: CNil) = (c: @unchecked) match {
-        case Inl(h) => inj(h)
-      }
+    def apply[C <: Coproduct](implicit basis: Basis[C]): Aux[C, basis.Out, basis.Rest] = basis
+
+    implicit def cnilBasis[Out0 <: Coproduct](implicit
+      cnilOf: CNilOf[Out0]
+    ): Aux[CNil, Out0, Out0] = new Basis[CNil] {
+      type Out = Out0
+      type Rest = Out0
+      def apply(c: CNil) = cnilOf(c)
+      def fromRest(r: Rest) = r
     }
 
-    implicit def headTail[H, T <: Coproduct, Super <: Coproduct](
-      implicit inj: Inject[Super, H], basis: Basis[T, Super]
-    ) = new Basis[H :+: T, Super] {
-
+    implicit def cconsBasis[H, T <: Coproduct, TRemaining <: Coproduct, Out0 <: Coproduct](implicit
+      tailBasis: Basis.Aux[T, Out0, TRemaining],
+      unite: Unite[TRemaining, H]
+    ): Aux[H :+: T, Out0, unite.Rest] = new Basis[H :+: T] {
+    type Out = Out0
+      type Rest = unite.Rest
       def apply(c: H :+: T) = c match {
-        case Inl(h) => inj(h)
-        case Inr(t) => basis(t)
+        case Inl(h) => tailBasis.fromRest(unite(Left(h)))
+        case Inr(t) => tailBasis(t)
       }
+      def fromRest(r: Rest) = tailBasis.fromRest(unite(Right(r)))
     }
-  }
-
-  object Basis extends BasisLowerImpl {
-    def apply[Sub <: Coproduct, Super <: Coproduct](implicit basis: Basis[Sub, Super]): Basis[Sub, Super] = basis
-
-    implicit def ident[C <: Coproduct] = new Basis[C, C] {
-      def apply(c: C) = c
-    }
-
   }
 }
