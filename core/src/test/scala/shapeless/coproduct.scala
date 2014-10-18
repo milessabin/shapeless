@@ -945,6 +945,34 @@ class CoproductTests {
   }
 
   @Test
+  def testUnite = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val is0 = Coproduct[I :+: S :+: CNil]("a")
+    val iis = Coproduct[I :+: S :+: I :+: CNil](2)
+    val iis0 = Coproduct[I :+: S :+: I :+: CNil]("b")
+
+    val u1 = Unite[I :+: CNil, I]
+    val r1 = u1(Left(1))
+    assertTypedEquals[I :+: CNil](i, r1)
+
+    val u2 = Unite[I :+: S :+: CNil, I]
+    val r2 = u2(Left(1))
+    assertTypedEquals[I :+: S :+: CNil](is, r2)
+
+    val r2_0 = u2(Right(Inl("a")))
+    assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
+
+    val u3 = Unite[I :+: S :+: I :+: CNil, I]
+    val r3 = u3(Left(2))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
+
+    val r3_0 = u3(Right(Inl("b")))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis0, r3_0)
+  }
+
+  @Test
   def testEmbed {
     type S1 = Int :+: CNil
     type S2 = Int :+: String :+: CNil

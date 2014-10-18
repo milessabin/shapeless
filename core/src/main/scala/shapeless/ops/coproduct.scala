@@ -840,6 +840,46 @@ object coproduct {
   }
 
   /**
+   * Type-class returning a coproduct `C` given either a `I` or a coproduct of type `Rest`,
+   * where `I` is a type from `C`, and `Rest` is `C` with the element of type `I` removed.
+   * Does the reverse of remove, which gives either a `I` or a `Rest` given a `C`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Unite[C <: Coproduct, I] {
+    type Rest <: Coproduct
+    def apply(r: Either[I, Rest]): C
+  }
+
+  trait LowPriorityUnite {
+    type Aux[C <: Coproduct, I, Rest0 <: Coproduct] = Unite[C, I] { type Rest = Rest0 }
+
+    // Given a lower priority than uniteHead, so that the two don't collide for coproducts with repeated types
+    implicit def uniteTail[H, T <: Coproduct, I](implicit
+      tailUnite: Unite[T, I]
+    ): Aux[H :+: T, I, H :+: tailUnite.Rest] = new Unite[H :+: T, I] {
+      type Rest = H :+: tailUnite.Rest
+      def apply(r: Either[I, H :+: tailUnite.Rest]) = r match {
+        case Left(i) => Inr(tailUnite(Left(i)))
+        case Right(Inl(h)) => Inl(h)
+        case Right(Inr(t)) => Inr(tailUnite(Right(t)))
+      }
+    }
+  }
+
+  object Unite extends LowPriorityUnite {
+    def apply[C <: Coproduct, I](implicit unite: Unite[C, I]): Aux[C, I, unite.Rest] = unite
+
+    implicit def uniteHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Unite[H :+: T, H] {
+      type Rest = T
+      def apply(r: Either[H, T]) = r match {
+        case Left(h) => Inl(h)
+        case Right(t) => Inr(t)
+      }
+    }
+  }
+
+  /**
     * Typeclass checking that :
     * - coproduct is a sub-union of a bigger coproduct
     * - embeds a sub-coproduct into a bigger coproduct
