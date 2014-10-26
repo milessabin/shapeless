@@ -170,30 +170,37 @@ object coproduct {
   trait Remove[C <: Coproduct, U] extends DepFn1[C] {
     type Rest <: Coproduct
     type Out = Either[U, Rest]
+    def inverse(r: Either[U, Rest]): C
 
-    def apply(c: C): Either[U, Rest] = coproduct(c) match {
-      case Inl(u) => Left(u)
-      case Inr(r) => Right(r)
+    def coproduct(c: C): U :+: Rest = apply(c) match {
+      case Left(u)  => Inl(u)
+      case Right(r) => Inr(r)
     }
-
-    def coproduct(c: C): U :+: Rest
   }
 
   trait LowPriorityRemove {
     type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = Remove[C, U] { type Rest = Rest0 }
 
-    // Needs to be given a lower priority than removeHead, see https://github.com/milessabin/shapeless/issues/251
-    implicit def removeTail[H, T <: Coproduct, U, TRest <: Coproduct](
-      implicit remove: Aux[T, U, TRest]
-    ): Aux[H :+: T, U, H :+: TRest] = new Remove[H :+: T, U] {
-      type Rest = H :+: TRest
+    // Must be given a lower priority than removeHead, so that:
+    // - the two don't collide for coproducts with repeated types
+    // - the first element of type I in C is removed 
+    implicit def removeTail[H, T <: Coproduct, U](implicit
+      tailRemove: Remove[T, U]
+    ): Aux[H :+: T, U, H :+: tailRemove.Rest] = new Remove[H :+: T, U] {
+      type Rest = H :+: tailRemove.Rest
 
-      def coproduct(c: H :+: T): U :+: Rest = c match {
-        case Inl(h) => Inr[U, H :+: TRest](Inl[H, TRest](h))
-        case Inr(t) => remove.coproduct(t) match {
-          case Inl(u) => Inl[U, H :+: TRest](u)
-          case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => Right(Inl(h))
+        case Inr(t) => tailRemove(t) match {
+          case Left(i)  => Left(i)
+          case Right(r) => Right(Inr(r))
         }
+      }
+
+      def inverse(r: Either[U, H :+: tailRemove.Rest]) = r match {
+        case Left(i)       => Inr(tailRemove.inverse(Left(i)))
+        case Right(Inl(h)) => Inl(h)
+        case Right(Inr(t)) => Inr(tailRemove.inverse(Right(t)))
       }
     }
   }
@@ -204,7 +211,15 @@ object coproduct {
     implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
       type Rest = T
 
-      def coproduct(c: H :+: T): H :+: T = c
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => Left(h)
+        case Inr(t) => Right(t)
+      }
+
+      def inverse(r: Either[H, T]) = r match {
+        case Left(h)  => Inl(h)
+        case Right(t) => Inr(t)
+      }
     }
   }
 
