@@ -964,6 +964,36 @@ class CoproductTests {
   }
 
   @Test
+  def testRemoveLastInverse = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val is0 = Coproduct[I :+: S :+: CNil]("a")
+    val iis: I :+: S :+: I :+: CNil = Inr(Inr(Inl(2)))
+    val iis0 = Coproduct[I :+: S :+: I :+: CNil]("b")
+
+    val u1 = RemoveLast[I :+: CNil, I]
+    val r1 = u1.inverse(Left(1))
+    assertTypedEquals[I :+: CNil](i, r1)
+
+    val u2 = RemoveLast[I :+: S :+: CNil, I]
+    val r2 = u2.inverse(Left(1))
+    assertTypedEquals[I :+: S :+: CNil](is, r2)
+
+    val r2_0 = u2.inverse(Right(Inl("a")))
+    assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
+
+    // These two are different from testRemoveInverse
+    
+    val u3 = RemoveLast[I :+: S :+: I :+: CNil, I]
+    val r3 = u3.inverse(Left(2))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
+
+    val r3_0 = u3.inverse(Right(Inr(Inl("b"))))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis0, r3_0)
+  }
+
+  @Test
   def testToHList {
     type CISB = Int :+: String :+: Boolean :+: CNil
     type PISBa = Int :: String :: Boolean :: HNil

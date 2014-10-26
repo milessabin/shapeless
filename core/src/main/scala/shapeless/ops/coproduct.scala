@@ -223,6 +223,43 @@ object coproduct {
     }
   }
 
+  trait RemoveLast[C <: Coproduct, I] extends DepFn1[C] {
+    type Rest <: Coproduct
+    type Out = Either[I, Rest]
+    def inverse(r: Either[I, Rest]): C
+  }
+
+  trait LowPriorityRemoveLast {
+    type Aux[C <: Coproduct, I, Rest0 <: Coproduct] = RemoveLast[C, I] {type Rest = Rest0}
+
+    protected def fromRemove[C <: Coproduct, I](remove: Remove[C, I]): Aux[C, I, remove.Rest] =
+      new RemoveLast[C, I] {
+        type Rest = remove.Rest
+        def apply(c: C) = remove(c)
+        def inverse(r: Either[I, Rest]) = remove.inverse(r)
+      }
+
+    protected def toRemove[C <: Coproduct, I](removeLast: RemoveLast[C, I]): Remove.Aux[C, I, removeLast.Rest] =
+      new Remove[C, I] {
+        type Rest = removeLast.Rest
+        def apply(c: C) = removeLast(c)
+        def inverse(r: Either[I, Rest]) = removeLast.inverse(r)
+      }
+
+    // Must be given a lower priority than removeLastTail, so that:
+    // - the two don't collide for coproducts with repeated types
+    // - the last element of type I in C is removed
+    implicit def removeLastHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = fromRemove(Remove.removeHead[H, T])
+  }
+
+  object RemoveLast extends LowPriorityRemoveLast {
+    def apply[C <: Coproduct, I](implicit removeLast: RemoveLast[C, I]): Aux[C, I, removeLast.Rest] = removeLast
+
+    implicit def removeLastTail[H, T <: Coproduct, I](implicit
+      tailRemoveLast: RemoveLast[T, I]
+    ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
+  }
+  
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
 
   object FlatMap {
