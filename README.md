@@ -187,6 +187,7 @@ compatibility.
 + Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
 + Nikolas Evangelopoulos <nikolas@jkl.gr> 
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
++ Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Stacy Curl <stacy.curl@gmail.com>
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)

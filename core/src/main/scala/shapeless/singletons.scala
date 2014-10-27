@@ -107,7 +107,6 @@ trait SingletonTypeMacros[C <: whitebox.Context] {
         mkWitness(tTpt, mkTagged(tTpt, symTree))
 
       case t =>
-        println(s"t: $t ${t.getClass.getName}")
         c.abort(c.enclosingPosition, s"Type argument $t is not a singleton type")
     }
   }
