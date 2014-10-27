@@ -875,43 +875,46 @@ object coproduct {
     * - coproduct is a sub-union of a bigger coproduct
     * - embeds a sub-coproduct into a bigger coproduct
     */
-  trait Basis[Sub <: Coproduct, Super <: Coproduct] extends DepFn1[Sub] {
-    type Out = Super
+  trait Basis[Super <: Coproduct, Sub <: Coproduct] extends DepFn1[Super] {
+    type Rest <: Coproduct
+    type Out = Either[Rest, Sub]
+    def inverse(e: Either[Rest, Sub]): Super
   }
 
-  /** 
-    * Tricks the implicit resolution to make `ident` implicit 
-    * prioritary & not redundant with `single` when `ident` is 
-    * the expected implicit (better compile perf)
-    */
-  trait BasisLowerImpl {
+  object Basis {
+    type Aux[Super <: Coproduct, Sub <: Coproduct, Rest0 <: Coproduct] =
+      Basis[Super, Sub] { type Rest = Rest0 }
 
-    implicit def single[H, Super <: Coproduct](
-      implicit inj: Inject[Super, H]
-    ) = new Basis[H :+: CNil, Super] {
+    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] = 
+      basis
 
-      def apply(c: H :+: CNil) = (c: @unchecked) match {
-        case Inl(h) => inj(h)
+    implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {
+      type Rest = Super
+      def apply(s: Super) = Left(s)
+      def inverse(e: Either[Rest, CNil]) = e.left.get // No CNil exists, so e cannot be a Right
+    }
+
+    implicit def cconsBasis[Super <: Coproduct, H, T <: Coproduct, TRest <: Coproduct](implicit
+      tailBasis: Basis.Aux[Super, T, TRest],
+      remove: RemoveLast[TRest, H]
+    ): Aux[Super, H :+: T, remove.Rest] = new Basis[Super, H :+: T] {
+      type Rest = remove.Rest
+
+      def apply(s: Super) = tailBasis(s) match {
+        case Left(r)  => remove(r) match {
+          case Left(h)  => Right(Inl(h))
+          case Right(r) => Left(r)
+        }
+        case Right(t) => Right(Inr(t))
+      }
+
+      def inverse(e: Either[Rest, H :+: T]) = e match {
+        case Left(r)  => tailBasis.inverse(Left(remove.inverse(Right(r))))
+        case Right(c) => c match {
+          case Inl(h)  => tailBasis.inverse(Left(remove.inverse(Left(h))))
+          case Inr(t)  => tailBasis.inverse(Right(t))
+        }
       }
     }
-
-    implicit def headTail[H, T <: Coproduct, Super <: Coproduct](
-      implicit inj: Inject[Super, H], basis: Basis[T, Super]
-    ) = new Basis[H :+: T, Super] {
-
-      def apply(c: H :+: T) = c match {
-        case Inl(h) => inj(h)
-        case Inr(t) => basis(t)
-      }
-    }
-  }
-
-  object Basis extends BasisLowerImpl {
-    def apply[Sub <: Coproduct, Super <: Coproduct](implicit basis: Basis[Sub, Super]): Basis[Sub, Super] = basis
-
-    implicit def ident[C <: Coproduct] = new Basis[C, C] {
-      def apply(c: C) = c
-    }
-
   }
 }
