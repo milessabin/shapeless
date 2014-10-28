@@ -738,12 +738,12 @@ object hlist {
 
     type Aux[L <: HList, U] = Selector[L, U]
 
-    implicit def hlistSelect1[H, T <: HList]: Aux[H :: T, H] =
+    implicit def select[H, T <: HList]: Aux[H :: T, H] =
       new Selector[H :: T, H] {
         def apply(l : H :: T) = l.head
       }
 
-    implicit def hlistSelect[H, T <: HList, U]
+    implicit def recurse[H, T <: HList, U]
       (implicit st : Selector[T, U]): Aux[H :: T, U] =
         new Selector[H :: T, U] {
           def apply(l : H :: T) = st(l.tail)
@@ -830,13 +830,13 @@ object hlist {
 
     type Aux[L <: HList, E, Out0] = Remove[L, E] { type Out = Out0 }
 
-    implicit def hlistRemove1[H, T <: HList]: Aux[H :: T, H, (H, T)] =
+    implicit def remove[H, T <: HList]: Aux[H :: T, H, (H, T)] =
       new Remove[H :: T, H] {
         type Out = (H, T)
         def apply(l : H :: T): Out = (l.head, l.tail)
       }
 
-    implicit def hlistRemove[H, T <: HList, E, OutT <: HList](implicit r : Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
+    implicit def recurse[H, T <: HList, E, OutT <: HList](implicit r : Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
       new Remove[H :: T, E] {
         type Out = (E, H :: OutT)
         def apply(l : H :: T): Out = {

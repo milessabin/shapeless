@@ -906,6 +906,7 @@ class CoproductTests {
     type S = String; type I = Int; type D = Double; type C = Char
     val i = Coproduct[I :+: CNil](1)
     val is = Coproduct[I :+: S :+: CNil](1)
+    val ii = Coproduct[I :+: I :+: CNil](1)
 
     val r1 = i.removeElemC[I]
     assertTypedEquals[I :+: CNil](i, r1)
@@ -924,6 +925,71 @@ class CoproductTests {
 
     val r6 = is.removeElem[S]
     assertTypedEquals[Either[S, I :+: CNil]](Right(i), r6)
+
+    // See https://github.com/milessabin/shapeless/issues/251
+    val r7 = ii.removeElemC[I]
+    assertTypedEquals[I :+: I :+: CNil](ii, r7)
+
+    val r8 = ii.removeElem[I]
+    assertTypedEquals[Either[I, I :+: CNil]](Left(1), r8)
+  }
+
+  @Test
+  def testRemoveInverse = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val is0 = Coproduct[I :+: S :+: CNil]("a")
+    val iis = Coproduct[I :+: S :+: I :+: CNil](2)
+    val iis0 = Coproduct[I :+: S :+: I :+: CNil]("b")
+
+    val u1 = Remove[I :+: CNil, I]
+    val r1 = u1.inverse(Left(1))
+    assertTypedEquals[I :+: CNil](i, r1)
+
+    val u2 = Remove[I :+: S :+: CNil, I]
+    val r2 = u2.inverse(Left(1))
+    assertTypedEquals[I :+: S :+: CNil](is, r2)
+
+    val r2_0 = u2.inverse(Right(Inl("a")))
+    assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
+
+    val u3 = Remove[I :+: S :+: I :+: CNil, I]
+    val r3 = u3.inverse(Left(2))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
+
+    val r3_0 = u3.inverse(Right(Inl("b")))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis0, r3_0)
+  }
+
+  @Test
+  def testRemoveLastInverse = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val i = Coproduct[I :+: CNil](1)
+    val is = Coproduct[I :+: S :+: CNil](1)
+    val is0 = Coproduct[I :+: S :+: CNil]("a")
+    val iis: I :+: S :+: I :+: CNil = Inr(Inr(Inl(2)))
+    val iis0 = Coproduct[I :+: S :+: I :+: CNil]("b")
+
+    val u1 = RemoveLast[I :+: CNil, I]
+    val r1 = u1.inverse(Left(1))
+    assertTypedEquals[I :+: CNil](i, r1)
+
+    val u2 = RemoveLast[I :+: S :+: CNil, I]
+    val r2 = u2.inverse(Left(1))
+    assertTypedEquals[I :+: S :+: CNil](is, r2)
+
+    val r2_0 = u2.inverse(Right(Inl("a")))
+    assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
+
+    // These two are different from testRemoveInverse
+    
+    val u3 = RemoveLast[I :+: S :+: I :+: CNil, I]
+    val r3 = u3.inverse(Left(2))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
+
+    val r3_0 = u3.inverse(Right(Inr(Inl("b"))))
+    assertTypedEquals[I :+: S :+: I :+: CNil](iis0, r3_0)
   }
 
   @Test
@@ -932,5 +998,49 @@ class CoproductTests {
     type PISBa = Int :: String :: Boolean :: HNil
     type PISBb = the.`ToHList[CISB]`.Out
     implicitly[PISBa =:= PISBb]
+  }
+
+  @Test
+  def testEmbedDeembed {
+    type S1 = Int :+: CNil
+    type S2 = Int :+: String :+: CNil
+    type S3 = Int :+: String :+: Boolean :+: CNil
+    type S4 = String :+: Boolean :+: CNil
+    type S5 = Int :+: Int :+: Int :+: CNil
+
+    val c1_0 = Coproduct[S1](5)
+    val c1_1 = c1_0.embed[S2]
+    assertTypedEquals[S2](c1_1, Coproduct[S2](5))
+    assertTypedEquals[S1](c1_0, c1_1.deembed[S1].right.get)
+
+    val c1_2 = c1_0.embed[S3]
+    assertTypedEquals[S3](c1_2, Coproduct[S3](5))
+    assertTypedEquals[S1](c1_0, c1_2.deembed[S1].right.get)
+    
+    val c2_0 = Coproduct[S2]("toto")
+    val c2 = c2_0.embed[S3]
+    assertTypedEquals[S3](c2, Coproduct[S3]("toto"))
+    assertTypedEquals[S2](c2_0, c2.deembed[S2].right.get)
+
+    illTyped("Coproduct[S1](5).embed[S4]")
+
+    // See https://github.com/milessabin/shapeless/issues/253
+    illTyped("Coproduct[S5](3).embed[S1]")
+    
+    // See https://github.com/milessabin/shapeless/issues/253#issuecomment-59648119
+    {
+      type II = Int :+: Int :+: CNil
+      type IDI = Int :+: Double :+: Int :+: CNil
+
+      val c1: II = Inr(Inl(1))
+      val c2: II = Inl(1)
+
+      val c1_0 = c1.embed[IDI].deembed[II].right.get
+      val c2_0 = c2.embed[IDI].deembed[II].right.get
+
+      assertTypedEquals[II](c1, c1_0)
+      assertTypedEquals[II](c2, c2_0)
+      assert(c2 != c1_0)
+    }
   }
 }
