@@ -227,6 +227,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Owein Reese <owreese@gmail.com> [@OweinReese](https://twitter.com/OweinReese)
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
++ Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
