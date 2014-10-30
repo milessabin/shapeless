@@ -3,6 +3,7 @@ package examples
 
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.logging.Logger
 import scala.reflect.ClassTag
 
 import ops.hlist.{ Length, Tupler }
@@ -11,6 +12,29 @@ import ops.nat.ToInt
 import test._
 
 import java.util.WeakHashMap
+
+/**
+ * A la carte facet that adds a private `Logger` method to every
+ * instance of the case class that points to a single instance of the
+ * logger. The vast majority of Scala logging frameworks mix in a lazy
+ * val, which actually costs 2 references per instance and can cause
+ * serious heap problems.
+ *
+ * This uses JUL, but it should be obvious how to use other backends.
+ */
+trait LogFacet extends ProductISOFacet {
+  trait LogOps extends ProductISOOps {
+    val logger: Logger
+  }
+
+  val ops: LogOps
+
+  trait LogMethods { self: C =>
+    protected def log: Logger = ops.logger
+  }
+}
+
+
 
 /**
  * A la carte facet that uses a `WeakHashMap` to cache instances
@@ -90,6 +114,7 @@ trait CachedFacet extends ProductISOFacet {
 }
 
 trait CachedCaseClassDefns extends
+  LogFacet with
   CachedFacet with
   ProductFacet with
   PolymorphicEqualityFacet with
@@ -97,6 +122,7 @@ trait CachedCaseClassDefns extends
   ToStringFacet {
 
   trait CaseClassOps extends
+    LogOps with
     CachedOps with
     ProductOps with
     PolymorphicEqualityOps with
@@ -107,6 +133,7 @@ trait CachedCaseClassDefns extends
     CachedCompanion
 
   trait CaseClass extends
+    LogMethods with
     CachedMethods with
     ProductMethods with
     PolymorphicEqualityMethods with
@@ -125,7 +152,8 @@ trait CachedCaseClassDefns extends
       pgen0: Generic.Aux[P0, Repr0],
       typ0: Typeable[C],
       tag0: ClassTag[C]
-    ) =
+    ) = {
+      val fqn = tag0.runtimeClass.getName
       new CaseClassOps {
         type Repr = Repr0
         type LRepr = LRepr0
@@ -135,9 +163,11 @@ trait CachedCaseClassDefns extends
         val pgen = pgen0
         val typ = typ0
         val tag = tag0
-        val productPrefix = tag0.runtimeClass.getName.split("(\\.|\\$)").last
+        val logger = Logger.getLogger(fqn)
+        val productPrefix = fqn.split("(\\.|\\$)").last
         val productArity = toInt()
       }
+  }
 }
 
 
@@ -152,7 +182,9 @@ object ALaCacheDemo extends App {
     val ops = Ops
     object Foo extends CaseClassCompanion
     // keep the constructor private so everybody has to go through .apply
-    class Foo private[FooDefns] (val i: Int, val s: String) extends CaseClass
+    class Foo private[FooDefns] (val i: Int, val s: String) extends CaseClass {
+      def stuff = log.info("hello")
+    }
   }
   import FooDefns._
 
@@ -175,6 +207,10 @@ object ALaCacheDemo extends App {
 
   assert(s eq s2)
   assert(Foo.aliveExtracted == 1)
+
+  // log side effect
+  foo.stuff
+
 
   // product defns
   val foo_1 = foo.productElement(0)
