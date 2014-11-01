@@ -93,8 +93,8 @@ to your settings.
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4.
 
 ```scala
-// For Scala 2.11.2
-scalaVersion := "2.11.2"
+// For Scala 2.11.4
+scalaVersion := "2.11.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.0.0"
@@ -120,10 +120,10 @@ above would be fine.
 ### shapeless-2.1.0-SNAPSHOT
 
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
-shapeless 2.1.0 will be Scala 2.11.2 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.1.0 will be Scala 2.11.4 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.1.0-SNAPSHOT" changing()
@@ -195,8 +195,8 @@ incOptions := incOptions.value.withNameHashing(false)
 
 to your settings.
 
-The master of shapeless branch is built with Scala 2.11.2 by default. To build with Scala 2.10.x you should check out
-the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.2 and
+The master of shapeless branch is built with Scala 2.11.4 by default. To build with Scala 2.10.x you should check out
+the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.4 and
 merged into the scala-2.10.x branch with only the minimal changes needed for forwards compatibility.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
@@ -227,6 +227,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Owein Reese <owreese@gmail.com> [@OweinReese](https://twitter.com/OweinReese)
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
++ Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)

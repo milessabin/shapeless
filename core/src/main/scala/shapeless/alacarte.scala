@@ -180,7 +180,7 @@ trait DefaultCaseClassDefns extends
         val pgen = ev(pgen0)
         val typ = typ0
         val tag = tag0
-        val productPrefix = tag0.runtimeClass.getSimpleName
+        val productPrefix = tag0.runtimeClass.getName.split("(\\.|\\$)").last
         val productArity = toInt()
       }
 }
