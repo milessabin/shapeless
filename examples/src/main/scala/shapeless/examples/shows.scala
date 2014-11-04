@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Lars Hupel
+ * Copyright (c) 2013-14 Lars Hupel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ object ShowExamples extends App {
   case class BarRec(i : Int, rec: Super) extends Super
 
   object Super {
-    implicit val instance = Show[Super]
+    implicit val instance: Show[Super] = Show[Super]
   }
 
   sealed trait MutualA
