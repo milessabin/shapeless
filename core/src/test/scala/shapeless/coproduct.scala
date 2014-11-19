@@ -572,6 +572,166 @@ class CoproductTests {
   }
 
   @Test
+  def testAlign {
+    type K0 = Int :+: String :+: Boolean :+: CNil
+    type K1 = Int :+: Boolean :+: String :+: CNil
+    type K2 = String :+: Int :+: Boolean :+: CNil
+    type K3 = String :+: Boolean :+: Int :+: CNil
+    type K4 = Boolean :+: Int :+: String :+: CNil
+    type K5 = Boolean :+: String :+: Int :+: CNil
+
+    val k0i = Coproduct[K0](13)
+    val k0s = Coproduct[K0]("bar")
+    val k0b = Coproduct[K0](false)
+
+    val k1i = Coproduct[K1](13)
+    val k1s = Coproduct[K1]("bar")
+    val k1b = Coproduct[K1](false)
+
+    val k2i = Coproduct[K2](13)
+    val k2s = Coproduct[K2]("bar")
+    val k2b = Coproduct[K2](false)
+
+    val k3i = Coproduct[K3](13)
+    val k3s = Coproduct[K3]("bar")
+    val k3b = Coproduct[K3](false)
+
+    val k4i = Coproduct[K4](13)
+    val k4s = Coproduct[K4]("bar")
+    val k4b = Coproduct[K4](false)
+
+    val k5i = Coproduct[K5](13)
+    val k5s = Coproduct[K5]("bar")
+    val k5b = Coproduct[K5](false)
+
+    type C = K0
+
+    val ci = Coproduct[C](23)
+    val cs = Coproduct[C]("foo")
+    val cb = Coproduct[C](true)
+
+    val a0i = ci.align(k0i)
+    assertTypedEquals[K0](Coproduct[K0](23), a0i)
+
+    val a0s = cs.align(k0s)
+    assertTypedEquals[K0](Coproduct[K0]("foo"), a0s)
+
+    val a0b = cb.align(k0b)
+    assertTypedEquals[K0](Coproduct[K0](true), a0b)
+
+    val a1i = ci.align(k1i)
+    assertTypedEquals[K1](Coproduct[K1](23), a1i)
+
+    val a1s = cs.align(k1s)
+    assertTypedEquals[K1](Coproduct[K1]("foo"), a1s)
+
+    val a1b = cb.align(k1b)
+    assertTypedEquals[K1](Coproduct[K1](true), a1b)
+
+    val a2i = ci.align(k2i)
+    assertTypedEquals[K2](Coproduct[K2](23), a2i)
+
+    val a2s = cs.align(k2s)
+    assertTypedEquals[K2](Coproduct[K2]("foo"), a2s)
+
+    val a2b = cb.align(k2b)
+    assertTypedEquals[K2](Coproduct[K2](true), a2b)
+
+    val a3i = ci.align(k3i)
+    assertTypedEquals[K3](Coproduct[K3](23), a3i)
+
+    val a3s = cs.align(k3s)
+    assertTypedEquals[K3](Coproduct[K3]("foo"), a3s)
+
+    val a3b = cb.align(k3b)
+    assertTypedEquals[K3](Coproduct[K3](true), a3b)
+
+    val a4i = ci.align(k4i)
+    assertTypedEquals[K4](Coproduct[K4](23), a4i)
+
+    val a4s = cs.align(k4s)
+    assertTypedEquals[K4](Coproduct[K4]("foo"), a4s)
+
+    val a4b = cb.align(k4b)
+    assertTypedEquals[K4](Coproduct[K4](true), a4b)
+
+    val a5i = ci.align(k5i)
+    assertTypedEquals[K5](Coproduct[K5](23), a5i)
+
+    val a5s = cs.align(k5s)
+    assertTypedEquals[K5](Coproduct[K5]("foo"), a5s)
+
+    val a5b = cb.align(k5b)
+    assertTypedEquals[K5](Coproduct[K5](true), a5b)
+
+    val b0i = ci.align[K0]
+    assertTypedEquals[K0](Coproduct[K0](23), b0i)
+
+    val b0s = cs.align[K0]
+    assertTypedEquals[K0](Coproduct[K0]("foo"), b0s)
+
+    val b0b = cb.align[K0]
+    assertTypedEquals[K0](Coproduct[K0](true), b0b)
+
+    val b1i = ci.align[K1]
+    assertTypedEquals[K1](Coproduct[K1](23), b1i)
+
+    val b1s = cs.align[K1]
+    assertTypedEquals[K1](Coproduct[K1]("foo"), b1s)
+
+    val b1b = cb.align[K1]
+    assertTypedEquals[K1](Coproduct[K1](true), b1b)
+
+    val b2i = ci.align[K2]
+    assertTypedEquals[K2](Coproduct[K2](23), b2i)
+
+    val b2s = cs.align[K2]
+    assertTypedEquals[K2](Coproduct[K2]("foo"), b2s)
+
+    val b2b = cb.align[K2]
+    assertTypedEquals[K2](Coproduct[K2](true), b2b)
+
+    val b3i = ci.align[K3]
+    assertTypedEquals[K3](Coproduct[K3](23), b3i)
+
+    val b3s = cs.align[K3]
+    assertTypedEquals[K3](Coproduct[K3]("foo"), b3s)
+
+    val b3b = cb.align[K3]
+    assertTypedEquals[K3](Coproduct[K3](true), b3b)
+
+    val b4i = ci.align[K4]
+    assertTypedEquals[K4](Coproduct[K4](23), b4i)
+
+    val b4s = cs.align[K4]
+    assertTypedEquals[K4](Coproduct[K4]("foo"), b4s)
+
+    val b4b = cb.align[K4]
+    assertTypedEquals[K4](Coproduct[K4](true), b4b)
+
+    val b5i = ci.align[K5]
+    assertTypedEquals[K5](Coproduct[K5](23), b5i)
+
+    val b5s = cs.align[K5]
+    assertTypedEquals[K5](Coproduct[K5]("foo"), b5s)
+
+    val b5b = cb.align[K5]
+    assertTypedEquals[K5](Coproduct[K5](true), b5b)
+
+    illTyped("""
+      (Coproduct[String :+: CNil]).align[Int :+: CNil]
+    """)
+
+    illTyped("""
+      (Coproduct[String :+: Int :+: CNil]).align[String :+: CNil]
+    """)
+
+    illTyped("""
+      (Coproduct[Int :+: CNil]).align[Int :+: String :+: CNil]
+    """)
+  }
+
+  @Test
   def testReverse {
     type S = String; type I = Int; type D = Double; type C = Char
     type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil

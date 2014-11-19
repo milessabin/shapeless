@@ -113,6 +113,18 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def drop(n: Nat)(implicit drop: Drop[C, n.N]): drop.Out = drop(c)
 
   /**
+   * Permutes this `Coproduct` into the same order as another `Coproduct`. An explicit type argument must be supplied.
+   * Available only if both `Coproduct`s have elements of the same types.
+   */
+  def align[K <: Coproduct](implicit align: Align[C, K]): K = align(c)
+
+  /**
+   * Permutes this `Coproduct` into the same order as another `Coproduct`. Available only if 
+   * both `Coproduct`s have elements of the same types.
+   */
+  def align[K <: Coproduct](k: K)(implicit align: Align[C, K]): K = align(c)
+
+  /**
    * Reverses this `Coproduct`.
    */
   def reverse(implicit reverse: Reverse[C]): reverse.Out = reverse(c)
