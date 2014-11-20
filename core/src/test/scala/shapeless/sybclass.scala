@@ -38,7 +38,7 @@ class SybClassTests {
   object incAll extends Poly1 {
     implicit def caseInt = at[Int](_+1)
     implicit def caseString = at[String](_+"*")
-    implicit def default[T](implicit data : DataT[this.type, T, T]) = at[T](data.gmapT)
+    implicit def default[T](implicit data : DataT[this.type, T]) = at[T](data.gmapT)
   }
 
   object inc extends Poly1 {
@@ -214,17 +214,17 @@ class SybClassTests {
     typed[String](result2)
     assertEquals("foo*", result2)
     
-    val result3 = everywhere(showFruit)(Apple(1))
-    typed[String](result3)
-    assertEquals("Pomme", result3)
+//    val result3 = everywhere(showFruit)(Apple(1))
+//    typed[String](result3)
+//    assertEquals("Pomme", result3)
 
     val result4 = everywhere(inc)(Apple(1))
     typed[Apple](result4)
     assertEquals(Apple(2), result4)
 
-    val result5 = everywhere(cycleFruit)(Apple(1))
-    typed[Pear](result5)
-    assertEquals(Pear(1), result5)
+//    val result5 = everywhere(cycleFruit)(Apple(1))
+//    typed[Pear](result5)
+//    assertEquals(Pear(1), result5)
 
 //    val result6 = everywhere(showFruit)(Apple(1) : Fruit)
 //    typed[String](result6)
@@ -388,6 +388,7 @@ class SybClassTests {
     assertEquals(42, result2)
   }
 
+  /*
   @Test
   def testHList2 {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
@@ -397,7 +398,9 @@ class SybClassTests {
     typed[Pear :: Banana :: Orange :: Apple :: HNil](result)
     assertEquals(expected, result)
   }
+  */
   
+  /*
   @Test
   def testHList3 {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
@@ -407,7 +410,9 @@ class SybClassTests {
     typed[String :: String :: String :: String :: HNil](result)
     assertEquals(expected, result)
   }
+  */
   
+  /*
   @Test
   def testCoproduct2 {
     type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
@@ -441,7 +446,9 @@ class SybClassTests {
     typed[PBOA](result4)
     assertEquals(expected4, result4)
   }
+  */
   
+  /*
   @Test
   def testList {
     val input: List[Apple] = List(Apple(1), Apple(2), Apple(3))
@@ -458,6 +465,7 @@ class SybClassTests {
     typed[List[Pear]](result2)
     assertEquals(expected2, result2)
   }
+  */
 
 /*
   @Test

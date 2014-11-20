@@ -27,13 +27,12 @@ object MonoidExamples extends App {
 
   // Automatically they're monoids ...
   {
-    import Monoid.auto._
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assert(f == Foo(36, "foobar"))
   }
 
-  // ... or explicitly
   {
+    // Precompute and cache instance for Bar ...
     implicit val barInstance = Monoid[Bar]
 
     val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
@@ -49,7 +48,7 @@ trait Monoid[T] {
   def append(a : T, b : T) : T
 }
 
-object Monoid extends ProductTypeClassCompanion[Monoid] {
+object Monoid extends SimpleTypeClassCompanion[Monoid] {
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
 
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -72,7 +71,7 @@ object Monoid extends ProductTypeClassCompanion[Monoid] {
     def append(a : String, b : String) = a+b
   }
 
-  implicit val monoidTypeClass: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
+  object typeClass extends SimpleTypeClass with ProductTypeClass {
     def emptyProduct = new Monoid[HNil] {
       def zero = HNil
       def append(a : HNil, b : HNil) = HNil
@@ -100,5 +99,3 @@ object MonoidSyntax {
     def |+|(b : T) = mt.append(a, b)
   }
 }
-
-// vim: expandtab:ts=2:sw=2

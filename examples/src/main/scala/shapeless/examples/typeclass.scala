@@ -20,7 +20,6 @@ package examples
 import test._
 
 object TypeClassesDemo {
-  import TypeClass.deriveConstructors
   import TypeClassesDemoAux._
   import ShowSyntax._
 
@@ -40,7 +39,6 @@ object TypeClassesDemo {
   }
 
   implicit def showShow2Dep: Show[Show2Dep] = new Show[Show2Dep] {
-    import Show2.auto._
     def show(t: Show2Dep) = "Show2Dep: >"+implicitly[Show2[Show2Dep]].show2(t)+"<"
   }
 
@@ -53,7 +51,6 @@ object TypeClassesDemo {
 
   def main(args: Array[String]): Unit = {
     import ExtInstances._
-    import Show.auto._
 
     //implicitly[Show[ADT]]
     //implicitly[Show[ADT2]]
@@ -127,7 +124,7 @@ object TypeClassesDemoAux {
     def show(t: T): String
   }
 
-  object Show extends LabelledTypeClassCompanion[Show] {
+  object Show extends SimpleTypeClassCompanion[Show] {
     implicit val showString: Show[String] = new Show[String] {
       def show(t: String) = t
     }
@@ -140,7 +137,7 @@ object TypeClassesDemoAux {
       def show(t: List[A]) = t.map(showA.show).mkString("List(", ", ", ")")
     }
 
-    implicit val showTypeClass: LabelledTypeClass[Show] = new LabelledTypeClass[Show] {
+    object typeClass extends SimpleTypeClass with LabelledTypeClass {
       def emptyProduct = new Show[HNil] {
         def show(t: HNil) = ""
       }
@@ -177,12 +174,12 @@ object TypeClassesDemoAux {
     def show2(t: T): String
   }
 
-  object Show2 extends ProductTypeClassCompanion[Show2] {
+  object Show2 extends SimpleTypeClassCompanion[Show2] {
     implicit val show2Int: Show2[Int] = new Show2[Int] {
       def show2(i: Int) = i.toString
     }
 
-    implicit val show2TypeClass: ProductTypeClass[Show2] = new ProductTypeClass[Show2] {
+    object typeClass extends SimpleTypeClass with ProductTypeClass {
       def emptyProduct = new Show2[HNil] {
         def show2(t: HNil) = ""
       }
