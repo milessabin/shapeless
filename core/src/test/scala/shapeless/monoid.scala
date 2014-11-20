@@ -25,7 +25,8 @@ package MonoidAux {
     def append(a : T, b : T) : T
   }
 
-  object Monoid extends ProductTypeClassCompanion[Monoid] {
+  object Monoid extends SimpleTypeClassCompanion[Monoid] {
+
     def mzero[T](implicit mt : Monoid[T]) = mt.zero
 
     implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -48,7 +49,7 @@ package MonoidAux {
       def append(a : String, b : String) = a+b
     }
 
-    implicit val monoidTypeClass: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
+    object typeClass extends SimpleTypeClass with ProductTypeClass {
       def emptyProduct = new Monoid[HNil] {
         def zero = HNil
         def append(a : HNil, b : HNil) = HNil
@@ -99,8 +100,6 @@ class MonoidTests {
 
   @Test
   def testAuto {
-    import Monoid.auto._
-
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
 
@@ -108,5 +107,3 @@ class MonoidTests {
     assertEquals(Bar(true, "foobar", 4.0), b)
   }
 }
-
-// vim: expandtab:ts=2:sw=2

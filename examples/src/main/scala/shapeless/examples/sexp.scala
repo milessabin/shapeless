@@ -29,7 +29,6 @@ import shapeless._
  * implementation in `org.ensime.sexp`.
  */
 
-
 // Our example serialised form
 // http://en.wikipedia.org/wiki/S-expression
 package sexp {
@@ -90,8 +89,6 @@ object SexpExamples extends App {
   ))
 
   // SETUP
-  import SexpConvert.auto._
-  //import TypeClass.deriveConstructors
   val creator = SexpConvert[Super]
 
   // DESERIALISATION
@@ -118,7 +115,7 @@ trait SexpConvert[T] {
   def ser(t: T): Sexp
 }
 
-object SexpConvert extends LabelledTypeClassCompanion[SexpConvert] {
+object SexpConvert extends SimpleTypeClassCompanion[SexpConvert] {
   // the SexpConvert[{String, Int}] are really "user land" concepts
   // hopefully shapeless 2.1 will allow these to be moved out of the
   // type class companion.
@@ -138,9 +135,7 @@ object SexpConvert extends LabelledTypeClassCompanion[SexpConvert] {
   }
   /////////////////////////////
 
-  def apply[T](implicit c: SexpConvert[T]) = c
-
-  implicit def tc: LabelledTypeClass[SexpConvert] = new LabelledTypeClass[SexpConvert] {
+  object typeClass extends SimpleTypeClass with LabelledTypeClass {
     def emptyProduct = new SexpConvert[HNil] {
       def deser(s: Sexp) = if (s == SexpNil) Some(HNil) else None
       def ser(n: HNil) = SexpNil

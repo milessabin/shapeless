@@ -31,7 +31,7 @@ package ProductTypeClassAux {
 
   case class Project[F, G](instance: Image[G]) extends Image[F]
 
-  object Image extends LabelledProductTypeClassCompanion[Image] {
+  object Image extends SimpleTypeClassCompanion[Image] {
     implicit def intImage: Image[Int] = Atom[Int]("int")
     implicit def stringImage: Image[String] = Atom[String]("string")
 
@@ -39,7 +39,7 @@ package ProductTypeClassAux {
       def image = dummy
     }
 
-    implicit object ImageTypeClass extends LabelledProductTypeClass[Image] {
+    object typeClass extends SimpleTypeClass with LabelledProductTypeClass {
       def product[H, T <: HList](name: String, h: Image[H], t: Image[T]) = Product(h, name, t)
 
       def emptyProduct = EmptyProduct
@@ -63,7 +63,7 @@ package TypeClassAux {
 
   case class Project[F, G](instance: Image[G]) extends Image[F]
 
-  object Image extends LabelledTypeClassCompanion[Image] {
+  object Image extends SimpleTypeClassCompanion[Image] {
     implicit def intImage: Image[Int] = Atom[Int]("int")
     implicit def stringImage: Image[String] = Atom[String]("string")
 
@@ -71,7 +71,7 @@ package TypeClassAux {
       def image = dummy
     }
 
-    implicit object ImageTypeClass extends LabelledTypeClass[Image] {
+    object typeClass extends SimpleTypeClass with LabelledTypeClass {
       def product[H, T <: HList](name: String, h: Image[H], t: Image[T]) = Product(h, name, t)
 
       def emptyProduct = EmptyProduct
@@ -136,28 +136,24 @@ class ProductTypeClassTests {
 
   @Test
   def testAutoSingle {
-    import Image.auto._
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
   def testAutoEmpty {
-    import Image.auto._
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
   def testAutoTuple {
-    import Image.auto._
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
   def testAutoUnit {
-    import Image.auto._
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
@@ -242,48 +238,31 @@ class TypeClassTests {
   }
 
   @Test
-  def testParentCheck {
-    illTyped("Image[CaseA[Int, String]]",
-      "Attempting to derive a type class instance for class `CaseA` with sealed superclass.*"
-    )
-
-    {
-      import TypeClass.deriveConstructors
-      Image[CaseA[Int, String]]
-    }
-  }
-
-  @Test
   def testAutoSingle {
-    import Image.auto._
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
   def testAutoEmpty {
-    import Image.auto._
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
   def testAutoMulti {
-    import Image.auto._
     assertEquals(casesResult, Image[Cases[Int, String]])
     assertEquals(casesResult, (CaseA(23): Cases[Int, String]).image)
   }
 
   @Test
   def testAutoTuple {
-    import Image.auto._
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
   def testAutoUnit {
-    import Image.auto._
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }

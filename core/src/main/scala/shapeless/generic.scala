@@ -18,7 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
-import scala.annotation.StaticAnnotation
+import scala.annotation.{ StaticAnnotation, tailrec }
 import scala.reflect.api.Universe
 import scala.reflect.macros.whitebox
 
@@ -55,8 +55,10 @@ trait CaseClassMacros {
   import internal.constantType
   import Flag._
 
+  def hlistTpe = typeOf[HList]
   def hnilTpe = typeOf[HNil]
   def hconsTpe = typeOf[::[_, _]].typeConstructor
+  def coproductTpe = typeOf[Coproduct]
   def cnilTpe = typeOf[CNil]
   def cconsTpe = typeOf[:+:[_, _]].typeConstructor
 
@@ -148,6 +150,24 @@ trait CaseClassMacros {
   def mkUnionTpe(fields: List[(TermName, Type)]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, fields.map((mkFieldTpe _).tupled))
 
+  def unfoldCompoundTpe(compoundTpe: Type, nil: Type, cons: Type): List[Type] = {
+    @tailrec
+    def loop(tpe: Type, acc: List[Type]): List[Type] =
+      tpe.dealias match {
+        case TypeRef(_, consSym, List(hd, tl))
+          if consSym.asType.toType.typeConstructor =:= cons => loop(tl, hd :: acc)
+        case `nil` => acc
+        case other => abort(s"Bad compound type $compoundTpe")
+      }
+    loop(compoundTpe, Nil).reverse
+  }
+
+  def hlistElements(tpe: Type): List[Type] =
+    unfoldCompoundTpe(tpe, hnilTpe, hconsTpe)
+
+  def coproductElements(tpe: Type): List[Type] =
+    unfoldCompoundTpe(tpe, cnilTpe, cconsTpe)
+
   def reprTpe(tpe: Type, labelled: Boolean): Type = {
     if(isProduct(tpe)) {
       val fields = fieldsOf(tpe)
@@ -168,6 +188,8 @@ trait CaseClassMacros {
   def isCaseClassLike(sym: ClassSymbol): Boolean =
     sym.isCaseClass ||
     (!sym.isAbstract && !sym.isTrait && sym.knownDirectSubclasses.isEmpty && fieldsOf(sym.typeSignature).nonEmpty)
+
+  def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass && isCaseClassLike(sym)
 
   def isCaseAccessorLike(sym: TermSymbol): Boolean =
     !isNonGeneric(sym) && sym.isPublic && (if(sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isAccessor)
@@ -254,7 +276,20 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
           cq"() => _root_.shapeless.HNil",
           cq"_root_.shapeless.HNil => ()"
         )
-      else {
+      else if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
+        val singleton =
+          tpe match {
+            case SingleType(_, singleton) => singleton
+            case TypeRef(pre, sym, args) => sym.asClass.module
+            case other =>
+              abort(s"Bad case object-like type $tpe")
+          }
+
+        (
+          cq"_: $tpe => _root_.shapeless.HNil",
+          cq"_root_.shapeless.HNil => $singleton"
+        )
+      } else {
         val sym = tpe.typeSymbol
         val isCaseClass = sym.asClass.isCaseClass
         def hasNonGenericCompanionMember(name: String): Boolean = {

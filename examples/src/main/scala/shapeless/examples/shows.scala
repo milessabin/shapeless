@@ -26,25 +26,13 @@ object ShowExamples extends App {
   case class Bar(i : Int) extends Super
   case class BarRec(i : Int, rec: Super) extends Super
 
-  object Super {
-    implicit val instance: Show[Super] = Show[Super]
-  }
-
   sealed trait MutualA
   case class MutualA1(x: Int) extends MutualA
   case class MutualA2(b: MutualB) extends MutualA
 
-  object MutualA {
-    implicit val aInstance: Show[MutualA] = Show[MutualA]
-  }
-
   sealed trait MutualB
   case class MutualB1(x: Int) extends MutualB
   case class MutualB2(b: MutualA) extends MutualB
-
-  object MutualB {
-    implicit val bInstance: Show[MutualB] = Show[MutualB]
-  }
 
   val bar: Super = Bar(0)
   val rec: Super = BarRec(1, Foo(0, "foo"))
@@ -71,7 +59,7 @@ trait Show[T] {
   def show(t: T): String
 }
 
-object Show extends LabelledTypeClassCompanion[Show] {
+object Show extends SimpleTypeClassCompanion[Show] {
   implicit def stringShow: Show[String] = new Show[String] {
     def show(t: String) = t
   }
@@ -80,7 +68,7 @@ object Show extends LabelledTypeClassCompanion[Show] {
     def show(n: Int) = n.toString
   }
 
-  implicit def showInstance: LabelledTypeClass[Show] = new LabelledTypeClass[Show] {
+  object typeClass extends SimpleTypeClass with LabelledTypeClass {
     def emptyProduct = new Show[HNil] {
       def show(t: HNil) = ""
     }
