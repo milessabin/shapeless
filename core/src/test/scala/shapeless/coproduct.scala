@@ -778,24 +778,47 @@ class CoproductTests {
     val in2 = Coproduct[I :+: S :+: CNil](1)
     val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
 
-    val r1 = in1.at[_0]
-    assertTypedEquals[Option[I]](Some(1), r1)
+    {
+      val r1 = in1.at(0)
+      assertTypedEquals[Option[I]](Some(1), r1)
 
-    val r2 = in2.at[_0]
-    assertTypedEquals[Option[I]](Some(1), r2)
+      val r2 = in2.at(0)
+      assertTypedEquals[Option[I]](Some(1), r2)
 
-    val r3 = in3.at[_0]
-    assertTypedEquals[Option[I]](Some(1), r3)
+      val r3 = in3.at(0)
+      assertTypedEquals[Option[I]](Some(1), r3)
 
 
-    val r4 = in2.at[_1]
-    assertTypedEquals[Option[S]](None, r4)
+      val r4 = in2.at(1)
+      assertTypedEquals[Option[S]](None, r4)
 
-    val r5 = in3.at[_1]
-    assertTypedEquals[Option[S]](None, r5)
+      val r5 = in3.at(1)
+      assertTypedEquals[Option[S]](None, r5)
 
-    val r6 = in3.at[_2]
-    assertTypedEquals[Option[D]](None, r6)
+      val r6 = in3.at(2)
+      assertTypedEquals[Option[D]](None, r6)
+    }
+
+    {
+      val r1 = in1.at[nat._0]
+      assertTypedEquals[Option[I]](Some(1), r1)
+
+      val r2 = in2.at[nat._0]
+      assertTypedEquals[Option[I]](Some(1), r2)
+
+      val r3 = in3.at[nat._0]
+      assertTypedEquals[Option[I]](Some(1), r3)
+
+
+      val r4 = in2.at[nat._1]
+      assertTypedEquals[Option[S]](None, r4)
+
+      val r5 = in3.at[nat._1]
+      assertTypedEquals[Option[S]](None, r5)
+
+      val r6 = in3.at[nat._2]
+      assertTypedEquals[Option[D]](None, r6)
+    }
   }
 
   @Test
