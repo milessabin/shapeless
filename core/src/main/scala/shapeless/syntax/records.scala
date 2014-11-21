@@ -106,6 +106,11 @@ final class RecordOps[L <: HList](l : L) {
   def toMap[K, V](implicit toMap: ToMap.Aux[L, K, V]): Map[K, V] = toMap(l)
 
   /**
+   * Maps a higher rank function across the values of this record.
+   */
+  def mapValues(f: Poly)(implicit mapValues: MapValues[f.type, L]): mapValues.Out = mapValues(l)
+
+  /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
   def record: DynamicRecordOps[L] = DynamicRecordOps(l)
