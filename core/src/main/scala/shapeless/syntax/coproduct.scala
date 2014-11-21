@@ -93,6 +93,13 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
 
   /**
+   * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type
+   * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def split[N <: Nat](implicit split: Split[C, N]): split.Out = split(c)
+  def splitC[N <: Nat](implicit split: Split[C, N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
+
+  /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
@@ -101,11 +108,23 @@ final class CoproductOps[C <: Coproduct](c: C) {
 
 
   /**
+   * Takes the first `n` elements of this `Coproduct`. An explicit type argument must be provided. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def take[N <: Nat](implicit take: Take[C, N]): take.Out = take(c)
+
+  /**
    * Takes the first `n` elements of this `Coproduct`. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
   def take(n: Nat)(implicit take: Take[C, n.N]): take.Out = take(c)
   
+  /**
+   * Drops the first `n` elements of this `Coproduct`. An explicit type argument must be provided. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def drop[N <: Nat](implicit drop: Drop[C, N]): drop.Out = drop(c)
+
   /**
    * Drops the first `n` elements of this `Coproduct`. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
@@ -162,12 +181,22 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
 
   /**
-   * Rotate this 'Coproduct' left by N
+   * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
+   */
+  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
+
+  /**
+   * Rotate this 'Coproduct' left by `n`
    */
   def rotateLeft(n: Nat)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
 
   /**
-   * Rotate this 'Coproduct' right by N
+   * Rotate this 'Coproduct' right by N. An explicit type argument must be provided.
+   */
+  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
+
+  /**
+   * Rotate this 'Coproduct' right by `n`
    */
   def rotateRight(n: Nat)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
 
