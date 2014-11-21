@@ -267,4 +267,54 @@ package record {
         def apply(l: FieldType[K, V] :: T): Out = (l.head: V) :: vt(l.tail)
       }
   }
+
+  /**
+   * Type class supporting converting this record to a `Map` whose keys and values
+   * are typed as the Lub of the keys and values of this record.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToMap[L <: HList] extends DepFn1[L] {
+    type Key
+    type Value
+    type Out = Map[Key, Value]
+  }
+
+  object ToMap {
+    def apply[L <: HList](implicit toMap: ToMap[L]): Aux[L, toMap.Key, toMap.Value] = toMap
+
+    type Aux[L <: HList, Key0, Value0] = ToMap[L] { type Key = Key0; type Value = Value0 }
+
+    implicit def hnilToMap[K, V, L <: HNil]: Aux[L, K, V] =
+      new ToMap[L] {
+        type Key = K
+        type Value = V
+        def apply(l: L) = Map.empty
+      }
+
+    implicit def hnilToMapAnyNothing[L <: HNil]: Aux[L, Any, Nothing] = hnilToMap[Any, Nothing, L]
+
+    implicit def hsingleToMap[K, V](implicit
+      wk: Witness.Aux[K]
+    ): Aux[FieldType[K, V] :: HNil, K, V] =
+      new ToMap[FieldType[K, V] :: HNil] {
+        type Key = K
+        type Value = V
+        def apply(l: FieldType[K, V] :: HNil) = Map(wk.value -> (l.head: V))
+      }
+
+    implicit def hlistToMap[HK, HV, TH, TT <: HList, TK, TV, K, V](implicit
+      tailToMap: ToMap.Aux[TH :: TT, TK, TV],
+      keyLub: Lub[HK, TK, K],
+      valueLub: Lub[HV, TV, V],
+      wk: Witness.Aux[HK]
+    ): Aux[FieldType[HK, HV] :: TH :: TT, K, V] =
+      new ToMap[FieldType[HK, HV] :: TH :: TT] {
+        type Key = K
+        type Value = V
+        def apply(l: FieldType[HK, HV] :: TH :: TT) =
+          tailToMap(l.tail).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)} +
+            (keyLub.left(wk.value) -> valueLub.left(l.head: HV))
+      }
+  }
 }

@@ -24,6 +24,7 @@ class RecordTests {
   import record._
   import syntax.singleton._
   import test._
+  import testutil._
 
   object intField1 extends FieldOf[Int]
   object intField2 extends FieldOf[Int]
@@ -653,5 +654,47 @@ class RecordTests {
     illTyped("""
       r.get('foo)
     """)
+  }
+
+  @Test
+  def testToMap {
+    {
+      val m = HNil.toMap
+      assertTypedEquals(Map.empty[Any, Nothing], m)
+    }
+
+    {
+      val m = HNil.toMap[String, Nothing]
+      assertTypedEquals(Map.empty[String, Nothing], m)
+    }
+
+    {
+      val m = HNil.toMap[String, Int]
+      assertTypedEquals(Map.empty[String, Int], m)
+    }
+
+    val r = Record(i = 23, s = "foo", b = true)
+
+    {
+      val m = r.toMap
+      assertTypedEquals(Map[Symbol, Any]('i -> 23, 's -> "foo", 'b -> true), m)
+    }
+
+    {
+      val m = r.toMap[Symbol, Any]
+      assertTypedEquals(Map[Symbol, Any]('i -> 23, 's -> "foo", 'b -> true), m)
+    }
+
+    val rs = ("first" ->> Some(2)) :: ("second" ->> Some(true)) :: ("third" ->> Option.empty[String]) :: HNil
+
+    {
+      val m = rs.toMap
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2), "second" -> Some(true), "third" -> Option.empty[String]), m)
+    }
+
+    {
+      val m = rs.toMap[String, Option[Any]]
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2), "second" -> Some(true), "third" -> Option.empty[String]), m)
+    }
   }
 }
