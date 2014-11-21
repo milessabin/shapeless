@@ -512,9 +512,19 @@ final class HListOps[L <: HList](l : L) {
   def permutations(implicit permutations: Permutations[L]): permutations.Out = permutations(l)
 
   /**
+   * Rotate this 'HList' left by N. An explicit type argument must be provided.
+   */
+  def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[L, N]): rotateLeft.Out = rotateLeft(l)
+
+  /**
    * Rotate this 'HList' left by N
    */
   def rotateLeft(n: Nat)(implicit rotateLeft: RotateLeft[L, n.N]): rotateLeft.Out = rotateLeft(l)
+
+  /**
+   * Rotate this 'HList' right by N. An explicit type argument must be provided.
+   */
+  def rotateRight[N <: Nat](implicit rotateRight: RotateRight[L, N]): rotateRight.Out = rotateRight(l)
 
   /**
    * Rotate this 'HList' right by N

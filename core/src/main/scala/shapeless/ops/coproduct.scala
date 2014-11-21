@@ -798,6 +798,32 @@ object coproduct {
   }
 
   /**
+   * Type class supporting permuting this `Coproduct` into the same order as another `Coproduct` with
+   * the same element types.
+   *
+   * @author Michael Pilquist
+   */
+  trait Align[A <: Coproduct, B <: Coproduct] extends (A => B) {
+    def apply(a: A): B
+  }
+
+  object Align {
+    def apply[A <: Coproduct, B <: Coproduct](implicit a: Align[A, B]): Align[A, B] = a
+
+    implicit val cnilAlign: Align[CNil, CNil] = new Align[CNil, CNil] {
+      def apply(c: CNil): CNil = c
+    }
+
+    implicit def coproductAlign[A <: Coproduct, BH, BT <: Coproduct, R <: Coproduct]
+      (implicit remove: Remove.Aux[A, BH, R], alignTail: Align[R, BT]): Align[A, BH :+: BT] = new Align[A, BH :+: BT] {
+      def apply(a: A) = remove(a) match {
+        case Left(bh) => Inl(bh)
+        case Right(rest) => Inr(alignTail(rest))
+      }
+    }
+  }
+
+  /**
    * Type class providing access to init and last of a Coproduct
    *
    * @author Stacy Curl

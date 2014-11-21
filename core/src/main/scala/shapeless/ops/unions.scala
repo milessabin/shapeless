@@ -111,4 +111,57 @@ object union {
         }
       }
   }
+
+  /**
+   * Type class supporting converting this union to a `Map` whose keys and values
+   * are typed as the Lub of the keys and values of this union.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToMap[U <: Coproduct] extends DepFn1[U] {
+    type Key
+    type Value
+    type Out = Map[Key, Value]
+  }
+
+  object ToMap {
+    def apply[U <: Coproduct](implicit toMap: ToMap[U]): Aux[U, toMap.Key, toMap.Value] = toMap
+
+    type Aux[U <: Coproduct, Key0, Value0] = ToMap[U] { type Key = Key0; type Value = Value0 }
+
+    implicit def cnilToMap[K, V]: Aux[CNil, K, V] =
+      new ToMap[CNil] {
+        type Key = K
+        type Value = V
+        def apply(l: CNil) = Map.empty
+      }
+
+    implicit val cnilToMapAnyNothing: Aux[CNil, Any, Nothing] = cnilToMap[Any, Nothing]
+
+    implicit def csingleToMap[K, V](implicit
+      wk: Witness.Aux[K]
+    ): Aux[FieldType[K, V] :+: CNil, K, V] =
+      new ToMap[FieldType[K, V] :+: CNil] {
+        type Key = K
+        type Value = V
+        def apply(c: FieldType[K, V] :+: CNil) = (c: @unchecked) match {
+          case Inl(h) => Map(wk.value -> (h: V))
+        }
+      }
+
+    implicit def coproductToMap[HK, HV, TH, TT <: Coproduct, TK, TV, K, V](implicit
+      tailToMap: ToMap.Aux[TH :+: TT, TK, TV],
+      keyLub: Lub[HK, TK, K],
+      valueLub: Lub[HV, TV, V],
+      wk: Witness.Aux[HK]
+    ): Aux[FieldType[HK, HV] :+: TH :+: TT, K, V] =
+      new ToMap[FieldType[HK, HV] :+: TH :+: TT] {
+        type Key = K
+        type Value = V
+        def apply(c: FieldType[HK, HV] :+: TH :+: TT) = c match {
+          case Inl(h) => Map(keyLub.left(wk.value) -> valueLub.left(h: HV))
+          case Inr(t) => tailToMap(t).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)}
+        }
+      }
+  }
 }

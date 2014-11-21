@@ -99,6 +99,12 @@ final class RecordOps[L <: HList](l : L) {
   def values(implicit values: Values[L]): values.Out = values(l)
 
   /**
+   * Returns a `Map` whose keys and values are typed as the Lub of the keys
+   * and values of this record.
+   */
+  def toMap[K, V](implicit toMap: ToMap.Aux[L, K, V]): Map[K, V] = toMap(l)
+
+  /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
   def record: DynamicRecordOps[L] = DynamicRecordOps(l)

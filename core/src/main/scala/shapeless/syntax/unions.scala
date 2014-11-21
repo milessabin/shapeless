@@ -56,6 +56,12 @@ final class UnionOps[C <: Coproduct](c : C) {
   def values(implicit values: Values[C]): values.Out = values(c)
 
   /**
+   * Returns a `Map` whose keys and values are typed as the Lub of the keys
+   * and values of this union.
+   */
+  def toMap[K, V](implicit toMap: ToMap.Aux[C, K, V]): Map[K, V] = toMap(c)
+
+  /**
    * Returns a wrapped version of this union that provides `selectDynamic` access to fields.
    */
   def union: DynamicUnionOps[C] = DynamicUnionOps(c)

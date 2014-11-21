@@ -23,8 +23,10 @@ import labelled.FieldType
 import union._
 import syntax.singleton._
 import test._
+import testutil._
 
 class UnionTests {
+
   val wI = Witness('i)
   type i = wI.T
 
@@ -127,5 +129,57 @@ class UnionTests {
     illTyped("""
       u1.get('foo)
     """)
+  }
+
+  @Test
+  def testToMap {
+    val u1 = Union[U](i = 23)
+    val u2 = Union[U](s = "foo")
+    val u3 = Union[U](b = true)
+
+    {
+      val m1 = u1.toMap
+      val m2 = u2.toMap
+      val m3 = u3.toMap
+
+      assertTypedEquals(Map[Symbol, Any]('i -> 23), m1)
+      assertTypedEquals(Map[Symbol, Any]('s -> "foo"), m2)
+      assertTypedEquals(Map[Symbol, Any]('b -> true), m3)
+    }
+
+    {
+      val m1 = u1.toMap[Symbol, Any]
+      val m2 = u2.toMap[Symbol, Any]
+      val m3 = u3.toMap[Symbol, Any]
+
+      assertTypedEquals(Map[Symbol, Any]('i -> 23), m1)
+      assertTypedEquals(Map[Symbol, Any]('s -> "foo"), m2)
+      assertTypedEquals(Map[Symbol, Any]('b -> true), m3)
+    }
+
+    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    val us1 = Coproduct[US]("first" ->> Option(2))
+    val us2 = Coproduct[US]("second" ->> Option(true))
+    val us3 = Coproduct[US]("third" ->> Option.empty[String])
+
+    {
+      val m1 = us1.toMap
+      val m2 = us2.toMap
+      val m3 = us3.toMap
+
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2)), m1)
+      assertTypedEquals(Map[String, Option[Any]]("second" -> Some(true)), m2)
+      assertTypedEquals(Map[String, Option[Any]]("third" -> Option.empty[String]), m3)
+    }
+
+    {
+      val m1 = us1.toMap[String, Option[Any]]
+      val m2 = us2.toMap[String, Option[Any]]
+      val m3 = us3.toMap[String, Option[Any]]
+
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2)), m1)
+      assertTypedEquals(Map[String, Option[Any]]("second" -> Some(true)), m2)
+      assertTypedEquals(Map[String, Option[Any]]("third" -> Option.empty[String]), m3)
+    }
   }
 }
