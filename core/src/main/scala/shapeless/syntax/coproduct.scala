@@ -49,7 +49,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * Returns the ''nth'' element of this `Coproduct`.
    * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def at[N <: Nat](n: N)(implicit at: At[C, n.N]): Option[at.A] = at(c)
+  def at(n: Nat)(implicit at: At[C, n.N]): Option[at.A] = at(c)
 
   /**
    * Returns the last element of this 'Coproduct'
