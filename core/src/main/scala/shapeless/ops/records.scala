@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import poly._
+
 //object record {
 //  Ideally this would be an object rather than a package, however that appears
 //  to trip bugs in implicit resolution which manifest in the use of WitnessWith
@@ -315,6 +317,34 @@ package record {
         def apply(l: FieldType[HK, HV] :: TH :: TT) =
           tailToMap(l.tail).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)} +
             (keyLub.left(wk.value) -> valueLub.left(l.head: HV))
+      }
+  }
+
+  /**
+   * Type class supporting mapping a higher rank function over the values of a record.
+   *
+   * @author Alexandre Archambault
+   */
+  trait MapValues[HF, L <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object MapValues {
+    def apply[HF, L <: HList](implicit mapValues: MapValues[HF, L]): Aux[HF, L, mapValues.Out] = mapValues
+
+    type Aux[HF, L <: HList, Out0 <: HList] = MapValues[HF, L] { type Out = Out0 }
+
+    implicit def hnilMapValues[HF, L <: HNil]: Aux[HF, L, HNil] =
+      new MapValues[HF, L] {
+        type Out = HNil
+        def apply(l: L) = HNil
+      }
+
+    implicit def hconsMapValues[HF, K, V, T <: HList](implicit
+      hc: Case1[HF, V],
+      mapValuesTail: MapValues[HF, T]
+    ): Aux[HF, FieldType[K, V] :: T, FieldType[K, hc.Result] :: mapValuesTail.Out] =
+      new MapValues[HF, FieldType[K, V] :: T] {
+        type Out = FieldType[K, hc.Result] :: mapValuesTail.Out
+        def apply(l: FieldType[K, V] :: T) = field[K](hc(l.head: V)) :: mapValuesTail(l.tail)
       }
   }
 }

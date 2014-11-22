@@ -62,6 +62,11 @@ final class UnionOps[C <: Coproduct](c : C) {
   def toMap[K, V](implicit toMap: ToMap.Aux[C, K, V]): Map[K, V] = toMap(c)
 
   /**
+   * Maps a higher rank function across the values of this union.
+   */
+  def mapValues(f: Poly)(implicit mapValues: MapValues[f.type, C]): mapValues.Out = mapValues(c)
+
+  /**
    * Returns a wrapped version of this union that provides `selectDynamic` access to fields.
    */
   def union: DynamicUnionOps[C] = DynamicUnionOps(c)

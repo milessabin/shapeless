@@ -182,4 +182,49 @@ class UnionTests {
       assertTypedEquals(Map[String, Option[Any]]("third" -> Option.empty[String]), m3)
     }
   }
+  
+  @Test
+  def testMapValues {
+    object f extends Poly1 {
+      implicit def int = at[Int](i => i > 0)
+      implicit def string = at[String](s => s"s: $s")
+      implicit def boolean = at[Boolean](v => if (v) "Yup" else "Nope")
+    }
+
+    {
+      val u1 = Union[U](i = 23)
+      val u2 = Union[U](s = "foo")
+      val u3 = Union[U](b = true)
+
+      type R = Union.`'i -> Boolean, 's -> String, 'b -> String`.T
+
+      val res1 = u1.mapValues(f)
+      val res2 = u2.mapValues(f)
+      val res3 = u3.mapValues(f)
+
+      assertTypedEquals[R](Union[R](i = true), res1)
+      assertTypedEquals[R](Union[R](s = "s: foo"), res2)
+      assertTypedEquals[R](Union[R](b = "Yup"), res3)
+    }
+
+    {
+      object toUpper extends Poly1 {
+        implicit def stringToUpper = at[String](_.toUpperCase)
+        implicit def otherTypes[X] = at[X](identity)
+      }
+
+      type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
+      val u1 = Coproduct[U]("foo" ->> "joe")
+      val u2 = Coproduct[U]("bar" ->> true)
+      val u3 = Coproduct[U]("baz" ->> 2.0)
+
+      val r1 = u1 mapValues toUpper
+      val r2 = u2 mapValues toUpper
+      val r3 = u3 mapValues toUpper
+
+      assertTypedEquals[U](Coproduct[U]("foo" ->> "JOE"), r1)
+      assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
+      assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
+    }
+  }
 }

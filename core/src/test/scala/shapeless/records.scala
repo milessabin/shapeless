@@ -697,4 +697,47 @@ class RecordTests {
       assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2), "second" -> Some(true), "third" -> Option.empty[String]), m)
     }
   }
+
+  @Test
+  def testMapValues {
+    object f extends Poly1 {
+      implicit def int = at[Int](i => i > 0)
+      implicit def string = at[String](s => s"s: $s")
+      implicit def boolean = at[Boolean](v => if (v) "Yup" else "Nope")
+    }
+
+    {
+      val r = HNil
+      val res = r.mapValues(f)
+      assertTypedEquals[HNil](HNil, res)
+    }
+
+    {
+      val r = Record(i = 23, s = "foo", b = true)
+      val res = r.mapValues(f)
+      assertTypedEquals[Record.`'i -> Boolean, 's -> String, 'b -> String`.T](Record(i = true, s = "s: foo", b = "Yup"), res)
+    }
+
+    {
+      object toUpper extends Poly1 {
+        implicit def stringToUpper = at[String](_.toUpperCase)
+        implicit def otherTypes[X] = at[X](identity)
+      }
+
+      val r = ("foo" ->> "joe") :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+      val r2 = r mapValues toUpper
+
+      val v1 = r2("foo")
+      typed[String](v1)
+      assertEquals("JOE", v1)
+
+      val v2 = r2("bar")
+      typed[Boolean](v2)
+      assertEquals(true, v2)
+
+      val v3 = r2("baz")
+      typed[Double](v3)
+      assertEquals(2.0, v3, Double.MinPositiveValue)
+    }
+  }
 }
