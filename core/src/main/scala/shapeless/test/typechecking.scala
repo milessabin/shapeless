@@ -36,10 +36,10 @@ object illTyped {
   def applyImpl(c: whitebox.Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
 
-    val Expr(Literal(Constant(codeStr: String))) = code
+    val Expr(c.universe.Literal(Constant(codeStr: String))) = code
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")
-      case Expr(Literal(Constant(s: String))) =>
+      case Expr(c.universe.Literal(Constant(s: String))) =>
         (Pattern.compile(s, Pattern.CASE_INSENSITIVE), "Expected error matching: "+s)
     }
 

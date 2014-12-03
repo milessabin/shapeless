@@ -74,7 +74,7 @@ trait SingletonTypeUtils {
 
   object LiteralSymbol {
     def unapply(t: Tree): Option[Constant] = t match {
-      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
+      case q""" scala.Symbol.apply(${c.universe.Literal(c: Constant)}) """ => Some(c)
       case _ => None
     }
   }
@@ -154,7 +154,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     val tpe = weakTypeOf[T].dealias
     val value =
       tpe match {
-        case ConstantType(c: Constant) => Literal(c)
+        case ConstantType(constant: Constant) => c.universe.Literal(constant)
 
         case SingleType(p, v) if !v.isParameter => q"""$v.asInstanceOf[$tpe]"""
 
@@ -168,8 +168,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
   def extractResult[T](t: Expr[T])(mkResult: (Type, Tree) => Tree): Tree =
     (t.actualType, t.tree) match {
-      case (tpe @ ConstantType(c: Constant), _) =>
-        mkResult(tpe, Literal(c))
+      case (tpe @ ConstantType(constant: Constant), _) =>
+        mkResult(tpe, c.universe.Literal(constant))
 
       case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
         mkResult(tpe, tree)

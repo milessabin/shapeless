@@ -74,7 +74,7 @@ object NatMacros {
     import c.universe._
 
     val n = i.tree match {
-      case Literal(Constant(n: Int)) => n
+      case c.universe.Literal(Constant(n: Int)) => n
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
     }
