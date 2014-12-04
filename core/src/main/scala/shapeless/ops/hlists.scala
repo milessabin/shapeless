@@ -1728,7 +1728,7 @@ object hlist {
    *
    * @author Cody Allen
    */
-  trait ZipWithKeys[K <: HList, V <: HList] extends DepFn2[K, V] { type Out <: HList }
+  trait ZipWithKeys[K <: HList, V <: HList] extends DepFn1[V] { type Out <: HList }
 
   object ZipWithKeys {
     import shapeless.labelled._
@@ -1740,15 +1740,15 @@ object hlist {
 
     implicit val hnilZipWithKeys: Aux[HNil, HNil, HNil] = new ZipWithKeys[HNil, HNil] {
       type Out = HNil
-      def apply(k: HNil, v: HNil) = HNil
+      def apply(v: HNil) = HNil
     }
 
     implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList] (implicit zipWithKeys: ZipWithKeys[KT, VT], wkh: Witness.Aux[KH])
         : Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: zipWithKeys.Out] =
           new ZipWithKeys[KH :: KT, VH :: VT] {
             type Out = FieldType[KH, VH] :: zipWithKeys.Out
-            def apply(k: KH :: KT, v: VH :: VT): Out =
-              field[wkh.T](v.head) :: zipWithKeys(k.tail, v.tail)
+            def apply(v: VH :: VT): Out =
+              field[wkh.T](v.head) :: zipWithKeys(v.tail)
           }
   }
 

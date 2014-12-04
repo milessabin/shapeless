@@ -178,7 +178,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Converts this `Coproduct` of values into a union with the provided keys.
    */
-  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
+  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
 
   /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
