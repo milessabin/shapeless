@@ -1877,6 +1877,22 @@ class HListTests {
     // key/value lengths must match up
     illTyped("orig.tail.values.zipWithKeys(orig.keys)")
     illTyped("orig.values.zipWithKeys(orig.keys.tail)")
+    
+    // Explicit type argument
+    {
+      val result = orig.values.zipWithKeys[Literals.`"intField", "boolField"`.T]
+      sameTyped(orig)(result)
+      assertEquals(orig, result)
+      val int = result.get("intField")
+      assertTypedEquals[Int](1, int)
+      val bool = result.get("boolField")
+      assertTypedEquals[Boolean](true, bool)
+      illTyped("""result.get("otherField")""")
+
+      // key/value lengths must match up
+      illTyped(""" orig.tail.values.zipWithKeys[Literals.`"intField", "boolField"`.T] """)
+      illTyped(""" orig.values.zipWithKeys[Literals.`"boolField"`.T] """)
+    }
   }
 
   @Test

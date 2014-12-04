@@ -507,6 +507,11 @@ final class HListOps[L <: HList](l : L) {
   def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(l)
 
   /**
+   * Converts this `HList` of values into a record with given keys. A type argument must be provided.
+   */
+  def zipWithKeys[K <: HList](implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(l)
+
+  /**
    * Returns all permutations of this 'HList'
    */
   def permutations(implicit permutations: Permutations[L]): permutations.Out = permutations(l)

@@ -304,6 +304,37 @@ class CoproductTests {
 
     // key/value lengths must match up
     illTyped("u1.zipWithKeys(uKeys.tail)")
+    
+    // Explicit type argument
+    
+    {
+      val u1 = Coproduct[ISB](23).zipWithKeys[Literals.`'i, 's, 'b`.T]
+      val v1 = u1.get('i)
+      typed[Option[Int]](v1)
+      assertEquals(Some(23), v1)
+      assertEquals(None, u1.get('s))
+    }
+    
+    {
+      val u2 = Coproduct[ISB]("foo").zipWithKeys[Literals.`'i, 's, 'b`.T]
+      val v2 = u2.get('s)
+      typed[Option[String]](v2)
+      assertEquals(Some("foo"), v2)
+      assertEquals(None, u2.get('b))
+    }
+    
+    {
+      val u3 = Coproduct[ISB](true).zipWithKeys[Literals.`'i, 's, 'b`.T]
+      val v3 = u3.get('b)
+      typed[Option[Boolean]](v3)
+      assertEquals(Some(true), v3)
+      assertEquals(None, u3.get('i))
+      
+      illTyped("v3.get('d)")
+    }
+
+    illTyped(" Coproduct[ISB](true).zipWithKeys[Literals.`'i, 's, 'b, 'd`.T] ")
+    
   }
 
   @Test
