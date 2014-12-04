@@ -152,4 +152,40 @@ class LabelledMacros(val c: whitebox.Context) {
     // to result in a runtime exception if the value is used in term position.
     Literal(Constant(())).setType(carrier)
   }
+
+  def literalsTypeImpl(tpeSelector: c.Tree): c.Tree = {
+    import c.universe.{ Try => _, _ }
+    import internal._, decorators._
+
+    val q"${tpeString: String}" = tpeSelector
+    val types = tpeString.split(",").map(_.trim).map { value =>
+      (for {
+        parsed <- Try(c.parse(value)).toOption
+        checked = c.typecheck(parsed, silent = true)
+        if checked.nonEmpty
+      } yield
+        checked match {
+          case q""" ${SingletonKeyType(keyType)} """ => keyType
+          case _ =>
+            c.abort(c.enclosingPosition, s"$checked does not look like a literal")
+        }
+      ).getOrElse(c.abort(c.enclosingPosition, s"Malformed type $tpeString"))
+    }
+
+    val productTpe =
+      types.foldRight(hnilTpe) { case (tpe, acc) =>
+        appliedType(hconsTpe, List(tpe, acc))
+      }
+
+    val sumTpe =
+      types.foldRight(cnilTpe) { case (tpe, acc) =>
+        appliedType(cconsTpe, List(tpe, acc))
+      }
+
+    val carrier = c.typecheck(tq"{ type T = $productTpe; type S = $sumTpe }", mode = c.TYPEmode).tpe
+
+    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+    // to result in a runtime exception if the value is used in term position.
+    Literal(Constant(())).setType(carrier)
+  }
 }
