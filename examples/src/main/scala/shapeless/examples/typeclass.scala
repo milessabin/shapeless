@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package shapeless
 package examples
 
-import test._
+import labelled.FieldType, syntax.singleton._, test._
 
 object TypeClassesDemo {
   import TypeClassesDemoAux._
@@ -81,7 +81,8 @@ object TypeClassesDemo {
           "Ctor(s = child), "+
           "ExtCtor(ExtCtor!(true)), "+
           "ADTRec(a = ExtCtor(ExtCtor!(false))), "+
-          "CtorRec(c = Ctor(s = otherchild)), "+
+          //"CtorRec(c = Ctor(s = otherchild)), "+
+          "CtorRec(c = s = otherchild), "+
           "IndirectADTRec(s = treeChild, "+
             "as = List("+
               "Ctor(s = grandchild), "+
@@ -124,7 +125,9 @@ object TypeClassesDemoAux {
     def show(t: T): String
   }
 
-  object Show extends SimpleTypeClassCompanion[Show] {
+  object Show {
+    def apply[T](implicit st: Lazy[Show[T]]): Show[T] = st.value
+
     implicit val showString: Show[String] = new Show[String] {
       def show(t: String) = t
     }
@@ -137,67 +140,80 @@ object TypeClassesDemoAux {
       def show(t: List[A]) = t.map(showA.show).mkString("List(", ", ", ")")
     }
 
-    object typeClass extends SimpleTypeClass with LabelledTypeClass {
-      def emptyProduct = new Show[HNil] {
-        def show(t: HNil) = ""
+    implicit def deriveHNil: Show[HNil] =
+      new Show[HNil] {
+        def show(p: HNil): String = ""
       }
 
-      def product[F, T <: HList](name: String, CHead: Show[F], CTail: Show[T]) = new Show[F :: T] {
-        def show(ft: F :: T) = {
-          val head = CHead.show(ft.head)
-          val tail = CTail.show(ft.tail)
-          if (tail.isEmpty)
-            s"$name = $head"
-          else
-            s"$name = $head, $tail"
+    implicit def deriveHCons[K <: Symbol, V, T <: HList]
+      (implicit
+        key: Witness.Aux[K],
+        sv: Lazy[Show[V]],
+        st: Lazy[Show[T]]
+      ): Show[FieldType[K, V] :: T] =
+        new Show[FieldType[K, V] :: T] {
+          def show(p: FieldType[K, V] :: T): String = {
+            val head = s"${key.value.name} = ${sv.value.show(p.head)}"
+            val tail = st.value.show(p.tail)
+            if(tail.isEmpty) head else s"$head, $tail"
+          }
         }
+
+    implicit def deriveCNil: Show[CNil] =
+      new Show[CNil] {
+        def show(p: CNil): String = ""
       }
 
-      def emptyCoproduct = new Show[CNil] {
-        def show(t: CNil) = ""
-      }
-
-      def coproduct[L, R <: Coproduct](name: String, CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
-        def show(lr: L :+: R) = lr match {
-          case Inl(l) => s"$name(${CL.show(l)})"
-          case Inr(r) => s"${CR.show(r)}"
+    implicit def deriveCCons[K <: Symbol, V, T <: Coproduct]
+      (implicit
+        key: Witness.Aux[K],
+        sv: Lazy[Show[V]],
+        st: Lazy[Show[T]]
+      ): Show[FieldType[K, V] :+: T] =
+        new Show[FieldType[K, V] :+: T] {
+          def show(c: FieldType[K, V] :+: T): String =
+            c match {
+              case Inl(l) => s"${key.value.name}(${sv.value.show(l)})"
+              case Inr(r) => st.value.show(r)
+            }
         }
-      }
 
-      def project[F, G](instance: => Show[G], to: F => G, from: G => F) = new Show[F] {
-        def show(f: F) = instance.show(to(f))
+    implicit def deriveInstance[F, G](implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]): Show[F] =
+      new Show[F] {
+        def show(f: F) = sg.value.show(gen.to(f))
       }
-    }
   }
 
   trait Show2[T] {
     def show2(t: T): String
   }
 
-  object Show2 extends SimpleTypeClassCompanion[Show2] {
+  object Show2 {
     implicit val show2Int: Show2[Int] = new Show2[Int] {
       def show2(i: Int) = i.toString
     }
 
-    object typeClass extends SimpleTypeClass with ProductTypeClass {
-      def emptyProduct = new Show2[HNil] {
-        def show2(t: HNil) = ""
+    implicit def deriveHNil: Show2[HNil] =
+      new Show2[HNil] {
+        def show2(p: HNil): String = ""
       }
 
-      def product[F, T <: HList](CHead: Show2[F], CTail: Show2[T]) = new Show2[F :: T] {
-        def show2(ft: F :: T) = {
-          val head = CHead.show2(ft.head)
-          val tail = CTail.show2(ft.tail)
-          if (tail.isEmpty)
-            s"$head"
-          else
-            s"$head, $tail"
+    implicit def deriveHCons[H, T <: HList]
+      (implicit
+        sv: Lazy[Show2[H]],
+        st: Lazy[Show2[T]]
+      ): Show2[H :: T] =
+        new Show2[H :: T] {
+          def show2(p: H :: T): String = {
+            val head = sv.value.show2(p.head)
+            val tail = st.value.show2(p.tail)
+            if(tail.isEmpty) head else s"$head, $tail"
+          }
         }
-      }
 
-      def project[F, G](instance: => Show2[G], to: F => G, from: G => F) = new Show2[F] {
-        def show2(f: F) = instance.show2(to(f))
+    implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], sg: Lazy[Show2[G]]): Show2[F] =
+      new Show2[F] {
+        def show2(f: F) = sg.value.show2(gen.to(f))
       }
-    }
   }
 }

@@ -242,8 +242,8 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     materializeAux(true, weakTypeOf[T])
 
   def materializeAux(labelled: Boolean, tpe: Type): Tree = {
-    if (!labelled && (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct]))
-      materializeIdentityGeneric(tpe)
+    if(tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
+      materializeIdentityGeneric(tpe, labelled)
     else
       materializeGeneric(tpe, labelled)
   }
@@ -260,7 +260,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
           case (acc, _) => q"_root_.shapeless.Inr($acc)"
         }
 
-      val body = mkCoproductValue(mkElem(q"$name", nameOf(tpe), tpe))
+      val body = mkCoproductValue(mkElem(q"$name: $tpe", nameOf(tpe), tpe))
       val pat = mkCoproductValue(pq"$name")
       (
         cq"$name: $tpe => $body",
@@ -356,7 +356,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     val clsName = TypeName(c.freshName())
     q"""
-      final class $clsName extends ${genericTypeConstructor}[$tpe] {
+      final class $clsName extends $genericTypeConstructor[$tpe] {
         type Repr = ${reprTpe(tpe, labelled)}
         def to(p: $tpe): Repr = p match { case ..$toCases }
         def from(p: Repr): $tpe = p match { case ..$fromCases }
@@ -365,10 +365,14 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     """
   }
 
-  def materializeIdentityGeneric(tpe: Type) = {
+  def materializeIdentityGeneric(tpe: Type, labelled: Boolean) = {
+    val genericTypeConstructor =
+      (if(labelled) typeOf[LabelledGeneric[_]].typeConstructor
+       else typeOf[Generic[_]].typeConstructor).typeSymbol
+
     val clsName = TypeName(c.freshName())
     q"""
-      final class $clsName extends Generic[$tpe] {
+      final class $clsName extends $genericTypeConstructor[$tpe] {
         type Repr = $tpe
         def to(p: $tpe): $tpe = p
         def from(p: $tpe): $tpe = p

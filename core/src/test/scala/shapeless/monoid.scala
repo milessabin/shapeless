@@ -21,59 +21,65 @@ import org.junit.Assert._
 
 package MonoidAux {
   trait Monoid[T] {
-    def zero : T
-    def append(a : T, b : T) : T
+    def zero: T
+    def append(a: T, b: T): T
   }
 
-  object Monoid extends SimpleTypeClassCompanion[Monoid] {
+  object Monoid {
+    def apply[T](implicit mt: Lazy[Monoid[T]]): Monoid[T] = mt.value
 
-    def mzero[T](implicit mt : Monoid[T]) = mt.zero
+    def mzero[T](implicit mt: Monoid[T]) = mt.zero
 
-    implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
+    implicit def booleanMonoid: Monoid[Boolean] = new Monoid[Boolean] {
       def zero = false
-      def append(a : Boolean, b : Boolean) = a || b
+      def append(a: Boolean, b: Boolean) = a || b
     }
 
-    implicit def intMonoid : Monoid[Int] = new Monoid[Int] {
+    implicit def intMonoid: Monoid[Int] = new Monoid[Int] {
       def zero = 0
-      def append(a : Int, b : Int) = a+b
+      def append(a: Int, b: Int) = a+b
     }
 
-    implicit def doubleMonoid : Monoid[Double] = new Monoid[Double] {
+    implicit def doubleMonoid: Monoid[Double] = new Monoid[Double] {
       def zero = 0.0
-      def append(a : Double, b : Double) = a+b
+      def append(a: Double, b: Double) = a+b
     }
 
-    implicit def stringMonoid : Monoid[String] = new Monoid[String] {
+    implicit def stringMonoid: Monoid[String] = new Monoid[String] {
       def zero = ""
-      def append(a : String, b : String) = a+b
+      def append(a: String, b: String) = a+b
     }
 
-    object typeClass extends SimpleTypeClass with ProductTypeClass {
-      def emptyProduct = new Monoid[HNil] {
+    implicit def deriveHNil: Monoid[HNil] =
+      new Monoid[HNil] {
         def zero = HNil
-        def append(a : HNil, b : HNil) = HNil
+        def append(a: HNil, b: HNil) = HNil
       }
 
-      def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-        def zero = FHead.zero :: FTail.zero
-        def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-      }
+    implicit def deriveHCons[H, T <: HList]
+      (implicit
+        mh: Lazy[Monoid[H]],
+        mt: Lazy[Monoid[T]]
+      ): Monoid[H :: T] =
+        new Monoid[H :: T] {
+          def zero = mh.value.zero :: mt.value.zero
+          def append(a: H :: T, b: H :: T) = mh.value.append(a.head, b.head) :: mt.value.append(a.tail, b.tail)
+        }
 
-      def project[F, G](instance : => Monoid[G], to : F => G, from : G => F) = new Monoid[F] {
-        def zero = from(instance.zero)
-        def append(a : F, b : F) = from(instance.append(to(a), to(b)))
+    implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], mg: Lazy[Monoid[G]]): Monoid[F] =
+      new Monoid[F] {
+        def zero = gen.from(mg.value.zero)
+        def append(a: F, b: F) = gen.from(mg.value.append(gen.to(a), gen.to(b)))
       }
-    }
   }
 
   trait MonoidSyntax[T] {
-    def |+|(b : T) : T
+    def |+|(b: T): T
   }
 
   object MonoidSyntax {
-    implicit def monoidSyntax[T](a : T)(implicit mt : Monoid[T]) : MonoidSyntax[T] = new MonoidSyntax[T] {
-      def |+|(b : T) = mt.append(a, b)
+    implicit def monoidSyntax[T](a: T)(implicit mt: Monoid[T]): MonoidSyntax[T] = new MonoidSyntax[T] {
+      def |+|(b: T) = mt.append(a, b)
     }
   }
 }
@@ -83,13 +89,13 @@ class MonoidTests {
 
   import MonoidSyntax._
 
-  case class Foo(i : Int, s : String)
-  case class Bar(b : Boolean, s : String, d : Double)
+  case class Foo(i: Int, s: String)
+  case class Bar(b: Boolean, s: String, d: Double)
 
   @Test
   def testBasics {
-    implicit val fooInstance: Monoid[Foo] = Monoid[Foo]
-    implicit val barInstance: Monoid[Bar] = Monoid[Bar]
+    implicit val fooInstance/*: Monoid[Foo]*/ = Monoid[Foo]
+    implicit val barInstance/*: Monoid[Bar]*/ = Monoid[Bar]
 
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
