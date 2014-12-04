@@ -48,7 +48,9 @@ trait Monoid[T] {
   def append(a : T, b : T) : T
 }
 
-object Monoid extends SimpleTypeClassCompanion[Monoid] {
+object Monoid {
+  def apply[T](implicit mt: Lazy[Monoid[T]]): Monoid[T] = mt.value
+
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
 
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
@@ -71,23 +73,27 @@ object Monoid extends SimpleTypeClassCompanion[Monoid] {
     def append(a : String, b : String) = a+b
   }
 
-  object typeClass extends SimpleTypeClass with ProductTypeClass {
-    def emptyProduct = new Monoid[HNil] {
+  implicit def deriveHNil: Monoid[HNil] =
+    new Monoid[HNil] {
       def zero = HNil
-      def append(a : HNil, b : HNil) = HNil
+      def append(a: HNil, b: HNil) = HNil
     }
 
-    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-      def zero = FHead.zero :: FTail.zero
-      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-    }
+  implicit def deriveHCons[H, T <: HList]
+    (implicit
+      mh: Lazy[Monoid[H]],
+      mt: Lazy[Monoid[T]]
+    ): Monoid[H :: T] =
+      new Monoid[H :: T] {
+        def zero = mh.value.zero :: mt.value.zero
+        def append(a: H :: T, b: H :: T) = mh.value.append(a.head, b.head) :: mt.value.append(a.tail, b.tail)
+      }
 
-    def project[F, G](instance : => Monoid[G], to : F => G, from : G => F) = new Monoid[F] {
-      def zero = from(instance.zero)
-      def append(a : F, b : F) = from(instance.append(to(a), to(b)))
+  implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], mg: Lazy[Monoid[G]]): Monoid[F] =
+    new Monoid[F] {
+      def zero = gen.from(mg.value.zero)
+      def append(a: F, b: F) = gen.from(mg.value.append(gen.to(a), gen.to(b)))
     }
-  }
-
 }
 
 trait MonoidSyntax[T] {

@@ -15,7 +15,7 @@
  */
 package shapeless.examples
 
-import shapeless._
+import shapeless._, labelled.{ field, FieldType }, syntax.singleton._
 
 /*
  * This example shows how to write a simple serialiser/deserialiser
@@ -115,7 +115,9 @@ trait SexpConvert[T] {
   def ser(t: T): Sexp
 }
 
-object SexpConvert extends SimpleTypeClassCompanion[SexpConvert] {
+object SexpConvert {
+  def apply[T](implicit st: Lazy[SexpConvert[T]]): SexpConvert[T] = st.value
+
   // the SexpConvert[{String, Int}] are really "user land" concepts
   // hopefully shapeless 2.1 will allow these to be moved out of the
   // type class companion.
@@ -135,61 +137,72 @@ object SexpConvert extends SimpleTypeClassCompanion[SexpConvert] {
   }
   /////////////////////////////
 
-  object typeClass extends SimpleTypeClass with LabelledTypeClass {
-    def emptyProduct = new SexpConvert[HNil] {
+  implicit def deriveHNil: SexpConvert[HNil] =
+    new SexpConvert[HNil] {
       def deser(s: Sexp) = if (s == SexpNil) Some(HNil) else None
       def ser(n: HNil) = SexpNil
     }
 
-    def product[F, T <: HList](name: String, FHead: SexpConvert[F], FTail: SexpConvert[T]) = new SexpConvert[F :: T] {
-      def deser(s: Sexp): Option[F :: T] = s match {
-        case SexpProp((field, car), cdr) if field == name =>
-          for {
-            front <- FHead.deser(car)
-            back <- FTail.deser(cdr)
-          } yield front :: back
+  implicit def deriveHCons[K <: Symbol, V, T <: HList]
+    (implicit
+      key: Witness.Aux[K],
+      scv: Lazy[SexpConvert[V]],
+      sct: Lazy[SexpConvert[T]]
+    ): SexpConvert[FieldType[K, V] :: T] =
+      new SexpConvert[FieldType[K, V] :: T] {
+        def deser(s: Sexp): Option[FieldType[K, V] :: T] = s match {
+          case SexpProp((label, car), cdr) if label == key.value.name =>
+            for {
+              front <- scv.value.deser(car)
+              back <- sct.value.deser(cdr)
+            } yield field[K](front) :: back
 
-        case _ =>
-          println("PRODUCT MISS = " + s)
-          None
-      }
+          case _ =>
+            println("PRODUCT MISS = " + s)
+            None
+        }
 
-      def ser(ft: F :: T): Sexp = {
-        val car = SexpProp(name, FHead.ser(ft.head))
-        FTail.ser(ft.tail) match {
-          case SexpNil => car
-          case cdr => SexpCons(car, cdr)
+        def ser(ft: FieldType[K, V] :: T): Sexp = {
+          val car = SexpProp(key.value.name, scv.value.ser(ft.head))
+          sct.value.ser(ft.tail) match {
+            case SexpNil => car
+            case cdr => SexpCons(car, cdr)
+          }
         }
       }
-    }
 
-    def emptyCoproduct = new SexpConvert[CNil] {
-      def deser(s: Sexp): Option[CNil] = None
-      def ser(t: CNil) = SexpNil
-    }
-
-    def coproduct[L, R <: Coproduct](
-      name: String, CL: => SexpConvert[L], CR: => SexpConvert[R]
-    ) = new SexpConvert[L :+: R] {
-      def deser(s: Sexp): Option[L :+: R] = s match {
-        case SexpCons(SexpAtom(impl), cdr) if impl == name =>
-          CL.deser(cdr).map(Inl(_))
-        case SexpCons(SexpAtom(impl), cdr) =>
-          CR.deser(s).map(Inr(_))
-        case _ =>
-          println("COPRODUCT MISS " + s)
-          None
-      }
-
-      def ser(lr: L :+: R): Sexp = lr match {
-        case Inl(l) => SexpCons(SexpAtom(name), CL.ser(l))
-        case Inr(r) => CR.ser(r)
-      }
-    }
-
-    def project[F, G](instance: => SexpConvert[G], to: F => G, from: G => F) = new SexpConvert[F] {
-      def deser(s: Sexp): Option[F] = instance.deser(s).map(from)
-      def ser(t: F): Sexp = instance.ser(to(t))
-    }
+  implicit def deriveCNil: SexpConvert[CNil] = new SexpConvert[CNil] {
+    def deser(s: Sexp): Option[CNil] = None
+    def ser(t: CNil) = SexpNil
   }
+
+  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct]
+    (implicit
+      key: Witness.Aux[K],
+      scv: Lazy[SexpConvert[V]],
+      sct: Lazy[SexpConvert[T]]
+    ): SexpConvert[FieldType[K, V] :+: T] =
+      new SexpConvert[FieldType[K, V] :+: T] {
+        def deser(s: Sexp): Option[FieldType[K, V] :+: T] = s match {
+          case SexpCons(SexpAtom(impl), cdr) if impl == key.value.name =>
+            scv.value.deser(cdr).map(v => Inl(field[K](v)))
+          case SexpCons(SexpAtom(impl), cdr) =>
+            sct.value.deser(s).map(Inr(_))
+          case _ =>
+            println("COPRODUCT MISS " + s)
+            None
+        }
+
+        def ser(lr: FieldType[K, V] :+: T): Sexp = lr match {
+          case Inl(l) => SexpCons(SexpAtom(key.value.name), scv.value.ser(l))
+          case Inr(r) => sct.value.ser(r)
+        }
+      }
+
+  implicit def deriveInstance[F, G]
+    (implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[SexpConvert[G]]): SexpConvert[F] =
+      new SexpConvert[F] {
+        def deser(s: Sexp): Option[F] = sg.value.deser(s).map(gen.from)
+        def ser(t: F): Sexp = sg.value.ser(gen.to(t))
+      }
 }

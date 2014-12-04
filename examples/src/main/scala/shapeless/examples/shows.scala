@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless._
+import shapeless._, labelled.FieldType, syntax.singleton._
 
 object ShowExamples extends App {
   import ShowSyntax._
@@ -59,7 +59,9 @@ trait Show[T] {
   def show(t: T): String
 }
 
-object Show extends SimpleTypeClassCompanion[Show] {
+object Show {
+  def apply[T](implicit st: Lazy[Show[T]]): Show[T] = st.value
+
   implicit def stringShow: Show[String] = new Show[String] {
     def show(t: String) = t
   }
@@ -68,35 +70,46 @@ object Show extends SimpleTypeClassCompanion[Show] {
     def show(n: Int) = n.toString
   }
 
-  object typeClass extends SimpleTypeClass with LabelledTypeClass {
-    def emptyProduct = new Show[HNil] {
-      def show(t: HNil) = ""
+  implicit def deriveHNil: Show[HNil] =
+    new Show[HNil] {
+      def show(p: HNil): String = ""
     }
 
-    def product[F, T <: HList](name : String, FHead : Show[F], FTail : Show[T]) = new Show[F :: T] {
-      def show(ft: F :: T) = {
-        val head = FHead.show(ft.head)
-        val tail = FTail.show(ft.tail)
-        if (tail.isEmpty)
-          s"$name = $head"
-        else
-          s"$name = $head, $tail"
+  implicit def deriveHCons[K <: Symbol, V, T <: HList]
+    (implicit
+      key: Witness.Aux[K],
+      sv: Lazy[Show[V]],
+      st: Lazy[Show[T]]
+    ): Show[FieldType[K, V] :: T] =
+      new Show[FieldType[K, V] :: T] {
+        def show(p: FieldType[K, V] :: T): String = {
+          val head = s"${key.value.name} = ${sv.value.show(p.head)}"
+          val tail = st.value.show(p.tail)
+          if(tail.isEmpty) head else s"$head, $tail"
+        }
       }
+
+  implicit def deriveCNil: Show[CNil] =
+    new Show[CNil] {
+      def show(p: CNil): String = ""
     }
 
-    def emptyCoproduct = new Show[CNil] {
-      def show(t: CNil) = ""
-    }
-
-    def coproduct[L, R <: Coproduct](name: String, CL: => Show[L], CR: => Show[R]) = new Show[L :+: R] {
-      def show(lr: L :+: R) = lr match {
-        case Inl(l) => s"$name(${CL.show(l)})"
-        case Inr(r) => s"${CR.show(r)}"
+  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct]
+    (implicit
+      key: Witness.Aux[K],
+      sv: Lazy[Show[V]],
+      st: Lazy[Show[T]]
+    ): Show[FieldType[K, V] :+: T] =
+      new Show[FieldType[K, V] :+: T] {
+        def show(c: FieldType[K, V] :+: T): String =
+          c match {
+            case Inl(l) => s"${key.value.name}(${sv.value.show(l)})"
+            case Inr(r) => st.value.show(r)
+          }
       }
-    }
 
-    def project[F, G](instance : => Show[G], to : F => G, from : G => F) = new Show[F] {
-      def show(f: F) = instance.show(to(f))
+  implicit def deriveInstance[F, G](implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]): Show[F] =
+    new Show[F] {
+      def show(f: F) = sg.value.show(gen.to(f))
     }
-  }
 }
