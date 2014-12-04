@@ -446,6 +446,9 @@ class TupleTests {
 
   @Test
   def testToTraversableList {
+    val empty = ().to[List]
+    assertTypedEquals[List[Nothing]](Nil, empty)
+    
     val fruits1 = apap.to[List]
     typed[List[Fruit]](fruits1)
     assertEquals(List(a, p, a, p), fruits1)
@@ -502,6 +505,9 @@ class TupleTests {
 
   @Test
   def testToList {
+    val empty = ().toList
+    assertTypedEquals[List[Nothing]](Nil, empty)
+
     val fruits1 = apap.toList
     typed[List[Fruit]](fruits1)
     assertEquals(List(a, p, a, p), fruits1)
@@ -560,6 +566,10 @@ class TupleTests {
   def testToTraversableArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+
+    val empty = ().to[Array]
+    typed[Array[Nothing]](empty)
+    assertArrayEquals2(Array.empty, empty)
 
     val fruits1 = apap.to[Array].map(x => x : Fruit)
     typed[Array[Fruit]](fruits1)
@@ -622,6 +632,10 @@ class TupleTests {
   def testToArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+
+    val empty = ().toArray
+    typed[Array[Nothing]](empty)
+    assertArrayEquals2(Array.empty, empty)
     
     val fruits1 = apap.toArray[Fruit]
     typed[Array[Fruit]](fruits1)
