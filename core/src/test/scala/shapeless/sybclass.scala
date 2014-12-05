@@ -54,20 +54,6 @@ class SybClassTests {
   case class Banana(i: Int) extends Fruit
   case class Orange(i: Int) extends Fruit
 
-  object showFruit extends Poly1 {
-    implicit def caseApple  = at[Apple] (_ => "Pomme")
-    implicit def casePear   = at[Pear]  (_ => "Poire")
-    implicit def caseBanana = at[Banana](_ => "Banane")
-    implicit def caseOrange = at[Orange](_ => "Orange")
-  }
-
-  object cycleFruit extends Poly1 {
-    implicit def caseApple  = at[Apple] { case Apple(i)  => Pear(i) }
-    implicit def casePear   = at[Pear]  { case Pear(i)   => Banana(i) }
-    implicit def caseBanana = at[Banana]{ case Banana(i) => Orange(i) }
-    implicit def caseOrange = at[Orange]{ case Orange(i) => Apple(i) }
-  }
-
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](left: Tree[T], right: Tree[T]) extends Tree[T]
@@ -219,29 +205,13 @@ class SybClassTests {
     typed[String](result2)
     assertEquals("foo*", result2)
 
-//    val result3 = everywhere(showFruit)(Apple(1))
-//    typed[String](result3)
-//    assertEquals("Pomme", result3)
+    val result3 = everywhere(inc)(Apple(1))
+    typed[Apple](result3)
+    assertEquals(Apple(2), result3)
 
-    val result4 = everywhere(inc)(Apple(1))
-    typed[Apple](result4)
+    val result4 = everywhere(inc)(Apple(1) : Fruit)
+    typed[Fruit](result4)
     assertEquals(Apple(2), result4)
-
-//    val result5 = everywhere(cycleFruit)(Apple(1))
-//    typed[Pear](result5)
-//    assertEquals(Pear(1), result5)
-
-//    val result6 = everywhere(showFruit)(Apple(1) : Fruit)
-//    typed[String](result6)
-//    assertEquals("Pomme", result6)
-
-    val result7 = everywhere(inc)(Apple(1) : Fruit)
-    typed[Fruit](result7)
-    assertEquals(Apple(2), result7)
-
-//    val result8 = everywhere(cycleFruit)(Apple(1) : Fruit)
-//    typed[Fruit](result8)
-//    assertEquals(Pear(1), result8)
   }
 
   @Test
@@ -392,102 +362,6 @@ class SybClassTests {
     val result2 = everything(gsize)(plus)(input)
     assertEquals(42, result2)
   }
-
-  /*
-  @Test
-  def testHList2 {
-    val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
-    val expected = Pear(1) :: Banana(2) :: Orange(3) :: Apple(4) :: HNil
-
-    val result = everywhere(cycleFruit)(input)
-    typed[Pear :: Banana :: Orange :: Apple :: HNil](result)
-    assertEquals(expected, result)
-  }
-  */
-
-  /*
-  @Test
-  def testHList3 {
-    val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
-    val expected = "Pomme" :: "Poire" :: "Banane" :: "Orange" :: HNil
-
-    val result = everywhere(showFruit)(input)
-    typed[String :: String :: String :: String :: HNil](result)
-    assertEquals(expected, result)
-  }
-  */
-
-  /*
-  @Test
-  def testCoproduct2 {
-    type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
-    type PBOA = Pear :+: Banana :+: Orange :+: Apple :+: CNil
-
-    val input1 = Coproduct[APBO](Apple(1))
-    val expected1 = Coproduct[PBOA](Pear(1))
-
-    val result1 = everywhere(cycleFruit)(input1)
-    typed[PBOA](result1)
-    assertEquals(expected1, result1)
-
-    val input2 = Coproduct[APBO](Pear(2))
-    val expected2 = Coproduct[PBOA](Banana(2))
-
-    val result2 = everywhere(cycleFruit)(input2)
-    typed[PBOA](result2)
-    assertEquals(expected2, result2)
-
-    val input3 = Coproduct[APBO](Banana(3))
-    val expected3 = Coproduct[PBOA](Orange(3))
-
-    val result3 = everywhere(cycleFruit)(input3)
-    typed[PBOA](result3)
-    assertEquals(expected3, result3)
-
-    val input4 = Coproduct[APBO](Orange(4))
-    val expected4 = Coproduct[PBOA](Apple(4))
-
-    val result4 = everywhere(cycleFruit)(input4)
-    typed[PBOA](result4)
-    assertEquals(expected4, result4)
-  }
-  */
-
-  /*
-  @Test
-  def testList {
-    val input: List[Apple] = List(Apple(1), Apple(2), Apple(3))
-    val expected: List[String] = List("Pomme", "Pomme", "Pomme")
-
-    val result = everywhere(showFruit)(input)
-    typed[List[String]](result)
-    assertEquals(expected, result)
-
-    val input2: List[Apple] = List(Apple(1), Apple(1), Apple(1))
-    val expected2: List[Pear] = List(Pear(1), Pear(1), Pear(1))
-
-    val result2 = everywhere(cycleFruit)(input2)
-    typed[List[Pear]](result2)
-    assertEquals(expected2, result2)
-  }
-  */
-
-/*
-  @Test
-  def testCoproduct3 {
-    // For this to work we will need to permute the mapped coproduct type back
-    // into the order corresponding to the Generic for Fruit
-
-//    val input: List[Fruit] = List(Apple(1), Pear(2), Banana(3), Orange(4))
-//    val expected: List[Fruit] = List(Pear(1), Banana(2), Orange(3), Apple(4))
-
-    val input: Option[Fruit] = Option(Apple(1))
-    val expected: Option[Fruit] = Option(Pear(1))
-
-    val result = everywhere(cycleFruit)(input)
-    assertEquals(expected, result)
-  }
-*/
 
   @Test
   def testRecursion {
