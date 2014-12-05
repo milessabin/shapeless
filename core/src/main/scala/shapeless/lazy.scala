@@ -21,7 +21,7 @@ import scala.language.experimental.macros
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.whitebox
 
-trait Lazy[T] {
+trait Lazy[+T] {
   val value: T
 
   def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
@@ -35,23 +35,28 @@ object Lazy {
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl
 }
 
 class LazyMacros(val c: whitebox.Context) {
   import c.universe._
+  import c.ImplicitCandidate
 
-  def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree = {
-    val iTpe = weakTypeOf[I].dealias
-    val i = LazyMacros.deriveInstance(c)(iTpe)
-    q"_root_.shapeless.Lazy[$iTpe]($i)"
+  def mkLazyImpl: Tree = {
+    val tpe = c.openImplicits.head match {
+      case ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _) => tpe
+      case _ =>
+        c.abort(c.enclosingPosition, s"Bad Lazy materialization $c.openImplicits.head")
+    }
+    val (tree, actualType) = LazyMacros.deriveInstance(c)(tpe)
+    q"_root_.shapeless.Lazy[$actualType]($tree)"
   }
 }
 
 object LazyMacros {
   var dcRef: Option[DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type): c.Tree = {
+  def deriveInstance(c: whitebox.Context)(tpe: c.Type): (c.Tree, c.Type) = {
     val (dc, root) =
       dcRef match {
         case None =>
@@ -93,7 +98,8 @@ trait DerivationContext extends CaseClassMacros {
     instTpe: Type,
     name: TermName,
     symbol: Symbol,
-    inst: Tree
+    inst: Tree,
+    actualTpe: Type
   ) {
     def ident = Ident(symbol)
   }
@@ -104,7 +110,7 @@ trait DerivationContext extends CaseClassMacros {
       val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
       val tree = Ident(sym)
 
-      new Instance(instTpe, nme, sym, tree)
+      new Instance(instTpe, nme, sym, tree, instTpe)
     }
   }
 
@@ -146,10 +152,10 @@ trait DerivationContext extends CaseClassMacros {
     sym.isVal || sym.isGetter
   }
 
-  def deriveInstance(instTpe: Type, root: Boolean): Tree = {
+  def deriveInstance(instTpe: Type, root: Boolean): (Tree, Type) = {
     val instTree =
       dict.get(TypeWrapper(instTpe)) match {
-        case Some(d) => d.ident
+        case Some(d) => (d.ident, d.actualTpe)
         case _ =>
           val instance = add(Instance(instTpe))
           val extInst = c.inferImplicitValue(instTpe, silent = true)
@@ -157,20 +163,22 @@ trait DerivationContext extends CaseClassMacros {
             remove(instance)
             abort(s"Unable to derive $instTpe")
           }
-
-          add(instance.copy(inst = extInst)).ident
+          val actualTpe = extInst.tpe
+          val sym = c.internal.setInfo(instance.symbol, actualTpe)
+          val tree = add(instance.copy(inst = extInst, actualTpe = extInst.tpe, symbol = sym)).ident
+          (tree, actualTpe)
       }
 
     if(root) mkInstances(instTpe) else instTree
   }
 
-  def mkInstances(primaryTpe: Type): Tree = {
+  def mkInstances(primaryTpe: Type): (Tree, Type) = {
     val instances = dict.values.toList
 
     val instTrees: List[Tree] =
       instances.map { instance =>
         import instance._
-        q"""implicit lazy val $name: $instTpe = $inst"""
+        q"""implicit lazy val $name: $actualTpe = $inst"""
       }
 
     val objName = TermName(c.freshName())
@@ -181,13 +189,18 @@ trait DerivationContext extends CaseClassMacros {
         }
       """
 
+    val instance = dict(TypeWrapper(primaryTpe))
+    val nme = instance.name
+    val actualType = instance.inst.tpe.finalResultType
+
     val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
     val cleanObj = c.untypecheck(c.internal.substituteSymbols(obj, from, to))
 
-    val nme = dict(TypeWrapper(primaryTpe)).name
-    q"""
-      $cleanObj
-      $objName.$nme
-     """
+    val tree =
+      q"""
+        $cleanObj
+        $objName.$nme
+       """
+    (tree, actualType)
   }
 }
