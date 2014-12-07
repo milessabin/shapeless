@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -295,7 +295,7 @@ class SingletonTypesTests {
         def show = w.value.toString
       }
   }
-  
+
   def showWitness(w: Witness)(implicit s: ShowWitness[w.T]) = s.show
 
   @Test
@@ -374,7 +374,7 @@ class SingletonTypesTests {
     illTyped("""
       check(false)(23)
     """)
-    
+
     illTyped("""
       check(23)(23)
     """)

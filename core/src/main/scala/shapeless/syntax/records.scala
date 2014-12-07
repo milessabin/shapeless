@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import tag.@@
 
 /**
  * Record operations on `HList`'s with field-like elements.
- * 
+ *
  * @author Miles Sabin
  */
 final class RecordOps[L <: HList](l : L) {
@@ -34,7 +34,7 @@ final class RecordOps[L <: HList](l : L) {
    * with keyType equal to the singleton type k.T.
    */
   def get(k: Witness)(implicit selector : Selector[L, k.T]): selector.Out = selector(l)
-  
+
   /**
    * Returns the value associated with the singleton typed key k. Only available if this record has a field with
    * with keyType equal to the singleton type k.T.
@@ -56,7 +56,7 @@ final class RecordOps[L <: HList](l : L) {
    */
   def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
-  
+
   /**
    * Updates a field having a value with type A by given function.
    */
@@ -69,12 +69,12 @@ final class RecordOps[L <: HList](l : L) {
    * record. Only available if this record has a field with keyType equal to the singleton type k.T.
    */
   def remove(k : Witness)(implicit remover: Remover[L, k.T]): remover.Out = remover(l)
-  
+
   /**
    * Updates or adds to this record a field of type F.
    */
   def +[F](f: F)(implicit updater : Updater[L, F]): updater.Out = updater(l, f)
-  
+
   /**
    * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this
    * record has a field with keyType equal to the singleton type k.T.
@@ -118,7 +118,7 @@ final class RecordOps[L <: HList](l : L) {
 
 /**
  * Record wrapper providing `selectDynamic` access to fields.
- * 
+ *
  * @author Cody Allen
  */
 final case class DynamicRecordOps[L <: HList](l : L) extends Dynamic {

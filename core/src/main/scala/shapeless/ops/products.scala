@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ object product {
     def apply[T](implicit length: ProductLength[T]): Aux[T, length.Out] = length
 
     type Aux[T, Out0] = ProductLength[T] { type Out = Out0 }
-    
+
     implicit def length[T, L <: HList]
       (implicit gen: Generic.Aux[T, L], length: Length[L]): Aux[T, length.Out] =
         new ProductLength[T] {

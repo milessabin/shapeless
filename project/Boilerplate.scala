@@ -36,7 +36,7 @@ object Boilerplate {
     }
   }
 
-  
+
   val templates: Seq[Template] = List(
     GenTuplerInstances,
     GenFnToProductInstances,
@@ -58,7 +58,7 @@ object Boilerplate {
     val tgtFile = dir / "shapeless" / t.filename
     IO.write(tgtFile, t.body)
     tgtFile
-  }  
+  }
 
   val header = """
     |/*
@@ -94,7 +94,7 @@ object Boilerplate {
     val `(A..N)`     = if (arity == 1) "Tuple1[A]" else synTypes.mkString("(", ", ", ")")
     val `(_.._)`     = if (arity == 1) "Tuple1[_]" else Seq.fill(arity)("_").mkString("(", ", ", ")")
     val `(a..n)`     = if (arity == 1) "Tuple1(a)" else synVals.mkString("(", ", ", ")")
-    val `a:A..n:N`   = synTypedVals mkString ", "    
+    val `a:A..n:N`   = synTypedVals mkString ", "
   }
 
   trait Template {
@@ -126,7 +126,7 @@ object Boilerplate {
 
     The block otherwise behaves as a standard interpolated string with regards to variable substitution.
   */
-  
+
   object GenTuplerInstances extends Template {
     val filename = "tupler.scala"
     def content(tv: TemplateVals) = {
@@ -148,12 +148,12 @@ object Boilerplate {
         -    new Tupler[${`A::N`}] {
         -      type Out = ${`(A..N)`}
         -      def apply(l : ${`A::N`}): Out = l match { case ${`a::n`} => ${`(a..n)`} }
-        -    }        
+        -    }
         |}
       """
-    }      
+    }
   }
-  
+
   object GenFnToProductInstances extends Template {
     val filename = "fntoproduct.scala"
 
@@ -163,8 +163,8 @@ object Boilerplate {
       import tv._
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
-      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
-      
+      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }"
+
       block"""
         |package ops
         |
@@ -189,7 +189,7 @@ object Boilerplate {
       """
     }
   }
-  
+
   object GenFnFromProductInstances extends Template {
     val filename = "fnfromproduct.scala"
 
@@ -213,7 +213,7 @@ object Boilerplate {
         -  : Aux[
         -    ${hlistFnType},
         -    ${fnType}
-        -  ] = 
+        -  ] =
         -    new FnFromProduct[${hlistFnType}] {
         -      type Out = ${fnType}
         -      def apply(hf : ${hlistFnType}): Out
@@ -224,9 +224,9 @@ object Boilerplate {
         |}
       """
     }
-    
+
   }
-  
+
   object GenCaseInst extends Template {
     val filename = "caseinst.scala"
 
@@ -239,7 +239,7 @@ object Boilerplate {
         |
         -  implicit def inst${arity}
         -    [Fn <: Poly, ${`A..N`}, Res]
-        -    (cse : Case[Fn, ${`A::N`}] { type Result = Res }) 
+        -    (cse : Case[Fn, ${`A::N`}] { type Result = Res })
         -  : (${`A..N`}) => Res =
         -    (${`a:A..n:N`})
         -      => cse.value(${`a::n`})
@@ -327,7 +327,7 @@ object Boilerplate {
         |}
       """
     }
-    
+
   }
 
   object GenPolyNTraits extends Template {
@@ -335,7 +335,7 @@ object Boilerplate {
 
     def content(tv: TemplateVals) = {
       import tv._
-      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
+      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }"
 
       block"""
         |
@@ -357,15 +357,15 @@ object Boilerplate {
         -        => ${fnBody}
         -    }
         -  }
-        -  
+        -
         -  def at[${`A..N`}]
         -    = new CaseBuilder[${`A..N`}]
         -}
         |
       """
-    }    
+    }
   }
-  
+
   object GenNats extends Template {
     val filename = "nats.scala"
 
@@ -381,7 +381,7 @@ object Boilerplate {
       """
     }
   }
-  
+
   object GenTupleTypeableInstances extends Template {
     val filename = "tupletypeables.scala"
 
@@ -411,9 +411,9 @@ object Boilerplate {
         -
         |}
       """
-    }        
+    }
   }
-  
+
   object GenSizedBuilder extends Template {
     val filename = "sizedbuilder.scala"
 
@@ -436,7 +436,7 @@ object Boilerplate {
       """
     }
   }
-  
+
   object GenHMapBuilder extends Template {
     val filename = "hmapbuilder.scala"
 
@@ -460,7 +460,7 @@ object Boilerplate {
       """
     }
   }
- 
+
   object GenUnpackInstances extends Template {
     val filename = "unpack.scala"
     def content(tv: TemplateVals) = {
@@ -473,7 +473,7 @@ object Boilerplate {
         -
         -/**
         - * Type class witnessing that type `PP` is equal to `FF[${`A..N`}]` for some higher kinded type `FF[${`_.._`}]` and type(s) `${`A..N`}`.
-        - * 
+        - *
         - * @author Miles Sabin
         - */
         -trait $traitname[-PP, $hktypeblock]
@@ -483,6 +483,6 @@ object Boilerplate {
         -}
         |
       """
-    }      
+    }
   }
 }

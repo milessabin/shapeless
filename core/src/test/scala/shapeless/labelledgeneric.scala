@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ class LabelledGenericTests {
     val b0 = gen.to(tapl)
     typed[BookRec](b0)
     assertEquals(taplRecord, b0)
-    
+
     val b1 = gen.from(b0)
     typed[Book](b1)
     assertEquals(tapl, b1)
@@ -92,7 +92,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0.get('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -115,7 +115,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -138,7 +138,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val v1 = b0.at(0)
     typed[String](v1)
     assertEquals("Benjamin Pierce", v1)
@@ -150,7 +150,7 @@ class LabelledGenericTests {
     val v3 = b0.at(2)
     typed[Int](v3)
     assertEquals(262162091, v3)
-    
+
     val v4 = b0.at(3)
     typed[Double](v4)
     assertEquals(44.11, v4, Double.MinPositiveValue)

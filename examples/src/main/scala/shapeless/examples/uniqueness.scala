@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package shapeless.examples
  * subtypes) exactly once.
  *
  * See this Shapeless Dev mailing list question for the original framing and
- * some additional discussion: 
+ * some additional discussion:
  *
  * https://groups.google.com/d/msg/shapeless-dev/HvV63toSBNM/K84lmwSsYzwJ
  *

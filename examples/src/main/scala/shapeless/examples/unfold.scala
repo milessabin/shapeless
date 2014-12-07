@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ object UnfoldExamples extends App {
   import ops.nat._
   import poly._
   import test._
-  
+
   trait Unfold[F <: Poly, E, S] {
     type Out <: HList
     def apply(s : S) : Out
   }
-  
+
   object Unfold {
     implicit def unfold1[F <: Poly, E, S, Out0 <: HList]
       (implicit unfold : UnfoldAux[F, E, S, E, Out0]) : Unfold[F, E, S] =
@@ -35,25 +35,25 @@ object UnfoldExamples extends App {
           type Out = Out0
           def apply(s : S) = unfold(s)
         }
-    
+
     trait ApplyUnfold[E] {
       def apply[S, L <: HList](f : Poly)(s : S)
         (implicit unfold : UnfoldAux[f.type, E, S, E, L]) = unfold(s)
     }
-    
-    def unfold[E] = new ApplyUnfold[E] {} 
-    def unfold[E](e : E) = new ApplyUnfold[E] {} 
+
+    def unfold[E] = new ApplyUnfold[E] {}
+    def unfold[E](e : E) = new ApplyUnfold[E] {}
   }
-  
+
   trait UnfoldAux[F <: Poly, E, S, CoS, Out <: HList] {
     def apply(s : S) : Out
   }
-  
+
   object UnfoldAux {
     implicit def unfold1[F <: Poly, S, CoS] : UnfoldAux[F, S, S, CoS, HNil] = new UnfoldAux[F, S, S, CoS, HNil] {
       def apply(s : S) = HNil
     }
-    
+
     // The trick to prevent diverging implicits here is to have the term CoS (read: co-seed)
     // shrink at the same time as the term S (read: seed) grows. The only structure assumed
     // for the (co-)sequence of seeds is that implied by the cases of F.
@@ -63,13 +63,13 @@ object UnfoldExamples extends App {
         f : Case1.Aux[F, S, (OutH, SS)],
         ut : UnfoldAux[F, E, SS, PCoS, OutT]) : UnfoldAux[F, E, S, CoS, OutH :: OutT] =
         new UnfoldAux[F, E, S, CoS, OutH :: OutT] {
-          def apply(s : S) : OutH :: OutT = { 
+          def apply(s : S) : OutH :: OutT = {
             val (outH, sn) = f(s :: HNil)
             outH :: ut(sn)
           }
         }
   }
-  
+
   import Unfold.unfold
 
   object unfoldMisc extends Poly1 {
@@ -98,7 +98,7 @@ object UnfoldExamples extends App {
   object toInt extends Poly1 {
     implicit def default[N <: Nat](implicit toInt : ToInt[N]) = at[N](_ => toInt())
   }
-  
+
   val l2 = unfold(_6)(unfoldFibs)(Nat(0))
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: HNil](l2)
   println(l2 map toInt)

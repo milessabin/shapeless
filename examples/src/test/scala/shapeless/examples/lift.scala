@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,28 +25,28 @@ class LiftTests {
   import syntax.std.function._
   import test._
   import Lift._
-  
+
   @Test
   def testLiftO {
-    
+
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
-    
+
     val hlsum = sum.toProduct
     typed[Int :: Int :: HNil => Int](hlsum)
-    
+
     val hlprd = prd.toProduct
     typed[Int :: Int :: Int :: HNil => Int](hlprd)
-    
+
     val l1 = 2 :: 3 :: HNil
     val l2 = 2 :: 3 :: 4 :: HNil
-    
+
     val s1 = hlsum(l1)
     assertEquals(5, s1)
-    
+
     val p1 = hlprd(l2)
     assertEquals(24, p1)
-    
+
     val l3 = Option(2) :: Option(3) :: HNil
     val isDef3 = l3.foldMap(true)(isDefined)(_ & _)
     assertTrue(isDef3)
@@ -70,17 +70,17 @@ class LiftTests {
 
     val s3 = sumO(Some(1), None)
     assertTrue(s3.isEmpty)
-    
+
     val s4 = sumO(None, Some(2))
     assertTrue(s4.isEmpty)
-    
+
     val s5 = sumO(None, None)
     assertTrue(s5.isEmpty)
-    
+
     val s6 = List(Some(1), Some(2), Some(3), Some(4)).reduce(sumO)
     assertTrue(s6.isDefined)
     assertEquals(10, s6.get)
-    
+
     val prdO = liftO(prd)
     typed[(Option[Int], Option[Int], Option[Int]) => Option[Int]](prdO)
 

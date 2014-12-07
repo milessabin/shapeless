@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ object BooleanInduction extends App {
     implicit val sif  = new Case[False] { type T = Int }
   }
 
-  val bt: String = boolInduction(si)("foo")(23)(true) 
+  val bt: String = boolInduction(si)("foo")(23)(true)
   val bf: Int    = boolInduction(si)("foo")(23)(false)
 }
 

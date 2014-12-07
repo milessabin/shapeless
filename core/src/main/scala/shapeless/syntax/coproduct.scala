@@ -118,7 +118,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
   def take(n: Nat)(implicit take: Take[C, n.N]): take.Out = take(c)
-  
+
   /**
    * Drops the first `n` elements of this `Coproduct`. An explicit type argument must be provided. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
@@ -138,7 +138,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
   def align[K <: Coproduct](implicit align: Align[C, K]): K = align(c)
 
   /**
-   * Permutes this `Coproduct` into the same order as another `Coproduct`. Available only if 
+   * Permutes this `Coproduct` into the same order as another `Coproduct`. Available only if
    * both `Coproduct`s have elements of the same types.
    */
   def align[K <: Coproduct](k: K)(implicit align: Align[C, K]): K = align(c)

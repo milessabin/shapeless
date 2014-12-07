@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ object DeepSearchExamples extends App {
   trait Searchable[A, Q] {
     def find(p: Q => Boolean)(a: A): Option[Q]
   }
-  
+
   trait LowPrioritySearchable {
     implicit def hlistishSearchable[A, L <: HList, Q](
       implicit gen: Generic.Aux[A, L], s: Searchable[L, Q]
@@ -37,21 +37,21 @@ object DeepSearchExamples extends App {
       def find(p: Q => Boolean)(a: A) = s.find(p)(gen to a)
     }
   }
-  
+
   object Searchable extends LowPrioritySearchable {
     implicit def elemSearchable[A]: Searchable[A, A] = new Searchable[A, A] {
       def find(p: A => Boolean)(a: A) = if (p(a)) Some(a) else None
     }
-  
+
     implicit def listSearchable[A, Q](implicit s: Searchable[A, Q]): Searchable[List[A], Q] =
       new Searchable[List[A], Q] {
         def find(p: Q => Boolean)(a: List[A]) = a.flatMap(s.find(p)).headOption
       }
-  
+
     implicit def hnilSearchable[Q]: Searchable[HNil, Q] = new Searchable[HNil, Q] {
       def find(p: Q => Boolean)(a: HNil) = None
     }
-  
+
     implicit def hlistSearchable[H, T <: HList, Q](
       implicit hs: Searchable[H, Q] = null, ts: Searchable[T, Q]
     ): Searchable[H :: T, Q] = new Searchable[H :: T, Q] {

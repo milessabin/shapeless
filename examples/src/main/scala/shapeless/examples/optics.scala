@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import shapeless._
 
 /*
  * Examples of optic (ie. lens/prism) usage.
- * 
+ *
  * @author Miles Sabin
  */
 package opticDemoDatatypes {
@@ -42,7 +42,7 @@ object OpticExamples extends App {
   val mary = Person("Mary", 32, Address("Southover Street", "Brighton"))
   val ageLens = lens[Person].age
   val streetLens = lens[Person].address.street
-  
+
   val age = ageLens.get(mary)
   assert(age == 32)
 

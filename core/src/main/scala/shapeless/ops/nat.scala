@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package ops
 object nat {
   /**
    * Type class witnessing that `B` is the predecessor of `A`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Pred[A <: Nat] { type Out <: Nat }
@@ -35,7 +35,7 @@ object nat {
 
   /**
    * Type class witnessing that `C` is the sum of `A` and `B`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Sum[A <: Nat, B <: Nat] { type Out <: Nat }
@@ -52,7 +52,7 @@ object nat {
 
   /**
    * Type class witnessing that `C` is the difference of `A` and `B`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Diff[A <: Nat, B <: Nat] { type Out <: Nat }
@@ -69,7 +69,7 @@ object nat {
 
   /**
    * Type class witnessing that `C` is the product of `A` and `B`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait Prod[A <: Nat, B <: Nat] { type Out <: Nat }
@@ -127,7 +127,7 @@ object nat {
 
   /**
    * Type class witnessing that `A` is less than `B`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait LT[A <: Nat, B <: Nat]
@@ -143,7 +143,7 @@ object nat {
 
   /**
    * Type class witnessing that `A` is less than or equal to `B`.
-   * 
+   *
    * @author Miles Sabin
    */
   trait LTEq[A <: Nat, B <: Nat]
@@ -198,7 +198,7 @@ object nat {
 
   /**
    * Type class supporting conversion of type-level Nats to value level Ints.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ToInt[N <: Nat] {
@@ -209,7 +209,7 @@ object nat {
     def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
 
     implicit val toInt0 = new ToInt[_0] {
-      def apply() = 0 
+      def apply() = 0
     }
     implicit def toIntSucc[N <: Nat](implicit toIntN : ToInt[N]) = new ToInt[Succ[N]] {
       def apply() = toIntN()+1

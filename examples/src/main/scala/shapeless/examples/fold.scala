@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,5 +44,5 @@ object FoldExamples extends App {
   // val c2b = if ((c2a >= 0) == false) "pass" else "fail"
   val l2 = "bar" :: false :: HNil
   val f2 = l2.foldLeft('o')(combine)
-  assert(f2 == "pass")  
+  assert(f2 == "pass")
 }

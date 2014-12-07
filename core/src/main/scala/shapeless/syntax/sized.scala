@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ object sized {
   implicit def genTraversableSizedConv[CC[X] <: GenTraversable[X], T](cc : CC[T])
     (implicit conv : CC[T] => GenTraversableLike[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
       new SizedConv[T, CC[T]](cc)
-  
+
   implicit def stringSizedConv(s : String) = new SizedConv[Char, String](s)
 }
 
@@ -33,10 +33,10 @@ final class SizedConv[A, Repr <% GenTraversableLike[A, Repr] : AdditiveCollectio
 
   def sized[L <: Nat](implicit toInt : ToInt[L]) =
     if(r.size == toInt()) Some(wrap[Repr, L](r)) else None
-    
+
   def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
     if(r.size == toInt()) Some(wrap[Repr, l.N](r)) else None
-    
+
   def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
     assert(r.size == toInt())
     wrap[Repr, L](r)

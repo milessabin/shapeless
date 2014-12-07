@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ package ops
 object function {
   /**
    * Type class supporting conversion of arbitrary functions to functions of a single `HList`
-   * argument. 
-   * 
+   * argument.
+   *
    * @author Miles Sabin
    */
   trait FnToProduct[F] extends DepFn1[F]
@@ -31,12 +31,12 @@ object function {
   }
 
   /**
-   * Type class supporting conversion of functions of a single `HList` argument to ordinary functions. 
-   * 
+   * Type class supporting conversion of functions of a single `HList` argument to ordinary functions.
+   *
    * @author Miles Sabin
    */
   trait FnFromProduct[F] extends DepFn1[F]
-    
+
   object FnFromProduct extends FnFromProductInstances {
     def apply[F](implicit fnfromp: FnFromProduct[F]): Aux[F, fnfromp.Out] = fnfromp
   }

@@ -619,7 +619,7 @@ object hlist {
           type Lub = T
           type N = Nat._0
           /* Calling wrap here as Sized[M]() only returns a Sized[M[Nothing], _0] */
-          def apply(l : L) = Sized.wrap(cbf().result()) 
+          def apply(l : L) = Sized.wrap(cbf().result())
         }
 
     implicit def hnilToSizedNothing[L <: HNil, M[_]]

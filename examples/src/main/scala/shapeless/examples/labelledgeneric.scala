@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import shapeless._
 
 /**
  * LabelledGeneric examples.
- * 
+ *
  * @author Miles Sabin
  */
 object LabelledGenericExamples extends App {

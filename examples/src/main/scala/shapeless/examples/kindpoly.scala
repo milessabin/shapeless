@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ object TyApp {
   class Arbitrary
   implicit def tyApp1[TC[_], A] =
     new TyApp[TC[A], TC[Arbitrary], A :: HNil]
-  
+
   implicit def tyApp2[TC[_, _], A, B] =
     new TyApp[TC[A, B], TC[Arbitrary, Arbitrary], A :: B :: HNil]
 
@@ -47,7 +47,7 @@ object KindPolyExamples {
 
   sameTypeCtor(List(23), List("foo"))
   sameTypeCtor(Map(23 -> "foo"), Map(true -> ((): Unit)))
-  sameTypeCtor((x : Int, y: Int) => Boolean, (x : Double, y : Double) => Boolean) 
+  sameTypeCtor((x : Int, y: Int) => Boolean, (x : Double, y : Double) => Boolean)
   // sameTypeCtor(23, true)                           // Does not compile
   // sameTypeCtor(List(23), Set(13))                  // Does not compile
   // sameTypeCtor(Map(23 -> "foo"), (13, "bar"))      // Does not compile

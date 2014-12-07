@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ class HListConstraintsTests {
   @Test
   def testUnaryTCConstraint {
     import UnaryTCConstraint._
-    
+
     def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
-    
-    val l1 = Option(23) :: Option(true) :: Option("foo") :: HNil 
+
+    val l1 = Option(23) :: Option(true) :: Option("foo") :: HNil
     val l2 = Option(23) :: true :: Option("foo") :: HNil
-    
+
     acceptOption(l1)  // Compiles
     acceptOption(HNil: HNil)
 
@@ -38,33 +38,33 @@ class HListConstraintsTests {
     acceptOption(l2)
     """)
 
-    val l3 = 23 :: true :: "foo" :: HNil 
-    
+    val l3 = 23 :: true :: "foo" :: HNil
+
     def acceptId[L <: HList : *->*[Id]#λ](l : L) = true
 
     acceptId(l3)  // Compiles
     acceptId(HNil: HNil)
-    
+
     val l4 = "foo" :: "bar" :: "baz" :: HNil
     val l5 = "foo" :: true :: "baz" :: HNil
-    
+
     def acceptConst[L <: HList : *->*[Const[String]#λ]#λ](l : L) = true
-    
+
     acceptConst(l4)  // Compiles
     acceptConst(HNil: HNil)
     illTyped("""
     acceptConst(l5)
     """)
   }
-  
+
   @Test
   def testBasisConstraint {
     import BasisConstraint._
-    
+
     type M = Int :: Boolean :: String :: HNil
-    
+
     def acceptBasis[L <: HList : Basis[M]#λ](l : L) = true
-    
+
     val l1 = 23 :: true :: 13 :: 7 :: 5 :: false :: "foo" :: "bar" :: HNil
     val l2 = 23 :: true :: 13 :: 7 :: 5 :: 2.0 :: "foo" :: "bar" :: HNil
 
@@ -74,17 +74,17 @@ class HListConstraintsTests {
     acceptBasis(l2)
     """)
   }
-  
+
   @Test
   def testLUBConstraint {
     import LUBConstraint._
-    
+
     trait Fruit
     case object Apple extends Fruit
     case object Pear extends Fruit
-    
+
     def acceptLUB[L <: HList : <<:[Fruit]#λ](l : L) = true
-    
+
     val l1 = Apple :: Pear :: Apple :: Pear :: HNil
     val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
 
@@ -99,7 +99,7 @@ class HListConstraintsTests {
   def testKeyValueConstraints {
     import KeyConstraint._
     import ValueConstraint._
-    
+
     object author  extends FieldOf[String]
     object title   extends FieldOf[String]
     object id      extends FieldOf[Int]
@@ -112,15 +112,15 @@ class HListConstraintsTests {
       (id     ->>  262162091) ::
       (price  ->>  44.11) ::
       HNil
-    
-    val summary = 
+
+    val summary =
       (author ->> "Benjamin Pierce") ::
       (title  ->> "Types and Programming Languages") ::
       (id     ->>  262162091) ::
       HNil
 
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
-    
+
     acceptKeys(summary)   // Compiles
     acceptKeys(HNil: HNil)
     illTyped("""
@@ -128,7 +128,7 @@ class HListConstraintsTests {
     """)
 
     def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
-    
+
     acceptValues(summary) // Compiles
     acceptValues(HNil: HNil)
     illTyped("""

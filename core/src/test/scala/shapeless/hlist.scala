@@ -755,7 +755,7 @@ class HListTests {
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
-    
+
     implicitly[ToTraversable.Aux[HNil, Array, Nothing]]
     implicitly[ToTraversable.Aux[HNil, Array, Int]]
 
@@ -830,7 +830,7 @@ class HListTests {
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
-    
+
     implicitly[ToArray[HNil, Nothing]]
     implicitly[ToArray[HNil, Int]]
 

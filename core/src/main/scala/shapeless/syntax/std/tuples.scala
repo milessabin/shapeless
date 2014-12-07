@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,12 +62,12 @@ final class TupleOps[T](t: T) {
    * Append the argument tuple to this tuple.
    */
   def ++[U](u: U)(implicit prepend: Prepend[T, U]): prepend.Out = prepend(t, u)
-  
+
   /**
    * Prepend the argument tuple to this tuple.
    */
   def ++:[U](u: U)(implicit prepend: Prepend[U, T]): prepend.Out = prepend(u, t)
-  
+
   /**
    * Prepend the argument tuple to this tuple.
    */
@@ -89,7 +89,7 @@ final class TupleOps[T](t: T) {
    * elements.
    */
   def apply(n: Nat)(implicit at: At[T, n.N]): at.Out = at(t)
-  
+
   /**
    * Returns the ''nth'' element of this tuple. An explicit type argument must be provided. Available only if there is
    * evidence that this tuple has at least ''n'' elements.
@@ -101,7 +101,7 @@ final class TupleOps[T](t: T) {
    * elements.
    */
   def at(n: Nat)(implicit at: At[T, n.N]): at.Out = at(t)
-  
+
   /**
    * Returns the last element of this tuple. Available only if there is evidence that this tuple is composite.
    */
@@ -128,16 +128,16 @@ final class TupleOps[T](t: T) {
    * Returns all elements of type different than `U` of this tuple. An explicit type argument must be provided.
    */
   def filterNot[U](implicit filterNot: FilterNot[T, U]): filterNot.Out = filterNot(t)
-  
+
   /**
    * Returns the first element of type `U` of this tuple plus the remainder of the tuple. An explicit type argument
    * must be provided. Available only if there is evidence that this tuple has an element of type `U`.
-   * 
+   *
    * The `Elem` suffix is here for consistency with the corresponding method name for `HList` and should be
    * removed when the latter is removed.
    */
   def removeElem[U](implicit remove: Remove[T, U]): remove.Out = remove(t)
-  
+
   /**
    * Returns the first elements of this tuple that have types in `S` plus the remainder of the tuple. An expicit
    * type argument must be provided. Available only if there is evidence that this tuple contains elements with
@@ -151,32 +151,32 @@ final class TupleOps[T](t: T) {
    * of type `U`.
    */
   def replace[U](u: U)(implicit replacer: Replacer[T, U, U]): replacer.Out = replacer(t, u)
-  
+
   class ReplaceTypeAux[U] {
     def apply[V](v: V)(implicit replacer: Replacer[T, V, U]): replacer.Out = replacer(t, v)
   }
-  
+
   /**
    * Replaces the first element of type `U` of this tuple with the supplied value of type `V`, returning both the
    * replaced element and the updated tuple. An explicit type argument must be provided for `U`. Available only if
    * there is evidence that this tuple has an element of type `U`.
    */
   def replaceType[U] = new ReplaceTypeAux[U]
-  
+
   /**
    * Replaces the first element of type `U` of this tuple with the supplied value, also of type `U`. Available only
    * if there is evidence that this tuple has an element of type `U`.
-   * 
+   *
    * The `Elem` suffix is here for consistency with the corresponding method name for `HList` and should be
    * removed when the latter is removed.
    */
   def updatedElem[U, R](u: U)
     (implicit replacer: Replacer.Aux[T, U, U, (U, R)]): R = replacer(t, u)._2
-  
+
   class UpdatedTypeAux[U] {
     def apply[V, R](v: V)(implicit replacer: Replacer.Aux[T, V, U, (U, R)]): R = replacer(t, v)._2
   }
-  
+
   /**
    * Replaces the first element of type `U` of this tuple with the supplied value of type `V`. An explicit type
    * argument must be provided for `U`. Available only if there is evidence that this tuple has an element of
@@ -187,13 +187,13 @@ final class TupleOps[T](t: T) {
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2
   }
-  
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. An explicit type argument
    * must be provided for `N`. Available only if there is evidence that this tuple has at least ''n'' elements.
    */
   def updatedAt[N <: Nat] = new UpdatedAtAux[N]
-  
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. Available only if there is
    * evidence that this tuple has at least ''n'' elements.
@@ -211,7 +211,7 @@ final class TupleOps[T](t: T) {
    * least ''n'' elements.
    */
   def take(n: Nat)(implicit take: Take[T, n.N]): take.Out = take(t)
-  
+
   /**
    * Returns all but the  first ''n'' elements of this tuple. An explicit type argument must be provided. Available
    * only if there is evidence that this tuple has at least ''n'' elements.
@@ -223,7 +223,7 @@ final class TupleOps[T](t: T) {
    * has at least ''n'' elements.
    */
   def drop(n: Nat)(implicit drop: Drop[T, n.N]): drop.Out = drop(t)
-  
+
   /**
    * Splits this tuple at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type argument
    * must be provided. Available only if there is evidence that this tuple has at least ''n'' elements.
@@ -235,7 +235,7 @@ final class TupleOps[T](t: T) {
    * evidence that this tuple has at least ''n'' elements.
    */
   def split(n: Nat)(implicit split: Split[T, n.N]): split.Out = split(t)
-  
+
   /**
    * Splits this tuple at the ''nth'' element, returning the reverse of the prefix and suffix as a pair. An explicit
    * type argument must be provided. Available only if there is evidence that this tuple has at least ''n'' elements.
@@ -313,20 +313,20 @@ final class TupleOps[T](t: T) {
    * there is evidence `op` can consume/produce all the partial results of the appropriate types.
    */
   def foldLeft[R](z: R)(op: Poly)(implicit folder: LeftFolder[T, R, op.type]): folder.Out = folder(t, z)
-  
+
   /**
    * Computes a right fold over this tuple using the polymorphic binary combining operator `op`. Available only if
    * there is evidence `op` can consume/produce all the partial results of the appropriate types.
    */
   def foldRight[R](z: R)(op: Poly)(implicit folder: RightFolder[T, R, op.type]): folder.Out = folder(t, z)
-  
+
   /**
    * Computes a left reduce over this tuple using the polymorphic binary combining operator `op`. Available only if
    * there is evidence that this tuple has at least one element and that `op` can consume/produce all the partial
    * results of the appropriate types.
    */
   def reduceLeft(op: Poly)(implicit reducer: LeftReducer[T, op.type]): reducer.Out = reducer(t)
-  
+
   /**
    * Computes a right reduce over this tuple using the polymorphic binary combining operator `op`. Available only if
    * there is evidence that this tuple has at least one element and that `op` can consume/produce all the partial
@@ -338,7 +338,7 @@ final class TupleOps[T](t: T) {
    * Zips this tuple with its argument tuple returning a tuple of pairs.
    */
   def zip[R](r: R)(implicit transpose: Transposer[(T, R)]): transpose.Out = transpose((t, r))
-  
+
   /**
    * Zips this tuple of monomorphic function values with its argument tuple of correspondingly typed function
    * arguments returning the result of each application as a tuple. Available only if there is evidence that the
@@ -357,7 +357,7 @@ final class TupleOps[T](t: T) {
    * tuple has tuple elements.
    */
   def unzip(implicit transpose: Transposer[T]): transpose.Out = transpose(t)
-  
+
   /**
    * Zips this tuple with its argument tuple of tuples, returning a tuple of tuples with each element of
    * this tuple prepended to the corresponding tuple element of the argument tuple.
@@ -369,7 +369,7 @@ final class TupleOps[T](t: T) {
    * ({element from original tuple}, {supplied constant})
    */
   def zipConst[C](c: C)(implicit zipper: ZipConst[T, C]): zipper.Out = zipper(t, c)
-  
+
   /**
    * Transposes this tuple.
    */
@@ -384,7 +384,7 @@ final class TupleOps[T](t: T) {
    * Returns a tuple with all elements that are subtypes of `B` typed as `B`.
    */
   def unifySubtypes[B](implicit subtypeUnifier : SubtypeUnifier[T, B]) : subtypeUnifier.Out = subtypeUnifier(t)
-  
+
   /**
    * Compute the length of this tuple.
    */
@@ -401,17 +401,17 @@ final class TupleOps[T](t: T) {
    * of this tuple.
    */
   def toList[Lub](implicit toTraversable : ToTraversable.Aux[T, List, Lub]) : toTraversable.Out = toTraversable(t)
-  
+
   /**
    * Converts this tuple to an `Array` of elements typed as the least upper bound of the types of the elements
    * of this tuple.
-   * 
+   *
    * It is advisable to specify the type parameter explicitly, because for many reference types, case classes in
    * particular, the inferred type will be too precise (ie. `Product with Serializable with CC` for a typical case class
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
   def toArray[Lub](implicit toTraversable : ToTraversable.Aux[T, Array, Lub]) : toTraversable.Out = toTraversable(t)
-  
+
   /**
    * Converts this tuple to a `M` of elements typed as the least upper bound of the types of the elements
    * of this tuple.
@@ -454,7 +454,7 @@ final class TupleOps[T](t: T) {
 
   /**
    *
-   * Produces a new tuple where a slice of this tuple is replaced by another. Available only if there are at least 
+   * Produces a new tuple where a slice of this tuple is replaced by another. Available only if there are at least
    * ``n`` plus ``m`` elements.
    */
   def patch[In](n: Nat, in: In, m: Nat)(implicit patcher: Patcher[n.N, m.N, T, In]): patcher.Out = patcher(t, in)

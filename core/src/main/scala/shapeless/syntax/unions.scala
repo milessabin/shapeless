@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import tag.@@
 
 /**
  * Discriminated union operations on `Coproducts`'s with field-like elements.
- * 
+ *
  * @author Miles Sabin
  */
 final class UnionOps[C <: Coproduct](c : C) {
@@ -34,7 +34,7 @@ final class UnionOps[C <: Coproduct](c : C) {
    * with keyType equal to the singleton type k.T.
    */
   def get(k: Witness)(implicit selector : Selector[C, k.T]): selector.Out = selector(c)
-  
+
   /**
    * Returns the value associated with the singleton typed key k. Only available if this union has a field with
    * with keyType equal to the singleton type k.T.
@@ -74,7 +74,7 @@ final class UnionOps[C <: Coproduct](c : C) {
 
 /**
  * Discriminated union wrapper providing `selectDynamic` access to fields.
- * 
+ *
  * @author Cody Allen
  */
 final case class DynamicUnionOps[C <: Coproduct](c : C) extends Dynamic {

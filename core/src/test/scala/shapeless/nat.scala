@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,22 @@ import org.junit.Assert._
 class NatTests {
   import nat._
   import ops.nat._
-  
+
   trait Check[N <: Nat]
   def check(expected: Nat)(actualy : => Check[expected.N]) {}
-  
+
   @Test
   def testNat {
     implicitly[Succ[_1] =:= _2]
-    
+
     implicitly[Pred.Aux[_19, _18]]
-    
+
     def pred(n: Nat)(implicit pred : Pred[n.N]) = new Check[pred.Out] {}
     val pd1 = pred(19)
     check(18)(pd1)
-    
+
     implicitly[Sum.Aux[_2, _3, _5]]
-    
+
     def sum(a: Nat, b: Nat)(implicit sum : Sum[a.N, b.N]) = new Check[sum.Out] {}
     val s1 = sum(2, 3)
     check(5)(s1)
