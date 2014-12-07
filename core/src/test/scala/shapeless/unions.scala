@@ -182,7 +182,7 @@ class UnionTests {
       assertTypedEquals(Map[String, Option[Any]]("third" -> Option.empty[String]), m3)
     }
   }
-  
+
   @Test
   def testMapValues {
     object f extends Poly1 {

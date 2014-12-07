@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,10 @@ object Coproduct {
   import syntax.CoproductOps
 
   class MkCoproduct[C <: Coproduct] {
-    def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t) 
+    def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t)
   }
-  
+
   def apply[C <: Coproduct] = new MkCoproduct[C]
 
-  implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
+  implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c)
 }

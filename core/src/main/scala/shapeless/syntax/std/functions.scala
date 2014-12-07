@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ package std
 
 /**
  * Conversions between ordinary functions and `HList` functions.
- * 
+ *
  * The implicits defined by this object enhance ordinary functions (resp. HList functions) with a `toProduct` (resp.
  * `fromProduct`) method which creates an equivalently typed `HList` function (resp. ordinary function).
- * 
+ *
  * @author Miles Sabin
  */
 object function {

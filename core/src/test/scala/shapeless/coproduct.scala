@@ -1413,7 +1413,7 @@ class CoproductTests {
     assertTypedEquals[I :+: S :+: CNil](is0, r2_0)
 
     // These two are different from testRemoveInverse
-    
+
     val u3 = RemoveLast[I :+: S :+: I :+: CNil, I]
     val r3 = u3.inverse(Left(2))
     assertTypedEquals[I :+: S :+: I :+: CNil](iis, r3)
@@ -1446,7 +1446,7 @@ class CoproductTests {
     val c1_2 = c1_0.embed[S3]
     assertTypedEquals[S3](c1_2, Coproduct[S3](5))
     assertTypedEquals[S1](c1_0, c1_2.deembed[S1].right.get)
-    
+
     val c2_0 = Coproduct[S2]("toto")
     val c2 = c2_0.embed[S3]
     assertTypedEquals[S3](c2, Coproduct[S3]("toto"))
@@ -1456,7 +1456,7 @@ class CoproductTests {
 
     // See https://github.com/milessabin/shapeless/issues/253
     illTyped("Coproduct[S5](3).embed[S1]")
-    
+
     // See https://github.com/milessabin/shapeless/issues/253#issuecomment-59648119
     {
       type II = Int :+: Int :+: CNil

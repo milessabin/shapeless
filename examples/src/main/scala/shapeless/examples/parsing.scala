@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import scala.util.parsing.combinator._
  * See http://stackoverflow.com/questions/9594392 for context.
  */
 object CombinatorTesting extends App {
-  
+
   object CombinatorParser extends RegexParsers {
     lazy val a = "a"
     lazy val b = "b"
@@ -40,34 +40,34 @@ object CombinatorTesting extends App {
   trait Flatten[M] extends (M => List[String]) {
     def apply(m : M) : List[String]
   }
-  
+
   /**
    * Type class instance for `String`.
    */
   implicit def flattenString = new Flatten[String] {
-    def apply(m : String) = List(m) 
+    def apply(m : String) = List(m)
   }
-  
+
   /**
-   * Flatten instance for `A ~ B`. Requires Flatten instances for `A` and `B`. 
+   * Flatten instance for `A ~ B`. Requires Flatten instances for `A` and `B`.
    */
   implicit def flattenPattern[A, B](implicit flattenA : Flatten[A], flattenB : Flatten[B]) = new Flatten[A ~ B] {
-    def apply(m : A ~ B) = m match { case a ~ b => flattenA(a) ::: flattenB(b) } 
+    def apply(m : A ~ B) = m match { case a ~ b => flattenA(a) ::: flattenB(b) }
   }
-  
+
   /**
    * Flatten instance for ParseResult[T]. Requires a Flatten instance for T.
    */
   implicit def flattenParseResult[T](implicit flattenP : Flatten[T]) = new Flatten[ParseResult[T]] {
-    def apply(p : ParseResult[T]) = (p map flattenP) getOrElse Nil 
+    def apply(p : ParseResult[T]) = (p map flattenP) getOrElse Nil
   }
-  
+
   def flatten[P](p : P)(implicit flatten : Flatten[P]) = flatten(p)
-  
+
   val testChar = "abc"
   val output = parseAll(content, testChar)
   println(output)          // ((a~b)~c) but I want List(a, b, c)
-    
+
   val flattenedOutput = flatten(output)
   println(flattenedOutput) // List(a, b, c)
 }

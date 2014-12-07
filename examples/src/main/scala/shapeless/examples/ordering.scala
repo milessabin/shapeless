@@ -24,17 +24,17 @@ object OrderingExamples extends App {
 
   trait LowPriorityGenericOrdering {
     // An Ordering for any type which is isomorphic to an HList, if that HList has an Ordering
-  
+
     implicit def hlistIsoOrdering[A, H <: HList](implicit gen : Generic.Aux[A, H], oh : Ordering[H]) : Ordering[A] = new Ordering[A] {
       def compare(a1 : A, a2 : A) = oh.compare(gen to a1, gen to a2)
     }
   }
-  
+
   object GenericOrdering extends LowPriorityGenericOrdering {
     implicit def hnilOrdering : Ordering[HNil] = new Ordering[HNil] {
       def compare(a : HNil, b : HNil) = 0
     }
-  
+
     implicit def hlistOrdering[H, T <: HList](implicit oh : Ordering[H], ot : Ordering[T]) : Ordering[H :: T] = new Ordering[H :: T] {
       def compare(a : H :: T, b : H :: T) = {
         val i = oh.compare(a.head, b.head)
@@ -43,7 +43,7 @@ object OrderingExamples extends App {
       }
     }
   }
-  
+
   import GenericOrdering._
 
   implicitly[Ordering[Int :: String :: HNil]]

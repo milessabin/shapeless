@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ package shapeless.examples
 object KList {
   import shapeless._
   import UnaryTCConstraint._
-  
+
   // Function which will only accept HList's whose elements all have have Option as their
   // outer type constructor
   def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
-  
-  val l1 = Option(23) :: Option(true) :: Option("foo") :: HNil 
+
+  val l1 = Option(23) :: Option(true) :: Option("foo") :: HNil
   val l2 = Option(23) :: true :: Option("foo") :: HNil
-  
+
   acceptOption(l1)  // Compiles
   //acceptOption(l2)  // Does not compile
 }

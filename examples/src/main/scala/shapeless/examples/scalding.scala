@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import syntax.singleton._
  * [1] https://github.com/twitter/scalding/wiki/Fields-based-API-Reference
  * [2] https://twitter.com/scalding/status/425704713447682048
  * [3] https://gist.github.com/milessabin/8549878
- * 
+ *
  * @author Miles Sabin
  */
 object ScaldingPoC extends App {
@@ -63,4 +63,4 @@ object ScaldingPoC extends App {
 
   val lines = books.flatMap(book => for(word <- book("text").split("\\s+")) yield book + ("word" ->> word))
   lines foreach println
-}  
+}

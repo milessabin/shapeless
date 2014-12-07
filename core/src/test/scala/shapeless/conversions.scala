@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin 
+ * Copyright (c) 2011-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,70 +28,70 @@ class ConversionTests {
   @Test
   def testTuples {
     val t1 = (23, "foo", 2.0, true)
-    
+
     val h1 = t1.productElements
     typed[Int :: String :: Double :: Boolean :: HNil](h1)
     assertEquals(23 :: "foo" :: 2.0 :: true :: HNil, h1)
-    
+
     val h2 = productElements(t1)
     typed[Int :: String :: Double :: Boolean :: HNil](h2)
     assertEquals(23 :: "foo" :: 2.0 :: true :: HNil, h2)
-    
+
     val l2 = 23 :: "foo" :: 2.0 :: true :: HNil
-    
+
     val t3 = l2.tupled
     typed[(Int, String, Double, Boolean)](t3)
     assertEquals((23, "foo", 2.0, true), t3)
-    
+
     val t4 = tupled(l2)
     typed[(Int, String, Double, Boolean)](t4)
     assertEquals((23, "foo", 2.0, true), t4)
-    
+
     val t5 = (23, "foo")
     val t6 = (false, 3.0)
-    
+
     val t7 = (t5.productElements ::: t6.productElements).tupled
     typed[(Int, String, Boolean, Double)](t7)
     assertEquals((23, "foo", false, 3.0), t7)
-    
+
     val t8 = (Set(2), Set("foo"))
     val t8b = (t8.productElements map choose).tupled
     typed[(Option[Int], Option[String])](t8b)
     assertEquals((Option(2), Option("foo")), t8b)
   }
-  
+
   @Test
   def testFunctions {
     val sum : (Int, Int) => Int = _+_
     val prd : (Int, Int, Int) => Int = _*_*_
-    
+
     val hlsum = sum.toProduct
     typed[(Int :: Int :: HNil) => Int](hlsum)
-    
+
     val hlprd = prd.toProduct
     typed[(Int :: Int :: Int :: HNil) => Int](hlprd)
-    
+
     trait A
     trait B extends A
     trait C extends A
-    
+
     val a = new A {}
     val b = new B {}
-    
+
     val ab : A => B = (a : A) => b
-    
+
     val hlab = ab.toProduct
     typed[(A :: HNil) => B](hlab)
- 
+
     def foo[F, L <: HList, R](f : F, l : L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
     val ab2 = foo(ab, a :: HNil)
   }
-  
+
   @Test
   def testCaseClasses {
     case class Foo(a : Int, b : String, c : Double)
-    
+
     val f1 = Foo(23, "foo", 2.3)
     val t1 = Foo.unapply(f1).get
     val hf = t1.productElements

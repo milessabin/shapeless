@@ -296,7 +296,7 @@ class GenericMacros(val c: whitebox.Context) {
         if(isCaseClass || hasUnapply) {
           val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
           val lhs = pq"${companionRef(tpe)}(..${binders.map(x => pq"${x._1}")})"
-          val rhs = 
+          val rhs =
             binders.foldRight(hnilValueTree) {
               case ((bound, name, tpe), acc) => q"$hconsValueTree(${mkElem(q"$bound", name, tpe)}, $acc)"
             }
@@ -333,7 +333,7 @@ class GenericMacros(val c: whitebox.Context) {
           applySym != NoSymbol && !isNonGeneric(applySym)
         }
 
-        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) } 
+        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
         val ctorArgs = binders.map { case (bound, name, tpe) => mkElem(Ident(bound), name, tpe) }
 
         val lhs =

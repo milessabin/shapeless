@@ -132,7 +132,7 @@ trait ProductPrismBuilder[C, P <: Product] extends Prism[C, P] {
       init: Init.Aux[QL, L],
       last: Last.Aux[QL, T]) =
       new ProductPrismBuilder[C, Q] {
-        def get(c: C): Option[Q] = 
+        def get(c: C): Option[Q] =
           for {
             init <- outer.get(c)
             last <- other.get(c)

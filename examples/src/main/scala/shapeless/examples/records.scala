@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package shapeless.examples
 
 /**
  * Record examples.
- * 
+ *
  * @author Miles Sabin
  */
 object RecordExamples extends App {
@@ -44,9 +44,9 @@ object RecordExamples extends App {
     ("id"     ->>  262162091) ::
     ("price"  ->>  44.11) ::
     HNil
-  
+
   printBook(book)
-    
+
   // Read price field
   val currentPrice = book("price")  // Static type is Double
   println("Current price is "+currentPrice)
@@ -59,8 +59,8 @@ object RecordExamples extends App {
   // Add a new field
   val extended = updated + ("inPrint" ->> true)
   printBook(extended)
-  
+
   // Remove a field
-  val noId = extended - "id" 
+  val noId = extended - "id"
   printBook(noId)
 }

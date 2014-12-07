@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Alois Cochard 
+ * Copyright (c) 2011 Alois Cochard
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,11 @@ abstract class Sonatype(build: Build) {
 
   val ossSnapshots = "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
   val ossStaging   = "Sonatype OSS Staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-  
+
   def projectUrl: String
   def developerId: String
   def developerName: String
-  
+
   def licenseName: String
   def licenseUrl: String
   def licenseDistribution = "repo"

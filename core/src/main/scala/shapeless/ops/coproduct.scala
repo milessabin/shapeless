@@ -183,7 +183,7 @@ object coproduct {
 
     // Must be given a lower priority than removeHead, so that:
     // - the two don't collide for coproducts with repeated types
-    // - the first element of type I in C is removed 
+    // - the first element of type I in C is removed
     implicit def removeTail[H, T <: Coproduct, U](implicit
       tailRemove: Remove[T, U]
     ): Aux[H :+: T, U, H :+: tailRemove.Rest] = new Remove[H :+: T, U] {
@@ -259,7 +259,7 @@ object coproduct {
       tailRemoveLast: RemoveLast[T, I]
     ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
   }
-  
+
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
 
   object FlatMap {
@@ -712,13 +712,13 @@ object coproduct {
     def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
 
     type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
-    
+
     implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
       new Take[C, Nat._0] {
         type Taken = CNil
         def apply(c: C) = None
       }
-    
+
     implicit def takeSucc[H, T <: Coproduct, N <: Nat]
      (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
       new Take[H :+: T, Succ[N]] {
@@ -911,7 +911,7 @@ object coproduct {
     type Aux[Super <: Coproduct, Sub <: Coproduct, Rest0 <: Coproduct] =
       Basis[Super, Sub] { type Rest = Rest0 }
 
-    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] = 
+    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] =
       basis
 
     implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {

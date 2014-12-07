@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package shapeless.examples
 
 /**
  * Demonstration of automatic packaging of multiple type class instances at call sites and
- * automatic unpackaging of them at call targets. 
- * 
+ * automatic unpackaging of them at call targets.
+ *
  * @author Miles Sabin
  */
 object PackExamples extends App {
   import shapeless._
-  
+
   sealed trait Pack[F[_], L <: HList]
   final case class PCons[F[_], H, T <: HList](head: F[H], tail: Pack[F, T]) extends Pack[F, H :: T]
   final case class PNil[F[_]]() extends Pack[F, HNil]
-  
+
   object Pack {
     implicit def packHNil[F[_]]: PNil[F] = PNil[F]()
 
@@ -58,7 +58,7 @@ object PackExamples extends App {
     trait IsPCons[F[_], L <: HList] {
       type H
       type T <: HList
-        
+
       def split(p: Pack[F, L]): (F[H], Pack[F, T])
     }
 
@@ -68,26 +68,26 @@ object PackExamples extends App {
         new IsPCons[F, H0 :: T0] {
           type H = H0
           type T = T0
-        
+
           def split(p: Pack[F, H :: T]): (F[H], Pack[F, T]) = p match {
             case PCons(fh, pt) => (fh, pt)
           }
         }
     }
   }
-  
+
   import Pack._
 
   trait A
   trait B
   trait C
-  
+
   trait Show[T] {
     def show : String
   }
-  
+
   def show[T](t : T)(implicit s : Show[T]) = s.show
-  
+
   val a = new A {}
   val b = new B {}
   val c = new C {}
@@ -100,7 +100,7 @@ object PackExamples extends App {
     // Instances automatically unpacked here
     (show(t), show(u), show(v))
   }
-  
+
   // Instances automatically packed here
   assert(use3(a, b, c) == ("A", "B", "C"))
 }

@@ -127,7 +127,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         if(t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
       }
     }
-  
+
   /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT: Typeable[T]): Typeable[Option[T]] =
     new Typeable[Option[T]] {

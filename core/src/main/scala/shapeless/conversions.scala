@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ object tupled extends Poly1 {
 }
 
 /**
- * Higher ranked function which converts products to `HLists`. 
+ * Higher ranked function which converts products to `HLists`.
  */
 object productElements extends Poly1 {
   implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))

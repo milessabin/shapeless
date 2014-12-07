@@ -57,14 +57,14 @@ object zipper {
         def apply(z : Zipper[C, L, R, P]) = Zipper(z.suffix reverse_::: z.prefix, HNil, z.parent)
       }
   }
-  
+
   trait RightBy[Z, N <: Nat] extends DepFn1[Z]
-  
+
   object RightBy {
     implicit def rightBy[C, L <: HList, R <: HList, P, N <: Nat, LP <: HList, RS <: HList]
       (implicit split : Split.Aux[R, N, LP, RS], reverse : ReversePrepend[LP, L]) =
         new RightBy[Zipper[C, L, R, P], N] {
-          type Out = Zipper[C, reverse.Out, RS, P] 
+          type Out = Zipper[C, reverse.Out, RS, P]
           def apply(z : Zipper[C, L, R, P]) = {
             val p :: s :: HNil = z.suffix.splitP[N]
             Zipper(p reverse_::: z.prefix, s, z.parent)
@@ -87,7 +87,7 @@ object zipper {
   }
 
   trait RightTo[Z, T] extends DepFn1[Z]
-  
+
   object RightTo {
     implicit def rightTo[C, L <: HList, R <: HList, P, T, LP <: HList, RS <: HList]
       (implicit split : SplitLeft.Aux[R, T, LP, RS], reverse : ReversePrepend[LP, L]) =

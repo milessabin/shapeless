@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import scala.collection.GenTraversable
 
 /**
  * Conversions between `Traversables` and `HLists`.
- * 
+ *
  * The implicit defined by this object enhances `Traversables` with a `toHList` method which constructs an equivalently
- * typed [[shapeless.HList]] if possible. 
- * 
+ * typed [[shapeless.HList]] if possible.
+ *
  * @author Miles Sabin
  */
 object traversable {

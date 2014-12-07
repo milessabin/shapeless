@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ object CartesianProductExample extends App {
   val expected =
     (1, 4.0) :: (1, "e") ::
     ('b, 4.0) :: ('b, "e") ::
-    ('c', 4.0) :: ('c', "e") :: HNil 
+    ('c', 4.0) :: ('c', "e") :: HNil
 
   typed[Result](result)
 

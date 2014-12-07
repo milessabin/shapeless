@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import scala.collection.{ GenTraversable, GenTraversableLike }
 
 object traversable {
   /**
-   * Type class supporting type safe conversion of `Traversables` to `HLists`. 
-   * 
+   * Type class supporting type safe conversion of `Traversables` to `HLists`.
+   *
    * @author Miles Sabin
    */
   trait FromTraversable[Out <: HList] {
@@ -31,7 +31,7 @@ object traversable {
 
   /**
    * `FromTraversable` type class instances.
-   * 
+   *
    * @author Miles Sabin
    */
   object FromTraversable {
@@ -41,9 +41,9 @@ object traversable {
 
     implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
       def apply(l : GenTraversable[_]) =
-        if(l.isEmpty) Some(HNil) else None 
+        if(l.isEmpty) Some(HNil) else None
     }
-    
+
     implicit def hlistFromTraversable[OutH, OutT <: HList]
       (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
         def apply(l : GenTraversable[_]) : Option[OutH :: OutT] =
