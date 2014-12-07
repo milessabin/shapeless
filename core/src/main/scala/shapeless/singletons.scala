@@ -16,6 +16,7 @@
 
 package shapeless
 
+import scala.language.dynamics
 import scala.language.existentials
 import scala.language.experimental.macros
 
@@ -47,6 +48,10 @@ object Witness {
       type T = Succ[P]
       val value = new Succ[P]()
     }
+}
+
+object Literal extends Dynamic {
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.literalTypeImpl
 }
 
 trait WitnessWith[TC[_]] extends Witness {
