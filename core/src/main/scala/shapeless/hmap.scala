@@ -19,7 +19,7 @@ package shapeless
 import poly._
   
 /**
- * Heterogenous map with type-level key/value associations that are fixed by an arbitrary
+ * Heterogeneous map with type-level key/value associations that are fixed by an arbitrary
  * relation `R`.
  * 
  * `HMap`s extend `Poly` and hence are also polymorphic function values with type-specific

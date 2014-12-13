@@ -15,7 +15,7 @@ A feature overview of shapeless-2.0.0 can be found [here][features200]. If you a
 will find the [release notes][relnotes] and [migration guide][migration] useful.
 
 shapeless is part of the [typelevel][] family of projects along with [Scalaz][scalaz] and [Spire][spire]. It is an Open
-Source project under the Apache License v2, hosted on [github][source]. Binary artefacts are published to the [Sonatype
+Source project under the Apache License v2, hosted on [github][source]. Binary artifacts are published to the [Sonatype
 OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
 There is a [mailing list][group] for discussion around generic programming in Scala in general and shapeless in
@@ -65,7 +65,7 @@ and guidance is always available.
 
 ## Using shapeless
 
-Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
+Binary release artifacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
 Central. Snapshots of the master and scala-2.10.x branches are built using [Travis CI][ci] and automatically published
 to the Sonatype OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
 
