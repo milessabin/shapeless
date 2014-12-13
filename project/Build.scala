@@ -67,8 +67,6 @@ object ShapelessBuild extends Build {
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
         (sourceGenerators in Compile) <+= buildInfo,
 
-        initialCommands in console := """import shapeless._""",
-
         mappings in (Compile, packageSrc) <++=
           (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
             (srcs pair (Path.relativeTo(base) | Path.flat))
@@ -181,6 +179,8 @@ object ShapelessBuild extends Build {
         "-language:implicitConversions",
         "-Xfatal-warnings",
         "-deprecation",
-        "-unchecked")
+        "-unchecked"),
+
+      initialCommands in console := """import shapeless._"""
     )
 }
