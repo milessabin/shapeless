@@ -28,5 +28,5 @@ final class NatOps[N <: Nat](n : Nat) {
   /**
    * Returns the int value of this `Nat`.
    */
-  def toInt(implicit toIntN: ToInt[N]): Int = Nat.toInt(n)
+  def toInt(implicit toIntN: ToInt[n.N]): Int = Nat.toInt(n)
 }
