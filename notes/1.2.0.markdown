@@ -14,7 +14,7 @@ The main changes include,
 * Added an implementation of [extensible records](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/records.scala#L24) in terms of HLists of
   key/value associations. 
 
-* Added HMap: a [heterogeneous map](https://github.com/milessabin/shapeless/blob/master/src/test/scala/shapeless/hmap.scala#L22) implementation where the relationship
+* Added HMap: a [heterogenous map](https://github.com/milessabin/shapeless/blob/master/src/test/scala/shapeless/hmap.scala#L22) implementation where the relationship
   between key types and value types is witnessed by an arbitrary relation.
 
 * Added HListIso: a representation of isomorphisms between case classes and

@@ -259,7 +259,7 @@ New features and enhancements which were previously announced in the shapeless
     * The `Poly` and `Case` name conventions have been aligned with the new
       shapeless type class name convention.
     * The internals of Poly had (ironically) a large amount of arity
-      specific/restricted artifacts. These have now been largely eliminated,
+      specific/restricted artefacts. These have now been largely eliminated,
       yielding a more consistent structure.
     * The type classes and extension methods for converting between functions
       of multiple arguments and functions with a single `HList` argument have
