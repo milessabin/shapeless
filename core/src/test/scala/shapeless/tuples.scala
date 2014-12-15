@@ -1051,7 +1051,7 @@ class TupleTests {
     typed[Fruit](x5)
     typed[(Apple, Pear, Apple, Fruit)](rr5)
   }
-  
+
   @Test
   def testUpdate {
     val sl = (1, true, "foo", 2.0)
@@ -1079,6 +1079,18 @@ class TupleTests {
 
     val r8 = sl.updatedType[Double]('*')
     assertEquals((1, true, "foo", '*'), r8)
+
+    val r9 = sl.updateWith[Int](i => (i + 1).toString)
+    assertEquals(("2", true, "foo", 2.0), r9)
+
+    val r10 = sl.updateWith[Boolean](b => if(b) 3.0 else 2.0)
+    assertEquals((1, 3.0, "foo", 2.0), r10)
+
+    val r11 = sl.updateWith[String](s => s.length)
+    assertEquals((1, true, 3, 2.0), r11)
+
+    val r12 = sl.updateWith[Double](d => '*')
+    assertEquals((1, true, "foo", '*'), r12)
     
     val fruits = (a, p, a, f)
     
@@ -1096,6 +1108,15 @@ class TupleTests {
     
     val rr5 = fruits.updatedElem(f)
     typed[(Apple, Pear, Apple, Fruit)](rr5)
+
+    val rr6 = fruits.updateWith[Pear](p => a)
+    typed[(Apple, Apple, Apple, Fruit)](rr6)
+
+    val rr7 = fruits.updateWith[Fruit](f => p)
+    typed[(Apple, Pear, Apple, Pear)](rr7)
+
+    val rr8 = fruits.updateWith[Pear](p => f)
+    typed[(Apple, Fruit, Apple, Fruit)](rr8)
   }
 
   @Test
