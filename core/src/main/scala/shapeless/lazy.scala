@@ -157,15 +157,18 @@ trait DerivationContext extends CaseClassMacros {
       dict.get(TypeWrapper(instTpe)) match {
         case Some(d) => (d.ident, d.actualTpe)
         case _ =>
-          val instance = add(Instance(instTpe))
+          val instance0 = add(Instance(instTpe))
           val extInst = c.inferImplicitValue(instTpe, silent = true)
-          if(extInst == EmptyTree || extInst.equalsStructure(instance.ident)) {
-            remove(instance)
+          if(extInst == EmptyTree || extInst.equalsStructure(instance0.ident)) {
+            remove(instance0)
             abort(s"Unable to derive $instTpe")
           }
-          val actualTpe = extInst.tpe
-          val sym = c.internal.setInfo(instance.symbol, actualTpe)
-          val tree = add(instance.copy(inst = extInst, actualTpe = extInst.tpe, symbol = sym)).ident
+
+          val instance1 = dict(TypeWrapper(instTpe))
+          val actualTpe = extInst.tpe.finalResultType
+
+          val sym = c.internal.setInfo(instance1.symbol, actualTpe)
+          val tree = add(instance1.copy(inst = extInst, actualTpe = actualTpe, symbol = sym)).ident
           (tree, actualTpe)
       }
 
@@ -178,7 +181,7 @@ trait DerivationContext extends CaseClassMacros {
     val instTrees: List[Tree] =
       instances.map { instance =>
         import instance._
-        q"""implicit lazy val $name: $actualTpe = $inst"""
+        q"""lazy val $name: $actualTpe = $inst.asInstanceOf[$actualTpe]"""
       }
 
     val objName = TermName(c.freshName())
@@ -191,7 +194,7 @@ trait DerivationContext extends CaseClassMacros {
 
     val instance = dict(TypeWrapper(primaryTpe))
     val nme = instance.name
-    val actualType = instance.inst.tpe.finalResultType
+    val actualType = instance.actualTpe
 
     val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
     val cleanObj = c.untypecheck(c.internal.substituteSymbols(obj, from, to))
@@ -201,6 +204,7 @@ trait DerivationContext extends CaseClassMacros {
         $cleanObj
         $objName.$nme
        """
+
     (tree, actualType)
   }
 }
