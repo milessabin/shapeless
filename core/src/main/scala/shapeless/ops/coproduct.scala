@@ -89,6 +89,65 @@ object coproduct {
     }
   }
 
+  trait Partition[C <: Coproduct, U] extends DepFn1[C] {
+    type Prefix <: Coproduct
+    type Suffix <: Coproduct
+    type Out = Either[Prefix, Suffix]
+
+    def filter(c: C): Option[Prefix]    = apply(c).left.toOption
+    def filterNot(c: C): Option[Suffix] = apply(c).right.toOption
+    def apply(c: C): Out = toEither(coproduct(c))
+    def coproduct(c: C): Prefix :+: Suffix :+: CNil
+  }
+
+  object Partition {
+    def apply[C <: Coproduct, U]
+      (implicit partition: Partition[C, U]): Aux[C, U, partition.Prefix, partition.Suffix] = partition
+
+    type Aux[C <: Coproduct, U, Prefix0 <: Coproduct, Suffix0 <: Coproduct] = Partition[C, U] {
+      type Prefix = Prefix0
+      type Suffix = Suffix0
+    }
+
+    implicit def cnilPartition[U]: Aux[CNil, U, CNil, CNil] = new Partition[CNil, U] {
+      type Prefix = CNil
+      type Suffix = CNil
+
+      def coproduct(c: CNil): Prefix :+: Suffix :+: CNil = Inr(Inr(c))
+    }
+
+    implicit def coproductPartition_Match[H, T <: Coproduct, TPrefix <: Coproduct, TSuffix <: Coproduct](
+      implicit partition: Aux[T, H, TPrefix, TSuffix]
+    ): Aux[H :+: T, H, H :+: TPrefix, TSuffix] = new Partition[H :+: T, H] {
+      type Prefix = H :+: TPrefix
+      type Suffix = TSuffix
+
+      def coproduct(c: H :+: T): Prefix :+: Suffix :+: CNil = c match {
+        case Inl(h) => Inl(Inl(h))
+        case Inr(t) => partition.coproduct(t) match {
+          case Inl(h) => Inl(Inr(h))
+          case Inr(t) => Inr(t)
+        }
+      }
+    }
+
+    implicit def coproductPartition_NonMatch[H, T <: Coproduct, TPrefix <: Coproduct, TSuffix <: Coproduct, U](
+      implicit partition: Aux[T, U, TPrefix, TSuffix], e: U =:!= H
+    ): Aux[H :+: T, U, TPrefix, H :+: TSuffix] = new Partition[H :+: T, U] {
+      type Prefix = TPrefix
+      type Suffix = H :+: TSuffix
+
+      def coproduct(c: H :+: T): Prefix :+: Suffix :+: CNil = c match {
+        case Inl(h) => Inr(Inl(Inl(h)))
+        case Inr(t) => partition.coproduct(t) match {
+          case Inl(h)      => Inl(h)
+          case Inr(Inl(t)) => Inr(Inl(Inr(t)))
+          case Inr(Inr(c)) => Inr(Inr(c))
+        }
+      }
+    }
+  }
+
   trait Filter[C <: Coproduct, U] extends DepFn1[C] {
     type A <: Coproduct
     type Out = Option[A]
@@ -99,32 +158,12 @@ object coproduct {
 
     type Aux[C <: Coproduct, U, A0 <: Coproduct] = Filter[C, U] { type A = A0 }
 
-    implicit def cnilFilter[U]: Aux[CNil, U, CNil] = new Filter[CNil, U] {
-      type A = CNil
+    implicit def coproductFilter[C <: Coproduct, U, CPrefix <: Coproduct, CSuffix <: Coproduct](
+      implicit partition: Partition.Aux[C, U, CPrefix, CSuffix]
+    ): Aux[C, U, CPrefix] = new Filter[C, U] {
+      type A = CPrefix
 
-      def apply(c: CNil): Option[A] = Some(c)
-    }
-
-    implicit def coproductFilter_Match[H, T <: Coproduct, FilterT <: Coproduct](
-      implicit filter: Aux[T, H, FilterT], inject: Inject[H :+: FilterT, H]
-    ): Aux[H :+: T, H, H :+: FilterT] = new Filter[H :+: T, H] {
-      type A = H :+: FilterT
-
-      def apply(c: H :+: T): Option[A] = c match {
-        case Inl(h) => Some(inject(h))
-        case Inr(t) => filter(t).map(Inr[H, FilterT](_))
-      }
-    }
-
-    implicit def coproductFilter_NonMatch[H, T <: Coproduct, FilterT <: Coproduct, U](
-      implicit filter: Aux[T, U, FilterT], e: U =:!= H
-    ): Aux[H :+: T, U, FilterT] = new Filter[H :+: T, U] {
-      type A = FilterT
-
-      def apply(c: H :+: T): Option[A] = c match {
-        case Inr(t) => filter(t)
-        case _      => None
-      }
+      def apply(c: C): Out = partition.filter(c)
     }
   }
 
@@ -138,32 +177,12 @@ object coproduct {
 
     type Aux[C <: Coproduct, U, A0 <: Coproduct] = FilterNot[C, U] { type A = A0 }
 
-    implicit def cnilFilterNot[U]: Aux[CNil, U, CNil] = new FilterNot[CNil, U] {
-      type A = CNil
+    implicit def coproductFilterNot[C <: Coproduct, U, CPrefix <: Coproduct, CSuffix <: Coproduct](
+      implicit partition: Partition.Aux[C, U, CPrefix, CSuffix]
+    ): Aux[C, U, CSuffix] = new FilterNot[C, U] {
+      type A = CSuffix
 
-      def apply(c: CNil): Option[A] = Some(c)
-    }
-
-    implicit def coproductFilterNot_Match[H, T <: Coproduct, TFilterNotH <: Coproduct](
-      implicit filterNot: Aux[T, H, TFilterNotH]
-    ): Aux[H :+: T, H, TFilterNotH] = new FilterNot[H :+: T, H] {
-      type A = TFilterNotH
-
-      def apply(c: H :+: T): Option[A] = c match {
-        case Inr(t) => filterNot(t)
-        case _      => None
-      }
-    }
-
-    implicit def coproductFilterNot_NonMatch[H, T <: Coproduct, TFilterNotU <: Coproduct, U](
-      implicit filterNot: Aux[T, U, TFilterNotU], inject: Inject[H :+: TFilterNotU, H], e: U =:!= H
-    ): Aux[H :+: T, U, H :+: TFilterNotU] = new FilterNot[H :+: T, U] {
-      type A = H :+: TFilterNotU
-
-      def apply(c: H :+: T): Option[A] = c match {
-        case Inl(h) => Some(inject(h))
-        case Inr(t) => filterNot(t).map(Inr[H, TFilterNotU](_))
-      }
+      def apply(c: C): Out = partition.filterNot(c)
     }
   }
 
@@ -183,7 +202,7 @@ object coproduct {
 
     // Must be given a lower priority than removeHead, so that:
     // - the two don't collide for coproducts with repeated types
-    // - the first element of type I in C is removed 
+    // - the first element of type I in C is removed
     implicit def removeTail[H, T <: Coproduct, U](implicit
       tailRemove: Remove[T, U]
     ): Aux[H :+: T, U, H :+: tailRemove.Rest] = new Remove[H :+: T, U] {
@@ -259,7 +278,7 @@ object coproduct {
       tailRemoveLast: RemoveLast[T, I]
     ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
   }
-  
+
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
 
   object FlatMap {
@@ -712,13 +731,13 @@ object coproduct {
     def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
 
     type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
-    
+
     implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
       new Take[C, Nat._0] {
         type Taken = CNil
         def apply(c: C) = None
       }
-    
+
     implicit def takeSucc[H, T <: Coproduct, N <: Nat]
      (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
       new Take[H :+: T, Succ[N]] {
@@ -911,7 +930,7 @@ object coproduct {
     type Aux[Super <: Coproduct, Sub <: Coproduct, Rest0 <: Coproduct] =
       Basis[Super, Sub] { type Rest = Rest0 }
 
-    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] = 
+    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] =
       basis
 
     implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {
@@ -942,5 +961,11 @@ object coproduct {
         }
       }
     }
+  }
+
+  private def toEither[Prefix, Suffix](c: Prefix :+: Suffix :+: CNil): Either[Prefix, Suffix] = c match {
+    case Inl(prefix)      => Left(prefix)
+    case Inr(Inl(suffix)) => Right(suffix)
+    case _                => sys.error("Impossible")
   }
 }

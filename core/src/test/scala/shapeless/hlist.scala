@@ -1236,6 +1236,26 @@ class HListTests {
   }
 
   @Test
+  def testPartition {
+    val l1 = 1 :: 2 :: HNil
+    val l2 = 1 :: true :: "foo" :: 2 :: HNil
+
+    val r1 = l1.partition[Int]
+    assertTypedEquals[(Int :: Int :: HNil, HNil)]((1 :: 2 :: HNil, HNil), r1)
+
+    val r2 = l1.partitionP[Int]
+    assertTypedEquals[(Int :: Int :: HNil) :: HNil :: HNil]((1 :: 2 :: HNil) :: HNil :: HNil, r2)
+
+    val r3 = l2.partition[Int]
+    assertTypedEquals[(Int :: Int :: HNil, Boolean :: String :: HNil)]((1 :: 2 :: HNil, true :: "foo" :: HNil), r3)
+
+    val r4 = l2.partitionP[Int]
+    assertTypedEquals[(Int :: Int :: HNil) :: (Boolean :: String :: HNil) :: HNil](
+      (1 :: 2 :: HNil) :: (true :: "foo" :: HNil) :: HNil, r4
+    )
+  }
+
+  @Test
   def testReplace {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
 
