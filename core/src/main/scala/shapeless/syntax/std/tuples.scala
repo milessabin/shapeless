@@ -176,13 +176,23 @@ final class TupleOps[T](t: T) {
   class UpdatedTypeAux[U] {
     def apply[V, R](v: V)(implicit replacer: Replacer.Aux[T, V, U, (U, R)]): R = replacer(t, v)._2
   }
-  
+
   /**
    * Replaces the first element of type `U` of this tuple with the supplied value of type `V`. An explicit type
    * argument must be provided for `U`. Available only if there is evidence that this tuple has an element of
    * type `U`.
    */
   def updatedType[U] = new UpdatedTypeAux[U]
+
+  class UpdateWithAux[U] {
+    def apply[V, R](f: U => V)(implicit modifier: Modifier.Aux[T, U, V, (U, R)]): R = modifier(t, f)._2
+  }
+
+  /**
+   * Replaces the first element of type `U` of this tuple with the result of its transformation to a `V` via the
+   * supplied function. Available only if there is evidence that this tuple has an element of type `U`.
+   */
+  def updateWith[U] = new UpdateWithAux[U]
 
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2
