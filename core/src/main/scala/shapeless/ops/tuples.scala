@@ -852,6 +852,12 @@ object tuple {
 
     type Aux[T, M[_], Lub0] = ToTraversable[T, M] { type Lub = Lub0 }
 
+    implicit def toTraversableNothing[M[_]](implicit tt: hl.ToTraversable.Aux[HNil, M, Nothing]): Aux[Unit, M, Nothing] =
+      new ToTraversable[Unit, M] {
+        type Lub = Nothing
+        def apply(t: Unit) = tt(HNil)
+      }
+
     implicit def toTraversable[T, L <: HList, M[_], Lub]
       (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable.Aux[L, M, Lub]): Aux[T, M, Lub] =
         new ToTraversable[T, M] {
