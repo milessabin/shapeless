@@ -7,7 +7,7 @@ The main changes include,
   transformation vs. more arbitrary morphism are now represented
   consistently. Typical natural transformations are "self-witnessing". The
   framework now supports extension to [polymorphic values of higher arities](https://github.com/milessabin/shapeless/blob/master/src/main/scala/shapeless/poly.scala#L233):
-  this is exploited in the implmentation of the new [HList fold operations](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/fold.scala#L24). Type
+  this is exploited in the implementation of the new [HList fold operations](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/fold.scala#L24). Type
   specific cases are now nested implicits reducing implicit scope pollution
   significantly.
   
@@ -48,7 +48,7 @@ The main changes include,
 
 * Added <= witness for Nat.
 
-* Nat values are now published implicilty.
+* Nat values are now published implicitly.
 
 * Id is now covariant.
 

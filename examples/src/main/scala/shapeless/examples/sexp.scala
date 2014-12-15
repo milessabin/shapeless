@@ -20,7 +20,7 @@ import shapeless._
 /*
  * This example shows how to write a simple serialiser/deserialiser
  * library for arbitrary coproducts (i.e. sealed traits) and products
- * (i.e. case clases) using S-Expressions as the domain.
+ * (i.e. case classes) using S-Expressions as the domain.
  *
  * This implementation is a proof of concept for using `TypeClass`
  * for this purpose and is currently limited by the implementation.

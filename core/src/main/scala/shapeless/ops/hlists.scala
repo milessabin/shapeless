@@ -1196,7 +1196,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting splitting this `HList` at the first occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this `HList` at the first occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this `HList` contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -1252,7 +1252,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting splitting this `HList` at the first occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this `HList` at the first occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this `HList` contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -1305,7 +1305,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting splitting this `HList` at the last occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this `HList` at the last occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this `HList` contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -1364,7 +1364,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting splitting this `HList` at the last occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this `HList` at the last occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this `HList` contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -2003,7 +2003,7 @@ object hlist {
     def apply[L <: HList, N <: Nat]
       (implicit rotateRight: RotateRight[L, N]): Aux[L, N, rotateRight.Out] = rotateRight
 
-    implicit def hlistRotateRightt[
+    implicit def hlistRotateRight[
       L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
     ](implicit
       length: Length.Aux[L, Size],

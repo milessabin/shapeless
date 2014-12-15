@@ -387,7 +387,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this tuple at the first occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -413,7 +413,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this tuple at the first occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -439,7 +439,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this tuple at the last occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -465,7 +465,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this tuple at the last occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin

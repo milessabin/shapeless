@@ -614,7 +614,7 @@ object coproduct {
     def apply[C <: Coproduct, N <: Nat]
       (implicit rotateRight: RotateRight[C, N]): Aux[C, N, rotateRight.Out] = rotateRight
 
-    implicit def hlistRotateRightt[
+    implicit def hlistRotateRight[
       C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
     ](implicit
       length: Length.Aux[C, Size],

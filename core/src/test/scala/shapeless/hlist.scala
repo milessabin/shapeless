@@ -602,7 +602,7 @@ class HListTests {
     typed[Set[_ >: Int with String] :: Set[_ >: Int with String] :: HNil](uinvar1)
 
     // Unifying three or more elements which have an invariant outer type constructor and differing type
-    // arguments fails, presumably due to a failure to compute a sensble LUB.
+    // arguments fails, presumably due to a failure to compute a sensible LUB.
     //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
     //val uinvar2 = invar.unify
   }
