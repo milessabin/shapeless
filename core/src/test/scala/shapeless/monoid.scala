@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import test.illTyped
+
 package MonoidAux {
   trait Monoid[T] {
     def zero: T
@@ -91,6 +93,7 @@ class MonoidTests {
 
   case class Foo(i: Int, s: String)
   case class Bar(b: Boolean, s: String, d: Double)
+  case class Qux(u: java.util.UUID)
 
   @Test
   def testBasics {
@@ -111,5 +114,13 @@ class MonoidTests {
 
     val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
     assertEquals(Bar(true, "foobar", 4.0), b)
+  }
+
+  @Test
+  def testNonMonoid {
+    illTyped(
+      """
+        val quxInstance = Monoid[Qux]
+      """)
   }
 }

@@ -243,7 +243,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   def materializeAux(labelled: Boolean, tpe: Type): Tree = {
     if(tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
-      materializeIdentityGeneric(tpe, labelled)
+      abort("No Generic instance available for HList or Coproduct")
     else
       materializeGeneric(tpe, labelled)
   }
@@ -360,22 +360,6 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         type Repr = ${reprTpe(tpe, labelled)}
         def to(p: $tpe): Repr = p match { case ..$toCases }
         def from(p: Repr): $tpe = p match { case ..$fromCases }
-      }
-      new $clsName()
-    """
-  }
-
-  def materializeIdentityGeneric(tpe: Type, labelled: Boolean) = {
-    val genericTypeConstructor =
-      (if(labelled) typeOf[LabelledGeneric[_]].typeConstructor
-       else typeOf[Generic[_]].typeConstructor).typeSymbol
-
-    val clsName = TypeName(c.freshName())
-    q"""
-      final class $clsName extends $genericTypeConstructor[$tpe] {
-        type Repr = $tpe
-        def to(p: $tpe): $tpe = p
-        def from(p: $tpe): $tpe = p
       }
       new $clsName()
     """
