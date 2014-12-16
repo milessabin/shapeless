@@ -88,7 +88,7 @@ class LabelledMacros(val c: whitebox.Context) {
 
   object LiteralSymbol {
     def unapply(t: Tree): Option[Constant] = t match {
-      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
+      case q""" scala.Symbol.apply(${c.universe.Literal(c: Constant)}) """ => Some(c)
       case _ => None
     }
   }
@@ -98,7 +98,7 @@ class LabelledMacros(val c: whitebox.Context) {
       appliedType(atatTpe, List(SymTpe, constantType(c)))
 
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (c.universe.Literal(k: Constant), _) => Some(constantType(k))
       case (LiteralSymbol(k: Constant), _) => Some(mkSingletonSymbolType(k))
       case (_, keyType: SingleType) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
@@ -150,6 +150,31 @@ class LabelledMacros(val c: whitebox.Context) {
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(carrier)
+    c.universe.Literal(Constant(())).setType(carrier)
+  }
+
+  def literalTypeImpl(tpeSelector: c.Tree): c.Tree = {
+    import c.universe.{ Try => _, _ }
+    import internal._, decorators._
+
+    val q"${tpeString: String}" = tpeSelector
+    val tpe =
+      (for {
+        parsed <- Try(c.parse(tpeString)).toOption
+        checked = c.typecheck(parsed, silent = true)
+        if checked.nonEmpty
+      } yield
+        checked match {
+          case q"""${SingletonKeyType(keyType)}""" => keyType
+          case _ =>
+            c.abort(c.enclosingPosition, s"$checked does not look like a literal")
+        }
+      ).getOrElse(c.abort(c.enclosingPosition, s"Malformed type $tpeString"))
+
+    val carrier = c.typecheck(tq"{ type T = $tpe }", mode = c.TYPEmode).tpe
+
+    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+    // to result in a runtime exception if the value is used in term position.
+    c.universe.Literal(Constant(())).setType(carrier)
   }
 }

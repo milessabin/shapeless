@@ -142,7 +142,7 @@ object TheMacros {
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(inferred.tpe)
+    c.universe.Literal(Constant(())).setType(inferred.tpe)
   }
 }
 

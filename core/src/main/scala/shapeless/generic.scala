@@ -118,7 +118,7 @@ class GenericMacros(val c: whitebox.Context) {
 
     def nameAsValue(name: Name): Constant = Constant(name.decodedName.toString.trim)
 
-    def nameAsLiteral(name: Name): Tree = Literal(nameAsValue(name))
+    def nameAsLiteral(name: Name): Tree = c.universe.Literal(nameAsValue(name))
 
     def nameOf(tpe: Type) = tpe.typeSymbol.name
 

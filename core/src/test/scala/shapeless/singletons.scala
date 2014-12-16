@@ -136,6 +136,52 @@ class SingletonTypesTests {
     assertEquals("'bar", sBar)
   }
 
+  trait LiteralShow[T] {
+    def show: String
+  }
+
+  object LiteralShow {
+    implicit val showTrue  = new LiteralShow[Literal.`true`.T] { def show = "true" }
+    implicit val showFalse = new LiteralShow[Literal.`false`.T] { def show = "false" }
+
+    implicit val showOne   = new LiteralShow[Literal.`1`.T] { def show = "One" }
+    implicit val showTwo   = new LiteralShow[Literal.`2`.T] { def show = "Two" }
+    implicit val showThree = new LiteralShow[Literal.`3`.T] { def show = "Three" }
+
+    implicit val showFoo   = new LiteralShow[Literal.`'foo`.T] { def show = "'foo" }
+    implicit val showBar   = new LiteralShow[Literal.`'bar`.T] { def show = "'bar" }
+  }
+
+  def literalShow[T](t: T)(implicit s: LiteralShow[T]) = s.show
+
+  @Test
+  def testRefinedLiteralTypeClass {
+    val sTrue = literalShow(true.narrow)
+    assertEquals("true", sTrue)
+
+    val sFalse = literalShow(false.narrow)
+    assertEquals("false", sFalse)
+
+    val sOne = literalShow(1.narrow)
+    assertEquals("One", sOne)
+
+    val sTwo = literalShow(2.narrow)
+    assertEquals("Two", sTwo)
+
+    val sThree = literalShow(3.narrow)
+    assertEquals("Three", sThree)
+
+    illTyped("""
+      literalShow(0.narrow)
+    """)
+
+    val sFoo = literalShow('foo.narrow)
+    assertEquals("'foo", sFoo)
+
+    val sBar = literalShow('bar.narrow)
+    assertEquals("'bar", sBar)
+  }
+
   @Test
   def testWitness {
     val wTrue = Witness(true)
