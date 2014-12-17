@@ -244,11 +244,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   def materializeAux(labelled: Boolean, tpe: Type): Tree = {
     if(tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
       abort("No Generic instance available for HList or Coproduct")
-    else
-      materializeGeneric(tpe, labelled)
-  }
 
-  def materializeGeneric(tpe: Type, labelled: Boolean) = {
     def mkElem(elem: Tree, name: Name, tpe: Type): Tree =
       if(labelled) q"$elem.asInstanceOf[${mkFieldTpe(name, tpe)}]" else elem
 
@@ -279,15 +275,17 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       else if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
         val singleton =
           tpe match {
-            case SingleType(_, singleton) => singleton
-            case TypeRef(pre, sym, args) => sym.asClass.module
+            case SingleType(pre, sym) =>
+              c.internal.gen.mkAttributedRef(pre, sym)
+            case TypeRef(pre, sym, List()) if sym.isModule =>
+              c.internal.gen.mkAttributedRef(pre, sym.asModule)
             case other =>
               abort(s"Bad case object-like type $tpe")
           }
 
         (
           cq"_: $tpe => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => $singleton"
+          cq"_root_.shapeless.HNil => $singleton: $tpe"
         )
       } else {
         val sym = tpe.typeSymbol

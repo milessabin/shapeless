@@ -443,4 +443,18 @@ class GenericTests {
     typed[O.Nested](n1)
     assertEquals(n0, n1)
   }
+
+  sealed trait Color
+  case object Green extends Color
+  object Color {
+    case object Red extends Color
+  }
+
+  @Test
+  def testNestedCaseObjects {
+    Generic[Green.type]
+    Generic[Color.Red.type]
+    LabelledGeneric[Green.type]
+    LabelledGeneric[Color.Red.type]
+  }
 }
