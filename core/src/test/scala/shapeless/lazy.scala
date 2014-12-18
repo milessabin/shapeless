@@ -21,6 +21,8 @@ import org.junit.Assert._
 
 import scala.collection.mutable.ListBuffer
 
+import test._
+
 class LazyTests {
 
   @Test
@@ -141,5 +143,28 @@ class LazyTests {
 
     val sl = show(l)
     assertEquals("Cons(1, Cons(2, Cons(3, Nil)))", sl)
+  }
+
+  trait Foo[T]
+  object Foo {
+    implicit def mkFoo[T]: Foo[T] = new Foo[T] {}
+  }
+
+  @Test
+  def testMultiple {
+    val foos = Lazy.values[Foo[Int] :: Foo[String] :: Foo[Boolean] :: HNil]
+    implicit val x :: y :: z :: HNil = foos
+
+    typed[Foo[Int]](x)
+    typed[Foo[String]](y)
+    typed[Foo[Boolean]](z)
+
+    val x1 = implicitly[Foo[Int]]
+    val y1 = implicitly[Foo[String]]
+    val z1 = implicitly[Foo[Boolean]]
+
+    assertTrue(x1 eq x)
+    assertTrue(y1 eq y)
+    assertTrue(z1 eq z)
   }
 }

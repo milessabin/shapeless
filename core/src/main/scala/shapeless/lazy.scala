@@ -35,6 +35,15 @@ object Lazy {
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
+  class Values[T <: HList](val values: T)
+  object Values {
+    implicit val hnilValues: Values[HNil] = new Values(HNil)
+    implicit def hconsValues[H, T <: HList](implicit lh: Lazy[H], t: Values[T]): Values[H :: T] =
+      new Values(lh.value :: t.values)
+  }
+
+  def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
+
   implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl
 }
 
