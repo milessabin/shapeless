@@ -117,6 +117,40 @@ libraryDependencies ++= Seq(
 Note that Scala 2.10.x releases are compatible with each other starting from 2.10.2, so a mismatch in minor versions
 above would be fine.
 
+If your project is built with Scala 2.10.4 and Scala 2.10.0 and later, then you will need to add the following,
+
+```scala
+val shapeless = Def setting (
+    CrossVersion partialVersion scalaVersion.value match {
+
+    case Some((2, scalaMajor)) if scalaMajor >= 11 => 
+      "com.chuusai" %% "shapeless" % "2.0.0"
+    
+    case Some((2, 10)) => 
+      "com.chuusai" %  "shapeless" % "2.0.0" cross CrossVersion.full
+      
+  }
+)
+
+libraryDependencies ++= Seq(
+  shapeless.value
+)
+```
+
+This is needed because the shapeless binaries for Scala 2.10 includes the Scala bug fix digit. There specific binaries for 2.10.2, 2.10.3 and 2.10.4, while in the Scala 2.11 series the bug fix digit is omitted.
+```scala
+"com.chuusai" %  "shapeless_2.10.2" % "2.0.0"
+
+"com.chuusai" %  "shapeless_2.10.3" % "2.0.0"
+
+"com.chuusai" %  "shapeless_2.10.4" % "2.0.0"
+
+"com.chuusai" %  "shapeless_2.11" % "2.0.0"
+```
+
+
+
+
 ### shapeless-2.1.0-SNAPSHOT
 
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
