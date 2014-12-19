@@ -128,7 +128,6 @@ val shapeless = Def setting (
     
     case Some((2, 10)) => 
       "com.chuusai" %  "shapeless" % "2.0.0" cross CrossVersion.full
-      
   }
 )
 
