@@ -16,6 +16,7 @@
 
 package shapeless
 
+import scala.language.dynamics
 import scala.language.existentials
 import scala.language.experimental.macros
 
@@ -29,7 +30,7 @@ trait Witness {
   val value: T {}
 }
 
-object Witness {
+object Witness extends Dynamic {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
@@ -48,6 +49,8 @@ object Witness {
       type T = Succ[P]
       val value = new Succ[P]()
     }
+
+  def selectDynamic(tpeSelector: String): Any = macro SingletonTypeMacros.witnessTypeImpl
 }
 
 trait WitnessWith[TC[_]] extends Witness {
@@ -268,5 +271,14 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
     }
+  }
+
+  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+    val q"${tpeString: String}" = tpeSelector    
+    val tpe = 
+      parseLiteralType(tpeString)
+        .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
+
+    typeCarrier(tpe)
   }
 }
