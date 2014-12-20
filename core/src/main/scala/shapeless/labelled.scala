@@ -90,21 +90,25 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
 
     val q"${tpeString: String}" = tpeSelector
-    val fields = tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
-      case Array(key, value) =>
-        val keyTpe = 
-          parseLiteralType(key)
-            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $key"))
-        
-        val valueTpe =
-          parseStandardType(value)
-            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $value"))
-        
-        (keyTpe, valueTpe)
-        
-      case other =>
-        c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
-    }
+    val fields =
+      if (tpeString.trim.isEmpty)
+        Array.empty[(c.Type, c.Type)]
+      else
+        tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
+          case Array(key, value) =>
+            val keyTpe = 
+              parseLiteralType(key)
+                .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $key"))
+            
+            val valueTpe =
+              parseType(value)
+                .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $value"))
+            
+            (keyTpe, valueTpe)
+            
+          case other =>
+            c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
+        }
 
     val labelledTpe =
       fields.foldRight(nilTpe) { case ((keyTpe, valueTpe), acc) =>
