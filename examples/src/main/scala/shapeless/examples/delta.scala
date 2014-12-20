@@ -9,15 +9,14 @@ object DeltaExamples extends App {
 
   import DeltaSyntax._
 
-  println("int delta: " + 2.delta(8))
-  println("string delta: " + "foo".delta("bar"))
-  println("hlist delta: " + (2 :: "foo" :: HNil).delta(8 :: "bar" :: HNil))
-  println("foo delta: " + Foo(2, "foo").delta(Foo(8, "food")))
-
-  // Not possible because of diverging implicit expansion (of course, I haven't used Lazy), but I _can't_ use Lazy
-  // Any use of Lazy makes Foo.delta blow the stack.
-
-  println("bar delta: " + Bar(true, "bar", Some(Bar(false, "barb", None))).delta(Bar(false, "bard", None)))
+  assert(6 == 2.delta(8))
+  assert(("foo", "bar") == "foo".delta("bar"))
+  assert(6 :: ("foo", "bar") :: HNil == (2 :: "foo" :: HNil).delta(8 :: "bar" :: HNil))
+  assert(6 :: ("foo", "bar") :: HNil == Foo(2, "foo").delta(Foo(8, "bar")))
+  assert(
+    Bar(true,  "foo",  Some(Bar(true, "bar",  None))).delta(Bar(false, "food", Some(Bar(true, "barf", None)))) ==
+    false :: ("foo", "food") :: Inl(Some(true :: ("bar", "barf") :: Inl(None) :: HNil)) :: HNil
+  )
 }
 
 trait Delta[In] {
@@ -44,7 +43,7 @@ object Delta extends Delta0 {
   implicit val booleanDelta: Delta.Aux[Boolean, Boolean] = new Delta[Boolean] {
     type Out = Boolean
 
-    def apply(before: Boolean, after: Boolean): Out = before != after
+    def apply(before: Boolean, after: Boolean): Out = before == after
   }
 
   implicit val intDelta: Delta.Aux[Int, Int] = new Delta[Int] {
@@ -59,12 +58,18 @@ object Delta extends Delta0 {
     def apply(before: String, after: String): (String, String) = (before, after)
   }
 
-  implicit def optionDelta[T](implicit deltaT: Lazy[Delta[T]]): Delta.Aux[Option[T], (Option[T], Option[T])] =
-    new Delta[Option[T]] {
-      type Out = (Option[T], Option[T])
+  implicit def optionDelta[T](
+    implicit deltaT: Lazy[Delta[T]]
+  ): Delta.Aux[Option[T], Option[deltaT.value.Out] :+: T :+: T :+: CNil] = new Delta[Option[T]] {
+    type Out = Option[deltaT.value.Out] :+: T :+: T :+: CNil
 
-      def apply(before: Option[T], after: Option[T]): (Option[T], Option[T]) = (before, after)
+    def apply(before: Option[T], after: Option[T]): Out = (before, after) match {
+      case (None, None)       => Inl(None)
+      case (Some(b), Some(a)) => Inl(Some(deltaT.value.apply(b, a)))
+      case (Some(b), None)    => Inr(Inl(b))
+      case (None, Some(a))    => Inr(Inr(Inl(a)))
     }
+  }
 
   implicit def deriveHNil: Delta.Aux[HNil, HNil] = new Delta[HNil] {
     type Out = HNil
@@ -72,10 +77,10 @@ object Delta extends Delta0 {
     def apply(before: HNil, after: HNil): HNil = HNil
   }
 
-  implicit def deriveHCons[H, T <: HList, HOut](
-    implicit deltaH: Delta.Aux[H, HOut], deltaT: Lazy[Delta[T] { type Out <: HList }]
-  ): Delta.Aux[H :: T, HOut :: deltaT.value.Out] = new Delta[H :: T] {
-    type Out = HOut :: deltaT.value.Out
+  implicit def deriveHCons[H, T <: HList](
+    implicit deltaH: Delta[H], deltaT: Lazy[Delta[T] { type Out <: HList }]
+  ): Delta.Aux[H :: T, deltaH.Out :: deltaT.value.Out] = new Delta[H :: T] {
+    type Out = deltaH.Out :: deltaT.value.Out
 
     def apply(before: H :: T, after: H :: T): Out = {
       deltaH(before.head, after.head) :: deltaT.value(before.tail, after.tail)
