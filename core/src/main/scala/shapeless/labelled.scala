@@ -118,4 +118,29 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
     typeCarrier(labelledTpe)
   }
+
+  def hlistTypeImpl(tpeSelector: c.Tree): c.Tree =
+    nonLabelledTypeImpl(tpeSelector, "hlist", hnilTpe, hconsTpe)
+
+  def coproductTypeImpl(tpeSelector: c.Tree): c.Tree =
+    nonLabelledTypeImpl(tpeSelector, "coproduct", cnilTpe, cconsTpe)
+
+  def nonLabelledTypeImpl(tpeSelector: c.Tree, variety: String, nilTpe: Type, consTpe: Type): c.Tree = {
+    val q"${tpeString: String}" = tpeSelector
+    val elemTypes =
+      if (tpeString.trim.isEmpty)
+        Array.empty[c.Type]
+      else
+        tpeString.split(",").map(_.trim).map { elemTypeStr =>
+          parseType(elemTypeStr)
+            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $elemTypeStr"))
+        }
+
+    val tpe =
+      elemTypes.foldRight(nilTpe) { case (elemTpe, acc) =>
+        appliedType(consTpe, List(elemTpe, acc))
+      }
+
+    typeCarrier(tpe)
+  }
 }

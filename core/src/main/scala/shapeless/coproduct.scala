@@ -16,6 +16,9 @@
 
 package shapeless
 
+import scala.language.dynamics
+import scala.language.experimental.macros
+
 sealed trait Coproduct
 
 sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
@@ -30,7 +33,7 @@ final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
 
 sealed trait CNil extends Coproduct
 
-object Coproduct {
+object Coproduct extends Dynamic {
   import ops.coproduct.Inject
   import syntax.CoproductOps
 
@@ -41,4 +44,20 @@ object Coproduct {
   def apply[C <: Coproduct] = new MkCoproduct[C]
 
   implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
+
+  /**
+   * Allows to specify a `Coproduct` type with a syntax similar to `Record` and `Union`, as follows,
+   *
+   * {{{
+   * type ISB = Coproduct.`Int, String, Boolean`.T
+   * }}}
+   *
+   * Literal types are allowed, so that the following is valid,
+   *
+   * {{{
+   * type ABC = Coproduct.`'a, 'b, 'c`.T
+   * type TwoTrueStr = Coproduct.`2, true, "str"`.T
+   * }}}
+   */
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductTypeImpl
 }

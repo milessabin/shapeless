@@ -1492,4 +1492,69 @@ class CoproductTests {
       assert(c2 != c1_0)
     }
   }
+  
+  @Test
+  def testCoproductTypeSelector {
+    import syntax.singleton._
+    
+    {
+      type C = Coproduct.` `.T
+      
+      implicitly[C =:= CNil]
+    }
+
+    {
+      type C = Coproduct.`Int`.T
+
+      typed[C](Inl(23))
+    }
+
+    {
+      type C = Coproduct.`Int, String`.T
+
+      typed[C](Inl(23))
+      typed[C](Inr(Inl("foo")))
+    }
+
+    {
+      type C = Coproduct.`Int, String, Boolean`.T
+
+      typed[C](Inl(23))
+      typed[C](Inr(Inl("foo")))
+      typed[C](Inr(Inr(Inl(true))))
+    }
+
+    // Literal types
+
+    {
+      type C = Coproduct.`2`.T
+
+      typed[C](Inl(2.narrow))
+    }
+
+    {
+      type C = Coproduct.`2, "a", true`.T
+
+      typed[C](Inl(2.narrow))
+      typed[C](Inr(Inl("a".narrow)))
+      typed[C](Inr(Inr(Inl(true.narrow))))
+    }
+
+    {
+      type C = Coproduct.`2`.T
+
+      illTyped(""" typed[C](Inl(3.narrow)) """)
+      ()
+    }
+
+    // Mix of standard and literal types
+
+    {
+      type C = Coproduct.`2, String, true`.T
+
+      typed[C](Inl(2.narrow))
+      typed[C](Inr(Inl("a")))
+      typed[C](Inr(Inr(Inl(true.narrow))))
+    }
+  }
 }

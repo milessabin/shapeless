@@ -2519,4 +2519,29 @@ class HListTests {
     type CISBb = the.`ToCoproduct[PISB]`.Out
     implicitly[CISBa =:= CISBb]
   }
+
+  @Test
+  def testHListTypeSelector {
+    import syntax.singleton._
+
+    typed[HList.` `.T](HNil)
+
+    typed[HList.`Int`.T](23 :: HNil)
+
+    typed[HList.`Int, String`.T](23 :: "foo" :: HNil)
+
+    typed[HList.`Int, String, Boolean`.T](23 :: "foo" :: true :: HNil)
+
+    // Literal types
+
+    typed[HList.`2`.T](2.narrow :: HNil)
+
+    typed[HList.`2, "a", true`.T](2.narrow :: "a".narrow :: true.narrow :: HNil)
+
+    illTyped(""" typed[HList.`2`.T](3.narrow :: HNil) """)
+
+    // Mix of standard and literal types
+
+    typed[HList.`2, String, true`.T](2.narrow :: "a" :: true.narrow :: HNil)
+  }
 }
