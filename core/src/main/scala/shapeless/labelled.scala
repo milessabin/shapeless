@@ -17,9 +17,6 @@
 package shapeless
 
 import scala.reflect.macros.whitebox
-import scala.util.Try
-
-import syntax.SingletonOps
 
 object labelled {
   /**
@@ -72,40 +69,15 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-class LabelledMacros(val c: whitebox.Context) {
+class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import labelled._
-  import c.universe.{ Try => _, _ }
-  import internal.constantType
+  import c.universe._
 
   val hconsTpe = typeOf[::[_, _]].typeConstructor
   val hnilTpe = typeOf[HNil]
   val cconsTpe = typeOf[:+:[_, _]].typeConstructor
   val cnilTpe = typeOf[CNil]
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
-  val singletonOpsTpe = typeOf[SingletonOps]
-  val SymTpe = typeOf[scala.Symbol]
-  val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
-
-  object LiteralSymbol {
-    def unapply(t: Tree): Option[Constant] = t match {
-      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
-      case _ => None
-    }
-  }
-
-  object SingletonKeyType {
-    def mkSingletonSymbolType(c: Constant): Type =
-      appliedType(atatTpe, List(SymTpe, constantType(c)))
-
-    def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
-      case (LiteralSymbol(k: Constant), _) => Some(mkSingletonSymbolType(k))
-      case (_, keyType: SingleType) => Some(keyType)
-      case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
-        Some(sops.tpe.member(TypeName("T")).typeSignature)
-      case _ => None
-    }
-  }
 
   def recordTypeImpl(tpeSelector: c.Tree): c.Tree =
     labelledTypeImpl(tpeSelector, "record", hnilTpe, hconsTpe)
@@ -114,28 +86,22 @@ class LabelledMacros(val c: whitebox.Context) {
     labelledTypeImpl(tpeSelector, "union", cnilTpe, cconsTpe)
 
   def labelledTypeImpl(tpeSelector: c.Tree, variety: String, nilTpe: Type, consTpe: Type): c.Tree = {
-    import c.universe.{ Try => _, _ }
-    import internal._, decorators._
-
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
 
     val q"${tpeString: String}" = tpeSelector
     val fields = tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
-      case Array(key, valueTpe) =>
-        val tpe =
-          (for {
-            parsed <- Try(c.parse(s"($key, null.asInstanceOf[$valueTpe])")).toOption
-            checked = c.typecheck(parsed, silent = true)
-            if checked.nonEmpty
-          } yield
-            checked match {
-              case q""" (${SingletonKeyType(keyType)}, $v) """ => (keyType, v.tpe)
-              case _ =>
-                c.abort(c.enclosingPosition, s"$checked has the wrong shape for a $variety field")
-            }
-          ).getOrElse(c.abort(c.enclosingPosition, s"Malformed type $tpeString"))
-        tpe
+      case Array(key, value) =>
+        val keyTpe = 
+          parseLiteralType(key)
+            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $key"))
+        
+        val valueTpe =
+          parseStandardType(value)
+            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $value"))
+        
+        (keyTpe, valueTpe)
+        
       case other =>
         c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
     }
@@ -146,10 +112,6 @@ class LabelledMacros(val c: whitebox.Context) {
         appliedType(consTpe, List(fieldTpe, acc))
       }
 
-    val carrier = c.typecheck(tq"{ type T = $labelledTpe }", mode = c.TYPEmode).tpe
-
-    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
-    // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(carrier)
+    typeCarrier(labelledTpe)
   }
 }

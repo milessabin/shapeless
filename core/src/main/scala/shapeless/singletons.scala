@@ -22,6 +22,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.{ blackbox, whitebox }
 
 import tag.@@
+import scala.util.Try
 
 trait Witness {
   type T
@@ -67,9 +68,11 @@ object WitnessWith extends LowPriorityWitnessWith {
 
 trait SingletonTypeUtils {
   val c: blackbox.Context
-  import c.universe._
-  import internal.constantType
+  import c.universe.{ Try => _, _ }
+  import internal._, decorators._
 
+  val singletonOpsTpe = typeOf[syntax.SingletonOps]
+  val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
 
   object LiteralSymbol {
@@ -95,6 +98,43 @@ trait SingletonTypeUtils {
   def mkSingletonSymbol(c: Constant): Tree = {
     val sTpe = SingletonSymbolType(c)
     q"""_root_.scala.Symbol($c).asInstanceOf[$sTpe]"""
+  }
+
+  object SingletonType {
+    def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
+      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (LiteralSymbol(k: Constant), _) => Some(SingletonSymbolType(k))
+      case (_, keyType: SingleType) => Some(keyType)
+      case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
+        Some(sops.tpe.member(TypeName("T")).typeSignature)
+      case _ => None
+    }
+  }
+
+  def parseLiteralType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(typeStr)).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+      tpe <- SingletonType.unapply(checked)
+    } yield tpe
+
+  def parseStandardType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+    } yield checked.tpe
+
+  def parseType(typeStr: String): Option[c.Type] =
+    parseStandardType(typeStr) orElse parseLiteralType(typeStr)
+
+  def typeCarrier(tpe: c.Type) = {
+    val carrier = c.typecheck(tq"{ type T = $tpe }", mode = c.TYPEmode).tpe
+
+    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+    // to result in a runtime exception if the value is used in term position.
+    Literal(Constant(())).setType(carrier)
   }
 }
 
