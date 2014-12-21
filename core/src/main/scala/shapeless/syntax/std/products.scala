@@ -34,4 +34,9 @@ final class ProductOps[P](p: P) {
    * Compute the length of this product.
    */
   def length(implicit length : ProductLength[P]) : length.Out = length(p)
+
+  /**
+   * Returns an `HList` containing the elements of this product.
+   */
+  def toHList[L <: HList](implicit toHList: ToHList.Aux[P, L]): L = toHList(p)
 }

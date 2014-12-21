@@ -34,4 +34,21 @@ object product {
           def apply(t: T): Out = length()
         }
   }
+  
+  trait ToHList[P] extends DepFn1[P] { type Out <: HList }
+  
+  object ToHList {
+    def apply[P](implicit toHList: ToHList[P]): Aux[P, toHList.Out] = toHList
+    
+    type Aux[P, Out0 <: HList] = ToHList[P] { type Out = Out0 }
+    
+    implicit def toHList[P, Out0 <: HList, L <: HList](implicit
+      gen: Generic.Aux[P, L],
+      ev: L <:< Out0                              
+    ): Aux[P, Out0] =
+      new ToHList[P] {
+        type Out = Out0
+        def apply(p: P) = ev(gen.to(p))
+      }
+  }
 }
