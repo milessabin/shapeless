@@ -486,4 +486,28 @@ class GenericTests {
     illTyped(" IsTuple[Person] ")
     illTyped(" IsTuple[Fruit] ")
   }
+
+  @Test
+  def testIsCaseClass {
+    import record._
+    import union._
+
+    illTyped(" IsCaseClass[Unit] ")
+    illTyped(" IsCaseClass[(Int, String)] ")
+    illTyped(" IsCaseClass[HNil] ")
+    illTyped(" IsCaseClass[Int :: String :: HNil] ")
+    illTyped(" IsCaseClass[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsCaseClass[CNil] ")
+    illTyped(" IsCaseClass[Int :+: String :+: CNil] ")
+    illTyped(" IsCaseClass[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsCaseClass[A.type] ") // FIXME This one should pass
+    
+    val single = IsCaseClass[Single]
+    implicitly[single.Repr =:= HNil]
+    
+    val person = IsCaseClass[Person]
+    implicitly[person.Repr =:= Record.`'name -> String, 'address -> String, 'age -> Int`.T]
+    
+    illTyped(" IsCaseClass[Fruit] ")
+  }
 }
