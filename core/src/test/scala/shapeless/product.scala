@@ -4,6 +4,7 @@ import org.junit.Test
 import testutil._
 
 import syntax.std.product._
+import record._
 
 class ProductTests {
 
@@ -60,4 +61,52 @@ class ProductTests {
       assertTypedEquals(expectedBarL, barL)
     }
   }
+
+  @Test
+  def testToRecord = {
+    {
+      // FIXME: should work (needs changes in GenericMacros?)
+      // Empty.toRecord 
+    }
+
+    {
+      val e = EmptyCC()
+      val el = e.toRecord
+      equalInferredTypes(HNil: HNil, el)
+    }
+
+    val foo = Foo(1, "b")
+    val bar = Bar(true, foo)
+
+    {
+      val fooL = foo.toRecord
+      val expectedFooL = Record(i = 1, s = "b")
+      equalInferredTypes(expectedFooL, fooL)
+      assertTypedEquals(expectedFooL, fooL)
+    }
+
+    {
+      val barL = bar.toRecord
+      val expectedBarL = Record(b = true, f = foo)
+      equalInferredTypes(expectedBarL, barL)
+      assertTypedEquals(expectedBarL, barL)
+    }
+    
+    // With explicit type arguments, >: or =:= to the inferred ones respectively
+
+    {
+      val fooL = foo.toRecord[Record.`'i -> AnyVal, 's -> String`.T]
+      val expectedFooL = Record(i=1: AnyVal, s="b")
+      equalInferredTypes(expectedFooL, fooL)
+      assertTypedEquals(expectedFooL, fooL)
+    }
+
+    {
+      val barL = bar.toRecord[Record.`'b -> Boolean, 'f -> Foo`.T]
+      val expectedBarL = Record(b=true, f=foo)
+      equalInferredTypes(expectedBarL, barL)
+      assertTypedEquals(expectedBarL, barL)
+    }
+  }
+  
 }

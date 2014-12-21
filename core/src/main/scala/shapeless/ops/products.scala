@@ -51,4 +51,21 @@ object product {
         def apply(p: P) = ev(gen.to(p))
       }
   }
+
+  trait ToRecord[P] extends DepFn1[P] { type Out <: HList }
+
+  object ToRecord {
+    def apply[P](implicit toRecord: ToRecord[P]): Aux[P, toRecord.Out] = toRecord
+
+    type Aux[P, Out0 <: HList] = ToRecord[P] { type Out = Out0 }
+
+    implicit def toRecord[P, Out0 <: HList, R <: HList](implicit
+      lgen: LabelledGeneric.Aux[P, R],
+      ev: R <:< Out0
+    ): Aux[P, Out0] =
+      new ToRecord[P] {
+        type Out = Out0
+        def apply(p: P) = ev(lgen.to(p))
+      }
+  }
 }

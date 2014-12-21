@@ -39,4 +39,9 @@ final class ProductOps[P](p: P) {
    * Returns an `HList` containing the elements of this product.
    */
   def toHList[L <: HList](implicit toHList: ToHList.Aux[P, L]): L = toHList(p)
+
+  /**
+   * Returns a record containing the elements of this labelled product.
+   */
+  def toRecord[R <: HList](implicit toRecord: ToRecord.Aux[P, R]): R = toRecord(p)
 }
