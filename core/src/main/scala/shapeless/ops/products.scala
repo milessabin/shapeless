@@ -113,4 +113,29 @@ object product {
       toMap: ops.record.ToMap.Aux[HNil, K0, Nothing]
     ): Aux[P, K0, Nothing] = productToMap[P, K0, Nothing, HNil]
   }
+
+  trait ToTraversable[P, M[_]] extends DepFn1[P] {
+    type Lub
+    type Out = M[Lub]
+  }
+
+  object ToTraversable {
+    def apply[P, M[_]](implicit toTraversable: ToTraversable[P, M]): Aux[P, M, toTraversable.Lub] = toTraversable
+
+    type Aux[P, M[_], Lub0] = ToTraversable[P, M] { type Lub = Lub0 }
+
+    implicit def productToTraversable[P, M[_], Lub0, L <: HList](implicit
+      gen: Generic.Aux[P, L],
+      toTraversable: ops.hlist.ToTraversable.Aux[L, M, Lub0]
+    ): Aux[P, M, Lub0] =
+      new ToTraversable[P, M] {
+        type Lub = Lub0
+        def apply(p: P) = toTraversable(gen.to(p))
+      }
+
+    implicit def emptyProductToTraversableNothing[P, M[_]](implicit
+      gen: Generic.Aux[P, HNil],
+      toTraversable: ops.hlist.ToTraversable.Aux[HNil, M, Nothing]
+    ): Aux[P, M, Nothing] = productToTraversable[P, M, Nothing, HNil]
+  }
 }

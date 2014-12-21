@@ -1,6 +1,7 @@
 package shapeless
 
 import org.junit.Test
+import org.junit.Assert.assertArrayEquals
 import testutil._
 
 import syntax.std.product._
@@ -12,6 +13,7 @@ class ProductTests {
   case class EmptyCC()
   case class Foo(i: Int, s: String)
   case class Bar(b: Boolean, f: Foo)
+  case class Baz(s: String, f: Foo)
 
   def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
@@ -153,6 +155,67 @@ class ProductTests {
       val expectedBarL = Record(b=true, f=foo)
       equalInferredTypes(expectedBarL, barL)
       assertTypedEquals(expectedBarL, barL)
+    }
+  }
+
+  @Test
+  def testToTraversable {
+    def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
+      assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
+
+    {
+      // FIXME: should work (needs changes in GenericMacros?)
+      // val l = Empty.to[List]
+      // assertTypedEquals(List.empty[Nothing], l)
+    }
+
+
+    val e = EmptyCC()
+
+    {
+      val l = e.to[List]
+      val expected = List.empty[Nothing]
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = e.to[Array]
+      val expected = Array.empty[Nothing]
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
+    }
+
+    val foo = Foo(1, "b")
+
+    {
+      val l = foo.to[List]
+      val expected = List(1, "b")
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = foo.to[Array]
+      val expected = Array(1, "b")
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
+    }
+    
+    val baz = Baz("a", foo)
+
+    {
+      val l = baz.to[List]
+      val expected = List("a", foo)
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = baz.to[Array]
+      val expected = Array("a", foo)
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
     }
   }
   

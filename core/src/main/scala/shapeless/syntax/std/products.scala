@@ -51,6 +51,11 @@ final class ProductOps[P](p: P) {
   def toRecord[R <: HList](implicit toRecord: ToRecord.Aux[P, R]): R = toRecord(p)
 
   /**
+   * Returns a collection `M` whose elements are typed as the Lub of the elements of this product.
+   */
+  def to[M[_]](implicit toTraversable: ToTraversable[P, M]): toTraversable.Out = toTraversable(p)
+
+  /**
    * Returns a `Map` whose values are typed as the Lub of the values of this product.
    */
   def toMap[K, V](implicit toMap: ToMap.Aux[P, K, V]): Map[K, V] = toMap(p)
