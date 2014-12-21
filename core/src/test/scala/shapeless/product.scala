@@ -156,4 +156,54 @@ class ProductTests {
     }
   }
   
+  @Test
+  def testToMap {
+    import syntax.singleton._
+    
+    {
+      // FIXME: should work (needs changes in GenericMacros?)
+      // val m = Empty.toMap
+      // assertTypedEquals(Map.empty[Any, Nothing], m)
+    }
+
+
+    val e = EmptyCC()
+
+    {
+      val m = e.toMap
+      val expected = Map.empty[Any, Nothing]
+      equalInferredTypes(expected, m)
+      assertTypedEquals(expected, m)
+    }
+
+    {
+      val m = e.toMap[String, Nothing]
+      val expected = Map.empty[String, Nothing]
+      equalInferredTypes(expected, m)
+      assertTypedEquals(expected, m)
+    }
+
+    {
+      val m = e.toMap[String, Int]
+      val expected = Map.empty[String, Int]
+      equalInferredTypes(expected, m)
+      assertTypedEquals(expected, m)
+    }
+
+    val foo = Foo(1, "b")
+    
+    {
+      val m = foo.toMap
+      val expected = Map('i.narrow -> 1, 's.narrow -> "b")
+      equalInferredTypes(expected, m)
+      assertTypedEquals(expected, m)
+    }
+
+    {
+      val m = foo.toMap[Symbol, Any]
+      val expected = Map[Symbol, Any]('i -> 1, 's -> "b")
+      equalInferredTypes(expected, m)
+      assertTypedEquals(expected, m)
+    }
+  }
 }

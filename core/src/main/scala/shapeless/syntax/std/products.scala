@@ -49,4 +49,9 @@ final class ProductOps[P](p: P) {
    * Returns a record containing the elements of this labelled product.
    */
   def toRecord[R <: HList](implicit toRecord: ToRecord.Aux[P, R]): R = toRecord(p)
+
+  /**
+   * Returns a `Map` whose values are typed as the Lub of the values of this product.
+   */
+  def toMap[K, V](implicit toMap: ToMap.Aux[P, K, V]): Map[K, V] = toMap(p)
 }

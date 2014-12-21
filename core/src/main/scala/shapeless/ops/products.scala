@@ -86,4 +86,31 @@ object product {
         def apply(p: P) = ev(lgen.to(p))
       }
   }
+
+  trait ToMap[P] extends DepFn1[P] {
+    type K
+    type V
+    type Out = Map[K, V] 
+  }
+
+  object ToMap {
+    def apply[P](implicit toMap: ToMap[P]): Aux[P, toMap.K, toMap.V] = toMap
+
+    type Aux[P, K0, V0] = ToMap[P] { type K = K0; type V = V0 }
+
+    implicit def productToMap[P, K0, V0, R <: HList](implicit
+      lgen: LabelledGeneric.Aux[P, R], 
+      toMap: ops.record.ToMap.Aux[R, K0, V0]
+    ): Aux[P, K0, V0] =
+      new ToMap[P] {
+        type K = K0
+        type V = V0
+        def apply(p: P) = toMap(lgen.to(p))
+      }
+    
+    implicit def emptyProductToMapNothing[P, K0](implicit
+      lgen: LabelledGeneric.Aux[P, HNil],
+      toMap: ops.record.ToMap.Aux[HNil, K0, Nothing]
+    ): Aux[P, K0, Nothing] = productToMap[P, K0, Nothing, HNil]
+  }
 }
