@@ -220,6 +220,67 @@ class ProductTests {
   }
   
   @Test
+  def testToSized {
+    def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
+      assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
+
+    {
+      // FIXME: should work (needs changes in GenericMacros?)
+      // val l = Empty.toSized[List]
+      // assertTypedEquals(Sized[List](), l)
+    }
+
+
+    val e = EmptyCC()
+
+    {
+      val l = e.toSized[List]
+      val expected = Sized[List]()
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = e.toSized[Array]
+      val expected = Sized[Array]()
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
+    }
+
+    val foo = Foo(1, "b")
+
+    {
+      val l = foo.toSized[List]
+      val expected = Sized[List](1, "b")
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = foo.toSized[Array]
+      val expected = Sized[Array](1, "b")
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
+    }
+
+    val baz = Baz("a", foo)
+
+    {
+      val l = baz.toSized[List]
+      val expected = Sized[List]("a", foo)
+      equalInferredTypes(expected, l)
+      assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = baz.toSized[Array]
+      val expected = Sized[Array]("a", foo)
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
+    }
+  }
+  
+  @Test
   def testToMap {
     import syntax.singleton._
     

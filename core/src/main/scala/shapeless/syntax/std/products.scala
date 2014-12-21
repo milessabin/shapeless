@@ -59,4 +59,9 @@ final class ProductOps[P](p: P) {
    * Returns a `Map` whose values are typed as the Lub of the values of this product.
    */
   def toMap[K, V](implicit toMap: ToMap.Aux[P, K, V]): Map[K, V] = toMap(p)
+
+  /**
+   * Returns a sized collection `M` whose elements are typed as the Lub of the elements of this product.
+   */
+  def toSized[M[_]](implicit toSized: ToSized[P, M]): toSized.Out = toSized(p)
 }

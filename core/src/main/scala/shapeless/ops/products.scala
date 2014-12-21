@@ -138,4 +138,31 @@ object product {
       toTraversable: ops.hlist.ToTraversable.Aux[HNil, M, Nothing]
     ): Aux[P, M, Nothing] = productToTraversable[P, M, Nothing, HNil]
   }
+
+  trait ToSized[P, M[_]] extends DepFn1[P] {
+    type Lub
+    type N <: Nat
+    type Out = Sized[M[Lub], N]
+  }
+
+  object ToSized {
+    def apply[P, M[_]](implicit toSized: ToSized[P, M]): Aux[P, M, toSized.Lub, toSized.N] = toSized
+
+    type Aux[P, M[_], Lub0, N0 <: Nat] = ToSized[P, M] { type Lub = Lub0; type N = N0 }
+
+    implicit def productToSized[P, M[_], Lub0, N0 <: Nat, L <: HList](implicit
+      gen: Generic.Aux[P, L],
+      toSized: ops.hlist.ToSized.Aux[L, M, Lub0, N0]
+    ): Aux[P, M, Lub0, N0] =
+      new ToSized[P, M] {
+        type Lub = Lub0
+        type N = N0 // Comment this line -> scalac crashes
+        def apply(p: P) = toSized(gen.to(p))
+      }
+
+    implicit def emptyProductToSizedNothing[P, M[_]](implicit
+      gen: Generic.Aux[P, HNil],
+      toSized: ops.hlist.ToSized.Aux[HNil, M, Nothing, _0]
+    ): Aux[P, M, Nothing, _0] = productToSized[P, M, Nothing, _0, HNil]
+  }
 }
