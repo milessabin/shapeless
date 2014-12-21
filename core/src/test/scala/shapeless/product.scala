@@ -16,6 +16,53 @@ class ProductTests {
   def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
   @Test
+  def testToTuple = {
+    {
+      // FIXME: should work (needs changes in GenericMacros?)
+      // Empty.toTuple
+    }
+    
+    {
+      val e = EmptyCC()
+      val el = e.toTuple
+      equalInferredTypes((), el)
+    }
+
+    val foo = Foo(1, "b")
+    val bar = Bar(true, foo)
+    
+    {
+      val fooT = foo.toTuple
+      val expectedFooT = (1, "b")
+      equalInferredTypes(expectedFooT, fooT)
+      assertTypedEquals(expectedFooT, fooT)
+    }
+    
+    {
+      val barT = bar.toTuple
+      val expectedBarT = (true, foo)
+      equalInferredTypes(expectedBarT, barT)
+      assertTypedEquals(expectedBarT, barT)
+    }
+    
+    // With explicit type arguments, >: or =:= to the inferred ones respectively
+
+    {
+      val fooT = foo.toTuple[(AnyVal, String)]
+      val expectedFooT = (1: AnyVal, "b")
+      equalInferredTypes(expectedFooT, fooT)
+      assertTypedEquals(expectedFooT, fooT)
+    }
+
+    {
+      val barT = bar.toTuple[(Boolean, Foo)]
+      val expectedBarT = (true, foo)
+      equalInferredTypes(expectedBarT, barT)
+      assertTypedEquals(expectedBarT, barT)
+    }
+  }
+
+  @Test
   def testToHList = {
     {
       // FIXME: should work (needs changes in GenericMacros?)
