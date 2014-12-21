@@ -463,4 +463,27 @@ class GenericTests {
     typed[O.Nested](n1)
     assertEquals(n0, n1)
   }
+
+  @Test
+  def testIsTuple {
+    import record._
+    import union._
+
+    val unit = IsTuple[Unit]
+    implicitly[unit.Repr =:= HNil]
+    
+    val tuple2 = IsTuple[(Int, String)]
+    implicitly[tuple2.Repr =:= (Int :: String :: HNil)]
+    
+    illTyped(" IsTuple[HNil] ")
+    illTyped(" IsTuple[Int :: String :: HNil] ")
+    illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[CNil] ")
+    illTyped(" IsTuple[Int :+: String :+: CNil] ")
+    illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")    
+    illTyped(" IsTuple[A.type] ")
+    illTyped(" IsTuple[Single] ")
+    illTyped(" IsTuple[Person] ")
+    illTyped(" IsTuple[Fruit] ")
+  }
 }
