@@ -65,6 +65,16 @@ object IsCaseClass {
   implicit def materialize[T, R <: HList]: Aux[T, R] = macro GenericMacros.materializeIsCaseClass[T, R]
 }
 
+trait IsSealedHierarchy[T] extends LabelledGeneric[T] { type Repr <: Coproduct }
+
+object IsSealedHierarchy {
+  type Aux[T, Repr0 <: Coproduct] = IsSealedHierarchy[T] { type Repr = Repr0 }
+
+  def apply[T](implicit lgen: IsSealedHierarchy[T]): Aux[T, lgen.Repr] = lgen
+
+  implicit def materialize[T, R <: Coproduct]: Aux[T, R] = macro GenericMacros.materializeIsSealedHierarchy[T, R]
+}
+
 class nonGeneric extends StaticAnnotation
 
 class GenericMacros(val c: whitebox.Context) {
@@ -143,6 +153,20 @@ class GenericMacros(val c: whitebox.Context) {
       c.error(c.enclosingPosition, s"$tpe is not a case class")
 
     helper.materializeGeneric(typeOf[IsCaseClass[_]].typeConstructor)
+  }
+
+  def materializeIsSealedHierarchy[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeIsSealedHierarchyAux(weakTypeOf[T])
+
+  def materializeIsSealedHierarchyAux(tpe: Type): Tree = {
+    import c.typeOf
+
+    val helper = new Helper(tpe, false, true, true)
+
+    if (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct] || !helper.isSealedHierarchyClassSymbol(helper.fromSym))
+      c.error(c.enclosingPosition, s"$tpe is not a sealed hierarchy")
+
+    helper.materializeGeneric(typeOf[IsSealedHierarchy[_]].typeConstructor)
   }
 
   def deriveProductInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
@@ -267,6 +291,19 @@ class GenericMacros(val c: whitebox.Context) {
       check(sym) ||
       (sym.isTerm && sym.asTerm.isAccessor && check(sym.asTerm.accessed)) ||
       sym.overrides.exists(isNonGeneric)
+    }
+
+    def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
+      def helper(classSym: ClassSymbol): Boolean = {
+        classSym.knownDirectSubclasses.toList forall { child0 =>
+          val child = child0.asClass
+          child.info // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+
+          isCaseClassLike(child) || (child.isSealed && helper(child))
+        }
+      }
+
+      symbol.isSealed && helper(symbol)
     }
 
     def isCaseClassLike(sym: ClassSymbol): Boolean =

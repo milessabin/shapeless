@@ -510,4 +510,27 @@ class GenericTests {
     
     illTyped(" IsCaseClass[Fruit] ")
   }
+
+  @Test
+  def testIsSealedHierarchy {
+    import record._
+    import union._
+
+    illTyped(" IsSealedHierarchy[Unit] ")
+    illTyped(" IsSealedHierarchy[(Int, String)] ")
+    illTyped(" IsSealedHierarchy[HNil] ")
+    illTyped(" IsSealedHierarchy[Int :: String :: HNil] ")
+    illTyped(" IsSealedHierarchy[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsSealedHierarchy[CNil] ")
+    illTyped(" IsSealedHierarchy[Int :+: String :+: CNil] ")
+    illTyped(" IsSealedHierarchy[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsSealedHierarchy[A.type] ") 
+    illTyped(" IsSealedHierarchy[Single] ")
+    illTyped(" IsSealedHierarchy[Person] ")
+    
+    val fruit = IsSealedHierarchy[Fruit]
+    implicitly[fruit.Repr =:= Union.`'Apple -> Apple, 'Banana -> Banana, 'Orange -> Orange, 'Pear -> Pear`.T]
+    
+    ()
+  }
 }
