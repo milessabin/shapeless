@@ -117,7 +117,7 @@ libraryDependencies ++= Seq(
 Note that Scala 2.10.x releases are compatible with each other starting from 2.10.2, so a mismatch in minor versions
 above would be fine.
 
-If your project is built with Scala 2.10.4 and Scala 2.10.0 and later, then you will need to add the following,
+If your project is built with Scala 2.10.4 and Scala 2.11.0 and later, then you will need to add the following,
 
 ```scala
 val shapeless = Def setting (
