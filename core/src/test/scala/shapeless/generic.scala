@@ -463,4 +463,74 @@ class GenericTests {
     typed[O.Nested](n1)
     assertEquals(n0, n1)
   }
+
+  @Test
+  def testIsTuple {
+    import record._
+    import union._
+
+    val unit = IsTuple[Unit]
+    implicitly[unit.Repr =:= HNil]
+    
+    val tuple2 = IsTuple[(Int, String)]
+    implicitly[tuple2.Repr =:= (Int :: String :: HNil)]
+    
+    illTyped(" IsTuple[HNil] ")
+    illTyped(" IsTuple[Int :: String :: HNil] ")
+    illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[CNil] ")
+    illTyped(" IsTuple[Int :+: String :+: CNil] ")
+    illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")    
+    illTyped(" IsTuple[A.type] ")
+    illTyped(" IsTuple[Single] ")
+    illTyped(" IsTuple[Person] ")
+    illTyped(" IsTuple[Fruit] ")
+  }
+
+  @Test
+  def testIsCaseClass {
+    import record._
+    import union._
+
+    illTyped(" IsCaseClass[Unit] ")
+    illTyped(" IsCaseClass[(Int, String)] ")
+    illTyped(" IsCaseClass[HNil] ")
+    illTyped(" IsCaseClass[Int :: String :: HNil] ")
+    illTyped(" IsCaseClass[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsCaseClass[CNil] ")
+    illTyped(" IsCaseClass[Int :+: String :+: CNil] ")
+    illTyped(" IsCaseClass[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsCaseClass[A.type] ") // FIXME This one should pass
+    
+    val single = IsCaseClass[Single]
+    implicitly[single.Repr =:= HNil]
+    
+    val person = IsCaseClass[Person]
+    implicitly[person.Repr =:= Record.`'name -> String, 'address -> String, 'age -> Int`.T]
+    
+    illTyped(" IsCaseClass[Fruit] ")
+  }
+
+  @Test
+  def testIsSealedHierarchy {
+    import record._
+    import union._
+
+    illTyped(" IsSealedHierarchy[Unit] ")
+    illTyped(" IsSealedHierarchy[(Int, String)] ")
+    illTyped(" IsSealedHierarchy[HNil] ")
+    illTyped(" IsSealedHierarchy[Int :: String :: HNil] ")
+    illTyped(" IsSealedHierarchy[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsSealedHierarchy[CNil] ")
+    illTyped(" IsSealedHierarchy[Int :+: String :+: CNil] ")
+    illTyped(" IsSealedHierarchy[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsSealedHierarchy[A.type] ") 
+    illTyped(" IsSealedHierarchy[Single] ")
+    illTyped(" IsSealedHierarchy[Person] ")
+    
+    val fruit = IsSealedHierarchy[Fruit]
+    implicitly[fruit.Repr =:= Union.`'Apple -> Apple, 'Banana -> Banana, 'Orange -> Orange, 'Pear -> Pear`.T]
+    
+    ()
+  }
 }

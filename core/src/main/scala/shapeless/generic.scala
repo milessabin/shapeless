@@ -45,10 +45,65 @@ object LabelledGeneric {
   implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materializeLabelled[T, R]
 }
 
+trait IsTuple[T] extends Generic[T] { type Repr <: HList }
+
+object IsTuple {
+  type Aux[T, Repr0 <: HList] = IsTuple[T] { type Repr = Repr0 }
+
+  def apply[T](implicit gen: IsTuple[T]): Aux[T, gen.Repr] = gen
+
+  implicit def materialize[T, R <: HList]: Aux[T, R] = macro GenericMacros.materializeIsTuple[T, R]
+}
+
+trait IsCaseClass[T] extends LabelledGeneric[T] { type Repr <: HList }
+
+object IsCaseClass {
+  type Aux[T, Repr0 <: HList] = IsCaseClass[T] { type Repr = Repr0 }
+
+  def apply[T](implicit lgen: IsCaseClass[T]): Aux[T, lgen.Repr] = lgen
+
+  implicit def materialize[T, R <: HList]: Aux[T, R] = macro GenericMacros.materializeIsCaseClass[T, R]
+}
+
+trait IsSealedHierarchy[T] extends LabelledGeneric[T] { type Repr <: Coproduct }
+
+object IsSealedHierarchy {
+  type Aux[T, Repr0 <: Coproduct] = IsSealedHierarchy[T] { type Repr = Repr0 }
+
+  def apply[T](implicit lgen: IsSealedHierarchy[T]): Aux[T, lgen.Repr] = lgen
+
+  implicit def materialize[T, R <: Coproduct]: Aux[T, R] = macro GenericMacros.materializeIsSealedHierarchy[T, R]
+}
+
 class nonGeneric extends StaticAnnotation
 
 class GenericMacros(val c: whitebox.Context) {
   import c.universe._
+
+  def isTupleType(tpe: Type): Boolean =
+    tpe <:< typeOf[Unit] ||
+      tpe <:< typeOf[Tuple1[_]] ||
+      tpe <:< typeOf[(_, _)] ||
+      tpe <:< typeOf[(_, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
+      tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)]
 
   def materialize[T: WeakTypeTag, R: WeakTypeTag] =
     materializeAux(false, weakTypeOf[T], weakTypeOf[R])
@@ -59,11 +114,59 @@ class GenericMacros(val c: whitebox.Context) {
   def materializeAux(labelled: Boolean, tpe: Type, rTpe: Type): Tree = {
     import c.{ abort, enclosingPosition, typeOf }
 
+    def genericTpe =
+      if (labelled)
+        typeOf[LabelledGeneric[_]].typeConstructor
+      else
+        typeOf[Generic[_]].typeConstructor
+
     val helper = new Helper(tpe, false, labelled, labelled)
     if (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct])
       helper.materializeIdentityGeneric
     else
-      helper.materializeGeneric
+      helper.materializeGeneric(genericTpe)
+  }
+
+  def materializeIsTuple[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeIsTupleAux(weakTypeOf[T])
+
+  def materializeIsTupleAux(tpe: Type): Tree = {
+    import c.typeOf
+
+    if (!isTupleType(tpe))
+      c.error(c.enclosingPosition, s"$tpe is not a tuple type")
+
+    val helper = new Helper(tpe, false, false, false)
+
+    helper.materializeGeneric(typeOf[IsTuple[_]].typeConstructor)
+  }
+
+  def materializeIsCaseClass[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeIsCaseClassAux(weakTypeOf[T])
+
+  def materializeIsCaseClassAux(tpe: Type): Tree = {
+    import c.typeOf
+
+    val helper = new Helper(tpe, false, true, true)
+
+    if (isTupleType(tpe) || tpe <:< typeOf[HList] || !helper.fromSym.isCaseClass)
+      c.error(c.enclosingPosition, s"$tpe is not a case class")
+
+    helper.materializeGeneric(typeOf[IsCaseClass[_]].typeConstructor)
+  }
+
+  def materializeIsSealedHierarchy[T: WeakTypeTag, R: WeakTypeTag] =
+    materializeIsSealedHierarchyAux(weakTypeOf[T])
+
+  def materializeIsSealedHierarchyAux(tpe: Type): Tree = {
+    import c.typeOf
+
+    val helper = new Helper(tpe, false, true, true)
+
+    if (tpe <:< typeOf[HList] || tpe <:< typeOf[Coproduct] || !helper.isSealedHierarchyClassSymbol(helper.fromSym))
+      c.error(c.enclosingPosition, s"$tpe is not a sealed hierarchy")
+
+    helper.materializeGeneric(typeOf[IsSealedHierarchy[_]].typeConstructor)
   }
 
   def deriveProductInstance[C[_], T](ev: Tree)(implicit tTag: WeakTypeTag[T], cTag: WeakTypeTag[C[Any]]) =
@@ -188,6 +291,19 @@ class GenericMacros(val c: whitebox.Context) {
       check(sym) ||
       (sym.isTerm && sym.asTerm.isAccessor && check(sym.asTerm.accessed)) ||
       sym.overrides.exists(isNonGeneric)
+    }
+
+    def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
+      def helper(classSym: ClassSymbol): Boolean = {
+        classSym.knownDirectSubclasses.toList forall { child0 =>
+          val child = child0.asClass
+          child.info // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
+
+          isCaseClassLike(child) || (child.isSealed && helper(child))
+        }
+      }
+
+      symbol.isSealed && helper(symbol)
     }
 
     def isCaseClassLike(sym: ClassSymbol): Boolean =
@@ -351,9 +467,7 @@ class GenericMacros(val c: whitebox.Context) {
       }
     }
 
-    def materializeGeneric = {
-      val genericTypeConstructor: Type = if(toLabelled) labelledGenericTpe else genericTpe
-
+    def materializeGeneric(genericTypeConstructor: Type) = {
       val reprTpe =
         if(fromProduct) reprOf(fromTpe)
         else if(toLabelled) {
