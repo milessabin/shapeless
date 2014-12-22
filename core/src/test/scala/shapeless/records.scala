@@ -601,11 +601,25 @@ class RecordTests {
 
   @Test
   def testRecordTypeSelector {
+    typed[Record.` `.T](HNil)
+
     typed[Record.`'i -> Int`.T]('i ->> 23 :: HNil)
 
     typed[Record.`'i -> Int, 's -> String`.T]('i ->> 23 :: 's ->> "foo" :: HNil)
 
     typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T]('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
+
+    // Literal types
+
+    typed[Record.`'i -> 2`.T]('i ->> 2.narrow :: HNil)
+    
+    typed[Record.`'i -> 2, 's -> "a", 'b -> true`.T]('i ->> 2.narrow :: 's ->> "a".narrow :: 'b ->> true.narrow :: HNil)
+
+    illTyped(""" typed[Record.`'i -> 2`.T]('i ->> 3.narrow :: HNil) """)
+    
+    // Mix of standard and literal types
+    
+    typed[Record.`'i -> 2, 's -> String, 'b -> true`.T]('i ->> 2.narrow :: 's ->> "a" :: 'b ->> true.narrow :: HNil)
   }
 
   @Test

@@ -106,6 +106,92 @@ class UnionTests {
 
     type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
     typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T]('b ->> true))
+    
+    // Curiously, lines like
+    //   typed[Union.`'i -> Int, 's -> String`.T](Inl('i ->> 23))
+    // or
+    //   val u: Union.`'i -> Int, 's -> String`.T = Inl('i ->> 23)
+    // don't compile as is. One has to tear apart the type and the value made of fields and Inl/Inr. 
+
+    {
+      type U = Union.` `.T
+      
+      implicitly[U =:= CNil]
+    }
+
+    {
+      type U = Union.`'i -> Int`.T
+      
+      val u = Inl('i ->> 23)
+      
+      typed[U](u)
+    }
+
+    {
+      type U = Union.`'i -> Int, 's -> String`.T
+      
+      val u0 = Inl('i ->> 23)
+      val u1 = Inr(Inl('s ->> "foo"))
+      
+      typed[U](u0)
+      typed[U](u1)
+    }
+
+    {
+      type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+      
+      val u0 = Inl('i ->> 23)
+      val u1 = Inr(Inl('s ->> "foo"))
+      val u2 = Inr(Inr(Inl('b ->> true)))
+      
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
+
+    // Literal types
+
+    {
+      type U = Union.`'i -> 2`.T
+      
+      val u = Inl('i ->> 2.narrow)
+      
+      typed[U](u)
+    }
+
+    {
+      type U = Union.`'i -> 2, 's -> "a", 'b -> true`.T
+      
+      val u0 = Inl('i ->> 2.narrow)
+      val u1 = Inr(Inl('s ->> "a".narrow))
+      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+      
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
+
+    {
+      type U = Union.`'i -> 2`.T
+      
+      val u = Inl('i ->> 3.narrow)
+      
+      illTyped(""" typed[U](u) """)
+    }
+
+    // Mix of standard and literal types
+
+    {
+      type U = Union.`'i -> 2, 's -> String, 'b -> true`.T
+
+      val u0 = Inl('i ->> 2.narrow)
+      val u1 = Inr(Inl('s ->> "a"))
+      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+      
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
   }
 
   @Test

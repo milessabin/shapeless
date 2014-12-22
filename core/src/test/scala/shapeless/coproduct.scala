@@ -304,6 +304,37 @@ class CoproductTests {
 
     // key/value lengths must match up
     illTyped("u1.zipWithKeys(uKeys.tail)")
+    
+    // Explicit type argument
+    
+    {
+      val u1 = Coproduct[ISB](23).zipWithKeys[HList.`'i, 's, 'b`.T]
+      val v1 = u1.get('i)
+      typed[Option[Int]](v1)
+      assertEquals(Some(23), v1)
+      assertEquals(None, u1.get('s))
+    }
+    
+    {
+      val u2 = Coproduct[ISB]("foo").zipWithKeys[HList.`'i, 's, 'b`.T]
+      val v2 = u2.get('s)
+      typed[Option[String]](v2)
+      assertEquals(Some("foo"), v2)
+      assertEquals(None, u2.get('b))
+    }
+    
+    {
+      val u3 = Coproduct[ISB](true).zipWithKeys[HList.`'i, 's, 'b`.T]
+      val v3 = u3.get('b)
+      typed[Option[Boolean]](v3)
+      assertEquals(Some(true), v3)
+      assertEquals(None, u3.get('i))
+      
+      illTyped("v3.get('d)")
+    }
+
+    illTyped(" Coproduct[ISB](true).zipWithKeys[HList.`'i, 's, 'b, 'd`.T] ")
+    
   }
 
   @Test
@@ -1490,6 +1521,71 @@ class CoproductTests {
       assertTypedEquals[II](c1, c1_0)
       assertTypedEquals[II](c2, c2_0)
       assert(c2 != c1_0)
+    }
+  }
+  
+  @Test
+  def testCoproductTypeSelector {
+    import syntax.singleton._
+    
+    {
+      type C = Coproduct.` `.T
+      
+      implicitly[C =:= CNil]
+    }
+
+    {
+      type C = Coproduct.`Int`.T
+
+      typed[C](Inl(23))
+    }
+
+    {
+      type C = Coproduct.`Int, String`.T
+
+      typed[C](Inl(23))
+      typed[C](Inr(Inl("foo")))
+    }
+
+    {
+      type C = Coproduct.`Int, String, Boolean`.T
+
+      typed[C](Inl(23))
+      typed[C](Inr(Inl("foo")))
+      typed[C](Inr(Inr(Inl(true))))
+    }
+
+    // Literal types
+
+    {
+      type C = Coproduct.`2`.T
+
+      typed[C](Inl(2.narrow))
+    }
+
+    {
+      type C = Coproduct.`2, "a", true`.T
+
+      typed[C](Inl(2.narrow))
+      typed[C](Inr(Inl("a".narrow)))
+      typed[C](Inr(Inr(Inl(true.narrow))))
+    }
+
+    {
+      type C = Coproduct.`2`.T
+
+      illTyped(""" typed[C](Inl(3.narrow)) """)
+      ()
+    }
+
+    // Mix of standard and literal types
+
+    {
+      type C = Coproduct.`2, String, true`.T
+
+      typed[C](Inl(2.narrow))
+      typed[C](Inr(Inl("a")))
+      typed[C](Inr(Inr(Inl(true.narrow))))
     }
   }
 }
