@@ -461,7 +461,7 @@ class HListTests {
   @Test
   def testToSizedArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
@@ -750,7 +750,7 @@ class HListTests {
   @Test
   def testToTraversableArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
@@ -817,15 +817,15 @@ class HListTests {
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
-    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
     typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
-    assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
+    assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
   @Test
   def testToArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
@@ -891,9 +891,9 @@ class HListTests {
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.toArray
-    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
     typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
-    assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
+    assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
   @Test
