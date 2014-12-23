@@ -122,10 +122,8 @@ If your project is built with Scala 2.10.4 and Scala 2.11.0 and later, then you 
 ```scala
 val shapeless = Def setting (
     CrossVersion partialVersion scalaVersion.value match {
-
     case Some((2, scalaMajor)) if scalaMajor >= 11 => 
       "com.chuusai" %% "shapeless" % "2.0.0"
-    
     case Some((2, 10)) => 
       "com.chuusai" %  "shapeless" % "2.0.0" cross CrossVersion.full
   }
