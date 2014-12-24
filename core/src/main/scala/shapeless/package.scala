@@ -102,4 +102,6 @@ package object shapeless {
   type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
   def everywhere(f: Poly): EverywhereAux[f.type] {} = new EverywhereAux[f.type]
+
+  type Label = LabelName @scala.annotation.meta.field
 }

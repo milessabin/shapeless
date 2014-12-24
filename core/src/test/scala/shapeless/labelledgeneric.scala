@@ -63,6 +63,11 @@ object LabelledGenericTestsAux {
     lazy val prev = prev0
     lazy val next = next0
   }
+
+  case class ExplicitLabelledClass(@Label("explicit_name") field1: Int, field2: String)
+
+  private val labelName = "labelName"
+  case class InvalidLabelledClass(@Label(labelName) a: Int, b: String)
 }
 
 class LabelledGenericTests {
@@ -283,5 +288,21 @@ class LabelledGenericTests {
     typed[NonCCLazy](fD)
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)
+  }
+
+  @Test
+  def testExplicitLabelAnnotation {
+    val gen = LabelledGeneric[ExplicitLabelledClass]
+    val a = ExplicitLabelledClass(42, "42")
+    val t = gen.to(a)
+    val record = 'explicit_name ->> 42 :: 'field2 ->> "42" :: HNil
+    val f = gen.from(record)
+    typed[ExplicitLabelledClass](f)
+    assertEquals(t.keys, 'explicit_name.narrow :: 'field2.narrow :: HNil)
+    assertEquals(a, f)
+    assertEquals(t, record)
+
+    illTyped("""LabelledGeneric.materialize[InvalidLabelledClass, Int :: String :: HNil]""")
+    illTyped("""LabelledGeneric[InvalidLabelledClass]""")
   }
 }

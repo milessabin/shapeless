@@ -77,6 +77,8 @@ object IsSealedHierarchy {
 
 class nonGeneric extends StaticAnnotation
 
+final class LabelName(name: String) extends StaticAnnotation
+
 class GenericMacros(val c: whitebox.Context) {
   import c.universe._
 
@@ -225,10 +227,25 @@ class GenericMacros(val c: whitebox.Context) {
 
     def nameOf(tpe: Type) = tpe.typeSymbol.name
 
-    def fieldsOf(tpe: Type): List[(TermName, Type)] =
+    def fieldsOf(tpe: Type): List[(TermName, Type)] = {
+      val explicitLabels = tpe.decls.flatMap { sym =>
+        for {
+          a <- sym.annotations.find(_.tree.tpe =:= typeOf[Label])
+        } yield {
+          val label = a.tree.children.collectFirst {
+            case Literal(Constant(value: String)) => value
+          }.getOrElse {
+            abort(s"$tpe.${sym.name} has a @Label annotation, but the argument is not a String constant value")
+          }
+          (sym.fullName, TermName(label))
+        }
+      }.toMap
+
       tpe.decls.toList collect {
-        case sym: TermSymbol if isCaseAccessorLike(sym) => (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+        case sym: TermSymbol if isCaseAccessorLike(sym) =>
+          (explicitLabels.getOrElse(sym.fullName, sym.name), sym.typeSignatureIn(tpe).finalResultType)
       }
+    }
 
     def reprOf(tpe: Type): Type = {
       val fields = fieldsOf(tpe)
