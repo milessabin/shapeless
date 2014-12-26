@@ -57,14 +57,14 @@ object zipper {
         def apply(z : Zipper[C, L, R, P]) = Zipper(z.suffix reverse_::: z.prefix, HNil, z.parent)
       }
   }
-  
+
   trait RightBy[Z, N <: Nat] extends DepFn1[Z]
-  
+
   object RightBy {
     implicit def rightBy[C, L <: HList, R <: HList, P, N <: Nat, LP <: HList, RS <: HList]
       (implicit split : Split.Aux[R, N, LP, RS], reverse : ReversePrepend[LP, L]) =
         new RightBy[Zipper[C, L, R, P], N] {
-          type Out = Zipper[C, reverse.Out, RS, P] 
+          type Out = Zipper[C, reverse.Out, RS, P]
           def apply(z : Zipper[C, L, R, P]) = {
             val p :: s :: HNil = z.suffix.splitP[N]
             Zipper(p reverse_::: z.prefix, s, z.parent)
@@ -87,7 +87,7 @@ object zipper {
   }
 
   trait RightTo[Z, T] extends DepFn1[Z]
-  
+
   object RightTo {
     implicit def rightTo[C, L <: HList, R <: HList, P, T, LP <: HList, RS <: HList]
       (implicit split : SplitLeft.Aux[R, T, LP, RS], reverse : ReversePrepend[LP, L]) =
@@ -128,7 +128,13 @@ object zipper {
   trait Down[Z] extends DepFn1[Z]
 
   object Down {
-    implicit def down[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit gen : Generic.Aux[RH, RHL]) =
+    implicit def hlistDown[C, L <: HList, RH <: HList, RT <: HList, P] =
+      new Down[Zipper[C, L, RH :: RT, P]] {
+        type Out = Zipper[RH, HNil, RH, Some[Zipper[C, L, RH :: RT, P]]]
+        def apply(z : Zipper[C, L, RH :: RT, P]) = Zipper(HNil, z.suffix.head, Some(z))
+      }
+
+    implicit def genericDown[C, L <: HList, RH, RT <: HList, P, RHL <: HList](implicit gen : Generic.Aux[RH, RHL]) =
       new Down[Zipper[C, L, RH :: RT, P]] {
         type Out = Zipper[RH, HNil, RHL, Some[Zipper[C, L, RH :: RT, P]]]
         def apply(z : Zipper[C, L, RH :: RT, P]) = Zipper(HNil, gen.to(z.suffix.head), Some(z))
@@ -162,16 +168,14 @@ object zipper {
 
   trait Put[Z, E] extends DepFn2[Z, E]
 
-  trait LowPriorityPut {
-    implicit def put[C, L <: HList, RH, RT <: HList, P, E, CL <: HList]
+  object Put {
+    implicit def genericPut[C, L <: HList, RH, RT <: HList, P, E, CL <: HList]
       (implicit gen : Generic.Aux[C, CL], rp : ReversePrepend.Aux[L, E :: RT, CL]) =
         new Put[Zipper[C, L, RH :: RT, P], E] {
           type Out = Zipper[C, L, E :: RT, P]
           def apply(z : Zipper[C, L, RH :: RT, P], e : E) = Zipper(z.prefix, e :: z.suffix.tail, z.parent)
         }
-  }
 
-  object Put extends LowPriorityPut {
     implicit def hlistPut[C <: HList, L <: HList, RH, RT <: HList, P, E, CL <: HList]
       (implicit rp : ReversePrepend.Aux[L, E :: RT, CL]) =
         new Put[Zipper[C, L, RH :: RT, P], E] {
@@ -205,7 +209,14 @@ object zipper {
   trait Reify[Z] extends DepFn1[Z]
 
   object Reify {
-    implicit def reify[C, L <: HList, R <: HList, P, CL <: HList]
+    implicit def hlistReify[LR <: HList, L <: HList, R <: HList, P]
+      (implicit rp : ReversePrepend.Aux[L, R, LR]) =
+        new Reify[Zipper[LR, L, R, P]] {
+          type Out = LR
+          def apply(z : Zipper[LR, L, R, P]) = z.prefix reverse_::: z.suffix
+        }
+
+    implicit def genericReify[C, L <: HList, R <: HList, P, CL <: HList]
       (implicit gen : Generic.Aux[C, CL], rp : ReversePrepend.Aux[L, R, CL]) =
         new Reify[Zipper[C, L, R, P]] {
           type Out = C

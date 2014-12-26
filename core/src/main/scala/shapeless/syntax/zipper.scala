@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,15 @@ package shapeless
 package syntax
 
 object zipper {
-  implicit def toZipper[C](c : C) = new ZipperOps(c)
+  implicit def toZipper[L <: HList](l: L) = new HListZipperOps(l)
+  implicit def toZipper[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) = new GenericZipperOps(c)
 }
 
 /** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
-class ZipperOps[C](c : C) {
-  def toZipper[CL <: HList](implicit gen : Generic.Aux[C, CL]) = Zipper(c)
+class GenericZipperOps[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) {
+  def toZipper = Zipper(c)
+}
+
+class HListZipperOps[L <: HList](l : L) {
+  def toZipper = Zipper(l)
 }
