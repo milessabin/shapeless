@@ -87,13 +87,7 @@ class UnionTests {
     typed[Option[Boolean]](v3)
     assertEquals(Some(true), v3)
 
-    /*
-     * illTyped gives a false positive here, but `u1.foo` does in fact fail to compile
-     * however, it fails in a weird way:
-     *   Unknown type: <error>, <error> [class scala.reflect.internal.Types$ErrorType$,
-     *   class scala.reflect.internal.Types$ErrorType$] TypeRef? false
-     */
-    //illTyped("u1.foo")
+    illTyped(" u1.foo; () ")
   }
 
   @Test

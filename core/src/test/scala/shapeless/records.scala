@@ -595,8 +595,7 @@ class RecordTests {
     typed[Boolean](v2)
     assertEquals(true, v2)
 
-    // illTyped gives a false positive here, but `d.baz` does in fact fail to compile
-    //illTyped("d.baz") 
+    illTyped(" d.baz; () ") 
   }
 
   @Test
