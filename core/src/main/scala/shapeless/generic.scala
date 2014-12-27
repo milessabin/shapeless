@@ -264,29 +264,7 @@ trait CaseClassMacros {
   }
 
   def isTuple(tpe: Type): Boolean =
-    tpe <:< typeOf[Unit] ||
-    tpe <:< typeOf[Tuple1[_]] ||
-    tpe <:< typeOf[(_, _)] ||
-    tpe <:< typeOf[(_, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)] ||
-    tpe <:< typeOf[(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)]
+    tpe <:< typeOf[Unit] || definitions.TupleClass.seq.contains(tpe.typeSymbol)
 }
 
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
