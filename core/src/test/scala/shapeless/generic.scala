@@ -460,12 +460,8 @@ class GenericTests {
     illTyped(" IsTuple[Single] ")
     illTyped(" IsTuple[Person] ")
     illTyped(" IsTuple[Fruit] ")
-
-    // False positives for illTyped
-    //IsTuple[Record.`'i -> Int, 's -> String`.T]
-    //IsTuple[Union.`'i -> Int, 's -> String`.T]
-    //illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
-    //illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")
   }
 
   @Test
@@ -475,19 +471,19 @@ class GenericTests {
 
     HasProductGeneric[Single]
     HasProductGeneric[Person]
+    HasProductGeneric[Unit]
+    HasProductGeneric[(Int, String)]
+    HasProductGeneric[A.type]
+    HasProductGeneric[Single]
+    HasProductGeneric[Person]
 
     illTyped(" HasProductGeneric[HNil] ")
     illTyped(" HasProductGeneric[Int :: String :: HNil] ")
     illTyped(" HasProductGeneric[CNil] ")
     illTyped(" HasProductGeneric[Int :+: String :+: CNil] ")
-
     illTyped(" HasProductGeneric[Fruit] ")
-
-    // False positives for illTyped
-    //HasProductGeneric[Record.`'i -> Int, 's -> String`.T]
-    //HasProductGeneric[Union.`'i -> Int, 's -> String`.T]
-    //illTyped(" HasProductGeneric[Record.`'i -> Int, 's -> String`.T] ")
-    //illTyped(" HasProductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasProductGeneric[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasProductGeneric[Union.`'i -> Int, 's -> String`.T] ")
   }
 
   @Test
@@ -506,12 +502,8 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[A.type] ")
     illTyped(" HasCoproductGeneric[Single] ")
     illTyped(" HasCoproductGeneric[Person] ")
-
-    // False positives for illTyped
-    //HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T]
-    //HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T]
-    //illTyped(" HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T] ")
-    //illTyped(" HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T] ")
   }
 
   sealed trait Color
