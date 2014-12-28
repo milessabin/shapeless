@@ -16,10 +16,6 @@
 
 package shapeless
 
-import scala.language.experimental.macros
-
-import scala.reflect.macros.whitebox
-
 import labelled.{ field, FieldType }
 import ops.record.{ Keys, Values }
 
