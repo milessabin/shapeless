@@ -23,11 +23,9 @@ import shapeless._, labelled.{ field, FieldType }, syntax.singleton._
  * library for arbitrary coproducts (i.e. sealed traits) and products
  * (i.e. case classes) using S-Expressions as the domain.
  *
- * This implementation is a proof of concept for using `TypeClass`
- * for this purpose and is currently limited by the implementation.
- * When Shapeless 2.1 comes out, breaking changes will enable all
- * the missing features. At which point, expect to see a fuller
- * implementation in `org.ensime.sexp`.
+ * This implementation is a proof of concept for using `TypeClass` for
+ * this purpose. Expect to see a fuller implementation in
+ * `org.ensime.sexp`.
  */
 
 // Our example serialised form
@@ -55,8 +53,7 @@ package sexp {
 }
 import sexp._
 
-// Example ADT that we want to serialise/deserialise. Due to
-// limitations with the 2.0 TypeClass, these have to be top-level
+// Example ADT that we want to serialise/deserialise.
 package sexp.examples {
   sealed trait Super
   case class Foo(i: Int) extends Super
@@ -70,6 +67,7 @@ package sexp.examples {
  */
 object SexpExamples extends App {
   import sexp.examples._
+  import SexpUserConvert._
 
   // example instances and expected forms
   val foo = Foo(13)
@@ -84,10 +82,16 @@ object SexpExamples extends App {
   )
   val baz = Baz(13, "blah")
   val bazSexp = SexpCons(SexpAtom("Baz"), SexpCons(
-    // order is important --- maybe shapeless 2.1 can fix that?
+    // order is important --- how can we address this?
     SexpProp("i", SexpAtom("13")),
     SexpProp("s", SexpAtom("blah"))
   ))
+  val wibble = Wibble(Foo(13))
+  val wibbleSexp =
+    SexpCons(SexpAtom("Wibble"),
+      SexpProp("foo",
+        SexpCons(SexpAtom("Foo"),
+          SexpProp("i", SexpAtom("13")))))
 
   // SETUP
   val creator = SexpConvert[Super]
@@ -97,18 +101,13 @@ object SexpExamples extends App {
   assert(creator.deser(fooSexp) == Some(foo))
   assert(creator.deser(barSexp) == Some(bar))
   assert(creator.deser(bazSexp) == Some(baz))
-
-  //// need shapeless 2.1 --- Foo is coming through as PRODUCT not COPRODUCT
-  // val wibble = creator.deser(
-  //   SexpCons(SexpAtom("Wibble"),
-  //     SexpCons(SexpAtom("Foo"),
-  //       SexpProp("i", SexpAtom("13")))))
-  // assert(wibble == Some(Wibble(Foo(13))), wibble)
+  assert(creator.deser(wibbleSexp) == Some(wibble))
 
   // SERIALISATION
   assert(creator.ser(foo) == fooSexp)
   assert(creator.ser(bar) == barSexp)
   assert(creator.ser(baz) == bazSexp)
+  assert(creator.ser(wibble) == wibbleSexp)
 }
 
 trait SexpConvert[T] {
@@ -116,12 +115,8 @@ trait SexpConvert[T] {
   def ser(t: T): Sexp
 }
 
-object SexpConvert {
-  def apply[T](implicit st: Lazy[SexpConvert[T]]): SexpConvert[T] = st.value
-
-  // the SexpConvert[{String, Int}] are really "user land" concepts
-  // hopefully shapeless 2.1 will allow these to be moved out of the
-  // type class companion.
+// define serialisation of "primitive" types
+object SexpUserConvert {
   implicit def stringSexpConvert: SexpConvert[String] = new SexpConvert[String] {
     def deser(s: Sexp) = s match {
       case SexpAtom(s) => Some(s)
@@ -136,7 +131,10 @@ object SexpConvert {
     }
     def ser(i: Int) = SexpAtom(i.toString)
   }
-  /////////////////////////////
+}
+
+object SexpConvert {
+  def apply[T](implicit st: Lazy[SexpConvert[T]]): SexpConvert[T] = st.value
 
   implicit def deriveHNil: SexpConvert[HNil] =
     new SexpConvert[HNil] {
