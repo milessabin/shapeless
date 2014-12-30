@@ -191,32 +191,27 @@ trait DerivationContext extends CaseClassMacros {
   def mkInstances(primaryTpe: Type): (Tree, Type) = {
     val instances = dict.values.toList
 
+    val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
+
     val instTrees: List[Tree] =
       instances.map { instance =>
         import instance._
-        q"""lazy val $name: $actualTpe = $inst.asInstanceOf[$actualTpe]"""
+        val cleanInst = c.untypecheck(c.internal.substituteSymbols(inst, from, to))
+        q"""lazy val $name: $actualTpe = $cleanInst.asInstanceOf[$actualTpe]"""
       }
 
-    val objName = TermName(c.freshName())
-    val obj =
-      q"""
-        object $objName {
-          ..$instTrees
-        }
-      """
-
-    val instance = dict(TypeWrapper(primaryTpe))
-    val nme = instance.name
-    val actualType = instance.actualTpe
-
-    val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
-    val cleanObj = c.untypecheck(c.internal.substituteSymbols(obj, from, to))
+    val primaryInstance = dict(TypeWrapper(primaryTpe))
+    val primaryNme = primaryInstance.name
+    val clsName = TypeName(c.freshName())
 
     val tree =
       q"""
-        $cleanObj
-        $objName.$nme
+        class $clsName {
+          ..$instTrees
+        }
+        (new $clsName).$primaryNme
        """
+    val actualType = primaryInstance.actualTpe
 
     (tree, actualType)
   }
