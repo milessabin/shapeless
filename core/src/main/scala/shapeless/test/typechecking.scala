@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ import scala.reflect.macros.{ Context, TypecheckException }
 
 /**
  * A utility which ensures that a code fragment does not typecheck.
- * 
+ *
  * Credit: Stefan Zeiger (@StefanZeiger)
  */
 object illTyped {
   def apply(code: String): Unit = macro applyImplNoExp
   def apply(code: String, expected: String): Unit = macro applyImpl
-  
-  def applyImplNoExp(c: Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
-  
-  def applyImpl(c: Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+
+  def applyImplNoExp(c: whitebox.Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
+
+  def applyImpl(c: whitebox.Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
 
     val Expr(Literal(Constant(codeStr: String))) = code
@@ -44,7 +44,8 @@ object illTyped {
     }
 
     try {
-      c.typeCheck(c.parse("{ "+codeStr+" }"))
+      val dummy = TermName(c.freshName)
+      c.typecheck(c.parse(s"{ val $dummy = { $codeStr } ; () }"))
       c.abort(c.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
     } catch {
       case e: TypecheckException =>
@@ -52,7 +53,7 @@ object illTyped {
         if((expected ne null) && !(expPat.matcher(msg)).matches)
           c.abort(c.enclosingPosition, "Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
     }
-    
+
     reify(())
   }
 }

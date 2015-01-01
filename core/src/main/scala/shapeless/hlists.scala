@@ -16,6 +16,9 @@
 
 package shapeless
 
+import scala.language.dynamics
+import scala.language.experimental.macros
+
 import scala.annotation.tailrec
 
 /**
@@ -51,7 +54,7 @@ sealed trait HNil extends HList {
  */
 case object HNil extends HNil
 
-object HList {
+object HList extends Dynamic {
   import ops.hlist._
   import syntax.HListOps
 
@@ -80,4 +83,20 @@ object HList {
     val :: = scala.collection.immutable.::
     val #: = shapeless.::
   }
+
+  /**
+   * Allows to specify an `HList` type with a syntax similar to `Record` and `Union`, as follows,
+   * 
+   * {{{
+   * type ISB = HList.`Int, String, Boolean`.T
+   * }}}
+   * 
+   * Literal types are allowed, so that the following is valid,
+   * 
+   * {{{
+   * type ABC = HList.`'a, 'b, 'c`.T
+   * type TwoTrueStr = HList.`2, true, "str"`.T
+   * }}}
+   */
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
 }

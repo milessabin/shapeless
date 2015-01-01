@@ -36,6 +36,6 @@ The main changes include,
     * Faux [kind-polymorphism](https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/kindpoly.scala). 
 
 * Some organizational and build improvements,
-    * Scala 2.9.x support is now continuted on the scala-2.9.x branch.
+    * Scala 2.9.x support is now continued on the scala-2.9.x branch.
     * The Locally modified copy of paulp/sbt-extras is now redundant so has
       been removed.

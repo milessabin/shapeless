@@ -39,7 +39,7 @@ Code contributors for shapeless 2.0.0 are,
 * Travis Brown ([@travisbrown](https://twitter.com/travisbrown))
 
 Many thanks to all of you and everyone else who has contributed ideas,
-enthusiasim and encouragement.
+enthusiasm and encouragement.
 
 There are a large number of new features, refactorings and bugfixes in
 shapeless 2.0.0. The features which were present in the 2.0.0-M1 preview
@@ -109,7 +109,7 @@ significant changes between 2.0.0-M1 and this 2.0.0 final release.
     <p>
 
 * Added type-parametrized factory methods to the companion objects of all
-  shapeless type classes, allowing instances to be acquired explictly without
+  shapeless type classes, allowing instances to be acquired explicitly without
   the use of (and attendant loss of precision with) `implicitly`.
 
 * Various namespacing tweaks,
@@ -264,7 +264,7 @@ New features and enhancements which were previously announced in the shapeless
     * The type classes and extension methods for converting between functions
       of multiple arguments and functions with a single `HList` argument have
       been renamed more transparently.
-    * All implict definitions now have explicit result types, which should
+    * All implicit definitions now have explicit result types, which should
       result in improved compile times.
 
   [typelevel]: http://typelevel.org/

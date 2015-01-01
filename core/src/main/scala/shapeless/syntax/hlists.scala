@@ -119,12 +119,17 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
-  def filter[U](implicit filter : Filter[L, U]) : filter.Out  = filter(l)
+  def filter[U](implicit partition : Partition[L, U]) : partition.Prefix  = partition.filter(l)
 
   /**
    * Returns all elements of type different than `U` of this `HList`. An explicit type argument must be provided.
    */
-  def filterNot[U](implicit filter : FilterNot[L, U]) : filter.Out  = filter(l)
+  def filterNot[U](implicit partition : Partition[L, U]) : partition.Suffix  = partition.filterNot(l)
+
+  def partition[U](implicit partition: Partition[L, U]): (partition.Prefix, partition.Suffix) = partition(l)
+
+  def partitionP[U]
+    (implicit partition: Partition[L, U]): partition.Prefix :: partition.Suffix :: HNil = partition.product(l)
 
   /**
    * Returns the first element of type `U` of this `HList` plus the remainder of the `HList`. An explicit type argument
@@ -504,7 +509,12 @@ final class HListOps[L <: HList](l : L) {
   /**
    * Converts this `HList` of values into a record with the provided keys.
    */
-  def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(keys, l)
+  def zipWithKeys[K <: HList](keys: K)(implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(l)
+
+  /**
+   * Converts this `HList` of values into a record with given keys. A type argument must be provided.
+   */
+  def zipWithKeys[K <: HList](implicit withKeys: ZipWithKeys[K, L]): withKeys.Out = withKeys(l)
 
   /**
    * Returns all permutations of this 'HList'

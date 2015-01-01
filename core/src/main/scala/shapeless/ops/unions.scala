@@ -17,6 +17,9 @@
 package shapeless
 package ops
 
+import labelled.field
+import poly._
+
 object union {
   import shapeless.labelled.FieldType
 
@@ -161,6 +164,37 @@ object union {
         def apply(c: FieldType[HK, HV] :+: TH :+: TT) = c match {
           case Inl(h) => Map(keyLub.left(wk.value) -> valueLub.left(h: HV))
           case Inr(t) => tailToMap(t).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)}
+        }
+      }
+  }
+  
+  /**
+   * Type class supporting mapping a higher rank function over the values of a union.
+   *
+   * @author Alexandre Archambault
+   */
+  trait MapValues[HF, U <: Coproduct] extends DepFn1[U] { type Out <: Coproduct }
+
+  object MapValues {
+    def apply[HF, U <: Coproduct](implicit mapValues: MapValues[HF, U]): Aux[HF, U, mapValues.Out] = mapValues
+
+    type Aux[HF, U <: Coproduct, Out0 <: Coproduct] = MapValues[HF, U] { type Out = Out0 }
+
+    implicit def cnilMapValues[HF]: Aux[HF, CNil, CNil] =
+      new MapValues[HF, CNil] {
+        type Out = CNil
+        def apply(c: CNil) = c
+      }
+
+    implicit def cconsMapValues[HF, K, V, T <: Coproduct](implicit
+      hc: Case1[HF, V],
+      tailMapValues: MapValues[HF, T]
+    ): Aux[HF, FieldType[K, V] :+: T, FieldType[K, hc.Result] :+: tailMapValues.Out] =
+      new MapValues[HF, FieldType[K, V] :+: T] {
+        type Out = FieldType[K, hc.Result] :+: tailMapValues.Out
+        def apply(c: FieldType[K, V] :+: T) = c match {
+          case Inl(h) => Inl(field[K](hc(h: V)))
+          case Inr(t) => Inr(tailMapValues(t))
         }
       }
   }

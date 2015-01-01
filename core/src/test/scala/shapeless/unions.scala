@@ -87,13 +87,7 @@ class UnionTests {
     typed[Option[Boolean]](v3)
     assertEquals(Some(true), v3)
 
-    /*
-     * illTyped gives a false positive here, but `u1.foo` does in fact fail to compile
-     * however, it fails in a weird way:
-     *   Unknown type: <error>, <error> [class scala.reflect.internal.Types$ErrorType$,
-     *   class scala.reflect.internal.Types$ErrorType$] TypeRef? false
-     */
-    //illTyped("u1.foo")
+    illTyped("u1.foo")
   }
 
   @Test
@@ -106,6 +100,92 @@ class UnionTests {
 
     type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
     typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T]('b ->> true))
+
+    // Curiously, lines like
+    //   typed[Union.`'i -> Int, 's -> String`.T](Inl('i ->> 23))
+    // or
+    //   val u: Union.`'i -> Int, 's -> String`.T = Inl('i ->> 23)
+    // don't compile as is. One has to tear apart the type and the value made of fields and Inl/Inr.
+
+    {
+      type U = Union.` `.T
+
+      implicitly[U =:= CNil]
+    }
+
+    {
+      type U = Union.`'i -> Int`.T
+
+      val u = Inl('i ->> 23)
+
+      typed[U](u)
+    }
+
+    {
+      type U = Union.`'i -> Int, 's -> String`.T
+
+      val u0 = Inl('i ->> 23)
+      val u1 = Inr(Inl('s ->> "foo"))
+
+      typed[U](u0)
+      typed[U](u1)
+    }
+
+    {
+      type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+
+      val u0 = Inl('i ->> 23)
+      val u1 = Inr(Inl('s ->> "foo"))
+      val u2 = Inr(Inr(Inl('b ->> true)))
+
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
+
+    // Literal types
+
+    {
+      type U = Union.`'i -> 2`.T
+
+      val u = Inl('i ->> 2.narrow)
+
+      typed[U](u)
+    }
+
+    {
+      type U = Union.`'i -> 2, 's -> "a", 'b -> true`.T
+
+      val u0 = Inl('i ->> 2.narrow)
+      val u1 = Inr(Inl('s ->> "a".narrow))
+      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
+
+    {
+      type U = Union.`'i -> 2`.T
+
+      val u = Inl('i ->> 3.narrow)
+
+      illTyped(""" typed[U](u) """)
+    }
+
+    // Mix of standard and literal types
+
+    {
+      type U = Union.`'i -> 2, 's -> String, 'b -> true`.T
+
+      val u0 = Inl('i ->> 2.narrow)
+      val u1 = Inr(Inl('s ->> "a"))
+      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+
+      typed[U](u0)
+      typed[U](u1)
+      typed[U](u2)
+    }
   }
 
   @Test
@@ -180,6 +260,51 @@ class UnionTests {
       assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2)), m1)
       assertTypedEquals(Map[String, Option[Any]]("second" -> Some(true)), m2)
       assertTypedEquals(Map[String, Option[Any]]("third" -> Option.empty[String]), m3)
+    }
+  }
+
+  @Test
+  def testMapValues {
+    object f extends Poly1 {
+      implicit def int = at[Int](i => i > 0)
+      implicit def string = at[String](s => s"s: $s")
+      implicit def boolean = at[Boolean](v => if (v) "Yup" else "Nope")
+    }
+
+    {
+      val u1 = Union[U](i = 23)
+      val u2 = Union[U](s = "foo")
+      val u3 = Union[U](b = true)
+
+      type R = Union.`'i -> Boolean, 's -> String, 'b -> String`.T
+
+      val res1 = u1.mapValues(f)
+      val res2 = u2.mapValues(f)
+      val res3 = u3.mapValues(f)
+
+      assertTypedEquals[R](Union[R](i = true), res1)
+      assertTypedEquals[R](Union[R](s = "s: foo"), res2)
+      assertTypedEquals[R](Union[R](b = "Yup"), res3)
+    }
+
+    {
+      object toUpper extends Poly1 {
+        implicit def stringToUpper = at[String](_.toUpperCase)
+        implicit def otherTypes[X] = at[X](identity)
+      }
+
+      type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
+      val u1 = Coproduct[U]("foo" ->> "joe")
+      val u2 = Coproduct[U]("bar" ->> true)
+      val u3 = Coproduct[U]("baz" ->> 2.0)
+
+      val r1 = u1 mapValues toUpper
+      val r2 = u2 mapValues toUpper
+      val r3 = u3 mapValues toUpper
+
+      assertTypedEquals[U](Coproduct[U]("foo" ->> "JOE"), r1)
+      assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
+      assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
   }
 }

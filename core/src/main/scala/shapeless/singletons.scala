@@ -16,19 +16,21 @@
 
 package shapeless
 
+import scala.language.dynamics
 import scala.language.existentials
 import scala.language.experimental.macros
 
 import scala.reflect.macros.Context
 
 import tag.@@
+import scala.util.Try
 
 trait Witness {
   type T
   val value: T {}
 }
 
-object Witness {
+object Witness extends Dynamic {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
@@ -47,6 +49,8 @@ object Witness {
       type T = Succ[P]
       val value = new Succ[P]()
     }
+
+  def selectDynamic(tpeSelector: String): Any = macro SingletonTypeMacros.witnessTypeImpl
 }
 
 trait WitnessWith[TC[_]] extends Witness {
@@ -66,10 +70,13 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
-trait SingletonTypeUtils[C <: Context] {
-  val c: C
-  import c.universe._
+trait SingletonTypeUtils {
+  val c: blackbox.Context
+  import c.universe.{ Try => _, _ }
+  import internal._, decorators._
 
+  val singletonOpsTpe = typeOf[syntax.SingletonOps]
+  val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
     
   object LiteralSymbol {
@@ -95,6 +102,43 @@ trait SingletonTypeUtils[C <: Context] {
   def mkSingletonSymbol(c: Constant): Tree = {
     val sTpe = SingletonSymbolType(c)
     q"""_root_.scala.Symbol($c).asInstanceOf[$sTpe]"""
+  }
+
+  object SingletonType {
+    def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
+      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (LiteralSymbol(k: Constant), _) => Some(SingletonSymbolType(k))
+      case (_, keyType: SingleType) => Some(keyType)
+      case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
+        Some(sops.tpe.member(TypeName("T")).typeSignature)
+      case _ => None
+    }
+  }
+
+  def parseLiteralType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(typeStr)).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+      tpe <- SingletonType.unapply(checked)
+    } yield tpe
+
+  def parseStandardType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+    } yield checked.tpe
+
+  def parseType(typeStr: String): Option[c.Type] =
+    parseStandardType(typeStr) orElse parseLiteralType(typeStr)
+
+  def typeCarrier(tpe: c.Type) = {
+    val carrier = c.typecheck(tq"{ type T = $tpe }", mode = c.TYPEmode).tpe
+
+    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+    // to result in a runtime exception if the value is used in term position.
+    Literal(Constant(())).setType(carrier)
   }
 }
 
@@ -235,6 +279,15 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
     }
+  }
+
+  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+    val q"${tpeString: String}" = tpeSelector    
+    val tpe = 
+      parseLiteralType(tpeString)
+        .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
+
+    typeCarrier(tpe)
   }
 }
 

@@ -33,17 +33,17 @@ import sbtrelease.ReleaseStateTransformations._
 import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
-  
+
   lazy val shapeless = Project(
-    id = "shapeless", 
+    id = "shapeless",
     base = file("."),
     aggregate = Seq(shapelessCore, shapelessExamples),
     settings = commonSettings ++ Seq(
       moduleName := "shapeless-root",
-        
+
       (unmanagedSourceDirectories in Compile) := Nil,
       (unmanagedSourceDirectories in Test) := Nil,
-      
+
       publish := (),
       publishLocal := ()
     )
@@ -51,14 +51,12 @@ object ShapelessBuild extends Build {
 
   lazy val shapelessCore =
     Project(
-      id = "shapeless-core", 
+      id = "shapeless-core",
       base = file("core"),
       settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
         moduleName := "shapeless",
-        
+
         managedSourceDirectories in Test := Nil,
-        
-        addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
@@ -66,17 +64,15 @@ object ShapelessBuild extends Build {
           "org.scalamacros" % "quasiquotes_2.10" % "2.0.0",
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),
-        
+
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
         (sourceGenerators in Compile) <+= buildInfo,
-
-        initialCommands in console := """import shapeless._""",
 
         mappings in (Compile, packageSrc) <++=
           (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
             (srcs pair (Path.relativeTo(base) | Path.flat))
           },
-          
+
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
 
@@ -146,10 +142,10 @@ object ShapelessBuild extends Build {
     )
   )
 
-  lazy val runAll = TaskKey[Unit]("run-all") 
-  
+  lazy val runAll = TaskKey[Unit]("run-all")
+
   def runAllIn(config: Configuration) = {
-    runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map { 
+    runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map {
       (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
     }
   }
@@ -189,6 +185,8 @@ object ShapelessBuild extends Build {
         "-language:implicitConversions",
         "-Xfatal-warnings",
         "-deprecation",
-        "-unchecked")
+        "-unchecked"),
+
+      initialCommands in console := """import shapeless._"""
     )
 }

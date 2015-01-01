@@ -293,6 +293,27 @@ object tuple {
   }
 
   /**
+   * Type class supporting replacement of the first element of type U from this tuple with the result of
+   * its transformation via a given function into a new element of type V.
+   * Available only if this tuple contains an element of type `U`.
+   *
+   * @author Howard Branch
+   */
+  trait Modifier[T, U, V] extends DepFn2[T, U => V]
+
+  object Modifier {
+    def apply[T, U, V](implicit modifier: Modifier[T, U, V]): Aux[T, U, V, modifier.Out] = modifier
+
+    type Aux[T, U, V, Out0] = Modifier[T, U, V] { type Out = Out0 }
+
+    implicit def modifyTuple[T, L1 <: HList, U, V, L2 <: HList]
+    (implicit gen: Generic.Aux[T, L1], modify: hl.Modifier.Aux[L1, U, V, (U, L2)], tp: hl.Tupler[L2]): Aux[T, U, V, (U, tp.Out)] = new Modifier[T, U, V] {
+      type Out = (U, tp.Out)
+      def apply(t: T, f: U => V): Out = { val (u, rep) = modify(gen.to(t), f) ; (u, tp(rep)) }
+    }
+  }
+
+  /**
    * Type class supporting retrieval of the first ''n'' elements of this tuple. Available only if this tuple has at
    * least ''n'' elements.
    *
@@ -387,7 +408,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this tuple at the first occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -413,7 +434,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the first occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this tuple at the first occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -439,7 +460,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the prefix
+   * Type class supporting splitting this tuple at the last occurrence of an element of type `U` returning the prefix
    * and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -465,7 +486,7 @@ object tuple {
   }
 
   /**
-   * Type class supporting splitting this tuple at the last occurence of an element of type `U` returning the reverse
+   * Type class supporting splitting this tuple at the last occurrence of an element of type `U` returning the reverse
    * prefix and suffix as a pair. Available only if this tuple contains an element of type `U`.
    *
    * @author Miles Sabin
@@ -851,6 +872,12 @@ object tuple {
       (implicit toTraversable: ToTraversable[T, M]): Aux[T, M, toTraversable.Lub] = toTraversable
 
     type Aux[T, M[_], Lub0] = ToTraversable[T, M] { type Lub = Lub0 }
+
+    implicit def toTraversableNothing[M[_]](implicit tt: hl.ToTraversable.Aux[HNil, M, Nothing]): Aux[Unit, M, Nothing] =
+      new ToTraversable[Unit, M] {
+        type Lub = Nothing
+        def apply(t: Unit) = tt(HNil)
+      }
 
     implicit def toTraversable[T, L <: HList, M[_], Lub]
       (implicit gen: Generic.Aux[T, L], toTraversable: hl.ToTraversable.Aux[L, M, Lub]): Aux[T, M, Lub] =

@@ -70,12 +70,17 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Returns all elements of type `U` of this `Coproduct`. An explicit type argument must be provided.
    */
-  def filter[U](implicit filter: Filter[C, U]): Option[filter.A]  = filter(c)
+  def filter[U](implicit partition: Partition[C, U]): Option[partition.Prefix]  = partition.filter(c)
 
   /**
    * Returns all elements of type different than `U` of this `Coproduct`. An explicit type argument must be provided.
    */
-  def filterNot[U](implicit filterNot: FilterNot[C, U]): Option[filterNot.A] = filterNot(c)
+  def filterNot[U](implicit partition: Partition[C, U]): Option[partition.Suffix] = partition.filterNot(c)
+
+  def partition[U](implicit partition: Partition[C, U]): Either[partition.Prefix, partition.Suffix] = partition(c)
+
+  def partitionC[U]
+    (implicit partition: Partition[C, U]): partition.Prefix :+: partition.Suffix :+: CNil = partition.coproduct(c)
 
   /**
    * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
@@ -178,7 +183,12 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Converts this `Coproduct` of values into a union with the provided keys.
    */
-  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
+  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
+
+  /**
+   * Converts this `Coproduct` of values into a union with given keys. A type argument must be provided.
+   */
+  def zipWithKeys[K <: HList](implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
 
   /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.

@@ -461,7 +461,7 @@ class HListTests {
   @Test
   def testToSizedArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
@@ -602,7 +602,7 @@ class HListTests {
     typed[Set[_ >: Int with String] :: Set[_ >: Int with String] :: HNil](uinvar1)
 
     // Unifying three or more elements which have an invariant outer type constructor and differing type
-    // arguments fails, presumably due to a failure to compute a sensble LUB.
+    // arguments fails, presumably due to a failure to compute a sensible LUB.
     //val invar2 = Set(23) :: Set("foo") :: Set(true) :: HNil
     //val uinvar2 = invar.unify
   }
@@ -750,7 +750,7 @@ class HListTests {
   @Test
   def testToTraversableArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
@@ -817,15 +817,15 @@ class HListTests {
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
-    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
     typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
-    assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
+    assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
   @Test
   def testToArray {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
-      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr1.asInstanceOf[Array[Object]])
+      assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
@@ -891,9 +891,9 @@ class HListTests {
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.toArray
-    // equalType(m2eim2esm2eim2eem2edList, m2e)
+    // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
     typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
-    assertArrayEquals2(m2im2sm2im2im2dArray.map(x => x : Any), m2e.map(x => x : Any))
+    assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
   @Test
@@ -1233,6 +1233,26 @@ class HListTests {
     assertTypedEquals[Int :: Boolean :: Int :: HNil](1 :: true :: 2 :: HNil, f2)
 
     typed[HNil](l2.filter[Double])
+  }
+
+  @Test
+  def testPartition {
+    val l1 = 1 :: 2 :: HNil
+    val l2 = 1 :: true :: "foo" :: 2 :: HNil
+
+    val r1 = l1.partition[Int]
+    assertTypedEquals[(Int :: Int :: HNil, HNil)]((1 :: 2 :: HNil, HNil), r1)
+
+    val r2 = l1.partitionP[Int]
+    assertTypedEquals[(Int :: Int :: HNil) :: HNil :: HNil]((1 :: 2 :: HNil) :: HNil :: HNil, r2)
+
+    val r3 = l2.partition[Int]
+    assertTypedEquals[(Int :: Int :: HNil, Boolean :: String :: HNil)]((1 :: 2 :: HNil, true :: "foo" :: HNil), r3)
+
+    val r4 = l2.partitionP[Int]
+    assertTypedEquals[(Int :: Int :: HNil) :: (Boolean :: String :: HNil) :: HNil](
+      (1 :: 2 :: HNil) :: (true :: "foo" :: HNil) :: HNil, r4
+    )
   }
 
   @Test
@@ -1877,6 +1897,22 @@ class HListTests {
     // key/value lengths must match up
     illTyped("orig.tail.values.zipWithKeys(orig.keys)")
     illTyped("orig.values.zipWithKeys(orig.keys.tail)")
+    
+    // Explicit type argument
+    {
+      val result = orig.values.zipWithKeys[HList.`"intField", "boolField"`.T]
+      sameTyped(orig)(result)
+      assertEquals(orig, result)
+      val int = result.get("intField")
+      assertTypedEquals[Int](1, int)
+      val bool = result.get("boolField")
+      assertTypedEquals[Boolean](true, bool)
+      illTyped("""result.get("otherField")""")
+
+      // key/value lengths must match up
+      illTyped(""" orig.tail.values.zipWithKeys[HList.`"intField", "boolField"`.T] """)
+      illTyped(""" orig.values.zipWithKeys[HList.`"boolField"`.T] """)
+    }
   }
 
   @Test
@@ -2498,5 +2534,30 @@ class HListTests {
     type CISBa = Int :+: String :+: Boolean :+: CNil
     type CISBb = the.`ToCoproduct[PISB]`.Out
     implicitly[CISBa =:= CISBb]
+  }
+
+  @Test
+  def testHListTypeSelector {
+    import syntax.singleton._
+
+    typed[HList.` `.T](HNil)
+
+    typed[HList.`Int`.T](23 :: HNil)
+
+    typed[HList.`Int, String`.T](23 :: "foo" :: HNil)
+
+    typed[HList.`Int, String, Boolean`.T](23 :: "foo" :: true :: HNil)
+
+    // Literal types
+
+    typed[HList.`2`.T](2.narrow :: HNil)
+
+    typed[HList.`2, "a", true`.T](2.narrow :: "a".narrow :: true.narrow :: HNil)
+
+    illTyped(""" typed[HList.`2`.T](3.narrow :: HNil) """)
+
+    // Mix of standard and literal types
+
+    typed[HList.`2, String, true`.T](2.narrow :: "a" :: true.narrow :: HNil)
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin
+ * Copyright (c) 2011-14 Dale Wijnand
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,16 @@
 package shapeless
 package syntax
 
-object zipper {
-  implicit def toZipper[L <: HList](l: L) = new HListZipperOps(l)
-  implicit def toZipper[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) = new GenericZipperOps(c)
-}
+/**
+ * Carrier for `Nat` operations.
+ *
+ * @author Dale Wijnand
+ */
+final class NatOps[N <: Nat](n : Nat) {
+  import ops.nat._
 
-/** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
-class GenericZipperOps[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) {
-  def toZipper = Zipper(c)
-}
-
-class HListZipperOps[L <: HList](l : L) {
-  def toZipper = Zipper(l)
+  /**
+   * Returns the int value of this `Nat`.
+   */
+  def toInt(implicit toIntN: ToInt[n.N]): Int = Nat.toInt(n)
 }
