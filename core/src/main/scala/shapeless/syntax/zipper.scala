@@ -19,12 +19,12 @@ package syntax
 
 object zipper {
   implicit def toZipper[L <: HList](l: L) = new HListZipperOps(l)
-  implicit def toZipper[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) = new GenericZipperOps(c)
+  implicit def toZipper[C](c : C)(implicit hpg: HasProductGeneric[C]) = new GenericZipperOps(c)
 }
 
 /** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
-class GenericZipperOps[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL]) {
-  def toZipper = Zipper(c)
+class GenericZipperOps[C](c : C) {
+  def toZipper[CL <: HList](implicit gen : Generic.Aux[C, CL]) = Zipper(c)
 }
 
 class HListZipperOps[L <: HList](l : L) {

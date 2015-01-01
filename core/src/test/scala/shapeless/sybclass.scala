@@ -38,7 +38,7 @@ class SybClassTests {
   object incAll extends Poly1 {
     implicit def caseInt = at[Int](_+1)
     implicit def caseString = at[String](_+"*")
-    implicit def default[T](implicit data: Lazy[DataT[this.type, T]]) = at[T](data.value.gmapT(_))
+    implicit def default[T](implicit data: Lazy[DataT.Aux[this.type, T, T]]) = at[T](data.value.gmapT(_): T)
   }
 
   object inc extends Poly1 {

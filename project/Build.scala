@@ -58,6 +58,8 @@ object ShapelessBuild extends Build {
 
         managedSourceDirectories in Test := Nil,
 
+        addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
@@ -112,6 +114,8 @@ object ShapelessBuild extends Build {
     dependencies = Seq(shapelessCore),
 
     settings = commonSettings ++ Seq(
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
@@ -129,6 +133,8 @@ object ShapelessBuild extends Build {
     dependencies = Seq(shapelessCore),
 
     settings = commonSettings ++ Seq(
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",

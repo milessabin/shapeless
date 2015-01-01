@@ -19,7 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.collection.immutable.ListMap
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 trait Lazy[+T] {
   val value: T
@@ -44,18 +44,17 @@ object Lazy {
 
   def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
 
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
 }
 
-class LazyMacros(val c: whitebox.Context) {
+class LazyMacros[C <: Context](val c: C) {
   import c.universe._
-  import c.ImplicitCandidate
 
   def mkLazyImpl: Tree = {
     val tpe = c.openImplicits.head match {
-      case ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _) =>
+      case (TypeRef(_, _, List(tpe)), _) =>
         // Replace all type variables with wildcards ...
-        tpe.map { t => if(t.typeSymbol.isParameter) WildcardType else t.dealias }
+        tpe.map { t => if(t.typeSymbol.isParameter) WildcardType else t.normalize }
       case _ =>
         c.abort(c.enclosingPosition, s"Bad Lazy materialization $c.openImplicits.head")
     }
@@ -66,9 +65,14 @@ class LazyMacros(val c: whitebox.Context) {
 }
 
 object LazyMacros {
+  def inst(c: Context) = new LazyMacros[c.type](c)
+
+  def mkLazyImpl[I](c: Context): c.Expr[Lazy[I]] =
+    c.Expr[Lazy[I]](inst(c).mkLazyImpl)
+
   var dcRef: Option[DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type): (c.Tree, c.Type) = {
+  def deriveInstance(c: Context)(tpe: c.Type): (c.Tree, c.Type) = {
     val (dc, root) =
       dcRef match {
         case None =>
@@ -90,18 +94,18 @@ object LazyMacros {
 object DerivationContext {
   type Aux[C0] = DerivationContext { type C = C0 }
 
-  def apply(c0: whitebox.Context): Aux[c0.type] =
+  def apply(c0: Context): Aux[c0.type] =
     new DerivationContext {
       type C = c0.type
       val c: C = c0
     }
 
-  def establish(dc: DerivationContext, c0: whitebox.Context): Aux[c0.type] =
+  def establish(dc: DerivationContext, c0: Context): Aux[c0.type] =
     dc.asInstanceOf[DerivationContext { type C = c0.type }]
 }
 
 trait DerivationContext extends CaseClassMacros {
-  type C <: whitebox.Context
+  type C <: Context
   val c: C
 
   import c.universe._
@@ -118,8 +122,8 @@ trait DerivationContext extends CaseClassMacros {
 
   object Instance {
     def apply(instTpe: Type) = {
-      val nme = TermName(c.freshName("inst"))
-      val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
+      val nme = newTermName(c.fresh("inst"))
+      val sym = NoSymbol.newTermSymbol(nme).setTypeSignature(instTpe)
       val tree = Ident(sym)
 
       new Instance(instTpe, nme, sym, tree, instTpe)
@@ -178,9 +182,12 @@ trait DerivationContext extends CaseClassMacros {
             }
 
           val instance1 = dict(TypeWrapper(instTpe))
-          val actualTpe = extInst.tpe.finalResultType
+          val actualTpe = extInst.tpe match {
+            case NullaryMethodType(restpe) => restpe
+            case other => other
+          }
 
-          val sym = c.internal.setInfo(instance1.symbol, actualTpe)
+          val sym = instance1.symbol.setTypeSignature(actualTpe)
           val tree = add(instance1.copy(inst = extInst, actualTpe = actualTpe, symbol = sym)).ident
           (tree, actualTpe)
       }
@@ -196,13 +203,13 @@ trait DerivationContext extends CaseClassMacros {
     val instTrees: List[Tree] =
       instances.map { instance =>
         import instance._
-        val cleanInst = c.untypecheck(c.internal.substituteSymbols(inst, from, to))
+        val cleanInst = c.resetLocalAttrs(inst.substituteSymbols(from, to))
         q"""lazy val $name: $actualTpe = $cleanInst.asInstanceOf[$actualTpe]"""
       }
 
     val primaryInstance = dict(TypeWrapper(primaryTpe))
     val primaryNme = primaryInstance.name
-    val clsName = TypeName(c.freshName())
+    val clsName = newTypeName(c.fresh())
 
     val tree =
       q"""

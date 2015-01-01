@@ -167,36 +167,4 @@ class LazyTests {
     assertTrue(y1 eq y)
     assertTrue(z1 eq z)
   }
-
-  trait Bar[A] { def foo(a: A): Unit }
-  object Bar {
-    implicit val intBar = new Bar[Int] { def foo(x: Int) = () }
-  }
-
-  @Test
-  def testEta {
-    implicitly[Lazy[Bar[Int]]].value.foo _
-  }
-
-  trait Baz[T] {
-    type U
-  }
-
-  object Baz {
-    def apply[T, U](t: T)(implicit bt: Lazy[Aux[T, U]]): Aux[T, U] = bt.value
-
-    type Aux[T, U0] = Baz[T] { type U = U0 }
-
-    implicit val bazIS: Aux[Int, String] = new Baz[Int] { type U = String }
-    implicit val bazBD: Aux[Boolean, Double] = new Baz[Boolean] { type U = Double }
-  }
-
-  @Test
-  def testAux {
-    val bIS = Baz(23)
-    typed[Baz.Aux[Int, String]](bIS)
-
-    val bBD = Baz(true)
-    typed[Baz.Aux[Boolean, Double]](bBD)
-  }
 }

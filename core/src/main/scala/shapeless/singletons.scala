@@ -70,15 +70,14 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
-trait SingletonTypeUtils {
-  val c: blackbox.Context
+trait SingletonTypeUtils[C <: Context] {
+  val c: C
   import c.universe.{ Try => _, _ }
-  import internal._, decorators._
 
   val singletonOpsTpe = typeOf[syntax.SingletonOps]
   val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
-    
+
   object LiteralSymbol {
     def unapply(t: Tree): Option[Constant] = t match {
       case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
@@ -106,11 +105,11 @@ trait SingletonTypeUtils {
 
   object SingletonType {
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (Literal(k: Constant), _) => Some(ConstantType(k))
       case (LiteralSymbol(k: Constant), _) => Some(SingletonSymbolType(k))
       case (_, keyType: SingleType) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
-        Some(sops.tpe.member(TypeName("T")).typeSignature)
+        Some(sops.tpe.member(newTypeName("T")).typeSignature)
       case _ => None
     }
   }
@@ -118,23 +117,23 @@ trait SingletonTypeUtils {
   def parseLiteralType(typeStr: String): Option[c.Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
+      checked = c.typeCheck(parsed, silent = true)
+      if checked != EmptyTree
       tpe <- SingletonType.unapply(checked)
     } yield tpe
 
   def parseStandardType(typeStr: String): Option[c.Type] =
     for {
       parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
+      checked = c.typeCheck(parsed, silent = true)
+      if checked != EmptyTree
     } yield checked.tpe
 
   def parseType(typeStr: String): Option[c.Type] =
     parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
   def typeCarrier(tpe: c.Type) = {
-    val carrier = c.typecheck(tq"{ type T = $tpe }", mode = c.TYPEmode).tpe
+    val carrier = c.typeCheck(q"null.asInstanceOf[{ type T = $tpe }]", silent = true).tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
@@ -144,6 +143,8 @@ trait SingletonTypeUtils {
 
 class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import syntax.SingletonOps
+  import c.universe._
+
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
   import c.universe._
@@ -316,4 +317,7 @@ object SingletonTypeMacros {
 
   def narrowSymbol[S <: String : c.WeakTypeTag](c: Context)(t: c.Expr[scala.Symbol]):
     c.Expr[scala.Symbol @@ S] = c.Expr[scala.Symbol @@ S](inst(c).narrowSymbol[S](t))
+
+  def witnessTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).witnessTypeImpl(tpeSelector.tree))
 }

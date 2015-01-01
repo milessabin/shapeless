@@ -16,7 +16,7 @@
 
 package shapeless
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 object labelled {
   /**
@@ -69,7 +69,7 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
+class LabelledMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import labelled._
   import c.universe._
 
@@ -143,4 +143,20 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
     typeCarrier(tpe)
   }
+}
+
+object LabelledMacros {
+  def inst(c: Context) = new LabelledMacros[c.type](c)
+
+  def recordTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).recordTypeImpl(tpeSelector.tree))
+
+  def unionTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).unionTypeImpl(tpeSelector.tree))
+
+  def hlistTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).hlistTypeImpl(tpeSelector.tree))
+
+  def coproductTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).coproductTypeImpl(tpeSelector.tree))
 }
