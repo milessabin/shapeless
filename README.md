@@ -161,13 +161,14 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency,
+Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency, and it is recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
 
 ```scala
 scalaVersion := "2.10.4"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.4" % "2.1.0-SNAPSHOT" changing()
+  "com.chuusai" % "shapeless_2.10.4" % "2.1.0-SNAPSHOT" changing(),
+  compilerPlugin("org.scalamacros" % "paradise_2.10.4" % "2.0.1")
 )
 ```
 
