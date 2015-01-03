@@ -34,6 +34,10 @@ object Generic {
   def apply[T](implicit gen: Generic[T]): Aux[T, gen.Repr] = gen
 
   implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materialize[T, R]
+
+  import syntax.GenericOps
+
+  implicit def genOps[T, R](gen: Generic.Aux[T, R]): GenericOps[T, R] = new GenericOps(gen)
 }
 
 trait LabelledGeneric[T] extends Generic[T]

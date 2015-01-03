@@ -519,4 +519,88 @@ class GenericTests {
     LabelledGeneric[Green.type]
     LabelledGeneric[Color.Red.type]
   }
+  
+  sealed trait CP
+  case class CPInt(i: Int) extends CP
+  case class CPString(s: String) extends CP
+
+  trait Dummy[T] {
+    def dummy: String
+  }
+
+  object Dummy {
+    import labelled._
+
+    implicit def intDummy: Dummy[Int] = new Dummy[Int] {
+      val dummy = "intDummy"
+    }
+
+    implicit def stringDummy: Dummy[String] = new Dummy[String] {
+      val dummy = "stringDummy"
+    }
+
+    implicit def hnilDummy: Dummy[HNil] = new Dummy[HNil] {
+      val dummy = "HNil"
+    }
+
+    implicit def hconsDummy[K <: Symbol, H, T <: HList](implicit
+      key: Witness.Aux[K],
+      headDummy: Lazy[Dummy[H]],
+      tailDummy: Lazy[Dummy[T]]
+    ): Dummy[FieldType[K, H] :: T] =
+      new Dummy[FieldType[K, H] :: T] {
+        val dummy = s"(${key.value.name}: ${headDummy.value.dummy}) :: ${tailDummy.value.dummy}"
+      }
+
+    implicit def cnilDummy: Dummy[CNil] = new Dummy[CNil] {
+      val dummy = "CNil"
+    }
+
+    implicit def cconsDummy[K <: Symbol, H, T <: Coproduct](implicit
+      key: Witness.Aux[K],
+      headDummy: Lazy[Dummy[H]],
+      tailDummy: Lazy[Dummy[T]]
+    ): Dummy[FieldType[K, H] :+: T] =
+      new Dummy[FieldType[K, H] :+: T] {
+        val dummy = s"(${key.value.name}: ${headDummy.value.dummy}) :+: ${tailDummy.value.dummy}"
+      }
+
+    implicit def projectDummy[F, G](implicit
+      lgen: LabelledGeneric.Aux[F, G],
+      underlying: Lazy[Dummy[G]]
+    ): Dummy[F] =
+      new Dummy[F] {
+        val dummy = underlying.value.dummy
+      }
+  }
+
+  @Test
+  def testWithLabels {
+    {
+      assert("(name: stringDummy) :: (address: stringDummy) :: (age: intDummy) :: HNil" == implicitly[Dummy[Person]].dummy)
+    }
+
+    illTyped(""" Generic[Person].withLabels[HList.`'lastName`.T] """)
+    illTyped(""" Generic[Person].withLabels[HList.`'lastName, 'addressLine, 'yo, 'city`.T] """)
+
+    {
+      implicit val ccLabelsOverride = Generic[Person].withLabels[HList.`'lastName, 'addressLine, 'yo`.T]
+      assert("(lastName: stringDummy) :: (addressLine: stringDummy) :: (yo: intDummy) :: HNil" == implicitly[Dummy[Person]].dummy)
+    }
+
+    {
+      assert("(CPInt: (i: intDummy) :: HNil) :+: (CPString: (s: stringDummy) :: HNil) :+: CNil" == implicitly[Dummy[CP]].dummy)
+    }
+
+    {
+      implicit val cpLabelsOverride = Generic[CP].withLabels[HList.`'opi, 'ops`.T]
+      assert("(opi: (i: intDummy) :: HNil) :+: (ops: (s: stringDummy) :: HNil) :+: CNil" == implicitly[Dummy[CP]].dummy)
+    }
+
+    {
+      implicit val cpiLabelsOverride = Generic[CPInt].withLabels[HList.`'ci`.T]
+      implicit val cpLabelsOverride = Generic[CP].withLabels[HList.`'opi, 'ops`.T]
+      assert("(opi: (ci: intDummy) :: HNil) :+: (ops: (s: stringDummy) :: HNil) :+: CNil" == implicitly[Dummy[CP]].dummy)
+    }
+  }
 }
