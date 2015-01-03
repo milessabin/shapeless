@@ -307,4 +307,33 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
   }
+
+  @Test
+  def testPrettyString {    
+    {
+      type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+      val ui = Union[U](i=2)
+      val us = Union[U](s="a")
+      val ub = Union[U](b=true)
+      
+      assertEquals("Union(i=2)", ui.prettyString)
+      assertEquals("Union(s=a)", us.prettyString)
+      assertEquals("Union(b=true)", ub.prettyString)
+    }
+
+    {
+      type U = Union.`'s -> String, 'b -> Boolean`.T
+      type U2 = Union.`'i -> Int, 's -> String, 'u -> U`.T
+
+      val ui = Union[U2](i=2)
+      val us = Union[U2](s="a")
+      val uus = Union[U2](u=Union[U](s="b"))
+      val uub = Union[U2](u=Union[U](b=true))
+
+      assertEquals("Union(i=2)", ui.prettyString)
+      assertEquals("Union(s=a)", us.prettyString)
+      assertEquals("Union(u=Union(s=b))", uus.prettyString)
+      assertEquals("Union(u=Union(b=true))", uub.prettyString)
+    }
+  }
 }

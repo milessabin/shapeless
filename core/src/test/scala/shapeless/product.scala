@@ -1,7 +1,7 @@
 package shapeless
 
 import org.junit.Test
-import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.{ assertEquals, assertArrayEquals }
 import testutil._
 
 import syntax.std.product._
@@ -328,6 +328,24 @@ class ProductTests {
       val expected = Map[Symbol, Any]('i -> 1, 's -> "b")
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
+    }
+  }
+
+  @Test
+  def testPrettyString {
+    {
+      val e = EmptyCC()
+      assertEquals("EmptyCC()", e.prettyString)
+    }
+
+    {
+      val foo = Foo(i=2, s="a")
+      assertEquals("Foo(i=2, s=a)", foo.prettyString)
+    }
+
+    {
+      val bar = Bar(b=true, f=Foo(i=3, s="b"))
+      assertEquals("Bar(b=true, f=Foo(i=3, s=b))", bar.prettyString)
     }
   }
 }

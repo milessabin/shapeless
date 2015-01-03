@@ -753,4 +753,22 @@ class RecordTests {
       assertEquals(2.0, v3, Double.MinPositiveValue)
     }
   }
+
+  @Test
+  def testPrettyString {
+    {
+      val r = HNil // FIXME should be Record()
+      assertEquals("Record()", r.prettyString)
+    }
+
+    {
+      val r = Record(i=2, s="a", b=true)
+      assertEquals("Record(i=2, s=a, b=true)", r.prettyString)
+    }
+
+    {
+      val r = Record(i=2, s="a", r=Record(b=true, s="b"))
+      assertEquals("Record(i=2, s=a, r=Record(b=true, s=b))", r.prettyString)
+    }
+  }
 }
