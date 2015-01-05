@@ -622,9 +622,25 @@ class RecordTests {
   }
 
   @Test
+  def testNamedArgs {
+    {
+      val r = Record()
+      typed[HNil](r)
+    }
+    
+    {
+      val r = Record(i = 23, s = "foo", b = true)
+      typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
+    }
+
+    {
+      illTyped(""" Record(2, "a") """)
+    }
+  }
+
+  @Test
   def testNamedArgsInject {
     val r = Record(i = 23, s = "foo", b = true)
-    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
 
     val v1 = r.get('i)
     typed[Int](v1)
