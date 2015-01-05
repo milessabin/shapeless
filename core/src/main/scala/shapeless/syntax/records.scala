@@ -28,6 +28,7 @@ import tag.@@
 final class RecordOps[L <: HList](l : L) {
   import shapeless.labelled._
   import ops.record._
+  import ops.prettystring.PrettyString
 
   /**
    * Returns the value associated with the singleton typed key k. Only available if this record has a field with
@@ -114,6 +115,11 @@ final class RecordOps[L <: HList](l : L) {
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
   def record: DynamicRecordOps[L] = DynamicRecordOps(l)
+
+  /**
+   * Returns a pretty string representation of this record
+   */
+  def prettyString(implicit prettyString: PrettyString[L]): String = prettyString(l)
 }
 
 /**

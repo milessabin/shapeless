@@ -28,6 +28,7 @@ import tag.@@
 final class UnionOps[C <: Coproduct](c : C) {
   import shapeless.union._
   import ops.union._
+  import ops.prettystring.PrettyString
 
   /**
    * Returns the value associated with the singleton typed key k. Only available if this union has a field with
@@ -70,6 +71,11 @@ final class UnionOps[C <: Coproduct](c : C) {
    * Returns a wrapped version of this union that provides `selectDynamic` access to fields.
    */
   def union: DynamicUnionOps[C] = DynamicUnionOps(c)
+
+  /**
+   * Returns a pretty string representation of this union
+   */
+  def prettyString(implicit prettyString: PrettyString[C]): String = prettyString(c)
 }
 
 /**

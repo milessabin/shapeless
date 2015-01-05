@@ -24,6 +24,7 @@ object product {
 
 final class ProductOps[P](p: P) {
   import ops.product._
+  import ops.prettystring.PrettyString
 
   /**
    * Returns an `HList` containing the elements of this tuple.
@@ -64,4 +65,9 @@ final class ProductOps[P](p: P) {
    * Returns a sized collection `M` whose elements are typed as the Lub of the elements of this product.
    */
   def toSized[M[_]](implicit toSized: ToSized[P, M]): toSized.Out = toSized(p)
+
+  /**
+   * Returns a pretty string representation of this product
+   */
+  def prettyString(implicit prettyString: PrettyString[P]): String = prettyString(p)
 }
