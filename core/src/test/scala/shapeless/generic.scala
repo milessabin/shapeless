@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -518,5 +518,28 @@ class GenericTests {
     Generic[Color.Red.type]
     LabelledGeneric[Green.type]
     LabelledGeneric[Color.Red.type]
+  }
+
+  sealed trait Base1
+  case object Foo1 extends Base1
+  case object Bar1 extends Base1
+
+  trait TC[T]
+
+  object TC {
+    def apply[T](implicit tc: TC[T]): TC[T] = tc
+
+    implicit def hnilTC: TC[HNil] = new TC[HNil] {}
+    implicit def hconsTC[H, T <: HList](implicit hd: Lazy[TC[H]], tl: Lazy[TC[T]]): TC[H :: T] = new TC[H :: T] {}
+
+    implicit def cnilTC: TC[CNil] = new TC[CNil] {}
+    implicit def cconsTC[H, T <: Coproduct](implicit hd: Lazy[TC[H]], tl: Lazy[TC[T]]): TC[H :+: T] = new TC[H :+: T] {}
+
+    implicit def projectTC[F, G](implicit gen: Generic.Aux[F, G], tc: Lazy[TC[G]]): TC[F] = new TC[F] {}
+  }
+
+  @Test
+  def testCaseObjectsAndLazy {
+    TC[Base1]
   }
 }

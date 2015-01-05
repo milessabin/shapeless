@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Lars Hupel, Miles Sabin
+ * Copyright (c) 2012-15 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -321,6 +321,8 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
           tpe match {
             case SingleType(pre, sym) =>
               mkAttributedRef(pre, sym)
+            case TypeRef(pre, sym, List()) if sym.isModule =>
+              mkAttributedRef(pre, sym.asModule)
             case TypeRef(pre, sym, List()) if sym.isModuleClass =>
               mkAttributedRef(pre, sym.asClass.module)
             case other =>
