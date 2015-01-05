@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Lars Hupel, Miles Sabin
+ * Copyright (c) 2012-15 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,6 +316,8 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
               c.internal.gen.mkAttributedRef(pre, sym)
             case TypeRef(pre, sym, List()) if sym.isModule =>
               c.internal.gen.mkAttributedRef(pre, sym.asModule)
+            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
+              c.internal.gen.mkAttributedRef(pre, sym.asClass.module)
             case other =>
               abort(s"Bad case object-like type $tpe")
           }
