@@ -34,15 +34,11 @@ object CSVExample extends App {
 
   import CSVConverter._
 
-  val personGen = Generic[Person]
-  val converter = CSVConverter[List[personGen.Repr]]
-
-  // the input to deserialize into a list of Person
   val input = """John,Carmack,23
 Brian,Fargo,35
 Markus,Persson,32"""
 
-  println(converter.from(input).map(_.map(personGen.from)))
+  println(CSVConverter[List[Person]].from(input))
 }
 
 
@@ -122,4 +118,14 @@ object CSVConverter {
           scv.value.to(ft.head) ++ "," ++ sct.value.to(ft.tail)
         }
       }
+
+
+  // Anything with a Generic
+
+  implicit def deriveClass[A,R](implicit gen: Generic.Aux[A,R], conv: CSVConverter[R])
+      : CSVConverter[A] = new CSVConverter[A] {
+    
+    def from(s: String): Try[A] = conv.from(s).map(gen.from)
+    def to(a: A): String = conv.to(gen.to(a))
+  }
 }
