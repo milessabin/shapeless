@@ -101,6 +101,26 @@ trait CaseClassMacros {
     }
   }
 
+  def ownerChain(sym: Symbol): List[Symbol] = {
+    @tailrec
+    def loop(sym: Symbol, acc: List[Symbol]): List[Symbol] =
+      if(sym.owner == NoSymbol) acc
+      else loop(sym.owner, sym :: acc)
+
+    loop(sym, Nil)
+  }
+
+  def mkDependentRef(prefix: Type, path: List[Name]): (Type, Symbol) = {
+    val (_, pre, sym) =
+      path.foldLeft((prefix, NoType, NoSymbol)) {
+        case ((pre, _, sym), nme) =>
+          val sym0 = pre.member(nme)
+          val pre0 = sym0.typeSignature
+          (pre0, pre, sym0)
+      }
+    (pre, sym)
+  }
+
   def fieldsOf(tpe: Type): List[(TermName, Type)] =
     tpe.decls.toList collect {
       case sym: TermSymbol if isCaseAccessorLike(sym) => (sym.name, sym.typeSignatureIn(tpe).finalResultType)
@@ -133,14 +153,31 @@ trait CaseClassMacros {
         case _ => abort(s"bad type $tpe")
       }
 
-      ctors map { sym =>
-        val subTpe = sym.asType.toType
-        val normalized = sym.typeParams match {
-          case Nil  => subTpe
-          case tpes => appliedType(subTpe, baseTpe.args)
-        }
+      val tpePrefix = prefix(tpe)
 
-        normalized
+      ctors map { sym =>
+        val suffix = ownerChain(sym).dropWhile(_ != tpePrefix.typeSymbol)
+        if(suffix.isEmpty) {
+          if(sym.isModuleClass) {
+            val moduleSym = sym.asClass.module
+            val modulePre = prefix(moduleSym.typeSignature)
+            c.internal.singleType(modulePre, moduleSym)
+          } else {
+            val subTpeSym = sym.asType
+            val subTpePre = prefix(subTpeSym.typeSignature)
+            c.internal.typeRef(subTpePre, subTpeSym, baseTpe.args)
+          }
+        } else {
+          if(sym.isModuleClass) {
+            val path = suffix.tail.map(_.name.toTermName)
+            val (modulePre, moduleSym) = mkDependentRef(tpePrefix, path)
+            c.internal.singleType(modulePre, moduleSym)
+          } else {
+            val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
+            val (subTpePre, subTpeSym) = mkDependentRef(tpePrefix, path)
+            c.internal.typeRef(subTpePre, subTpeSym, baseTpe.args)
+          }
+        }
       }
     }
     else
@@ -246,6 +283,12 @@ trait CaseClassMacros {
     val pre = gTpe.prefix
     val sym = gTpe.typeSymbol.companionSymbol
     global.gen.mkAttributedRef(pre, sym).asInstanceOf[Tree]
+  }
+
+  def prefix(tpe: Type): Type = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    gTpe.prefix.asInstanceOf[Type]
   }
 
   def isNonGeneric(sym: Symbol): Boolean = {
