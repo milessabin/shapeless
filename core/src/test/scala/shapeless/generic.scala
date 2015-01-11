@@ -543,3 +543,72 @@ class GenericTests {
     TC[Base1]
   }
 }
+
+package GenericTestsAux2 {
+  trait Foo[T]
+
+  object Foo {
+    implicit val deriveHNil: Foo[HNil] = ???
+
+    implicit def deriveLabelledGeneric[A, Rec <: HList]
+      (implicit gen: Generic.Aux[A, Rec], auto: Foo[Rec]): Foo[A] = ???
+  }
+
+  class Bar[A]
+
+  object Bar {
+    implicit def cnil: Bar[CNil] = ???
+
+    implicit def deriveCoproduct[H, T <: Coproduct]
+      (implicit headFoo: Foo[H], tailAux: Bar[T]): Bar[H :+: T] = ???
+
+    implicit def labelledGeneric[A, U <: Coproduct]
+      (implicit gen: Generic.Aux[A, U], auto: Bar[U]): Bar[A] = ???
+  }
+
+  class Outer1 {
+    sealed trait Color
+    object Inner {
+      case object Red extends Color
+    }
+
+    implicitly[Bar[Color]]
+  }
+
+  object Outer2 {
+    class Wrapper {
+      sealed trait Color
+    }
+    val wrapper = new Wrapper
+    import wrapper.Color
+    case object Red extends Color
+    case object Green extends Color
+    case object Blue extends Color
+
+    implicitly[Bar[Color]]
+  }
+
+  object Outer3 {
+    class Wrapper {
+      sealed trait Color
+    }
+    val wrapper = new Wrapper
+    case object Red extends wrapper.Color
+    case object Green extends wrapper.Color
+    case object Blue extends wrapper.Color
+
+    implicitly[Bar[wrapper.Color]]
+  }
+
+  object Outer4 {
+    val wrapper = new Wrapper
+    case object Red extends wrapper.Color
+    case object Green extends wrapper.Color
+    case object Blue extends wrapper.Color
+
+    class Wrapper {
+      sealed trait Color
+      implicitly[Bar[wrapper.Color]]
+    }
+  }
+}

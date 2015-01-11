@@ -56,6 +56,7 @@ object record {
    * }}}
    */
   object Record extends Dynamic {
+    def applyDynamic(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordEmptyImpl
     def applyDynamicNamed(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordNamedImpl
 
     def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.recordTypeImpl
@@ -109,6 +110,13 @@ class RecordMacros[C <: Context](val c: C) {
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
   val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
+
+  def mkRecordEmptyImpl(method: Tree)(rec: Tree*): Tree = {
+    if(rec.nonEmpty)
+      c.abort(c.enclosingPosition, "this method must be called with named arguments")
+    
+    q"_root_.shapeless.HNil"
+  }
 
   def mkRecordNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val q"${methodString: String}" = method
