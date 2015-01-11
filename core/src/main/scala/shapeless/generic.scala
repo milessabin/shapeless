@@ -162,21 +162,21 @@ trait CaseClassMacros {
           if(sym.isModuleClass) {
             val moduleSym = sym.asClass.module
             val modulePre = prefix(moduleSym.typeSignature)
-            c.internal.singleType(modulePre, moduleSym)
+            singleType(modulePre, moduleSym)
           } else {
             val subTpeSym = sym.asType
             val subTpePre = prefix(subTpeSym.typeSignature)
-            c.internal.typeRef(subTpePre, subTpeSym, baseTpe.args)
+            typeRef(subTpePre, subTpeSym, baseTpe.args)
           }
         } else {
           if(sym.isModuleClass) {
             val path = suffix.tail.map(_.name.toTermName)
             val (modulePre, moduleSym) = mkDependentRef(tpePrefix, path)
-            c.internal.singleType(modulePre, moduleSym)
+            singleType(modulePre, moduleSym)
           } else {
             val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
             val (subTpePre, subTpeSym) = mkDependentRef(tpePrefix, path)
-            c.internal.typeRef(subTpePre, subTpeSym, baseTpe.args)
+            typeRef(subTpePre, subTpeSym, baseTpe.args)
           }
         }
       }
@@ -343,12 +343,33 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
           case (acc, _) => q"_root_.shapeless.Inr($acc)"
         }
 
-      val body = mkCoproductValue(mkElem(q"$name: $tpe", nameOf(tpe), tpe))
-      val pat = mkCoproductValue(pq"$name")
-      (
-        cq"$name: $tpe => $body",
-        cq"$pat => $name"
-      )
+      if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
+        val singleton =
+          tpe match {
+            case SingleType(pre, sym) =>
+              mkAttributedRef(pre, sym)
+            case TypeRef(pre, sym, List()) if sym.isModule =>
+              mkAttributedRef(pre, sym.asModule)
+            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
+              mkAttributedRef(pre, sym.asClass.module)
+            case other =>
+              abort(s"Bad case object-like type $tpe")
+          }
+
+        val body = mkCoproductValue(mkElem(q"$name.asInstanceOf[$tpe]", nameOf(tpe), tpe))
+        val pat = mkCoproductValue(pq"$name")
+        (
+          cq"$name if $name eq $singleton => $body",
+          cq"$pat => $singleton: $tpe"
+        )
+      } else {
+        val body = mkCoproductValue(mkElem(q"$name: $tpe", nameOf(tpe), tpe))
+        val pat = mkCoproductValue(pq"$name")
+        (
+          cq"$name: $tpe => $body",
+          cq"$pat => $name"
+        )
+      }
     }
 
     def mkProductCases(tpe: Type): (CaseDef, CaseDef) = {

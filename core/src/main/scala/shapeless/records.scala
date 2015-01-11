@@ -91,6 +91,9 @@ trait RecordArgs extends Dynamic {
 object RecordMacros {
   def inst(c: Context) = new RecordMacros[c.type](c)
 
+  def mkRecordEmptyImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[HList] =
+    c.Expr[HList](inst(c).mkRecordEmptyImpl(method.tree)(rec.map(_.tree): _*))
+
   def mkRecordNamedImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[HList] =
     c.Expr[HList](inst(c).mkRecordNamedImpl(method.tree)(rec.map(_.tree): _*))
 
