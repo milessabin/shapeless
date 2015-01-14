@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin
+ * Copyright (c) 2014-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package shapeless
+
+import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
 
@@ -33,6 +35,17 @@ object labelled {
   class FieldBuilder[K] {
     def apply[V](v : V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
   }
+}
+
+trait DefaultSymbolicLabelling[T] extends DepFn0 { type Out <: HList }
+
+object DefaultSymbolicLabelling {
+  type Aux[T, Out0] = DefaultSymbolicLabelling[T] { type Out = Out0 }
+
+  def apply[T](implicit lab: DefaultSymbolicLabelling[T]): Aux[T, lab.Out] = lab
+
+  implicit def mkDefaultSymbolicLabelling[T]: DefaultSymbolicLabelling[T] =
+    macro LabelledMacros.mkDefaultSymbolicLabellingImpl[T]
 }
 
 /**
@@ -69,15 +82,33 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
+class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
   import labelled._
   import c.universe._
 
-  val hconsTpe = typeOf[::[_, _]].typeConstructor
-  val hnilTpe = typeOf[HNil]
-  val cconsTpe = typeOf[:+:[_, _]].typeConstructor
-  val cnilTpe = typeOf[CNil]
-  val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
+  def mkDefaultSymbolicLabellingImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
+    val tTpe = weakTypeOf[T]
+    val labels: List[String] =
+      if(isProduct(tTpe)) fieldsOf(tTpe).map { f => nameAsString(f._1) }
+      else if(isCoproduct(tTpe)) ctorsOf(tTpe).map { tpe => nameAsString(nameOf(tpe)) }
+      else c.abort(c.enclosingPosition, s"$tTpe is not case class like or the root of a sealed family of types")
+
+    val labelTpes = labels.map(SingletonSymbolType(_))
+    val labelValues = labels.map(mkSingletonSymbol)
+
+    val labelsTpe = mkHListTpe(labelTpes)
+    val labelsValue =
+      labelValues.foldRight(q"_root_.shapeless.HNil": Tree) {
+        case (elem, acc) => q"_root_.shapeless.::($elem, $acc)"
+      }
+
+    q"""
+      new DefaultSymbolicLabelling[$tTpe] {
+        type Out = $labelsTpe
+        def apply(): $labelsTpe = $labelsValue
+      }
+    """
+  }
 
   def recordTypeImpl(tpeSelector: c.Tree): c.Tree =
     labelledTypeImpl(tpeSelector, "record", hnilTpe, hconsTpe)
@@ -96,16 +127,16 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       else
         tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
           case Array(key, value) =>
-            val keyTpe = 
+            val keyTpe =
               parseLiteralType(key)
                 .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $key"))
-            
+
             val valueTpe =
               parseType(value)
                 .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $value"))
-            
+
             (keyTpe, valueTpe)
-            
+
           case other =>
             c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
         }

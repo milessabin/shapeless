@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,76 @@ object LabelledGenericTestsAux {
   }
 }
 
+object ShapelessTaggedAux {
+  import tag.@@
+
+  trait CustomTag
+  case class Dummy(i: Int @@ CustomTag)
+}
+
+object ScalazTaggedAux {
+  import labelled.FieldType
+
+  type Tagged[A, T] = { type Tag = T; type Self = A }
+  type @@[T, Tag] = Tagged[T, Tag]
+
+  trait CustomTag
+  case class Dummy(i: Int @@ CustomTag)
+  case class DummyTagged(b: Boolean, i: Int @@ CustomTag)
+
+  trait TC[T] {
+    def apply(): String
+  }
+
+  object TC {
+    implicit val intTC: TC[Int] =
+      new TC[Int] {
+        def apply() = "Int"
+      }
+
+    implicit val booleanTC: TC[Boolean] =
+      new TC[Boolean] {
+        def apply() = "Boolean"
+      }
+
+    implicit val taggedIntTC: TC[Int @@ CustomTag] =
+      new TC[Int @@ CustomTag] {
+        def apply() = s"TaggedInt"
+      }
+
+    implicit val hnilTC: TC[HNil] =
+      new TC[HNil] {
+        def apply() = "HNil"
+      }
+
+    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
+      key: Witness.Aux[K],
+      headTC: Lazy[TC[H @@ HT]],
+      tailTC: Lazy[TC[T]]
+    ): TC[FieldType[K, H @@ HT] :: T] =
+      new TC[FieldType[K, H @@ HT] :: T] {
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
+      }
+
+    implicit def hconsTC[K <: Symbol, H, T <: HList](implicit
+      key: Witness.Aux[K],
+      headTC: Lazy[TC[H]],
+      tailTC: Lazy[TC[T]]
+    ): TC[FieldType[K, H] :: T] =
+      new TC[FieldType[K, H] :: T] {
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
+      }
+
+    implicit def projectTC[F, G](implicit
+      lgen: LabelledGeneric.Aux[F, G],
+      tc: Lazy[TC[G]]
+    ): TC[F] =
+      new TC[F] {
+        def apply() = s"Proj(${tc.value()})"
+      }
+  }
+}
+
 class LabelledGenericTests {
   import LabelledGenericTestsAux._
 
@@ -75,7 +145,7 @@ class LabelledGenericTests {
     val b0 = gen.to(tapl)
     typed[BookRec](b0)
     assertEquals(taplRecord, b0)
-    
+
     val b1 = gen.from(b0)
     typed[Book](b1)
     assertEquals(tapl, b1)
@@ -92,7 +162,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0.get('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -115,7 +185,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -138,7 +208,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val v1 = b0.at(0)
     typed[String](v1)
     assertEquals("Benjamin Pierce", v1)
@@ -150,7 +220,7 @@ class LabelledGenericTests {
     val v3 = b0.at(2)
     typed[Int](v3)
     assertEquals(262162091, v3)
-    
+
     val v4 = b0.at(3)
     typed[Double](v4)
     assertEquals(44.11, v4, Double.MinPositiveValue)
@@ -283,5 +353,39 @@ class LabelledGenericTests {
     typed[NonCCLazy](fD)
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)
+  }
+
+  @Test
+  def testShapelessTagged {
+    import ShapelessTaggedAux._
+
+    val lgen = LabelledGeneric[Dummy]
+    val s = s"${lgen from Record(i=tag[CustomTag](0))}"
+    assertEquals(s, "Dummy(0)")
+  }
+
+  @Test
+  def testScalazTagged {
+    import ScalazTaggedAux._
+
+    implicitly[TC[Int @@ CustomTag]]
+    implicitly[TC[Boolean]]
+
+    implicitly[Generic[Dummy]]
+    implicitly[LabelledGeneric[Dummy]]
+
+    implicitly[TC[Dummy]]
+
+    type R = Record.`'i -> Int @@ CustomTag`.T
+    val lgen = LabelledGeneric[Dummy]
+    implicitly[lgen.Repr =:= R]
+    implicitly[TC[R]]
+
+    implicitly[TC[DummyTagged]]
+
+    type RT = Record.`'b -> Boolean, 'i -> Int @@ CustomTag`.T
+    val lgent = LabelledGeneric[DummyTagged]
+    implicitly[lgent.Repr =:= RT]
+    implicitly[TC[RT]]
   }
 }

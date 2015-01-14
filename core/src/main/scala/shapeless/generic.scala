@@ -20,7 +20,9 @@ import scala.language.experimental.macros
 
 import scala.annotation.{ StaticAnnotation, tailrec }
 import scala.reflect.api.Universe
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.{ blackbox, whitebox }
+
+import ops.{ hlist, coproduct }
 
 trait Generic[T] {
   type Repr
@@ -43,7 +45,31 @@ object LabelledGeneric {
 
   def apply[T](implicit lgen: LabelledGeneric[T]): Aux[T, lgen.Repr] = lgen
 
-  implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materializeLabelled[T, R]
+  implicit def materializeProduct[T, K <: HList, V <: HList, R <: HList]
+    (implicit
+      lab: DefaultSymbolicLabelling.Aux[T, K],
+      gen: Generic.Aux[T, V],
+      zip: hlist.ZipWithKeys.Aux[K, V, R],
+      ev: R <:< V
+    ): Aux[T, R] =
+    new LabelledGeneric[T] {
+      type Repr = R
+      def to(t: T): Repr = zip(gen.to(t))
+      def from(r: Repr): T = gen.from(r)
+    }
+
+  implicit def materializeCoproduct[T, K <: HList, V <: Coproduct, R <: Coproduct]
+    (implicit
+      lab: DefaultSymbolicLabelling.Aux[T, K],
+      gen: Generic.Aux[T, V],
+      zip: coproduct.ZipWithKeys.Aux[K, V, R],
+      ev: R <:< V
+    ): Aux[T, R] =
+    new LabelledGeneric[T] {
+      type Repr = R
+      def to(t: T): Repr = zip(gen.to(t))
+      def from(r: Repr): T = gen.from(r)
+    }
 }
 
 class nonGeneric extends StaticAnnotation
@@ -66,12 +92,9 @@ object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]
 }
 
-trait CaseClassMacros {
-  val c: whitebox.Context
-
+trait ReprTypes {
+  val c: blackbox.Context
   import c.universe._
-  import internal.constantType
-  import Flag._
 
   def hlistTpe = typeOf[HList]
   def hnilTpe = typeOf[HNil]
@@ -82,6 +105,14 @@ trait CaseClassMacros {
 
   def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
+}
+
+trait CaseClassMacros extends ReprTypes {
+  val c: whitebox.Context
+
+  import c.universe._
+  import internal.constantType
+  import Flag._
 
   def abort(msg: String) =
     c.abort(c.enclosingPosition, msg)
@@ -184,29 +215,27 @@ trait CaseClassMacros {
       abort(s"$tpe is not a case class, case class-like, a sealed trait or Unit")
   }
 
-  def nameAsValue(name: Name): Constant = Constant(name.decodedName.toString.trim)
+  def nameAsString(name: Name): String = name.decodedName.toString.trim
+
+  def nameAsValue(name: Name): Constant = Constant(nameAsString(name))
 
   def nameOf(tpe: Type) = tpe.typeSymbol.name
 
   def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
     items.foldRight(nil) { case (tpe, acc) => appliedType(cons, List(tpe, acc)) }
 
+  def mkLabelTpe(name: Name): Type =
+    appliedType(atatTpe, List(typeOf[scala.Symbol], constantType(nameAsValue(name))))
+
   def mkFieldTpe(name: Name, valueTpe: Type): Type = {
-    val keyTpe = appliedType(atatTpe, List(typeOf[scala.Symbol], constantType(nameAsValue(name))))
-    appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
+    appliedType(fieldTypeTpe, List(mkLabelTpe(name), valueTpe))
   }
 
   def mkHListTpe(items: List[Type]): Type =
     mkCompoundTpe(hnilTpe, hconsTpe, items)
 
-  def mkRecordTpe(fields: List[(TermName, Type)]): Type =
-    mkCompoundTpe(hnilTpe, hconsTpe, fields.map((mkFieldTpe _).tupled))
-
   def mkCoproductTpe(items: List[Type]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, items)
-
-  def mkUnionTpe(fields: List[(TermName, Type)]): Type =
-    mkCompoundTpe(cnilTpe, cconsTpe, fields.map((mkFieldTpe _).tupled))
 
   def unfoldCompoundTpe(compoundTpe: Type, nil: Type, cons: Type): List[Type] = {
     @tailrec
@@ -226,21 +255,9 @@ trait CaseClassMacros {
   def coproductElements(tpe: Type): List[Type] =
     unfoldCompoundTpe(tpe, cnilTpe, cconsTpe)
 
-  def reprTpe(tpe: Type, labelled: Boolean): Type = {
-    if(isProduct(tpe)) {
-      val fields = fieldsOf(tpe)
-      if(labelled)
-        mkRecordTpe(fields)
-      else
-        mkHListTpe(fields.map(_._2))
-    } else {
-      val ctors = ctorsOf(tpe)
-      if(labelled) {
-        val labelledCases = ctors.map(tpe => (nameOf(tpe).toTermName, tpe))
-        mkUnionTpe(labelledCases)
-      } else
-        mkCoproductTpe(ctors)
-    }
+  def reprTpe(tpe: Type): Type = {
+    if(isProduct(tpe)) mkHListTpe(fieldsOf(tpe).map(_._2))
+    else mkCoproductTpe(ctorsOf(tpe))
   }
 
   def isCaseClassLike(sym: ClassSymbol): Boolean =
@@ -315,18 +332,10 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import internal.constantType
   import Flag._
 
-  def materialize[T: WeakTypeTag, R: WeakTypeTag] =
-    materializeAux(false, weakTypeOf[T])
-
-  def materializeLabelled[T: WeakTypeTag, R: WeakTypeTag] =
-    materializeAux(true, weakTypeOf[T])
-
-  def materializeAux(labelled: Boolean, tpe: Type): Tree = {
+  def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
+    val tpe = weakTypeOf[T]
     if(isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
-
-    def mkElem(elem: Tree, name: Name, tpe: Type): Tree =
-      if(labelled) q"$elem.asInstanceOf[${mkFieldTpe(name, tpe)}]" else elem
 
     def mkCoproductCases(tpe: Type, index: Int): (CaseDef, CaseDef) = {
       val name = TermName(c.freshName("pat"))
@@ -336,7 +345,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
           case (acc, _) => q"_root_.shapeless.Inr($acc)"
         }
 
-      val body = mkCoproductValue(mkElem(q"$name: $tpe", nameOf(tpe), tpe))
+      val body = mkCoproductValue(q"$name: $tpe")
       val pat = mkCoproductValue(pq"$name")
       (
         cq"$name: $tpe => $body",
@@ -384,18 +393,14 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
             val lhs = pq"${companionRef(tpe)}(..${binders.map(x => pq"${x._1}")})"
             val rhs =
               binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((bound, name, tpe), acc) =>
-                  val elem = mkElem(q"$bound", name, tpe)
-                  q"_root_.shapeless.::($elem, $acc)"
+                case ((bound, name, tpe), acc) => q"_root_.shapeless.::($bound, $acc)"
               }
             cq"$lhs => $rhs"
           } else {
             val lhs = TermName(c.freshName("pat"))
             val rhs =
               fieldsOf(tpe).foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((name, tpe), acc) =>
-                  val elem = mkElem(q"$lhs.$name", name, tpe)
-                  q"_root_.shapeless.::($elem, $acc)"
+                case ((name, tpe), acc) => q"_root_.shapeless.::($lhs.$name, $acc)"
               }
             cq"$lhs => $rhs"
           }
@@ -407,7 +412,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
             }
 
           val rhs = {
-            val ctorArgs = binders.map { case (bound, name, tpe) => mkElem(Ident(bound), name, tpe) }
+            val ctorArgs = binders.map { case (bound, name, tpe) => Ident(bound) }
             if(isCaseClass || hasNonGenericCompanionMember("apply"))
               q"${companionRef(tpe)}(..$ctorArgs)"
             else
@@ -430,14 +435,10 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         (to, from :+ cq"_ => _root_.scala.Predef.???")
       }
 
-    val genericTypeConstructor =
-      (if(labelled) typeOf[LabelledGeneric[_]].typeConstructor
-       else typeOf[Generic[_]].typeConstructor).typeSymbol
-
     val clsName = TypeName(c.freshName())
     q"""
-      final class $clsName extends $genericTypeConstructor[$tpe] {
-        type Repr = ${reprTpe(tpe, labelled)}
+      final class $clsName extends Generic[$tpe] {
+        type Repr = ${reprTpe(tpe)}
         def to(p: $tpe): Repr = p match { case ..$toCases }
         def from(p: Repr): $tpe = p match { case ..$fromCases }
       }
