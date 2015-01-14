@@ -1,5 +1,7 @@
 # shapeless: generic programming for Scala
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 **shapeless** is a type class and dependent type based generic programming library for Scala. It had its origins in
 several talks by Miles Sabin ([@milessabin][milessabin]), given over the course of 2011, on implementing [scrap your
 boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since then it has evolved from being a resolutely
