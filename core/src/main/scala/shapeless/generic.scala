@@ -463,7 +463,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
 
     val clsName = newTypeName(c.fresh())
     q"""
-      final class $clsName extends Generic[$tpe] {
+      final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTpe(tpe)}
         def to(p: $tpe): Repr = p match { case ..$toCases }
         def from(p: Repr): $tpe = p match { case ..$fromCases }
