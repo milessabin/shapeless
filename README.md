@@ -15,9 +15,9 @@ widely in production systems wherever there are arities to be abstracted over an
 A feature overview of shapeless-2.0.0 can be found [here][features200]. If you are upgrading from shapeless-1.2.4 you
 will find the [release notes][relnotes] and [migration guide][migration] useful.
 
-shapeless is part of the [typelevel][] family of projects along with [Scalaz][scalaz] and [Spire][spire]. It is an Open
-Source project under the Apache License v2, hosted on [github][source]. Binary artefacts are published to the [Sonatype
-OSS Repository Hosting service][sonatype] and synced to Maven Central.
+shapeless is part of the [typelevel][] family of projects. It is an Open Source project under the Apache License v2,
+hosted on [github][source]. Binary artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype]
+and synced to Maven Central.
 
 There is a [mailing list][group] for discussion around generic programming in Scala in general and shapeless in
 particular. You will also find many of the main shapeless contributors on IRC in the #shapeless channel on
