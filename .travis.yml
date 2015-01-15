@@ -18,3 +18,6 @@ sudo: false
 
 notifications:
   irc: "chat.freenode.net#shapeless"
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/e58e987de2f64f32c8c6
