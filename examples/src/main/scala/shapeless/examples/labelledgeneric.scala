@@ -16,14 +16,13 @@
 
 package shapeless.examples
 
-import shapeless._
-
 /**
  * LabelledGeneric examples.
  * 
  * @author Miles Sabin
  */
 object LabelledGenericExamples extends App {
+  import shapeless._
   import record._
   import ops.record._
   import syntax.singleton._
@@ -62,42 +61,5 @@ object LabelledGenericExamples extends App {
   val libro = libroGen.from(libroRec) // static type is Libro
   println(libro)
   println
-}
 
-/**
- * Utility trait intended for inferring a field type from a sample value and unpacking it into its
- * key and value types.
- */
-import labelled.FieldType
-
-trait Field {
-  type K
-  type V
-  type F = FieldType[K, V]
-}
-
-object Field {
-  def apply[K0, V0](sample: FieldType[K0, V0]) = new Field { type K = K0; type V = V0 }
-}
-
-object OldWineNewBottles extends App {
-  import ops.hlist.Align
-  import syntax.singleton._
-
-  case class From(s1: String, s2: String)
-  case class To(s2: String, i: Int, s1: String)
-
-  val from = From("foo", "bar")
-
-  val fromGen = LabelledGeneric[From]
-  val toGen = LabelledGeneric[To]
-
-  // Define the type of the i field by example
-  val iField = Field('i ->> 0)
-
-  val align = Align[iField.F :: fromGen.Repr, toGen.Repr]
-
-  val to = toGen.from(align('i ->> 23 :: fromGen.to(from)))
-  println(to)
-  println
 }

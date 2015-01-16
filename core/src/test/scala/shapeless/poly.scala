@@ -22,7 +22,6 @@ import org.junit.Assert._
 import poly._
 import ops.hlist.Mapper
 import test._
-import testutil._
 
 /** Polymorphic singleton function. */
 object singleton extends (Id ~> Set) {
@@ -456,88 +455,6 @@ class PolyTests {
 
     val l7 = li.map(mCnCn2 _)
     typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  @Test
-  def testRotateLeft {
-    object isd extends Poly3 {
-      implicit val default = at[Int, String, Double] {
-        case (i, s, d) => s"i: $i, s: $s, d: $d"
-      }
-    }
-
-    val r1 = isd(1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
-
-    val sdi = isd.rotateLeft[Nat._1]
-
-    val r2 = sdi("foo", 2.0, 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
-
-    val dis  = isd.rotateLeft[Nat._2]
-
-    val r3 = dis(2.0, 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
-
-    object isdc extends Poly4 {
-      implicit val default = at[Int, String, Double, Char] {
-        case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
-      }
-    }
-
-    val r4 = isdc(1, "foo", 2.0, 'a')
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
-
-    val sdci = isdc.rotateLeft[Nat._1]
-
-    val r5 = sdci("foo", 2.0, 'a', 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
-
-    val dcis = isdc.rotateLeft[Nat._2]
-
-    val r6 = dcis(2.0, 'a', 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
-  }
-
-  @Test
-  def testRotateRight {
-    object isd extends Poly3 {
-      implicit val default = at[Int, String, Double] {
-        case (i, s, d) => s"i: $i, s: $s, d: $d"
-      }
-    }
-
-    val r1 = isd(1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
-
-    val dis = isd.rotateRight[Nat._1]
-
-    val r2 = dis(2.0, 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
-
-    val sdi  = isd.rotateRight[Nat._2]
-
-    val r3 = sdi("foo", 2.0, 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
-
-    object isdc extends Poly4 {
-      implicit val default = at[Int, String, Double, Char] {
-        case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
-      }
-    }
-
-    val r4 = isdc(1, "foo", 2.0, 'a')
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
-
-    val cisd = isdc.rotateRight[Nat._1]
-
-    val r5 = cisd('a', 1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
-
-    val dcis = isdc.rotateRight[Nat._2]
-
-    val r6 = dcis(2.0, 'a', 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
   }
 }
 

@@ -24,7 +24,7 @@ class NatTests {
   import ops.nat._
   
   trait Check[N <: Nat]
-  def check(expected: Nat)(actually : => Check[expected.N]) {}
+  def check(expected: Nat)(actualy : => Check[expected.N]) {}
   
   @Test
   def testNat {

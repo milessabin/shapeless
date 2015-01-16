@@ -32,7 +32,6 @@ class HListConstraintsTests {
     val l2 = Option(23) :: true :: Option("foo") :: HNil
     
     acceptOption(l1)  // Compiles
-    acceptOption(HNil: HNil)
 
     illTyped("""
     acceptOption(l2)
@@ -43,7 +42,6 @@ class HListConstraintsTests {
     def acceptId[L <: HList : *->*[Id]#λ](l : L) = true
 
     acceptId(l3)  // Compiles
-    acceptId(HNil: HNil)
     
     val l4 = "foo" :: "bar" :: "baz" :: HNil
     val l5 = "foo" :: true :: "baz" :: HNil
@@ -51,7 +49,6 @@ class HListConstraintsTests {
     def acceptConst[L <: HList : *->*[Const[String]#λ]#λ](l : L) = true
     
     acceptConst(l4)  // Compiles
-    acceptConst(HNil: HNil)
     illTyped("""
     acceptConst(l5)
     """)
@@ -69,7 +66,6 @@ class HListConstraintsTests {
     val l2 = 23 :: true :: 13 :: 7 :: 5 :: 2.0 :: "foo" :: "bar" :: HNil
 
     acceptBasis(l1) // Compiles
-    acceptBasis(HNil: HNil)
     illTyped("""
     acceptBasis(l2)
     """)
@@ -89,7 +85,6 @@ class HListConstraintsTests {
     val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
 
     acceptLUB(l1) // Compiles
-    acceptLUB(HNil: HNil)
     illTyped("""
     acceptLUB(l2)
     """)
@@ -122,7 +117,6 @@ class HListConstraintsTests {
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
     
     acceptKeys(summary)   // Compiles
-    acceptKeys(HNil: HNil)
     illTyped("""
     acceptKeys(book)
     """)
@@ -130,7 +124,6 @@ class HListConstraintsTests {
     def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
     
     acceptValues(summary) // Compiles
-    acceptValues(HNil: HNil)
     illTyped("""
     acceptValues(book)
     """)

@@ -33,28 +33,28 @@ object DeepSearchExamples extends App {
   trait LowPrioritySearchable {
     implicit def hlistishSearchable[A, L <: HList, Q](
       implicit gen: Generic.Aux[A, L], s: Searchable[L, Q]
-    ): Searchable[A, Q] = new Searchable[A, Q] {
+    ) = new Searchable[A, Q] {
       def find(p: Q => Boolean)(a: A) = s.find(p)(gen to a)
     }
   }
   
   object Searchable extends LowPrioritySearchable {
-    implicit def elemSearchable[A]: Searchable[A, A] = new Searchable[A, A] {
+    implicit def elemSearchable[A] = new Searchable[A, A] {
       def find(p: A => Boolean)(a: A) = if (p(a)) Some(a) else None
     }
   
-    implicit def listSearchable[A, Q](implicit s: Searchable[A, Q]): Searchable[List[A], Q] =
+    implicit def listSearchable[A, Q](implicit s: Searchable[A, Q]) =
       new Searchable[List[A], Q] {
         def find(p: Q => Boolean)(a: List[A]) = a.flatMap(s.find(p)).headOption
       }
   
-    implicit def hnilSearchable[Q]: Searchable[HNil, Q] = new Searchable[HNil, Q] {
+    implicit def hnilSearchable[Q] = new Searchable[HNil, Q] {
       def find(p: Q => Boolean)(a: HNil) = None
     }
   
     implicit def hlistSearchable[H, T <: HList, Q](
       implicit hs: Searchable[H, Q] = null, ts: Searchable[T, Q]
-    ): Searchable[H :: T, Q] = new Searchable[H :: T, Q] {
+    ) = new Searchable[H :: T, Q] {
       def find(p: Q => Boolean)(a: H :: T) =
         Option(hs).flatMap(_.find(p)(a.head)) orElse ts.find(p)(a.tail)
     }
@@ -65,7 +65,7 @@ object DeepSearchExamples extends App {
       s.find(p)(a)
   }
 
-  implicit def wrapSearchable[A](a: A): SearchableWrapper[A] = SearchableWrapper(a)
+  implicit def wrapSearchable[A](a: A) = SearchableWrapper(a)
 
   // An example predicate:
   val p = (_: String) endsWith "o"
