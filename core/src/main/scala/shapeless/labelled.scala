@@ -103,7 +103,7 @@ class LabelledMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] with 
       }
 
     q"""
-      new DefaultSymbolicLabelling[$tTpe] {
+      new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
         type Out = $labelsTpe
         def apply(): $labelsTpe = $labelsValue
       }
