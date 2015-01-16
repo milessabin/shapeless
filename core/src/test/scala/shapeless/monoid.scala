@@ -48,7 +48,7 @@ package MonoidAux {
       def append(a : String, b : String) = a+b
     }
 
-    implicit val monoidInstance: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
+    object typeClass extends ProductTypeClass[Monoid] {
       def emptyProduct = new Monoid[HNil] {
         def zero = HNil
         def append(a : HNil, b : HNil) = HNil
@@ -99,8 +99,6 @@ class MonoidTests {
 
   @Test
   def testAuto {
-    import Monoid.auto._
-
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
   

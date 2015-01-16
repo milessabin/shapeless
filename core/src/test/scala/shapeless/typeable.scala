@@ -205,28 +205,28 @@ class TypeableTests {
   def testNull {
     val n : Any = null
     val cn = n.cast[AnyVal]
-    assertTrue(cn.isDefined)
+    assertTrue(!cn.isDefined)
 
     val cn1 = n.cast[AnyRef]
-    assertTrue(cn1.isDefined)
+    assertTrue(!cn1.isDefined)
 
     val cn2 = n.cast[Int]
-    assertTrue(cn2.isDefined)
+    assertTrue(!cn2.isDefined)
 
     val cn3 = n.cast[String]
-    assertTrue(cn3.isDefined)
+    assertTrue(!cn3.isDefined)
 
     val cn4 = n.cast[List[Int]]
-    assertTrue(cn4.isDefined)
+    assertTrue(!cn4.isDefined)
 
     val cn5 = n.cast[HNil]
-    assertTrue(cn5.isDefined)
+    assertTrue(!cn5.isDefined)
 
     val cn6 = n.cast[Int :: String :: Boolean :: HNil]
-    assertTrue(cn6.isDefined)
+    assertTrue(!cn6.isDefined)
 
     val cn7 = n.cast[(Int, String)]
-    assertTrue(cn7.isDefined)
+    assertTrue(!cn7.isDefined)
   }
 
   @Test
@@ -271,10 +271,10 @@ class TypeableTests {
     val cd2 = d.cast[B with A]
     assertTrue(cd2.isDefined)
 
-    val cd3 = d.cast[A with C] // Initial type of arbitrary intersection is OK
-    assertTrue(cd3.isDefined)
+    val cd3 = d.cast[A with C]
+    assertTrue(cd3.isEmpty)
 
-    val cd4 = d.cast[C with A] // Subsequent types are not
+    val cd4 = d.cast[C with A]
     assertTrue(cd4.isEmpty)
   }
 

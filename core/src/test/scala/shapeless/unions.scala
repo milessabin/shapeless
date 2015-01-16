@@ -20,13 +20,11 @@ import org.junit.Test
 import org.junit.Assert._
 
 class UnionTests {
-  import record.RecordType
   import union._
   import syntax.singleton._
   import test._
 
-  val uSchema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
-  type U = uSchema.Union
+  type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
   @Test
   def testGetLiterals {

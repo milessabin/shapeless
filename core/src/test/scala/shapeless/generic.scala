@@ -129,26 +129,6 @@ class GenericTests {
   }
 
   @Test
-  def testHLists {
-    type T0 = HNil
-    type T1 = Int :: HNil
-    type T2 = Int :: String :: HNil
-    type T3 = Int :: String :: Boolean :: HNil
-    
-    val gen0 = Generic[HNil]
-    typed[Generic[T0] { type Repr = T0 }](gen0)
-    
-    val gen1 = Generic[Int :: HNil]
-    typed[Generic[T1] { type Repr = T1 }](gen1)
-    
-    val gen2 = Generic[Int :: String :: HNil]
-    typed[Generic[T2] { type Repr = T2 }](gen2)
-    
-    val gen3 = Generic[Int :: String :: Boolean :: HNil]
-    typed[Generic[T3] { type Repr = T3 }](gen3)
-  }
-
-  @Test
   def testProductMapBasics {
     val p = Person("Joe Soap", "Brighton", 23)
     

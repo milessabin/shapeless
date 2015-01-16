@@ -1330,6 +1330,7 @@ class HListTests {
 
   @Test
   def testWithKeys {
+    import record._
     import syntax.singleton._
 
     val orig =

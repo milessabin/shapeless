@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class RecordTests {
+  import labelled._
   import record._
   import syntax.singleton._
   import test._

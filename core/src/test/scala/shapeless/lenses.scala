@@ -19,11 +19,14 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import testutil._
+
 case class Address(street : String, city : String, postcode : String)
 case class Person(name : String, age : Int, address : Address)
 
 trait LensTests {
   import test._
+  import labelled._
   import lens._
 
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
@@ -184,19 +187,18 @@ trait LensTests {
 
   @Test
   def testRecords {
-    import record.FieldType, syntax.singleton._
+    import record._, syntax.singleton._
 
-    val (fooT, barT) = (Witness("foo"), Witness("bar"))
-    type LT = (fooT.T FieldType Int) :: (barT.T FieldType String) :: HNil
+    type LT = Record.`"foo" -> Int, "bar" -> String`.T
     val l = ("foo" ->> 42) :: ("bar" ->> "hi") :: HNil
     typed[LT](l)
 
-    val li = recordLens[LT, Int]("foo")
-    assertEquals(42, li.get(l))
+    val li = recordLens[LT]("foo")
+    assertTypedEquals[Int](42, li.get(l))
     assertEquals(("foo" ->> 84) :: ("bar" ->> "hi") :: HNil, li.set(l)(84))
 
-    val ls = recordLens[LT, String]("bar")
-    assertEquals("hi", ls.get(l))
+    val ls = recordLens[LT]("bar")
+    assertTypedEquals[String]("hi", ls.get(l))
     assertEquals(("foo" ->> 42) :: ("bar" ->> "bye") :: HNil, ls.set(l)("bye"))
   }
 

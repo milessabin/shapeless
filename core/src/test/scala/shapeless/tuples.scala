@@ -74,8 +74,20 @@ class TupleTests {
 
   object mkString extends (Any -> String)(_.toString)
   object fruit extends (Fruit -> Fruit)(f => f)
-  object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends LiftU(choose)
+
+  trait incInt0 extends Poly1 {
+    implicit def default[T] = at[T](t => ())
+  }
+  object incInt extends incInt0 {
+    implicit val caseInt = at[Int](i => Tuple1(i+1))
+  }
+
+  trait extendedChoose0 extends Poly1 {
+    implicit def default[T] = at[T](t => ())
+  }
+  object extendedChoose extends extendedChoose0 {
+    implicit def caseSet[T] = at[Set[T]](s => Tuple1(s.headOption))
+  }
   
   @Test
   def testBasics {

@@ -38,7 +38,7 @@ class SybClassTests {
   object incAll extends Poly1 {
     implicit def caseInt = at[Int](_+1)
     implicit def caseString = at[String](_+"*")
-    implicit def default[T](implicit data : DataT[this.type, T, T]) = at[T](data.gmapT)
+    implicit def default[T](implicit data : DataT.Aux[this.type, T, T]) = at[T](data.gmapT)
   }
 
   object inc extends Poly1 {
@@ -442,23 +442,6 @@ class SybClassTests {
     assertEquals(expected4, result4)
   }
   
-  @Test
-  def testList {
-    val input: List[Apple] = List(Apple(1), Apple(2), Apple(3))
-    val expected: List[String] = List("Pomme", "Pomme", "Pomme")
-    
-    val result = everywhere(showFruit)(input)
-    typed[List[String]](result)
-    assertEquals(expected, result)
-    
-    val input2: List[Apple] = List(Apple(1), Apple(1), Apple(1))
-    val expected2: List[Pear] = List(Pear(1), Pear(1), Pear(1))
-    
-    val result2 = everywhere(cycleFruit)(input2)
-    typed[List[Pear]](result2)
-    assertEquals(expected2, result2)
-  }
-
 /*
   @Test
   def testCoproduct3 {

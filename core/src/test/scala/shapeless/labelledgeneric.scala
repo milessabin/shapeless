@@ -32,17 +32,14 @@ object LabelledGenericTestsAux {
   val tapl2 = Book("Benjamin Pierce", "Types and Programming Languages (2nd Ed.)", 262162091, 46.11)
   val taplExt = ExtendedBook("Benjamin Pierce", "Types and Programming Languages", 262162091, 44.11, true)
 
+  type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
+
   val taplRecord =
     ('author ->> "Benjamin Pierce") ::
     ('title  ->> "Types and Programming Languages") ::
     ('id     ->>  262162091) ::
     ('price  ->>  44.11) ::
     HNil
-
-  val bookSchema = RecordType.like(taplRecord)
-  type BookRec = bookSchema.Record
-  type BookKeys = bookSchema.Keys
-  type BookValues = bookSchema.Values
 
   sealed trait Tree
   case class Node(left: Tree, right: Tree) extends Tree

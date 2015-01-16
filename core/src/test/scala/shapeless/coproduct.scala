@@ -193,27 +193,23 @@ class CoproductTests {
 
   @Test
   def testWithKeys {
-    import syntax.singleton._
-    import record.RecordType
     import union._
-    import ops.union._
 
-    val uSchema = RecordType.like('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
-    val cKeys = Keys[uSchema.Union].apply()
+    type Keys = HList.`'i, 's, 'b`.T
 
-    val u1 = Coproduct[ISB](23).zipWithKeys(cKeys)
+    val u1 = Coproduct[ISB](23).zipWithKeys[Keys]
     val v1 = u1.get('i)
     typed[Option[Int]](v1)
     assertEquals(Some(23), v1)
     assertEquals(None, u1.get('s))
 
-    val u2 = Coproduct[ISB]("foo").zipWithKeys(cKeys)
+    val u2 = Coproduct[ISB]("foo").zipWithKeys[Keys]
     val v2 = u2.get('s)
     typed[Option[String]](v2)
     assertEquals(Some("foo"), v2)
     assertEquals(None, u2.get('b))
 
-    val u3 = Coproduct[ISB](true).zipWithKeys(cKeys)
+    val u3 = Coproduct[ISB](true).zipWithKeys[Keys]
     val v3 = u3.get('b)
     typed[Option[Boolean]](v3)
     assertEquals(Some(true), v3)
