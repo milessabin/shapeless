@@ -22,7 +22,7 @@ import scala.annotation.tailrec
 import scala.reflect.macros.whitebox
 
 /**
- * Base trait for type level real numbers. 
+ * Base trait for type level numbers. 
  * 
  * @author Olivier Mélois
  */

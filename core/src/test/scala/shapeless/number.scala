@@ -76,14 +76,32 @@ class NumberTests {
     check(0)(d4)
 
     implicitly[Prod.Aux[_m5, _2, _m10]]
+    implicitly[Prod.Aux[_5, _2, _10]]
     implicitly[Prod.Aux[_5, _m1, _m5]]
     implicitly[Prod.Aux[_m4, _m2, _8]]
+    implicitly[Prod.Aux[_m1, _0, _0]]
 
     def prod(a: RInt, b: RInt)(implicit prod : Prod[a.N, b.N]) = new Check[prod.Out] {}
     val p1 = prod(2, -3)
     check(-6)(p1)
     val p2 = prod(-4, -5)
     check(20)(p2)
+    val p3 = prod(-1, 0)
+    check(0)(p3)
+    val p4 = prod(0, -1)
+    check(0)(p4)
+
+    implicitly[LT[_0,_1]]
+    implicitly[LT[_4,_8]]
+    implicitly[LT[_m4, _m2]]
+    implicitly[LT[_m4, _4]]
+
+    implicitly[LTEq[_0,_1]]
+    implicitly[LTEq[_4,_8]]
+    implicitly[LTEq[_m4, _m2]]
+    implicitly[LTEq[_m4, _4]]
+    implicitly[LTEq[_m1, _m1]]
+    implicitly[LTEq[_2, _2]]
 
 
     // Type level
