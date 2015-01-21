@@ -7,7 +7,7 @@ The main changes include,
 
 * Restructured project as an aggregate of a core and an examples project.
 
-* Generated and example source now included in source artifact.
+* Generated and example source now included in source artefact.
 
 * Improved build configuration,
     * Updated to SBT 0.12.0-Beta2.

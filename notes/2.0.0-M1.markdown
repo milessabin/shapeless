@@ -166,7 +166,7 @@ shapeless 2.0.0. The most significant of these are,
     * The type classes and extension methods for converting between functions
       of multiple arguments and functions with a single `HList` argument have
       been renamed more transparently.
-    * All implict definitions now have explicit result types, which should
+    * All implicit definitions now have explicit result types, which should
       result in improved compile times.
 
   [typelevel]: http://typelevel.org/

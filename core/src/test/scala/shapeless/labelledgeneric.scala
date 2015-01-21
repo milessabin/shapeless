@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,9 @@ object LabelledGenericTestsAux {
     ('price  ->>  44.11) ::
     HNil
 
-  val bookSchema = RecordType.like(taplRecord)
-  type BookRec = bookSchema.Record
-  type BookKeys = bookSchema.Keys
-  type BookValues = bookSchema.Values
+  type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
+  type BookKeys = Keys[BookRec]
+  type BookValues = Values[BookRec]
 
   sealed trait Tree
   case class Node(left: Tree, right: Tree) extends Tree
@@ -66,6 +65,76 @@ object LabelledGenericTestsAux {
   }
 }
 
+object ShapelessTaggedAux {
+  import tag.@@
+
+  trait CustomTag
+  case class Dummy(i: Int @@ CustomTag)
+}
+
+object ScalazTaggedAux {
+  import labelled.FieldType
+
+  type Tagged[A, T] = { type Tag = T; type Self = A }
+  type @@[T, Tag] = Tagged[T, Tag]
+
+  trait CustomTag
+  case class Dummy(i: Int @@ CustomTag)
+  case class DummyTagged(b: Boolean, i: Int @@ CustomTag)
+
+  trait TC[T] {
+    def apply(): String
+  }
+
+  object TC {
+    implicit val intTC: TC[Int] =
+      new TC[Int] {
+        def apply() = "Int"
+      }
+
+    implicit val booleanTC: TC[Boolean] =
+      new TC[Boolean] {
+        def apply() = "Boolean"
+      }
+
+    implicit val taggedIntTC: TC[Int @@ CustomTag] =
+      new TC[Int @@ CustomTag] {
+        def apply() = s"TaggedInt"
+      }
+
+    implicit val hnilTC: TC[HNil] =
+      new TC[HNil] {
+        def apply() = "HNil"
+      }
+
+    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
+      key: Witness.Aux[K],
+      headTC: Lazy[TC[H @@ HT]],
+      tailTC: Lazy[TC[T]]
+    ): TC[FieldType[K, H @@ HT] :: T] =
+      new TC[FieldType[K, H @@ HT] :: T] {
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
+      }
+
+    implicit def hconsTC[K <: Symbol, H, T <: HList](implicit
+      key: Witness.Aux[K],
+      headTC: Lazy[TC[H]],
+      tailTC: Lazy[TC[T]]
+    ): TC[FieldType[K, H] :: T] =
+      new TC[FieldType[K, H] :: T] {
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
+      }
+
+    implicit def projectTC[F, G](implicit
+      lgen: LabelledGeneric.Aux[F, G],
+      tc: Lazy[TC[G]]
+    ): TC[F] =
+      new TC[F] {
+        def apply() = s"Proj(${tc.value()})"
+      }
+  }
+}
+
 class LabelledGenericTests {
   import LabelledGenericTestsAux._
 
@@ -76,7 +145,7 @@ class LabelledGenericTests {
     val b0 = gen.to(tapl)
     typed[BookRec](b0)
     assertEquals(taplRecord, b0)
-    
+
     val b1 = gen.from(b0)
     typed[Book](b1)
     assertEquals(tapl, b1)
@@ -93,7 +162,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0.get('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -116,7 +185,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val e1 = b0('author)
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
@@ -139,7 +208,7 @@ class LabelledGenericTests {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
-    
+
     val v1 = b0.at(0)
     typed[String](v1)
     assertEquals("Benjamin Pierce", v1)
@@ -151,7 +220,7 @@ class LabelledGenericTests {
     val v3 = b0.at(2)
     typed[Int](v3)
     assertEquals(262162091, v3)
-    
+
     val v4 = b0.at(3)
     typed[Double](v4)
     assertEquals(44.11, v4, Double.MinPositiveValue)
@@ -198,9 +267,7 @@ class LabelledGenericTests {
 
   @Test
   def testCoproductBasics {
-    val treeRec = ('Leaf ->> Leaf(1)) :: ('Node ->> Node(Leaf(1), Leaf(1))) :: HNil
-    val treeSchema = RecordType.like(treeRec)
-    type TreeUnion = treeSchema.Union
+    type TreeUnion = Union.`'Leaf -> Leaf, 'Node -> Node`.T
 
     val gen = LabelledGeneric[Tree]
 
@@ -215,17 +282,9 @@ class LabelledGenericTests {
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
 
-    val recA = ('i ->> 23) :: ('s ->> "foo") :: HNil
-    val nonCCASchema = RecordType.like(recA)
-    type NonCCARec = nonCCASchema.Record
-
-    val recB = ('b ->> true) :: ('d ->> 2.0) :: HNil
-    val nonCCBSchema = RecordType.like(recB)
-    type NonCCBRec = nonCCBSchema.Record
-
-    val recAbs = ('NonCCA ->> ncca) :: ('NonCCB ->> nccb) :: HNil
-    val absSchema = RecordType.like(recAbs)
-    type AbsUnion = absSchema.Union
+    type NonCCARec = Record.`'i -> Int, 's -> String`.T
+    type NonCCBRec = Record.`'b -> Boolean, 'd -> Double`.T
+    type AbsUnion = Union.`'NonCCA -> NonCCA, 'NonCCB -> NonCCB`.T
 
     val genA = LabelledGeneric[NonCCA]
     val genB = LabelledGeneric[NonCCB]
@@ -264,8 +323,7 @@ class LabelledGenericTests {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val rec = ('i ->> 23) :: ('s ->> "foo") :: HNil
-    val nonCCSchema = RecordType.like(rec)
-    type NonCCRec = nonCCSchema.Record
+    type NonCCRec = Record.`'i -> Int, 's -> String`.T
 
     val gen = LabelledGeneric[NonCCWithCompanion]
 
@@ -284,8 +342,7 @@ class LabelledGenericTests {
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
     val rec = 'prev ->> a :: 'next ->> c :: HNil
-    val lazySchema = RecordType.like(rec)
-    type LazyRec = lazySchema.Record
+    type LazyRec = Record.`'prev -> NonCCLazy, 'next -> NonCCLazy`.T
 
     val gen = LabelledGeneric[NonCCLazy]
 
@@ -296,5 +353,39 @@ class LabelledGenericTests {
     typed[NonCCLazy](fD)
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)
+  }
+
+  @Test
+  def testShapelessTagged {
+    import ShapelessTaggedAux._
+
+    val lgen = LabelledGeneric[Dummy]
+    val s = s"${lgen from Record(i=tag[CustomTag](0))}"
+    assertEquals(s, "Dummy(0)")
+  }
+
+  @Test
+  def testScalazTagged {
+    import ScalazTaggedAux._
+
+    implicitly[TC[Int @@ CustomTag]]
+    implicitly[TC[Boolean]]
+
+    implicitly[Generic[Dummy]]
+    implicitly[LabelledGeneric[Dummy]]
+
+    implicitly[TC[Dummy]]
+
+    type R = Record.`'i -> Int @@ CustomTag`.T
+    val lgen = LabelledGeneric[Dummy]
+    implicitly[lgen.Repr =:= R]
+    implicitly[TC[R]]
+
+    implicitly[TC[DummyTagged]]
+
+    type RT = Record.`'b -> Boolean, 'i -> Int @@ CustomTag`.T
+    val lgent = LabelledGeneric[DummyTagged]
+    implicitly[lgent.Repr =:= RT]
+    implicitly[TC[RT]]
   }
 }

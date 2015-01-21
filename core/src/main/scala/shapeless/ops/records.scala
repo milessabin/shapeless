@@ -17,12 +17,14 @@
 package shapeless
 package ops
 
+import poly._
+
 //object record {
 //  Ideally this would be an object rather than a package, however that appears
 //  to trip bugs in implicit resolution which manifest in the use of WitnessWith
 //  in updateWith
 package record {
-  import shapeless.record._
+  import shapeless.labelled._
 
   /**
    * Type class supporting record field selection.
@@ -87,6 +89,48 @@ package record {
       new Updater[FieldType[K, V] :: T, FieldType[K, V]] {
         type Out = FieldType[K, V] :: T
         def apply(l: FieldType[K, V] :: T, f: FieldType[K, V]): Out = f :: l.tail
+      }
+  }
+
+  /**
+   * Type class support record merging.
+   *
+   * @author Miles Sabin
+   */
+  trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] { type Out <: HList }
+
+  trait LowPriorityMerger {
+    type Aux[L <: HList, M <: HList, Out0 <: HList] = Merger[L, M] { type Out = Out0 }
+
+    implicit def hlistMerger1[H, T <: HList, M <: HList]
+      (implicit mt : Merger[T, M]): Aux[H :: T, M, H :: mt.Out] =
+        new Merger[H :: T, M] {
+          type Out = H :: mt.Out
+          def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
+        }
+  }
+
+  object Merger extends LowPriorityMerger {
+    def apply[L <: HList, M <: HList](implicit merger: Merger[L, M]): Aux[L, M, merger.Out] = merger
+
+    implicit def hnilMerger[M <: HList]: Aux[HNil, M, M] =
+      new Merger[HNil, M] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
+      (implicit
+        rm: Remover.Aux[M, K, (V, MT)],
+        mt: Merger[T, MT]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
+      new Merger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](mv)
+          up :: mt(l.tail, mr)
+        }
       }
   }
 
@@ -223,6 +267,84 @@ package record {
       new Values[FieldType[K, V] :: T] {
         type Out = V :: vt.Out
         def apply(l: FieldType[K, V] :: T): Out = (l.head: V) :: vt(l.tail)
+      }
+  }
+
+  /**
+   * Type class supporting converting this record to a `Map` whose keys and values
+   * are typed as the Lub of the keys and values of this record.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToMap[L <: HList] extends DepFn1[L] {
+    type Key
+    type Value
+    type Out = Map[Key, Value]
+  }
+
+  object ToMap {
+    def apply[L <: HList](implicit toMap: ToMap[L]): Aux[L, toMap.Key, toMap.Value] = toMap
+
+    type Aux[L <: HList, Key0, Value0] = ToMap[L] { type Key = Key0; type Value = Value0 }
+
+    implicit def hnilToMap[K, V, L <: HNil]: Aux[L, K, V] =
+      new ToMap[L] {
+        type Key = K
+        type Value = V
+        def apply(l: L) = Map.empty
+      }
+
+    implicit def hnilToMapAnyNothing[L <: HNil]: Aux[L, Any, Nothing] = hnilToMap[Any, Nothing, L]
+
+    implicit def hsingleToMap[K, V](implicit
+      wk: Witness.Aux[K]
+    ): Aux[FieldType[K, V] :: HNil, K, V] =
+      new ToMap[FieldType[K, V] :: HNil] {
+        type Key = K
+        type Value = V
+        def apply(l: FieldType[K, V] :: HNil) = Map(wk.value -> (l.head: V))
+      }
+
+    implicit def hlistToMap[HK, HV, TH, TT <: HList, TK, TV, K, V](implicit
+      tailToMap: ToMap.Aux[TH :: TT, TK, TV],
+      keyLub: Lub[HK, TK, K],
+      valueLub: Lub[HV, TV, V],
+      wk: Witness.Aux[HK]
+    ): Aux[FieldType[HK, HV] :: TH :: TT, K, V] =
+      new ToMap[FieldType[HK, HV] :: TH :: TT] {
+        type Key = K
+        type Value = V
+        def apply(l: FieldType[HK, HV] :: TH :: TT) =
+          tailToMap(l.tail).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)} +
+            (keyLub.left(wk.value) -> valueLub.left(l.head: HV))
+      }
+  }
+
+  /**
+   * Type class supporting mapping a higher rank function over the values of a record.
+   *
+   * @author Alexandre Archambault
+   */
+  trait MapValues[HF, L <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object MapValues {
+    def apply[HF, L <: HList](implicit mapValues: MapValues[HF, L]): Aux[HF, L, mapValues.Out] = mapValues
+
+    type Aux[HF, L <: HList, Out0 <: HList] = MapValues[HF, L] { type Out = Out0 }
+
+    implicit def hnilMapValues[HF, L <: HNil]: Aux[HF, L, HNil] =
+      new MapValues[HF, L] {
+        type Out = HNil
+        def apply(l: L) = HNil
+      }
+
+    implicit def hconsMapValues[HF, K, V, T <: HList](implicit
+      hc: Case1[HF, V],
+      mapValuesTail: MapValues[HF, T]
+    ): Aux[HF, FieldType[K, V] :: T, FieldType[K, hc.Result] :: mapValuesTail.Out] =
+      new MapValues[HF, FieldType[K, V] :: T] {
+        type Out = FieldType[K, hc.Result] :: mapValuesTail.Out
+        def apply(l: FieldType[K, V] :: T) = field[K](hc(l.head: V)) :: mapValuesTail(l.tail)
       }
   }
 }

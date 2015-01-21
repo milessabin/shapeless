@@ -68,7 +68,7 @@ object LabelledGenericExamples extends App {
  * Utility trait intended for inferring a field type from a sample value and unpacking it into its
  * key and value types.
  */
-import record.FieldType
+import labelled.FieldType
 
 trait Field {
   type K

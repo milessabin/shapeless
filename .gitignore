@@ -1,3 +1,31 @@
 scratch/
 target/
+
+# Ignore project files for Eclipse
+/.classpath
+/*/.classpath
+/.settings
+/*/.settings
+/.project
+/*/.project
+/.worksheet
+/*/.worksheet
+
+# Ignore project files for IntelliJ
+/.idea
+/*/.idea
+*.iml
+*.iws
+
+# Ignore project files foor Sublime
 *.sublime-project
+
+# Ignore OS X metadata
+.DS_Store
+
+# Ignore vim swap files
+.swp
+.*.swp
+.swo
+.*.swo
+

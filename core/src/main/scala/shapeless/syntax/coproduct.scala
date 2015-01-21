@@ -49,7 +49,7 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * Returns the ''nth'' element of this `Coproduct`.
    * Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def at[N <: Nat](n: N)(implicit at: At[C, n.N]): Option[at.A] = at(c)
+  def at(n: Nat)(implicit at: At[C, n.N]): Option[at.A] = at(c)
 
   /**
    * Returns the last element of this 'Coproduct'
@@ -70,30 +70,31 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Returns all elements of type `U` of this `Coproduct`. An explicit type argument must be provided.
    */
-  def filter[U](implicit filter: Filter[C, U]): Option[filter.A]  = filter(c)
+  def filter[U](implicit partition: Partition[C, U]): Option[partition.Prefix]  = partition.filter(c)
 
   /**
    * Returns all elements of type different than `U` of this `Coproduct`. An explicit type argument must be provided.
    */
-  def filterNot[U](implicit filterNot: FilterNot[C, U]): Option[filterNot.A] = filterNot(c)
+  def filterNot[U](implicit partition: Partition[C, U]): Option[partition.Suffix] = partition.filterNot(c)
 
-  /**
-   * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
-   * An explicit type argument must be provided. Available only if there is evidence that this
-   * `Coproduct` has an element of type `U`.
-   *
-   * The `Elem` suffix is here to avoid creating an ambiguity with RecordOps#remove and should be removed if
-   * SI-5414 is resolved in a way which eliminates the ambiguity.
-   */
-  def removeElem[U](implicit removeElem: RemoveElem[C, U]): Either[U, removeElem.Rest] =
-    removeElem.either(c)
+  def partition[U](implicit partition: Partition[C, U]): Either[partition.Prefix, partition.Suffix] = partition(c)
+
+  def partitionC[U]
+    (implicit partition: Partition[C, U]): partition.Prefix :+: partition.Suffix :+: CNil = partition.coproduct(c)
 
   /**
    * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
    * An explicit type argument must be provided. Available only if there is evidence that this
    * `Coproduct` has an element of type `U`.
    */
-  def removeElemC[U](implicit removeElem: RemoveElem[C, U]): U :+: removeElem.Rest = removeElem(c)
+  def removeElem[U](implicit remove: Remove[C, U]): Either[U, remove.Rest] = remove(c)
+
+  /**
+   * Returns the first element of type `U` of this `Coproduct` plus the remainder of the `Coproduct`.
+   * An explicit type argument must be provided. Available only if there is evidence that this
+   * `Coproduct` has an element of type `U`.
+   */
+  def removeElemC[U](implicit remove: Remove[C, U]): U :+: remove.Rest = remove.coproduct(c)
 
 
   /**
@@ -101,12 +102,51 @@ final class CoproductOps[C <: Coproduct](c: C) {
    * argument must be provided. Available only if there is evidence that this `Coproduct` has at least ''n'' elements.
    */
   def split[N <: Nat](implicit split: Split[C, N]): split.Out = split(c)
+  def splitC[N <: Nat](implicit split: Split[C, N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
 
   /**
    * Splits this `Coproduct` at the ''nth'' element, returning the prefix and suffix as a pair. Available only if
    * there is evidence that this `Coproduct` has at least ''n'' elements.
    */
-  def split[N <: Nat](n: N)(implicit split: Split[C, n.N]): split.Out = split(c)
+  def split(n: Nat)(implicit split: Split[C, n.N]): split.Out = split(c)
+  def splitC(n: Nat)(implicit split: Split[C, n.N]): split.Left :+: split.Right :+: CNil = split.coproduct(c)
+
+
+  /**
+   * Takes the first `n` elements of this `Coproduct`. An explicit type argument must be provided. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def take[N <: Nat](implicit take: Take[C, N]): take.Out = take(c)
+
+  /**
+   * Takes the first `n` elements of this `Coproduct`. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def take(n: Nat)(implicit take: Take[C, n.N]): take.Out = take(c)
+  
+  /**
+   * Drops the first `n` elements of this `Coproduct`. An explicit type argument must be provided. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def drop[N <: Nat](implicit drop: Drop[C, N]): drop.Out = drop(c)
+
+  /**
+   * Drops the first `n` elements of this `Coproduct`. Available only if
+   * there is evidence that this `Coproduct` has at least ''n'' elements.
+   */
+  def drop(n: Nat)(implicit drop: Drop[C, n.N]): drop.Out = drop(c)
+
+  /**
+   * Permutes this `Coproduct` into the same order as another `Coproduct`. An explicit type argument must be supplied.
+   * Available only if both `Coproduct`s have elements of the same types.
+   */
+  def align[K <: Coproduct](implicit align: Align[C, K]): K = align(c)
+
+  /**
+   * Permutes this `Coproduct` into the same order as another `Coproduct`. Available only if 
+   * both `Coproduct`s have elements of the same types.
+   */
+  def align[K <: Coproduct](k: K)(implicit align: Align[C, K]): K = align(c)
 
   /**
    * Reverses this `Coproduct`.
@@ -143,27 +183,32 @@ final class CoproductOps[C <: Coproduct](c: C) {
   /**
    * Converts this `Coproduct` of values into a union with the provided keys.
    */
-  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(keys, c)
+  def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
 
   /**
-   * Rotate this 'Coproduct' left by N
+   * Converts this `Coproduct` of values into a union with given keys. A type argument must be provided.
+   */
+  def zipWithKeys[K <: HList](implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
+
+  /**
+   * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
    */
   def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)
 
   /**
-   * Rotate this 'Coproduct' left by N
+   * Rotate this 'Coproduct' left by `n`
    */
-  def rotateLeft[N <: Nat](n: N)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
+  def rotateLeft(n: Nat)(implicit rotateLeft: RotateLeft[C, n.N]): rotateLeft.Out = rotateLeft(c)
 
   /**
-   * Rotate this 'Coproduct' right by N
+   * Rotate this 'Coproduct' right by N. An explicit type argument must be provided.
    */
   def rotateRight[N <: Nat](implicit rotateRight: RotateRight[C, N]): rotateRight.Out = rotateRight(c)
 
   /**
-   * Rotate this 'Coproduct' right by N
+   * Rotate this 'Coproduct' right by `n`
    */
-  def rotateRight[N <: Nat](n: N)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
+  def rotateRight(n: Nat)(implicit rotateRight: RotateRight[C, n.N]): rotateRight.Out = rotateRight(c)
 
   /**
    * Extend this `Coproduct` on the left.
@@ -186,4 +231,16 @@ final class CoproductOps[C <: Coproduct](c: C) {
    */
   def extendRightBy[K <: Coproduct](implicit extendRightBy: ExtendRightBy[C, K]): extendRightBy.Out =
     extendRightBy(c)
+
+  /**
+   * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
+   */
+  def embed[Super <: Coproduct](implicit basis: Basis[Super, C]): Super =
+    basis.inverse(Right(c))
+
+  /**
+   * De-embeds a sub-`Coproduct` from this `Coproduct` if possible.
+   */
+  def deembed[Sub <: Coproduct](implicit basis: Basis[C, Sub]): basis.Out =
+    basis(c)
 }

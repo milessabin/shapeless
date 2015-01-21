@@ -110,6 +110,7 @@ class _0 extends Nat with Neg {
  */
 object Nat extends Nats {
   import ops.nat._
+  import syntax.NatOps
 
   def apply(i: Int): Nat = macro NatMacros.materializeWidened
 
@@ -122,6 +123,8 @@ object Nat extends Nats {
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
   implicit def materialize(i: Int): Nat = macro NatMacros.materializeSingleton
+
+  implicit def natOps[N <: Nat](n : N) : NatOps[N] = new NatOps(n)
 }
 
 /**

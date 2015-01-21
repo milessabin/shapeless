@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,21 @@
 
 package shapeless
 
+import scala.language.dynamics
 import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.{ blackbox, whitebox }
 
 import tag.@@
+import scala.util.Try
 
 trait Witness {
   type T
   val value: T {}
 }
 
-object Witness {
+object Witness extends Dynamic {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
@@ -47,6 +49,8 @@ object Witness {
       type T = Succ[P]
       val value = new Succ[P]()
     }
+
+  def selectDynamic(tpeSelector: String): Any = macro SingletonTypeMacros.witnessTypeImpl
 }
 
 trait WitnessWith[TC[_]] extends Witness {
@@ -65,7 +69,77 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
-class SingletonTypeMacros(val c: whitebox.Context) {
+trait SingletonTypeUtils extends ReprTypes {
+  import c.universe.{ Try => _, _ }
+  import internal._, decorators._
+
+  def singletonOpsTpe = typeOf[syntax.SingletonOps]
+  val SymTpe = typeOf[scala.Symbol]
+
+  object LiteralSymbol {
+    def unapply(t: Tree): Option[String] = t match {
+      case q""" scala.Symbol.apply(${Literal(Constant(s: String))}) """ => Some(s)
+      case _ => None
+    }
+  }
+
+  object SingletonSymbolType {
+    val atatTpe = typeOf[@@[_,_]].typeConstructor
+    val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
+
+    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, constantType(Constant(s))))
+
+    def unapply(t: Type): Option[String] =
+      t match {
+        case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(Constant(s: String))))), _) => Some(s)
+        case _ => None
+      }
+  }
+
+  def mkSingletonSymbol(s: String): Tree = {
+    val sTpe = SingletonSymbolType(s)
+    q"""_root_.scala.Symbol($s).asInstanceOf[$sTpe]"""
+  }
+
+  object SingletonType {
+    def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
+      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (LiteralSymbol(s), _) => Some(SingletonSymbolType(s))
+      case (_, keyType: SingleType) => Some(keyType)
+      case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
+        Some(sops.tpe.member(TypeName("T")).typeSignature)
+      case _ => None
+    }
+  }
+
+  def parseLiteralType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(typeStr)).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+      tpe <- SingletonType.unapply(checked)
+    } yield tpe
+
+  def parseStandardType(typeStr: String): Option[c.Type] =
+    for {
+      parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
+      checked = c.typecheck(parsed, silent = true)
+      if checked.nonEmpty
+    } yield checked.tpe
+
+  def parseType(typeStr: String): Option[c.Type] =
+    parseStandardType(typeStr) orElse parseLiteralType(typeStr)
+
+  def typeCarrier(tpe: c.Type) = {
+    val carrier = c.typecheck(tq"{ type T = $tpe }", mode = c.TYPEmode).tpe
+
+    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+    // to result in a runtime exception if the value is used in term position.
+    Literal(Constant(())).setType(carrier)
+  }
+}
+
+class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import syntax.SingletonOps
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
@@ -73,14 +147,12 @@ class SingletonTypeMacros(val c: whitebox.Context) {
   import internal._
   import decorators._
 
-  val SymTpe = typeOf[scala.Symbol]
-
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     val name = TypeName(c.freshName())
 
     q"""
       {
-        final class $name extends Witness {
+        final class $name extends _root_.shapeless.Witness {
           type T = $sTpe
           val value: $sTpe = $s
         }
@@ -119,31 +191,6 @@ class SingletonTypeMacros(val c: whitebox.Context) {
     """
   }
 
-  object LiteralSymbol {
-    def unapply(t: Tree): Option[Constant] = t match {
-      case q""" scala.Symbol.apply(${Literal(c: Constant)}) """ => Some(c)
-      case _ => None
-    }
-  }
-
-  object SingletonSymbolType {
-    val atatTpe = typeOf[@@[_,_]].typeConstructor
-    val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
-
-    def apply(c: Constant): Type = appliedType(atatTpe, List(SymTpe, constantType(c)))
-
-    def unapply(t: Type): Option[Constant] =
-      t match {
-        case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(c)))), _) => Some(c)
-        case _ => None
-      }
-  }
-
-  def mkSingletonSymbol(c: Constant): Tree = {
-    val sTpe = SingletonSymbolType(c)
-    q"""_root_.scala.Symbol($c).asInstanceOf[$sTpe]"""
-  }
-
   def materializeImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].dealias
     val value =
@@ -168,8 +215,8 @@ class SingletonTypeMacros(val c: whitebox.Context) {
       case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
         mkResult(tpe, tree)
 
-      case (SymTpe, LiteralSymbol(c)) =>
-        mkResult(SingletonSymbolType(c), mkSingletonSymbol(c))
+      case (SymTpe, LiteralSymbol(s)) =>
+        mkResult(SingletonSymbolType(s), mkSingletonSymbol(s))
 
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
@@ -217,10 +264,19 @@ class SingletonTypeMacros(val c: whitebox.Context) {
 
   def narrowSymbol[S <: String : WeakTypeTag](t: Expr[scala.Symbol]): Tree = {
     (weakTypeOf[S], t.tree) match {
-      case (ConstantType(Constant(s1)), LiteralSymbol(Constant(s2))) if s1 == s2 =>
-        mkSingletonSymbol(Constant(s1))
+      case (ConstantType(Constant(s1: String)), LiteralSymbol(s2)) if s1 == s2 =>
+        mkSingletonSymbol(s1)
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
     }
+  }
+
+  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+    val q"${tpeString: String}" = tpeSelector
+    val tpe =
+      parseLiteralType(tpeString)
+        .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
+
+    typeCarrier(tpe)
   }
 }
