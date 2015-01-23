@@ -41,6 +41,7 @@ trait RInt extends Number {
 
 /**
  * Trait for type level negative or zero integers.
+ *
  * @author Olivier Mélois 
  *
  */
@@ -59,6 +60,7 @@ trait Nat extends RInt{
 
 /**
  * Trait for type level strictly negative integers.
+ *
  * @author Olivier Mélois 
  *
  */
@@ -68,6 +70,7 @@ trait SNeg extends Neg {
 
 /**
  * Trait for type level strictly positive integers.
+ *
  * @author Olivier Mélois 
  *
  */

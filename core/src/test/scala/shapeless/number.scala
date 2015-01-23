@@ -104,6 +104,24 @@ class NumberTests {
     implicitly[LTEq[_2, _2]]
 
 
+    implicitly[Div.Aux[_2, _1, _2]]
+    implicitly[Div.Aux[_4, _m2, _m2]]
+    implicitly[Div.Aux[_m4, _m2, _2]]
+    implicitly[Div.Aux[_m4, _2, _m2]]
+    def div(a: RInt, b: RInt)(implicit div : Div[a.N, b.N]) = new Check[div.Out] {}
+    val div1 = div(4,-2)
+    check(-2)(div1)
+    val div2 = div(-10,3)
+    check(-3)(div2)
+    val div3 = div(-5, -2)
+    check(2)(div3)
+    val div4 = div(-10, 11)
+    check(0)(div4)
+    val div5 = div(7, 9)
+    check(0)(div5)
+    val div6 = div(15, -5)
+    check(-3)(div6)
+
     // Type level
     assertEquals(-1, toInt[_m1])
     assertEquals(-2, toInt[_m2])
@@ -151,5 +169,6 @@ class NumberTests {
     assertEquals(-20, toInt(_m20))
     assertEquals(-21, toInt(_m21))
     assertEquals(-22, toInt(_m22))
+
   }
 }

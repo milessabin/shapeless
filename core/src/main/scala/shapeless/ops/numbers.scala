@@ -162,7 +162,7 @@ object numbers {
 
   /**
    * Type class witnessing that `A` is less than or equal to `B`.
-
+   *
    *
    * @author Olivier Mélois
    */
@@ -174,7 +174,85 @@ object numbers {
     type <=[A <: Number, B <: Number] = LTEq[A, B]
 
     implicit def equal[A <: Number] = new <=[A, A] {}
-    implicit def lt[A <: Number, B <: Number](implicit lt: LT[A,B]) = new <=[A, B] {}
+    implicit def lt[A <: Number, B <: Number](implicit lt: LT[A, B]) = new <=[A, B] {}
   }
+
+
+  /**
+   * Type class witnessing that `A` and `B` are either both positive of both negative.
+   *
+   * @author Olivier Mélois
+   */
+  trait SameSign[A <: Number, B <: Number]
+
+  object SameSign {
+    def apply[A <: Number, B <: Number](implicit ss: SameSign[A,B]): SameSign[A, B] = ss
+  
+    implicit def ss1[A <: SPos, B <: SPos] = new SameSign[A, B]{}
+    implicit def ss2[A <: SNeg, B <: SNeg] = new SameSign[A, B]{}
+  }
+
+  /**
+   * Type class witnessing that `A` and `B` are neither both positive or both negative.
+   *
+   * @author Olivier Mélois
+   */
+  trait OppositeSign[A <: Number, B <: Number]
+
+  object OppositeSign {
+    def apply[A <: Number, B <: Number](implicit os: OppositeSign[A,B]): OppositeSign[A, B] = os
+  
+    implicit def ss1[A <: SPos, B <: SNeg] = new OppositeSign[A, B]{}
+    implicit def ss2[A <: SNeg, B <: SPos] = new OppositeSign[A, B]{}
+  }
+
+  /**
+   * Type class witnessing that `Out` is the absolute value of `A`.
+   *
+   * @author Olivier Mélois
+   */
+  trait Absolute[A <: Number] { type Out <: Number}
+  
+  object Absolute {
+    def apply[A <: Number](implicit absolute: Absolute[A]): Aux[A, absolute.Out] = absolute
+
+    type Aux[A <: Number, B <: Number] = Absolute[A] { type Out = B }
+    implicit val absoluteZero = new Absolute[_0] { type Out = _0 }
+    implicit def absolutePos[B <: SPos]: Aux[B, B] = new Absolute[B] { type Out = B }
+    implicit def absoluteNeg[B <: SNeg, OB <: SPos](implicit oppb : Opposite.Aux[B, OB]) = new Absolute[B] { type Out = OB }
+  }
+
+
+  /**
+   * Type class witnessing that `Out` is the quotient of `A` and `B`.
+   *
+   * @author Olivier Mélois
+   */
+  trait Div[A <: Number, B <: Number] { type Out <: Number }
+
+  object Div {
+    def apply[A <: Number, B <: Number](implicit div: Div[A, B]): Aux[A, B, div.Out] = div
+
+    import LT._
+
+    type _1 = RInt._1
+
+    type Aux[A <: Number, B <: Number, C <: Number] = Div[A, B] { type Out = C }
+
+    implicit def divNum0[A <: Number]: Aux[_0, A, _0] = new Div[_0, A] { type Out = _0 }
+
+    implicit def divSelfPos[A <: SPos] : Aux[A, A, _1] = new Div[A, A] {type Out = _1}
+
+    implicit def divAltB[A <: SPos, B <: SPos](implicit lt: A < B): Aux[A, B, _0] =
+      new Div[A, B] { type Out = _0 }
+
+    implicit def divSameSign[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Nat, D <: Nat](implicit sameSign : SameSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], lt : AB < AA, diff: Diff.Aux[AA, AB, C], div: Div.Aux[C, AB, D]): Aux[A, B, Succ[D]] =
+      new Div[A, B] { type Out = Succ[D] }
+
+    implicit def divOppSign[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Number](implicit oppSign : OppositeSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], div : Div.Aux[AA, AB, C], oppc : Opposite[C]) : Aux[A, B, oppc.Out] =
+      new Div[A, B] { type Out = oppc.Out}
+
+  }
+
 }
 
