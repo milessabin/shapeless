@@ -6,24 +6,26 @@ boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since the
 experimental project into library which, while still testing the limits of what's possible in Scala, is being used
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped. 
 
-[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=scala-2.10.x)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 
 ## Finding out more about the project
 
-A feature overview of shapeless-2.0.0 can be found [here][features200]. If you are upgrading from shapeless-1.2.4 you
-will find the [release notes][relnotes] and [migration guide][migration] useful.
+A full feature overview of shapeless-2.1.0 is in preparation. In the meantime, please refer to the
+[release notes][relnotes210] and the feature overview for shapeless-2.0.0 which can be found [here][features200]. If you
+are upgrading from shapeless-2.0.0 you will find the [migration guide][migration210] useful.
 
-shapeless is part of the [typelevel][] family of projects. It is an Open Source project under the Apache License v2,
-hosted on [github][source]. Binary artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype]
-and synced to Maven Central.
+shapeless is part of the [Typelevel][typelevel] family of projects. It is an Open Source project under the Apache
+License v2, hosted on [github][source]. Binary artefacts are published to the
+[Sonatype OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
-There is a [mailing list][group] for discussion around generic programming in Scala in general and shapeless in
-particular. You will also find many of the main shapeless contributors on IRC in the #shapeless channel on
-[freenode][irc]. Questions about shapeless are often asked and answered under the [shapeless tag on StackOverflow][so].
-Some articles on the implementation techniques can be found on [Miles's blog][blog], and Olivera, Moors and Odersky,
-[Type Classes as Object and Implicits][tcoi] is useful background material.
+Discussion of shapeless and generic programming in Scala in general happens on the [Typelevel mailing list][group].
+You will also find many of the main shapeless contributors in its [Gitter channel][gitter] and on IRC in
+the #shapeless channel on [freenode][irc]. Questions about shapeless are often asked and answered under the
+[shapeless tag on StackOverflow][so]. Some articles on the implementation techniques can be found on
+[Miles's blog][blog], and Olivera, Moors and Odersky, [Type Classes as Object and Implicits][tcoi] is useful
+background material.
 
 Support for Scala 2.9.x is still available via the shapeless-1.2.4 release (feature overview [here][features124]). It
 isn't straightforward to bring the latest shapeless features to Scala versions which don't support implicit macros, and
@@ -34,7 +36,9 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [features124]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-1.2.4
 [relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
+[relnotes210]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0 
+[migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0 
 [milessabin]: https://twitter.com/milessabin
 [syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
 [higherrank]: http://www.cs.rutgers.edu/~ccshan/cs252/usage.pdf
@@ -45,21 +49,23 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [source]: https://github.com/milessabin/shapeless
 [sonatype]: https://oss.sonatype.org/index.html#nexus-search;quick~shapeless
 [wiki]: https://github.com/milessabin/shapeless/wiki
-[group]: https://groups.google.com/group/shapeless-dev
+[oldgroup]: https://groups.google.com/group/shapeless-dev
+[group]: https://groups.google.com/group/typelevel
 [so]: http://stackoverflow.com/questions/tagged/shapeless
+[gitter]: https://gitter.im/milessabin/shapeless
 [irc]: http://freenode.net/
 [blog]: http://www.chuusai.com/blog
 
 ## Participation
 
 The shapeless project supports the [Typelevel][typelevel] [code of conduct][codeofconduct] and wants all of its
-channels (mailing list, IRC, github, etc.) to be welcoming environments for everyone.
+channels (mailing list, Gitter, IRC, github, etc.) to be welcoming environments for everyone.
 
 Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
-Contributors are usually available to field questions, give advice and discuss ideas on [#shapeless][irc] and
-the [mailing list][group], and for people wanting to take their first steps at contributing we have a selection
-of open issues flagged up as being [good candidates to take on][lowhangingfruit]. No contribution is too small,
-and guidance is always available.
+Contributors are usually available to field questions, give advice and discuss ideas on the [Gitter channel][gitter],
+on [#shapeless][irc] and the [mailing list][group], and for people wanting to take their first steps at contributing
+we have a selection of open issues flagged up as being [good candidates to take on][lowhangingfruit]. No contribution
+is too small, and guidance is always available.
 
 [codeofconduct]: http://typelevel.org/conduct.html
 [lowhangingfruit]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22Low+hanging+fruit%22
@@ -89,13 +95,38 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.0.0
+### shapeless-2.1.0-RC1
 
-Builds are available for Scala 2.11.0 and later and for Scala 2.10.4.
+Builds are available for Scala 2.11.x and for Scala 2.10.4. The main line of development for
+shapeless 2.1.0 is Scala 2.11.5 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-// For Scala 2.11.4
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.5"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.1.0-RC1"
+)
+```
+
+Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency, and it is
+recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
+
+```scala
+scalaVersion := "2.10.4"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" % "shapeless_2.10.4" % "2.1.0-RC1",
+  compilerPlugin("org.scalamacros" % "paradise_2.10.4" % "2.0.1")
+)
+```
+
+### shapeless-2.0.0
+
+Builds are available for Scala 2.11.x and for Scala 2.10.4.
+
+```scala
+// For Scala 2.11.x
+scalaVersion := "2.11.5"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.0.0"
@@ -146,37 +177,10 @@ This is needed because the shapeless binaries for Scala 2.10 includes the Scala 
 "com.chuusai" %  "shapeless_2.11" % "2.0.0"
 ```
 
-
-
-
-### shapeless-2.1.0-SNAPSHOT
-
-Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
-shapeless 2.1.0 will be Scala 2.11.4 with Scala 2.10.x supported via the macro paradise compiler plugin.
-
-```scala
-scalaVersion := "2.11.4"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.1.0-SNAPSHOT" changing()
-)
-```
-
-Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency, and it is recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
-
-```scala
-scalaVersion := "2.10.4"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.4" % "2.1.0-SNAPSHOT" changing(),
-  compilerPlugin("org.scalamacros" % "paradise_2.10.4" % "2.0.1")
-)
-```
-
 ### shapeless-1.2.4
 
 Builds are available for Scala 2.9, 2.10 and 2.11. If you are working with Scala 2.10.2 or later you should use
-shapeless-2.0.0 instead.
+shapeless-2.1.0 instead.
 
 If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
 compiler flag,
@@ -228,8 +232,8 @@ incOptions := incOptions.value.withNameHashing(false)
 
 to your settings.
 
-The master of shapeless branch is built with Scala 2.11.4 by default. To build with Scala 2.10.x you should check out
-the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.4 and
+The master branch of shapeless is built with Scala 2.11.5 by default. To build with Scala 2.10.x you should check out
+the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.5 and
 merged into the scala-2.10.x branch with only the minimal changes needed for forwards compatibility.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
@@ -247,7 +251,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
-+ Filipe Nepomuceno <filinep@gmail.com
++ Filipe Nepomuceno <filinep@gmail.com>
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
@@ -256,7 +260,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
-+ Jules Gosnell <jules_gosnell@yahoo.com
++ Jules Gosnell <jules_gosnell@yahoo.com>
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
 + Mario Pastorelli <mario.pastorelli@teralytics.ch> [@mapastr](https://twitter.com/mapastr)
