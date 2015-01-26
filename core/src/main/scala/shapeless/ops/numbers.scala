@@ -31,9 +31,9 @@ object numbers {
 
     type Aux[A <: RInt, B <: RInt] = Predecessor[A] { type Out = B }
 
-    implicit val predZero = new Predecessor[_0] { type Out = Minus[Succ[_0]] }
-    implicit def predNat[B <: Nat]: Aux[Succ[B], B] = new Predecessor[Succ[B]] { type Out = B }
-    implicit def predNeg[B <: SPos]: Aux[Minus[B], Minus[Succ[B]]] = new Predecessor[Minus[B]] { type Out = Minus[Succ[B]] }
+    implicit val pred0 = new Predecessor[_0] { type Out = Minus[Succ[_0]] }
+    implicit def pred1[B <: Nat]: Aux[Succ[B], B] = new Predecessor[Succ[B]] { type Out = B }
+    implicit def pred2[B <: SPos]: Aux[Minus[B], Minus[Succ[B]]] = new Predecessor[Minus[B]] { type Out = Minus[Succ[B]] }
   }
 
   /**
@@ -48,9 +48,9 @@ object numbers {
 
     type Aux[A <: RInt, B <: RInt] = Successor[A] { type Out = B }
 
-    implicit val succMinusOne: Aux[Minus[Succ[_0]], _0] = new Successor[Minus[Succ[_0]]] { type Out = _0 }
-    implicit def succNat[B <: Nat]: Aux[B, Succ[B]] = new Successor[B] { type Out = Succ[B] }
-    implicit def succNeg[B <: SPos]: Aux[Minus[Succ[B]], Minus[B]] = new Successor[Minus[Succ[B]]] { type Out = Minus[B] }
+    implicit val succ0 : Aux[Minus[Succ[_0]], _0] = new Successor[Minus[Succ[_0]]] { type Out = _0 }
+    implicit def succ1[B <: Nat]: Aux[B, Succ[B]] = new Successor[B] { type Out = Succ[B] }
+    implicit def succ2[B <: SPos]: Aux[Minus[Succ[B]], Minus[B]] = new Successor[Minus[Succ[B]]] { type Out = Minus[B] }
   }
 
   /**
@@ -89,9 +89,10 @@ object numbers {
     def apply[A <: Number](implicit opposite: Opposite[A]): Aux[A, opposite.Out] = opposite
 
     type Aux[A <: Number, B <: Number] = Opposite[A] { type Out = B }
-    implicit val oppositeZero = new Opposite[_0] { type Out = _0 }
-    implicit def oppositePos[B <: SPos]: Aux[B, Minus[B]] = new Opposite[B] { type Out = Minus[B] }
-    implicit def oppositeNeg[B <: SPos]: Aux[Minus[B], B] = new Opposite[Minus[B]] { type Out = B }
+    
+    implicit val opposite0 = new Opposite[_0] { type Out = _0 }
+    implicit def opposite1[B <: SPos]: Aux[B, Minus[B]] = new Opposite[B] { type Out = Minus[B] }
+    implicit def opposite2[B <: SPos]: Aux[Minus[B], B] = new Opposite[Minus[B]] { type Out = B }
   }
 
   /**
@@ -106,9 +107,9 @@ object numbers {
 
     type Aux[A <: Number, B <: Number, C <: Number] = Sum[A, B] { type Out = C }
 
-    implicit def sum1[B <: Number]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
-    implicit def sum2[A <: SPos, PA <: Nat, B <: RInt, SB <: RInt](implicit predA: Predecessor.Aux[A, PA], succB: Successor.Aux[B, SB], sum: Sum[PA, SB]): Aux[A, B, sum.Out] = new Sum[A, B] { type Out = sum.Out }
-    implicit def sum3[A <: SNeg, OA <: SPos, B <: RInt, OB <: RInt, C <: RInt](implicit oppA: Opposite.Aux[A, OA], oppB: Opposite.Aux[B, OB], sum: Sum.Aux[OA, OB, C], oppC: Opposite[C]): Aux[A, B, oppC.Out] = new Sum[A, B] { type Out = oppC.Out }
+    implicit def sum0[B <: Number]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
+    implicit def sum1[A <: SPos, PA <: Nat, B <: RInt, SB <: RInt](implicit predA: Predecessor.Aux[A, PA], succB: Successor.Aux[B, SB], sum: Sum[PA, SB]): Aux[A, B, sum.Out] = new Sum[A, B] { type Out = sum.Out }
+    implicit def sum2[A <: SNeg, OA <: SPos, B <: RInt, OB <: RInt, C <: RInt](implicit oppA: Opposite.Aux[A, OA], oppB: Opposite.Aux[B, OB], sum: Sum.Aux[OA, OB, C], oppC: Opposite[C]): Aux[A, B, oppC.Out] = new Sum[A, B] { type Out = oppC.Out }
   }
 
   /**
@@ -120,6 +121,7 @@ object numbers {
 
   object Diff {
     def apply[A <: Number, B <: Number](implicit sum: Diff[A, B]): Aux[A, B, sum.Out] = sum
+    
     type Aux[A <: Number, B <: Number, C <: Number] = Diff[A, B] { type Out = C }
 
     implicit def diff[A <: Number, B <: Number, OB <: Number](implicit opposite: Opposite.Aux[B, OB], sum: Sum[A, OB]): Aux[A, B, sum.Out] = new Diff[A, B] { type Out = sum.Out }
@@ -137,9 +139,9 @@ object numbers {
 
     type Aux[A <: Number, B <: Number, C <: Number] = Prod[A, B] { type Out = C }
 
-    implicit def prod0Num[B <: Number]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
-    implicit def prodPosNum[A <: SPos, PA <: Nat, B <: Number, C <: Number](implicit pred: Predecessor.Aux[A, PA], prod: Prod.Aux[PA, B, C], sum: Sum[B, C]): Aux[A, B, sum.Out] = new Prod[A, B] { type Out = sum.Out }
-    implicit def prodNegNum[A <: SNeg, OA <: Number, B <: Number, C <: Number](implicit oppA: Opposite.Aux[A, OA], prod: Prod.Aux[OA, B, C], oppC: Opposite[C]): Aux[A, B, oppC.Out] = new Prod[A, B] { type Out = oppC.Out }
+    implicit def prod0[B <: Number]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
+    implicit def prod1[A <: SPos, PA <: Nat, B <: Number, C <: Number](implicit pred: Predecessor.Aux[A, PA], prod: Prod.Aux[PA, B, C], sum: Sum[B, C]): Aux[A, B, sum.Out] = new Prod[A, B] { type Out = sum.Out }
+    implicit def prod2[A <: SNeg, OA <: Number, B <: Number, C <: Number](implicit oppA: Opposite.Aux[A, OA], prod: Prod.Aux[OA, B, C], oppC: Opposite[C]): Aux[A, B, oppC.Out] = new Prod[A, B] { type Out = oppC.Out }
   }
 
   /**
@@ -154,10 +156,10 @@ object numbers {
 
     type <[A <: Number, B <: Number] = LT[A, B]
 
-    implicit def lt1[A <: Neg, B <: SPos] = new <[A, B] {}
-    implicit def lt2[A <: SNeg] = new <[A, _0] {}
-    implicit def lt3[A <: Nat, B <: Nat](implicit lt: A < B) = new <[Succ[A], Succ[B]] {}
-    implicit def lt4[A <: SPos, OA <: RInt, B <: SPos, OB <: RInt](implicit oppa: Opposite.Aux[A, OA], oppb: Opposite.Aux[B, OB], lt: A < B) = new <[OB, OA] {}
+    implicit def lt0[A <: Neg, B <: SPos] = new <[A, B] {}
+    implicit def lt1[A <: SNeg] = new <[A, _0] {}
+    implicit def lt2[A <: Nat, B <: Nat](implicit lt: A < B) = new <[Succ[A], Succ[B]] {}
+    implicit def lt3[A <: SPos, OA <: RInt, B <: SPos, OB <: RInt](implicit oppa: Opposite.Aux[A, OA], oppb: Opposite.Aux[B, OB], lt: A < B) = new <[OB, OA] {}
   }
 
   /**
@@ -188,8 +190,8 @@ object numbers {
   object SameSign {
     def apply[A <: Number, B <: Number](implicit ss: SameSign[A,B]): SameSign[A, B] = ss
   
-    implicit def ss1[A <: SPos, B <: SPos] = new SameSign[A, B]{}
-    implicit def ss2[A <: SNeg, B <: SNeg] = new SameSign[A, B]{}
+    implicit def ss0[A <: SPos, B <: SPos] = new SameSign[A, B]{}
+    implicit def ss1[A <: SNeg, B <: SNeg] = new SameSign[A, B]{}
   }
 
   /**
@@ -202,8 +204,8 @@ object numbers {
   object OppositeSign {
     def apply[A <: Number, B <: Number](implicit os: OppositeSign[A,B]): OppositeSign[A, B] = os
   
-    implicit def ss1[A <: SPos, B <: SNeg] = new OppositeSign[A, B]{}
-    implicit def ss2[A <: SNeg, B <: SPos] = new OppositeSign[A, B]{}
+    implicit def os0[A <: SPos, B <: SNeg] = new OppositeSign[A, B]{}
+    implicit def os1[A <: SNeg, B <: SPos] = new OppositeSign[A, B]{}
   }
 
   /**
@@ -217,9 +219,10 @@ object numbers {
     def apply[A <: Number](implicit absolute: Absolute[A]): Aux[A, absolute.Out] = absolute
 
     type Aux[A <: Number, B <: Number] = Absolute[A] { type Out = B }
-    implicit val absoluteZero = new Absolute[_0] { type Out = _0 }
-    implicit def absolutePos[B <: SPos]: Aux[B, B] = new Absolute[B] { type Out = B }
-    implicit def absoluteNeg[B <: SNeg, OB <: SPos](implicit oppb : Opposite.Aux[B, OB]) = new Absolute[B] { type Out = OB }
+    
+    implicit val absolute0 = new Absolute[_0] { type Out = _0 }
+    implicit def absolute1[B <: SPos]: Aux[B, B] = new Absolute[B] { type Out = B }
+    implicit def absolute2[B <: SNeg, OB <: SPos](implicit oppb : Opposite.Aux[B, OB]) = new Absolute[B] { type Out = OB }
   }
 
 
@@ -239,17 +242,13 @@ object numbers {
 
     type Aux[A <: Number, B <: Number, C <: Number] = Div[A, B] { type Out = C }
 
-    implicit def divNum0[A <: Number]: Aux[_0, A, _0] = new Div[_0, A] { type Out = _0 }
-
-    implicit def divSelfPos[A <: SPos] : Aux[A, A, _1] = new Div[A, A] {type Out = _1}
-
-    implicit def divAltB[A <: SPos, B <: SPos](implicit lt: A < B): Aux[A, B, _0] =
+    implicit def div0[A <: Number]: Aux[_0, A, _0] = new Div[_0, A] { type Out = _0 }
+    implicit def div1[A <: SPos] : Aux[A, A, _1] = new Div[A, A] {type Out = _1}
+    implicit def div2[A <: SPos, B <: SPos](implicit lt: A < B): Aux[A, B, _0] =
       new Div[A, B] { type Out = _0 }
-
-    implicit def divSameSign[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Nat, D <: Nat](implicit sameSign : SameSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], lt : AB < AA, diff: Diff.Aux[AA, AB, C], div: Div.Aux[C, AB, D]): Aux[A, B, Succ[D]] =
+    implicit def div3[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Nat, D <: Nat](implicit sameSign : SameSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], lt : AB < AA, diff: Diff.Aux[AA, AB, C], div: Div.Aux[C, AB, D]): Aux[A, B, Succ[D]] =
       new Div[A, B] { type Out = Succ[D] }
-
-    implicit def divOppSign[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Number](implicit oppSign : OppositeSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], div : Div.Aux[AA, AB, C], oppc : Opposite[C]) : Aux[A, B, oppc.Out] =
+    implicit def div4[A <: Number, B <: Number, AA <: Number, AB <: Number, C <: Number](implicit oppSign : OppositeSign[A,B], absa : Absolute.Aux[A, AA], absb : Absolute.Aux[B,AB], div : Div.Aux[AA, AB, C], oppc : Opposite[C]) : Aux[A, B, oppc.Out] =
       new Div[A, B] { type Out = oppc.Out}
 
   }

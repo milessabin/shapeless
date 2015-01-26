@@ -137,6 +137,7 @@ object Nat extends Nats {
  */
 object RInt extends RInts {
   import ops.numbers._
+  import syntax.RIntOps
 
   def apply(i: Int): RInt = macro IntMacros.materializeWidened
 
@@ -149,6 +150,8 @@ object RInt extends RInts {
   def toInt(n : RInt)(implicit toIntN : ToInt[n.N]) = toIntN()
 
   implicit def materialize(i: Int): RInt = macro IntMacros.materializeSingleton
+
+  implicit def rintOps[N <: RInt](n : N) : RIntOps[N] = new RIntOps(n)
 }
 
 
