@@ -44,31 +44,33 @@ object Lazy {
 
   def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
 
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
 }
 
 class LazyMacros(val c: whitebox.Context) {
   import c.universe._
   import c.ImplicitCandidate
 
-  def mkLazyImpl: Tree = {
-    val tpe = c.openImplicits.head match {
-      case ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _) =>
+  def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree = {
+    (c.openImplicits.headOption, iTag.tpe.dealias) match {
+      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
         // Replace all type variables with wildcards ...
-        tpe.map { t => if(t.typeSymbol.isParameter) WildcardType else t.dealias }
+        val etpe = tpe.map { t => if(t.typeSymbol.isParameter) WildcardType else t.dealias }
+        LazyMacros.deriveInstance(c)(etpe)
+      case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
+        q"null.asInstanceOf[_root_.shapeless.Lazy[Nothing]]"
+      case (None, tpe) =>                                     // Non-implicit invocation
+        LazyMacros.deriveInstance(c)(tpe)
       case _ =>
         c.abort(c.enclosingPosition, s"Bad Lazy materialization $c.openImplicits.head")
     }
-
-    val (tree, actualType) = LazyMacros.deriveInstance(c)(tpe)
-    q"_root_.shapeless.Lazy[$actualType]($tree)"
   }
 }
 
 object LazyMacros {
   var dcRef: Option[DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type): (c.Tree, c.Type) = {
+  def deriveInstance(c: whitebox.Context)(tpe: c.Type): c.Tree = {
     val (dc, root) =
       dcRef match {
         case None =>
@@ -150,7 +152,7 @@ trait DerivationContext extends CaseClassMacros {
     dict = dict-TypeWrapper(d.instTpe)
   }
 
-  def deriveInstance(instTpe: Type, root: Boolean): (Tree, Type) = {
+  def deriveInstance(instTpe: Type, root: Boolean): Tree = {
     val instTree =
       dict.get(TypeWrapper(instTpe)) match {
         case Some(d) => (d.ident, d.actualTpe)
@@ -185,7 +187,8 @@ trait DerivationContext extends CaseClassMacros {
           (tree, actualTpe)
       }
 
-    if(root) mkInstances(instTpe) else instTree
+    val (tree, actualType) = if(root) mkInstances(instTpe) else instTree
+    q"_root_.shapeless.Lazy[$actualType]($tree)"
   }
 
   def mkInstances(primaryTpe: Type): (Tree, Type) = {
