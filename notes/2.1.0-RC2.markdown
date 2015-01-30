@@ -1,0 +1,161 @@
+This is the second release candidate for [shapeless-2.1.0][shapeless]. A
+detailed feature overview is in preparation, but in the meantime these
+release notes provide a summary of changes since shapeless 2.0.0, and a
+[guide to migration from shapeless 2.0.0][migration] is available on the
+[shapeless wiki][wiki].
+
+Since shapeless 2.1.0-RC1 was published, one issue was found and has been
+fixed relating to an interaction between the macro supporting shapeless's
+`Lazy` and the Scala presentation compiler. This did not affect code
+generation, but it did result in spurious errors being reported by the Scala
+IDE for Eclipse.
+
+A big "Thank You!" to everyone who has contributed to this release, either
+directly in code or by using and discussing it, by inviting me to talk about
+it, and especially by ignoring my advice that shapeless was experimental and
+should under no circumstances be used in production. In particular I would
+like to thank Alexandre Archambault ([@alxarchambault][alxarchambault]),
+Edward Pierzchalski ([@eapi_][eapi]), Michael Pilquist
+([@mpilquist][mpilquist]), Sam Halliday ([@fommil][fommil]) and Stacy Curl
+([@stacycurl][stacycurl]) for their commitment to and assistance with the
+massive improvements in automatic type class derivation which are the
+primary new feature of this release.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
+[alxarchambault]: https://twitter.com/alxarchambault
+[eapi]: https://twitter.com/eapi_
+[mpilquist]: https://twitter.com/mpilquist
+[fommil]: https://twitter.com/fommil
+[stacycurl]: https://twitter.com/stacycurl
+
+Contributors for shapeless 2.1.0 are, 
+
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Andrew Brett ([@Ephemerix](https://twitter.com/Ephemerix))
+* Chris Hodapp ([@clhodapp](https://twitter.com/clhodapp))
+* Cody Allen ([@fourierstrick](https://twitter.com/fourierstrick))
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
+* Eugene Burmako ([@xeno_by](https://twitter.com/xeno_by))
+* Filipe Nepomuceno <filinep@gmail.com>
+* Howard Branch ([@purestgreen](https://twitter.com/purestgreen))
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Jules Gosnell <jules_gosnell@yahoo.com>
+* Kevin Wright ([@thecoda](https://twitter.com/thecoda))
+* Lars Hupel ([@larsr_h](https://twitter.com/larsr_h))
+* Mario Pastorelli ([@mapastr](https://twitter.com/mapastr))
+* Michael Pilquist ([@mpilquist](https://twitter.com/mpilquist))
+* Oleg Aleshko ([@OlegYch](https://twitter.com/OlegYch))
+* Owein Reese ([@OweinReese](https://twitter.com/OweinReese))
+* Pascal Voitot ([@mandubian](https://twitter.com/mandubian))
+* Renato Cavalcanti ([@renatocaval](https://twitter.com/renatocaval))
+* Sam Halliday ([@fommil](https://twitter.com/fommil))
+* Sarah Gerweck ([@SGerweck](https://twitter.com/SGerweck))
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Stacy Curl ([@stacycurl](https://twitter.com/stacycurl))
+* Travis Brown ([@travisbrown](https://twitter.com/travisbrown))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+There are a large number of new features, refactorings and bugfixes in
+shapeless 2.1.0. The most significant of these are,
+
+* Improvements in Generic
+    * Generalized to support all types which are sufficiently case-class
+      like.  In particular this allows non-case classes with lazy val
+      members to be operated on generically in the same way as vanilla case
+      classes. This significantly expands the range of types for which type
+      classes and lenses can be derived automatically. It also supports a
+      library-level implementation of "case classes a la carte".
+    * The implicit macro which materializes instances of Generic now uses
+      [fundep materailization][fundep], a new feature of macros in Scala
+      2.11.x. This eliminates some issues with type inference which could be
+      experienced when working with Generic in Scala 2.10.x. This
+      functionality is available in Scala 2.10.4 via the Macro Paradise
+      compiler plugin, and will be available in Scala 2.10.5 without the
+      plugin, using a new -Yfundep-materialization compiler flag.
+    * Dedicated macro support for LabelledGeneric has been replaced by a
+      non-macro implementation in terms of Generic and a separate type class
+      which provides a labelling. Amongst other things, this facilitates the
+      provision of alternative labellings.
+    * Added type classes witnessing that a type has a product or coproduct
+      generic representation type (HasProductGeneric, HasCoproductGeneric).
+
+* Significantly enhanced type class derivation,
+    * The `Lazy` type is now able to materialize instances of its type
+      arguments in a much more general way, allowing (mutually) recursive
+      values to be constructed implicitly.
+    * Combined with the enhanced `Generic` implementation, it has been
+      possible to reimplement the `TypeClass` family entirely in terms of
+      `Lazy`, `Generic`, `DefaultSymbolicLabelling` and standard Scala
+      implicit resolution. This allows a much wider range of type classes to
+      be derived for a much wider range of ADTs and ADT-like types.
+    * The Scrap Your Boilerplate implementation has been completely reworked
+      in terms of `Lazy` and `Generic` and the specialized macro support has
+      been removed.
+
+* Many new HList/record/Coproduct/union/tuples/product operations have been
+  added for these types as enumerated [here][periodictable].
+
+[periodictable]: https://github.com/milessabin/shapeless/wiki/Feature-overview%3A-shapeless-2.1.0#operations-on-hlistsrecordscoproductsunionstuplesproducts
+
+* An `Ordering` type class instance has been added for `HList`s and a
+  `PartialOrdering` instance for `Coproduct`s.
+
+* Additional operations defined directly for all Scala Product types,
+    * Conversions to shapeless records, HLists and to tuples (toRecord,
+      toHList, toTuple).
+    * Conversions to Maps, Traversables and to shapeless Sized types
+      (toMap, toTraversable, toSized.
+    * Added the IsTuple type class witness that that a type is one of the
+      family of Scala tuple types.
+    * Added an updateWith operation for tuples.
+
+* Record/union improvements
+    * As with HLists and Coproducts, records and* unions are now much more
+      consistent and support many more common operations.
+    * Added a simulation of first class record/union types.
+    * Added toMap and mapValues operations.
+    * Added getField operation
+    * Added selectDynamic-based method-like element selection.
+
+* Optics (lenses and prisms) have been enhanced.
+    * The improvements to `Generic` mean that optics can now be
+      automatically derived for a wider range of ADT-like types.
+    * Optics can now be used as extractors in pattern match context.
+    * Scala's `selectDynamic` has been exploited to allow optic
+      construction with a more idiomatic member selection syntax.
+
+* Typeable improvements
+    * It is no longer possible to cast from `null`.
+    * All elements of an intersection type are verified, not just the
+      first.
+    * Various otherwise impossible `Typeable` instances have been
+      excluded.
+    * It is now possible to cast to singleton types.
+
+* Added simulation of first-class literal singleton types.
+
+Lots of new examples,
+
+* Ensime protocol (de)serialization via type class derivation.
+* Type safe structural diff via type class derivation.
+* CSV (de)serialization via type class derivation.
+* An example use of `Lazy` to control implicit divergence.
+* Examples of the new optic/prism/lens infrastructure
+* An example of using case classes a la carte to automatically
+  intern instances.
+* Partitioning a list of members of an ADT via its coproduct
+  `Generic`.
+* Type level FizzBuzz.
+
+[ensime]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/sexp.scala
+[diff]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/delta.scala
+[csv]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/csv.scala
+[lazy]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/deephlister.scala
+[optics]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/optics.scala
+[alacarte]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/alacache.scala
+[partition]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/partition.scala
+[fizzbuzz]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/fizzbuzz.scala
