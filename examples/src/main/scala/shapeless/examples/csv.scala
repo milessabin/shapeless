@@ -53,7 +53,7 @@ trait CSVConverter[T] {
   def to(t: T): String
 }
 
-/** Isntances of the CSVConverter trait */
+/** Instances of the CSVConverter trait */
 object CSVConverter {
   def apply[T](implicit st: Lazy[CSVConverter[T]]): CSVConverter[T] = st.value
 
