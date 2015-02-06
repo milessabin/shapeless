@@ -13,6 +13,7 @@ target/
 
 # Ignore project files for IntelliJ
 /.idea
+/.idea_modules
 /*/.idea
 *.iml
 *.iws

@@ -16,6 +16,10 @@
 
 package shapeless
 
+import shapeless.PolyDefns.Case
+
+import scala.language.implicitConversions
+
 import poly._
 
 trait SMC {
@@ -26,23 +30,29 @@ trait SMC {
 
   def nil: Nil
 
-  def intro[A](a: A): A :#: Nil
+  def introRight[A](a: A): A :#: Nil
+  def introLeft[A](a: A): Nil :#: A
+
   // braiding operator
   def swap[A, B](p: A :#: B): B :#: A
   // unit coherence
   def unitRight[A](p: A :#: Nil): A
   def unitLeft[B](p: Nil :#: B): B
   // associativity coherence
-  def assoc[A, B, C](p: (A :#: B) :#: C): A :#: (B :#: C)
+  def assocRight[A, B, C](p: (A :#: B) :#: C): A :#: (B :#: C)
+  def assocLeft[A, B, C](p: A :#: (B :#: C)): (A :#: B) :#: C
 
-  def leftMap[A, B, C](p: A :#: B)(f: A => C): C :#: B
-  def rightMap[A, B, C](p: A :#: B)(f: B => C): A :#: C =
-    swap(leftMap(swap(p))(f))
+  def mapLeft[A, B, C](p: A :#: B)(f: A => C): C :#: B
+
+  def mapRight[A, B, C](p: A :#: B)(f: B => C): A :#: C =
+    swap(mapLeft(swap(p))(f))
+
   def bimap[A, B, C, D](p: A :#: B)(fa: A => C, fb: B => D): C :#: D =
-    rightMap(leftMap(p)(fa))(fb)
+    mapRight(mapLeft(p)(fa))(fb)
 
   def shift[A, B, C](p: (A :#: B) :#: C): B :#: A :#: C =
-    assoc(leftMap(p)(swap))
+    assocRight(mapLeft(p)(swap))
+
 
   trait Uncons[P] {
     type Head
@@ -65,7 +75,7 @@ trait SMC {
     implicit def folder[P, In, F, Out0](implicit folder: LeftFolder0[P :#: Nil, In, F, P]): Aux[P, In, F, folder.Out] =
       new LeftFolder[P, In, F] {
         type Out = folder.Out
-        def apply(p : P, in: In) : Out = folder(intro(p), in)
+        def apply(p : P, in: In) : Out = folder(introRight(p), in)
       }
 
     trait LeftFolder0[Elem, Acc, F, S] {
@@ -163,6 +173,104 @@ trait SMC {
           def apply(p: A :#: B): Out = bimap(p)(fa(_), mb(_))
         }
   }
+
+  trait RightAssoc[P] extends DepFn1[P]
+
+  object RightAssoc extends LowPriorityRightAssoc {
+    def apply[P](implicit rightAssoc: RightAssoc[P]): Aux[P, rightAssoc.Out] = rightAssoc
+
+    implicit def rightAssocCons[L, R, LLA, RRA](
+      implicit leftAssoc: LeftAssoc.Aux[L, LLA], rightAssoc: RightAssoc.Aux[R, RRA], joinRight: JoinRight[LLA :#: RRA]
+    ): Aux[L :#: R, joinRight.Out] = new RightAssoc[L :#: R] {
+      type Out = joinRight.Out
+
+      def apply(p: L :#: R): Out = joinRight(bimap(p)(leftAssoc(_), rightAssoc(_)))
+    }
+
+    trait JoinRight[P] extends DepFn1[P]
+
+    object JoinRight extends LowPriorityJoinRight {
+      def apply[P](implicit joinRight: JoinRight[P]): Aux[P, joinRight.Out] = joinRight
+
+      implicit def joinRight[A, B, R](
+        implicit joinRight: JoinRight[A :#: (B :#: R)]
+      ): Aux[(A :#: B) :#: R, joinRight.Out] = new JoinRight[(A :#: B) :#: R] {
+        type Out = joinRight.Out
+
+        def apply(p: (A :#: B) :#: R): Out = joinRight(assocRight(p))
+      }
+    }
+
+    trait LowPriorityJoinRight {
+      type Aux[P, Out0] = JoinRight[P] { type Out = Out0 }
+
+      implicit def joinIdentity[P]: Aux[P, P] = new JoinRight[P] {
+        type Out = P
+
+        def apply(p: P): Out = p
+      }
+    }
+  }
+
+  trait LowPriorityRightAssoc {
+    type Aux[P, C] = RightAssoc[P] { type Out = C }
+
+    implicit def rightAssocIdentity[P]: Aux[P, P] = new RightAssoc[P] {
+      type Out = P
+
+      def apply(p: P): P = p
+    }
+  }
+
+
+
+  trait LeftAssoc[P] extends DepFn1[P]
+
+  object LeftAssoc extends LowPriorityLeftAssoc {
+    def apply[P](implicit leftAssoc: LeftAssoc[P]): Aux[P, leftAssoc.Out] = leftAssoc
+
+    implicit def leftAssocCons[L, R, LLA, RRA](
+      implicit leftAssoc: LeftAssoc.Aux[L, LLA], rightAssoc: RightAssoc.Aux[R, RRA], joinLeft: JoinLeft[LLA :#: RRA]
+    ): Aux[L :#: R, joinLeft.Out] = new LeftAssoc[L :#: R] {
+      type Out = joinLeft.Out
+
+      def apply(p: L :#: R): Out = joinLeft(bimap(p)(leftAssoc(_), rightAssoc(_)))
+    }
+
+    trait JoinLeft[P] extends DepFn1[P]
+
+    object JoinLeft extends LowPriorityJoinLeft {
+      def apply[P](implicit joinLeft: JoinLeft[P]): Aux[P, joinLeft.Out] = joinLeft
+
+      implicit def joinLeft[L, A, B](
+        implicit joinLeft: JoinLeft[(L :#: A) :#: B]
+      ): Aux[L :#: (A :#: B), joinLeft.Out] = new JoinLeft[L :#: (A :#: B)] {
+        type Out = joinLeft.Out
+
+        def apply(p: L :#: (A :#: B)): Out = joinLeft(assocLeft(p))
+      }
+    }
+
+    trait LowPriorityJoinLeft {
+      type Aux[P, Out0] = JoinLeft[P] { type Out = Out0 }
+
+      implicit def joinIdentity[P]: Aux[P, P] = new JoinLeft[P] {
+        type Out = P
+
+        def apply(p: P): Out = p
+      }
+    }
+  }
+
+  trait LowPriorityLeftAssoc {
+    type Aux[P, Out0] = LeftAssoc[P] { type Out = Out0 }
+
+    implicit def leftAssocIdentity[P]: Aux[P, P] = new LeftAssoc[P] {
+      type Out = P
+
+      def apply(p: P): P = p
+    }
+  }
 }
 
 object SMC {
@@ -174,13 +282,15 @@ object SMC {
 
     def nil: Unit = ()
 
-    def intro[A](a: A): (A, Nil) = (a, ())
+    def introRight[A](a: A): (A, Nil) = (a, ())
+    def introLeft[A](a: A): (Nil, A) = ((), a)
     def swap[A, B](p: (A, B)): (B, A) = p.swap
     def unitRight[A](p: (A, Unit)): A = p._1
     def unitLeft[B](p: (Unit, B)): B = p._2
-    def assoc[A, B, C](p: ((A, B), C)): (A, (B, C)) = (p._1._1, (p._1._2, p._2))
+    def assocRight[A, B, C](p: ((A, B), C)): (A, (B, C)) = (p._1._1, (p._1._2, p._2))
+    def assocLeft[A, B, C](p: (A, (B, C))): ((A, B), C) = ((p._1, p._2._1), p._2._2)
 
-    def leftMap[A, B, C](p: (A, B))(f: A => C): (C, B) = (f(p._1), p._2)
+    def mapLeft[A, B, C](p: (A, B))(f: A => C): (C, B) = (f(p._1), p._2)
 
     implicit def mkUncons[A, B]: Uncons.Aux[(A, B), A, B] =
       new Uncons[(A, B)] {
@@ -200,7 +310,8 @@ object SMC {
 
     def nil: Unit = ()
 
-    def intro[A](a: A): Either[A, Nil] = Left(a)
+    def introRight[A](a: A): Either[A, Nil] = Left(a) // intro nil to the right
+    def introLeft[A](a: A): Either[Nil, A] = Right(a) // intro nil to the left
     def swap[A, B](p: Either[A, B]): Either[B, A] = p.swap
     def unitRight[A](p: Either[A, Nil]): A = p match {
       case Left(a) => a
@@ -210,13 +321,20 @@ object SMC {
       case Right(b) => b
       case _ => ??? // Needed because we can't define Nil as Nothing
     }
-    def assoc[A, B, C](p: Either[Either[A, B], C]): Either[A, Either[B, C]] = p match {
-      case Left(Left(a)) => Left(a)
+
+    def assocRight[A, B, C](p: Either[Either[A, B], C]): Either[A, Either[B, C]] = p match {
+      case Left(Left(a))  => Left(a)
       case Left(Right(b)) => Right(Left(b))
-      case Right(c) => Right(Right(c))
+      case Right(c)       => Right(Right(c))
     }
 
-    def leftMap[A, B, C](p: Either[A, B])(f: A => C): Either[C, B] = p match {
+    override def assocLeft[A, B, C](p: Either[A, Either[B, C]]): Either[Either[A, B], C] = p match {
+      case Left(a)         => Left(Left(a))
+      case Right(Left(b))  => Left(Right(b))
+      case Right(Right(c)) => Right(c)
+    }
+
+    def mapLeft[A, B, C](p: Either[A, B])(f: A => C): Either[C, B] = p match {
       case Left(a) => Left(f(a))
       case Right(b) => Right(b)
     }
@@ -263,6 +381,9 @@ class SMCOps[P, S <: SMC](p: P, val smc: S) {
   def reverse(implicit reverse: S#Reverse[P]): reverse.Out = reverse(p)
   def map(f: Poly)(implicit mapper: S#Mapper[f.type, P]): mapper.Out = mapper(p)
   def foldLeft[Z](z: Z)(f: Poly2)(implicit folder: S#LeftFolder[P, Z, f.type]): folder.Out = folder(p, z)
+
+  def rightAssoc(implicit rightAssoc: S#RightAssoc[P]): rightAssoc.Out = rightAssoc(p)
+  def leftAssoc(implicit leftAssoc: S#LeftAssoc[P]): leftAssoc.Out = leftAssoc(p)
 }
 
 object SMCOps {
@@ -306,6 +427,24 @@ object Demo {
   typed[(Boolean, (Int, (String, Unit)))](prev)
   val popt = p.map(option)
   typed[(Option[String], (Option[Int], (Option[Boolean], Unit)))](popt)
+
+  val pi = (2, ())
+  val piRA = pi.rightAssoc
+  typed[(Int, Unit)](piRA)
+
+  val prii = ((2, 3), ())
+  val priiRA = prii.rightAssoc
+  typed[(Int, (Int, Unit))](priiRA)
+  val pRA = p.rightAssoc
+  typed[(String, (Int, (Boolean, Unit)))](pRA)
+  val pLA = p.leftAssoc
+  typed[(((String, Int), Boolean), Unit)](pLA)
+
+  val ppRA = (p, p).rightAssoc
+  typed[(String, (Int, (Boolean, (Unit, (String, (Int, (Boolean, Unit)))))))](ppRA)
+
+  val ppLA = (p, p).leftAssoc
+  typed[(((((((String, Int), Boolean), Unit), String), Int), Boolean), Unit)](ppLA)
 
   val c: Either[String, Either[Int, Either[Boolean, Unit]]] = Left("foo")
   val cSmc = c.smc
