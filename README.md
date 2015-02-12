@@ -53,7 +53,7 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [group]: https://groups.google.com/group/typelevel
 [so]: http://stackoverflow.com/questions/tagged/shapeless
 [gitter]: https://gitter.im/milessabin/shapeless
-[irc]: http://freenode.net/
+[irc]: http://webchat.freenode.net?channels=%23shapeless
 [blog]: http://www.chuusai.com/blog
 
 ## Participation
