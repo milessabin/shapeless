@@ -34,7 +34,7 @@ object CSVExample extends App {
 
   import CSVConverter._
 
-  val input = """John,Carmack,23
+  val input = """John,Carmack,23,0
 Brian,Fargo,35
 Markus,Persson,32"""
 
