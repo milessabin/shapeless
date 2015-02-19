@@ -562,12 +562,12 @@ object hlist {
       (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
         hnilToTraversable[L, M, Nothing]
 
-    implicit def hsingleToTraversable[T, M[_]]
-      (implicit cbf : CanBuildFrom[Nothing, T, M[T]]) : Aux[T :: HNil, M, T] =
+    implicit def hsingleToTraversable[T, M[_], Lub0]
+      (implicit ev : T <:< Lub0, cbf : CanBuildFrom[Nothing, Lub0, M[Lub0]]) : Aux[T :: HNil, M, Lub0] =
         new ToTraversable[T :: HNil, M] {
-          type Lub = T
+          type Lub = Lub0
           def builder() = cbf()
-          def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : T => LLub) = {
+          def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub) = {
             b += f(l.head)
           }
         }
@@ -626,10 +626,10 @@ object hlist {
       (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
         hnilToSized[L, M, Nothing]
 
-    implicit def hsingleToSized[T, M[_]]
-    (implicit cbf : CanBuildFrom[Nothing, T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[T :: HNil, M, T, Nat._1] =
+    implicit def hsingleToSized[T, M[_], Lub0]
+     (implicit ub : T <:< Lub0, cbf : CanBuildFrom[Nothing, Lub0, M[Lub0]], ev : AdditiveCollection[M[Lub0]]) : Aux[T :: HNil, M, Lub0, Nat._1] =
       new ToSized[T :: HNil, M] {
-        type Lub = T
+        type Lub = Lub0
         type N = Nat._1
         def apply(l : T :: HNil) = Sized[M](l.head)
       }
