@@ -401,7 +401,8 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
         val to =
           if(isCaseClass || hasNonGenericCompanionMember("unapply")) {
-            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => if (x._4) pq"${x._1} @ _*" else pq"${x._1}")})"
+            val wcard = Star(Ident(termNames.WILDCARD))  // like pq"_*" except that it does work
+            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => if (x._4) pq"${x._1} @ $wcard" else pq"${x._1}")})"
             val rhs =
               binders.foldRight(q"_root_.shapeless.HNil": Tree) {
                 case ((bound, name, tpe, _), acc) => q"_root_.shapeless.::($bound, $acc)"
