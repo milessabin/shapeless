@@ -19,7 +19,6 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.annotation.{ StaticAnnotation, tailrec }
-import scala.reflect.api.Universe
 import scala.reflect.macros.{ blackbox, whitebox }
 
 import ops.{ hlist, coproduct }
@@ -229,7 +228,9 @@ trait CaseClassMacros extends ReprTypes {
   def nameOf(tpe: Type) = tpe.typeSymbol.name
 
   def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
-    items.foldRight(nil) { case (tpe, acc) => appliedType(cons, List(tpe, acc)) }
+    items.foldRight(nil) {
+      case (tpe, acc) => appliedType(cons, List(devarargify(tpe), acc))
+    }
 
   def mkLabelTpe(name: Name): Type =
     appliedType(atatTpe, List(typeOf[scala.Symbol], constantType(nameAsValue(name))))
@@ -393,6 +394,16 @@ trait CaseClassMacros extends ReprTypes {
 
   def isTuple(tpe: Type): Boolean =
     tpe <:< typeOf[Unit] || definitions.TupleClass.seq.contains(tpe.typeSymbol)
+
+  def isVararg(tpe: Type): Boolean =
+    tpe.typeSymbol == c.universe.definitions.RepeatedParamClass
+
+  def devarargify(tpe: Type): Type =
+    tpe match {
+      case TypeRef(pre, _, args) if isVararg(tpe) =>
+        internal.typeRef(pre, typeOf[Seq[_]].typeSymbol, args)
+      case _ => tpe
+    }
 }
 
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
@@ -452,14 +463,14 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
           mSym != NoSymbol && !isNonGeneric(mSym)
         }
 
-        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe) }
+        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe, isVararg(tpe)) }
 
         val to =
           if(isCaseClass || hasNonGenericCompanionMember("unapply")) {
-            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => pq"${x._1}")})"
+            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => if (x._4) pq"${x._1} @ _*" else pq"${x._1}")})"
             val rhs =
               binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((bound, name, tpe), acc) => q"_root_.shapeless.::($bound, $acc)"
+                case ((bound, name, tpe, _), acc) => q"_root_.shapeless.::($bound, $acc)"
               }
             cq"$lhs => $rhs"
           } else {
@@ -474,11 +485,11 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         val from = {
           val lhs =
             binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-              case ((bound, _, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
+              case ((bound, _, _, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
             }
 
           val rhs = {
-            val ctorArgs = binders.map { case (bound, name, tpe) => Ident(bound) }
+            val ctorArgs = binders.map { case (bound, name, tpe, vararg) => if (vararg) q"$bound: _*" else Ident(bound) }
             if(isCaseClass || hasNonGenericCompanionMember("apply"))
               q"${companionRef(tpe)}(..$ctorArgs)"
             else
