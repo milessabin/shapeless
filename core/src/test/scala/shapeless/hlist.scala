@@ -420,6 +420,11 @@ class HListTests {
     implicitly[ToSized.Aux[HNil, List, Nothing, _0]]
     implicitly[ToSized.Aux[HNil, List, Int, _0]]
 
+    {
+      implicitly[ToSized.Aux[M[Int] :: HNil, List, M[Int], _1]]
+      implicitly[ToSized.Aux[M[Int] :: HNil, List, M[_], _1]]
+    }
+
     val sizedApap = apap.toSized[List]
     assertEquals(Nat toInt apap.length, sizedApap.length)
     equalInferredTypes(apapList, sizedApap.unsized)
@@ -628,6 +633,11 @@ class HListTests {
     implicitly[ToList[HNil, Nothing]]
     implicitly[ToList[HNil, Int]]
 
+    {
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[Int]]]
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[_]]]
+    }
+
     val r2 = apap.to[List]
     assertTypedEquals[List[Fruit]](List(a, p, a, p), r2)
 
@@ -686,6 +696,14 @@ class HListTests {
 
     implicitly[ToTraversable.Aux[HNil, List, Nothing]]
     implicitly[ToTraversable.Aux[HNil, List, Int]]
+
+    {
+      val l1 = (mi :: HNil).toList[M[Int]]
+      val l2 = (mi :: HNil).toList[M[_]]
+
+      assertTypedEquals[List[M[Int]]](List(mi), l1)
+      assertTypedEquals[List[M[_]]](List(mi), l2)
+    }
 
     val fruits1 = apap.toList
     assertTypedEquals[List[Fruit]](List(a, p, a, p), fruits1)
@@ -758,6 +776,11 @@ class HListTests {
     
     implicitly[ToTraversable.Aux[HNil, Array, Nothing]]
     implicitly[ToTraversable.Aux[HNil, Array, Int]]
+
+    {
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, Array, M[Int]]]
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, Array, M[_]]]
+    }
 
     val fruits1 = apap.to[Array].map(x => x : Fruit) // Default inferred type is too precise
                                                      // (Product with Serializable with Fruit)
@@ -833,6 +856,16 @@ class HListTests {
     
     implicitly[ToArray[HNil, Nothing]]
     implicitly[ToArray[HNil, Int]]
+
+    {
+      val a1 = (mi :: HNil).toArray[M[Int]]
+      val a2 = (mi :: HNil).toArray[M[_]]
+
+      typed[Array[M[Int]]](a1)
+      typed[Array[M[_]]](a2)
+      assertArrayEquals2(Array[M[Int]](mi), a1)
+      assertArrayEquals2(Array[M[_]](mi), a2)
+    }
 
     val fruits1 = apap.toArray[Fruit]
     typed[Array[Fruit]](fruits1)
