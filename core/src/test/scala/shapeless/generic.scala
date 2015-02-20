@@ -66,6 +66,8 @@ package GenericTestsAux {
 
   case class Salary(salary : Double)
 
+  case class PersonWithPseudonims(name: String, nicks: String*)
+
   trait starLP extends Poly1 {
     implicit def default[T] = at[T](identity)
   }
@@ -129,6 +131,20 @@ class GenericTests {
 
     val p1 = gen.from(p0)
     typed[Person](p1)
+    assertEquals(p, p1)
+  }
+
+  @Test
+  def testProductVarargs {
+    val p = PersonWithPseudonims("Joe Soap", "X", "M", "Z")
+    val gen = Generic[PersonWithPseudonims]
+
+    val p0 = gen.to(p)
+    typed[String :: Seq[String] :: HNil](p0)
+    assertEquals("Joe Soap" :: Seq("X", "M", "Z") :: HNil, p0)
+
+    val p1 = gen.from(p0)
+    typed[PersonWithPseudonims](p1)
     assertEquals(p, p1)
   }
 
