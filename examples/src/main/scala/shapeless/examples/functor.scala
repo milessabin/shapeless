@@ -29,7 +29,7 @@ package FunctorDemoDefns {
 }
 
 object FunctorDemo extends App {
-  import syntax.functor._
+  import Functor._
   import FunctorDemoDefns._
 
   def transform[F[_]: Functor, A, B](ft: F[A])(f: A => B): F[B] = ft.map(f)
@@ -110,16 +110,13 @@ object Functor {
       def map[A, B](fa: F[A])(f: A => B): F[B] =
         gen.from(far.value.map(gen.to(fa))(f))
     }
-}
 
-package syntax {
-  object functor {
-    implicit def functorSyntax[F[_]: Functor, A](fa: F[A]): FunctorOps[F, A] =
-      new FunctorOps[F, A](fa)
+  // Functor syntax
+  implicit def functorSyntax[F[_]: Functor, A](fa: F[A]): FunctorOps[F, A] =
+    new FunctorOps[F, A](fa)
 
-    class FunctorOps[F[_], A](fa: F[A])(implicit F: Functor[F]) {
-      def map[B](f: A => B): F[B] = F.map(fa)(f)
-    }
+  class FunctorOps[F[_], A](fa: F[A])(implicit F: Functor[F]) {
+    def map[B](f: A => B): F[B] = F.map(fa)(f)
   }
 }
 
