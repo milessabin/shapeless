@@ -40,7 +40,7 @@ object coproduct {
     def apply(c: C): Option[T]
   }
 
-  object Selector extends {
+  object Selector {
     def apply[C <: Coproduct, T](implicit select: Selector[C, T]): Selector[C, T] = select
 
     implicit def hdSelector[H, T <: Coproduct]: Selector[H :+: T, H] = new Selector[H :+: T, H] {

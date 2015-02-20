@@ -24,8 +24,6 @@ import testutil._
 
 import ops.coproduct._
 
-import shapeless._
-
 class CoproductTests {
   type ISB = Int :+: String :+: Boolean :+: CNil
   type III = Int :+: Int :+: Int :+: CNil
