@@ -36,6 +36,7 @@ object ShapelessBuild extends Build {
 
   lazy val shapeless = (project in file(".")
     aggregate (core, examples)
+    dependsOn (core, examples, scratch)
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-root",
