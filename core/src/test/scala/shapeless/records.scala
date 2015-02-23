@@ -20,9 +20,11 @@ import org.junit.Test
 import org.junit.Assert._
 
 class RecordTests {
+  import labelled._
   import record._
   import syntax.singleton._
   import test._
+  import testutil._
 
   object intField1 extends FieldOf[Int]
   object intField2 extends FieldOf[Int]
@@ -237,6 +239,17 @@ class RecordTests {
     assertEquals(3.0, v6, Double.MinPositiveValue)
   }
   
+  @Test
+  def testMerge {
+    val r1 = 'a ->> 23 :: 'b ->> "foo" :: 'c ->> true :: HNil
+    val r2 = 'c ->> false :: 'a ->> 13 :: HNil
+    val rExp = 'a ->> 13 :: 'b ->> "foo" :: 'c ->> false :: HNil
+
+    val rm = r1.merge(r2)
+    typed[Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T](rm)
+    assertEquals(rExp, rm)
+  }
+
   @Test
   def testConcatenate {
     val r1 =
@@ -584,5 +597,147 @@ class RecordTests {
 
     // illTyped gives a false positive here, but `d.baz` does in fact fail to compile
     //illTyped("d.baz") 
+  }
+
+  @Test
+  def testRecordTypeSelector {
+    typed[Record.`'i -> Int`.T]('i ->> 23 :: HNil)
+
+    typed[Record.`'i -> Int, 's -> String`.T]('i ->> 23 :: 's ->> "foo" :: HNil)
+
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T]('i ->> 23 :: 's ->> "foo" :: 'b ->> true :: HNil)
+  }
+
+  @Test
+  def testNamedArgsInject {
+    val r = Record(i = 23, s = "foo", b = true)
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
+
+    val v1 = r.get('i)
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = r.get('s)
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = r.get('b)
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    illTyped("""
+      r.get('foo)
+    """)
+  }
+
+  object Foo extends RecordArgs {
+    def applyRecord[R <: HList](rec: R): R = rec
+  }
+
+  @Test
+  def testRecordArgs {
+    val r = Foo(i = 23, s = "foo", b = true)
+    typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)
+
+    val v1 = r.get('i)
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = r.get('s)
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = r.get('b)
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    illTyped("""
+      r.get('foo)
+    """)
+  }
+
+  @Test
+  def testToMap {
+    {
+      val m = HNil.toMap
+      assertTypedEquals(Map.empty[Any, Nothing], m)
+    }
+
+    {
+      val m = HNil.toMap[String, Nothing]
+      assertTypedEquals(Map.empty[String, Nothing], m)
+    }
+
+    {
+      val m = HNil.toMap[String, Int]
+      assertTypedEquals(Map.empty[String, Int], m)
+    }
+
+    val r = Record(i = 23, s = "foo", b = true)
+
+    {
+      val m = r.toMap
+      assertTypedEquals(Map[Symbol, Any]('i -> 23, 's -> "foo", 'b -> true), m)
+    }
+
+    {
+      val m = r.toMap[Symbol, Any]
+      assertTypedEquals(Map[Symbol, Any]('i -> 23, 's -> "foo", 'b -> true), m)
+    }
+
+    val rs = ("first" ->> Some(2)) :: ("second" ->> Some(true)) :: ("third" ->> Option.empty[String]) :: HNil
+
+    {
+      val m = rs.toMap
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2), "second" -> Some(true), "third" -> Option.empty[String]), m)
+    }
+
+    {
+      val m = rs.toMap[String, Option[Any]]
+      assertTypedEquals(Map[String, Option[Any]]("first" -> Some(2), "second" -> Some(true), "third" -> Option.empty[String]), m)
+    }
+  }
+
+  @Test
+  def testMapValues {
+    object f extends Poly1 {
+      implicit def int = at[Int](i => i > 0)
+      implicit def string = at[String](s => s"s: $s")
+      implicit def boolean = at[Boolean](v => if (v) "Yup" else "Nope")
+    }
+
+    {
+      val r = HNil
+      val res = r.mapValues(f)
+      assertTypedEquals[HNil](HNil, res)
+    }
+
+    {
+      val r = Record(i = 23, s = "foo", b = true)
+      val res = r.mapValues(f)
+      assertTypedEquals[Record.`'i -> Boolean, 's -> String, 'b -> String`.T](Record(i = true, s = "s: foo", b = "Yup"), res)
+    }
+
+    {
+      object toUpper extends Poly1 {
+        implicit def stringToUpper = at[String](_.toUpperCase)
+        implicit def otherTypes[X] = at[X](identity)
+      }
+
+      val r = ("foo" ->> "joe") :: ("bar" ->> true) :: ("baz" ->> 2.0) :: HNil
+      val r2 = r mapValues toUpper
+
+      val v1 = r2("foo")
+      typed[String](v1)
+      assertEquals("JOE", v1)
+
+      val v2 = r2("bar")
+      typed[Boolean](v2)
+      assertEquals(true, v2)
+
+      val v3 = r2("baz")
+      typed[Double](v3)
+      assertEquals(2.0, v3, Double.MinPositiveValue)
+    }
   }
 }

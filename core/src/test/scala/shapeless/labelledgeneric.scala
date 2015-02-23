@@ -41,10 +41,9 @@ object LabelledGenericTestsAux {
     ('price  ->>  44.11) ::
     HNil
 
-  val bookSchema = RecordType.like(taplRecord)
-  type BookRec = bookSchema.Record
-  type BookKeys = bookSchema.Keys
-  type BookValues = bookSchema.Values
+  type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
+  type BookKeys = Keys[BookRec]
+  type BookValues = Values[BookRec]
 
   sealed trait Tree
   case class Node(left: Tree, right: Tree) extends Tree
@@ -198,9 +197,7 @@ class LabelledGenericTests {
 
   @Test
   def testCoproductBasics {
-    val treeRec = ('Leaf ->> Leaf(1)) :: ('Node ->> Node(Leaf(1), Leaf(1))) :: HNil
-    val treeSchema = RecordType.like(treeRec)
-    type TreeUnion = treeSchema.Union
+    type TreeUnion = Union.`'Leaf -> Leaf, 'Node -> Node`.T
 
     val gen = LabelledGeneric[Tree]
 
@@ -215,17 +212,9 @@ class LabelledGenericTests {
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
 
-    val recA = ('i ->> 23) :: ('s ->> "foo") :: HNil
-    val nonCCASchema = RecordType.like(recA)
-    type NonCCARec = nonCCASchema.Record
-
-    val recB = ('b ->> true) :: ('d ->> 2.0) :: HNil
-    val nonCCBSchema = RecordType.like(recB)
-    type NonCCBRec = nonCCBSchema.Record
-
-    val recAbs = ('NonCCA ->> ncca) :: ('NonCCB ->> nccb) :: HNil
-    val absSchema = RecordType.like(recAbs)
-    type AbsUnion = absSchema.Union
+    type NonCCARec = Record.`'i -> Int, 's -> String`.T
+    type NonCCBRec = Record.`'b -> Boolean, 'd -> Double`.T
+    type AbsUnion = Union.`'NonCCA -> NonCCA, 'NonCCB -> NonCCB`.T
 
     val genA = LabelledGeneric[NonCCA]
     val genB = LabelledGeneric[NonCCB]
@@ -264,8 +253,7 @@ class LabelledGenericTests {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val rec = ('i ->> 23) :: ('s ->> "foo") :: HNil
-    val nonCCSchema = RecordType.like(rec)
-    type NonCCRec = nonCCSchema.Record
+    type NonCCRec = Record.`'i -> Int, 's -> String`.T
 
     val gen = LabelledGeneric[NonCCWithCompanion]
 
@@ -284,8 +272,7 @@ class LabelledGenericTests {
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
     val rec = 'prev ->> a :: 'next ->> c :: HNil
-    val lazySchema = RecordType.like(rec)
-    type LazyRec = lazySchema.Record
+    type LazyRec = Record.`'prev -> NonCCLazy, 'next -> NonCCLazy`.T
 
     val gen = LabelledGeneric[NonCCLazy]
 

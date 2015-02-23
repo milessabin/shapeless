@@ -443,4 +443,24 @@ class GenericTests {
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)
   }
+
+  trait Parent {
+    case class Nested(i: Int, s: String)
+  }
+
+  trait Child extends Parent {
+    val gen = Generic[Nested]
+  }
+
+  object O extends Child
+
+  @Test
+  def testNestedInherited {
+    val n0 = O.Nested(23, "foo")
+    val repr = O.gen.to(n0)
+    typed[Int :: String :: HNil](repr)
+    val n1 = O.gen.from(repr)
+    typed[O.Nested](n1)
+    assertEquals(n0, n1)
+  }
 }

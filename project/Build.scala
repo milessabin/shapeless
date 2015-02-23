@@ -59,6 +59,7 @@ object ShapelessBuild extends Build {
         managedSourceDirectories in Test := Nil,
         
         libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),
@@ -169,7 +170,7 @@ object ShapelessBuild extends Build {
   def commonSettings =
     Seq(
       organization        := "com.chuusai",
-      scalaVersion        := "2.11.2",
+      scalaVersion        := "2.11.4",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),

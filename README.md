@@ -49,6 +49,20 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [irc]: http://freenode.net/
 [blog]: http://www.chuusai.com/blog
 
+## Participation
+
+The shapeless project supports the [Typelevel][typelevel] [code of conduct][codeofconduct] and wants all of its
+channels (mailing list, IRC, github, etc.) to be welcoming environments for everyone.
+
+Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
+Contributors are usually available to field questions, give advice and discuss ideas on [#shapeless][irc] and
+the [mailing list][group], and for people wanting to take their first steps at contributing we have a selection
+of open issues flagged up as being [good candidates to take on][lowhangingfruit]. No contribution is too small,
+and guidance is always available.
+
+[codeofconduct]: http://typelevel.org/conduct.html
+[lowhangingfruit]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22Low+hanging+fruit%22
+
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
@@ -62,6 +76,16 @@ resolvers ++= Seq(
 )
 ```
 
+Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its new name hashing feature which when
+compiling with shapeless might cause SBT to loop indefinitely consuming all heap. Workarounds are to move to an
+earlier (0.13.5) or later (0.13.7) SBT version or disable name hashing by adding,
+
+```scala
+incOptions := incOptions.value.withNameHashing(false)
+```
+
+to your settings.
+
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 ### shapeless-2.0.0
@@ -69,8 +93,8 @@ resolvers ++= Seq(
 Builds are available for Scala 2.11.0 and later and for Scala 2.10.4.
 
 ```scala
-// For Scala 2.11.0
-scalaVersion := "2.11.0"
+// For Scala 2.11.4
+scalaVersion := "2.11.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.0.0"
@@ -95,11 +119,11 @@ above would be fine.
 
 ### shapeless-2.1.0-SNAPSHOT
 
-Builds are available for Scala 2.11.0 and Scala 2.10.4. The main line of development for shapeless 2.1.0 will be Scala
-2.11.0 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.0 and later and for Scala 2.10.4. The main line of development for
+shapeless 2.1.0 will be Scala 2.11.4 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.0"
+scalaVersion := "2.11.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.1.0-SNAPSHOT" changing()
@@ -118,7 +142,7 @@ libraryDependencies ++= Seq(
 
 ### shapeless-1.2.4
 
-Builds are available for Scala 2.9, 2.10 and 2.11.0. If you are working with Scala 2.10.2 or later you should use
+Builds are available for Scala 2.9, 2.10 and 2.11. If you are working with Scala 2.10.2 or later you should use
 shapeless-2.0.0 instead.
 
 If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
@@ -161,10 +185,21 @@ which will set the `-Ydependent-method-types` compiler flag conditionally on the
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.2. The master branch is built with Scala 2.11.0 by default. To build with Scala 2.10.x
-you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master
-and Scala 2.11.0 and merged into the scala-2.10.x branch with only the minimal changes needed for forwards
-compatibility.
+shapeless is built with 0.13.7 or later. SBT 0.13.6 has an [issue][namehashing] related to its new name hashing
+feature which when compiling shapeless causes SBT to loop indefinitely consuming all heap. Workarounds are to move to
+an earlier or later SBT version or disable name hashing by adding,
+
+```scala
+incOptions := incOptions.value.withNameHashing(false)
+```
+
+to your settings.
+
+The master of shapeless branch is built with Scala 2.11.4 by default. To build with Scala 2.10.x you should check out
+the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.4 and
+merged into the scala-2.10.x branch with only the minimal changes needed for forwards compatibility.
+
+[namehashing]: https://github.com/sbt/sbt/issues/1640
 
 ## Contributors
 
@@ -192,6 +227,7 @@ compatibility.
 + Owein Reese <owreese@gmail.com> [@OweinReese](https://twitter.com/OweinReese)
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
++ Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)

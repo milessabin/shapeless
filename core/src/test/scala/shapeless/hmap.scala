@@ -161,5 +161,36 @@ class HMapTests {
     assertTrue(isDefined(o2))
     typed[Option[Int]](o2)
     assertEquals(Some(13), o2)
-  }  
+  }
+
+  trait M[A]
+
+  class Mapping[K, V]
+  implicit def mappingFromM[A, B <: M[A]] = new Mapping[A,B]
+
+  case class X(x: Int) extends M[X.type]
+  object X
+
+  case class Y(x: String) extends M[Y.type]
+  object Y
+
+  @Test
+  def testSingleton {
+
+    val hm = HMap[Mapping](X -> X(13), Y -> Y("foo"))
+
+    illTyped("""
+      val hm2 = HMap[Mapping](X -> Y("foo"), Y -> X(13))
+    """)
+
+    val x = hm.get(X)
+    assertTrue(isDefined(x))
+    typed[Option[X]](x)
+    assertEquals(Some(X(13)), x)
+
+    val y = hm.get(Y)
+    assertTrue(isDefined(y))
+    typed[Option[Y]](y)
+    assertEquals(Some(Y("foo")), y)
+  }
 }

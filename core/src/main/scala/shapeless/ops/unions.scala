@@ -17,8 +17,11 @@
 package shapeless
 package ops
 
+import labelled.field
+import poly._
+
 object union {
-  import shapeless.record.FieldType
+  import shapeless.labelled.FieldType
 
   /**
    * Type class supporting union member selection.
@@ -85,7 +88,7 @@ object union {
   }
 
   /**
-   * Type class supporting collecting the value of a union as an `Coproduct`.
+   * Type class supporting collecting the value of a union as a `Coproduct`.
    * 
    * @author Miles Sabin
    */
@@ -108,6 +111,90 @@ object union {
         def apply(l: FieldType[K, V] :+: T): Out = l match {
           case Inl(l) => Inl(l)
           case Inr(r) => Inr(vt(r))
+        }
+      }
+  }
+
+  /**
+   * Type class supporting converting this union to a `Map` whose keys and values
+   * are typed as the Lub of the keys and values of this union.
+   *
+   * @author Alexandre Archambault
+   */
+  trait ToMap[U <: Coproduct] extends DepFn1[U] {
+    type Key
+    type Value
+    type Out = Map[Key, Value]
+  }
+
+  object ToMap {
+    def apply[U <: Coproduct](implicit toMap: ToMap[U]): Aux[U, toMap.Key, toMap.Value] = toMap
+
+    type Aux[U <: Coproduct, Key0, Value0] = ToMap[U] { type Key = Key0; type Value = Value0 }
+
+    implicit def cnilToMap[K, V]: Aux[CNil, K, V] =
+      new ToMap[CNil] {
+        type Key = K
+        type Value = V
+        def apply(l: CNil) = Map.empty
+      }
+
+    implicit val cnilToMapAnyNothing: Aux[CNil, Any, Nothing] = cnilToMap[Any, Nothing]
+
+    implicit def csingleToMap[K, V](implicit
+      wk: Witness.Aux[K]
+    ): Aux[FieldType[K, V] :+: CNil, K, V] =
+      new ToMap[FieldType[K, V] :+: CNil] {
+        type Key = K
+        type Value = V
+        def apply(c: FieldType[K, V] :+: CNil) = (c: @unchecked) match {
+          case Inl(h) => Map(wk.value -> (h: V))
+        }
+      }
+
+    implicit def coproductToMap[HK, HV, TH, TT <: Coproduct, TK, TV, K, V](implicit
+      tailToMap: ToMap.Aux[TH :+: TT, TK, TV],
+      keyLub: Lub[HK, TK, K],
+      valueLub: Lub[HV, TV, V],
+      wk: Witness.Aux[HK]
+    ): Aux[FieldType[HK, HV] :+: TH :+: TT, K, V] =
+      new ToMap[FieldType[HK, HV] :+: TH :+: TT] {
+        type Key = K
+        type Value = V
+        def apply(c: FieldType[HK, HV] :+: TH :+: TT) = c match {
+          case Inl(h) => Map(keyLub.left(wk.value) -> valueLub.left(h: HV))
+          case Inr(t) => tailToMap(t).map{case (k, v) => keyLub.right(k) -> valueLub.right(v)}
+        }
+      }
+  }
+  
+  /**
+   * Type class supporting mapping a higher rank function over the values of a union.
+   *
+   * @author Alexandre Archambault
+   */
+  trait MapValues[HF, U <: Coproduct] extends DepFn1[U] { type Out <: Coproduct }
+
+  object MapValues {
+    def apply[HF, U <: Coproduct](implicit mapValues: MapValues[HF, U]): Aux[HF, U, mapValues.Out] = mapValues
+
+    type Aux[HF, U <: Coproduct, Out0 <: Coproduct] = MapValues[HF, U] { type Out = Out0 }
+
+    implicit def cnilMapValues[HF]: Aux[HF, CNil, CNil] =
+      new MapValues[HF, CNil] {
+        type Out = CNil
+        def apply(c: CNil) = c
+      }
+
+    implicit def cconsMapValues[HF, K, V, T <: Coproduct](implicit
+      hc: Case1[HF, V],
+      tailMapValues: MapValues[HF, T]
+    ): Aux[HF, FieldType[K, V] :+: T, FieldType[K, hc.Result] :+: tailMapValues.Out] =
+      new MapValues[HF, FieldType[K, V] :+: T] {
+        type Out = FieldType[K, hc.Result] :+: tailMapValues.Out
+        def apply(c: FieldType[K, V] :+: T) = c match {
+          case Inl(h) => Inl(field[K](hc(h: V)))
+          case Inr(t) => Inr(tailMapValues(t))
         }
       }
   }

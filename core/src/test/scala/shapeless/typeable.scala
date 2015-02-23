@@ -441,4 +441,62 @@ class TypeableTests {
     assertEquals(Some(23), typeCase[Int](List(("foo", 23)): Any))
     assertEquals(None, typeCase[String](List(("foo", 23)): Any))
   }
+
+  @Test
+  def testSingletons {
+    val wOne = Witness(1)
+    type One = wOne.T
+
+    val wTrue = Witness(true)
+    type True = wTrue.T
+
+    val wFoo = Witness("foo")
+    type Foo = wFoo.T
+
+    val wSym = Witness('Foo)
+    type Sym = wSym.T
+
+    object ObjA
+    object ObjB
+
+    val c1 = (1: Any).cast[One]
+    typed[Option[One]](c1)
+    assertEquals(Some(1), c1)
+
+    val c2 = (0: Any).cast[One]
+    typed[Option[One]](c2)
+    assertEquals(None, c2)
+
+    val c3 = (true: Any).cast[True]
+    typed[Option[True]](c3)
+    assertEquals(Some(true), c3)
+
+    val c4 = (false: Any).cast[True]
+    typed[Option[True]](c4)
+    assertEquals(None, c4)
+
+    val c5 = ("foo": Any).cast[Foo]
+    typed[Option[Foo]](c5)
+    assertEquals(Some("foo"), c5)
+
+    val c6 = ("bar": Any).cast[Foo]
+    typed[Option[Foo]](c6)
+    assertEquals(None, c6)
+
+    val c7 = ('Foo: Any).cast[Sym]
+    typed[Option[Sym]](c7)
+    assertEquals(Some('Foo), c7)
+
+    val c8 = ('Bar: Any).cast[Sym]
+    typed[Option[Sym]](c8)
+    assertEquals(None, c8)
+
+    val c9 = (ObjA: Any).cast[ObjA.type]
+    typed[Option[ObjA.type]](c9)
+    assertEquals(Some(ObjA), c9)
+
+    val c10 = (ObjB: Any).cast[ObjA.type]
+    typed[Option[ObjA.type]](c10)
+    assertEquals(None, c10)
+  }
 }

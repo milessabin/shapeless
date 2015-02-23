@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,43 +167,99 @@ object coproduct {
     }
   }
 
-  trait RemoveElem[C <: Coproduct, U] extends DepFn1[C] {
+  trait Remove[C <: Coproduct, U] extends DepFn1[C] {
     type Rest <: Coproduct
-    type Out = U :+: Rest
+    type Out = Either[U, Rest]
+    def inverse(r: Either[U, Rest]): C
 
-    def either(c: C): Either[U, Rest] = apply(c) match {
-      case Inl(u) => Left(u)
-      case Inr(r) => Right(r)
+    def coproduct(c: C): U :+: Rest = apply(c) match {
+      case Left(u)  => Inl(u)
+      case Right(r) => Inr(r)
     }
   }
 
-  object RemoveElem {
-    def apply[C <: Coproduct, U]
-      (implicit removeElem: RemoveElem[C, U]): Aux[C, U, removeElem.Rest] = removeElem
+  trait LowPriorityRemove {
+    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = Remove[C, U] { type Rest = Rest0 }
 
-    type Aux[C <: Coproduct, U, Rest0 <: Coproduct] = RemoveElem[C, U] { type Rest = Rest0 }
+    // Must be given a lower priority than removeHead, so that:
+    // - the two don't collide for coproducts with repeated types
+    // - the first element of type I in C is removed 
+    implicit def removeTail[H, T <: Coproduct, U](implicit
+      tailRemove: Remove[T, U]
+    ): Aux[H :+: T, U, H :+: tailRemove.Rest] = new Remove[H :+: T, U] {
+      type Rest = H :+: tailRemove.Rest
 
-    implicit def removeElemHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new RemoveElem[H :+: T, H] {
-      type Rest = T
-
-      def apply(c: H :+: T): Out = c
-    }
-
-    implicit def removeElemTail[H, T <: Coproduct, U, TRest <: Coproduct](
-      implicit removeElem: Aux[T, U, TRest]
-    ): Aux[H :+: T, U, H :+: TRest] = new RemoveElem[H :+: T, U] {
-      type Rest = H :+: TRest
-
-      def apply(c: H :+: T): Out = c match {
-        case Inl(h) => Inr[U, H :+: TRest](Inl[H, TRest](h))
-        case Inr(t) => removeElem(t) match {
-          case Inl(u) => Inl[U, H :+: TRest](u)
-          case Inr(r) => Inr[U, H :+: TRest](Inr[H, TRest](r))
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => Right(Inl(h))
+        case Inr(t) => tailRemove(t) match {
+          case Left(i)  => Left(i)
+          case Right(r) => Right(Inr(r))
         }
+      }
+
+      def inverse(r: Either[U, H :+: tailRemove.Rest]) = r match {
+        case Left(i)       => Inr(tailRemove.inverse(Left(i)))
+        case Right(Inl(h)) => Inl(h)
+        case Right(Inr(t)) => Inr(tailRemove.inverse(Right(t)))
       }
     }
   }
 
+  object Remove extends LowPriorityRemove {
+    def apply[C <: Coproduct, U](implicit remove: Remove[C, U]): Aux[C, U, remove.Rest] = remove
+
+    implicit def removeHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = new Remove[H :+: T, H] {
+      type Rest = T
+
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => Left(h)
+        case Inr(t) => Right(t)
+      }
+
+      def inverse(r: Either[H, T]) = r match {
+        case Left(h)  => Inl(h)
+        case Right(t) => Inr(t)
+      }
+    }
+  }
+
+  trait RemoveLast[C <: Coproduct, I] extends DepFn1[C] {
+    type Rest <: Coproduct
+    type Out = Either[I, Rest]
+    def inverse(r: Either[I, Rest]): C
+  }
+
+  trait LowPriorityRemoveLast {
+    type Aux[C <: Coproduct, I, Rest0 <: Coproduct] = RemoveLast[C, I] {type Rest = Rest0}
+
+    protected def fromRemove[C <: Coproduct, I](remove: Remove[C, I]): Aux[C, I, remove.Rest] =
+      new RemoveLast[C, I] {
+        type Rest = remove.Rest
+        def apply(c: C) = remove(c)
+        def inverse(r: Either[I, Rest]) = remove.inverse(r)
+      }
+
+    protected def toRemove[C <: Coproduct, I](removeLast: RemoveLast[C, I]): Remove.Aux[C, I, removeLast.Rest] =
+      new Remove[C, I] {
+        type Rest = removeLast.Rest
+        def apply(c: C) = removeLast(c)
+        def inverse(r: Either[I, Rest]) = removeLast.inverse(r)
+      }
+
+    // Must be given a lower priority than removeLastTail, so that:
+    // - the two don't collide for coproducts with repeated types
+    // - the last element of type I in C is removed
+    implicit def removeLastHead[H, T <: Coproduct]: Aux[H :+: T, H, T] = fromRemove(Remove.removeHead[H, T])
+  }
+
+  object RemoveLast extends LowPriorityRemoveLast {
+    def apply[C <: Coproduct, I](implicit removeLast: RemoveLast[C, I]): Aux[C, I, removeLast.Rest] = removeLast
+
+    implicit def removeLastTail[H, T <: Coproduct, I](implicit
+      tailRemoveLast: RemoveLast[T, I]
+    ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
+  }
+  
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
 
   object FlatMap {
@@ -271,15 +327,14 @@ object coproduct {
           case Inl(h) => h
         }
       }
-    
-    implicit def cpUnifier[H1, H2, T <: Coproduct, TL, L, Out0 >: L]
-      (implicit u: Lub[H1, H2, L], lt: Aux[L :+: T, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
+
+    implicit def cpUnifier[H1, H2, T <: Coproduct, L, Out0]
+      (implicit lt: Aux[H2 :+: T, L], u: Lub[H1, L, Out0]): Aux[H1 :+: H2 :+: T, Out0] =
         new Unifier[H1 :+: H2 :+: T] {
           type Out = Out0
           def apply(c: H1 :+: H2 :+: T): Out = c match {
             case Inl(h1) => u.left(h1)
-            case Inr(Inl(h2)) => u.right(h2)
-            case Inr(Inr(t)) => lt(Inr(t))
+            case Inr(t) => u.right(lt(t))
           }
         }
   }
@@ -303,7 +358,7 @@ object coproduct {
   trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn2[K, V] { type Out <: Coproduct }
 
   object ZipWithKeys {
-    import shapeless.record._
+    import shapeless.labelled._
 
     def apply[K <: HList, V <: Coproduct]
       (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
@@ -600,12 +655,19 @@ object coproduct {
   /**
    * Type class supporting splitting this `Coproduct` at the ''nth'' element returning prefix and suffix as a coproduct
    *
-   * @author Stacy Curl
+   * @author Stacy Curl, Alexandre Archambault
    */
   trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
     type Left  <: Coproduct
     type Right <: Coproduct
-    type Out = Left :+: Right :+: CNil
+    type Out = Either[Left, Right]
+
+    def coproduct(c: C): Left :+: Right :+: CNil = apply(c) match {
+      case Left(l) =>
+        Inl(l)
+      case Right(r) =>
+        Inr(Inl(r))
+    }
   }
 
   object Split {
@@ -614,66 +676,90 @@ object coproduct {
     type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
       Split[C, N] { type Left = L; type Right = R }
 
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] {
-      type Left  <: Coproduct
-      type Right <: Coproduct
-      type Out = Left :+: Right :+: CNil
-
-      protected def left(l: Left)   = Inl[Left, Right :+: CNil](l)
-      protected def right(r: Right) = Inr[Left, Right :+: CNil](Inl[Right, CNil](r))
-    }
-
-    implicit def coproductSplit[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat](
-      implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Succ[Size], NModSize],
-      impl: Impl[C, NModSize]
-    ): Aux[C, N, impl.Left, impl.Right] = new Split[C, N] {
-      type Left = impl.Left
-      type Right = impl.Right
-
-      def apply(c: C): Out = impl(c)
-    }
-
-    object Impl {
-      type Aux[C <: Coproduct, N <: Nat, L <: Coproduct, R <: Coproduct] =
-        Impl[C, N] { type Left = L; type Right = R }
-
-      implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] = new Impl[C, Nat._0] {
+    implicit def splitZero[C <: Coproduct]: Aux[C, Nat._0, CNil, C] =
+      new Split[C, Nat._0] {
         type Left  = CNil
         type Right = C
-
-        def apply(c: C): Out = right(c)
+        def apply(c: C) = Right(c)
       }
 
-      implicit def splitOne[H1, T <: Coproduct]
-        : Aux[H1 :+: T, Nat._1, H1 :+: CNil, T] = new Impl[H1 :+: T, Nat._1] {
-
-        type Left  = H1 :+: CNil
-        type Right = T
-
-        def apply(c: H1 :+: T): Out = c match {
-          case Inl(h1) => left(Inl[H1, CNil](h1))
-          case Inr(t)  => right(t)
-        }
-      }
-
-      implicit def coproductImpl[H, T <: Coproduct, N <: Nat, L0 <: Coproduct, R0 <: Coproduct](
-        implicit splitN: Aux[T, N, L0, R0]
-      ): Aux[H :+: T, Succ[N], H :+: L0, R0] = new Impl[H :+: T, Succ[N]] {
-        type Left  = H :+: L0
-        type Right = R0
-
-        def apply(c: H :+: T): Out = c match {
-          case Inl(h) => left(Inl[H, L0](h))
-          case Inr(t) => splitN(t) match {
-            case Inl(l0) => left(Inr[H, L0](l0))
-            case Inr(Inl(r0)) => right(r0)
-            case other        => sys.error("unreachable: " + other)
+    implicit def splitSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Split[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Left, tail.Right] =
+      new Split[H :+: T, Succ[N]] {
+        type Left  = H :+: tail.Left
+        type Right = tail.Right
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Left(Inl(h))
+          case Inr(t) => tail(t) match {
+            case Left(l)  => Left(Inr(l))
+            case Right(r) => Right(r)
           }
         }
       }
-    }
+  }
+
+  /**
+   * Type class supporting taking the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Taken <: Coproduct
+    type Out = Option[Taken]
+  }
+
+  object Take {
+    def apply[C <: Coproduct, N <: Nat](implicit take: Take[C, N]): Aux[C, N, take.Taken] = take
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Take[C, N] { type Taken = L }
+    
+    implicit def takeZero[C <: Coproduct]: Aux[C, Nat._0, CNil] =
+      new Take[C, Nat._0] {
+        type Taken = CNil
+        def apply(c: C) = None
+      }
+    
+    implicit def takeSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Take[T, N]): Aux[H :+: T, Succ[N], H :+: tail.Taken] =
+      new Take[H :+: T, Succ[N]] {
+        type Taken = H :+: tail.Taken
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => Some(Coproduct[H :+: tail.Taken](h))
+          case Inr(t) => tail(t).map(Inr[H, tail.Taken](_))
+        }
+      }
+  }
+
+  /**
+   * Type class supporting dropping the first `n`-elements of this `Coproduct`
+   *
+   * @author Alexandre Archambault
+   */
+  trait Drop[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+    type Remaining <: Coproduct
+    type Out = Option[Remaining]
+  }
+
+  object Drop {
+    def apply[C <: Coproduct, N <: Nat](implicit drop: Drop[C, N]): Aux[C, N, drop.Remaining] = drop
+
+    type Aux[C <: Coproduct, N <: Nat, L <: Coproduct] = Drop[C, N] { type Remaining = L }
+
+    implicit def dropZero[C <: Coproduct]: Aux[C, Nat._0, C] =
+      new Drop[C, Nat._0] {
+        type Remaining = C
+        def apply(c: C) = Some(c)
+      }
+
+    implicit def dropSucc[H, T <: Coproduct, N <: Nat]
+     (implicit tail: Drop[T, N]): Aux[H :+: T, Succ[N], tail.Remaining] =
+      new Drop[H :+: T, Succ[N]] {
+        type Remaining = tail.Remaining
+        def apply(c: H :+: T) = c match {
+          case Inl(h) => None
+          case Inr(t) => tail(t)
+        }
+      }
   }
 
   /**
@@ -707,6 +793,32 @@ object coproduct {
       def apply(c: H :+: T): Out = c match {
         case Inl(h) => inject(h)
         case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
+      }
+    }
+  }
+
+  /**
+   * Type class supporting permuting this `Coproduct` into the same order as another `Coproduct` with
+   * the same element types.
+   *
+   * @author Michael Pilquist
+   */
+  trait Align[A <: Coproduct, B <: Coproduct] extends (A => B) {
+    def apply(a: A): B
+  }
+
+  object Align {
+    def apply[A <: Coproduct, B <: Coproduct](implicit a: Align[A, B]): Align[A, B] = a
+
+    implicit val cnilAlign: Align[CNil, CNil] = new Align[CNil, CNil] {
+      def apply(c: CNil): CNil = c
+    }
+
+    implicit def coproductAlign[A <: Coproduct, BH, BT <: Coproduct, R <: Coproduct]
+      (implicit remove: Remove.Aux[A, BH, R], alignTail: Align[R, BT]): Align[A, BH :+: BT] = new Align[A, BH :+: BT] {
+      def apply(a: A) = remove(a) match {
+        case Left(bh) => Inl(bh)
+        case Right(rest) => Inr(alignTail(rest))
       }
     }
   }
@@ -759,4 +871,76 @@ object coproduct {
           case _                  => None
         }
       }
+
+  /**
+   * Type class computing the `HList`  type corresponding to this `Coproduct`.
+   *
+   * @author Miles Sabin
+   */
+  trait ToHList[L <: Coproduct] { type Out <: HList }
+
+  object ToHList {
+    def apply[L <: Coproduct](implicit thl: ToHList[L]): Aux[L, thl.Out] = thl
+
+    type Aux[L <: Coproduct, Out0 <: HList] = ToHList[L] { type Out = Out0 }
+
+    implicit val cnilToHList: Aux[CNil, HNil] =
+      new ToHList[CNil] {
+        type Out = HNil
+      }
+
+    implicit def cconsToHList[H, T <: Coproduct](implicit ut: ToHList[T]): Aux[H :+: T, H :: ut.Out] =
+      new ToHList[H :+: T] {
+        type Out = H :: ut.Out
+      }
+  }
+
+
+  /**
+    * Typeclass checking that :
+    * - coproduct is a sub-union of a bigger coproduct
+    * - embeds a sub-coproduct into a bigger coproduct
+    */
+  trait Basis[Super <: Coproduct, Sub <: Coproduct] extends DepFn1[Super] {
+    type Rest <: Coproduct
+    type Out = Either[Rest, Sub]
+    def inverse(e: Either[Rest, Sub]): Super
+  }
+
+  object Basis {
+    type Aux[Super <: Coproduct, Sub <: Coproduct, Rest0 <: Coproduct] =
+      Basis[Super, Sub] { type Rest = Rest0 }
+
+    def apply[Super <: Coproduct, Sub <: Coproduct](implicit basis: Basis[Super, Sub]): Aux[Super, Sub, basis.Rest] = 
+      basis
+
+    implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {
+      type Rest = Super
+      def apply(s: Super) = Left(s)
+      def inverse(e: Either[Rest, CNil]) = e.left.get // No CNil exists, so e cannot be a Right
+    }
+
+    implicit def cconsBasis[Super <: Coproduct, H, T <: Coproduct, TRest <: Coproduct](implicit
+      tailBasis: Basis.Aux[Super, T, TRest],
+      remove: RemoveLast[TRest, H]
+    ): Aux[Super, H :+: T, remove.Rest] = new Basis[Super, H :+: T] {
+      type Rest = remove.Rest
+
+      def apply(s: Super) = tailBasis(s) match {
+        case Left(r)  => remove(r) match {
+          case Left(h)  => Right(Inl(h))
+          case Right(r) => Left(r)
+        }
+        case Right(t) => Right(Inr(t))
+      }
+
+      def inverse(e: Either[Rest, H :+: T]) = e match {
+        case Left(r)  => tailBasis.inverse(Left(remove.inverse(Right(r))))
+        case Right(c) => c match {
+          case Inl(h)  => tailBasis.inverse(Left(remove.inverse(Left(h))))
+          case Inr(t)  => tailBasis.inverse(Right(t))
+        }
+      }
+    }
+  }
 }
