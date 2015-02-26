@@ -499,4 +499,75 @@ class TypeableTests {
     typed[Option[ObjA.type]](c10)
     assertEquals(None, c10)
   }
+
+  trait A
+  trait B
+  class C extends A with B
+
+  @Test
+  def testToString {
+    def typeableString[T](t: T)(implicit tp: Typeable[T]) = tp.toString
+
+    val i: Int = 7
+    assertEquals("Typeable[Int]", typeableString(i))
+
+    val u: Unit = ()
+    assertEquals("Typeable[Unit]", typeableString(u))
+
+    val a: Any = ()
+    assertEquals("Typeable[Any]", typeableString(a))
+
+    val av: AnyVal =  7
+    assertEquals("Typeable[AnyVal]", typeableString(av))
+
+    val ar: AnyRef =  ""
+    assertEquals("Typeable[AnyRef]", typeableString(ar))
+
+    val f: Foo = Foo(0, "", true)
+    assertEquals("Typeable[Foo]", typeableString(f))
+
+    val bi: Bar[Int] = Bar(23)
+    assertEquals("Typeable[Bar[Int]]", typeableString(bi))
+
+    val i1: A with B = new C
+    assertEquals("Typeable[A with B]", typeableString(i1))
+    assertEquals("Typeable[A]", typeableString(new A{}))
+
+    val o: Option[Long] = Some(4l)
+    assertEquals("Typeable[Option[Long]]", typeableString(o))
+
+    val e: Either[Long, String] = Right("")
+    assertEquals("Typeable[Either[Long, String]]", typeableString(e))
+    assertEquals("Typeable[Right[Long]]", typeableString(Right(3l)))
+
+    val l: List[Int] = List(1,2)
+    assertEquals("Typeable[List[Int]]", typeableString(l))
+
+    val m: Map[Int, String] = Map(1 -> "one", 2 -> "two")
+    assertEquals("Typeable[Map[Int, String]]", typeableString(m))
+
+    assertEquals("Typeable[HNil.type]", typeableString(HNil))
+    val hl = 1 :: "" :: HNil
+    assertEquals("Typeable[Int :: String :: HNil]", typeableString(hl))
+
+    type CP = Double :+: Boolean :+: CNil
+    val cpd: CP = Coproduct[CP](2.0)
+    assertEquals("Typeable[Double :+: Boolean :+: CNil]", typeableString(cpd))
+
+    val wOne = Witness(1)
+    type One = wOne.T
+    val one: One = 1
+    assertEquals("Typeable[Int(1)]", typeableString(one))
+
+    object FooBar
+    val wFB = Witness(FooBar)
+    type FooBarT = wFB.T
+    val foobar: FooBarT = FooBar
+    assertEquals("Typeable[FooBar.type]", typeableString(foobar))
+
+    val tc = TypeCase[List[Int]]
+    assertEquals("TypeCase[List[Int]]", tc.toString)
+
+  }
+
 }
