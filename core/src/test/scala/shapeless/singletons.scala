@@ -460,3 +460,14 @@ class SingletonTypesTests {
     """)
   }
 }
+
+package SingletonTypeTestsAux {
+  class Wrapper {
+    sealed trait Sealed
+    object Sealed {
+      case object A extends Sealed
+    }
+
+    implicitly[Witness.Aux[Sealed.A.type]]
+  }
+}

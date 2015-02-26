@@ -202,13 +202,20 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
     """
   }
 
+  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gPre = pre.asInstanceOf[global.Type]
+    val gSym = sym.asInstanceOf[global.Symbol]
+    global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
+  }
+
   def materializeImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].normalize
     val value =
       tpe match {
         case ConstantType(c: Constant) => Literal(c)
 
-        case SingleType(p, v) if !v.isParameter => q"""$v.asInstanceOf[$tpe]"""
+        case SingleType(p, v) if !v.isParameter => mkAttributedRef(p, v)
 
         case SingletonSymbolType(c) => mkSingletonSymbol(c)
 

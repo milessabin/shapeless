@@ -34,11 +34,11 @@ import sbtrelease.Utilities._
 
 object ShapelessBuild extends Build {
 
-  lazy val shapeless = Project(
-    id = "shapeless",
-    base = file("."),
-    aggregate = Seq(shapelessCore, shapelessExamples),
-    settings = commonSettings ++ Seq(
+  lazy val shapeless = (project in file(".")
+    aggregate (core, examples)
+    dependsOn (core, examples, scratch)
+    settings (commonSettings: _*)
+    settings (
       moduleName := "shapeless-root",
 
       (unmanagedSourceDirectories in Compile) := Nil,
@@ -49,11 +49,9 @@ object ShapelessBuild extends Build {
     )
   )
 
-  lazy val shapelessCore =
-    Project(
-      id = "shapeless-core",
-      base = file("core"),
-      settings = commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings ++ Seq(
+  lazy val core = (project
+      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings: _*)
+      settings(
         moduleName := "shapeless",
 
         managedSourceDirectories in Test := Nil,
@@ -76,7 +74,7 @@ object ShapelessBuild extends Build {
           },
 
         mappings in (Compile, packageSrc) <++=
-          (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples")),
+          (mappings in (Compile, packageSrc) in LocalProject("examples")),
 
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
         OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
@@ -108,12 +106,12 @@ object ShapelessBuild extends Build {
       )
     )
 
-  lazy val shapelessScratch = Project(
-    id = "shapeless-scratch",
-    base = file("scratch"),
-    dependencies = Seq(shapelessCore),
+  lazy val scratch = (project
+    dependsOn core
+    settings (commonSettings: _*)
+    settings (
+      moduleName := "shapeless-scratch",
 
-    settings = commonSettings ++ Seq(
       addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
       libraryDependencies ++= Seq(
@@ -127,12 +125,12 @@ object ShapelessBuild extends Build {
     )
   )
 
-  lazy val shapelessExamples = Project(
-    id = "shapeless-examples",
-    base = file("examples"),
-    dependencies = Seq(shapelessCore),
+  lazy val examples = (project
+    dependsOn core
+    settings (commonSettings: _*)
+    settings (
+      moduleName := "shapeless-examples",
 
-    settings = commonSettings ++ Seq(
       addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
       libraryDependencies ++= Seq(

@@ -43,17 +43,16 @@ object coproduct {
   object Selector {
     def apply[C <: Coproduct, T](implicit select: Selector[C, T]): Selector[C, T] = select
 
-    implicit def tlSelector1[H, T <: Coproduct, S](implicit st: Selector[T, S]): Selector[H :+: T, S] = new Selector[H :+: T, S] {
+    implicit def hdSelector[H, T <: Coproduct]: Selector[H :+: T, H] = new Selector[H :+: T, H] {
+      def apply(c: H :+: T): Option[H] = c match {
+        case Inl(h) => Some(h)
+        case Inr(t) => None
+      }
+    }
+    implicit def tlSelector[H, T <: Coproduct, S](implicit st: Selector[T, S]): Selector[H :+: T, S] = new Selector[H :+: T, S] {
       def apply(c: H :+: T): Option[S] = c match {
         case Inl(h) => None
         case Inr(t) => st(t)
-      }
-    }
-
-    implicit def hdSelector[H, T <: Coproduct](implicit st: Selector[T, H] = null): Selector[H :+: T, H] = new Selector[H :+: T, H] {
-      def apply(c: H :+: T): Option[H] = c match {
-        case Inl(h) => Some(h)
-        case Inr(t) => if (st != null) st(t) else None
       }
     }
   }
