@@ -102,3 +102,13 @@ object ValueConstraint {
   implicit def hlistValues[K, V, T <: HList, M <: HList]
     (implicit bct : ValueConstraint[T, M], sel : Selector[M, V]) = new ValueConstraint[FieldType[K, V] :: T, M] {}
 }
+
+trait NonEmptyConstraint[L <: HList]
+
+object NonEmptyConstraint {
+
+  implicit def oneElementNonEmptyHListConstraint[T]: NonEmptyConstraint[T::HNil] = new NonEmptyConstraint[T::HNil]{}
+
+  implicit def hlistNonEmptyConstraint[T,H<:HList](implicit nec:NonEmptyConstraint[H]): NonEmptyConstraint[T::H] = new NonEmptyConstraint[T::H]{}
+
+}
