@@ -120,6 +120,11 @@ trait CaseClassMacros extends ReprTypes {
   def isReprType(tpe: Type): Boolean =
     tpe <:< hlistTpe || tpe <:< coproductTpe
 
+  def isReprType1(tpe: Type): Boolean = {
+    val normalized = appliedType(tpe, WildcardType).dealias
+    normalized <:< hlistTpe || normalized <:< coproductTpe
+  }
+
   def isProduct(tpe: Type): Boolean =
     tpe =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
@@ -181,7 +186,13 @@ trait CaseClassMacros extends ReprTypes {
       if (ctors.isEmpty) abort(s"Sealed trait $tpe has no case class subtypes")
 
       val baseArgs: List[Type] =
-        if(hk) tpe.typeParams.map(_.asType.toType)
+        if(hk) {
+          val tc = tpe.typeConstructor
+          val paramSym = tc.typeParams.head
+          val paramTpe = paramSym.asType.toType
+          val appTpe = appliedType(tc, paramTpe)
+          appTpe.dealias.typeArgs
+        }
         else tpe.dealias.typeArgs
 
       val tpePrefix = prefix(tpe)
@@ -239,14 +250,21 @@ trait CaseClassMacros extends ReprTypes {
 
   def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
     tpe match {
-      case TypeRef(pre, sym, args) if args.exists(_ =:= param) =>
+      case t if t =:= param =>
+        Ident(arg)
+      case PolyType(params, body) if params.head.asType.toType =:= param =>
+        appliedTypTree1(body, param, arg)
+      case t @ TypeRef(pre, sym, List()) if t.takesTypeArgs =>
+        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
+        AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
+      case TypeRef(pre, sym, List()) =>
+        mkAttributedRef(pre, sym)
+      case TypeRef(pre, sym, args) =>
         val argTrees = args.map(appliedTypTree1(_, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
       case t if t.takesTypeArgs =>
         val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
         AppliedTypeTree(mkAttributedRef(tpe.typeConstructor), argTrees)
-      case t if t =:= param =>
-        Ident(arg)
       case t =>
         mkAttributedRef(t)
     }
