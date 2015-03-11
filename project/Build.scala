@@ -176,6 +176,7 @@ object ShapelessBuild extends Build {
         "-language:higherKinds",
         "-language:implicitConversions",
         "-Xfatal-warnings",
+        "-Xmax-classfile-name","240",
         "-deprecation",
         "-unchecked"),
 
