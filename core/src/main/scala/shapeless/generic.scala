@@ -204,11 +204,7 @@ trait CaseClassMacros extends ReprTypes {
             val moduleSym = sym.asClass.module
             val modulePre = prefix(moduleSym.typeSignature)
             c.internal.singleType(modulePre, moduleSym)
-          } else {
-            val subTpeSym = sym.asType
-            val subTpePre = prefix(subTpeSym.typeSignature)
-            c.internal.typeRef(subTpePre, subTpeSym, baseArgs)
-          }
+          } else appliedType(sym.toTypeIn(c.prefix.tree.tpe), baseArgs)
         } else {
           if(sym.isModuleClass) {
             val path = suffix.tail.map(_.name.toTermName)
