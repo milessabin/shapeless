@@ -25,43 +25,79 @@ import scala.reflect.macros.Context
 
 import ops.{ hlist, coproduct }
 
-trait Generic1[F[_]] {
+trait Generic1[F[_], FR[_[_]]] {
   type R[t]
+
+  lazy val fr: FR[R] = mkFrr
+
   def to[T](ft: F[T]): R[T]
   def from[T](rt: R[T]): F[T]
+
+  def mkFrr: FR[R]
 }
 
 object Generic1 {
-  type Aux[F[_], R0[_]] = Generic1[F] { type R[t] >: R0[t] <: R0[t] }
+  type Aux[F[_], FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
 
-  def apply[F[_]](implicit gen: Generic1[F]): Aux[F, gen.R] = gen
+  def apply[F[_], FR[_[_]]](implicit gen: Generic1[F, FR]): Aux[F, FR, gen.R] = gen
 
-  implicit def id: Generic1[Id] { type R[T] = T :: HNil } =
-    new Generic1[Id] {
-      type R[T] = T :: HNil
-      def to[T](t: T): R[T] = t :: HNil
-      def from[T](t: R[T]): T = t.head
-    }
+  implicit def materialize[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.materialize[T, FR]
+}
 
-  implicit def const[C]: Generic1[Const[C]#λ] { type R[T] = C :: HNil } =
-    new Generic1[Const[C]#λ] {
-      type R[T] = C :: HNil
-      def to[T](t: C): R[T] = t :: HNil
-      def from[T](t: R[T]): C = t.head
-    }
+trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] {
+  type H[_]
+  type T[_] <: HList
 
-  implicit def materialize[T[_]]: Generic1[T] = macro Generic1Macros.materialize[T]
+  lazy val fh: FH[H] = mkFhh
+  lazy val ft: FT[T] = mkFtt
+
+  def pack[A](u: (H[A], T[A])): L[A]
+  def unpack[A](p: L[A]): (H[A], T[A])
+
+  def mkFhh: FH[H]
+  def mkFtt: FT[T]
+}
+
+object IsHCons1 {
+  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+
+  def apply[L[_], FH[_[_]], FT[_[_]]](implicit tc: IsHCons1[L, FH, FT]): Aux[L, FH, FT, tc.H, tc.T] = tc
+
+  implicit def mkIsHCons1[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
+}
+
+trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] {
+  type H[_]
+  type T[_] <: Coproduct
+
+  lazy val fh: FH[H] = mkFhh
+  lazy val ft: FT[T] = mkFtt
+
+  def pack[A](u: Either[H[A], T[A]]): L[A]
+  def unpack[A](p: L[A]): Either[H[A], T[A]]
+
+  def mkFhh: FH[H]
+  def mkFtt: FT[T]
+}
+
+object IsCCons1 {
+  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+
+  def apply[L[_], FH[_[_]], FT[_[_]]](implicit tc: IsCCons1[L, FH, FT]): Aux[L, FH, FT, tc.H, tc.T] = tc
+
+  implicit def mkIsCCons1[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
 class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
   import Flag._
 
-  def materialize[T[_]](implicit tTag: WeakTypeTag[T[_]]): Tree = {
+  def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Id]]): Tree = {
     val tpe = weakTypeOf[T[_]]
+    val frTpe = frTag.tpe.typeConstructor
     val nme = newTypeName(c.fresh)
 
-    if(isReprType(tpe))
+    if(isReprType1(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
     def mkCoproductCases(tpe: Type, index: Int): (CaseDef, CaseDef) = {
@@ -165,13 +201,18 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
 
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
+    val frTpt = mkAttributedRef(frTpe)
 
     val clsName = newTypeName(c.fresh())
     q"""
-      final class $clsName extends _root_.shapeless.Generic1[$tpe] {
+      type C[$nme] = $tpeTpt
+      final class $clsName extends _root_.shapeless.Generic1[C, $frTpe] {
         type R[$nme] = $reprTpt
-        def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
-        def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
+
+        def mkFrr: $frTpt[R] = lazily[$frTpt[R]]
+
+        def to[$nme](ft: C[$nme]): R[$nme] = ft match { case ..$toCases }
+        def from[$nme](rt: R[$nme]): C[$nme] = rt match { case ..$fromCases }
       }
       new $clsName()
     """
@@ -181,6 +222,126 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
 object Generic1Macros {
   def inst(c: Context) = new Generic1Macros[c.type](c)
 
-  def materialize[T[_]](c: Context)(implicit tTag: c.WeakTypeTag[T[_]]): c.Expr[Generic1[T]] =
-    c.Expr[Generic1[T]](inst(c).materialize[T])
+  def materialize[T[_], FR[_[_]]](c: Context)
+    (implicit tTag: c.WeakTypeTag[T[_]], frTag: c.WeakTypeTag[FR[Id]]): c.Expr[Generic1[T, FR]] =
+      c.Expr[Generic1[T, FR]](inst(c).materialize[T, FR])
+}
+
+class IsHCons1Macros[C <: Context](val c: C) extends IsCons1Macros {
+  import c.universe._
+
+  def mkIsHCons1Impl[L[_], FH[_[_]], FT[_[_]]]
+    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Id]], ftTag: WeakTypeTag[FT[Const[HNil]#λ]]): Tree =
+      mkIsCons1(lTag.tpe, fhTag.tpe.typeConstructor, ftTag.tpe.typeConstructor)
+
+  val isCons1TC: Tree = tq"_root_.shapeless.IsHCons1"
+  val consTpe: Type = hconsTpe
+
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree) =
+    (
+      q"""
+        def pack[$nme](u: ($hdTpt, $tlTpt)): $lTpt = _root_.shapeless.::(u._1, u._2)
+      """,
+      q"""
+        def unpack[$nme](p: $lTpt): ($hdTpt, $tlTpt) = (p.head, p.tail)
+      """
+    )
+}
+
+object IsHCons1Macros {
+  def inst(c: Context) = new IsHCons1Macros[c.type](c)
+
+  def mkIsHCons1Impl[L[_], FH[_[_]], FT[_[_]]](c: Context)
+    (implicit
+      lTag: c.WeakTypeTag[L[_]],
+      fhTag: c.WeakTypeTag[FH[Id]],
+      ftTag: c.WeakTypeTag[FT[Const[HNil]#λ]]
+    ): c.Expr[IsHCons1[L, FH, FT]] =
+      c.Expr[IsHCons1[L, FH, FT]](inst(c).mkIsHCons1Impl[L, FH, FT])
+}
+
+class IsCCons1Macros[C <: Context](val c: C) extends IsCons1Macros {
+  import c.universe._
+
+  def mkIsCCons1Impl[L[_], FH[_[_]], FT[_[_]]]
+    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Id]], ftTag: WeakTypeTag[FT[Const[CNil]#λ]]): Tree =
+      mkIsCons1(lTag.tpe, fhTag.tpe.typeConstructor, ftTag.tpe.typeConstructor)
+
+  val isCons1TC: Tree = tq"_root_.shapeless.IsCCons1"
+  val consTpe: Type = cconsTpe
+
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree) =
+    (
+      q"""
+        def pack[$nme](u: Either[$hdTpt, $tlTpt]): $lTpt = u match {
+          case Left(hd) => Inl[$hdTpt, $tlTpt](hd)
+          case Right(tl) => Inr[$hdTpt, $tlTpt](tl)
+        }
+      """,
+      q"""
+        def unpack[$nme](p: $lTpt): Either[$hdTpt, $tlTpt] = p match {
+          case Inl(hd) => Left[$hdTpt, $tlTpt](hd)
+          case Inr(tl) => Right[$hdTpt, $tlTpt](tl)
+        }
+      """
+    )
+}
+
+object IsCCons1Macros {
+  def inst(c: Context) = new IsCCons1Macros[c.type](c)
+
+  def mkIsCCons1Impl[L[_], FH[_[_]], FT[_[_]]](c: Context)
+    (implicit
+      lTag: c.WeakTypeTag[L[_]],
+      fhTag: c.WeakTypeTag[FH[Id]],
+      ftTag: c.WeakTypeTag[FT[Const[CNil]#λ]]
+    ): c.Expr[IsCCons1[L, FH, FT]] =
+      c.Expr[IsCCons1[L, FH, FT]](inst(c).mkIsCCons1Impl[L, FH, FT])
+}
+
+trait IsCons1Macros extends CaseClassMacros {
+  import c.universe._
+
+  val isCons1TC: Tree
+  val consTpe: Type
+
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree)
+
+  def mkIsCons1(lTpe: Type, fhTpe: Type, ftTpe: Type): Tree = {
+    val fhTpt = mkAttributedRef(fhTpe)
+    val ftTpt = mkAttributedRef(ftTpe)
+
+    val TypeRef(_, lSym, _) = lTpe
+    val lParam = lSym.asType.typeParams.head
+    val lParamTpe = lParam.asType.toType
+    val lDealiasedTpe = appliedType(lTpe, List(lParamTpe)).normalize
+
+    if(!(lDealiasedTpe.typeConstructor =:= consTpe))
+      abort("Not H/CCons")
+
+    val TypeRef(_, _, List(hd, tl)) = lDealiasedTpe
+
+    val lPoly = polyType(List(lParam), lDealiasedTpe)
+    val hdPoly = polyType(List(lParam), hd)
+    val tlPoly = polyType(List(lParam), tl)
+
+    val nme = newTypeName(c.fresh)
+    val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
+    val hdTpt = appliedTypTree1(hdPoly, lParamTpe, nme)
+    val tlTpt = appliedTypTree1(tlPoly, lParamTpe, nme)
+
+    val (pack, unpack) = mkPackUnpack(nme, lTpt, hdTpt, tlTpt)
+    q"""
+      new $isCons1TC[$lTpe, $fhTpt, $ftTpt] {
+        type H[$nme] = $hdTpt
+        type T[$nme] = $tlTpt
+
+        def mkFhh: $fhTpt[H] = lazily[$fhTpt[H]]
+        def mkFtt: $ftTpt[T] = lazily[$ftTpt[T]]
+
+        $pack
+        $unpack
+      }
+    """
+  }
 }

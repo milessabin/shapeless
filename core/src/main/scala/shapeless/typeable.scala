@@ -27,6 +27,8 @@ import scala.reflect.macros.Context
  */
 trait Typeable[T] {
   def cast(t: Any): Option[T]
+  def describe: String
+  override def toString = s"Typeable[$describe]"
 }
 
 trait LowPriorityTypeable {
@@ -45,30 +47,30 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   def apply[T](implicit castT: Typeable[T]) = castT
 
-  case class ValueTypeable[T, B](cB: Class[B]) extends Typeable[T] {
+  case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
     def cast(t: Any): Option[T] = {
       if(t != null && (cB isAssignableFrom t.getClass)) Some(t.asInstanceOf[T]) else None
     }
   }
 
   /** Typeable instance for `Byte`. */
-  implicit val byteTypeable: Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte])
+  implicit val byteTypeable: Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte], "Byte")
   /** Typeable instance for `Short`. */
-  implicit val shortTypeable: Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short])
+  implicit val shortTypeable: Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short], "Short")
   /** Typeable instance for `Char`. */
-  implicit val charTypeable: Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character])
+  implicit val charTypeable: Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character], "Char")
   /** Typeable instance for `Int`. */
-  implicit val intTypeable: Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer])
+  implicit val intTypeable: Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer], "Int")
   /** Typeable instance for `Long`. */
-  implicit val longTypeable: Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long])
+  implicit val longTypeable: Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long], "Long")
   /** Typeable instance for `Float`. */
-  implicit val floatTypeable: Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float])
+  implicit val floatTypeable: Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float], "Float")
   /** Typeable instance for `Double`. */
-  implicit val doubleTypeable: Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double])
+  implicit val doubleTypeable: Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double], "Double")
   /** Typeable instance for `Boolean`. */
-  implicit val booleanTypeable: Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean])
+  implicit val booleanTypeable: Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
   /** Typeable instance for `Unit`. */
-  implicit val unitTypeable: Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit])
+  implicit val unitTypeable: Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
 
   def isValClass[T](clazz: Class[T]) =
     (classOf[jl.Number] isAssignableFrom clazz) ||
@@ -80,6 +82,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   implicit val anyTypeable: Typeable[Any] =
     new Typeable[Any] {
       def cast(t: Any): Option[Any] = Some(t)
+      def describe = "Any"
     }
 
   /** Typeable instance for `AnyVal`. */
@@ -88,6 +91,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t: Any): Option[AnyVal] = {
         if(t != null && isValClass(t.getClass)) Some(t.asInstanceOf[AnyVal]) else None
       }
+      def describe = "AnyVal"
     }
 
   /** Typeable instance for `AnyRef`. */
@@ -96,6 +100,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t: Any): Option[AnyRef] = {
         if(t == null || isValClass(t.getClass)) None else Some(t.asInstanceOf[AnyRef])
       }
+      def describe = "AnyRef"
     }
 
   /** Typeable instance for simple monomorphic types */
@@ -104,21 +109,32 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t: Any): Option[T] = {
         if(t != null && erased.isAssignableFrom(t.getClass)) Some(t.asInstanceOf[T]) else None
       }
+      def describe = {
+        // Workaround for https://issues.scala-lang.org/browse/SI-5425
+        try {
+          erased.getSimpleName
+        } catch {
+          case _: InternalError =>
+            erased.getName
+        }
+      }
     }
 
   /** Typeable instance for singleton value types */
-  def valueSingletonTypeable[T](value: T): Typeable[T] =
+  def valueSingletonTypeable[T](value: T, name: String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] =
         if(t == value) Some(value) else None
+      def describe = s"$name($value)"
     }
 
   /** Typeable instance for singleton reference types */
-  def referenceSingletonTypeable[T <: AnyRef](value: T): Typeable[T] =
+  def referenceSingletonTypeable[T <: AnyRef](value: T, name: String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] =
         if(t.asInstanceOf[AnyRef] eq value) Some(value) else None
-    }
+      def describe = s"$name.type"
+   }
 
   /** Typeable instance for intersection types with typeable parents */
   def intersectionTypeable[T](parents: List[Typeable[_]]): Typeable[T] =
@@ -126,11 +142,12 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t: Any): Option[T] = {
         if(t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
       }
+      def describe = parents map(_.describe) mkString " with "
     }
   
   /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT: Typeable[T]): Typeable[Option[T]] =
-    new Typeable[Option[T]] {
+    new Typeable[Option[T]]{
       def cast(t: Any): Option[Option[T]] = {
         if(t == null) None
         else if(t.isInstanceOf[Option[_]]) {
@@ -139,15 +156,17 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           else for(e <- o; _ <- e.cast[T]) yield t.asInstanceOf[Option[T]]
         } else None
       }
+      def describe = s"Option[${castT.describe}]"
     }
 
   /** Typeable instance for `Either`. */
   implicit def eitherTypeable[A, B]
-    (implicit castA: Typeable[Left[A, B]], castB: Typeable[Right[A, B]]): Typeable[Either[A, B]] =
+    (implicit castA: Typeable[A], castB: Typeable[B]): Typeable[Either[A, B]] =
       new Typeable[Either[A, B]] {
         def cast(t: Any): Option[Either[A, B]] = {
           t.cast[Left[A, B]] orElse t.cast[Right[A, B]]
         }
+        def describe = s"Either[${castA.describe}, ${castB.describe}]"
       }
 
   /** Typeable instance for `Left`. */
@@ -160,6 +179,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           for(a <- l.a.cast[A]) yield t.asInstanceOf[Left[A, B]]
         } else None
       }
+      def describe = s"Left[${castA.describe}]"
     }
 
   /** Typeable instance for `Right`. */
@@ -172,25 +192,31 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           for(b <- r.b.cast[B]) yield t.asInstanceOf[Right[A, B]]
         } else None
       }
+      def describe = s"Right[${castB.describe}]"
     }
 
   /** Typeable instance for `GenTraversable`.
-   *  Note that the contents be will tested for conformance to the element type. */
+   *  Note that the contents be will tested for conformance to the element type.
+   *
+   *  In Scala 2.10.x Lazy is required to prevent spurious divergence wrt
+   *  the instance for Any.
+   */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T]] =
+    (implicit mCC: ClassTag[CC[_]], castT: Lazy[Typeable[T]]): Typeable[CC[T]] =
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =
         if(t == null) None
         else if(mCC.runtimeClass isAssignableFrom t.getClass) {
           val cc = t.asInstanceOf[CC[Any]]
-          if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
+          if(cc.forall(x => castT.value.cast(x).isDefined)) Some(t.asInstanceOf[CC[T]])
           else None
         } else None
+      def describe = s"${mCC.runtimeClass.getSimpleName}[${castT.value.describe}]"
     }
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], K, V]
-    (implicit ev: M[K, V] <:< GenMap[K, V], mM: ClassTag[M[_, _]], castKV: Typeable[(K, V)]): Typeable[M[K, V]] =
+    (implicit ev: M[K, V] <:< GenMap[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
     new Typeable[M[K, V]] {
       def cast(t: Any): Option[M[K, V]] =
         if(t == null) None
@@ -199,6 +225,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
           else None
         } else None
+      def describe = s"${mM.runtimeClass.getSimpleName}[${castK.describe}, ${castV.describe}]"
     }
 
   /** Typeable instance for polymorphic case classes with typeable elements */
@@ -211,12 +238,24 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           if((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(c)
           else None
         } else None
+      def describe = {
+        val typeParams = fields map(_.describe) mkString(",")
+        // Workaround for https://issues.scala-lang.org/browse/SI-5425
+        val name = try {
+          erased.getSimpleName
+        } catch {
+          case _: InternalError =>
+            erased.getName
+        }
+        s"$name[$typeParams]"
       }
+    }
 
   /** Typeable instance for `HNil`. */
   implicit val hnilTypeable: Typeable[HNil] =
     new Typeable[HNil] {
       def cast(t: Any): Option[HNil] = if(t != null && t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
+      def describe = "HNil"
     }
 
   /** Typeable instance for `HList`s. Note that the contents will be tested for conformance to the element types. */
@@ -229,12 +268,14 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           for(hd <- l.head.cast[H]; tl <- (l.tail: Any).cast[T]) yield t.asInstanceOf[H :: T]
         } else None
       }
+      def describe = s"${castH.describe} :: ${castT.describe}"
     }
 
   /** Typeable instance for `CNil`. */
   implicit val cnilTypeable: Typeable[CNil] =
     new Typeable[CNil] {
       def cast(t: Any): Option[CNil] = None
+      def describe = "CNil"
     }
 
   /**
@@ -247,6 +288,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def cast(t: Any): Option[H :+: T] = {
         t.cast[Inl[H, T]] orElse t.cast[Inr[H, T]]
       }
+      def describe = s"${castH.describe} :+: ${castT.describe}"
     }
 
   /** Typeable instance for `Inl`. */
@@ -259,6 +301,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           for(hd <- l.head.cast[H]) yield t.asInstanceOf[Inl[H, T]]
         } else None
       }
+      def describe = s"Inl[${castH.describe}}]"
     }
 
   /** Typeable instance for `Inr`. */
@@ -271,6 +314,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           for(tl <- r.tail.cast[T]) yield t.asInstanceOf[Inr[H, T]]
         } else None
       }
+      def describe = s"Inr[${castT.describe}}]"
     }
 }
 
@@ -287,8 +331,9 @@ trait TypeCase[T] {
 
 object TypeCase {
   import syntax.typeable._
-  def apply[T: Typeable]: TypeCase[T] = new TypeCase[T] {
+  def apply[T](implicit tt:Typeable[T]): TypeCase[T] = new TypeCase[T] {
     def unapply(t: Any): Option[T] = t.cast[T]
+    override def toString = s"TypeCase[${tt.describe}]"
   }
 }
 
@@ -324,12 +369,15 @@ class TypeableMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
 
       case SingletonSymbolType(c) =>
         val sym = mkSingletonSymbol(c)
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym)"""
+        val name = sym.symbol.name.toString
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym, $name)"""
 
       case RefinedType(parents, decls) =>
         if(decls.nonEmpty)
           c.abort(c.enclosingPosition, "No Typeable for a refinement with non-empty decls")
-        val parentTypeables = parents.map { parent => c.inferImplicitValue(appliedType(typeableTpe, List(parent))) }
+        val parentTypeables = parents.filterNot(_ =:= typeOf[AnyRef]).map { parent =>
+          c.inferImplicitValue(appliedType(typeableTpe, List(parent)))
+        }
         if(parentTypeables.exists(_ == EmptyTree))
           c.abort(c.enclosingPosition, "Missing Typeable for parent of a refinement")
 
@@ -359,10 +407,12 @@ class TypeableMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
         q"""_root_.shapeless.Typeable.caseClassTypeable(classOf[$tpe], List(..$fieldTypeables))"""
 
       case SingleType(_, v) if !v.isParameter =>
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe])"""
+        val name = v.name.toString
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe], $name)"""
 
       case ConstantType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe])"""
+        val name = c.tpe.typeSymbol.name.toString
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], $name)"""
 
       case other =>
         q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
