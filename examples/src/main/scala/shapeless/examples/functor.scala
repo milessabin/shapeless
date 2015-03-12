@@ -17,9 +17,6 @@
 package shapeless.examples
 
 import shapeless._
-import ops.coproduct.IsCCons
-import ops.hlist.IsHCons
-import test._
 
 package FunctorDemoDefns {
   case class Foo[T](t: T, ts: List[T])

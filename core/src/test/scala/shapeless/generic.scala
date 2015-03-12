@@ -611,4 +611,20 @@ package GenericTestsAux2 {
       implicitly[Bar[wrapper.Color]]
     }
   }
+
+  // This should compile correctly, however, the corresponding pattern match
+  // falls foul of https://issues.scala-lang.org/browse/SI-9220
+  /*
+  object Outer5 {
+    trait Command
+    object Command {
+      sealed trait Execution extends Command
+    }
+
+    case class Buzz() extends Command.Execution
+    case class Door() extends Command.Execution
+
+    Generic[Command.Execution]
+  }
+  */
 }

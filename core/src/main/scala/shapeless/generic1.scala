@@ -205,14 +205,13 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
 
     val clsName = newTypeName(c.fresh())
     q"""
-      type C[$nme] = $tpeTpt
-      final class $clsName extends _root_.shapeless.Generic1[C, $frTpe] {
+      final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
         def mkFrr: $frTpt[R] = lazily[$frTpt[R]]
 
-        def to[$nme](ft: C[$nme]): R[$nme] = ft match { case ..$toCases }
-        def from[$nme](rt: R[$nme]): C[$nme] = rt match { case ..$fromCases }
+        def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
+        def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
       }
       new $clsName()
     """
