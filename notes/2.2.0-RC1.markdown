@@ -34,7 +34,7 @@ A big "Thank You!" to everyone who has contributed to this release,
 * Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
 * Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
 * Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
-* Vladimir Matveev
+* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
 
 [shapeless]: https://github.com/milessabin/shapeless
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
