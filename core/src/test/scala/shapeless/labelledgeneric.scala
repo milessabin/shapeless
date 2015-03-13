@@ -29,10 +29,15 @@ import union._
 object LabelledGenericTestsAux {
   case class Book(author: String, title: String, id: Int, price: Double)
   case class ExtendedBook(author: String, title: String, id: Int, price: Double, inPrint: Boolean)
+  case class BookWithMultipleAuthors(title: String, id: Int, authors: String*)
 
   val tapl = Book("Benjamin Pierce", "Types and Programming Languages", 262162091, 44.11)
   val tapl2 = Book("Benjamin Pierce", "Types and Programming Languages (2nd Ed.)", 262162091, 46.11)
   val taplExt = ExtendedBook("Benjamin Pierce", "Types and Programming Languages", 262162091, 44.11, true)
+  val dp = BookWithMultipleAuthors(
+    "Design Patterns", 201633612,
+    "Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides"
+  )
 
   val taplRecord =
     ('author ->> "Benjamin Pierce") ::
@@ -41,9 +46,18 @@ object LabelledGenericTestsAux {
     ('price  ->>  44.11) ::
     HNil
 
+  val dpRecord =
+    ('title   ->> "Design Patterns") ::
+    ('id      ->> 201633612) ::
+    ('authors ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
+    HNil
+
   type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
   type BookKeys = Keys[BookRec]
   type BookValues = Values[BookRec]
+
+  type BookWithMultipleAuthorsRec = Record.`'title -> String, 'id -> Int, 'authors -> Seq[String]`.T
+
 
   sealed trait Tree
   case class Node(left: Tree, right: Tree) extends Tree
@@ -148,6 +162,24 @@ class LabelledGenericTests {
 
     val values = b0.values
     assertEquals("Benjamin Pierce" :: "Types and Programming Languages" :: 262162091 :: 44.11 :: HNil, values)
+  }
+
+  @Test
+  def testProductWithVarargBasics: Unit = {
+    val gen = LabelledGeneric[BookWithMultipleAuthors]
+
+    val b0 = gen.to(dp)
+    typed[BookWithMultipleAuthorsRec](b0)
+    assertEquals(dpRecord, b0)
+
+    val keys = b0.keys
+    assertEquals('title.narrow :: 'id.narrow :: 'authors.narrow :: HNil, keys)
+
+    val values = b0.values
+    assertEquals(
+      "Design Patterns" :: 201633612 :: Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides") :: HNil,
+      values
+    )
   }
 
   @Test
