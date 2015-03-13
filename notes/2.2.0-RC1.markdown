@@ -1,0 +1,33 @@
+This is the first release candidate for [shapeless-2.2.0][shapeless]. 
+These release notes provide a summary of changes since shapeless 2.1.0.
+shapeless 2.2.0 should be source and binary compatible with shapeless
+2.1.0, and for migration from shapeless 2.0.0 the earlier
+[migration guide from shapeless 2.0.0 to 2.1.0][migration] is still
+applicable and is available on the [shapeless wiki][wiki].
+
+A big "Thank You!" to everyone who has contributed to this release,
+
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
+* Vladimir Matveev
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
+
+* Added support for derivation of type classes for higher-kinded types.
+
+* Added support for Generic representation of types with repeated.
+
+* Added a useful toString to instances of the Typeable type class.
+
+* Added a useful toString to Sized containers.
+
+* Improved the CSV serialization example.
+
+* Reorganized the SBT project modules.
+
+

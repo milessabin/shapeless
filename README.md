@@ -258,6 +258,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
++ Johnny Everson <khronnuz@gmail.com> [@johnny_everson](https://twitter.com/johnny_everson)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
@@ -281,3 +282,4 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
++ Vladimir Matveev <vladimir.matweev@gmail.com>
