@@ -401,7 +401,7 @@ trait CaseClassMacros extends ReprTypes {
   def devarargify(tpe: Type): Type =
     tpe match {
       case TypeRef(pre, _, args) if isVararg(tpe) =>
-        internal.typeRef(pre, typeOf[Seq[_]].typeSymbol, args)
+        appliedType(typeOf[scala.collection.Seq[_]].typeConstructor, args)
       case _ => tpe
     }
 }
