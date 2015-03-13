@@ -885,6 +885,11 @@ class HListTests {
     typed[Array[Any]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
+    val ssl = "foo" :: "bar" :: 1L :: HNil
+    val ssla = ssl.toArray
+    typed[Array[Any]](ssla)
+    assertArrayEquals2(Array("foo", "bar", 1L), ssla)
+
     val stuff2 = stuff.toHList[ISII]
     assertTrue(stuff2.isDefined)
     assertTypedEquals[ISII](1 :: "foo" :: 2 :: 3 :: HNil, stuff2.get)
