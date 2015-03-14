@@ -255,51 +255,43 @@ class BinTreeTests {
 
 
   object Op {
-    def apply(name0: String)(pf0: PartialFunction[BinTree, BinTree]): Op = new Op {
-      val name = name0
-      val pf = pf0
+    def apply(name: String)(pf: PartialFunction[BinTree, BinTree]): Op = create(name)(pf.lift)
+
+    def create(name0: String)(f: BinTree ⇒ Option[BinTree]): Op = new Op {
+      def name = name0
+      def apply(tree: BinTree): Option[BinTree] = f(tree)
     }
+
 
     class AndThen(before: Op, after: Op) extends Op {
       val name = s"${before.name} >>> ${after.name}"
-
-      val pf: PartialFunction[BinTree, BinTree] = {
-        case tree if before(tree).flatMap(after(_)).isDefined ⇒
-          before(tree).flatMap(after(_)).get
-      }
+      def apply(tree: BinTree): Option[BinTree] = before(tree).flatMap(after(_))
     }
 
     class RepeatUntil(op: Op, p: BinTreePredicate) extends Op {
       val name: String = s"repeat(${op.name}).until($p)"
 
-      val pf: PartialFunction[BinTree, BinTree] = { case tree ⇒ recurse(tree) }
-
-      @tailrec private def recurse(current: BinTree): BinTree =
-        if (p(current)) current else recurse(op(current).getOrElse(sys.error {
-          s"${op.name} $current : Unexpected None result"
-        }))
+      @tailrec final def apply(tree: BinTree): Option[BinTree] = {
+        if (p(tree)) Some(tree) else op(tree) match {
+          case None ⇒ None
+          case Some(next) ⇒ apply(next)
+        }
+      }
     }
 
     class Named(op: Op, val name: String) extends Op {
-      val pf = op.pf
-
+      def apply(tree: BinTree): Option[BinTree] = op(tree)
       override def toString: String = s"$name = (${op.name})"
     }
 
     class Cond(p: BinTreePredicate, ifTrue: Op, ifFalse: Op) extends Op {
       def name: String = s"if ($name) { ${ifTrue.name} } else { ${ifFalse.name} }"
-
-      val pf: PartialFunction[BinTree, BinTree] = {
-        case tree if p(tree) && ifTrue.pf.isDefinedAt(tree) ⇒ ifTrue(tree).get
-        case tree if ifFalse.pf.isDefinedAt(tree) ⇒ ifFalse(tree).get
-      }
+      def apply(tree: BinTree): Option[BinTree] = if (p(tree)) ifTrue(tree) else ifFalse(tree)
     }
   }
 
   trait Op {
     def name: String
-    // TODO: Change to BinTree ⇒ Option[BinTree]
-    def pf: PartialFunction[BinTree, BinTree]
 
     def trace(tree: BinTree): Option[BinTree] = {
       val result = apply(tree)
@@ -309,7 +301,7 @@ class BinTreeTests {
       result
     }
 
-    def apply(tree: BinTree): Option[BinTree] = pf.lift(tree)
+    def apply(tree: BinTree): Option[BinTree]
     def andThen(after: Op): Op = new Op.AndThen(this, after)
     def repeatUntil(p: BinTreePredicate): Op = new Op.RepeatUntil(this, p)
     def named(name: String) = new Op.Named(this, name)
@@ -330,8 +322,15 @@ class BinTreeTests {
   val assocL = Op("assocL") { case Node(l, Node(m, r)) ⇒ Node(Node(l, m), r) }
   val assocR = Op("assocR") { case Node(Node(l, m), r) ⇒ Node(l, Node(m, r)) }
 
-  def mapL(op: Op): Op = Op(s"mapL(${op.name})") { case Node(l, r) if op(l).isDefined ⇒ Node(op(l).get, r) }
-  def mapR(op: Op): Op = Op(s"mapR(${op.name})") { case Node(l, r) if op(r).isDefined ⇒ Node(l, op(r).get) }
+  def mapL(op: Op): Op = Op.create(s"mapL(${op.name})") {
+    case Node(l, r) ⇒ op(l).map(Node(_, r))
+    case _ ⇒ None
+  }
+
+  def mapR(op: Op): Op = Op.create(s"mapR(${op.name})") {
+    case Node(l, r) ⇒ op(r).map(Node(l, _))
+    case _ ⇒ None
+  }
 
   val shiftL  = mapR(swap) andThen assocL named "shiftL"
   val shiftR  = mapL(swap) andThen assocR named "shiftR"
