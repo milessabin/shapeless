@@ -7,6 +7,30 @@ class BinTreeTests {
   import org.junit.Assert._
   import org.junit.Test
 
+  @Test def testIsNil(): Unit = {
+    assertTrue(isNil(Nil))
+    assertFalse(isNil(a))
+    assertFalse(isNil(Node(a, Nil)))
+  }
+
+  @Test def testNilInit(): Unit = {
+    assertTrue(nilInit(Node(Nil, a)))
+    assertFalse(nilInit(Nil))
+    assertFalse(nilInit(Node(a, Nil)))
+  }
+
+  @Test def testNilTail(): Unit = {
+    assertTrue(nilTail(Node(a, Nil)))
+    assertFalse(nilTail(Nil))
+    assertFalse(nilTail(Node(Nil, a)))
+  }
+
+  @Test def testId(): Unit = {
+    assertEquals(Some(Nil), id(Nil))
+    assertEquals(Some(a), id(a))
+    assertEquals(Some(Node(a, Nil)), id(Node(a, Nil)))
+  }
+
   @Test def testIntroL(): Unit = {
     assertEquals(Some(Node(Nil, a)), introL(a))
     assertEquals(Some(Node(Nil, Node(a, b))), introL(Node(a, b)))
@@ -34,14 +58,16 @@ class BinTreeTests {
     assertEquals(None, swap(a))
   }
 
+  @Test def testAssocL(): Unit = {
+    assertEquals(Some(Node(Node(a, b), c)), assocL(Node(a, Node(b, c))))
+    assertEquals(None, assocL(a))
+    assertEquals(None, assocL(Node(Node(a, b), c)))
+  }
+
   @Test def testAssocR(): Unit = {
     assertEquals(Some(Node(a, Node(b, c))), assocR(Node(Node(a, b), c)))
     assertEquals(None, assocR(a))
     assertEquals(None, assocR(Node(a, Node(b, c))))
-  }
-
-  @Test def testAssocL(): Unit = {
-    assertEquals(Some(Node(Node(a, b), c)), assocL(Node(a, Node(b, c))))
   }
 
   @Test def testMapL(): Unit = {
@@ -52,30 +78,104 @@ class BinTreeTests {
     assertEquals(Some(Node(a, Node(c, b))), mapR(swap)(Node(a, Node(b, c))))
   }
 
-  @Test def testShift(): Unit = {
+  @Test def testShiftL(): Unit = {
+    assertEquals(Some(Node(Node(a, c), b)), shiftL(Node(a, Node(b, c))))
+    assertEquals(None, shiftL(a))
+    assertEquals(None, shiftL(Node(Node(a, b), c)))
+  }
+
+  @Test def testShiftR(): Unit = {
     assertEquals(Some(Node(b, Node(a, c))), shiftR(Node(Node(a, b), c)))
     assertEquals(None, shiftR(a))
     assertEquals(None, shiftR(Node(a, Node(b, c))))
   }
 
-  @Test def testReverse(): Unit = {
-    assertEquals(Some(                         Nil), reverseR(Nil))
-    assertEquals(Some(                    a #: Nil), reverseR(a #: Nil))
-    assertEquals(Some(               b #: a #: Nil), reverseR(a #: b #: Nil))
-    assertEquals(Some(          c #: b #: a #: Nil), reverseR(a #: b #: c #: Nil))
-    assertEquals(Some(     d #: c #: b #: a #: Nil), reverseR(a #: b #: c #: d #: Nil))
-    assertEquals(Some(e #: d #: c #: b #: a #: Nil), reverseR(a #: b #: c #: d #: e #: Nil))
+  @Test def testNonNil(): Unit = {
+    assertEquals(Some(Nil), nonNil(swap)(Nil))
+    assertEquals(Some(Node(b, a)), nonNil(swap)(Node(a, b)))
+  }
 
+  @Test def testBracketR(): Unit = {
+    assertEquals(Some(Nil), bracketR(swap)(Nil))
+    assertEquals(Some(a), bracketR(swap)(a))
+    assertEquals(Some(Node(a, Nil)), bracketR(swap)(Node(a, Nil)))
+  }
+
+  @Test def testBracketL(): Unit = {
+    assertEquals(Some(Nil), bracketL(swap)(Nil))
+    assertEquals(Some(a), bracketL(swap)(a))
+    assertEquals(Some(Node(a, Nil)), bracketL(swap)(Node(a, Nil)))
+  }
+
+  @Test def testRepeatUntil(): Unit = {
+    assertEquals(Some(Node(a, Nil)), swap.repeatUntil(nilTail)(Node(a, Nil)))
+    assertEquals(Some(Node(a, Nil)), swap.repeatUntil(nilTail)(Node(Nil, a)))
+  }
+
+  @Test def testFoldL(): Unit = {
+    assertEquals(Some(Nil), foldL(swap)(Nil))
+    assertEquals(Some(Node(a, Nil)), foldL(swap)(Node(a, Nil)))
+  }
+
+  @Test def testFoldR(): Unit = {
+    assertEquals(Some(Nil), foldR(swap)(Nil))
+    assertEquals(Some(Node(a, Nil)), foldR(swap)(Node(a, Nil)))
+  }
+
+  @Test def testReverseL(): Unit = {
     assertEquals(Some(                         Nil), reverseL(Nil))
     assertEquals(Some(                    Nil :# a), reverseL(Nil :# a))
     assertEquals(Some(               Nil :# b :# a), reverseL(Nil :# a :# b))
     assertEquals(Some(          Nil :# c :# b :# a), reverseL(Nil :# a :# b :# c))
     assertEquals(Some(     Nil :# d :# c :# b :# a), reverseL(Nil :# a :# b :# c :# d))
     assertEquals(Some(Nil :# e :# d :# c :# b :# a), reverseL(Nil :# a :# b :# c :# d :# e))
-
   }
 
+  @Test def testReverseR(): Unit = {
+    assertEquals(Some(                         Nil), reverseR(Nil))
+    assertEquals(Some(                    a #: Nil), reverseR(a #: Nil))
+    assertEquals(Some(               b #: a #: Nil), reverseR(a #: b #: Nil))
+    assertEquals(Some(          c #: b #: a #: Nil), reverseR(a #: b #: c #: Nil))
+    assertEquals(Some(     d #: c #: b #: a #: Nil), reverseR(a #: b #: c #: d #: Nil))
+    assertEquals(Some(e #: d #: c #: b #: a #: Nil), reverseR(a #: b #: c #: d #: e #: Nil))
+  }
+
+  @Test def testFullL(): Unit = {
+    assertEquals(Some(Nil), fullL(Nil))
+    assertEquals(Some(Nil #: a), fullL(a :# Nil))
+    assertEquals(Some(Nil #: a #: b), fullL(a :# b :# Nil))
+  }
+
+  @Test def testFullR(): Unit = {
+    assertEquals(Some(Nil), fullR(Nil))
+    assertEquals(Some(a :# Nil), fullR(Nil #: a))
+    assertEquals(Some(a :# b :# Nil), fullR(Nil #: a #: b))
+  }
+
+  def testInitLastL(): Unit = {
+    assertEquals(None, initLastL(Nil))
+    assertEquals(Some(Nil #: a), initLastL(Nil #: a))
+    assertEquals(Some(Nil #: a #: b), initLastL(Nil #: a #: b))
+  }
+
+  def testInitLastR(): Unit = {
+    for {
+      s1 ← id trace listL(a, b, c, d, e)
+//      s2 ← fullR trace s1
+      s2 ← headTailL trace s1
+    } yield s2
+
+    assertEquals(None, initLastR(listL()))
+    assertEquals(Some(Nil #: a), initLastR(a :# Nil))
+    assertEquals(Some(Nil #: a #: b), initLastR(a :# b :# Nil))
+  }
+
+  def listR(nodes: BinTree*): BinTree = nodes.foldRight(Nil: BinTree)(_ #: _)
+  def listL(nodes: BinTree*): BinTree = nodes.foldLeft(Nil: BinTree)(_ :# _)
+
   def demoReverse(): Unit = {
+    println(reverseR)
+
     for {
       s1 ← introR trace a #: b #: c #: Nil
       s2 ← shiftR trace s1
@@ -84,6 +184,8 @@ class BinTreeTests {
       s3 ← unitL  trace s4
     } yield ()
 
+    println(reverseL)
+
     for {
       s1 ← introL trace Nil :# a :# b :# c
       s2 ← shiftL trace s1
@@ -91,11 +193,13 @@ class BinTreeTests {
       s4 ← shiftL trace s3
       s5 ← unitR  trace s4
     } yield ()
+  }
 
-    findRun(a :# b :# Nil,                               b :# a :# Nil)
-    findRun(a :# b :# c :# Nil,                     c :# b :# a :# Nil)
-    findRun(a :# b :# c :# d :# Nil,           d :# c :# b :# a :# Nil)
-    findRun(a :# b :# c :# d :# e :# Nil, e :# d :# c :# b :# a :# Nil)
+  def findReverse(): Unit = {
+    findRun(a #: b #: Nil,                               b #: a #: Nil)
+    findRun(a #: b #: c #: Nil,                     c #: b #: a #: Nil)
+    findRun(a #: b #: c #: d #: Nil,           d #: c #: b #: a #: Nil)
+    findRun(a #: b #: c #: d #: e #: Nil, e #: d #: c #: b #: a #: Nil)
   }
 
   @Test def testSeveral(): Unit = {
@@ -117,21 +221,38 @@ class BinTreeTests {
   private val List(a, b, c, d, e) = "abcde".toList.map(Leaf)
 
   sealed trait BinTree {
-    def #:(right: BinTree): BinTree = Node(right, this)
-    def :#(left: BinTree): BinTree = Node(this, left)
+    def #:(right: BinTree): BinTree = Node(right, this) // cons
+    def :#(left: BinTree):  BinTree = Node(this, left)  // snoc
+
+    def leaves: Stream[Char]
   }
 
   case object Nil extends BinTree {
     override def toString: String = "0"
+
+    def leaves: Stream[Char] = Stream.empty
   }
 
   case class Leaf(value: Char) extends BinTree {
     override def toString: String = value.toString
+
+    def leaves: Stream[Char] = Stream(value)
   }
 
   case class Node(left: BinTree, right: BinTree) extends BinTree {
     override def toString: String = s"($left, $right)"
+
+    def leaves: Stream[Char] = left.leaves ++ right.leaves
   }
+
+
+  case class BinTreePredicate(name: String)(pf: PartialFunction[BinTree, Boolean]) extends (BinTree ⇒ Boolean) {
+    def apply(tree: BinTree): Boolean = pf.lift(tree).getOrElse(false)
+    override def toString(): String = name
+
+    def cond(ifTrue: Op, ifFalse: Op): Op = new Op.Cond(this, ifTrue, ifFalse)
+  }
+
 
   object Op {
     def apply(name0: String)(pf0: PartialFunction[BinTree, BinTree]): Op = new Op {
@@ -148,8 +269,8 @@ class BinTreeTests {
       }
     }
 
-    class RepeatUntil(op: Op, p: BinTree ⇒ Boolean) extends Op {
-      val name: String = s"repeatUntil(${op.name})"
+    class RepeatUntil(op: Op, p: BinTreePredicate) extends Op {
+      val name: String = s"repeat(${op.name}).until($p)"
 
       val pf: PartialFunction[BinTree, BinTree] = { case tree ⇒ recurse(tree) }
 
@@ -161,11 +282,23 @@ class BinTreeTests {
 
     class Named(op: Op, val name: String) extends Op {
       val pf = op.pf
+
+      override def toString: String = s"$name = (${op.name})"
+    }
+
+    class Cond(p: BinTreePredicate, ifTrue: Op, ifFalse: Op) extends Op {
+      def name: String = s"if ($name) { ${ifTrue.name} } else { ${ifFalse.name} }"
+
+      val pf: PartialFunction[BinTree, BinTree] = {
+        case tree if p(tree) && ifTrue.pf.isDefinedAt(tree) ⇒ ifTrue(tree).get
+        case tree if ifFalse.pf.isDefinedAt(tree) ⇒ ifFalse(tree).get
+      }
     }
   }
 
   trait Op {
     def name: String
+    // TODO: Change to BinTree ⇒ Option[BinTree]
     def pf: PartialFunction[BinTree, BinTree]
 
     def trace(tree: BinTree): Option[BinTree] = {
@@ -178,12 +311,15 @@ class BinTreeTests {
 
     def apply(tree: BinTree): Option[BinTree] = pf.lift(tree)
     def andThen(after: Op): Op = new Op.AndThen(this, after)
-    def repeatUntil(p: BinTree ⇒ Boolean): Op = new Op.RepeatUntil(this, p)
+    def repeatUntil(p: BinTreePredicate): Op = new Op.RepeatUntil(this, p)
     def named(name: String) = new Op.Named(this, name)
 
     override def toString: String = name.padTo(15, ' ')
   }
 
+  val isNil   = BinTreePredicate("isNil")   { case Nil ⇒ true          }
+  val nilInit = BinTreePredicate("nilInit") { case Node(Nil, _) ⇒ true }
+  val nilTail = BinTreePredicate("nilTail") { case Node(_, Nil) ⇒ true }
 
   val id     = Op("id")     { case t                   ⇒ t                   }
   val introL = Op("introL") { case t                   ⇒ Node(Nil, t)        }
@@ -200,31 +336,29 @@ class BinTreeTests {
   val shiftL  = mapR(swap) andThen assocL named "shiftL"
   val shiftR  = mapL(swap) andThen assocR named "shiftR"
 
-  val isNil:   BinTree ⇒ Boolean = { case Nil ⇒ true;          case _ ⇒ false }
-  val nilHead: BinTree ⇒ Boolean = { case Node(Nil, _) ⇒ true; case _ ⇒ false }
-  val nilInit: BinTree ⇒ Boolean = { case Node(_, Nil) ⇒ true; case _ ⇒ false }
-
-  val reverseR: Op = nonNil(foldR(shiftR)) named "reverseR"
-  val reverseL: Op = nonNil(foldL(shiftL)) named "reverseL"
-
-  def foldR(op: Op) = bracketR(op.repeatUntil(nilHead))
-  def foldL(op: Op) = bracketL(op.repeatUntil(nilInit))
+  // TODO add orElse
+  def nonNil(op: Op) = isNil.cond(id, op)
 
   def bracketR(op: Op) = introR andThen op andThen unitL
   def bracketL(op: Op) = introL andThen op andThen unitR
 
-  def nonNil(op: Op) = cond(isNil, id, op)
+  def foldL(op: Op) = nonNil(bracketL(op.repeatUntil(nilTail)))
+  def foldR(op: Op) = nonNil(bracketR(op.repeatUntil(nilInit)))
 
-  def cond(p: BinTree ⇒ Boolean, ifTrue: Op, ifFalse: Op): Op = new Op {
-    def name: String = s"cond(p, ${ifTrue.name}, ${ifFalse.name}"
+  val reverseL: Op = foldL(shiftL) named "reverseL"
+  val reverseR: Op = foldR(shiftR) named "reverseR"
 
-    val pf: PartialFunction[BinTree, BinTree] = {
-      case tree if p(tree) && ifTrue.pf.isDefinedAt(tree) ⇒ ifTrue(tree).get
-      case tree if ifFalse.pf.isDefinedAt(tree) ⇒ ifFalse(tree).get
-    }
-  }
+  val fullL: Op = foldL(assocL) named "fullL"
+  val fullR: Op = foldR(assocR) named "fullR"
 
-  def findRun(from: BinTree, to: BinTree): Unit = {
+  val initLastL: Op = id named "initLastL"
+  val initLastR: Op = nonNil(fullL andThen mapL(fullR)) named "initLastR"
+
+  val headTailL: Op = nonNil(fullR andThen mapR(fullL)) named "headTailR"
+  val headTailR: Op = id named "headTailR"
+
+
+  def findRun(from: BinTree, to: BinTree, initial: Op = id): Unit = {
     @tailrec def run(current: BinTree, ops: List[Op]): Option[BinTree] = ops match {
       case scala.Nil ⇒ Some(current)
       case _ ⇒ ops.head(current) match {
@@ -240,28 +374,35 @@ class BinTreeTests {
       }
     }
 
-    val steps = find(from, to).toList
+    val steps = find(from, to, initial).toList
     println(s"$from    →     $to")
     println("=====================================================================")
     run(from, steps)
     println("=====================================================================")
   }
 
-  def find(from: BinTree, to: BinTree, max: Int = 20): Stream[Op] = {
-    @tailrec def attempt(current: BinTree, todo: Stream[Op], done: Stream[Op], count: Int): Option[Stream[Op]] = {
-      if (current == to) Some(done) else if (count > max) None else {
+  def find(from: BinTree, to: BinTree, initial: Op, max: Int = 20): Stream[Op] = {
+    require(from.leaves.toSet == to.leaves.toSet, "Cannot create nor destroy information")
+
+    @tailrec def attempt(current: BinTree, todo: Stream[Op], seen: Set[BinTree], done: Stream[Op], count: Int): Option[Stream[Op]] = {
+      if (current == to) Some(done) else if (count > max || seen.contains(current) || current.leaves.count(_ == '0') > 2) None else {
         todo.head(current) match {
           case None ⇒ None
           case Some(next) ⇒ if (next == current) {
-            attempt(next, todo.tail, done, count)
+            attempt(next, todo.tail, seen + current, done, count)
           } else {
-            attempt(next, todo.tail, done :+ todo.head, count + 1)
+            attempt(next, todo.tail, seen + current, done :+ todo.head, count + 1)
           }
         }
       }
     }
 
-    Stream.continually(attempt(from, randOps, Stream.empty, 0)).flatten.head
+    Stream.continually({
+      val ops = initial #:: randOps
+      // println("Attempting: " + ops.take(max).toList)
+//      Thread.sleep(1000)
+      attempt(from, ops, Set(), Stream.empty, 0)
+    }).flatten.head
   }
 
   def randOps: Stream[Op] = Stream.continually(rand)
