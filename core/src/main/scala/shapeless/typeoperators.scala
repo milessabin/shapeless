@@ -106,14 +106,12 @@ object newtype {
  * }}}
  */
 object the extends Dynamic {
-  def apply[T](implicit t: T): T = macro TheMacros.applyImpl
+  def apply[T <: AnyRef](implicit t: T): t.type = t
 
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
 object TheMacros {
-  def applyImpl(c: whitebox.Context)(t: c.Tree): c.Tree = t
-
   def implicitlyImpl(c: whitebox.Context)(tpeSelector: c.Tree): c.Tree = {
     import c.universe.{ Try => _, _ }
     import internal._, decorators._
