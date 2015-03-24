@@ -773,7 +773,7 @@ class HListTests {
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
-    
+
     implicitly[ToTraversable.Aux[HNil, Array, Nothing]]
     implicitly[ToTraversable.Aux[HNil, Array, Int]]
 
@@ -853,7 +853,7 @@ class HListTests {
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
-    
+
     implicitly[ToArray[HNil, Nothing]]
     implicitly[ToArray[HNil, Int]]
 
@@ -1935,7 +1935,7 @@ class HListTests {
     // key/value lengths must match up
     illTyped("orig.tail.values.zipWithKeys(orig.keys)")
     illTyped("orig.values.zipWithKeys(orig.keys.tail)")
-    
+
     // Explicit type argument
     {
       val result = orig.values.zipWithKeys[HList.`"intField", "boolField"`.T]
@@ -2597,5 +2597,68 @@ class HListTests {
     // Mix of standard and literal types
 
     typed[HList.`2, String, true`.T](2.narrow :: "a" :: true.narrow :: HNil)
+  }
+
+  object Foo extends ProductArgs {
+    def applyProduct[L <: HList](args: L): L = args
+  }
+
+  @Test
+  def testProductArgs {
+    val l = Foo(23, "foo", true)
+    typed[Int :: String :: Boolean :: HNil](l)
+
+    val v1 = l.head
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = l.tail.head
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = l.tail.tail.head
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    val v4 = l.tail.tail.tail
+    typed[HNil](v4)
+
+    illTyped("""
+      r.tail.tail.tail.head
+    """)
+  }
+
+  implicit class Interpolator(val sc: StringContext) {
+    class Args extends ProductArgs {
+      def applyProduct[L <: HList](l: L): L = l
+    }
+
+    val hlist: Args = new Args
+  }
+
+  @Test
+  def testStringInterpolator {
+    val (i, s, b) = (23, "foo", true)
+    val l = hlist"Int: $i, String: $s, Boolean: $b"
+    typed[Int :: String :: Boolean :: HNil](l)
+
+    val v1 = l.head
+    typed[Int](v1)
+    assertEquals(23, v1)
+
+    val v2 = l.tail.head
+    typed[String](v2)
+    assertEquals("foo", v2)
+
+    val v3 = l.tail.tail.head
+    typed[Boolean](v3)
+    assertEquals(true, v3)
+
+    val v4 = l.tail.tail.tail
+    typed[HNil](v4)
+
+    illTyped("""
+      r.tail.tail.tail.head
+    """)
   }
 }

@@ -20,6 +20,7 @@ import scala.language.dynamics
 import scala.language.experimental.macros
 
 import scala.annotation.tailrec
+import scala.reflect.macros.whitebox
 
 /**
  * `HList` ADT base trait.
@@ -99,4 +100,55 @@ object HList extends Dynamic {
    * }}}
    */
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
+}
+
+/**
+ * Trait supporting mapping dynamic argument lists to HList arguments.
+ *
+ * Mixing in this trait enables method applications of the form,
+ *
+ * {{{
+ * lhs.method(23, "foo", true)
+ * }}}
+ *
+ * to be rewritten as,
+ *
+ * {{{
+ * lhs.methodProduct(23 :: "foo" :: true)
+ * }}}
+ *
+ * ie. the arguments are rewritten as HList elements and the application is
+ * rewritten to an application of an implementing method (identified by the
+ * "Product" suffix) which accepts a single HList argument.
+ */
+trait ProductArgs extends Dynamic {
+  def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardImpl
+}
+
+class ProductMacros(val c: whitebox.Context) {
+  import c.universe._
+
+  val hconsValueTree = reify {  ::  }.tree
+  val hnilValueTree  = reify { HNil: HNil }.tree
+
+  def forwardImpl(method: Tree)(args: Tree*): Tree = {
+    val q"${methodString: String}" = method
+    val methodName = TermName(methodString+"Product")
+    val argsTree = mkProductImpl(args: _*)
+    val app = c.macroApplication
+
+    val lhs = app match {
+      case q"$lhs.applyDynamic($_)(..$_)" => lhs
+      case other =>
+        c.abort(c.enclosingPosition, s"bogus prefix '$other'")
+    }
+
+    q""" $lhs.$methodName($argsTree) """
+  }
+
+  def mkProductImpl(args: Tree*): Tree = {
+    args.foldRight(hnilValueTree) {
+      case(elem, acc) => q""" $hconsValueTree($elem, $acc) """
+    }
+  }
 }
