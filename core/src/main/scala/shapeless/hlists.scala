@@ -20,7 +20,7 @@ import scala.language.dynamics
 import scala.language.experimental.macros
 
 import scala.annotation.tailrec
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * `HList` ADT base trait.
@@ -125,7 +125,14 @@ trait ProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardImpl
 }
 
-class ProductMacros(val c: whitebox.Context) {
+object ProductMacros {
+  def inst(c: Context) = new ProductMacros[c.type](c)
+
+  def forwardImpl(c: Context)(method: c.Expr[String])(args: c.Expr[Any]*): c.Expr[Any] =
+    c.Expr[Any](inst(c).forwardImpl(method.tree)(args.map(_.tree): _*))
+}
+
+class ProductMacros[C <: Context](val c: C) {
   import c.universe._
 
   val hconsValueTree = reify {  ::  }.tree
@@ -133,12 +140,12 @@ class ProductMacros(val c: whitebox.Context) {
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = {
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"Product")
+    val methodName = newTermName(methodString+"Product")
     val argsTree = mkProductImpl(args: _*)
     val app = c.macroApplication
 
     val lhs = app match {
-      case q"$lhs.applyDynamic($_)(..$_)" => lhs
+      case q"$lhs.applyDynamic($m)(..$args)" => lhs
       case other =>
         c.abort(c.enclosingPosition, s"bogus prefix '$other'")
     }
