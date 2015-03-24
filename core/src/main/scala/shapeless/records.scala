@@ -75,12 +75,12 @@ object record {
  * to be rewritten as,
  *
  * {{{
- * lhs.methodImpl('x ->> 23 :: 'y ->> "foo", 'z ->> true)
+ * lhs.methodRecord('x ->> 23 :: 'y ->> "foo", 'z ->> true)
  * }}}
  *
  * ie. the named arguments are rewritten as record fields with the argument name
  * encoded as a singleton-typed `Symbol` and the application is rewritten to an
- * application of an implementing method (identified by the "Impl" suffix) which
+ * application of an implementing method (identified by the "Record" suffix) which
  * accepts a single record argument.
  */
 trait RecordArgs extends Dynamic {
