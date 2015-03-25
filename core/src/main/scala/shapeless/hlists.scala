@@ -139,16 +139,16 @@ class ProductMacros[C <: Context](val c: C) {
   val hnilValueTree  = reify { HNil: HNil }.tree
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = {
+    val lhs = c.prefix.tree 
+    val lhsTpe = lhs.tpe
+
     val q"${methodString: String}" = method
     val methodName = newTermName(methodString+"Product")
-    val argsTree = mkProductImpl(args: _*)
-    val app = c.macroApplication
 
-    val lhs = app match {
-      case q"$lhs.applyDynamic($m)(..$args)" => lhs
-      case other =>
-        c.abort(c.enclosingPosition, s"bogus prefix '$other'")
-    }
+    if(lhsTpe.member(methodName) == NoSymbol)
+      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+
+    val argsTree = mkProductImpl(args: _*)
 
     q""" $lhs.$methodName($argsTree) """
   }

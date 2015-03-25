@@ -132,17 +132,16 @@ class RecordMacros[C <: Context](val c: C) {
   def forwardImpl(method: Tree)(): Tree = forwardNamedImpl(method)()
 
   def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
+    val lhs = c.prefix.tree 
+    val lhsTpe = lhs.tpe
+
     val q"${methodString: String}" = method
     val methodName = newTermName(methodString+"Record")
-    val recTree = mkRecordImpl(rec: _*)
-    val app = c.macroApplication
 
-    val lhs = app match {
-      case q"$lhs.applyDynamicNamed($m)(..$args)" => lhs
-      case q"$lhs.applyDynamic($m)()" => lhs
-      case other =>
-        c.abort(c.enclosingPosition, s"bogus prefix '$other'")
-    }
+    if(lhsTpe.member(methodName) == NoSymbol)
+      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+
+    val recTree = mkRecordImpl(rec: _*)
 
     q""" $lhs.$methodName($recTree) """
   }
