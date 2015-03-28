@@ -644,3 +644,107 @@ package GenericTestsAux2 {
   }
   */
 }
+
+object MixedCCNonCCNested {
+  // Block local
+  {
+    object T1{
+      sealed abstract class Tree
+      final case class Node(left: Tree, right: Tree, v: Int) extends Tree
+      case object Leaf extends Tree
+    }
+
+    Generic[T1.Tree]
+    import T1._
+    Generic[Tree]
+
+    sealed trait A
+    sealed case class B(i: Int, s: String) extends A
+    case object C extends A
+    sealed trait D extends A
+    final case class E(a: Double, b: Option[Float]) extends D
+    case object F extends D
+    sealed abstract class Foo extends D
+    case object Baz extends Foo
+    final class Bar extends Foo
+    final class Baz(val i1: Int, val s1: String) extends Foo
+
+    Generic[A]
+    Generic[B]
+    Generic[C.type]
+    Generic[D]
+    Generic[E]
+    Generic[F.type]
+    Generic[Foo]
+    Generic[Baz.type]
+    Generic[Bar]
+    Generic[Baz]
+  }
+
+  def methodLocal: Unit = {
+    object T1{
+      sealed abstract class Tree
+      final case class Node(left: Tree, right: Tree, v: Int) extends Tree
+      case object Leaf extends Tree
+    }
+
+    Generic[T1.Tree]
+    import T1._
+    Generic[Tree]
+
+    sealed trait A
+    sealed case class B(i: Int, s: String) extends A
+    case object C extends A
+    sealed trait D extends A
+    final case class E(a: Double, b: Option[Float]) extends D
+    case object F extends D
+    sealed abstract class Foo extends D
+    case object Baz extends Foo
+    final class Bar extends Foo
+    final class Baz(val i1: Int, val s1: String) extends Foo
+
+    Generic[A]
+    Generic[B]
+    Generic[C.type]
+    Generic[D]
+    Generic[E]
+    Generic[F.type]
+    Generic[Foo]
+    Generic[Baz.type]
+    Generic[Bar]
+    Generic[Baz]
+  }
+
+  // Top level
+  object T1{
+    sealed abstract class Tree
+    final case class Node(left: Tree, right: Tree, v: Int) extends Tree
+    case object Leaf extends Tree
+  }
+
+  Generic[T1.Tree]
+  import T1._
+  Generic[Tree]
+
+  sealed trait A
+  sealed case class B(i: Int, s: String) extends A
+  case object C extends A
+  sealed trait D extends A
+  final case class E(a: Double, b: Option[Float]) extends D
+  case object F extends D
+  sealed abstract class Foo extends D
+  case object Baz extends Foo
+  final class Bar extends Foo
+  final class Baz(val i1: Int, val s1: String) extends Foo
+
+  Generic[A]
+  Generic[B]
+  Generic[C.type]
+  Generic[D]
+  Generic[E]
+  Generic[F.type]
+  Generic[Foo]
+  Generic[Baz.type]
+  Generic[Bar]
+  Generic[Baz]
+}
