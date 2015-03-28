@@ -160,6 +160,9 @@ trait CaseClassMacros extends ReprTypes {
         (sym.name.toTermName, restpe)
     }
 
+  def productCtorsOf(tpe: Type): List[Symbol] =
+    tpe.declarations.toList.filter { x => x.isMethod && x.asMethod.isConstructor }
+
   def ctorsOf(tpe: Type): List[Type] = ctorsOfAux(tpe, false)
   def ctorsOf1(tpe: Type): List[Type] = ctorsOfAux(tpe, true)
 
@@ -321,7 +324,9 @@ trait CaseClassMacros extends ReprTypes {
 
   def isCaseClassLike(sym: ClassSymbol): Boolean =
     sym.isCaseClass ||
-    (!sym.isAbstractClass && !sym.isTrait && sym.knownDirectSubclasses.isEmpty && fieldsOf(sym.typeSignature).nonEmpty)
+    (!sym.isAbstractClass && !sym.isTrait &&
+     sym.knownDirectSubclasses.isEmpty &&
+     productCtorsOf(sym.typeSignature).size == 1)
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass && isCaseClassLike(sym)
 
@@ -364,8 +369,12 @@ trait CaseClassMacros extends ReprTypes {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
     val gTpe = tpe.asInstanceOf[global.Type]
     val pre = gTpe.prefix
-    val sym = gTpe.typeSymbol.companionSymbol
-    global.gen.mkAttributedRef(pre, sym).asInstanceOf[Tree]
+    val sym = gTpe.typeSymbol
+    val cSym = sym.companionSymbol
+    if(cSym != NoSymbol)
+      global.gen.mkAttributedRef(pre, cSym).asInstanceOf[Tree]
+    else
+      Ident(tpe.typeSymbol.name.toTermName) // Attempt to refer to local companion
   }
 
   def prefix(tpe: Type): Type = {
