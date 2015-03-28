@@ -24,6 +24,7 @@ import org.junit.Assert._
 import newtype._, tag._, test._, testutil._
 
 class TypeOperatorTests {
+  import TypeOperatorTests._
 
   trait ATag
 
@@ -163,4 +164,16 @@ class TypeOperatorTests {
     val blah = the.`package wibble`
     """)
   }
+
+  @Test
+  def testValueClass {
+    implicit val one: AValueClass = AValueClass(1L)
+
+    val x = the[AValueClass]
+    typed[AValueClass](x)
+  }
+}
+
+object TypeOperatorTests {
+  final case class AValueClass(l: Long) extends AnyVal
 }
