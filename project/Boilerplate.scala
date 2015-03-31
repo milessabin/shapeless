@@ -47,6 +47,7 @@ object Boilerplate {
     GenCases,
     GenPolyNTraits,
     GenNats,
+    GenRInts,
     GenTupleTypeableInstances,
     GenSizedBuilder,
     GenHMapBuilder,
@@ -377,6 +378,22 @@ object Boilerplate {
         -
         -  type _${n} = Succ[_${n-1}]
         -  val _${n}: _${n} = new _${n}
+        |}
+      """
+    }
+  }
+
+  object GenRInts extends Template {
+    val filename = "rints.scala"
+
+    def content(tv: TemplateVals) = {
+      val n = tv.arity
+      block"""
+        |
+        |trait RInts extends Nats {
+        -
+        -  type _m${n} = Minus[_${n}]
+        -  val _m${n}: _m${n} = new _m${n}
         |}
       """
     }

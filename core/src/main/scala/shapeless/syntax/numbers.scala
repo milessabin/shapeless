@@ -18,6 +18,21 @@ package shapeless
 package syntax
 
 /**
+ * Carrier for `RInt` operations.
+ *
+ * @author Olivier Mélois
+ */
+final class RIntOps[N <: RInt](n : RInt) {
+  import ops.numbers._
+
+  /**
+   * Returns the int value of this `Nat`.
+   */
+  def toInt(implicit toIntN: ToInt[n.N]): Int = RInt.toInt(n)
+}
+
+
+/**
  * Carrier for `Nat` operations.
  *
  * @author Dale Wijnand

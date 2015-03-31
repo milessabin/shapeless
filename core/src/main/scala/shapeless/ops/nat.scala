@@ -141,7 +141,7 @@ object nat {
     implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
   }
 
-  /**
+  /** 
    * Type class witnessing that `A` is less than or equal to `B`.
    * 
    * @author Miles Sabin
