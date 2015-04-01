@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-4 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import scala.language.experimental.macros
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.whitebox
 
-trait Lazy[+T] {
+trait Lazy[+T] extends Serializable {
   val value: T
 
   def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
@@ -211,7 +211,7 @@ trait DerivationContext extends CaseClassMacros {
 
     val tree =
       q"""
-        class $clsName {
+        final class $clsName extends _root_.scala.Serializable {
           ..$instTrees
         }
         (new $clsName).$primaryNme

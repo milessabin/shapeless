@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import tag.@@
  * 
  * @author Miles Sabin
  */
-final class UnionOps[C <: Coproduct](c : C) {
+final class UnionOps[C <: Coproduct](c : C) extends Serializable {
   import shapeless.union._
   import ops.union._
 

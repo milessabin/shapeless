@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ object tuple extends LowPriorityTuple {
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 }
 
-final class TupleOps[T](t: T) {
+final class TupleOps[T](t: T) extends Serializable {
   import ops.tuple._
 
   /**

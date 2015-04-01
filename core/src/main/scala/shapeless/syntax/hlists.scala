@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import scala.annotation.tailrec
  *
  * @author Miles Sabin
  */
-final class HListOps[L <: HList](l : L) {
+final class HListOps[L <: HList](l : L) extends Serializable {
   import ops.hlist._
 
   /**

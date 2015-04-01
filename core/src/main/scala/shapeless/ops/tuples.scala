@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait IsComposite[P] {
+  trait IsComposite[P] extends Serializable {
     type H
     type T
 
@@ -53,7 +53,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Prepend[T, U] extends DepFn2[T, U]
+  trait Prepend[T, U] extends DepFn2[T, U] with Serializable
 
   object Prepend {
     def apply[T, U](implicit prepend: Prepend[T, U]): Aux[T, U, prepend.Out] = prepend
@@ -73,7 +73,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ReversePrepend[T, U] extends DepFn2[T, U]
+  trait ReversePrepend[T, U] extends DepFn2[T, U] with Serializable
 
   object ReversePrepend {
     def apply[T, U](implicit prepend: ReversePrepend[T, U]): Aux[T, U, prepend.Out] = prepend
@@ -94,7 +94,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait At[T, N <: Nat] extends DepFn1[T]
+  trait At[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object At {
     def apply[T, N <: Nat](implicit at: At[T, N]): Aux[T, N, at.Out] = at
@@ -115,7 +115,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Last[T] extends DepFn1[T]
+  trait Last[T] extends DepFn1[T] with Serializable
 
   object Last {
     def apply[T](implicit last: Last[T]): Aux[T, last.Out] = last
@@ -136,7 +136,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Init[T] extends DepFn1[T]
+  trait Init[T] extends DepFn1[T] with Serializable
 
   object Init {
     def apply[T](implicit init: Init[T]): Aux[T, init.Out] = init
@@ -157,7 +157,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Selector[T, U] extends DepFn1[T] { type Out = U }
+  trait Selector[T, U] extends DepFn1[T] with Serializable { type Out = U }
 
   object Selector {
     def apply[T, U](implicit selector: Selector[T, U]): Aux[T, U] = selector
@@ -176,7 +176,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Filter[T, U] extends DepFn1[T]
+  trait Filter[T, U] extends DepFn1[T] with Serializable
 
   object Filter {
     def apply[T, U](implicit filter: Filter[T, U]): Aux[T, U, filter.Out] = filter
@@ -195,7 +195,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait FilterNot[T, U] extends DepFn1[T]
+  trait FilterNot[T, U] extends DepFn1[T] with Serializable
 
   object FilterNot {
     def apply[T, U](implicit filter: FilterNot[T, U]): Aux[T, U, filter.Out] = filter
@@ -215,7 +215,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Remove[T, U] extends DepFn1[T]
+  trait Remove[T, U] extends DepFn1[T] with Serializable
 
   object Remove {
     def apply[T, E](implicit remove: Remove[T, E]): Aux[T, E, remove.Out] = remove
@@ -237,7 +237,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait RemoveAll[T, S] extends DepFn1[T]
+  trait RemoveAll[T, S] extends DepFn1[T] with Serializable
 
   object RemoveAll {
     def apply[T, S](implicit remove: RemoveAll[T, S]): Aux[T, S, remove.Out] = remove
@@ -258,7 +258,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Replacer[T, U, V] extends DepFn2[T, U]
+  trait Replacer[T, U, V] extends DepFn2[T, U] with Serializable
 
   object Replacer {
     def apply[T, U, V](implicit replacer: Replacer[T, U, V]): Aux[T, U, V, replacer.Out] = replacer
@@ -278,7 +278,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ReplaceAt[T, N <: Nat, U] extends DepFn2[T, U]
+  trait ReplaceAt[T, N <: Nat, U] extends DepFn2[T, U] with Serializable
 
   object ReplaceAt {
     def apply[T, N <: Nat, V](implicit replacer: ReplaceAt[T, N, V]): Aux[T, N, V, replacer.Out] = replacer
@@ -299,7 +299,7 @@ object tuple {
    *
    * @author Howard Branch
    */
-  trait Modifier[T, U, V] extends DepFn2[T, U => V]
+  trait Modifier[T, U, V] extends DepFn2[T, U => V] with Serializable
 
   object Modifier {
     def apply[T, U, V](implicit modifier: Modifier[T, U, V]): Aux[T, U, V, modifier.Out] = modifier
@@ -319,7 +319,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Take[T, N <: Nat] extends DepFn1[T]
+  trait Take[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object Take {
     def apply[T, N <: Nat](implicit take: Take[T, N]): Aux[T, N, take.Out] = take
@@ -340,7 +340,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Drop[T, N <: Nat] extends DepFn1[T]
+  trait Drop[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object Drop {
     def apply[T, N <: Nat](implicit drop: Drop[T, N]): Aux[T, N, drop.Out] = drop
@@ -361,7 +361,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Split[T, N <: Nat] extends DepFn1[T]
+  trait Split[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object Split {
     def apply[T, N <: Nat](implicit split: Split[T, N]): Aux[T, N, split.Out] = split
@@ -387,7 +387,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplit[T, N <: Nat] extends DepFn1[T]
+  trait ReverseSplit[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object ReverseSplit {
     def apply[T, N <: Nat](implicit split: ReverseSplit[T, N]): Aux[T, N, split.Out] = split
@@ -413,7 +413,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait SplitLeft[T, U] extends DepFn1[T]
+  trait SplitLeft[T, U] extends DepFn1[T] with Serializable
 
   object SplitLeft {
     def apply[T, U](implicit split: SplitLeft[T, U]): Aux[T, U, split.Out] = split
@@ -439,7 +439,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplitLeft[T, U] extends DepFn1[T]
+  trait ReverseSplitLeft[T, U] extends DepFn1[T] with Serializable
 
   object ReverseSplitLeft {
     def apply[T, U](implicit split: ReverseSplitLeft[T, U]): Aux[T, U, split.Out] = split
@@ -465,7 +465,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait SplitRight[T, U] extends DepFn1[T]
+  trait SplitRight[T, U] extends DepFn1[T] with Serializable
 
   object SplitRight {
     def apply[T, U](implicit split: SplitRight[T, U]): Aux[T, U, split.Out] = split
@@ -491,7 +491,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ReverseSplitRight[T, U] extends DepFn1[T]
+  trait ReverseSplitRight[T, U] extends DepFn1[T] with Serializable
 
   object ReverseSplitRight {
     def apply[T, U](implicit split: ReverseSplitRight[T, U]): Aux[T, U, split.Out] = split
@@ -516,7 +516,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Reverse[T] extends DepFn1[T]
+  trait Reverse[T] extends DepFn1[T] with Serializable
 
   object Reverse {
     def apply[T](implicit reverse: Reverse[T]): Aux[T, reverse.Out] = reverse
@@ -536,7 +536,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Mapper[T, P] extends DepFn1[T]
+  trait Mapper[T, P] extends DepFn1[T] with Serializable
 
   object Mapper {
     def apply[T, P](implicit mapper: Mapper[T, P]): Aux[T, P, mapper.Out] = mapper
@@ -556,7 +556,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait FlatMapper[T, P] extends DepFn1[T]
+  trait FlatMapper[T, P] extends DepFn1[T] with Serializable
 
   object FlatMapper {
     def apply[T, P](implicit mapper: FlatMapper[T, P]): Aux[T, P, mapper.Out] = mapper
@@ -578,7 +578,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ConstMapper[T, C] extends DepFn2[T, C]
+  trait ConstMapper[T, C] extends DepFn2[T, C] with Serializable
 
   object ConstMapper {
     def apply[T, C](implicit mapper: ConstMapper[T, C]): Aux[T, C, mapper.Out] = mapper
@@ -599,7 +599,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait MapFolder[T, R, P] { // Nb. Not a dependent function signature
+  trait MapFolder[T, R, P] extends Serializable { // Nb. Not a dependent function signature
     def apply(t: T, in: R, op: (R, R) => R): R
   }
 
@@ -618,7 +618,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait LeftFolder[T, U, P] extends DepFn2[T, U]
+  trait LeftFolder[T, U, P] extends DepFn2[T, U] with Serializable
 
   object LeftFolder {
     def apply[T, U, P](implicit folder: LeftFolder[T, U, P]): Aux[T, U, P, folder.Out] = folder
@@ -638,7 +638,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait RightFolder[T, U, P] extends DepFn2[T, U]
+  trait RightFolder[T, U, P] extends DepFn2[T, U] with Serializable
 
   object RightFolder {
     def apply[T, U, P](implicit folder: RightFolder[T, U, P]): Aux[T, U, P, folder.Out] = folder
@@ -658,7 +658,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait LeftReducer[T, P] extends DepFn1[T]
+  trait LeftReducer[T, P] extends DepFn1[T] with Serializable
 
   object LeftReducer {
     def apply[T, P](implicit reducer: LeftReducer[T, P]): Aux[T, P, reducer.Out] = reducer
@@ -678,7 +678,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait RightReducer[T, P] extends DepFn1[T]
+  trait RightReducer[T, P] extends DepFn1[T] with Serializable
 
   object RightReducer {
     def apply[T, P](implicit reducer: RightReducer[T, P]): Aux[T, P, reducer.Out] = reducer
@@ -698,7 +698,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Transposer[T] extends DepFn1[T]
+  trait Transposer[T] extends DepFn1[T] with Serializable
 
   object Transposer {
     def apply[T](implicit transposer: Transposer[T]): Aux[T, transposer.Out] = transposer
@@ -726,7 +726,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ZipApply[FT, AT] extends DepFn2[FT, AT]
+  trait ZipApply[FT, AT] extends DepFn2[FT, AT] with Serializable
 
   object ZipApply {
     def apply[FT, AT](implicit zip: ZipApply[FT, AT]): Aux[FT, AT, zip.Out] = zip
@@ -752,7 +752,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ZipOne[H, T] extends DepFn2[H, T]
+  trait ZipOne[H, T] extends DepFn2[H, T] with Serializable
 
   object ZipOne {
     def apply[H, T](implicit zip: ZipOne[H, T]): Aux[H, T, zip.Out] = zip
@@ -780,7 +780,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ZipConst[T, C] extends DepFn2[T, C]
+  trait ZipConst[T, C] extends DepFn2[T, C] with Serializable
 
   object ZipConst {
     def apply[T, C](implicit zip: ZipConst[T, C]): Aux[T, C, zip.Out] = zip
@@ -800,7 +800,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Unifier[T] extends DepFn1[T]
+  trait Unifier[T] extends DepFn1[T] with Serializable
 
   object Unifier {
     def apply[T](implicit unifier: Unifier[T]): Aux[T, unifier.Out] = unifier
@@ -821,7 +821,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait SubtypeUnifier[T, B] extends DepFn1[T]
+  trait SubtypeUnifier[T, B] extends DepFn1[T] with Serializable
 
   object SubtypeUnifier {
     def apply[T, B](implicit unifier: SubtypeUnifier[T, B]): Aux[T, B, unifier.Out] = unifier
@@ -841,7 +841,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Length[T] extends DepFn1[T]
+  trait Length[T] extends DepFn1[T] with Serializable
 
   object Length {
     def apply[T](implicit length: Length[T]): Aux[T, length.Out] = length
@@ -955,7 +955,7 @@ object tuple {
    *
    * @author Stacy Curl
    */
-  trait Collect[T, P <: Poly] extends DepFn1[T]
+  trait Collect[T, P <: Poly] extends DepFn1[T] with Serializable
 
   object Collect {
     def apply[T, P <: Poly](implicit collect: Collect[T, P]): Aux[T, P, collect.Out] = collect
@@ -976,7 +976,7 @@ object tuple {
    *
    * @author Stacy Curl
    */
-  trait Permutations[T] extends DepFn1[T]
+  trait Permutations[T] extends DepFn1[T] with Serializable
 
   object Permutations {
     def apply[T](implicit permutations: Permutations[T]): Aux[T, permutations.Out] = permutations
@@ -998,7 +998,7 @@ object tuple {
    *
    * @author Stacy Curl
    */
-  trait RotateLeft[T, N <: Nat] extends DepFn1[T]
+  trait RotateLeft[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object RotateLeft {
     def apply[T, N <: Nat](implicit rotateLeft: RotateLeft[T, N]): Aux[T, N, rotateLeft.Out] = rotateLeft
@@ -1019,7 +1019,7 @@ object tuple {
    *
    * @author Stacy Curl
    */
-  trait RotateRight[T, N <: Nat] extends DepFn1[T]
+  trait RotateRight[T, N <: Nat] extends DepFn1[T] with Serializable
 
   object RotateRight {
     def apply[T, N <: Nat](implicit rotateRight: RotateRight[T, N]): Aux[T, N, rotateRight.Out] = rotateRight
@@ -1040,7 +1040,7 @@ object tuple {
    *
    * @author Owein Reese
    */
-  trait LeftScanner[T, In, P <: Poly] extends DepFn2[T, In]
+  trait LeftScanner[T, In, P <: Poly] extends DepFn2[T, In] with Serializable
 
   object LeftScanner{
     def apply[T, In, P <: Poly](implicit scanL: LeftScanner[T, In, P]): Aux[T, In, P, scanL.Out] = scanL
@@ -1064,7 +1064,7 @@ object tuple {
    *
    * @author Owein Reese
    */
-  trait RightScanner[T, In, P <: Poly] extends DepFn2[T, In]
+  trait RightScanner[T, In, P <: Poly] extends DepFn2[T, In] with Serializable
 
   object RightScanner{
     def apply[T, In, P <: Poly](implicit scanR: RightScanner[T, In, P]): Aux[T, In, P, scanR.Out] = scanR
@@ -1088,7 +1088,7 @@ object tuple {
    *
    * @author Alexandre Archambault
    */
-  trait Fill[N, A] extends DepFn1[A]
+  trait Fill[N, A] extends DepFn1[A] with Serializable
 
   object Fill {
     def apply[N, A](implicit fill: Fill[N, A]) = fill
@@ -1116,7 +1116,7 @@ object tuple {
    *
    * @author Owein Reese
    */
-  trait Patcher[N <: Nat, M <: Nat, T, InT] extends DepFn2[T, InT]
+  trait Patcher[N <: Nat, M <: Nat, T, InT] extends DepFn2[T, InT] with Serializable
 
   object Patcher{
     def apply[N <: Nat, M <: Nat, T, InT](implicit patch: Patcher[N, M, T, InT]) = patch

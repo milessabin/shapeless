@@ -25,7 +25,7 @@ import scala.reflect.macros.{ blackbox, whitebox }
 import tag.@@
 import scala.util.Try
 
-trait Witness {
+trait Witness extends Serializable {
   type T
   val value: T {}
 }

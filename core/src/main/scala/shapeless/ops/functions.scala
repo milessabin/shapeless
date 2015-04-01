@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin 
+ * Copyright (c) 2013-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ object function {
    * 
    * @author Miles Sabin
    */
-  trait FnToProduct[F] extends DepFn1[F]
+  trait FnToProduct[F] extends DepFn1[F] with Serializable
 
   object FnToProduct extends FnToProductInstances {
     def apply[F](implicit fntop: FnToProduct[F]): Aux[F, fntop.Out] = fntop
@@ -35,7 +35,7 @@ object function {
    * 
    * @author Miles Sabin
    */
-  trait FnFromProduct[F] extends DepFn1[F]
+  trait FnFromProduct[F] extends DepFn1[F] with Serializable
     
   object FnFromProduct extends FnFromProductInstances {
     def apply[F](implicit fnfromp: FnFromProduct[F]): Aux[F, fnfromp.Out] = fnfromp

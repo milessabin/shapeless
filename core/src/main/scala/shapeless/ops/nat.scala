@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait Pred[A <: Nat] { type Out <: Nat }
+  trait Pred[A <: Nat] extends Serializable { type Out <: Nat }
 
   object Pred {
     def apply[A <: Nat](implicit pred: Pred[A]): Aux[A, pred.Out] = pred
@@ -38,7 +38,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait Sum[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Sum[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Sum {
     def apply[A <: Nat, B <: Nat](implicit sum: Sum[A, B]): Aux[A, B, sum.Out] = sum
@@ -55,7 +55,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait Diff[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Diff[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Diff {
     def apply[A <: Nat, B <: Nat](implicit diff: Diff[A, B]): Aux[A, B, diff.Out] = diff
@@ -72,7 +72,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait Prod[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Prod[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Prod {
     def apply[A <: Nat, B <: Nat](implicit prod: Prod[A, B]): Aux[A, B, prod.Out] = prod
@@ -89,7 +89,7 @@ object nat {
    *
    * @author Tom Switzer
    */
-  trait Div[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Div[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Div {
     def apply[A <: Nat, B <: Nat](implicit div: Div[A, B]): Aux[A, B, div.Out] = div
@@ -113,7 +113,7 @@ object nat {
    *
    * @author Tom Switzer
    */
-  trait Mod[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Mod[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Mod {
     def apply[A <: Nat, B <: Nat](implicit mod: Mod[A, B]): Aux[A, B, mod.Out] = mod
@@ -130,7 +130,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait LT[A <: Nat, B <: Nat]
+  trait LT[A <: Nat, B <: Nat] extends Serializable
 
   object LT {
     def apply[A <: Nat, B <: Nat](implicit lt: A < B): LT[A, B] = lt
@@ -146,7 +146,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait LTEq[A <: Nat, B <: Nat]
+  trait LTEq[A <: Nat, B <: Nat] extends Serializable
 
   object LTEq {
     def apply[A <: Nat, B <: Nat](implicit lteq: A <= B): LTEq[A, B] = lteq
@@ -163,7 +163,7 @@ object nat {
    *
    * @author George Leontiev
    */
-  trait Min[A <: Nat, B <: Nat] { type Out <: Nat }
+  trait Min[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
 
   object Min {
     def apply[A <: Nat, B <: Nat](implicit min: Min[A, B]): Aux[A, B, min.Out] = min
@@ -181,7 +181,7 @@ object nat {
    *
    * @author George Leontiev
    */
-  trait Pow[N <: Nat, X <: Nat] { type Out <: Nat }
+  trait Pow[N <: Nat, X <: Nat] extends Serializable { type Out <: Nat }
 
   object Pow {
     def apply[A <: Nat, B <: Nat](implicit pow: Pow[A, B]): Aux[A, B, pow.Out] = pow
@@ -201,7 +201,7 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait ToInt[N <: Nat] {
+  trait ToInt[N <: Nat] extends Serializable {
     def apply() : Int
   }
 
