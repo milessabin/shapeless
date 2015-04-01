@@ -27,6 +27,6 @@ class GenericZipperOps[C, CL <: HList](c : C)(implicit gen : Generic.Aux[C, CL])
   def toZipper = Zipper(c)
 }
 
-class HListZipperOps[L <: HList](l : L) {
+class HListZipperOps[L <: HList](val l : L) extends AnyVal {
   def toZipper = Zipper(l)
 }

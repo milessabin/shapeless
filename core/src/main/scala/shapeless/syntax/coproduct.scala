@@ -25,7 +25,7 @@ package syntax
  *
  * @author Miles Sabin
  */
-final class CoproductOps[C <: Coproduct](c: C) {
+final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal {
   import ops.coproduct._
 
   /**

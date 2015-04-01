@@ -22,7 +22,7 @@ package syntax
  *
  * @author Dale Wijnand
  */
-final class NatOps[N <: Nat](n : Nat) {
+final class NatOps[N <: Nat](val n : Nat) extends AnyVal {
   import ops.nat._
 
   /**
