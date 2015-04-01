@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import scala.reflect.macros.Context
  *
  * @author Miles Sabin
  */
-trait Typeable[T] {
+trait Typeable[T] extends Serializable {
   def cast(t: Any): Option[T]
   def describe: String
   override def toString = s"Typeable[$describe]"
@@ -137,7 +137,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
    }
 
   /** Typeable instance for intersection types with typeable parents */
-  def intersectionTypeable[T](parents: List[Typeable[_]]): Typeable[T] =
+  def intersectionTypeable[T](parents: Array[Typeable[_]]): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] = {
         if(t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
@@ -229,7 +229,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     }
 
   /** Typeable instance for polymorphic case classes with typeable elements */
-  def caseClassTypeable[T](erased: Class[T], fields: List[Typeable[_]]): Typeable[T] =
+  def caseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]]): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] =
         if(classOf[Product].isAssignableFrom(erased) && erased.isAssignableFrom(t.getClass)) {
@@ -325,7 +325,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
  *
  * @author Miles Sabin
  */
-trait TypeCase[T] {
+trait TypeCase[T] extends Serializable {
   def unapply(t: Any): Option[T]
 }
 
@@ -381,7 +381,11 @@ class TypeableMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
         if(parentTypeables.exists(_ == EmptyTree))
           c.abort(c.enclosingPosition, "Missing Typeable for parent of a refinement")
 
-        q"""_root_.shapeless.Typeable.intersectionTypeable(List(..$parentTypeables))"""
+        q"""
+          _root_.shapeless.Typeable.intersectionTypeable(
+            _root_.scala.Array[Typeable[_]](..$parentTypeables)
+          )
+         """
 
       case TypeRef(_, _, tArgs) if tArgs.nonEmpty =>
         val pSym = {
@@ -404,7 +408,11 @@ class TypeableMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
         if(fieldTypeables.exists(_ == EmptyTree))
           c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
 
-        q"""_root_.shapeless.Typeable.caseClassTypeable(classOf[$tpe], List(..$fieldTypeables))"""
+        q"""
+          _root_.shapeless.Typeable.caseClassTypeable(
+            classOf[$tpe], _root_.scala.Array[Typeable[_]](..$fieldTypeables)
+          )
+         """
 
       case SingleType(_, v) if !v.isParameter =>
         val name = v.name.toString

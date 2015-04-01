@@ -289,6 +289,7 @@ class PolyTests {
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
   }
 
+  /*
   @Test
   def testInlinePoly {
     val l = 23 :: "foo" :: true :: HNil
@@ -457,6 +458,7 @@ class PolyTests {
     val l7 = li.map(mCnCn2 _)
     typed[Int :: Int :: Int :: HNil](l7)
   }
+  */
 
   @Test
   def testRotateLeft {

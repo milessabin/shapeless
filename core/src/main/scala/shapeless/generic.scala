@@ -23,7 +23,7 @@ import scala.reflect.macros.Context
 
 import ops.{ hlist, coproduct }
 
-trait Generic[T] {
+trait Generic[T] extends Serializable {
   type Repr
   def to(t : T) : Repr
   def from(r : Repr) : T
@@ -73,19 +73,19 @@ object LabelledGeneric {
 
 class nonGeneric extends StaticAnnotation
 
-trait IsTuple[T]
+trait IsTuple[T] extends Serializable
 
 object IsTuple {
   implicit def apply[T]: IsTuple[T] = macro GenericMacros.mkIsTuple[T]
 }
 
-trait HasProductGeneric[T]
+trait HasProductGeneric[T] extends Serializable
 
 object HasProductGeneric {
   implicit def apply[T]: HasProductGeneric[T] = macro GenericMacros.mkHasProductGeneric[T]
 }
 
-trait HasCoproductGeneric[T]
+trait HasCoproductGeneric[T] extends Serializable
 
 object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]

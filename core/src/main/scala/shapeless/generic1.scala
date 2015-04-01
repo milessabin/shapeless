@@ -25,7 +25,7 @@ import scala.reflect.macros.Context
 
 import ops.{ hlist, coproduct }
 
-trait Generic1[F[_], FR[_[_]]] {
+trait Generic1[F[_], FR[_[_]]] extends Serializable {
   type R[t]
 
   lazy val fr: FR[R] = mkFrr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import ops.hlist.Selector
 /**
  * Type class witnessing that every element of `L` has `TC` as its outer type constructor. 
  */
-trait UnaryTCConstraint[L <: HList, TC[_]]
+trait UnaryTCConstraint[L <: HList, TC[_]] extends Serializable
 
 object UnaryTCConstraint {
+  def apply[L <: HList, TC[_]](implicit utcc: UnaryTCConstraint[L, TC]): UnaryTCConstraint[L, TC] = utcc
+
   type *->*[TC[_]] = {
     type λ[L <: HList] = UnaryTCConstraint[L, TC] 
   } 
@@ -42,9 +44,11 @@ object UnaryTCConstraint {
 /**
  * Type class witnessing that every element of `L` is an element of `M`.
  */
-trait BasisConstraint[L <: HList, M <: HList]
+trait BasisConstraint[L <: HList, M <: HList] extends Serializable
 
 object BasisConstraint {
+  def apply[L <: HList, M <: HList](implicit bc: BasisConstraint[L, M]): BasisConstraint[L, M] = bc
+
   type Basis[M <: HList] = {
     type λ[L <: HList] = BasisConstraint[L, M] 
   } 
@@ -57,9 +61,11 @@ object BasisConstraint {
 /**
  * Type class witnessing that every element of `L` is a subtype of `B`.
  */
-trait LUBConstraint[L <: HList, B]
+trait LUBConstraint[L <: HList, B] extends Serializable
 
 object LUBConstraint {
+  def apply[L <: HList, B](implicit lc: LUBConstraint[L, B]): LUBConstraint[L, B] = lc
+
   type <<:[B] = {
     type λ[L <: HList] = LUBConstraint[L, B] 
   } 
@@ -72,10 +78,12 @@ object LUBConstraint {
 /**
  * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `K` is an element of `M`.
  */
-trait KeyConstraint[L <: HList, M <: HList]
+trait KeyConstraint[L <: HList, M <: HList] extends Serializable
 
 object KeyConstraint {
   import labelled._
+
+  def apply[L <: HList, M <: HList](implicit kc: KeyConstraint[L, M]): KeyConstraint[L, M] = kc
 
   type Keys[M <: HList] = {
     type λ[L <: HList] = KeyConstraint[L, M] 
@@ -89,10 +97,12 @@ object KeyConstraint {
 /**
  * Type class witnessing that every element of `L` is of the form `FieldType[K, V]` where `V` is an element of `M`.
  */
-trait ValueConstraint[L <: HList, M <: HList]
+trait ValueConstraint[L <: HList, M <: HList] extends Serializable
 
 object ValueConstraint {
   import labelled._
+
+  def apply[L <: HList, M <: HList](implicit vc: ValueConstraint[L, M]): ValueConstraint[L, M] = vc
 
   type Values[M <: HList] = {
     type λ[L <: HList] = ValueConstraint[L, M] 

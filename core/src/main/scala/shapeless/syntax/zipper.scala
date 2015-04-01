@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin
+ * Copyright (c) 2012-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ object zipper {
 }
 
 /** Enhances values of any type with a representation via `Generic` with a method supporting conversion to a `Zipper`. */
-class GenericZipperOps[C](c : C) {
+class GenericZipperOps[C](c : C) extends Serializable {
   def toZipper[CL <: HList](implicit gen : Generic.Aux[C, CL]) = Zipper(c)
 }
 
-class HListZipperOps[L <: HList](l : L) {
+class HListZipperOps[L <: HList](l : L) extends Serializable {
   def toZipper = Zipper(l)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ object typeable {
   implicit def typeableOps[T](t : T): TypeableOps[T] = new TypeableOps(t)
 }
 
-final class TypeableOps[T](t : T) {
+final class TypeableOps[T](t : T) extends Serializable {
   /**
    * Cast the receiver to a value of type `U` if possible. This operation will be as precise wrt erasure as possible
    * given the in-scope `Typeable` instances available.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package ops
 import poly._
 
 object coproduct {
-  trait Inject[C <: Coproduct, I] {
+  trait Inject[C <: Coproduct, I] extends Serializable {
     def apply(i: I): C
   }
 
@@ -36,7 +36,7 @@ object coproduct {
     }
   }
 
-  trait Selector[C <: Coproduct, T] {
+  trait Selector[C <: Coproduct, T] extends Serializable {
     def apply(c: C): Option[T]
   }
 
@@ -57,7 +57,7 @@ object coproduct {
     }
   }
 
-  trait At[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+  trait At[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
     type A
     type Out = Option[A]
   }
@@ -88,7 +88,7 @@ object coproduct {
     }
   }
 
-  trait Partition[C <: Coproduct, U] extends DepFn1[C] {
+  trait Partition[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type Prefix <: Coproduct
     type Suffix <: Coproduct
     type Out = Either[Prefix, Suffix]
@@ -147,7 +147,7 @@ object coproduct {
     }
   }
 
-  trait Filter[C <: Coproduct, U] extends DepFn1[C] {
+  trait Filter[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type A <: Coproduct
     type Out = Option[A]
   }
@@ -166,7 +166,7 @@ object coproduct {
     }
   }
 
-  trait FilterNot[C <: Coproduct, U] extends DepFn1[C] {
+  trait FilterNot[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type A <: Coproduct
     type Out = Option[A]
   }
@@ -185,7 +185,7 @@ object coproduct {
     }
   }
 
-  trait Remove[C <: Coproduct, U] extends DepFn1[C] {
+  trait Remove[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type Rest <: Coproduct
     type Out = Either[U, Rest]
     def inverse(r: Either[U, Rest]): C
@@ -241,7 +241,7 @@ object coproduct {
     }
   }
 
-  trait RemoveLast[C <: Coproduct, I] extends DepFn1[C] {
+  trait RemoveLast[C <: Coproduct, I] extends DepFn1[C] with Serializable {
     type Rest <: Coproduct
     type Out = Either[I, Rest]
     def inverse(r: Either[I, Rest]): C
@@ -278,7 +278,7 @@ object coproduct {
     ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
   }
 
-  trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] { type Out <: Coproduct }
+  trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object FlatMap {
     def apply[C <: Coproduct, F <: Poly](implicit folder: FlatMap[C, F]): Aux[C, F, folder.Out] = folder
@@ -307,7 +307,7 @@ object coproduct {
 
   }
 
-  trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
+  trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object Mapper {
     def apply[F <: Poly, C <: Coproduct](implicit mapper: Mapper[F, C]): Aux[F, C, mapper.Out] = mapper
@@ -331,7 +331,7 @@ object coproduct {
         }
   }
 
-  trait Unifier[C <: Coproduct] extends DepFn1[C]
+  trait Unifier[C <: Coproduct] extends DepFn1[C] with Serializable
 
   object Unifier {
     def apply[C <: Coproduct](implicit unifier: Unifier[C]): Aux[C, unifier.Out] = unifier
@@ -357,7 +357,7 @@ object coproduct {
         }
   }
 
-  trait Folder[F <: Poly, C <: Coproduct] extends DepFn1[C]
+  trait Folder[F <: Poly, C <: Coproduct] extends DepFn1[C] with Serializable
 
   object Folder {
     def apply[F <: Poly, C <: Coproduct](implicit folder: Folder[F, C]): Aux[F, C, folder.Out] = folder
@@ -373,7 +373,7 @@ object coproduct {
         }
   }
 
-  trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] { type Out <: Coproduct }
+  trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] with Serializable { type Out <: Coproduct }
 
   object ZipWithKeys {
     import shapeless.labelled._
@@ -404,7 +404,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait Length[C <: Coproduct] extends DepFn0 { type Out <: Nat }
+  trait Length[C <: Coproduct] extends DepFn0 with Serializable { type Out <: Nat }
 
   object Length {
     def apply[C <: Coproduct](implicit length: Length[C]): Aux[C, length.Out] = length
@@ -431,7 +431,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait ExtendRight[C <: Coproduct, T] extends DepFn1[C] { type Out <: Coproduct }
+  trait ExtendRight[C <: Coproduct, T] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object ExtendRight {
     def apply[C <: Coproduct, T]
@@ -461,7 +461,7 @@ object coproduct {
         }
   }
 
-  trait ExtendBy[L <: Coproduct, R <: Coproduct] {
+  trait ExtendBy[L <: Coproduct, R <: Coproduct] extends Serializable {
     type Out <: Coproduct
 
     def right(l: L): Out
@@ -484,7 +484,7 @@ object coproduct {
     }
   }
 
-  trait ExtendLeftBy[L <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+  trait ExtendLeftBy[L <: Coproduct, R <: Coproduct] extends DepFn1[R] with Serializable { type Out <: Coproduct }
 
   object ExtendLeftBy {
     def apply[L <: Coproduct, R <: Coproduct]
@@ -500,7 +500,7 @@ object coproduct {
       def apply(r: R): Out = impl(r)
     }
 
-    trait Impl[RevL <: Coproduct, R <: Coproduct] extends DepFn1[R] { type Out <: Coproduct }
+    trait Impl[RevL <: Coproduct, R <: Coproduct] extends DepFn1[R] with Serializable { type Out <: Coproduct }
 
     object Impl {
       type Aux[RevL <: Coproduct, R <: Coproduct, Out0 <: Coproduct] = Impl[RevL, R] { type Out = Out0 }
@@ -521,7 +521,7 @@ object coproduct {
     }
   }
 
-  trait ExtendRightBy[L <: Coproduct, R <: Coproduct] extends DepFn1[L] { type Out <: Coproduct }
+  trait ExtendRightBy[L <: Coproduct, R <: Coproduct] extends DepFn1[L] with Serializable { type Out <: Coproduct }
 
   object ExtendRightBy {
     def apply[L <: Coproduct, R <: Coproduct]
@@ -549,7 +549,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait RotateLeft[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+  trait RotateLeft[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object RotateLeft extends LowPriorityRotateLeft {
     def apply[C <: Coproduct, N <: Nat]
@@ -566,7 +566,7 @@ object coproduct {
         def apply(c: C): Out = impl(c)
       }
 
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
     object Impl {
       type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] { type Out = Out0 }
@@ -607,7 +607,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait RotateRight[C <: Coproduct, N <: Nat] extends DepFn1[C] { type Out <: Coproduct }
+  trait RotateRight[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object RotateRight extends LowPriorityRotateRight {
     def apply[C <: Coproduct, N <: Nat]
@@ -642,7 +642,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait IsCCons[C <: Coproduct] {
+  trait IsCCons[C <: Coproduct] extends Serializable {
     type H
     type T <: Coproduct
 
@@ -675,7 +675,7 @@ object coproduct {
    *
    * @author Stacy Curl, Alexandre Archambault
    */
-  trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+  trait Split[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
     type Left  <: Coproduct
     type Right <: Coproduct
     type Out = Either[Left, Right]
@@ -721,7 +721,7 @@ object coproduct {
    *
    * @author Alexandre Archambault
    */
-  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+  trait Take[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
     type Taken <: Coproduct
     type Out = Option[Taken]
   }
@@ -753,7 +753,7 @@ object coproduct {
    *
    * @author Alexandre Archambault
    */
-  trait Drop[C <: Coproduct, N <: Nat] extends DepFn1[C] {
+  trait Drop[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
     type Remaining <: Coproduct
     type Out = Option[Remaining]
   }
@@ -785,7 +785,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait Reverse[C <: Coproduct] extends DepFn1[C] { type Out <: Coproduct }
+  trait Reverse[C <: Coproduct] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object Reverse {
     def apply[C <: Coproduct](implicit reverse: Reverse[C]): Aux[C, reverse.Out] = reverse
@@ -821,7 +821,7 @@ object coproduct {
    *
    * @author Michael Pilquist
    */
-  trait Align[A <: Coproduct, B <: Coproduct] extends (A => B) {
+  trait Align[A <: Coproduct, B <: Coproduct] extends (A => B) with Serializable {
     def apply(a: A): B
   }
 
@@ -846,7 +846,7 @@ object coproduct {
    *
    * @author Stacy Curl
    */
-  trait InitLast[C <: Coproduct] {
+  trait InitLast[C <: Coproduct] extends Serializable {
     type I <: Coproduct
     type L
 
@@ -895,7 +895,7 @@ object coproduct {
    *
    * @author Miles Sabin
    */
-  trait ToHList[L <: Coproduct] { type Out <: HList }
+  trait ToHList[L <: Coproduct] extends Serializable { type Out <: HList }
 
   object ToHList {
     def apply[L <: Coproduct](implicit thl: ToHList[L]): Aux[L, thl.Out] = thl
@@ -919,7 +919,7 @@ object coproduct {
     * - coproduct is a sub-union of a bigger coproduct
     * - embeds a sub-coproduct into a bigger coproduct
     */
-  trait Basis[Super <: Coproduct, Sub <: Coproduct] extends DepFn1[Super] {
+  trait Basis[Super <: Coproduct, Sub <: Coproduct] extends DepFn1[Super] with Serializable {
     type Rest <: Coproduct
     type Out = Either[Rest, Sub]
     def inverse(e: Either[Rest, Sub]): Super

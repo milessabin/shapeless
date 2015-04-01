@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ object traversable {
    * 
    * @author Miles Sabin
    */
-  trait FromTraversable[Out <: HList] {
+  trait FromTraversable[Out <: HList] extends Serializable {
     def apply(l : GenTraversable[_]) : Option[Out]
   }
 

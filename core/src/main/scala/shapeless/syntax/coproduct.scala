@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ package syntax
  *
  * @author Miles Sabin
  */
-final class CoproductOps[C <: Coproduct](c: C) {
+final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
   import ops.coproduct._
 
   /**

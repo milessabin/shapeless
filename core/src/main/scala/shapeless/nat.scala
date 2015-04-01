@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ case class Succ[P <: Nat]() extends Nat {
  * 
  * @author Miles Sabin
  */
-class _0 extends Nat {
+class _0 extends Nat with Serializable {
   type N = _0
 }
 

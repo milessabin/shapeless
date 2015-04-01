@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ object HMap {
  * 
  * @author Miles Sabin
  */
-class ~?>[K[_], V[_]] {
-  class λ[K, V]
+class ~?>[K[_], V[_]] extends Serializable {
+  class λ[K, V] extends Serializable
 }
 
 object ~?> {

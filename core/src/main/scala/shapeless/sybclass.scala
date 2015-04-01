@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import poly._
 /**
  * Type class representing one-level generic queries.
  */
-trait Data[F, T, R] {
+trait Data[F, T, R] extends Serializable {
   def gmapQ(t: T): List[R]
 }
 
@@ -91,7 +91,7 @@ object Data extends Data1 {
 /**
  * Type class representing one-level generic transformations.
  */
-trait DataT[F, T] {
+trait DataT[F, T] extends Serializable {
   type Out
   def gmapT(t: T): Out
 }

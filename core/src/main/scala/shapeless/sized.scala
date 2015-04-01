@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,7 @@ object Sized extends LowPrioritySized {
  *
  * @author Alexandre Archambault
  */
-trait AdditiveCollection[Repr]
+trait AdditiveCollection[Repr] extends Serializable
 
 object AdditiveCollection {
   import scala.collection.immutable.Queue

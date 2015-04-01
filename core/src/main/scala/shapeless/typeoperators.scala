@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ object TheMacros {
  *
  * @author Miles Sabin
  */
-trait Lub[-A, -B, Out] {
+trait Lub[-A, -B, Out] extends Serializable {
   def left(a : A): Out
   def right(b : B): Out
 }
