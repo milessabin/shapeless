@@ -61,7 +61,7 @@ object ShapelessBuild extends Build {
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-          "org.scalamacros" % "quasiquotes_2.10" % "2.0.0",
+          "org.scalamacros" %% "quasiquotes" % "2.0.0",
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),
 
@@ -175,10 +175,6 @@ object ShapelessBuild extends Build {
       organization        := "com.chuusai",
 
       scalaVersion        := "2.10.5",
-      scalaBinaryVersion  := scalaVersion.value,
-
-      crossVersion        := CrossVersion.full,
-      crossScalaVersions  := Seq("2.10.4", "2.10.5"),
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
