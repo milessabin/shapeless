@@ -2628,6 +2628,34 @@ class HListTests {
     """)
   }
 
+  object SFoo extends SingletonProductArgs {
+    def applyProduct[L <: HList](args: L): L = args
+  }
+
+  @Test
+  def testSingletonProductArgs {
+    val l = SFoo(23, "foo", true)
+    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`true`.T :: HNil](l)
+
+    // Annotations on the LHS here and subsequently, otherwise scalac will
+    // widen the RHS to a non-singleton type.
+    val v1: Witness.`23`.T = l.head
+    assertEquals(23, v1)
+
+    val v2: Witness.`"foo"`.T = l.tail.head
+    assertEquals("foo", v2)
+
+    val v3: Witness.`true`.T = l.tail.tail.head
+    assertEquals(true, v3)
+
+    val v4 = l.tail.tail.tail
+    typed[HNil](v4)
+
+    illTyped("""
+      r.tail.tail.tail.head
+    """)
+  }
+
   implicit class Interpolator(val sc: StringContext) {
     class Args extends ProductArgs {
       def applyProduct[L <: HList](l: L): L = l

@@ -125,20 +125,50 @@ trait ProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardImpl
 }
 
+/**
+ * Trait supporting mapping dynamic argument lists to singleton-typed HList arguments.
+ *
+ * Mixing in this trait enables method applications of the form,
+ *
+ * {{{
+ * lhs.method(23, "foo", true)
+ * }}}
+ *
+ * to be rewritten as,
+ *
+ * {{{
+ * lhs.methodProduct(23.narrow :: "foo".narrow :: true.narrow)
+ * }}}
+ *
+ * ie. the arguments are rewritten as singleton-typed HList elements and the
+ * application is rewritten to an application of an implementing method (identified by the
+ * "Product" suffix) which accepts a single HList argument.
+ */
+trait SingletonProductArgs extends Dynamic {
+  def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
+}
+
 object ProductMacros {
   def inst(c: Context) = new ProductMacros[c.type](c)
 
   def forwardImpl(c: Context)(method: c.Expr[String])(args: c.Expr[Any]*): c.Expr[Any] =
     c.Expr[Any](inst(c).forwardImpl(method.tree)(args.map(_.tree): _*))
+
+  def forwardSingletonImpl(c: Context)(method: c.Expr[String])(args: c.Expr[Any]*): c.Expr[Any] =
+    c.Expr[Any](inst(c).forwardSingletonImpl(method.tree)(args.map(_.tree): _*))
 }
 
 class ProductMacros[C <: Context](val c: C) {
   import c.universe._
 
-  val hconsValueTree = reify {  ::  }.tree
-  val hnilValueTree  = reify { HNil: HNil }.tree
+  val hnilTpe = typeOf[HNil]
+  val hconsTpe = typeOf[::[_, _]].typeConstructor
 
-  def forwardImpl(method: Tree)(args: Tree*): Tree = {
+  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
+
+  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, true)
+
+  def forward(method: Tree, args: Seq[Tree], narrow: Boolean): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
@@ -148,14 +178,24 @@ class ProductMacros[C <: Context](val c: C) {
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val argsTree = mkProductImpl(args: _*)
+    val argsTree = mkProductImpl(args, narrow)
 
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def mkProductImpl(args: Tree*): Tree = {
-    args.foldRight(hnilValueTree) {
-      case(elem, acc) => q""" $hconsValueTree($elem, $acc) """
+  def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
+    def narrowElem(value: Tree): Type = {
+      value match {
+        case v @ Literal(c: Constant) if narrow => ConstantType(c)
+        case v => v.tpe
+      }
     }
+
+    args.foldRight((hnilTpe, q"_root_.shapeless.HNil": Tree)) {
+      case(elem, (accTpe, accTree)) =>
+        val neTpe = narrowElem(elem)
+        val neTree = q"$elem.asInstanceOf[$neTpe]"
+        (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
+    }._2
   }
 }
