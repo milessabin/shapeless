@@ -8,6 +8,11 @@ applicable and is available on the [shapeless wiki][wiki].
 Since the shapeless 2.2.0-RC1 release the following changes have been
 made,
 
+* If you are using Scala 2.10.x it is no longer necessary to provide an
+  explicit Scala version suffix for your shapeless dependency. You must
+  still ensure that you are using Scala version 2.10.2 or greater, with
+  Scala 2.10.5 (or switching to 2.11.x) strongly recommended.
+
 * All the major types and type classes now extend Serializable for
   compatibility with libraries and systems which use Java
   serialization.
