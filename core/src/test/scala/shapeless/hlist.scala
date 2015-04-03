@@ -26,8 +26,10 @@ class HListTests {
   import nat._
   import poly._
   import syntax.std.traversable._
+  import syntax.singleton._
   import syntax.typeable._
   import ops.hlist._
+  import ops.record._
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil
@@ -2632,10 +2634,28 @@ class HListTests {
     def applyProduct[L <: HList](args: L): L = args
   }
 
+  case class Quux(i: Int, s: String, b: Boolean)
+
+  object selectAll extends SingletonProductArgs {
+    class Apply[K <: HList] {
+      def from[T, R <: HList, S <: HList, Out](t: T)
+        (implicit
+          gen: LabelledGeneric.Aux[T, R],
+          sel: SelectAll.Aux[R, K, S],
+          tp: Tupler.Aux[S, Out]
+        ): Out =
+        tp(sel(gen.to(t)))
+    }
+
+    def applyProduct[K <: HList](keys: K) = new Apply[K]
+  }
+
   @Test
   def testSingletonProductArgs {
-    val l = SFoo(23, "foo", true)
-    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`true`.T :: HNil](l)
+    object Obj
+
+    val l = SFoo(23, "foo", 'bar, Obj, true)
+    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`'bar`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
     // widen the RHS to a non-singleton type.
@@ -2645,15 +2665,26 @@ class HListTests {
     val v2: Witness.`"foo"`.T = l.tail.head
     assertEquals("foo", v2)
 
-    val v3: Witness.`true`.T = l.tail.tail.head
-    assertEquals(true, v3)
+    val v3: Witness.`'bar`.T = l.tail.tail.head
+    assertEquals('bar, v3)
 
-    val v4 = l.tail.tail.tail
-    typed[HNil](v4)
+    val v4: Obj.type = l.tail.tail.tail.head
+    assertEquals(Obj, v4)
+
+    val v5: Witness.`true`.T = l.tail.tail.tail.tail.head
+    assertEquals(true, v5)
+
+    val v6 = l.tail.tail.tail.tail.tail
+    typed[HNil](v6)
 
     illTyped("""
-      r.tail.tail.tail.head
+      r.tail.tail.tail.tail.tail.tail.head
     """)
+
+    val quux = Quux(23, "foo", true)
+    val ib = selectAll('i, 'b).from(quux)
+    typed[(Int, Boolean)](ib)
+    assertEquals((23, true), ib)
   }
 
   implicit class Interpolator(val sc: StringContext) {

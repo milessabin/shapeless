@@ -158,11 +158,8 @@ object ProductMacros {
     c.Expr[Any](inst(c).forwardSingletonImpl(method.tree)(args.map(_.tree): _*))
 }
 
-class ProductMacros[C <: Context](val c: C) {
+class ProductMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import c.universe._
-
-  val hnilTpe = typeOf[HNil]
-  val hconsTpe = typeOf[::[_, _]].typeConstructor
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
 
@@ -184,17 +181,9 @@ class ProductMacros[C <: Context](val c: C) {
   }
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
-    def narrowElem(value: Tree): Type = {
-      value match {
-        case v @ Literal(c: Constant) if narrow => ConstantType(c)
-        case v => v.tpe
-      }
-    }
-
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil": Tree)) {
       case(elem, (accTpe, accTree)) =>
-        val neTpe = narrowElem(elem)
-        val neTree = q"$elem.asInstanceOf[$neTpe]"
+        val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
   }
