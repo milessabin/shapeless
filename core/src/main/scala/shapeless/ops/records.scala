@@ -59,6 +59,36 @@ package record {
   }
 
   /**
+   * Type class supporting multiple record field selection.
+   *
+   * @author Miles Sabin
+   */
+  @annotation.implicitNotFound(msg = "No fields ${K} in record ${L}")
+  trait SelectAll[L <: HList, K <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object SelectAll {
+    def apply[L <: HList, K <: HList](implicit sa: SelectAll[L, K]): Aux[L, K, sa.Out] = sa
+
+    type Aux[L <: HList, K <: HList, Out0 <: HList] = SelectAll[L, K] { type Out = Out0 }
+
+    implicit def hnilSelectAll[L <: HList]: Aux[L, HNil, HNil] =
+      new SelectAll[L, HNil] {
+        type Out = HNil
+        def apply(l: L): Out = HNil
+      }
+
+    implicit def hconsSelectAll[L <: HList, KH, KT <: HList]
+      (implicit
+        sh: Selector[L, KH],
+        st: SelectAll[L, KT]
+      ): Aux[L, KH :: KT, sh.Out :: st.Out] =
+      new SelectAll[L, KH :: KT] {
+        type Out = sh.Out :: st.Out
+        def apply(l: L): Out = sh(l) :: st(l)
+      }
+  }
+
+  /**
    * Type class supporting record update and extension.
    *
    * @author Miles Sabin

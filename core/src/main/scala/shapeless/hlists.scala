@@ -148,12 +148,9 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
-class ProductMacros(val c: whitebox.Context) {
+class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal.constantType
-
-  val hnilTpe = typeOf[HNil]
-  val hconsTpe = typeOf[::[_, _]].typeConstructor
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
 
@@ -175,17 +172,9 @@ class ProductMacros(val c: whitebox.Context) {
   }
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
-    def narrowElem(value: Tree): Type = {
-      value match {
-        case v @ Literal(c: Constant) if narrow => constantType(c)
-        case v => v.tpe
-      }
-    }
-
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil": Tree)) {
       case(elem, (accTpe, accTree)) =>
-        val neTpe = narrowElem(elem)
-        val neTree = q"$elem.asInstanceOf[$neTpe]"
+        val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
   }

@@ -112,6 +112,16 @@ trait SingletonTypeUtils extends ReprTypes {
     }
   }
 
+  def narrowValue(t: Tree): (Type, Tree) = {
+    t match {
+      case Literal(k: Constant) =>
+        val tpe = constantType(k)
+        (tpe, q"$t.asInstanceOf[$tpe]")
+      case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
+      case _ => (t.tpe, t)
+    }
+  }
+
   def parseLiteralType(typeStr: String): Option[c.Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
