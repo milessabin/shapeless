@@ -488,6 +488,10 @@ class SerializationTests {
     assertSerializable(Selector[R, KA])
     assertSerializable(Selector[R, KB])
 
+    assertSerializable(SelectAll[R, HNil])
+    assertSerializable(SelectAll[R, KA :: HNil])
+    assertSerializable(SelectAll[R, KA :: KB :: HNil])
+
     assertSerializable(Updater[HNil, FA])
     assertSerializable(Updater[R, FA])
     assertSerializable(Updater[R, FB])
