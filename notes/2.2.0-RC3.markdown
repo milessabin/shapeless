@@ -1,0 +1,66 @@
+This is the third release candidate for [shapeless-2.2.0][shapeless]. 
+These release notes provide a summary of changes since shapeless 2.1.0.
+shapeless 2.2.0 should be source and binary compatible with shapeless
+2.1.0, and for migration from shapeless 2.0.0 the earlier
+[migration guide from shapeless 2.0.0 to 2.1.0][migration] is still
+applicable and is available on the [shapeless wiki][wiki].
+
+Since the shapeless 2.2.0-RC2 release a bug was found and fixed in the
+new SingletonProductArgs implementation.
+
+Since the shapeless 2.2.0-RC1 release the following changes have been
+made,
+
+* If you are using Scala 2.10.x it is no longer necessary to provide an
+  explicit Scala version suffix for your shapeless dependency. You must
+  still ensure that you are using Scala version 2.10.2 or greater, with
+  Scala 2.10.5 (or switching to 2.11.x) strongly recommended.
+
+* All the major types and type classes now extend Serializable for
+  compatibility with libraries and systems which use Java
+  serialization.
+
+* A mechanism to replace Scala's now deprecated auto-tupling has been
+  added via the [ProductArgs][prodargs] and SingletonProductArgs traits.
+
+* A number of issues relating to the generation of Generic instances
+  for method local case classes have been fixed.
+
+The earlier 2.2.0-RC1 release included a number of [bug fixes][fixes]
+and the following new features and enhancements,
+
+* Added support for derivation of type classes for higher-kinded types.
+  See in particular the new [example][functor] illustrating the
+  application of this to the automatic derivation of Functor type class
+  instances for ADTs.
+
+* Added support for Generic representation of types with repeated
+  (ie. vararg) constructor arguments.
+
+* Added a useful toString to instances of the Typeable type class.
+
+* Added a useful toString to Sized containers.
+
+* Improved the CSV serialization example.
+
+* Reorganized the SBT project modules.
+  The "shapeless-" prefix has been dropped from all the module names
+  and it is now possible to drop into the Scala REPL with shapeless
+  on the classpath using just the "console" command.
+
+A big "Thank You!" to everyone who has contributed to this release,
+
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
+[prodargs]: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/hlists.scala#L124
+[fixes]: https://github.com/milessabin/shapeless/issues?q=milestone%3Ashapeless-2.2.0+is%3Aclosed
+[functor]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/functor.scala
+
