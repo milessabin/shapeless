@@ -64,7 +64,7 @@ package record {
    * @author Miles Sabin
    */
   @annotation.implicitNotFound(msg = "No fields ${K} in record ${L}")
-  trait SelectAll[L <: HList, K <: HList] extends DepFn1[L] { type Out <: HList }
+  trait SelectAll[L <: HList, K <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object SelectAll {
     def apply[L <: HList, K <: HList](implicit sa: SelectAll[L, K]): Aux[L, K, sa.Out] = sa
