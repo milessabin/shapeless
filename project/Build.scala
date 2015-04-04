@@ -32,6 +32,8 @@ import sbtrelease.ReleasePlugin.ReleaseKeys._
 import sbtrelease.ReleaseStateTransformations._
 import sbtrelease.Utilities._
 
+import org.scalajs.sbtplugin.ScalaJSPlugin
+
 object ShapelessBuild extends Build {
 
   lazy val shapeless = (project in file(".")
@@ -48,6 +50,7 @@ object ShapelessBuild extends Build {
       publishLocal := ()
     )
   )
+  .configure(scalajs)
 
   lazy val core = (project
       settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings: _*)
@@ -105,6 +108,7 @@ object ShapelessBuild extends Build {
         )
       )
     )
+    .configure(scalajs)
 
   lazy val scratch = (project
     dependsOn core
@@ -124,6 +128,7 @@ object ShapelessBuild extends Build {
       publishLocal := ()
     )
   )
+  .configure(scalajs)
 
   lazy val examples = (project
     dependsOn core
@@ -145,6 +150,7 @@ object ShapelessBuild extends Build {
       publishLocal := ()
     )
   )
+  .configure(scalajs)
 
   lazy val runAll = TaskKey[Unit]("run-all")
 
@@ -189,4 +195,20 @@ object ShapelessBuild extends Build {
 
       initialCommands in console := """import shapeless._"""
     )
+
+  def referJsSourceMapsToGithub: Project => Project =
+    p => p.settings(
+      scalacOptions ++= (if (isSnapshot.value) Seq.empty else Seq({
+        val dir = p.base.toURI.toString.replaceFirst("[^/]+/?$", "")
+        val url = "https://raw.githubusercontent.com/milessabin/shapeless"
+        val tag = "shapeless-" + version.value
+        s"-P:scalajs:mapSourceURI:$dir->$url/$tag/"
+      }))
+    )
+
+  def scalajs: Project => Project =
+    _.enablePlugins(ScalaJSPlugin)
+      .settings(ScalaJSPlugin.projectSettings: _*)
+      .configure(referJsSourceMapsToGithub)
+
 }
