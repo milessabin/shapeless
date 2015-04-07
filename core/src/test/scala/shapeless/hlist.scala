@@ -2650,6 +2650,13 @@ class HListTests {
     def applyProduct[K <: HList](keys: K) = new Apply[K]
   }
 
+  trait NonSingletonHNilTC[T]
+  object NonSingletonHNilTC {
+    def apply[T](t: T)(implicit i: NonSingletonHNilTC[T]): NonSingletonHNilTC[T] = i
+
+    implicit val nsHNilTC: NonSingletonHNilTC[HNil] = new NonSingletonHNilTC[HNil] {}
+  }
+
   @Test
   def testSingletonProductArgs {
     object Obj
@@ -2680,6 +2687,10 @@ class HListTests {
     illTyped("""
       r.tail.tail.tail.tail.tail.tail.head
     """)
+
+    // Verify that we infer HNil rather than HNil.type at the end
+    NonSingletonHNilTC(SFoo(23).tail)
+    NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
     val ib = selectAll('i, 'b).from(quux)
