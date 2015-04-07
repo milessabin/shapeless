@@ -172,7 +172,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
-    args.foldRight((hnilTpe, q"_root_.shapeless.HNil": Tree)) {
+    args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
         val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
