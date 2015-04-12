@@ -41,7 +41,7 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0 
 [milessabin]: https://twitter.com/milessabin
 [syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
-[higherrank]: http://www.cs.rutgers.edu/~ccshan/cs252/usage.pdf
+[higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
 [typelevel]: http://typelevel.org/
 [scalaz]: https://github.com/scalaz/scalaz
 [spire]: https://github.com/non/spire
@@ -95,7 +95,7 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.2.0-RC3
+### shapeless-2.2.0-RC4
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
 shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
@@ -104,7 +104,7 @@ shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradi
 scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC3"
+  "com.chuusai" %% "shapeless" % "2.2.0-RC4"
 )
 ```
 
@@ -117,7 +117,7 @@ plugin to your build,
 scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC3",
+  "com.chuusai" %% "shapeless" % "2.2.0-RC4",
   compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 )
 ```
