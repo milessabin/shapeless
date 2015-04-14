@@ -686,6 +686,33 @@ class RecordTests {
   }
 
   @Test
+  def testFields {
+    {
+      val f = HNil.fields
+      assertTypedEquals(HNil, f)
+    }
+
+    {
+      val f = (HNil: HNil).fields
+      assertTypedEquals(HNil: HNil, f)
+    }
+
+    val r = Record(i = 23, s = "foo", b = true)
+
+    {
+      val f = r.fields
+      assertTypedEquals(('i.narrow -> 23) :: ('s.narrow -> "foo") :: ('b.narrow -> true) :: HNil, f)
+    }
+
+    val rs = ("first" ->> Some(2)) :: ("second" ->> Some(true)) :: ("third" ->> Option.empty[String]) :: HNil
+
+    {
+      val f = rs.fields
+      assertTypedEquals(("first".narrow -> Some(2)) :: ("second".narrow -> Some(true)) :: ("third" -> Option.empty[String]) :: HNil, f)
+    }
+  }
+
+  @Test
   def testToMap {
     {
       val m = HNil.toMap
