@@ -16,18 +16,15 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
+import test._
 
-import shapeless.test._
-import testutil._
-
-class SizedTests {
+class SizedTests extends SpecLite{
   import nat._
   import syntax.sized._
+
+  "SizedTests" should {
   
-  @Test
-  def testBasics {
+  "testBasics" in {
     val l0 = List.empty[Int]
     val l1 = List(1)
     val l2 = List(1, 2)
@@ -282,8 +279,7 @@ class SizedTests {
   val m2eim2esm2eim2eem2edSized = Sized[List](m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
 
 
-  @Test
-  def testToHList {
+  "testToHList" in {
     def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
     val hlApap = apapSized.toHList
@@ -368,8 +364,7 @@ class SizedTests {
     assertEquals(m2eim2esm2eim2eem2ed, hlM2eim2esm2eim2eem2ed)
   }
 
-  @Test
-  def testAt {
+  "testAt" in {
     val ss = Sized[List](0, 1, 2)
     typed[Int](ss(0))
     typed[Int](ss(1))
@@ -399,8 +394,7 @@ class SizedTests {
     """)
   }
 
-  @Test
-  def testTupled {
+  "testTupled" in {
     val ss = Sized[List](0, 1, 2)
     val r1 = ss.tupled
     assertTypedEquals[(Int, Int, Int)]((0, 1, 2), r1)
@@ -409,5 +403,6 @@ class SizedTests {
     assertTypedEquals[Int](0, x)
     assertTypedEquals[Int](1, y)
     assertTypedEquals[Int](2, z)
+  }
   }
 }

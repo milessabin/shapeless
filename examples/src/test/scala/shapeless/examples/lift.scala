@@ -16,18 +16,16 @@
 
 package shapeless.examples
 
-import org.junit.Test
-import org.junit.Assert._
-
 import shapeless._
 
-class LiftTests {
+class LiftTests extends SpecLite {
   import syntax.std.function._
   import test._
   import Lift._
   
-  @Test
-  def testLiftO {
+  "LiftTests" should {
+
+  "testLiftO" in {
     
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _
@@ -94,4 +92,5 @@ class LiftTests {
     val p4 = prdO(Some(2), Some(3), None)
     assertTrue(p4.isEmpty)
   }
+}
 }

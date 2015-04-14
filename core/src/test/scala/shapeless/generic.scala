@@ -16,11 +16,7 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import ops.{ hlist => hl, coproduct => cp }
-import testutil.assertTypedEquals
 
 package GenericTestsAux {
   sealed trait Fruit
@@ -123,7 +119,7 @@ package GenericTestsAux {
   case class OAB(i: Int) extends OA with OB
 }
 
-class GenericTests {
+class GenericTests extends SpecLite{
   import GenericTestsAux._
   import scala.collection.immutable.{ :: => Cons }
   import test._
@@ -133,8 +129,9 @@ class GenericTests {
 
   type ABC = A.type :+: B.type :+: C.type :+: CNil
 
-  @Test
-  def testProductBasics {
+  "GenericTests" should {
+
+  "testProductBasics" in {
     val p = Person("Joe Soap", "Brighton", 23)
     type SSI = String :: String :: Int :: HNil
     val gen = Generic[Person]
@@ -148,8 +145,7 @@ class GenericTests {
     assertEquals(p, p1)
   }
 
-  @Test
-  def testProductVarargs {
+  "testProductVarargs" in {
     val p = PersonWithPseudonims("Joe Soap", "X", "M", "Z")
     val gen = Generic[PersonWithPseudonims]
 
@@ -162,8 +158,7 @@ class GenericTests {
     assertEquals(p, p1)
   }
 
-  @Test
-  def testTuples {
+  "testTuples" in {
     val gen1 = Generic[Tuple1[Int]]
     typed[Generic[Tuple1[Int]] { type Repr = Int :: HNil }](gen1)
 
@@ -174,8 +169,7 @@ class GenericTests {
     typed[Generic[(Int, String, Boolean)] { type Repr = Int :: String :: Boolean :: HNil }](gen3)
   }
 
-  @Test
-  def testProductMapBasics {
+  "testProductMapBasics" in {
     val p = Person("Joe Soap", "Brighton", 23)
 
     val p0 = star(p)
@@ -183,8 +177,7 @@ class GenericTests {
     assertEquals(Person("Joe Soap*", "Brighton*", 23), p0)
   }
 
-  @Test
-  def testProductNestedMap {
+  "testProductNestedMap" in {
     val p = Person("Joe Soap", "Brighton", 23)
     val e = Employee(p, Salary(2000))
 
@@ -193,8 +186,7 @@ class GenericTests {
     assertEquals(Employee(Person("Joe Soap*", "Brighton*", 23), Salary(2000)), e0)
   }
 
-  @Test
-  def testCoproductBasics {
+  "testCoproductBasics" in {
     val a: Fruit = Apple()
     val p: Fruit = Pear()
     val b: Fruit = Banana()
@@ -227,8 +219,7 @@ class GenericTests {
     typed[Fruit](o1)
   }
 
-  @Test
-  def testCoproductMapBasics {
+  "testCoproductMapBasics" in {
     val a: Fruit = Apple()
     val p: Fruit = Pear()
     val b: Fruit = Banana()
@@ -257,8 +248,7 @@ class GenericTests {
     assertEquals("Orange", o1)
   }
 
-  @Test
-  def testSingletonCoproducts {
+  "testSingletonCoproducts" in {
     type S = Single
 
     val gen = Generic[AbstractSingle]
@@ -272,8 +262,7 @@ class GenericTests {
     typed[AbstractSingle](s1)
   }
 
-  @Test
-  def testOverlappingCoproducts {
+  "testOverlappingCoproducts" in {
     val gen = Generic[Overlapping]
     val o: Overlapping = OAB(1)
     val o0 = gen.to(o)
@@ -283,8 +272,7 @@ class GenericTests {
     typed[Overlapping](o1)
   }
 
-  @Test
-  def testCaseObjects {
+  "testCaseObjects" in {
     val a: Enum = A
     val b: Enum = B
     val c: Enum = C
@@ -310,8 +298,7 @@ class GenericTests {
     typed[Enum](c1)
   }
 
-  @Test
-  def testCaseObjectMap {
+  "testCaseObjectMap" in {
     val a: Enum = A
     val b: Enum = B
     val c: Enum = C
@@ -340,8 +327,7 @@ class GenericTests {
     assertEquals(Pear(), c1.unify)
   }
 
-  @Test
-  def testParametrized {
+  "testParametrized" in {
     val t: Tree[Int] = Node(Node(Leaf(23), Leaf(13)), Leaf(11))
     type NI = Leaf[Int] :+: Node[Int] :+: CNil
 
@@ -354,8 +340,7 @@ class GenericTests {
     typed[Tree[Int]](t1)
   }
 
-  @Test
-  def testParametrizedWithVarianceOption {
+  "testParametrizedWithVarianceOption" in {
     val o: Option[Int] = Option(23)
     type SN = None.type :+: Some[Int] :+: CNil
 
@@ -368,8 +353,7 @@ class GenericTests {
     typed[Option[Int]](o1)
   }
 
-  @Test
-  def testMapOption {
+  "testMapOption" in {
     val o: Option[Int] = Option(23)
 
     val o0 = inc(o)
@@ -382,8 +366,7 @@ class GenericTests {
     assertEquals(Some(Some(24)), oo0)
   }
 
-  @Test
-  def testParametrizedWithVarianceList {
+  "testParametrizedWithVarianceList" in {
     import scala.collection.immutable.{ :: => Cons }
 
     val l: List[Int] = List(1, 2, 3)
@@ -398,8 +381,7 @@ class GenericTests {
     typed[List[Int]](l1)
   }
 
-  @Test
-  def testParametrzedSubset {
+  "testParametrzedSubset" in {
     val l = Left(23)
     val r = Right(true)
     type IB = Left[Int] :+: Right[Boolean] :+: CNil
@@ -413,8 +395,7 @@ class GenericTests {
     assertTypedEquals[IB](Inr(Inl(r)), c1)
   }
 
-  @Test
-  def testParametrizedPermute {
+  "testParametrizedPermute" in {
     val s = Swap(23, true)
     type IB = Swap[Int, Boolean] :+: CNil
 
@@ -424,8 +405,7 @@ class GenericTests {
     assertTypedEquals[IB](Inl(s), s0)
   }
 
-  @Test
-  def testAbstractNonCC {
+  "testAbstractNonCC" in {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
@@ -460,8 +440,7 @@ class GenericTests {
     assertEquals(2.0, fAbs.asInstanceOf[NonCCB].d, Double.MinPositiveValue)
   }
 
-  @Test
-  def testNonCCWithCompanion {
+  "testNonCCWithCompanion" in {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val gen = Generic[NonCCWithCompanion]
@@ -475,8 +454,7 @@ class GenericTests {
     assertEquals("bar", f.s)
   }
 
-  @Test
-  def testNonCCLazy {
+  "testNonCCLazy" in {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
@@ -501,8 +479,7 @@ class GenericTests {
 
   object O extends Child
 
-  @Test
-  def testNestedInherited {
+  "testNestedInherited" in {
     val n0 = O.Nested(23, "foo")
     val repr = O.gen.to(n0)
     typed[Int :: String :: HNil](repr)
@@ -511,8 +488,7 @@ class GenericTests {
     assertEquals(n0, n1)
   }
 
-  @Test
-  def testIsTuple {
+  "testIsTuple" in {
     import record._
     import union._
 
@@ -534,8 +510,7 @@ class GenericTests {
     illTyped(" IsTuple[Array[Int]] ")
   }
 
-  @Test
-  def testHasProductGeneric {
+  "testHasProductGeneric" in {
     import record._
     import union._
 
@@ -559,8 +534,7 @@ class GenericTests {
     illTyped(" HasProductGeneric[Array[Int]] ")
   }
 
-  @Test
-  def testHasCoproductGeneric {
+  "testHasCoproductGeneric" in {
     import record._
     import union._
 
@@ -582,8 +556,7 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[Array[Int]] ")
   }
 
-  @Test
-  def testNonGeneric {
+  "testNonGeneric" in {
     import record._
     import union._
 
@@ -604,12 +577,12 @@ class GenericTests {
     case object Red extends Color
   }
 
-  @Test
-  def testNestedCaseObjects {
+  "testNestedCaseObjects" in {
     Generic[Green.type]
     Generic[Color.Red.type]
     LabelledGeneric[Green.type]
     LabelledGeneric[Color.Red.type]
+    assertTrue()
   }
 
   sealed trait Base1
@@ -630,9 +603,10 @@ class GenericTests {
     implicit def projectTC[F, G](implicit gen: Generic.Aux[F, G], tc: Lazy[TC[G]]): TC[F] = new TC[F] {}
   }
 
-  @Test
-  def testCaseObjectsAndLazy {
+  "testCaseObjectsAndLazy" in {
     TC[Base1]
+    assertTrue()
+  }
   }
 }
 

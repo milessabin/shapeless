@@ -16,10 +16,7 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
-import lens._, nat._, record._, syntax.singleton._, tag.@@, test._, testutil._
+import lens._, nat._, record._, syntax.singleton._, tag.@@, test._
 
 package lensTestDataTypes {
   sealed trait Sum1
@@ -51,7 +48,7 @@ package lensTestDataTypes {
 
 import lensTestDataTypes._
 
-trait LensTests {
+trait LensTests extends SpecLite {
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
   val person = Person("Joe Grey", 37, address)
 
@@ -62,8 +59,9 @@ trait LensTests {
   val cityLens: Lens[Person, String]
   val postcodeLens: Lens[Person, String]
 
-  @Test
-  def testBasics {
+  "LensTests" should {
+
+  "testBasics" in {
     val age1 = ageLens.get(person)
     typed[Int](age1)
     assertEquals(37, age1)
@@ -79,8 +77,7 @@ trait LensTests {
     assertEquals("Montpelier Road", person3.address.street)
   }
 
-  @Test
-  def testCompose {
+  "testCompose" in {
     val addressLens = lens[Person] >> 2
     val streetLens = lens[Address] >> 0
 
@@ -101,8 +98,7 @@ trait LensTests {
     assertEquals("Southover Street", street3)
   }
 
-  @Test
-  def testTuples {
+  "testTuples" in {
     type ISDB = (Int, (String, (Double, Boolean)))
 
     val tp = (23, ("foo", (2.0, false)))
@@ -163,8 +159,7 @@ trait LensTests {
     assertEquals((23, ("foo", (2.0, true))), tpb)
   }
 
-  @Test
-  def testHLists {
+  "testHLists" in {
     type ISB = Int :: String :: Boolean :: HNil
     val l = 23 :: "foo" :: true :: HNil
 
@@ -206,8 +201,7 @@ trait LensTests {
     assertEquals(23 :: "foo" :: false :: HNil, lensB.set(l)(false))
   }
 
-  @Test
-  def testRecords {
+  "testRecords" in {
     import labelled.FieldType, syntax.singleton._
 
     val (fooT, barT) = (Witness("foo"), Witness("bar"))
@@ -224,8 +218,7 @@ trait LensTests {
     assertEquals(("foo" ->> 42) :: ("bar" ->> "bye") :: HNil, ls.set(l)("bye"))
   }
 
-  @Test
-  def testSets {
+  "testSets" in {
     val s = Set("foo", "bar", "baz")
     val lens = setLens[String]("bar")
 
@@ -242,8 +235,7 @@ trait LensTests {
     assertEquals(s, s3)
   }
 
-  @Test
-  def testMaps {
+  "testMaps" in {
     val m = Map(23 -> "foo", 13 -> "bar", 11 -> "baz")
     val lens = mapLens[Int, String](13)
 
@@ -269,8 +261,7 @@ trait LensTests {
     assertEquals(Option("bar"), s4)
   }
 
-  @Test
-  def testProducts {
+  "testProducts" in {
     val nameAgeCityLens = nameLens ~ ageLens ~ cityLens
 
     val nac1 = nameAgeCityLens.get(person)
@@ -279,6 +270,7 @@ trait LensTests {
 
     val person2 = nameAgeCityLens.set(person)("Joe Soap", 27, "London")
     assertEquals(Person("Joe Soap", 27, Address("Southover Street", "London", "BN2 9UA")), person2)
+  }
   }
 }
 
@@ -309,9 +301,11 @@ class OpticTestsDynamic extends LensTests {
   val postcodeLens = lens[Person].address.postcode
 }
 
-class OpticTests {
-  @Test
-  def testBasics {
+class OpticTests extends SpecLite {
+
+  "OpticTests" should {
+
+  "testBasics" in {
     val s1: Sum1 = Prod1a(Prod2a(13), 23)
     val s2: Sum1 = Prod1b(Prod2b("foo"), "bar")
 
@@ -404,8 +398,7 @@ class OpticTests {
     assertEquals(s2, t5b)
   }
 
-  @Test
-  def testInferredProducts {
+  "testInferredProducts" in {
     val s1: Sum1 = Prod1a(Prod2a(13), 23)
     val s2: Sum1 = Prod1b(Prod2b("foo"), "bar")
 
@@ -464,8 +457,7 @@ class OpticTests {
     assertEquals(s2, t3b)
   }
 
-  @Test
-  def testRecursive {
+  "testRecursive" in {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -545,8 +537,7 @@ class OpticTests {
     assertEquals(t2, s5b)
   }
 
-  @Test
-  def testRecursiveInferredProducts {
+  "testRecursiveInferredProducts" in {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -609,8 +600,7 @@ class OpticTests {
     assertEquals(t2, s4b)
   }
 
-  @Test
-  def testPaths {
+  "testPaths" in {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -678,8 +668,7 @@ class OpticTests {
     assertEquals(t2, s4b)
   }
 
-  @Test
-  def testInferredLenses {
+  "testInferredLenses" in {
     def update[T, E](t: T)(e: E)(implicit mkLens: p.Lens[T, E]): T = mkLens().set(t)(e)
 
     val p = ^.i
@@ -697,8 +686,7 @@ class OpticTests {
   }
 
   
-  @Test
-  def testUnapply {
+  "testUnapply" in {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
 
@@ -741,8 +729,7 @@ class OpticTests {
     assertTypedEquals[Int](3, z3)
   }
 
-  @Test
-  def testLazyUnapply {
+  "testLazyUnapply" in {
     val g = optic[BGraph[Int]]
     val l = g.left
     val rl = g.right.left
@@ -770,4 +757,5 @@ class OpticTests {
     assertEquals(1, x2)
     assertEquals(2, y2)
   }
+}
 }

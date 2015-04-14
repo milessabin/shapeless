@@ -16,19 +16,28 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import shapeless.test._
 
-class HMapTests {
+class HMapTests extends SpecLite {
 
   class BiMapIS[K, V]
   implicit val intToString = new BiMapIS[Int, String]
   implicit val stringToInt = new BiMapIS[String, Int]
-  
-  @Test
-  def testBasics {
+
+  trait M[A]
+
+  class Mapping[K, V]
+  implicit def mappingFromM[A, B <: M[A]] = new Mapping[A,B]
+
+  case class X(x: Int) extends M[X.type]
+  object X
+
+  case class Y(x: String) extends M[Y.type]
+  object Y
+
+  "HMapTests" should {
+
+  "testBasics" in {
     val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
     
     illTyped("""
@@ -46,8 +55,7 @@ class HMapTests {
     assertEquals(Some(13), i1)
   }
   
-  @Test
-  def testPoly {
+  "testPoly" in {
     val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
     import hm._
     
@@ -65,8 +73,7 @@ class HMapTests {
     assertEquals(("foo", 13), a1)
   }
   
-  @Test
-  def testNatTrans {
+  "testNatTrans" in {
     val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     
     illTyped("""
@@ -90,8 +97,7 @@ class HMapTests {
     assertEquals(Some(Some(13)), o2)
   }
   
-  @Test
-  def testPolyNatTrans {
+  "testPolyNatTrans" in {
     val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     import nt._
     
@@ -112,8 +118,7 @@ class HMapTests {
     assertEquals((Option("bar"), Option(13)), a1)
   }
   
-  @Test
-  def testIdKeyNatTrans {
+  "testIdKeyNatTrans" in {
     val nt = HMap[(Id ~?> Option)#λ]("foo" -> Option("bar"), 23 -> Option(13))
     
     illTyped("""
@@ -137,8 +142,7 @@ class HMapTests {
     assertEquals(Some(Some(13)), o2)
   }  
   
-  @Test
-  def testIdValueNatTrans {
+  "testIdValueNatTrans" in {
     val nt = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> 13)
     
     illTyped("""
@@ -163,19 +167,7 @@ class HMapTests {
     assertEquals(Some(13), o2)
   }
 
-  trait M[A]
-
-  class Mapping[K, V]
-  implicit def mappingFromM[A, B <: M[A]] = new Mapping[A,B]
-
-  case class X(x: Int) extends M[X.type]
-  object X
-
-  case class Y(x: String) extends M[Y.type]
-  object Y
-
-  @Test
-  def testSingleton {
+  "testSingleton" in {
 
     val hm = HMap[Mapping](X -> X(13), Y -> Y("foo"))
 
@@ -192,5 +184,6 @@ class HMapTests {
     assertTrue(isDefined(y))
     typed[Option[Y]](y)
     assertEquals(Some(Y("foo")), y)
+  }
   }
 }
