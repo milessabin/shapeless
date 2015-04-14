@@ -16,15 +16,14 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
 import syntax.zipper._
 
-class ZipperTests {
-  @Test
-  def testTraversal {
+class ZipperTests extends SpecLite {
+
+  "ZipperTests" should {
+
+  "testTraversal" in {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val z = l.toZipper
@@ -54,8 +53,7 @@ class ZipperTests {
     assertEquals(1, i2)
   }
 
-  @Test
-  def testUpdate {
+"testUpdate" in {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l2 = l.toZipper.right.put("wibble", 45).reify
@@ -75,8 +73,7 @@ class ZipperTests {
     assertEquals(1 :: "foo" :: 3.0 :: "bar" :: HNil, l5)
   }
 
-  @Test
-  def testTypeIndexing {
+  "testTypeIndexing" in {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l6 = l.toZipper.rightTo[Double]
@@ -90,8 +87,7 @@ class ZipperTests {
     assertEquals(1, i7)
   }
   
-  @Test
-  def testNatIndexing {
+  "testNatIndexing" in {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l8 = l.toZipper.rightBy(2)
@@ -105,8 +101,7 @@ class ZipperTests {
     assertEquals("foo", s9)
   }
   
-  @Test
-  def testEmpty {
+  "testEmpty" in {
     val l = HNil
     val z = l.toZipper
     
@@ -134,8 +129,7 @@ class ZipperTests {
       HNil
     )
   
-  @Test
-  def testCaseClasses {
+  "testCaseClasses" in {
     val z = p1.toZipper
     
     val name = z.get
@@ -203,5 +197,6 @@ class ZipperTests {
        Employee("Achilles", 3000) ::
        Employee("Odysseus", 2000) ::
        HNil), z3)
+  }
   }
 }

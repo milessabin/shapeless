@@ -16,14 +16,12 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import shapeless.test.illTyped
 
-class HListConstraintsTests {
-  @Test
-  def testUnaryTCConstraint {
+class HListConstraintsTests extends SpecLite {
+
+  "HListConstraintsTests" should {
+  "testUnaryTCConstraint" in {
     import UnaryTCConstraint._
     
     def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
@@ -57,8 +55,7 @@ class HListConstraintsTests {
     """)
   }
   
-  @Test
-  def testBasisConstraint {
+  "testBasisConstraint" in {
     import BasisConstraint._
     
     type M = Int :: Boolean :: String :: HNil
@@ -75,8 +72,7 @@ class HListConstraintsTests {
     """)
   }
   
-  @Test
-  def testLUBConstraint {
+  "testLUBConstraint" in {
     import LUBConstraint._
     
     trait Fruit
@@ -95,8 +91,7 @@ class HListConstraintsTests {
     """)
   }
 
-  @Test
-  def testKeyValueConstraints {
+  "testKeyValueConstraints" in {
     import KeyConstraint._
     import ValueConstraint._
     
@@ -134,5 +129,6 @@ class HListConstraintsTests {
     illTyped("""
     acceptValues(book)
     """)
+  }
   }
 }

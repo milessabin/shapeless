@@ -16,13 +16,9 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import poly._
 import ops.hlist.Mapper
 import test._
-import testutil._
 
 /** Polymorphic singleton function. */
 object singleton extends (Id ~> Set) {
@@ -75,7 +71,7 @@ object zero extends Poly0 {
   implicit def zeroList[T] = at[List[T]](Nil)
 }
 
-class PolyTests {
+class PolyTests extends SpecLite{
   object toInt extends (Id ~>> Int) {
     def apply[T](t : T) = t.toString.toInt
   }
@@ -89,8 +85,9 @@ class PolyTests {
     implicit def caseTuple[T, U](implicit st : Case.Aux[T, Int], su : Case.Aux[U, Int]) = at[(T, U)]{ case (t, u) => size(t)+size(u) }
   }
   
-  @Test
-  def testHRFn {
+  "PolyTests" should {
+
+  "testHRFn" in {
     implicitly[choose.Case[Set[Int]]]
     
     implicitly[size.Case[Int]]
@@ -226,8 +223,7 @@ class PolyTests {
     assertEquals(List(23) :: List("foo") :: HNil, hm2)
   }
 
-  @Test
-  def testCompose {
+  "testCompose" in {
     val so = singleton compose option
     
     val sos = so("foo")
@@ -239,8 +235,7 @@ class PolyTests {
     assertEquals(Set(Option(23)), soi)
   }
 
-  @Test
-  def testPolyVal {
+  "testPolyVal" in {
     val i1 = zero[Int]
     typed[Int](i1)
     assertEquals(0, i1)
@@ -273,8 +268,7 @@ class PolyTests {
     implicit val caseString = at[String](_.toInt)
   }
 
-  @Test
-  def testBinary {
+  "testBinary" in {
     val bi = bidi(23)
     typed[String](bi)
     assertEquals("23", bi)
@@ -289,8 +283,7 @@ class PolyTests {
     assertEquals("1" :: 2 :: "3" :: 4 :: HNil, blis)
   }
 
-  @Test
-  def testInlinePoly {
+  "testInlinePoly" in {
     val l = 23 :: "foo" :: true :: HNil
     val ll = List(23) :: List("foo") :: List(true) :: HNil
     val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
@@ -324,8 +317,7 @@ class PolyTests {
     typed[Int :: Int :: Int :: HNil](l7)
   }
 
-  @Test
-  def testLiftImported {
+  "testLiftImported" in {
     import LiftMethods._
 
     val l = 23 :: "foo" :: true :: HNil
@@ -355,8 +347,7 @@ class PolyTests {
     typed[Int :: Int :: Int :: HNil](l7)
   }
 
-  @Test
-  def testLiftPath {
+  "testLiftPath" in {
     val l = 23 :: "foo" :: true :: HNil
     val ll = List(23) :: List("foo") :: List(true) :: HNil
     val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
@@ -384,8 +375,7 @@ class PolyTests {
     typed[Int :: Int :: Int :: HNil](l7)
   }
 
-  @Test
-  def testLiftLocal {
+  "testLiftLocal" in {
     def mTcTc[T](t : List[T]) = t.headOption
     def mIdTc[T](t : T) = Option(t)
     def mTcId[T](t : Option[T]) = t.get
@@ -429,8 +419,7 @@ class PolyTests {
   def mIdCn2[T](t : T) = t.toString
   def mCnCn2(t : Int) = t+1
 
-  @Test
-  def testLiftEnclosing {
+  "testLiftEnclosing" in {
     val l = 23 :: "foo" :: true :: HNil
     val ll = List(23) :: List("foo") :: List(true) :: HNil
     val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
@@ -458,8 +447,7 @@ class PolyTests {
     typed[Int :: Int :: Int :: HNil](l7)
   }
 
-  @Test
-  def testRotateLeft {
+  "testRotateLeft" in {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
@@ -499,8 +487,7 @@ class PolyTests {
     assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
   }
 
-  @Test
-  def testRotateRight {
+  "testRotateRight" in {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
@@ -538,6 +525,7 @@ class PolyTests {
 
     val r6 = dcis(2.0, 'a', 1, "foo")
     assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
+  }
   }
 }
 

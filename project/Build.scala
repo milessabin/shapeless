@@ -51,7 +51,7 @@ object ShapelessBuild extends Build {
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-          "com.novocode" % "junit-interface" % "0.7" % "test"
+          "org.scala-sbt" %  "test-interface" % "1.0" % "test"
         ),
 
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
@@ -83,7 +83,7 @@ object ShapelessBuild extends Build {
     )
 
   lazy val scratch = (project
-    dependsOn core
+    dependsOn core % "compile;test->test"
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-scratch",
@@ -91,7 +91,7 @@ object ShapelessBuild extends Build {
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-        "com.novocode" % "junit-interface" % "0.7" % "test"
+        "org.scala-sbt" %  "test-interface" % "1.0" % "test"
       ),
 
       publish := (),
@@ -100,7 +100,7 @@ object ShapelessBuild extends Build {
   )
 
   lazy val examples = (project
-    dependsOn core
+    dependsOn core % "compile;test->test"
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-examples",
@@ -108,7 +108,7 @@ object ShapelessBuild extends Build {
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-        "com.novocode" % "junit-interface" % "0.7" % "test"
+        "org.scala-sbt" %  "test-interface" % "1.0" % "test"
       ),
 
       runAllIn(Compile),
@@ -133,7 +133,7 @@ object ShapelessBuild extends Build {
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-
+      testFrameworks := Seq(new TestFramework("shapeless.test.SpecLiteFramework")),
       scalacOptions       := Seq(
         "-feature",
         "-language:higherKinds",
