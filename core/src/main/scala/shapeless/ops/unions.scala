@@ -116,6 +116,40 @@ object union {
   }
 
   /**
+   * Type class supporting converting this union to a `Coproduct` of key-value pairs.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fields[U <: Coproduct] extends DepFn1[U] with Serializable {
+    type Out <: Coproduct
+  }
+
+  object Fields {
+    def apply[U <: Coproduct](implicit fields: Fields[U]): Aux[U, fields.Out] = fields
+
+    type Aux[L <: Coproduct, Out0 <: Coproduct] = Fields[L] { type Out = Out0 }
+
+    implicit val cnilFields: Aux[CNil, CNil] =
+      new Fields[CNil] {
+        type Out = CNil
+        def apply(u: CNil) = u
+      }
+
+    implicit def cconsFields[K, V, T <: Coproduct](implicit
+      key: Witness.Aux[K],
+      tailFields: Fields[T]
+    ): Aux[FieldType[K, V] :+: T, (K, V) :+: tailFields.Out] =
+      new Fields[FieldType[K, V] :+: T] {
+        type Out = (K, V) :+: tailFields.Out
+        def apply(u: FieldType[K, V] :+: T) =
+          u match {
+            case Inl(v) => Inl(key.value -> v)
+            case Inr(t) => Inr(tailFields(t))
+          }
+      }
+  }
+
+  /**
    * Type class supporting converting this union to a `Map` whose keys and values
    * are typed as the Lub of the keys and values of this union.
    *
