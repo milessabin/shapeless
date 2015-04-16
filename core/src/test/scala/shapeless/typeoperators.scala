@@ -148,7 +148,12 @@ class TypeOperatorTests {
 
   @Test
   def testRejectBogus {
-    assert(Try(the.Foo).isFailure)
+    try {
+      the.Foo
+      assert(false)
+    } catch {
+      case _: Throwable => // OK
+    }
 
     //the.Unit  // illTyped fails for this expression
 
