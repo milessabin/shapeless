@@ -378,7 +378,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         q"""
           _root_.shapeless.Typeable.intersectionTypeable(
-            _root_.scala.Array[Typeable[_]](..$parentTypeables)
+            _root_.scala.Array[_root_.shapeless.Typeable[_]](..$parentTypeables)
           )
          """
 
@@ -405,7 +405,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         q"""
           _root_.shapeless.Typeable.caseClassTypeable(
-            classOf[$tpe], _root_.scala.Array[Typeable[_]](..$fieldTypeables)
+            classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables)
           )
          """
 
