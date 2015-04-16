@@ -96,6 +96,16 @@ class NatTests {
     val min2 = min[_5, _4]
     check(4)(min2)
 
+    implicitly[Max.Aux[_0, _0, _0]]
+    implicitly[Max.Aux[_5, _2, _5]]
+    implicitly[Max.Aux[_3, _8, _8]]
+
+    def max[A <: Nat, B <: Nat](implicit max : Max[A, B]) = new Check[max.Out] {}
+    val max1 = max[_3, _4]
+    check(4)(max1)
+    val max2 = max[_5, _4]
+    check(5)(max2)
+
     implicitly[Pow.Aux[_0, _8, _1]]
     implicitly[Pow.Aux[_9, _0, _0]]
     implicitly[Pow.Aux[_3, _2, _8]]

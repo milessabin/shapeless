@@ -41,7 +41,7 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0 
 [milessabin]: https://twitter.com/milessabin
 [syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
-[higherrank]: http://www.cs.rutgers.edu/~ccshan/cs252/usage.pdf
+[higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
 [typelevel]: http://typelevel.org/
 [scalaz]: https://github.com/scalaz/scalaz
 [spire]: https://github.com/non/spire
@@ -267,6 +267,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 
 ## Contributors
 
++ Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
