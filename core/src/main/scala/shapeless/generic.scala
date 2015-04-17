@@ -183,14 +183,13 @@ trait CaseClassMacros extends ReprTypes {
     if(isProduct(tpe))
       List(tpe)
     else if(isCoproduct(tpe)) {
-      val ctors = collectCtors(classSym(tpe)).sortBy(_.fullName)
-      if (ctors.isEmpty) abort(s"Sealed trait $tpe has no case class subtypes")
-
       def typeArgs(tpe: Type) = tpe match {
         case TypeRef(_, _, args) => args
         case _ => Nil
       }
 
+      val basePre = prefix(tpe)
+      val baseSym = classSym(tpe)
       val baseArgs: List[Type] =
         if(hk) {
           val tc = tpe.typeConstructor
@@ -202,25 +201,35 @@ trait CaseClassMacros extends ReprTypes {
         }
         else typeArgs(tpe.normalize)
 
-      val tpePrefix = prefix(tpe)
+      val ctors = collectCtors(baseSym).sortBy(_.fullName)
+      if (ctors.isEmpty)
+        abort(s"Sealed trait $tpe has no case class subtypes")
 
       ctors map { sym =>
-        val suffix = ownerChain(sym).dropWhile(_ != tpePrefix.typeSymbol)
+        def substituteArgs: List[Type] = {
+          val subst = typeArgs(ThisType(sym).baseType(baseSym))
+          sym.typeParams.map { param =>
+            val paramTpe = param.asType.toType
+            baseArgs(subst.indexWhere(_ =:= paramTpe))
+          }
+        }
+
+        val suffix = ownerChain(sym).dropWhile(_ != basePre.typeSymbol)
         if(suffix.isEmpty) {
           if(sym.isModuleClass) {
             val moduleSym = sym.asClass.module
             val modulePre = prefix(moduleSym.typeSignature)
             singleType(modulePre, moduleSym)
-          } else appliedType(sym.toTypeIn(c.prefix.tree.tpe), baseArgs)
+          } else appliedType(sym.toTypeIn(c.prefix.tree.tpe), substituteArgs)
         } else {
           if(sym.isModuleClass) {
             val path = suffix.tail.map(_.name.toTermName)
-            val (modulePre, moduleSym) = mkDependentRef(tpePrefix, path)
+            val (modulePre, moduleSym) = mkDependentRef(basePre, path)
             singleType(modulePre, moduleSym)
           } else {
             val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
-            val (subTpePre, subTpeSym) = mkDependentRef(tpePrefix, path)
-            typeRef(subTpePre, subTpeSym, baseArgs)
+            val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
+            typeRef(subTpePre, subTpeSym, substituteArgs)
           }
         }
       }
