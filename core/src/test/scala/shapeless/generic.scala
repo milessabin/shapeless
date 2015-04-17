@@ -107,6 +107,13 @@ package GenericTestsAux {
     lazy val prev = prev0
     lazy val next = next0
   }
+
+  sealed trait Xor[+A, +B]
+  case class Left[+LA](a: LA) extends Xor[LA, Nothing]
+  case class Right[+RB](b: RB) extends Xor[Nothing, RB]
+
+  sealed trait Base[BA, BB]
+  case class Swap[SA, SB](a: SA, b: SB) extends Base[SB, SA]
 }
 
 class GenericTests {
@@ -371,6 +378,32 @@ class GenericTests {
 
     val l1 = gen.from(l0)
     typed[List[Int]](l1)
+  }
+
+  @Test
+  def testParametrzedSubset {
+    val l = Left(23)
+    val r = Right(true)
+    type IB = Left[Int] :+: Right[Boolean] :+: CNil
+
+    val gen = Generic[Xor[Int, Boolean]]
+
+    val c0 = gen.to(l)
+    assertTypedEquals[IB](Inl(l), c0)
+
+    val c1 = gen.to(r)
+    assertTypedEquals[IB](Inr(Inl(r)), c1)
+  }
+
+  @Test
+  def testParametrizedPermute {
+    val s = Swap(23, true)
+    type IB = Swap[Int, Boolean] :+: CNil
+
+    val gen = Generic[Base[Boolean, Int]]
+
+    val s0 = gen.to(s)
+    assertTypedEquals[IB](Inl(s), s0)
   }
 
   @Test
