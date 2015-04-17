@@ -478,6 +478,9 @@ class GenericTests {
     illTyped(" IsTuple[Fruit] ")
     illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[Int] ")
+    illTyped(" IsTuple[String] ")
+    illTyped(" IsTuple[Array[Int]] ")
   }
 
   @Test
@@ -500,6 +503,9 @@ class GenericTests {
     illTyped(" HasProductGeneric[Fruit] ")
     illTyped(" HasProductGeneric[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" HasProductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasProductGeneric[Int] ")
+    illTyped(" HasProductGeneric[String] ")
+    illTyped(" HasProductGeneric[Array[Int]] ")
   }
 
   @Test
@@ -520,6 +526,25 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[Person] ")
     illTyped(" HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasCoproductGeneric[Int] ")
+    illTyped(" HasCoproductGeneric[String] ")
+    illTyped(" HasCoproductGeneric[Array[Int]] ")
+  }
+
+  @Test
+  def testNonGeneric {
+    import record._
+    import union._
+
+    illTyped(" Generic[Int] ")
+    illTyped(" Generic[Array[Int]] ")
+    illTyped(" Generic[String] ")
+    illTyped(" Generic[HNil] ")
+    illTyped(" Generic[Int :: String :: HNil] ")
+    illTyped(" Generic[CNil] ")
+    illTyped(" Generic[Int :+: String :+: CNil] ")
+    illTyped(" Generic[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" Generic[Union.`'i -> Int, 's -> String`.T] ")
   }
 
   sealed trait Color
