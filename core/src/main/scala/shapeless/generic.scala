@@ -316,11 +316,22 @@ trait CaseClassMacros extends ReprTypes {
     else mkCoproductTypTree1(ctorsOf1(tpe), param, arg)
   }
 
-  def isCaseClassLike(sym: ClassSymbol): Boolean =
+  def isCaseClassLike(sym: ClassSymbol): Boolean = {
+    def checkCtor: Boolean = {
+      def unique[T](s: Seq[T]): Option[T] =
+        s.headOption.find(_ => s.tail.isEmpty)
+
+      val tpe = sym.typeSignature
+      (for {
+        ctor <- unique(productCtorsOf(tpe))
+        params <- unique(ctor.asMethod.paramLists)
+      } yield params.size == fieldsOf(tpe).size).getOrElse(false)
+    }
+
     sym.isCaseClass ||
     (!sym.isAbstract && !sym.isTrait &&
-     sym.knownDirectSubclasses.isEmpty &&
-     productCtorsOf(sym.typeSignature).size == 1)
+     sym.knownDirectSubclasses.isEmpty && checkCtor)
+  }
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass && isCaseClassLike(sym)
 
