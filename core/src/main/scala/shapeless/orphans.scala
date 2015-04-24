@@ -16,9 +16,10 @@
 
 package shapeless
 
+import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 case class Orphan[F[_], D, T](instance: F[T])
 
@@ -30,7 +31,7 @@ trait OrphanDeriver[F[_], D] {
   implicit def materialize[T]: F[T] = macro OrphanMacros.materializeImpl[F, D, T]
 }
 
-class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
+class OrphanMacros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
 
   def materializeImpl[F[_], D, T]
@@ -49,6 +50,29 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
      """
   }
 
+  case class OpenImplicit(pre: Type, sym: Symbol, pt: Type, tree: Tree)
+  def openImplicits: List[OpenImplicit] = {
+    val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper
+    typer.context.openImplicits.map { oi =>
+      OpenImplicit(
+        oi.info.pre.asInstanceOf[Type],
+        oi.info.sym.asInstanceOf[Symbol],
+        oi.pt.asInstanceOf[Type],
+        oi.tree.asInstanceOf[Tree])
+    }
+  }
+
+  def finalResultType(tpe: Type): Type = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    gTpe.finalResultType.asInstanceOf[Type]
+  }
+
+  def typeArgs(tpe: Type) = tpe match {
+    case TypeRef(_, _, args) => args
+    case _ => Nil
+  }
+
   def materializeAux[F[_], D, T](proxied: Boolean)
     (implicit fTag: WeakTypeTag[F[_]], dTag: WeakTypeTag[D], tTag: WeakTypeTag[T]): Tree = {
     val fTcTpe = fTag.tpe.typeConstructor
@@ -56,7 +80,7 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
     val tTpe = tTag.tpe
     val appTpe = appliedType(fTcTpe, List(tTpe))
 
-    val open = c.openImplicits
+    val open = openImplicits
     val materializerIdx = if(proxied) 1 else 0
     val materializer = open(materializerIdx)
     val checkIdx = (materializerIdx*2)+1
@@ -92,7 +116,7 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
         _root_.shapeless.the[$appTpe]
        """
 
-    val checkedProbe = c.typecheck(probe, pt = appTpe, silent = true)
+    val checkedProbe = c.typeCheck(probe, pt = appTpe, silent = true)
     if(checkedProbe == EmptyTree) {
       if(inst == EmptyTree) {
         c.abort(c.enclosingPosition, "No derived instance $appTpe")
@@ -107,11 +131,11 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
       if(derived.equalsStructure(inst)) inst
       else if(inst == EmptyTree) derived
       else {
-        val resTpeD = derived.symbol.asMethod.info.finalResultType
-        val resTpeI = inst.symbol.asMethod.info.finalResultType
+        val resTpeD = finalResultType(derived.symbol.asMethod.typeSignature)
+        val resTpeI = finalResultType(inst.symbol.asMethod.typeSignature)
 
         val useDerived =
-          resTpeD.typeArgs.zip(resTpeI.typeArgs).forall { case (ad, ai) =>
+          typeArgs(resTpeD).zip(typeArgs(resTpeI)).forall { case (ad, ai) =>
             ai.typeSymbol.isParameter ||
             (!ad.typeSymbol.isParameter && !(ad <:< ai))
           }
@@ -120,4 +144,16 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
       }
     }
   }
+}
+
+object OrphanMacros {
+  def inst(c: Context) = new OrphanMacros[c.type](c)
+
+  def materializeImpl[F[_], D, T](c: Context)
+    (implicit fTag: c.WeakTypeTag[F[_]], dTag: c.WeakTypeTag[D], tTag: c.WeakTypeTag[T]): c.Expr[F[T]] =
+      c.Expr[F[T]](inst(c).materializeImpl[F, D, T])
+
+  def materializeOrphanImpl[F[_], D, T](c: Context)
+    (implicit fTag: c.WeakTypeTag[F[_]], dTag: c.WeakTypeTag[D], tTag: c.WeakTypeTag[T]): c.Expr[Orphan[F, D, T]] =
+      c.Expr[Orphan[F, D, T]](inst(c).materializeOrphanImpl[F, D, T])
 }
