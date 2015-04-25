@@ -54,6 +54,16 @@ package Generic1TestsAux {
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](l: Tree[T], r: Tree[T]) extends Tree[T]
 
+  sealed trait Overlapping1[+T]
+
+  sealed trait OA1[+T] extends Overlapping1[T]
+  case class OAC1[+T](t: T) extends OA1[T]
+
+  sealed trait OB1[+T] extends Overlapping1[T]
+  case class OBC1[+T](t: T) extends OB1[T]
+
+  case class OAB1[+T](t: T) extends OA1[T] with OB1[T]
+
   trait Functor[F[_]] {
     def map[A, B](fa: F[A])(f: A => B): F[B]
   }
@@ -130,6 +140,17 @@ class Generic1Tests {
     val fr = gen0.fr
     typed[TC2[gen0.R]](fr)
     typed[TC2[({ type λ[t] = t :: List[t] :: HNil })#λ]](fr)
+  }
+
+  @Test
+  def testOverlappingCoproducts1 {
+    val gen = Generic1[Overlapping1, TC1]
+    val o: Overlapping1[Int] = OAB1(1)
+    val o0 = gen.to(o)
+    typed[OAB1[Int] :+: OAC1[Int] :+: OBC1[Int] :+: CNil](o0)
+
+    val s1 = gen.from(o0)
+    typed[Overlapping1[Int]](s1)
   }
 
   @Test
