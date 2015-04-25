@@ -163,8 +163,16 @@ trait CaseClassMacros extends ReprTypes {
 
   def productCtorsOf(tpe: Type): List[Symbol] = tpe.decls.toList.filter(_.isConstructor)
 
-  def ctorsOf(tpe: Type): List[Type] = ctorsOfAux(tpe, false)
-  def ctorsOf1(tpe: Type): List[Type] = ctorsOfAux(tpe, true)
+  def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, false)
+  def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, true)
+
+  def distinctCtorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
+    def distinct[A](list: List[A])(eq: (A, A) => Boolean): List[A] = list.foldLeft(List.empty[A]) { (acc, x) =>
+        if (!acc.exists(eq(x, _))) x :: acc
+        else acc
+    }.reverse
+    distinct(ctorsOfAux(tpe, hk))(_ =:= _)
+  }
 
   def ctorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
     def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
