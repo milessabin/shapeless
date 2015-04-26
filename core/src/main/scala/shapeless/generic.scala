@@ -282,6 +282,8 @@ trait CaseClassMacros extends ReprTypes {
       case t if t.takesTypeArgs =>
         val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
         AppliedTypeTree(mkAttributedRef(tpe.typeConstructor), argTrees)
+      case SingleType(_, _) =>
+        tq"$tpe"
       case t =>
         mkAttributedRef(t)
     }
