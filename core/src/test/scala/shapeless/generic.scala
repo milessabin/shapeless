@@ -114,6 +114,13 @@ package GenericTestsAux {
 
   sealed trait Base[BA, BB]
   case class Swap[SA, SB](a: SA, b: SB) extends Base[SB, SA]
+
+  sealed trait Overlapping
+  sealed trait OA extends Overlapping
+  case class OAC(s: String) extends OA
+  sealed trait OB extends Overlapping
+  case class OBC(s: String) extends OB
+  case class OAB(i: Int) extends OA with OB
 }
 
 class GenericTests {
@@ -263,6 +270,17 @@ class GenericTests {
 
     val s1 = gen.from(s0)
     typed[AbstractSingle](s1)
+  }
+
+  @Test
+  def testOverlappingCoproducts {
+    val gen = Generic[Overlapping]
+    val o: Overlapping = OAB(1)
+    val o0 = gen.to(o)
+    typed[OAB :+: OAC :+: OBC :+: CNil](o0)
+
+    val o1 = gen.from(o0)
+    typed[Overlapping](o1)
   }
 
   @Test
