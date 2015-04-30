@@ -21,6 +21,8 @@ import java.io._
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.collection.generic.CanBuildFrom
+
 import labelled._
 import nat._
 import ops.function._
@@ -214,6 +216,16 @@ object SerializationTestDefns {
       }
     }
   }
+
+  /**
+   * A `CanBuildFrom` for `List` implementing `Serializable`, unlike the one provided by the standard library.
+   */
+  implicit def listSerializableCanBuildFrom[T]: CanBuildFrom[List[T], T, List[T]] =
+    new CanBuildFrom[List[T], T, List[T]] with Serializable {
+      def apply(from: List[T]) = from.genericBuilder[T]
+      def apply() = List.newBuilder[T]
+    }
+
 }
 
 class SerializationTests {
@@ -337,13 +349,15 @@ class SerializationTests {
     assertSerializable(SubtypeUnifier[HNil, Quux])
     assertSerializable(SubtypeUnifier[Q, Quux])
 
-    // Depends on CanBuildFrom
-    //assertSerializable(ToTraversable[HNil, List])
-    //assertSerializable(ToTraversable[L, List])
+    assertSerializable(ToTraversable[HNil, List])
+    assertSerializable(ToTraversable[L, List])
 
-    // Depends on CanBuildFrom
-    //assertSerializable(ToSized[HNil, List])
-    //assertSerializable(ToSized[L, List])
+    assertSerializable(ToList[HNil, Nothing])
+    assertSerializable(ToList[HNil, Int])
+    assertSerializable(ToList[L, Any])
+
+    assertSerializable(ToSized[HNil, List])
+    assertSerializable(ToSized[L, List])
 
     assertSerializable(Tupler[HNil])
     assertSerializable(Tupler[L])
@@ -780,6 +794,16 @@ class SerializationTests {
 
     assertSerializable(Length[Unit])
     assertSerializable(Length[L])
+
+    assertSerializable(ToTraversable[Unit, List])
+    assertSerializable(ToTraversable[L, List])
+
+    assertSerializable(ToList[Unit, Nothing])
+    assertSerializable(ToList[Unit, Int])
+    assertSerializable(ToList[L, Any])
+
+    assertSerializable(ToSized[Unit, List])
+    assertSerializable(ToSized[L, List])
 
     assertSerializable(Collect[Unit, selInt.type])
     assertSerializable(Collect[L, selInt.type])

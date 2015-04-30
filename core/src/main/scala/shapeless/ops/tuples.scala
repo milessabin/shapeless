@@ -862,7 +862,7 @@ object tuple {
    *
    * @author Alexandre Archambault
    */
-  trait ToTraversable[T, M[_]] extends DepFn1[T] {
+  trait ToTraversable[T, M[_]] extends DepFn1[T] with Serializable {
     type Lub
     type Out = M[Lub]
   }
@@ -895,7 +895,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait ToList[T, Lub] extends DepFn1[T]
+  trait ToList[T, Lub] extends DepFn1[T] with Serializable
 
   object ToList {
     type Aux[T, Lub, Out0] = ToList[T, Lub] { type Out = Out0 }
@@ -947,7 +947,7 @@ object tuple {
    *
    * @author Alexandre Archambault
    */
-  trait ToSized[T, M[_]] extends DepFn1[T]
+  trait ToSized[T, M[_]] extends DepFn1[T] with Serializable
 
   object ToSized {
     def apply[T, M[_]](implicit toSized: ToSized[T, M]): Aux[T, M, toSized.Out] = toSized
