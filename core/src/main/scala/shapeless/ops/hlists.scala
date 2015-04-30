@@ -529,9 +529,14 @@ object hlist {
    * Type class supporting conversion of this `HList` to a `M` with elements typed
    * as the least upper bound Lub of the types of the elements of this `HList`.
    *
+   * Serializable if the `CanBuildFrom`s it implicitly finds are too.
+   * Note that the `CanBuildFrom`s from the standard library are *not*
+   * serializable. See the tests for how to make your own serializable
+   * `CanBuildFrom` available to `ToTraversable`.
+   *
    * @author Alexandre Archambault
    */
-  trait ToTraversable[L <: HList, M[_]] extends DepFn1[L] {
+  trait ToTraversable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
     type Lub
     def builder(): mutable.Builder[Lub, M[Lub]]
     def append[LLub](l: L, b: mutable.Builder[LLub, M[LLub]], f: Lub => LLub): Unit
@@ -590,18 +595,20 @@ object hlist {
    * Type aliases and constructors provided for backward compatibility
    **/
   type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
-  def ToArray[L <: HList, Lub](l: L)(implicit toArray: ToArray[L, Lub]) = toArray
+  def ToArray[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
 
   type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
-  def ToList[L <: HList, Lub](l: L)(implicit toList: ToList[L, Lub]) = toList
+  def ToList[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
   /**
    * Type class supporting conversion of this `HList` to a `Sized[M[Lub], N]` with elements typed
    * as the least upper bound Lub of the types of the elements of this `HList`.
    *
+   * About serializability, see the comment in `ToTraversable`.
+   *
    * @author Alexandre Archambault
    */
-  trait ToSized[L <: HList, M[_]] extends DepFn1[L] {
+  trait ToSized[L <: HList, M[_]] extends DepFn1[L] with Serializable {
     type Lub
     type N <: Nat
     type Out = Sized[M[Lub], N]
