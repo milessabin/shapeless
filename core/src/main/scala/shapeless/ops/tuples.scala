@@ -900,12 +900,18 @@ object tuple {
   object ToList {
     type Aux[T, Lub, Out0] = ToList[T, Lub] { type Out = Out0 }
 
-    implicit def toList[T, L <: HList, Lub]
+    def apply[T, Lub](implicit toList: ToList[T, Lub]): Aux[T, Lub, toList.Out] = toList
+
+    implicit def toList[T, Lub]
       (implicit toTraversable: ToTraversable.Aux[T, List, Lub]): Aux[T, Lub, List[Lub]] =
         new ToList[T, Lub] {
           type Out = List[Lub]
           def apply(t: T) = toTraversable(t)
         }
+
+    implicit def toListNothing[T]
+      (implicit toTraversable: ToTraversable.Aux[T, List, Nothing]): Aux[T, Nothing, List[Nothing]] =
+        toList[T, Nothing]
   }
 
   /**
@@ -921,12 +927,18 @@ object tuple {
   object ToArray {
     type Aux[T, Lub, Out0] = ToArray[T, Lub] { type Out = Out0 }
 
-    implicit def toArray[T, L <: HList, Lub]
+    def apply[T, Lub](implicit toArray: ToArray[T, Lub]): Aux[T, Lub, toArray.Out] = toArray
+
+    implicit def toArray[T, Lub]
       (implicit toTraversable: ToTraversable.Aux[T, Array, Lub]): Aux[T, Lub, Array[Lub]] =
         new ToArray[T, Lub] {
           type Out = Array[Lub]
           def apply(t: T) = toTraversable(t)
         }
+
+    implicit def toArrayNothing[T]
+      (implicit toTraversable: ToTraversable.Aux[T, Array, Nothing]): Aux[T, Nothing, Array[Nothing]] =
+        toArray[T, Nothing]
   }
 
   /**

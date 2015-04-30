@@ -632,8 +632,8 @@ class HListTests {
     val r1 = HNil.to[List]
     assertTypedEquals[List[Nothing]](Nil, r1)
 
-    implicitly[ToList[HNil, Nothing]]
-    implicitly[ToList[HNil, Int]]
+    ToList[HNil, Nothing]
+    ToList[HNil, Int]
 
     {
       implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[Int]]]
@@ -856,8 +856,8 @@ class HListTests {
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
 
-    implicitly[ToArray[HNil, Nothing]]
-    implicitly[ToArray[HNil, Int]]
+    ToArray[HNil, Nothing]
+    ToArray[HNil, Int]
 
     {
       val a1 = (mi :: HNil).toArray[M[Int]]
