@@ -63,6 +63,62 @@ package sexp.examples {
 }
 
 /**
+ * An example Abstract Syntax Tree / family.
+ */
+package sexp.ast {
+  sealed trait Token {
+    def text: String
+  }
+
+  sealed trait RawToken extends Token
+  case class Split(text: String) extends RawToken
+  case class And(text: String) extends RawToken
+  case class Or(text: String) extends RawToken
+
+  sealed trait ContextualMarker extends RawToken
+  case class Like(text: String) extends ContextualMarker
+  case class Prefer(text: String) extends ContextualMarker
+  case class Negate(text: String) extends ContextualMarker
+
+  sealed trait TokenTree extends Token
+  sealed trait ContextualToken extends TokenTree
+  sealed trait CompressedToken extends TokenTree
+  case class Unparsed(text: String) extends TokenTree
+  case class AndCondition(left: TokenTree, right: TokenTree, text: String) extends TokenTree
+  case class OrCondition(left: TokenTree, right: TokenTree, text: String) extends TokenTree
+
+  case class Ignored(text: String = "") extends TokenTree
+  case class Unclear(text: String = "") extends TokenTree
+
+  object SpecialToken extends TokenTree {
+    // to test case object serialisation
+    def text = ""
+  }
+
+  sealed trait Term extends TokenTree {
+    def field: DatabaseField
+  }
+
+  case class DatabaseField(column: String)
+  case class FieldTerm(text: String, field: DatabaseField, value: String) extends Term
+  case class BoundedTerm(
+    text: String,
+    field: DatabaseField,
+    low: Option[String] = None,
+    high: Option[String] = None,
+    inclusive: Boolean = false) extends Term
+  case class LikeTerm(term: FieldTerm, like: Option[Like]) extends Term {
+    val text = like.map(_.text).getOrElse("")
+    val field = term.field
+  }
+  case class PreferToken(tree: TokenTree, before: Option[Prefer], after: Option[Prefer]) extends TokenTree {
+    val text = before.getOrElse("") + tree.text + after.getOrElse("")
+  }
+  case class InTerm(field: DatabaseField, value: String, text: String = "") extends CompressedToken
+  case class QualifierToken(text: String, field: DatabaseField) extends ContextualToken with Term
+}
+
+/**
  * shapeless-examples/runMain shapeless.examples.SexpExamples
  */
 object SexpExamples extends App {
@@ -108,6 +164,13 @@ object SexpExamples extends App {
   assert(creator.ser(bar) == barSexp)
   assert(creator.ser(baz) == bazSexp)
   assert(creator.ser(wibble) == wibbleSexp)
+
+
+  // a less trivial example
+  import sexp.ast._
+  val complex = SexpConvert[TokenTree]
+
+
 }
 
 trait SexpConvert[T] {
@@ -130,6 +193,23 @@ object SexpUserConvert {
       case _ => None
     }
     def ser(i: Int) = SexpAtom(i.toString)
+  }
+  implicit def boolSexpConvert: SexpConvert[Boolean] = new SexpConvert[Boolean] {
+    def deser(s: Sexp) = s match {
+      case SexpNil => Some(false)
+      case other => Some(true)
+    }
+    def ser(b: Boolean) = if (b) SexpAtom("t") else SexpNil
+  }
+  implicit def optSexpConvert[T](c: Lazy[SexpConvert[T]]): SexpConvert[Option[T]] = new SexpConvert[Option[T]] {
+    def deser(s: Sexp) = s match {
+      case SexpNil => None
+      case other => Some(c.value.deser(other))
+    }
+    def ser(o: Option[T]) = o match {
+      case None => SexpNil
+      case Some(t) => c.value.ser(t)
+    }
   }
 }
 
