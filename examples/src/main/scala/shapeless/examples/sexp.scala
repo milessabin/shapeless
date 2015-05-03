@@ -25,7 +25,7 @@ import shapeless._, labelled.{ field, FieldType }, syntax.singleton._
  *
  * This implementation is a proof of concept for using `TypeClass` for
  * this purpose. Expect to see a fuller implementation in
- * `org.ensime.sexp`.
+ * `org.ensime.sexp` and `org.ensime.json`.
  */
 
 // Our example serialised form
@@ -119,7 +119,7 @@ package sexp.ast {
 }
 
 /**
- * shapeless-examples/runMain shapeless.examples.SexpExamples
+ * examples/runMain shapeless.examples.SexpExamples
  */
 object SexpExamples extends App {
   import sexp.examples._
@@ -170,6 +170,15 @@ object SexpExamples extends App {
   import sexp.ast._
   val complex = SexpConvert[TokenTree]
 
+  val token = QualifierToken("thing", DatabaseField("Source.THING"))
+  val tokenSexp =
+    SexpCons(SexpAtom("QualifierToken"),
+      SexpCons(SexpProp("text", SexpAtom("thing")),
+        SexpProp("field",
+          SexpProp("column", SexpAtom("Source.THING")))))
+
+  assert(complex.deser(tokenSexp) == Some(token))
+  assert(complex.ser(token) == tokenSexp)
 
 }
 
