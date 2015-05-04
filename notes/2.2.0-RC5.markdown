@@ -93,16 +93,22 @@ and the following new features and enhancements,
 
 A big "Thank You!" to everyone who has contributed to this release,
 
++ Alexander Konovalov ([@alexknvl](https://twitter.com/alexknvl))
 * Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
++ Alistair Johnson
 * Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
++ Denis Mikhaylov [@notxcain](https://twitter.com/@notxcain)
 * Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
 * Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
++ Pascal Voitot [@mandubian](https://twitter.com/mandubian)
++ Sam Halliday [@fommil](https://twitter.com/fommil)
 * Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
 * Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
 
 [shapeless]: https://github.com/milessabin/shapeless
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
 [wiki]: https://github.com/milessabin/shapeless/wiki
+[contrib]: https://github.com/typelevel/shapeless-contrib
 [prodargs]: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/hlists.scala#L124
 [fixes]: https://github.com/milessabin/shapeless/issues?q=milestone%3Ashapeless-2.2.0+is%3Aclosed
 [functor]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/functor.scala
