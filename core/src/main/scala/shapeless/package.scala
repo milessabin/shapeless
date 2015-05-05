@@ -110,42 +110,44 @@ package object shapeless {
   def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
 }
 
-class CachedImplicitMacros[C <: Context](val c: C) {
-  import c.universe._
+package shapeless {
+  class CachedImplicitMacros[C <: Context](val c: C) {
+    import c.universe._
 
-  def dropLocal(nme: TermName): TermName = {
-    val LOCAL_SUFFIX_STRING = " "
-    val nmeString = nme.decoded
-    if(nmeString endsWith LOCAL_SUFFIX_STRING)
-      newTermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
-    else
-      nme
+    def dropLocal(nme: TermName): TermName = {
+      val LOCAL_SUFFIX_STRING = " "
+      val nmeString = nme.decoded
+      if(nmeString endsWith LOCAL_SUFFIX_STRING)
+        newTermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
+      else
+        nme
+    }
+
+    def enclosingOwner: Symbol = {
+      val internalContext = c.asInstanceOf[scala.reflect.macros.runtime.Context]
+      val internalOwner = internalContext.callsiteTyper.context.owner
+      internalOwner.asInstanceOf[Symbol]
+    }
+
+    def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
+      val tTpe = weakTypeOf[T]
+      val owner = enclosingOwner
+      val ownerNme = dropLocal(owner.name.toTermName)
+      val tpe = if(tTpe.typeSymbol.isParameter) owner.typeSignature else tTpe
+
+      q"""
+        {
+          def $ownerNme = ???
+          _root_.shapeless.the[$tpe]
+        }
+      """
+    }
   }
 
-  def enclosingOwner: Symbol = {
-    val internalContext = c.asInstanceOf[scala.reflect.macros.runtime.Context]
-    val internalOwner = internalContext.callsiteTyper.context.owner
-    internalOwner.asInstanceOf[Symbol]
+  object CachedImplicitMacros {
+    def inst(c: Context) = new CachedImplicitMacros[c.type](c)
+
+    def cachedImplicitImpl[T: c.WeakTypeTag](c: Context): c.Expr[T] =
+      c.Expr[T](inst(c).cachedImplicitImpl[T])
   }
-
-  def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
-    val tTpe = weakTypeOf[T]
-    val owner = enclosingOwner
-    val ownerNme = dropLocal(owner.name.toTermName)
-    val tpe = if(tTpe.typeSymbol.isParameter) owner.typeSignature else tTpe
-
-    q"""
-      {
-        def $ownerNme = ???
-        the[$tpe]
-      }
-    """
-  }
-}
-
-object CachedImplicitMacros {
-  def inst(c: Context) = new CachedImplicitMacros[c.type](c)
-
-  def cachedImplicitImpl[T: c.WeakTypeTag](c: Context): c.Expr[T] =
-    c.Expr[T](inst(c).cachedImplicitImpl[T])
 }
