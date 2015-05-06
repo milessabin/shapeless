@@ -124,8 +124,8 @@ libraryDependencies ++= Seq(
 
 ### shapeless-2.1.0
 
-Builds are available for Scala 2.11.x and for Scala 2.10.4. The main line of development for
-shapeless 2.1.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.x and for Scala 2.10.4 and 2.10.5. The main line of development for shapeless
+2.1.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
 scalaVersion := "2.11.6"
@@ -135,15 +135,15 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency, and it is
+Note that for Scala 2.10.x you must provide an explicit Scala version suffix to your shapeless dependency, and it is
 recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
 
 ```scala
-scalaVersion := "2.10.4"
+scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.4" % "2.1.0",
-  compilerPlugin("org.scalamacros" % "paradise_2.10.4" % "2.0.1")
+  "com.chuusai" % "shapeless_2.10.5" % "2.1.0",
+  compilerPlugin("org.scalamacros" % "paradise_2.10.5" % "2.0.1")
 )
 ```
 
