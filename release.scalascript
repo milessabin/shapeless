@@ -1,0 +1,242 @@
+#!/bin/sh
+exec scala "$0" "$@"
+!#
+
+/*
+ * Copyright (c) 2011-15 Miles Sabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import scala.io.Source
+import scala.io.StdIn._
+import scala.sys.process._
+import scala.util.{Failure, Success, Try}
+
+object CrossBranchRelease {
+  def main(args: Array[String]): Unit = {
+
+    (for {
+      _ <- checkClean()
+      _ <- run("git checkout master")
+      curVer <- readVersion()
+      newVer <- askVersion(curVer)
+      tagExists <- checkTagExists(newVer)
+      _ <- verifyBranch("master")
+      _ <- verifyBranch("scala-2.10.x")
+      //disabled _ <- verifyBranch("scalajs-2.10.x")
+      _ <- verifyBranch("scalajs-2.11.x")
+      _ <- commitVersion(curVer, newVer, tagExists)
+      _ <- tagRelease(newVer, tagExists)
+      _ <- mergeVersion("scala-2.10.x", newVer)
+      //disabled _ <- mergeVersion("scalajs-2.10.x", newVer)
+      _ <- mergeVersion("scalajs-2.11.x", newVer)
+      _ <- release("master")
+      _ <- release("scala-2.10.x")
+      //disabled _ <- release("scalajs-2.10.x")
+      _ <- release("scalajs-2.11.x")
+    } yield {
+        "completed"
+      }) match {
+      case Success(msg) =>
+        logInfo(msg)
+      case Failure(e) =>
+        logError(e.getMessage)
+    }
+
+  }
+
+  val VERSION_FILE = "version.sbt"
+
+  def logInfo(msg: String): Unit = {
+    println(s"${Console.GREEN}$msg ${Console.WHITE}")
+  }
+
+  def logError(msg: String): Unit = {
+    System.err.println(s"${Console.RED}$msg${Console.WHITE}")
+  }
+
+  def run(cmd: String): Try[String] = Try {
+    println(cmd + "...")
+    val stderr = new StringBuilder
+    val stdout = new StringBuilder
+
+    val status = cmd ! ProcessLogger(stdout append _ + "\n", stderr append _ + "\n")
+    if(status != 0)
+      sys.error(stderr.toString())
+    println(stdout.toString())
+    stdout.toString()
+  }
+
+  def runS(args: Seq[String]): Try[String] = Try {
+    println(args.mkString(" ") + "...")
+    val stderr = new StringBuilder
+    val stdout = new StringBuilder
+    //args.!!
+    val status = args ! ProcessLogger(stdout append _ + "\n", stderr append _ + "\n")
+    if(status != 0)
+      sys.error(stderr.toString())
+    println(stdout.toString())
+    stdout.toString()
+  }
+
+  def readVersion() = Try {
+    val str = Source.fromFile(VERSION_FILE).mkString
+    val VersionR = "version in ThisBuild := \"(.*)\"\\s?".r
+    str match {
+      case VersionR(v) => v
+    }
+  }
+
+  def checkClean(): Try[Boolean] = {
+
+    for {
+      r <- run("git diff")
+    } yield {
+      if (r.isEmpty) {
+        true
+      } else {
+        sys.error("Working copy is not clean!")
+      }
+    }
+  }
+
+  def checkTagExists(newVersion: String): Try[Boolean] = {
+
+    for {
+      r <- runS(Seq("git", "tag", "-l", s"shapeless-$newVersion"))
+    } yield {
+      if (r.contains(newVersion)) {
+        println(s"Tag shapeles-$newVersion already exists! Want to override it? yes/No")
+        val answer = readBoolean()
+        if (!answer)
+          sys.error("Aborted by user!")
+        true
+      } else {
+        false
+      }
+    }
+  }
+
+  def confirm(question: String) = Try {
+    println(question)
+    val answer = readBoolean()
+    if (!answer)
+      sys.error("Aborted by user!")
+  }
+
+  def askVersion(default: String): Try[String] = Try {
+    println(s"Do you want to use the version number '$default' for this release? yes/no")
+    val answer = readBoolean()
+    if (!answer) {
+      val newVersion = readLine("Please provide the new release version: ")
+      val versionR = "\\d\\.\\d{1,2}\\.\\d{1,2}(-.+)?"
+      if (newVersion == null || !newVersion.matches(versionR)) {
+        sys.error("Invalid version provided!")
+      }
+      newVersion
+    } else {
+      default
+    }
+
+  }
+
+  def askRemote(): Try[String] = {
+    run("git remote -v").map { remotesStr =>
+      val validRemotes = remotesStr.split("\n").map(_.split("\t")(0)).distinct
+      println(s"Which git remote repo you want to push the changes? Valid options are: " + validRemotes.mkString(", "))
+      var line = ""
+      while( {line = readLine(); !validRemotes.contains(line)} ) {
+        println("Invalid remote repository. Please try again. Valid options are: " + validRemotes.mkString(", "))
+      }
+      line
+    }
+  }
+
+  def commitVersion(curVersion: String, newVersion: String, tagExists: Boolean): Try[Any] = {
+    logInfo(s"Committing version $newVersion if necessary...")
+
+    def writeVersion(version: String) = Try {
+      import java.nio.charset.StandardCharsets
+      import java.nio.file.{Files, Paths}
+      val content = s"""version in ThisBuild := "$version"\n"""
+      Files.write(Paths.get(VERSION_FILE), content.getBytes(StandardCharsets.UTF_8))
+    }
+
+    if (curVersion != newVersion) {
+      for {
+        _ <- run("git checkout master")
+        _ <- writeVersion(newVersion)
+        _ <- run(s"git add $VERSION_FILE")
+        _ <- runS(Seq("git", "commit", s"--message=Updates for $newVersion."))
+      } yield {}
+    } else {
+      Success({})
+    }
+  }
+
+  def tagRelease(newVersion: String, tagExists: Boolean): Try[Any] = {
+    logInfo(s"Tagging version $newVersion...")
+    val stderr = new StringBuilder
+
+    for {
+      _ <- run("git checkout master")
+      _ <- if (tagExists) {
+        run(s"git tag -d shapeless-$newVersion")
+      } else {
+        Success({})
+      }
+      remote <- askRemote()
+      _ <- run(s"git tag shapeless-$newVersion")
+      // this probably should happen after everything is successful
+      _ <- run(s"git push $remote shapeless-$newVersion").recoverWith {
+        case e if tagExists && e.getMessage.contains("already exists") =>
+          println("Tag already exists on remote. Forcing push...")
+          // we already asked. Doing a forced update of the tag.
+          run(s"git push --force $remote shapeless-$newVersion")
+      }
+    } yield {}
+  }
+
+  def mergeVersion(branch: String, newVersion: String): Try[Any] = {
+    logInfo(s"Merging master into $branch...")
+    for {
+      _ <- run(s"git checkout $branch")
+      curVersion <- readVersion()
+      _ <- if (curVersion != newVersion) {
+        run(s"git merge --no-edit master")
+      } else {
+        Success({})
+      }
+    } yield {}
+  }
+
+  def verifyBranch(branch: String): Try[Unit] = {
+    logInfo(s"Verify $branch builds...")
+    for {
+      _ <- run(s"git checkout $branch")
+      _ <- run("sbt clean compile test:compile test runAll")
+    } yield {}
+  }
+
+  def release(branch: String): Try[Unit] = {
+    logInfo(s"Releasing from $branch...")
+    for {
+      _ <- run(s"git checkout $branch")
+      _ <- run("sbt clean compile publish-local")
+    } yield {}
+  }
+
+}
+
+CrossBranchRelease.main(args)
