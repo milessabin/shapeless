@@ -728,6 +728,55 @@ class CoproductTests {
   }
 
   @Test
+  def testPrepend: Unit = {
+    type S = String; type I = Int; type D = Double; type C = Char
+    val in1 = Coproduct[I :+: CNil](1)
+    val in2 = Coproduct[I :+: S :+: CNil](1)
+    val in3 = Coproduct[I :+: S :+: D :+: CNil](1)
+    val in4 = Coproduct[I :+: S :+: D :+: C :+: CNil](1)
+
+    {
+      // Prepending CNil - checking for same-ness, not only equality
+      val r1 = Prepend[CNil, I :+: CNil].apply(Right(in1))
+      assertTypedSame(in1, r1)
+      val r2 = Prepend[CNil, I :+: S :+: CNil].apply(Right(in2))
+      assertTypedSame(in2, r2)
+      val r3 = Prepend[CNil, I :+: S :+: D :+: CNil].apply(Right(in3))
+      assertTypedSame(in3, r3)
+      val r4 = Prepend[CNil, I :+: S :+: D :+: C :+: CNil].apply(Right(in4))
+      assertTypedSame(in4, r4)
+    }
+
+    {
+      // Appending CNil - checking for same-ness, not only equality
+      val r1 = Prepend[I :+: CNil, CNil].apply(Left(in1))
+      assertTypedSame(in1, r1)
+      val r2 = Prepend[I :+: S :+: CNil, CNil].apply(Left(in2))
+      assertTypedSame(in2, r2)
+      val r3 = Prepend[I :+: S :+: D :+: CNil, CNil].apply(Left(in3))
+      assertTypedSame(in3, r3)
+      val r4 = Prepend[I :+: S :+: D :+: C :+: CNil, CNil].apply(Left(in4))
+      assertTypedSame(in4, r4)
+    }
+
+    {
+      val r11_1 = Prepend[I :+: CNil, I :+: CNil].apply(Left(in1))
+      assertTypedEquals(Inl(1), r11_1)
+      val r11_2 = Prepend[I :+: CNil, I :+: CNil].apply(Right(in1))
+      assertTypedEquals(Inr(Inl(1)), r11_2)
+      val r12_1 = Prepend[I :+: CNil, I :+: S :+: CNil].apply(Left(in1))
+      assertTypedEquals(Inl(1), r12_1)
+      val r12_2 = Prepend[I :+: CNil, I :+: S :+: CNil].apply(Right(in2))
+      assertTypedEquals(Inr(Inl(1)), r12_2)
+
+      val r34_3 = Prepend[I :+: S :+: D :+: CNil, I :+: S :+: D :+: C :+: CNil].apply(Left(in3))
+      assertTypedEquals(Inl(1), r34_3)
+      val r34_4 = Prepend[I :+: S :+: D :+: CNil, I :+: S :+: D :+: C :+: CNil].apply(Right(in4))
+      assertTypedEquals(Inr(Inr(Inr(Inl(1)))), r34_4)
+    }
+  }
+
+  @Test
   def testAlign {
     type K0 = Int :+: String :+: Boolean :+: CNil
     type K1 = Int :+: Boolean :+: String :+: CNil

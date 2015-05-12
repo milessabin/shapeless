@@ -848,6 +848,46 @@ object coproduct {
   }
 
   /**
+   * Type class supporting prepending to this `Coproduct`.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Prepend[P <: Coproduct, S <: Coproduct] extends DepFn1[Either[P, S]] with Serializable { type Out <: Coproduct }
+
+  trait LowestPriorityPrepend {
+    type Aux[P <: Coproduct, S <: Coproduct, Out0 <: Coproduct] = Prepend[P, S] { type Out = Out0 }
+
+    implicit def cconsPrepend[PH, PT <: Coproduct, S <: Coproduct]
+     (implicit pt : Prepend[PT, S]): Aux[PH :+: PT, S, PH :+: pt.Out] =
+      new Prepend[PH :+: PT, S] {
+        type Out = PH :+: pt.Out
+        def apply(e : Either[PH :+: PT, S]): Out = e match {
+          case Left(Inl(h)) => Inl(h)
+          case Left(Inr(t)) => Inr(pt(Left(t)))
+          case Right(s) => Inr(pt(Right(s)))
+        }
+      }
+  }
+
+  trait LowPriorityPrepend extends LowestPriorityPrepend {
+    implicit def cnilPrepend0[P <: Coproduct]: Aux[P, CNil, P] =
+      new Prepend[P, CNil] {
+        type Out = P
+        def apply(e : Either[P, CNil]): P = e.left.get
+      }
+  }
+
+  object Prepend extends LowPriorityPrepend {
+    def apply[P <: Coproduct, S <: Coproduct](implicit prepend: Prepend[P, S]): Aux[P, S, prepend.Out] = prepend
+
+    implicit def cnilPrepend1[S <: Coproduct]: Aux[CNil, S, S] =
+      new Prepend[CNil, S] {
+        type Out = S
+        def apply(e: Either[CNil, S]): S = e.right.get
+      }
+  }
+
+  /**
    * Type class providing access to init and last of a Coproduct
    *
    * @author Stacy Curl
