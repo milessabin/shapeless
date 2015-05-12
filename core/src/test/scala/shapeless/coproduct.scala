@@ -585,6 +585,38 @@ class CoproductTests {
       val r7 = in4.rotateLeft[_6]
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r7)
     }
+
+    {
+      type C1 = Int :+: Boolean :+: String :+: Int :+: CNil
+      type C2 = Boolean :+: String :+: Int :+: Int :+: CNil
+      type C3 = String :+: Int :+: Int :+: Boolean :+: CNil
+      type C4 = Int :+: Int :+: Boolean :+: String :+: CNil
+
+      val i1: C1 = Inl(1)
+      val i2: C2 = Inr(Inr(Inr(Inl(1))))
+      val i3: C3 = Inr(Inr(Inl(1)))
+      val i4: C4 = Inr(Inl(1))
+
+      assertTypedEquals(i1, i1.rotateLeft(0))
+      assertTypedEquals(i2, i1.rotateLeft(1))
+      assertTypedEquals(i3, i1.rotateLeft(2))
+      assertTypedEquals(i4, i1.rotateLeft(3))
+
+      assertTypedEquals(i2, i2.rotateLeft(0))
+      assertTypedEquals(i3, i2.rotateLeft(1))
+      assertTypedEquals(i4, i2.rotateLeft(2))
+      assertTypedEquals(i1, i2.rotateLeft(3))
+
+      assertTypedEquals(i3, i3.rotateLeft(0))
+      assertTypedEquals(i4, i3.rotateLeft(1))
+      assertTypedEquals(i1, i3.rotateLeft(2))
+      assertTypedEquals(i2, i3.rotateLeft(3))
+
+      assertTypedEquals(i4, i4.rotateLeft(0))
+      assertTypedEquals(i1, i4.rotateLeft(1))
+      assertTypedEquals(i2, i4.rotateLeft(2))
+      assertTypedEquals(i3, i4.rotateLeft(3))
+    }
   }
 
   @Test
@@ -700,6 +732,38 @@ class CoproductTests {
 
       val r7 = in4.rotateRight[_6]
       assertTypedEquals[D :+: C :+: I :+: S :+: CNil](Coproduct[D :+: C :+: I :+: S :+: CNil](1), r7)
+    }
+
+    {
+      type C1 = Int :+: Boolean :+: String :+: Int :+: CNil
+      type C2 = Int :+: Int :+: Boolean :+: String :+: CNil
+      type C3 = String :+: Int :+: Int :+: Boolean :+: CNil
+      type C4 = Boolean :+: String :+: Int :+: Int :+: CNil
+
+      val i1: C1 = Inl(1)
+      val i2: C2 = Inr(Inl(1))
+      val i3: C3 = Inr(Inr(Inl(1)))
+      val i4: C4 = Inr(Inr(Inr(Inl(1))))
+
+      assertTypedEquals(i1, i1.rotateRight(0))
+      assertTypedEquals(i2, i1.rotateRight(1))
+      assertTypedEquals(i3, i1.rotateRight(2))
+      assertTypedEquals(i4, i1.rotateRight(3))
+
+      assertTypedEquals(i2, i2.rotateRight(0))
+      assertTypedEquals(i3, i2.rotateRight(1))
+      assertTypedEquals(i4, i2.rotateRight(2))
+      assertTypedEquals(i1, i2.rotateRight(3))
+
+      assertTypedEquals(i3, i3.rotateRight(0))
+      assertTypedEquals(i4, i3.rotateRight(1))
+      assertTypedEquals(i1, i3.rotateRight(2))
+      assertTypedEquals(i2, i3.rotateRight(3))
+
+      assertTypedEquals(i4, i4.rotateRight(0))
+      assertTypedEquals(i1, i4.rotateRight(1))
+      assertTypedEquals(i2, i4.rotateRight(2))
+      assertTypedEquals(i3, i4.rotateRight(3))
     }
   }
 

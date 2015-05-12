@@ -548,57 +548,38 @@ object coproduct {
    * Type class supporting rotating a Coproduct left
    *
    * @author Stacy Curl
+   * @author Alexandre Archambault
    */
   trait RotateLeft[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object RotateLeft extends LowPriorityRotateLeft {
+    type Aux[C <: Coproduct, N <: Nat, Out0] = RotateLeft[C, N] { type Out = Out0 }
+
     def apply[C <: Coproduct, N <: Nat]
-      (implicit rotateLeft: RotateLeft[C, N]): Aux[C, N, rotateLeft.Out] = rotateLeft
+     (implicit rotateLeft: RotateLeft[C, N]): Aux[C, N, rotateLeft.Out] = rotateLeft
 
-    implicit def implToRotateLeft[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_]]
-      (implicit
-       length: Length.Aux[C, Size],
-       mod: nat.Mod.Aux[N, Size, NModSize],
-       impl: Impl[C, NModSize]
-      ): Aux[C, N, impl.Out] = new RotateLeft[C, N] {
-        type Out = impl.Out
-
-        def apply(c: C): Out = impl(c)
-      }
-
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
-
-    object Impl {
-      type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] { type Out = Out0 }
-
-      implicit def rotateCoproductOne[H, T <: Coproduct, TH <: Coproduct]
-        (implicit extendRight: ExtendRight.Aux[T, H, TH], inject: Inject[TH, H]): Aux[H :+: T, Nat._1, TH] =
-         new Impl[H :+: T, Nat._1] {
-           type Out = TH
-
-           def apply(c: H :+: T): Out = c match {
-             case Inl(a)    => inject(a)
-             case Inr(tail) => extendRight(tail)
-           }
-         }
-
-      implicit def rotateCoproductN[C <: Coproduct, N <: Nat, CN <: Coproduct, CSN <: Coproduct]
-        (implicit rotateN: Aux[C, N, CN], rotate1: Aux[CN, Nat._1, CSN]): Aux[C, Succ[N], CSN] =
-          new Impl[C, Succ[N]] {
-            type Out = CSN
-
-            def apply(c: C): Out = rotate1(rotateN(c))
-          }
+    implicit def cnilRotateLeft[N <: Nat]: RotateLeft.Aux[CNil, N, CNil] = new RotateLeft[CNil, N] {
+      type Out = CNil
+      def apply(c: CNil) = c
     }
   }
 
   trait LowPriorityRotateLeft {
-    type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = RotateLeft[C, N] { type Out = Out0 }
+    implicit def coproductRotateLeft[
+     C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat, Before <: Coproduct, After <: Coproduct
+    ](implicit
+      length: Length.Aux[C, Size],
+      mod: nat.Mod.Aux[N, Size, NModSize],
+      split: Split.Aux[C, NModSize, Before, After],
+      prepend: Prepend[After, Before]
+    ): RotateLeft.Aux[C, N, prepend.Out] = new RotateLeft[C, N] {
+      type Out = prepend.Out
 
-    implicit def noopRotateLeftImpl[C <: Coproduct, N <: Nat]: Aux[C, N, C] = new RotateLeft[C, N] {
-      type Out = C
+      def apply(c: C): Out = {
+        val e = split(c)
 
-      def apply(c: C): Out = c
+        prepend(e.swap)
+      }
     }
   }
 
@@ -606,34 +587,34 @@ object coproduct {
    * Type class supporting rotating a Coproduct right
    *
    * @author Stacy Curl
+   * @author Alexandre Archambault
    */
   trait RotateRight[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object RotateRight extends LowPriorityRotateRight {
+    type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = RotateRight[C, N] { type Out = Out0 }
+
     def apply[C <: Coproduct, N <: Nat]
-      (implicit rotateRight: RotateRight[C, N]): Aux[C, N, rotateRight.Out] = rotateRight
+     (implicit rotateRight: RotateRight[C, N]): Aux[C, N, rotateRight.Out] = rotateRight
 
-    implicit def hlistRotateRight[
-      C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
-    ](implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Size, NModSize],
-      diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
-      rotateLeft: RotateLeft.Impl[C, Size_Diff_NModSize]
-    ): Aux[C, N, rotateLeft.Out] = new RotateRight[C, N] {
-      type Out = rotateLeft.Out
-
-      def apply(c: C): Out = rotateLeft(c)
+    implicit def cnilRotateRight[N <: Nat]: RotateRight.Aux[CNil, N, CNil] = new RotateRight[CNil, N] {
+      type Out = CNil
+      def apply(c: CNil) = c
     }
   }
 
   trait LowPriorityRotateRight {
-    type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = RotateRight[C, N] { type Out = Out0 }
+    implicit def coproductRotateRight[
+     C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Nat, Size_Diff_NModSize <: Nat
+    ](implicit
+      length: Length.Aux[C, Size],
+      mod: nat.Mod.Aux[N, Size, NModSize],
+      diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
+      rotateLeft: RotateLeft[C, Size_Diff_NModSize]
+    ): RotateRight.Aux[C, N, rotateLeft.Out] = new RotateRight[C, N] {
+      type Out = rotateLeft.Out
 
-    implicit def noopRotateRight[C <: Coproduct, N <: Nat]: Aux[C, N, C] = new RotateRight[C, N] {
-      type Out = C
-
-      def apply(c: C): Out = c
+      def apply(c: C): Out = rotateLeft(c)
     }
   }
 
