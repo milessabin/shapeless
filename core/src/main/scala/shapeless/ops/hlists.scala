@@ -1497,9 +1497,18 @@ object hlist {
    */
   trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable { type Out <: HList }
 
-  trait LowPriorityPrepend {
+  trait LowestPriorityPrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
+    implicit def hlistPrepend[PH, PT <: HList, S <: HList]
+     (implicit pt : Prepend[PT, S]): Aux[PH :: PT, S, PH :: pt.Out] =
+      new Prepend[PH :: PT, S] {
+        type Out = PH :: pt.Out
+        def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
+      }
+  }
+
+  trait LowPriorityPrepend extends LowestPriorityPrepend {
     implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
@@ -1515,13 +1524,6 @@ object hlist {
         type Out = S
         def apply(prefix : P, suffix : S): S = suffix
       }
-
-    implicit def hlistPrepend[PH, PT <: HList, S <: HList]
-      (implicit pt : Prepend[PT, S]): Aux[PH :: PT, S, PH :: pt.Out] =
-        new Prepend[PH :: PT, S] {
-          type Out = PH :: pt.Out
-          def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
-        }
   }
 
   /**
