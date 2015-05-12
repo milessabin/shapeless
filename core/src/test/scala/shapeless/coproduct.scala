@@ -889,17 +889,35 @@ class CoproductTests {
 
   @Test
   def testReverse {
-    type S = String; type I = Int; type D = Double; type C = Char
-    type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil
+    {
+      type S = String; type I = Int; type D = Double; type C = Char
+      type SI = S :+: I :+: CNil; type IS = I :+: S :+: CNil
 
-    val r1 = Coproduct[I :+: CNil](1).reverse
-    assertTypedEquals[I :+: CNil](Coproduct[I :+: CNil](1), r1)
+      val r1 = Coproduct[I :+: CNil](1).reverse
+      assertTypedEquals[I :+: CNil](Coproduct[I :+: CNil](1), r1)
 
-    val r2 = Coproduct[IS](1).reverse
-    assertTypedEquals[SI](Coproduct[SI](1), r2)
+      val r2 = Coproduct[IS](1).reverse
+      assertTypedEquals[SI](Coproduct[SI](1), r2)
 
-    val r3 = Coproduct[IS]("foo").reverse
-    assertTypedEquals[SI](Coproduct[SI]("foo"), r3)
+      val r3 = Coproduct[IS]("foo").reverse
+      assertTypedEquals[SI](Coproduct[SI]("foo"), r3)
+    }
+
+    {
+      type C = Int :+: String :+: Double :+: Int :+: Boolean :+: CNil
+
+      val c1: C = Inl(1)
+      val c2: C = Inr(Inl("str"))
+      val c3: C = Inr(Inr(Inl(3.0)))
+      val c4: C = Inr(Inr(Inr(Inl(4))))
+      val c5: C = Inr(Inr(Inr(Inr(Inl(true)))))
+
+      assertTypedEquals(c1, c1.reverse.reverse)
+      assertTypedEquals(c2, c2.reverse.reverse)
+      assertTypedEquals(c3, c3.reverse.reverse)
+      assertTypedEquals(c4, c4.reverse.reverse)
+      assertTypedEquals(c5, c5.reverse.reverse)
+    }
   }
 
   @Test
