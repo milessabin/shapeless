@@ -54,6 +54,13 @@ package Generic1TestsAux {
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](l: Tree[T], r: Tree[T]) extends Tree[T]
 
+  sealed trait Overlapping1[+T]
+  sealed trait OA1[+T] extends Overlapping1[T]
+  case class OAC1[+T](t: T) extends OA1[T]
+  sealed trait OB1[+T] extends Overlapping1[T]
+  case class OBC1[+T](t: T) extends OB1[T]
+  case class OAB1[+T](t: T) extends OA1[T] with OB1[T]
+
   trait Functor[F[_]] {
     def map[A, B](fa: F[A])(f: A => B): F[B]
   }
@@ -105,6 +112,89 @@ package Generic1TestsAux {
       def map[B](f: A => B): F[B] = F.map(fa)(f)
     }
   }
+
+  /** This version of Pointed isn't complete & NOT working but it allows to show bugs in IsHCons1/ISCCons/Generic1 macro generation */
+  trait Pointed[F[_]] { def point[A](a: A): F[A] }
+
+  object Pointed extends Pointed0 {
+    def apply[F[_]](implicit f: Lazy[Pointed[F]]): Pointed[F] = f.value
+
+    import scala.language.experimental.macros
+
+    implicit val idPointed: Pointed[Id] =
+      new Pointed[Id] {
+        def point[A](a: A): Id[A] = a
+      }
+
+    // Pointed can be built for Singleton types
+    implicit def constSingletonPointed[T](implicit w: Witness.Aux[T]): Pointed[Const[T]#λ] =
+      new Pointed[Const[T]#λ] {
+        def point[A](a: A): T = w.value
+      }
+
+    implicit def isCPointedSingleSingleton[C](
+      implicit w: Witness.Aux[C], pf: Lazy[Pointed[Const[C]#λ]]
+    ): Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] =
+      new Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] {
+        def point[A](a: A): Const[C]#λ[A] :+: Const[CNil]#λ[A] = Inl(pf.value.point(a))
+      }
+
+    implicit def isCPointedSingle[F[_]](
+      implicit pf: Lazy[Pointed[F]]
+    ): Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] =
+      new Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] {
+        def point[A](a: A): F[A] :+: Const[CNil]#λ[A] = Inl(pf.value.point(a))
+      }
+
+  }
+
+  trait Pointed0 extends Pointed1 {
+
+    implicit def hcons[F[_]](implicit ihc: IsHCons1[F, Pointed, Pointed]): Pointed[F] =
+      new Pointed[F] {
+        def point[A](a: A): F[A] = {
+          ihc.pack(ihc.fh.point(a), ihc.ft.point(a))
+        }
+      }
+
+    implicit def ccons[F[_]](implicit ihc: IsCCons1[F, Pointed, Pointed]): Pointed[F] =
+      new Pointed[F] {
+        def point[A](a: A): F[A] = {
+          ihc.pack(Left(ihc.fh.point(a)))
+        }
+      }
+
+    implicit def generic[F[_]](implicit gen: Generic1[F, Pointed]): Pointed[F] =
+      new Pointed[F] {
+        def point[A](a: A): F[A] = gen.from(gen.fr.point(a))
+      }
+
+  }
+
+  trait Pointed1 {
+
+    // HACKING the fact that CNil can't be pointed
+    implicit def isCPointedSimpleType: Pointed[({type λ[A] = A :+: Const[CNil]#λ[A] })#λ] =
+      new Pointed[({type λ[A] = A :+: Const[CNil]#λ[A] })#λ] {
+        def point[A](a: A): A :+: Const[CNil]#λ[A] = Inl(a)
+      }
+      
+
+    implicit val constHNilPointed: Pointed[Const[HNil]#λ] =
+      new Pointed[Const[HNil]#λ] {
+        def point[A](a: A): HNil = HNil
+      }
+
+  }
+
+  // Pointed syntax
+  object pointedSyntax {
+    implicit def pointedOps[A](a: A): PointedOps[A] = new PointedOps(a)
+
+    class PointedOps[A](a: A) {
+      def point[F[_]](implicit F: Pointed[F]): F[A] = F.point(a)
+    }
+  }
 }
 
 class Generic1Tests {
@@ -130,6 +220,17 @@ class Generic1Tests {
     val fr = gen0.fr
     typed[TC2[gen0.R]](fr)
     typed[TC2[({ type λ[t] = t :: List[t] :: HNil })#λ]](fr)
+  }
+
+  @Test
+  def testOverlappingCoproducts1 {
+    val gen = Generic1[Overlapping1, TC1]
+    val o: Overlapping1[Int] = OAB1(1)
+    val o0 = gen.to(o)
+    typed[OAB1[Int] :+: OAC1[Int] :+: OBC1[Int] :+: CNil](o0)
+
+    val s1 = gen.from(o0)
+    typed[Overlapping1[Int]](s1)
   }
 
   @Test
@@ -242,5 +343,15 @@ class Generic1Tests {
       )
     assertEquals(expectedTree, t0)
     assertEquals(expectedTree, t1)
+  }
+
+  @Test
+  def testPointed: Unit = {
+    import pointedSyntax._
+
+    type R0[t] = None.type :: HNil
+    IsHCons1[R0, Pointed, Pointed]
+
+    Pointed[Option]
   }
 }

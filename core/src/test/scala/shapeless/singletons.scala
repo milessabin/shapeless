@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin 
+ * Copyright (c) 2013-14 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,7 +255,82 @@ class SingletonTypesTests {
     """)
   }
 
+  /*
+  class NestingBug {
+    val o: AnyRef = new Object {}
+
+    val wO = {
+      final class W extends _root_.shapeless.Witness {
+        type T = o.type
+        val value: T = o
+      }
+      new W
+    }
+
+    // This fails on 2.10.x unless W is moved out of the block
+    // on the RHS of wO
+    val x1: o.type = wO.value
+  }
+  */
+
   def convert(w: Witness): Witness.Aux[w.T] = w
+
+  def boundedConvert2[B](w: Witness.Lt[B]): Witness.Aux[w.T] = w
+
+  def testSingletonWitness {
+    trait Bound
+    object Foo extends Bound
+    val bar = "bar"
+    val wFoo = Witness(Foo)
+    val wBar = Witness(bar)
+
+    // These fail on 2.10.x due to nesting bug above
+    //typed[Foo.type](wFoo.value)
+    //typed[bar.type](wBar.value)
+
+    val cFoo = convert(Foo)
+    val cBar = convert(bar)
+
+    sameTyped(cFoo)(Witness(Foo))
+    sameTyped(cBar)(Witness(bar))
+
+    val bcFoo = boundedConvert2[Bound](Foo)
+    val bcBar = boundedConvert2[String](bar)
+
+    sameTyped(bcFoo)(Witness(Foo))
+    sameTyped(bcBar)(Witness(bar))
+  }
+
+  /*
+  // These fail on 2.10.x due to nesting bug above
+  class PathDependentSingleton1 {
+    val o: AnyRef = new Object {}
+    val wO = Witness(o)
+    type OT = wO.T
+    implicitly[OT =:= o.type]
+
+    val x0: OT = wO.value
+    val x1: o.type = wO.value
+
+    val x2 = wO.value
+    typed[o.type](x2)
+    typed[OT](x2)
+  }
+
+  object PathDependentSingleton2 {
+    val o: AnyRef = new Object {}
+    val wO = Witness(o)
+    type OT = wO.T
+    implicitly[OT =:= o.type]
+
+    val x0: OT = wO.value
+    val x1: o.type = wO.value
+
+    val x2 = wO.value
+    typed[o.type](x2)
+    typed[OT](x2)
+  }
+  */
 
   @Test
   def testWitnessConversion {
@@ -375,7 +450,7 @@ class SingletonTypesTests {
         def show = w.value.toString
       }
   }
-  
+
   def showWitness(w: Witness)(implicit s: ShowWitness[w.T]) = s.show
 
   @Test
@@ -454,7 +529,7 @@ class SingletonTypesTests {
     illTyped("""
       check(false)(23)
     """)
-    
+
     illTyped("""
       check(23)(23)
     """)

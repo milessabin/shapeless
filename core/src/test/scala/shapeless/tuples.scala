@@ -517,6 +517,12 @@ class TupleTests {
 
   @Test
   def testToList {
+    import ops.tuple.ToList
+
+    ToList[Unit, Nothing]
+    ToList[Unit, Int]
+    ToList[APAP, Fruit]
+
     val empty = ().toList
     assertTypedEquals[List[Nothing]](Nil, empty)
 
@@ -642,6 +648,12 @@ class TupleTests {
 
   @Test
   def testToArray {
+    import ops.tuple.ToArray
+
+    ToArray[Unit, Nothing]
+    ToArray[Unit, Int]
+    ToArray[APAP, Fruit]
+
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 

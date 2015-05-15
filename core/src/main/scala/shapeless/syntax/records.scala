@@ -99,6 +99,11 @@ final class RecordOps[L <: HList](l : L) extends Serializable {
   def values(implicit values: Values[L]): values.Out = values(l)
 
   /**
+   * Returns a `HList` made of the key-value pairs of this record.
+   */
+  def fields(implicit fields: Fields[L]): fields.Out = fields(l)
+
+  /**
    * Returns a `Map` whose keys and values are typed as the Lub of the keys
    * and values of this record.
    */

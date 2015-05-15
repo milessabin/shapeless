@@ -301,6 +301,36 @@ package record {
   }
 
   /**
+   * Type class supporting converting this record to a `HList` of key-value pairs.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fields[L <: HList] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object Fields {
+    def apply[L <: HList](implicit fields: Fields[L]): Aux[L, fields.Out] = fields
+
+    type Aux[L <: HList, Out0 <: HList] = Fields[L] { type Out = Out0 }
+
+    implicit def hnilFields[L <: HNil]: Aux[L, L] =
+      new Fields[L] {
+        type Out = L
+        def apply(l: L) = l
+      }
+
+    implicit def hconsFields[K, V, T <: HList](implicit
+      key: Witness.Aux[K],
+      tailFields: Fields[T]
+    ): Aux[FieldType[K, V] :: T, (K, V) :: tailFields.Out] =
+      new Fields[FieldType[K, V] :: T] {
+        type Out = (K, V) :: tailFields.Out
+        def apply(l: FieldType[K, V] :: T) = (key.value -> l.head) :: tailFields(l.tail)
+      }
+  }
+
+  /**
    * Type class supporting converting this record to a `Map` whose keys and values
    * are typed as the Lub of the keys and values of this record.
    *

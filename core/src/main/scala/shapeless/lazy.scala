@@ -17,6 +17,7 @@
 package shapeless
 
 import scala.language.experimental.macros
+import scala.language.reflectiveCalls
 
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
@@ -71,8 +72,28 @@ class LazyMacros[C <: Context](val c: C) {
 object LazyMacros {
   def inst(c: Context) = new LazyMacros[c.type](c)
 
-  def mkLazyImpl[I: c.WeakTypeTag](c: Context): c.Expr[Lazy[I]] =
-    c.Expr[Lazy[I]](inst(c).mkLazyImpl[I])
+  def mkLazyImpl[I: c.WeakTypeTag](c: Context): c.Expr[Lazy[I]] = {
+    import c.universe._
+
+    val lmSym = typeOf[LazyMacros.type].typeSymbol
+    lmSym.attachments.all.headOption match {
+      case Some(lm) =>
+        if(lm == LazyMacros)
+          c.Expr[Lazy[I]](inst(c).mkLazyImpl[I])
+        else {
+          lm.asInstanceOf[
+            { def mkLazyImpl(c: Context)(i: c.WeakTypeTag[I]): c.Expr[Lazy[I]] }
+          ].mkLazyImpl(c)(weakTypeTag[I])
+        }
+      case None =>
+        lmSym.updateAttachment[LazyMacros.type](this)
+        try {
+          c.Expr[Lazy[I]](inst(c).mkLazyImpl[I])
+        } finally {
+            lmSym.removeAttachment[LazyMacros.type]
+        }
+    }
+  }
 
   var dcRef: Option[DerivationContext] = None
 
