@@ -95,7 +95,7 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.2.0-RC4
+### shapeless-2.2.0-RC6
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
 shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
@@ -104,7 +104,7 @@ shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradi
 scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC4"
+  "com.chuusai" %% "shapeless" % "2.2.0-RC6"
 )
 ```
 
@@ -117,15 +117,15 @@ plugin to your build,
 scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC4",
+  "com.chuusai" %% "shapeless" % "2.2.0-RC6",
   compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 )
 ```
 
 ### shapeless-2.1.0
 
-Builds are available for Scala 2.11.x and for Scala 2.10.4. The main line of development for
-shapeless 2.1.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.x and for Scala 2.10.4 and 2.10.5. The main line of development for shapeless
+2.1.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
 scalaVersion := "2.11.6"
@@ -135,117 +135,24 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Note that for Scala 2.10.4 you must provide an explicit Scala version suffix to your shapeless dependency, and it is
+Note that for Scala 2.10.x you must provide an explicit Scala version suffix to your shapeless dependency, and it is
 recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
 
 ```scala
-scalaVersion := "2.10.4"
+scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.4" % "2.1.0",
-  compilerPlugin("org.scalamacros" % "paradise_2.10.4" % "2.0.1")
+  "com.chuusai" % "shapeless_2.10.5" % "2.1.0",
+  compilerPlugin("org.scalamacros" % "paradise_2.10.5" % "2.0.1")
 )
 ```
 
-### shapeless-2.0.0
+### Older releases
 
-Builds are available for Scala 2.11.x and for Scala 2.10.4.
+Please use a current release if possible. If unavoidable, you can find [usage information for older
+releases][olderusage] on the shapeless wiki.
 
-```scala
-// For Scala 2.11.x
-scalaVersion := "2.11.6"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.0.0"
-)
-```
-
-For Scala 2.10.x you must specify a Scala version of at least 2.10.2, and add either `cross CrossVersion.full` or
-provide an explicit Scala version suffix to your shapeless dependency,
-
-```scala
-// For Scala 2.10.x >= 2.10.2
-scalaVersion := "2.10.4"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.4" % "2.0.0"
-  // "com.chuusai" % "shapeless" % "2.0.0" cross CrossVersion.full  // Alternatively ...
-)
-```
-
-Note that Scala 2.10.x releases are compatible with each other starting from 2.10.2, so a mismatch in minor versions
-above would be fine.
-
-If your project is built with Scala 2.10.4 and Scala 2.11.0 and later, then you will need to add the following,
-
-```scala
-val shapeless = Def setting (
-    CrossVersion partialVersion scalaVersion.value match {
-    case Some((2, scalaMajor)) if scalaMajor >= 11 => 
-      "com.chuusai" %% "shapeless" % "2.0.0"
-    case Some((2, 10)) => 
-      "com.chuusai" %  "shapeless" % "2.0.0" cross CrossVersion.full
-  }
-)
-
-libraryDependencies ++= Seq(
-  shapeless.value
-)
-```
-
-This is needed because the shapeless binaries for Scala 2.10 includes the Scala bug fix digit. There specific binaries for 2.10.2, 2.10.3 and 2.10.4, while in the Scala 2.11 series the bug fix digit is omitted.
-```scala
-"com.chuusai" %  "shapeless_2.10.2" % "2.0.0"
-
-"com.chuusai" %  "shapeless_2.10.3" % "2.0.0"
-
-"com.chuusai" %  "shapeless_2.10.4" % "2.0.0"
-
-"com.chuusai" %  "shapeless_2.11" % "2.0.0"
-```
-
-### shapeless-1.2.4
-
-Builds are available for Scala 2.9, 2.10 and 2.11. If you are working with Scala 2.10.2 or later you should use
-shapeless-2.1.0 instead.
-
-If your project is built with Scala 2.9.3 or earlier, then you will need to specify the `-Ydependent-method-types`
-compiler flag,
-
-```scala
-scalaVersion := "2.9.3"
-
-scalacOptions += "-Ydependent-method-types"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "1.2.4"
-)
-```
-
-This option isn't necessary or supported in Scala 2.10 and later, so you should omit it if you are building with
-Scala 2.10.2 or later,
-
-```scala
-scalaVersion := "2.10.4"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "1.2.4"
-)
-```
-
-If you want to be able to support building relative to both 2.9.3 and 2.10 and later then you should use the 2.10.4
-configuration above and add the following,
- 
-```scala
-scalacOptions <++= scalaVersion map { version =>
-  val Some((major, minor)) = CrossVersion.partialVersion(version)
-  if (major < 2 || (major == 2 && minor < 10)) 
-    Seq("-Ydependent-method-types")
-  else Nil
-}
-```
-
-which will set the `-Ydependent-method-types` compiler flag conditionally on the actual Scala version in use.
+[olderusage]: https://github.com/milessabin/shapeless/wiki/Using-shapeless:-older-releases
 
 ## Building shapeless
 
@@ -267,7 +174,9 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 
 ## Contributors
 
++ Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
++ Alistair Johnson <alistair.johnson@johnsonusm.com>
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
@@ -277,6 +186,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
++ Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Filipe Nepomuceno <filinep@gmail.com>
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)

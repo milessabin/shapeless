@@ -56,6 +56,11 @@ final class UnionOps[C <: Coproduct](c : C) extends Serializable {
   def values(implicit values: Values[C]): values.Out = values(c)
 
   /**
+   * Returns a `Coproduct` made of the key-value pairs of this union.
+   */
+  def fields(implicit fields: Fields[C]): fields.Out = fields(c)
+
+  /**
    * Returns a `Map` whose keys and values are typed as the Lub of the keys
    * and values of this union.
    */

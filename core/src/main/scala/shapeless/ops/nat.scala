@@ -177,6 +177,24 @@ object nat {
   }
 
   /**
+   * Type class witnessing that `Out` is `A` max `B`.
+   *
+   * @author Alexander Konovalov
+   */
+  trait Max[A <: Nat, B <: Nat] extends Serializable { type Out <: Nat }
+
+  object Max {
+    def apply[A <: Nat, B <: Nat](implicit max: Max[A, B]): Aux[A, B, max.Out] = max
+
+    type Aux[A <: Nat, B <: Nat, C <: Nat] = Max[A, B] { type Out = C }
+
+    implicit def maxAux0[A <: Nat, B <: Nat, C <: Nat]
+      (implicit lteq: LTEq[A, B]): Aux[A, B, B] = new Max[A, B] { type Out = B }
+    implicit def maxAux1[A <: Nat, B <: Nat, C <: Nat]
+      (implicit lteq: LT[B, A]): Aux[A, B, A] = new Max[A, B] { type Out = A }
+  }
+
+  /**
    * Type class witnessing that `Out` is `X` raised to the power `N`.
    *
    * @author George Leontiev
