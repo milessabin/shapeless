@@ -107,6 +107,20 @@ package GenericTestsAux {
     lazy val prev = prev0
     lazy val next = next0
   }
+
+  sealed trait Xor[+A, +B]
+  case class Left[+LA](a: LA) extends Xor[LA, Nothing]
+  case class Right[+RB](b: RB) extends Xor[Nothing, RB]
+
+  sealed trait Base[BA, BB]
+  case class Swap[SA, SB](a: SA, b: SB) extends Base[SB, SA]
+
+  sealed trait Overlapping
+  sealed trait OA extends Overlapping
+  case class OAC(s: String) extends OA
+  sealed trait OB extends Overlapping
+  case class OBC(s: String) extends OB
+  case class OAB(i: Int) extends OA with OB
 }
 
 class GenericTests {
@@ -259,6 +273,17 @@ class GenericTests {
   }
 
   @Test
+  def testOverlappingCoproducts {
+    val gen = Generic[Overlapping]
+    val o: Overlapping = OAB(1)
+    val o0 = gen.to(o)
+    typed[OAB :+: OAC :+: OBC :+: CNil](o0)
+
+    val o1 = gen.from(o0)
+    typed[Overlapping](o1)
+  }
+
+  @Test
   def testCaseObjects {
     val a: Enum = A
     val b: Enum = B
@@ -374,6 +399,32 @@ class GenericTests {
   }
 
   @Test
+  def testParametrzedSubset {
+    val l = Left(23)
+    val r = Right(true)
+    type IB = Left[Int] :+: Right[Boolean] :+: CNil
+
+    val gen = Generic[Xor[Int, Boolean]]
+
+    val c0 = gen.to(l)
+    assertTypedEquals[IB](Inl(l), c0)
+
+    val c1 = gen.to(r)
+    assertTypedEquals[IB](Inr(Inl(r)), c1)
+  }
+
+  @Test
+  def testParametrizedPermute {
+    val s = Swap(23, true)
+    type IB = Swap[Int, Boolean] :+: CNil
+
+    val gen = Generic[Base[Boolean, Int]]
+
+    val s0 = gen.to(s)
+    assertTypedEquals[IB](Inl(s), s0)
+  }
+
+  @Test
   def testAbstractNonCC {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
@@ -478,6 +529,9 @@ class GenericTests {
     illTyped(" IsTuple[Fruit] ")
     illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" IsTuple[Int] ")
+    illTyped(" IsTuple[String] ")
+    illTyped(" IsTuple[Array[Int]] ")
   }
 
   @Test
@@ -500,6 +554,9 @@ class GenericTests {
     illTyped(" HasProductGeneric[Fruit] ")
     illTyped(" HasProductGeneric[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" HasProductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasProductGeneric[Int] ")
+    illTyped(" HasProductGeneric[String] ")
+    illTyped(" HasProductGeneric[Array[Int]] ")
   }
 
   @Test
@@ -520,6 +577,25 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[Person] ")
     illTyped(" HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T] ")
     illTyped(" HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(" HasCoproductGeneric[Int] ")
+    illTyped(" HasCoproductGeneric[String] ")
+    illTyped(" HasCoproductGeneric[Array[Int]] ")
+  }
+
+  @Test
+  def testNonGeneric {
+    import record._
+    import union._
+
+    illTyped(" Generic[Int] ")
+    illTyped(" Generic[Array[Int]] ")
+    illTyped(" Generic[String] ")
+    illTyped(" Generic[HNil] ")
+    illTyped(" Generic[Int :: String :: HNil] ")
+    illTyped(" Generic[CNil] ")
+    illTyped(" Generic[Int :+: String :+: CNil] ")
+    illTyped(" Generic[Record.`'i -> Int, 's -> String`.T] ")
+    illTyped(" Generic[Union.`'i -> Int, 's -> String`.T] ")
   }
 
   sealed trait Color

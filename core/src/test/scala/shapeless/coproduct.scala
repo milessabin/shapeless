@@ -358,16 +358,18 @@ class CoproductTests {
     val (one, two, abc, xyz) =
       (Coproduct[ISB](1), Coproduct[ISB](2), Coproduct[ISB]("abc"), Coproduct[ISB]("xyz"))
 
-    def assertPOEquals(expected: Option[Int], l: ISB, r: ISB)(implicit po: PartialOrdering[ISB]) =
-      assertEquals(s"${l} ${r}", expected, po.tryCompare(l, r))
+    def assertPOEquals(expected: Option[Int], l: ISB, r: ISB)(implicit po: PartialOrdering[ISB]) = {
+      val actual =  po.tryCompare(l, r) map { i => Some(if (i < 0) -1 else if (i > 0) 1 else 0) }
+      assertEquals(s"${l} ${r}", expected, actual getOrElse None)
+    }
 
     assertPOEquals(Some(0),  one, one)
     assertPOEquals(Some(-1), one, two)
     assertPOEquals(Some(1),  two, one)
 
     assertPOEquals(Some(0),  abc, abc)
-    assertPOEquals(Some(-23), abc, xyz)
-    assertPOEquals(Some(23),  xyz, abc)
+    assertPOEquals(Some(-1), abc, xyz)
+    assertPOEquals(Some(1),  xyz, abc)
 
     assertPOEquals(None, one, abc)
     assertPOEquals(None, abc, one)

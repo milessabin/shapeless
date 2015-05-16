@@ -632,8 +632,8 @@ class HListTests {
     val r1 = HNil.to[List]
     assertTypedEquals[List[Nothing]](Nil, r1)
 
-    implicitly[ToList[HNil, Nothing]]
-    implicitly[ToList[HNil, Int]]
+    ToList[HNil, Nothing]
+    ToList[HNil, Int]
 
     {
       implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[Int]]]
@@ -856,8 +856,8 @@ class HListTests {
     typed[Array[Nothing]](empty)
     assertArrayEquals2(Array[Nothing](), empty)
 
-    implicitly[ToArray[HNil, Nothing]]
-    implicitly[ToArray[HNil, Int]]
+    ToArray[HNil, Nothing]
+    ToArray[HNil, Int]
 
     {
       val a1 = (mi :: HNil).toArray[M[Int]]
@@ -2650,6 +2650,13 @@ class HListTests {
     def applyProduct[K <: HList](keys: K) = new Apply[K]
   }
 
+  trait NonSingletonHNilTC[T]
+  object NonSingletonHNilTC {
+    def apply[T](t: T)(implicit i: NonSingletonHNilTC[T]): NonSingletonHNilTC[T] = i
+
+    implicit val nsHNilTC: NonSingletonHNilTC[HNil] = new NonSingletonHNilTC[HNil] {}
+  }
+
   @Test
   def testSingletonProductArgs {
     object Obj
@@ -2680,6 +2687,10 @@ class HListTests {
     illTyped("""
       r.tail.tail.tail.tail.tail.tail.head
     """)
+
+    // Verify that we infer HNil rather than HNil.type at the end
+    NonSingletonHNilTC(SFoo(23).tail)
+    NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
     val ib = selectAll('i, 'b).from(quux)
