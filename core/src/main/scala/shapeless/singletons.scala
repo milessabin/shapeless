@@ -235,6 +235,12 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       case (SymTpe, LiteralSymbol(s)) =>
         mkResult(SingletonSymbolType(s), mkSingletonSymbol(s))
 
+      case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable =>
+        val sym = tree.symbol.asTerm
+        val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
+        val symTpe = c.internal.singleType(pre, sym)
+        mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
+
       case _ =>
         c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
     }

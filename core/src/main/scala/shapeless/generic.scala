@@ -163,8 +163,16 @@ trait CaseClassMacros extends ReprTypes {
 
   def productCtorsOf(tpe: Type): List[Symbol] = tpe.decls.toList.filter(_.isConstructor)
 
-  def ctorsOf(tpe: Type): List[Type] = ctorsOfAux(tpe, false)
-  def ctorsOf1(tpe: Type): List[Type] = ctorsOfAux(tpe, true)
+  def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, false)
+  def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, true)
+
+  def distinctCtorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
+    def distinct[A](list: List[A])(eq: (A, A) => Boolean): List[A] = list.foldLeft(List.empty[A]) { (acc, x) =>
+        if (!acc.exists(eq(x, _))) x :: acc
+        else acc
+    }.reverse
+    distinct(ctorsOfAux(tpe, hk))(_ =:= _)
+  }
 
   def ctorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
     def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
@@ -183,9 +191,8 @@ trait CaseClassMacros extends ReprTypes {
     if(isProduct(tpe))
       List(tpe)
     else if(isCoproduct(tpe)) {
-      val ctors = collectCtors(classSym(tpe)).sortBy(_.fullName)
-      if (ctors.isEmpty) abort(s"Sealed trait $tpe has no case class subtypes")
-
+      val basePre = prefix(tpe)
+      val baseSym = classSym(tpe)
       val baseArgs: List[Type] =
         if(hk) {
           val tc = tpe.typeConstructor
@@ -196,25 +203,36 @@ trait CaseClassMacros extends ReprTypes {
         }
         else tpe.dealias.typeArgs
 
-      val tpePrefix = prefix(tpe)
+      val ctors = collectCtors(baseSym).sortBy(_.fullName)
+      if (ctors.isEmpty)
+        abort(s"Sealed trait $tpe has no case class subtypes")
 
       ctors map { sym =>
-        val suffix = ownerChain(sym).dropWhile(_ != tpePrefix.typeSymbol)
+        def substituteArgs: List[Type] = {
+          val subst = c.internal.thisType(sym).baseType(baseSym).typeArgs
+          sym.typeParams.map { param =>
+            val paramTpe = param.asType.toType
+            baseArgs(subst.indexWhere(_ =:= paramTpe))
+          }
+        }
+
+        val suffix = ownerChain(sym).dropWhile(_ != basePre.typeSymbol)
         if(suffix.isEmpty) {
           if(sym.isModuleClass) {
             val moduleSym = sym.asClass.module
             val modulePre = prefix(moduleSym.typeSignature)
             c.internal.singleType(modulePre, moduleSym)
-          } else appliedType(sym.toTypeIn(c.prefix.tree.tpe), baseArgs)
+          } else
+            appliedType(sym.toTypeIn(c.prefix.tree.tpe), substituteArgs)
         } else {
           if(sym.isModuleClass) {
             val path = suffix.tail.map(_.name.toTermName)
-            val (modulePre, moduleSym) = mkDependentRef(tpePrefix, path)
+            val (modulePre, moduleSym) = mkDependentRef(basePre, path)
             c.internal.singleType(modulePre, moduleSym)
           } else {
             val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
-            val (subTpePre, subTpeSym) = mkDependentRef(tpePrefix, path)
-            c.internal.typeRef(subTpePre, subTpeSym, baseArgs)
+            val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
+            c.internal.typeRef(subTpePre, subTpeSym, substituteArgs)
           }
         }
       }
@@ -265,7 +283,7 @@ trait CaseClassMacros extends ReprTypes {
         val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
         AppliedTypeTree(mkAttributedRef(tpe.typeConstructor), argTrees)
       case t =>
-        mkAttributedRef(t)
+        tq"$tpe"
     }
   }
 
@@ -316,11 +334,22 @@ trait CaseClassMacros extends ReprTypes {
     else mkCoproductTypTree1(ctorsOf1(tpe), param, arg)
   }
 
-  def isCaseClassLike(sym: ClassSymbol): Boolean =
+  def isCaseClassLike(sym: ClassSymbol): Boolean = {
+    def checkCtor: Boolean = {
+      def unique[T](s: Seq[T]): Option[T] =
+        s.headOption.find(_ => s.tail.isEmpty)
+
+      val tpe = sym.typeSignature
+      (for {
+        ctor <- unique(productCtorsOf(tpe))
+        params <- unique(ctor.asMethod.paramLists)
+      } yield params.size == fieldsOf(tpe).size).getOrElse(false)
+    }
+
     sym.isCaseClass ||
     (!sym.isAbstract && !sym.isTrait &&
-     sym.knownDirectSubclasses.isEmpty &&
-     productCtorsOf(sym.typeSignature).size == 1)
+     sym.knownDirectSubclasses.isEmpty && checkCtor)
+  }
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass && isCaseClassLike(sym)
 
