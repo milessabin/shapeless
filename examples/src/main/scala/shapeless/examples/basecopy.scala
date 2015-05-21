@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin
+ * Copyright (c) 2015 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,55 @@ object BaseCopyDemo extends App {
   assert(b4.copy(b = true, i = 13) == Quux('*', 13, true))
 }
 
+/**
+ * Functional update of common fields of an open family of case classes
+ * via a case-class-like copy through the common super type ...
+ */
+object OpenBaseCopyDemo extends App {
+  import openCopySyntax._
+  import mergeSyntax._
+
+  // Open family of case classes ...
+  trait Base extends OpenFamily[Base] {
+    val i: Int
+    val b: Boolean
+
+    case class BaseFields(i: Int, b: Boolean)
+    def baseFields = BaseFields(i, b)
+    def baseCopy(base: BaseFields): Base
+  }
+
+  case class Foo(i: Int, b: Boolean) extends Base {
+    def baseCopy(base: BaseFields) = this merge base
+  }
+
+  case class Bar(i: Int, s: String, b: Boolean) extends Base {
+    def baseCopy(base: BaseFields) = this merge base
+  }
+
+  case class Baz(i: Int, b: Boolean, d: Double) extends Base {
+    def baseCopy(base: BaseFields) = this merge base
+  }
+
+  case class Quux(c: Char, i: Int, b: Boolean) extends Base {
+    def baseCopy(base: BaseFields) = this merge base
+  }
+
+
+  // case class copy style functional update through the common super-type ...
+  val b1: Base = Foo(23, true)
+  assert(b1.copy(i = 13) == Foo(13, true))
+
+  val b2: Base = Bar(23, "foo", false)
+  assert(b2.copy(i = 13, b = true) == Bar(13, "foo", true))
+
+  val b3: Base = Baz(23, false, 2.3)
+  assert(b3.copy(i = 13) == Baz(13, false, 2.3))
+
+  val b4: Base = Quux('*', 23, false)
+  assert(b4.copy(b = true, i = 13) == Quux('*', 13, true))
+}
+
 // Implementation in terms of RecordArgs, Generic and Lazy ...
 object copySyntax {
   class CopySyntax[T](t: T) {
@@ -55,6 +104,23 @@ object copySyntax {
   }
 
   implicit def apply[T](t: T): CopySyntax[T] = new CopySyntax[T](t)
+}
+
+object openCopySyntax {
+  class CopySyntax[T, BaseFields0](t: OpenFamily[T] { type BaseFields = BaseFields0 }) {
+    object copy extends RecordArgs {
+      def applyRecord[R <: HList](r: R)(implicit update: UpdateRepr[BaseFields0, R]): T =
+        t.baseCopy(update(t.baseFields, r))
+    }
+  }
+
+  implicit def apply[T](t: OpenFamily[T]): CopySyntax[T, t.BaseFields] = new CopySyntax(t)
+}
+
+trait OpenFamily[T] {
+  type BaseFields
+  def baseFields: BaseFields
+  def baseCopy(base: BaseFields): T
 }
 
 trait UpdateRepr[T, R <: HList] {
