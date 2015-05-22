@@ -136,7 +136,7 @@ libraryDependencies ++= Seq(
 ```
 
 Note that for Scala 2.10.x you must provide an explicit Scala version suffix to your shapeless dependency, and it is
-recommanded to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
+recommended to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
 
 ```scala
 scalaVersion := "2.10.5"
