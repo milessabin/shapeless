@@ -20,7 +20,7 @@ shapeless is part of the [Typelevel][typelevel] family of projects. It is an Ope
 License v2, hosted on [github][source]. Binary artefacts are published to the
 [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
-Discussion of shapeless and generic programming in Scala in general happens on the [Typelevel mailing list][group].
+Discussion of shapeless and generic programming in Scala in general happens on the [mailing list][group].
 You will also find many of the main shapeless contributors in its [Gitter channel][gitter] and on IRC in
 the #shapeless channel on [freenode][irc]. Questions about shapeless are often asked and answered under the
 [shapeless tag on StackOverflow][so]. Some articles on the implementation techniques can be found on
@@ -49,8 +49,7 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [source]: https://github.com/milessabin/shapeless
 [sonatype]: https://oss.sonatype.org/index.html#nexus-search;quick~shapeless
 [wiki]: https://github.com/milessabin/shapeless/wiki
-[oldgroup]: https://groups.google.com/group/shapeless-dev
-[group]: https://groups.google.com/group/typelevel
+[group]: https://groups.google.com/group/shapeless-dev
 [so]: http://stackoverflow.com/questions/tagged/shapeless
 [gitter]: https://gitter.im/milessabin/shapeless
 [irc]: http://webchat.freenode.net?channels=%23shapeless
