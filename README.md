@@ -95,7 +95,7 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.2.0-RC6
+### shapeless-2.2.0
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
 shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
@@ -104,7 +104,7 @@ shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradi
 scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC6"
+  "com.chuusai" %% "shapeless" % "2.2.0"
 )
 ```
 
@@ -117,33 +117,8 @@ plugin to your build,
 scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0-RC6",
+  "com.chuusai" %% "shapeless" % "2.2.0",
   compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
-)
-```
-
-### shapeless-2.1.0
-
-Builds are available for Scala 2.11.x and for Scala 2.10.4 and 2.10.5. The main line of development for shapeless
-2.1.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
-
-```scala
-scalaVersion := "2.11.6"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.1.0"
-)
-```
-
-Note that for Scala 2.10.x you must provide an explicit Scala version suffix to your shapeless dependency, and it is
-recommended to add the macro paradise plugin to your build, for some macros provided by shapeless to work smoothly,
-
-```scala
-scalaVersion := "2.10.5"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" % "shapeless_2.10.5" % "2.1.0",
-  compilerPlugin("org.scalamacros" % "paradise_2.10.5" % "2.0.1")
 )
 ```
 
@@ -156,7 +131,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with 0.13.7 or later. SBT 0.13.6 has an [issue][namehashing] related to its new name hashing
+shapeless is built with SBT 0.13.7 or later. SBT 0.13.6 has an [issue][namehashing] related to its new name hashing
 feature which when compiling shapeless causes SBT to loop indefinitely consuming all heap. Workarounds are to move to
 an earlier or later SBT version or disable name hashing by adding,
 
