@@ -161,6 +161,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
++ David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Filipe Nepomuceno <filinep@gmail.com>
@@ -189,6 +190,7 @@ merged into the scala-2.10.x branch with only the minimal changes needed for for
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
++ Sébastien Doeraene <sjrdoeraene@gmail.com> [@sjrdoeraene](https://twitter.com/sjrdoeraene)
 + Simon Hafner <hafnersimon@gmail.com> [@reactormonk](https://twitter.com/reactormonk)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
