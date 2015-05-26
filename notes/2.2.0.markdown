@@ -5,8 +5,25 @@ shapeless 2.2.0 should be source and binary compatible with shapeless
 guide from shapeless 2.0.0 to 2.1.0][migration] is still applicable and
 is available on the [shapeless wiki][wiki].
 
-shapeless 2.2.0 includes the following new features and enhancements
-and a number of [bug fixes][fixes],
+Contributors for shapeless 2.2.0 are,
+
+* Alexander Konovalov ([@alexknvl](https://twitter.com/alexknvl))
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Alistair Johnson
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
+* Denis Mikhaylov [@notxcain](https://twitter.com/@notxcain)
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
+* Pascal Voitot [@mandubian](https://twitter.com/mandubian)
+* Sam Halliday [@fommil](https://twitter.com/fommil)
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+There are a large number of new features, refactorings and [bug
+fixes][fixes] in shapeless 2.2.0. The most significant of these are,
 
 * Added support for derivation of type classes for higher-kinded types.
   See in particular the new [example][functor] illustrating the
@@ -73,20 +90,6 @@ and a number of [bug fixes][fixes],
   The "shapeless-" prefix has been dropped from all the module names
   and it is now possible to drop into the Scala REPL with shapeless
   on the classpath using just the "console" command.
-
-A big "Thank You!" to everyone who has contributed to this release,
-
-* Alexander Konovalov ([@alexknvl](https://twitter.com/alexknvl))
-* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
-* Alistair Johnson
-* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
-* Denis Mikhaylov [@notxcain](https://twitter.com/@notxcain)
-* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
-* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
-* Pascal Voitot [@mandubian](https://twitter.com/mandubian)
-* Sam Halliday [@fommil](https://twitter.com/fommil)
-* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
-* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
 
 [shapeless]: https://github.com/milessabin/shapeless
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
