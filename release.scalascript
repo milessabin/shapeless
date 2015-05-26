@@ -30,30 +30,40 @@ object CrossBranchRelease {
       _ <- checkClean()
       _ <- run("git checkout master")
       curVer <- readVersion()
-      newVer <- askVersion(curVer)
-      tagExists <- checkTagExists(newVer)
+      relVer <- askVersion(true, curVer)
+      nextVer <- askVersion(false, curVer)
+      tagExists <- checkTagExists(relVer)
+      remote <- askRemote()
       _ <- verifyBranch("master")
       _ <- verifyBranch("scala-2.10.x")
-      _ <- verifyBranch("scalajs-2.10.x")
       _ <- verifyBranch("scalajs-2.11.x")
-      _ <- commitVersion(curVer, newVer, tagExists)
-      _ <- tagRelease(newVer, tagExists)
-      _ <- mergeVersion("scala-2.10.x", newVer)
-      _ <- mergeVersion("scalajs-2.10.x", newVer)
-      _ <- mergeVersion("scalajs-2.11.x", newVer)
+      _ <- verifyBranch("scalajs-2.10.x")
+      _ <- commitVersion(curVer, relVer)
+      _ <- tagRelease(relVer, tagExists)
+      _ <- mergeVersion("scala-2.10.x", relVer)
+      _ <- mergeVersion("scalajs-2.11.x", relVer)
+      _ <- mergeVersion("scalajs-2.10.x", relVer)
       _ <- release("master")
       _ <- release("scala-2.10.x")
       _ <- release("scalajs-2.10.x")
       _ <- release("scalajs-2.11.x")
+      _ <- commitVersion(relVer, nextVer)
+      _ <- mergeVersion("scala-2.10.x", relVer)
+      _ <- mergeVersion("scalajs-2.10.x", relVer)
+      _ <- mergeVersion("scalajs-2.11.x", relVer)
+      _ <- pushVersion(remote, "master")
+      _ <- pushVersion(remote, "scala-2.10.x")
+      _ <- pushVersion(remote, "scalajs-2.11.x")
+      _ <- pushVersion(remote, "scalajs-2.10.x")
+      _ <- pushTag(remote, relVer, tagExists)
     } yield {
         "completed"
-      }) match {
+    }) match {
       case Success(msg) =>
         logInfo(msg)
       case Failure(e) =>
         logError(e.getMessage)
     }
-
   }
 
   val VERSION_FILE = "version.sbt"
@@ -99,7 +109,6 @@ object CrossBranchRelease {
   }
 
   def checkClean(): Try[Boolean] = {
-
     for {
       r <- run("git diff")
     } yield {
@@ -135,8 +144,9 @@ object CrossBranchRelease {
       sys.error("Aborted by user!")
   }
 
-  def askVersion(default: String): Try[String] = Try {
-    println(s"Do you want to use the version number '$default' for this release? yes/no")
+  def askVersion(when: Boolean, default: String): Try[String] = Try {
+    val whenStr = if(when) "for" else "after"
+    println(s"Do you want to use the version number '$default' $when this release? yes/no")
     val answer = readBoolean()
     if (!answer) {
       val newVersion = readLine("Please provide the new release version: ")
@@ -148,7 +158,6 @@ object CrossBranchRelease {
     } else {
       default
     }
-
   }
 
   def askRemote(): Try[String] = {
@@ -163,7 +172,7 @@ object CrossBranchRelease {
     }
   }
 
-  def commitVersion(curVersion: String, newVersion: String, tagExists: Boolean): Try[Any] = {
+  def commitVersion(curVersion: String, newVersion: String): Try[Any] = {
     logInfo(s"Committing version $newVersion if necessary...")
 
     def writeVersion(version: String) = Try {
@@ -192,19 +201,10 @@ object CrossBranchRelease {
     for {
       _ <- run("git checkout master")
       _ <- if (tagExists) {
-        run(s"git tag -d shapeless-$newVersion")
-      } else {
-        Success({})
-      }
-      remote <- askRemote()
-      _ <- run(s"git tag shapeless-$newVersion")
-      // this probably should happen after everything is successful
-      _ <- run(s"git push $remote shapeless-$newVersion").recoverWith {
-        case e if tagExists && e.getMessage.contains("already exists") =>
-          println("Tag already exists on remote. Forcing push...")
-          // we already asked. Doing a forced update of the tag.
-          run(s"git push --force $remote shapeless-$newVersion")
-      }
+             run(s"git tag -d shapeless-$newVersion")
+           } else {
+             Success({})
+           }
     } yield {}
   }
 
@@ -214,10 +214,10 @@ object CrossBranchRelease {
       _ <- run(s"git checkout $branch")
       curVersion <- readVersion()
       _ <- if (curVersion != newVersion) {
-        run(s"git merge --no-edit master")
-      } else {
-        Success({})
-      }
+             run(s"git merge --no-edit master")
+           } else {
+             Success({})
+           }
     } yield {}
   }
 
@@ -233,10 +233,29 @@ object CrossBranchRelease {
     logInfo(s"Releasing from $branch...")
     for {
       _ <- run(s"git checkout $branch")
-      _ <- run("sbt clean compile publish-local")
+      _ <- run("sbt clean compile publish-signed")
     } yield {}
   }
 
+  def pushVersion(remote: String, branch: String): Try[Any] = {
+    logInfo(s"Pushing version udpates for $branch to $remote...")
+    for {
+      _ <- run(s"git push $remote $branch")
+    } yield {}
+  }
+
+  def pushTag(remote: String, releaseVersion: String, tagExists: Boolean): Try[Any] = {
+    logInfo(s"Pushing release tag to $remote...")
+    for {
+      _ <- run("git checkout master")
+      _ <- run(s"git push $remote shapeless-$releaseVersion").recoverWith {
+             case e if tagExists && e.getMessage.contains("already exists") =>
+               println("Tag already exists on remote. Forcing push...")
+               // we already asked. Doing a forced update of the tag.
+               run(s"git push --force $remote shapeless-$releaseVersion")
+           }
+    } yield {}
+  }
 }
 
 CrossBranchRelease.main(args)
