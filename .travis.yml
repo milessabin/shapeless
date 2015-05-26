@@ -12,7 +12,16 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
 
-script: sbt ++${TRAVIS_SCALA_VERSION} test $(if [[ "${TRAVIS_PULL_REQUEST}" == "false" && ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) && ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x")]]; then echo "publish";  fi)
+script:
+  - if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
+         ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) &&
+         ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x") &&
+         ! $(cat version.sbt) =~ "-SNAPSHOT"
+    ]]; then
+      sbt ++${TRAVIS_SCALA_VERSION} test publish ;
+    else
+      sbt ++${TRAVIS_SCALA_VERSION} test ;
+    fi
 
 env:
   global:
