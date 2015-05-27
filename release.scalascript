@@ -40,17 +40,17 @@ object CrossBranchRelease {
       _ <- verifyBranch("scalajs-2.10.x")
       _ <- commitVersion(curVer, relVer)
       _ <- tagRelease(relVer, tagExists)
-      _ <- mergeVersion("scala-2.10.x", relVer)
-      _ <- mergeVersion("scalajs-2.11.x", relVer)
-      _ <- mergeVersion("scalajs-2.10.x", relVer)
+      _ <- mergeVersion("master", "scala-2.10.x", relVer)
+      _ <- mergeVersion("master", "scalajs-2.11.x", relVer)
+      _ <- mergeVersion("scala-2.10.x", "scalajs-2.10.x", relVer)
       _ <- release("master")
       _ <- release("scala-2.10.x")
-      _ <- release("scalajs-2.10.x")
       _ <- release("scalajs-2.11.x")
+      _ <- release("scalajs-2.10.x")
       _ <- commitVersion(relVer, nextVer)
-      _ <- mergeVersion("scala-2.10.x", relVer)
-      _ <- mergeVersion("scalajs-2.10.x", relVer)
-      _ <- mergeVersion("scalajs-2.11.x", relVer)
+      _ <- mergeVersion("master", "scala-2.10.x", nextVer)
+      _ <- mergeVersion("master", "scalajs-2.11.x", nextVer)
+      _ <- mergeVersion("scala-2.10.x", "scalajs-2.10.x", nextVer)
       _ <- pushVersion(remote, "master")
       _ <- pushVersion(remote, "scala-2.10.x")
       _ <- pushVersion(remote, "scalajs-2.11.x")
@@ -201,20 +201,20 @@ object CrossBranchRelease {
     for {
       _ <- run("git checkout master")
       _ <- if (tagExists) {
-             run(s"git tag -d shapeless-$newVersion")
+             run(s"git tag --force shapeless-$newVersion")
            } else {
-             Success({})
+             run(s"git tag shapeless-$newVersion")
            }
     } yield {}
   }
 
-  def mergeVersion(branch: String, newVersion: String): Try[Any] = {
-    logInfo(s"Merging master into $branch...")
+  def mergeVersion(from: String, branch: String, newVersion: String): Try[Any] = {
+    logInfo(s"Merging $from into $branch...")
     for {
       _ <- run(s"git checkout $branch")
       curVersion <- readVersion()
       _ <- if (curVersion != newVersion) {
-             run(s"git merge --no-edit master")
+             run(s"git merge --no-edit $from")
            } else {
              Success({})
            }
