@@ -82,10 +82,11 @@ object CrossBranchRelease {
     val stdout = new StringBuilder
 
     val status = cmd ! ProcessLogger(stdout append _ + "\n", stderr append _ + "\n")
+    val res = stdout.toString()
+    println(res)
     if(status != 0)
       sys.error(stderr.toString())
-    println(stdout.toString())
-    stdout.toString()
+    res
   }
 
   def runS(args: Seq[String]): Try[String] = Try {
