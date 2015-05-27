@@ -85,6 +85,10 @@ fixes][fixes] in shapeless 2.2.0. The most significant of these are,
 * Added an example of [merging][merge] instances of one case class into
   another.
 
+* With the addition of Scala.js support there are now four branches to
+  release from simultaneously. Many thanks to Johnny Everson for his
+  contribution of a script to automate this process.
+
 * A number of tests have been made more portable so that they don't
   fail when run under Scala.js due to spurious platform-specifics.
 
