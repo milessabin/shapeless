@@ -69,11 +69,11 @@ object CrossBranchRelease {
   val VERSION_FILE = "version.sbt"
 
   def logInfo(msg: String): Unit = {
-    println(s"${Console.GREEN}$msg ${Console.WHITE}")
+    println(s"${Console.GREEN}$msg ${Console.RESET}")
   }
 
   def logError(msg: String): Unit = {
-    System.err.println(s"${Console.RED}$msg${Console.WHITE}")
+    System.err.println(s"${Console.RED}$msg${Console.RESET}")
   }
 
   def run(cmd: String): Try[String] = Try {
