@@ -1,5 +1,21 @@
-#!/bin/sh
-exec scala "$0" "$@"
+#!/bin/bash
+
+if [[ -f ~/.bash_aliases ]] ; then
+  shopt -s expand_aliases
+  source ~/.bash_aliases
+fi
+
+SCALA=`type -P scala`
+if [[ -z $SCALA && `type -a scala` ]]; then
+  SCALA=`eval echo "${BASH_ALIASES[scala]}"`
+fi
+
+SBT=`type -P sbt`
+if [[ -z $SBT && `type -a sbt` ]]; then
+  SBT=`eval echo "${BASH_ALIASES[sbt]}"`
+fi
+
+exec $SCALA "$0" "$SBT" "$@"
 !#
 
 /*
@@ -23,21 +39,21 @@ import scala.io.StdIn._
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
-object CrossBranchRelease {
-  def main(args: Array[String]): Unit = {
-
+class CrossBranchRelease(val sbt: String) {
+  def run: Unit = {
     (for {
       _ <- checkClean()
       _ <- run("git checkout master")
+      verifyBuild <- askBuild()
+      _ <- verifyBranch("master", None, verifyBuild)
+      _ <- verifyBranch("scala-2.10.x", Some("master"), verifyBuild)
+      _ <- verifyBranch("scalajs-2.11.x", Some("master"), verifyBuild)
+      _ <- verifyBranch("scalajs-2.10.x", Some("scala-2.10.x"), verifyBuild)
       curVer <- readVersion()
       relVer <- askVersion(true, curVer)
       nextVer <- askVersion(false, curVer)
       tagExists <- checkTagExists(relVer)
       remote <- askRemote()
-      _ <- verifyBranch("master")
-      _ <- verifyBranch("scala-2.10.x")
-      _ <- verifyBranch("scalajs-2.11.x")
-      _ <- verifyBranch("scalajs-2.10.x")
       _ <- commitVersion(curVer, relVer)
       _ <- tagRelease(relVer, tagExists)
       _ <- mergeVersion("master", "scala-2.10.x", relVer)
@@ -82,10 +98,21 @@ object CrossBranchRelease {
     val stdout = new StringBuilder
 
     val status = cmd ! ProcessLogger(stdout append _ + "\n", stderr append _ + "\n")
+    val res = stdout.toString()
+    println(res)
     if(status != 0)
       sys.error(stderr.toString())
-    println(stdout.toString())
-    stdout.toString()
+    res
+  }
+
+  def runC(cmd: String): Try[Unit] = Try {
+    println(cmd + "...")
+
+    val status = cmd !
+
+    if(status != 0)
+      sys.error(s"$cmd exited with non-zero status $status")
+    else ()
   }
 
   def runS(args: Seq[String]): Try[String] = Try {
@@ -142,6 +169,11 @@ object CrossBranchRelease {
     val answer = readBoolean()
     if (!answer)
       sys.error("Aborted by user!")
+  }
+
+  def askBuild(): Try[Boolean] = Try {
+    println(s"Do you want to build and test all branches before releasing? yes/no")
+    readBoolean()
   }
 
   def askVersion(when: Boolean, default: String): Try[String] = Try {
@@ -221,11 +253,22 @@ object CrossBranchRelease {
     } yield {}
   }
 
-  def verifyBranch(branch: String): Try[Unit] = {
-    logInfo(s"Verify $branch builds...")
+  def verifyBranch(branch: String, upstream: Option[String], build: Boolean): Try[Unit] = {
+    logInfo(s"Verify $branch...")
     for {
-      _ <- run(s"git checkout $branch")
-      _ <- run("sbt clean compile test:compile test runAll")
+      merged <- upstream.fold(Try(true)) { b =>
+                  run(s"git branch --contains $b").map { res =>
+                    res.split("\n").map(_.trim).contains(branch)
+                  }
+                }
+      if merged
+      _ <- if (build)
+             for {
+               _ <- run(s"git checkout $branch")
+               _ <- runC(s"$sbt clean compile test:compile test runAll")
+             } yield ()
+           else
+             Success(())
     } yield {}
   }
 
@@ -233,7 +276,7 @@ object CrossBranchRelease {
     logInfo(s"Releasing from $branch...")
     for {
       _ <- run(s"git checkout $branch")
-      _ <- run("sbt clean compile publish-signed")
+      _ <- runC(s"$sbt clean compile publish-signed")
     } yield {}
   }
 
@@ -258,4 +301,4 @@ object CrossBranchRelease {
   }
 }
 
-CrossBranchRelease.main(args)
+new CrossBranchRelease(args(0)).run
