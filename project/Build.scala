@@ -17,8 +17,6 @@
 import sbt._
 import Keys._
 
-import com.typesafe.sbt.pgp.PgpKeys._
-
 import com.typesafe.sbt.osgi.SbtOsgi._
 
 import sbtbuildinfo.Plugin._
