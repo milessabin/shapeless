@@ -26,12 +26,6 @@ import sbtbuildinfo.Plugin._
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
-import sbtrelease._
-import sbtrelease.ReleasePlugin._
-import sbtrelease.ReleasePlugin.ReleaseKeys._
-import sbtrelease.ReleaseStateTransformations._
-import sbtrelease.Utilities._
-
 import org.scalajs.sbtplugin.ScalaJSPlugin
 
 object ShapelessBuild extends Build {
@@ -53,7 +47,7 @@ object ShapelessBuild extends Build {
   .configure(scalajs)
 
   lazy val core = (project
-      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++ releaseSettings: _*)
+      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings : _*)
       settings(
         moduleName := "shapeless",
 
@@ -92,19 +86,6 @@ object ShapelessBuild extends Build {
           BuildInfoKey.action("buildTime") {
             System.currentTimeMillis
           }
-        ),
-
-        releaseProcess := Seq[ReleaseStep](
-          checkSnapshotDependencies,
-          inquireVersions,
-          runTest,
-          setReleaseVersion,
-          commitReleaseVersion,
-          tagRelease,
-          publishSignedArtifacts,
-          setNextVersion,
-          commitNextVersion,
-          pushChanges
         )
       )
     )
@@ -159,22 +140,6 @@ object ShapelessBuild extends Build {
       (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
     }
   }
-
-  lazy val publishSignedArtifacts = ReleaseStep(
-    action = st => {
-      val extracted = st.extract
-      val ref = extracted.get(thisProjectRef)
-      extracted.runAggregated(publishSigned in Global in ref, st)
-    },
-    check = st => {
-      // getPublishTo fails if no publish repository is set up.
-      val ex = st.extract
-      val ref = ex.get(thisProjectRef)
-      Classpaths.getPublishTo(ex.get(publishTo in Global in ref))
-      st
-    },
-    enableCrossBuild = true
-  )
 
   def commonSettings =
     Seq(
