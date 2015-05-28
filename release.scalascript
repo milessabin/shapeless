@@ -276,7 +276,7 @@ class CrossBranchRelease(val sbt: String) {
     logInfo(s"Releasing from $branch...")
     for {
       _ <- run(s"git checkout $branch")
-      _ <- runC(s"$sbt clean compile publish-signed")
+      _ <- runC(s"$sbt clean core/publish-signed")
     } yield {}
   }
 
