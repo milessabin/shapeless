@@ -18,9 +18,6 @@ package shapeless
 
 import java.io._
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.collection.generic.CanBuildFrom
 
 import labelled._
@@ -60,7 +57,6 @@ object SerializationTestDefns {
     }
   }
 
-  def assertSerializable[T](t: T): Unit = assertTrue(serializable(t))
 
   object isDefined extends (Option ~>> Boolean) {
     def apply[T](o : Option[T]) = o.isDefined
@@ -236,11 +232,14 @@ object SerializationTestDefns {
 
 }
 
-class SerializationTests extends Serializable {
+class SerializationTests extends SpecLite with Serializable {
   import SerializationTestDefns._
 
-  @Test
-  def testStructures {
+  def assertSerializable[T](t: T): Unit = assertTrue(serializable(t))
+
+  "SerializationTests" should {
+
+  "testStructures" in {
     val l = 23 :: "foo" :: true :: HNil
 
     type ISB = Int :+: String :+: Boolean :+: CNil
@@ -260,8 +259,7 @@ class SerializationTests extends Serializable {
     assertSerializable(r)
   }
 
-  @Test
-  def testSyntax {
+  "testSyntax" in {
     val l = 23 :: "foo" :: true :: HNil
 
     type ISB = Int :+: String :+: Boolean :+: CNil
@@ -294,8 +292,7 @@ class SerializationTests extends Serializable {
     assertSerializable(new TypeableOps(23))
   }
 
-  @Test
-  def testHListOps {
+  "testHListOps" in {
     import ops.hlist._
 
     type L = Int :: String :: Boolean :: HNil
@@ -493,8 +490,7 @@ class SerializationTests extends Serializable {
     assertSerializable(Patcher[_0, _1, L, IS])
   }
 
-  @Test
-  def testRecords {
+  "testRecords" in {
     import ops.record._
 
     type FA = FieldType[KA, Int]
@@ -540,8 +536,7 @@ class SerializationTests extends Serializable {
     assertSerializable(MapValues[poly.identity.type, R])
   }
 
-  @Test
-  def testCoproducts {
+  "testCoproducts" in {
     import ops.coproduct._
 
     type L = Int :+: String :+: Boolean :+: CNil
@@ -650,8 +645,7 @@ class SerializationTests extends Serializable {
     assertSerializable(Basis[L, BS])
   }
 
-  @Test
-  def testUnions {
+  "testUnions" in {
     import ops.union._
 
     assertSerializable(Selector[U, KA])
@@ -670,8 +664,7 @@ class SerializationTests extends Serializable {
     assertSerializable(MapValues[poly.identity.type, U])
   }
 
-  @Test
-  def testTuples {
+  "testTuples" in {
     import ops.tuple._
 
     type L = (Int, String, Boolean)
@@ -825,8 +818,7 @@ class SerializationTests extends Serializable {
     assertSerializable(Patcher[_0, _1, L, IS])
   }
 
-  @Test
-  def testPoly {
+  "testPoly" in {
     assertSerializable(poly.identity)
     assertSerializable(isDefined)
     assertSerializable(productElements)
@@ -837,8 +829,7 @@ class SerializationTests extends Serializable {
     assertSerializable(plus)
   }
 
-  @Test
-  def testNats {
+  "testNats" in {
     assertSerializable(_0)
     assertSerializable(_1)
     assertSerializable(_2)
@@ -859,8 +850,7 @@ class SerializationTests extends Serializable {
     assertSerializable(ToInt[_3])
   }
 
-  @Test
-  def testFunctions {
+  "testFunctions" in {
     assertSerializable(FnToProduct[() => String])
     assertSerializable(FnToProduct[(Int) => String])
     assertSerializable(FnToProduct[(Int, Boolean) => String])
@@ -870,8 +860,7 @@ class SerializationTests extends Serializable {
     assertSerializable(FnFromProduct[(Int :: Boolean :: HNil) => String])
   }
 
-  @Test
-  def testGeneric {
+  "testGeneric" in {
     assertSerializable(Generic[(Int, String, Boolean)])
     assertSerializable(Generic[Option[Int]])
 
@@ -884,14 +873,12 @@ class SerializationTests extends Serializable {
     assertSerializable(Generic1[List, TC1])
   }
 
-  @Test
-  def testTraversable {
+  "testTraversable" in {
     type L = Int :: String :: Boolean :: HNil
     assertSerializable(FromTraversable[L])
   }
 
-  @Test
-  def testTypeable {
+  "testTypeable" in {
     assertSerializable(Typeable[Any])
     assertSerializable(Typeable[AnyRef])
     assertSerializable(Typeable[AnyVal])
@@ -922,15 +909,13 @@ class SerializationTests extends Serializable {
     assertSerializable(TypeCase[List[Int]])
   }
 
-  @Test
-  def testHMap {
+  "testHMap" in {
     assertSerializable(HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13)))
     assertSerializable(new (Set ~?> Option))
     assertSerializable(implicitly[(Set ~?> Option)#λ[Set[Int], Option[Int]]])
   }
 
-  @Test
-  def testLazy {
+  "testLazy" in {
     assertSerializable(Lazy(23))
 
     // The following two fail serialization with a ClassNotFoundException due to
@@ -947,8 +932,7 @@ class SerializationTests extends Serializable {
     assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])
   }
 
-  @Test
-  def testZipper {
+  "testZipper" in {
     import ops.zipper._
 
     val l = 23 :: "foo" :: true :: HNil
@@ -1016,8 +1000,7 @@ class SerializationTests extends Serializable {
     assertSerializable(Reify[Z4])
   }
 
-  @Test
-  def testConstraints {
+  "testConstraints" in {
     type L = Int :: String :: Boolean :: HNil
     type OL = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
     type I3 = Int :: Int :: Int :: HNil
@@ -1041,8 +1024,7 @@ class SerializationTests extends Serializable {
     assertSerializable(ValueConstraint[R, L])
   }
 
-  @Test
-  def testSybclass {
+  "testSybclass" in {
     type L = Int :: String :: Boolean :: HNil
     type C = Int :+: String :+: Boolean :+: CNil
 
@@ -1064,24 +1046,21 @@ class SerializationTests extends Serializable {
     assertSerializable(implicitly[Everywhere[poly.identity.type, Wibble]])
   }
 
-  @Test
-  def testFunctor {
+  "testFunctor" in {
     assertSerializable(Functor[Some])
     assertSerializable(Functor[Option])
     assertSerializable(Functor[Tree])
     assertSerializable(Functor[List])
   }
 
-  @Test
-  def testShow {
+  "testShow" in {
     assertSerializable(Show[Some[Int]])
     assertSerializable(Show[Option[Int]])
     assertSerializable(Show[Tree[Int]])
     assertSerializable(Show[List[Int]])
   }
 
-  @Test
-  def testLenses {
+  "testLenses" in {
     val l1 = optic[Tree[Int]]
     val l2 = optic[Tree[Int]][Node[Int]]
     val l3 = optic[Tree[Int]][Node[Int]].l
@@ -1111,5 +1090,6 @@ class SerializationTests extends Serializable {
     assertSerializable(l12)
     assertSerializable(l13)
     assertSerializable(l14)
+  }
   }
 }

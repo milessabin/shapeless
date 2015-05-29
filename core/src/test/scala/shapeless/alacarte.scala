@@ -16,9 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
 
 package ALaCarteTestsAux {
@@ -31,11 +28,12 @@ package ALaCarteTestsAux {
   class Foo(val i: Int, val s: String) extends FooDefns.CaseClass
 }
 
-class ALaCarteTests {
+class ALaCarteTests extends SpecLite {
   import ALaCarteTestsAux._
 
-  @Test
-  def testApplyUnapply {
+  "ALaCarteTests" should {
+
+  "testApplyUnapply" in {
     val foo = Foo(23, "foo")
     typed[Foo](foo)
 
@@ -44,8 +42,7 @@ class ALaCarteTests {
     typed[String](s)
   }
 
-  @Test
-  def testProduct {
+  "testProduct" in {
     val foo = Foo(23, "foo")
 
     val foo_1 = foo.productElement(0)
@@ -66,8 +63,7 @@ class ALaCarteTests {
     assertEquals(2, fooArity)
   }
 
-  @Test
-  def testPolyEquality {
+ "testPolyEquality" in {
     val foo = Foo(23, "foo")
     val foo2 = Foo(23, "foo")
     val foo3 = Foo(13, "bar")
@@ -76,8 +72,7 @@ class ALaCarteTests {
     assertFalse(foo == foo3)
   }
 
-  @Test
-  def testCopy {
+  "testCopy" in {
     val foo = Foo(23, "foo")
     val fooCopy = foo.copy()
     assertFalse(fooCopy eq foo)
@@ -91,10 +86,10 @@ class ALaCarteTests {
     assertEquals(mod.hashCode, fooMod.hashCode)
   }
 
-  @Test
-  def testToString {
+  "testToString" in {
     val foo = Foo(23, "foo")
     val fooStr = foo.toString
     assertEquals("Foo(23,foo)", fooStr)
+  }
   }
 }

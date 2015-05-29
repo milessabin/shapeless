@@ -16,17 +16,16 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
 
 import scala.collection.mutable.ListBuffer
 
 import test._
 
-class LazyTests {
+class LazyTests extends SpecLite {
 
-  @Test
-  def testEffectOrder {
+  "LazyTests" should {
+
+  "testEffectOrder" in {
     val effects = ListBuffer[Int]()
 
     implicit def lazyInt: Lazy[Int] = Lazy[Int]{ effects += 3 ; 23 }
@@ -46,8 +45,7 @@ class LazyTests {
     assertEquals(List(1, 2, 3, 4, 5), effects.toList)
   }
 
-  @Test
-  def testDefConversion {
+  "testDefConversion" in {
     val effects = ListBuffer[Int]()
 
     def effectfulInt: Int = { effects += 3 ; 23 }
@@ -67,8 +65,7 @@ class LazyTests {
     assertEquals(List(1, 2, 3, 4, 5), effects.toList)
   }
 
-  @Test
-  def testLazyConversion {
+  "testLazyConversion" in {
     val effects = ListBuffer[Int]()
 
     lazy val effectfulInt: Int = { effects += 3 ; 23 }
@@ -88,8 +85,7 @@ class LazyTests {
     assertEquals(List(1, 2, 3, 4, 5), effects.toList)
   }
 
-  @Test
-  def testInlineConversion {
+  "testInlineConversion" in {
     val effects = ListBuffer[Int]()
 
     def useEffectfulInt(li: Lazy[Int]): Int = {
@@ -137,8 +133,7 @@ class LazyTests {
     }
   }
 
-  @Test
-  def testRecursive {
+  "testRecursive" in {
     val l: List[Int] = Cons(1, Cons(2, Cons(3, Nil)))
 
     val sl = show(l)
@@ -150,8 +145,7 @@ class LazyTests {
     implicit def mkFoo[T]: Foo[T] = new Foo[T] {}
   }
 
-  @Test
-  def testMultiple {
+  "testMultiple" in {
     val foos = Lazy.values[Foo[Int] :: Foo[String] :: Foo[Boolean] :: HNil]
     implicit val x :: y :: z :: HNil = foos
 
@@ -166,5 +160,6 @@ class LazyTests {
     assertTrue(x1 eq x)
     assertTrue(y1 eq y)
     assertTrue(z1 eq z)
+  }
   }
 }

@@ -1,13 +1,9 @@
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert.assertArrayEquals
-import testutil._
-
 import syntax.std.product._
 import record._
 
-class ProductTests {
+class ProductTests extends SpecLite {
 
   case object Empty
   case class EmptyCC()
@@ -17,8 +13,9 @@ class ProductTests {
 
   def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 
-  @Test
-  def testToTuple = {
+  "ProductTests" should {
+
+  "testToTuple" in {
     {
       // FIXME: should work (needs changes in GenericMacros?)
       // Empty.toTuple
@@ -64,8 +61,7 @@ class ProductTests {
     }
   }
 
-  @Test
-  def testToHList = {
+  "testToHList" in {
     {
       // FIXME: should work (needs changes in GenericMacros?)
       // Empty.toHList 
@@ -111,8 +107,7 @@ class ProductTests {
     }
   }
 
-  @Test
-  def testToRecord = {
+  "testToRecord" in {
     {
       // FIXME: should work (needs changes in GenericMacros?)
       // Empty.toRecord 
@@ -158,8 +153,7 @@ class ProductTests {
     }
   }
 
-  @Test
-  def testToTraversable {
+  "testToTraversable" in {
     def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
       assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
 
@@ -219,8 +213,7 @@ class ProductTests {
     }
   }
   
-  @Test
-  def testToSized {
+  "testToSized" in {
     def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
       assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
 
@@ -280,8 +273,7 @@ class ProductTests {
     }
   }
   
-  @Test
-  def testToMap {
+  "testToMap" in {
     import syntax.singleton._
     
     {
@@ -329,5 +321,6 @@ class ProductTests {
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
     }
+  }
   }
 }
