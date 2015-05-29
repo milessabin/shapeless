@@ -1970,17 +1970,26 @@ object hlist {
   trait RotateLeft[L <: HList, N <: Nat] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object RotateLeft extends LowPriorityRotateLeft {
+    type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
+
     def apply[L <: HList, N <: Nat]
       (implicit rotateLeft: RotateLeft[L, N]): Aux[L, N, rotateLeft.Out] = rotateLeft
 
+    implicit def hnilRotateLeft[L <: HNil, N <: Nat]: RotateLeft.Aux[L, N, L] = new RotateLeft[L, N] {
+      type Out = L
+      def apply(l: L) = l
+    }
+  }
+
+  trait LowPriorityRotateLeft {
     implicit def hlistRotateLeft[
-      L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Before <: HList, After <: HList
+    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Before <: HList, After <: HList
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
       split: Split.Aux[L, NModSize, Before, After],
       prepend: Prepend[After, Before]
-    ): Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
+       ): RotateLeft.Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
       type Out = prepend.Out
 
       def apply(l: L): Out = {
@@ -1988,16 +1997,6 @@ object hlist {
 
         prepend(after, before)
       }
-    }
-  }
-
-  trait LowPriorityRotateLeft {
-    type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
-
-    implicit def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
-      type Out = L
-
-      def apply(l: L): Out = l
     }
   }
 
@@ -2009,30 +2008,29 @@ object hlist {
   trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object RotateRight extends LowPriorityRotateRight {
+    type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
+
     def apply[L <: HList, N <: Nat]
       (implicit rotateRight: RotateRight[L, N]): Aux[L, N, rotateRight.Out] = rotateRight
 
+    implicit def hnilRotateRight[L <: HNil, N <: Nat]: RotateRight.Aux[L, N, L] = new RotateRight[L, N] {
+      type Out = L
+      def apply(l: L) = l
+    }
+  }
+
+  trait LowPriorityRotateRight {
     implicit def hlistRotateRight[
-      L <: HList, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
+    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Size_Diff_NModSize <: Nat
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
       diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
       rotateLeft: RotateLeft[L, Size_Diff_NModSize]
-    ): Aux[L, N, rotateLeft.Out] = new RotateRight[L, N] {
+       ): RotateRight.Aux[L, N, rotateLeft.Out] = new RotateRight[L, N] {
       type Out = rotateLeft.Out
 
       def apply(l: L): Out = rotateLeft(l)
-    }
-  }
-
-  trait LowPriorityRotateRight {
-    type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
-
-    implicit def noopRotateRight[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateRight[L, N] {
-      type Out = L
-
-      def apply(l: L): Out = l
     }
   }
 
