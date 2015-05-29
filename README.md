@@ -12,31 +12,23 @@ widely in production systems wherever there are arities to be abstracted over an
 
 ## Finding out more about the project
 
-A full feature overview of shapeless-2.1.0 is in preparation. In the meantime, please refer to the
-[release notes][relnotes210] and the feature overview for shapeless-2.0.0 which can be found [here][features200]. If you
+A full feature overview of shapeless-2.2.0 is in preparation. In the meantime, please refer to the
+[release notes][relnotes220] and the feature overview for shapeless-2.0.0 which can be found [here][features200]. If you
 are upgrading from shapeless-2.0.0 you will find the [migration guide][migration210] useful.
 
 shapeless is part of the [Typelevel][typelevel] family of projects. It is an Open Source project under the Apache
 License v2, hosted on [github][source]. Binary artefacts are published to the
 [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
-Discussion of shapeless and generic programming in Scala in general happens on the [Typelevel mailing list][group].
-You will also find many of the main shapeless contributors in its [Gitter channel][gitter] and on IRC in
-the #shapeless channel on [freenode][irc]. Questions about shapeless are often asked and answered under the
-[shapeless tag on StackOverflow][so]. Some articles on the implementation techniques can be found on
-[Miles's blog][blog], and Olivera, Moors and Odersky, [Type Classes as Object and Implicits][tcoi] is useful
-background material.
-
-Support for Scala 2.9.x is still available via the shapeless-1.2.4 release (feature overview [here][features124]). It
-isn't straightforward to bring the latest shapeless features to Scala versions which don't support implicit macros, and
-this release should be treated as a stopgap until you are able to move your project to Scala 2.11. It might, however, be
-feasible to backport some of the updates via a compiler plugin for Scala 2.9.x, and anyone interested in contributing or
-sponsoring such work should [get in touch](mailto:miles@milessabin.com).
+Most discussion of shapeless and generic programming in Scala happens on the shapeless [Gitter channel][gitter]. There
+is also a [mailing list][group] and [IRC channel][irc], but these are largely dormant now that most activity has moved
+to Gitter. Questions about shapeless are often asked and answered under the [shapeless tag on StackOverflow][so]. Some
+articles on the implementation techniques can be found on [Miles's blog][blog], and Olivera, Moors and Odersky, [Type
+Classes as Object and Implicits][tcoi] is useful background material.
 
 [features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
-[features124]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-1.2.4
 [relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
-[relnotes210]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
+[relnotes220]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.2.0
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0 
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0 
 [milessabin]: https://twitter.com/milessabin
@@ -49,12 +41,11 @@ sponsoring such work should [get in touch](mailto:miles@milessabin.com).
 [source]: https://github.com/milessabin/shapeless
 [sonatype]: https://oss.sonatype.org/index.html#nexus-search;quick~shapeless
 [wiki]: https://github.com/milessabin/shapeless/wiki
-[oldgroup]: https://groups.google.com/group/shapeless-dev
 [group]: https://groups.google.com/group/typelevel
 [so]: http://stackoverflow.com/questions/tagged/shapeless
 [gitter]: https://gitter.im/milessabin/shapeless
 [irc]: http://webchat.freenode.net?channels=%23shapeless
-[blog]: http://www.chuusai.com/blog
+[blog]: http://milessabin.com/blog
 
 ## Participation
 
