@@ -784,6 +784,7 @@ object coproduct {
    * Type class supporting reversing a Coproduct
    *
    * @author Stacy Curl
+   * @author Alexandre Archambault
    */
   trait Reverse[C <: Coproduct] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
@@ -792,26 +793,31 @@ object coproduct {
 
     type Aux[C <: Coproduct, Out0 <: Coproduct] = Reverse[C] { type Out = Out0 }
 
-    implicit val reverseCNil: Aux[CNil, CNil] = new Reverse[CNil] {
-      type Out = CNil
+    implicit def reverse[C <: Coproduct, Out0 <: Coproduct](implicit reverse: Reverse0[CNil, C, Out0]): Aux[C, Out0] =
+      new Reverse[C] {
+        type Out = Out0
+        def apply(c: C) = reverse(Right(c))
+      }
 
-      def apply(c: CNil): Out = c
+    trait Reverse0[Acc <: Coproduct, L <: Coproduct, Out <: Coproduct] extends Serializable {
+      def apply(e: Either[Acc, L]): Out
     }
 
-    implicit def reverseCoproduct[
-      H, T <: Coproduct, ReverseT <: Coproduct, RotateL_HReverseT <: Coproduct
-    ](
-      implicit
-      reverse: Aux[T, ReverseT],
-      rotateLeft: RotateLeft.Aux[H :+: ReverseT, Nat._1, RotateL_HReverseT],
-      inject: Inject[RotateL_HReverseT, H]
-    ): Aux[H :+: T, RotateL_HReverseT] = new Reverse[H :+: T] {
-      type Out = RotateL_HReverseT
+    object Reverse0 {
+      implicit def cnilReverse[Out <: Coproduct]: Reverse0[Out, CNil, Out] =
+        new Reverse0[Out, CNil, Out] {
+          def apply(e: Either[Out, CNil]) = e.left.get
+        }
 
-      def apply(c: H :+: T): Out = c match {
-        case Inl(h) => inject(h)
-        case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
-      }
+      implicit def cconsReverse[Acc <: Coproduct, InH, InT <: Coproduct, Out <: Coproduct]
+       (implicit rt: Reverse0[InH :+: Acc, InT, Out]): Reverse0[Acc, InH :+: InT, Out] =
+        new Reverse0[Acc, InH :+: InT, Out] {
+          def apply(e: Either[Acc, InH :+: InT]) = rt(e match {
+            case Left(acc) => Left(Inr(acc))
+            case Right(Inl(h)) => Left(Inl(h))
+            case Right(Inr(t)) => Right(t)
+          })
+        }
     }
   }
 
