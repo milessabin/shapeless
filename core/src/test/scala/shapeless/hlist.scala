@@ -387,25 +387,48 @@ class HListTests {
     val pabp = ap reverse_::: bp
     assertTypedEquals[PABP](p :: a :: b :: p :: HNil, pabp)
 
-    // must compile without requiring an implicit Prepend
-    def prependWithHNil[L <: HList](list: L) = HNil ::: list
-    def prependToHNil[L <: HList](list: L) = list ::: HNil
-    val r1 = prependWithHNil(ap)
-    assertTypedEquals[AP](ap, r1)
-    val r2 = prependToHNil(ap)
-    assertTypedEquals[AP](ap, r2)
-    val r3 = HNil ::: HNil
-    assertTypedEquals[HNil](HNil, r3)
+    {
+      // must compile without requiring an implicit Prepend
+      def prependWithHNil[L <: HList](list: L) = HNil ::: list
+      def prependToHNil[L <: HList](list: L) = list ::: HNil
 
-    // must compile without requiring an implicit ReversePrepend
-    def reversePrependWithHNil[L <: HList](list: L) = HNil reverse_::: list
-    def reversePrependToHNil[L <: HList: Reverse](list: L) = list reverse_::: HNil
-    val r4 = reversePrependWithHNil(ap)
-    assertTypedEquals[AP](ap, r4)
-    val r5 = reversePrependToHNil(ap)
-    assertTypedEquals[Pear :: Apple :: HNil](ap.reverse, r5)
-    val r6 = HNil reverse_::: HNil
-    assertTypedEquals[HNil](HNil, r6)
+      val r1 = prependWithHNil(ap)
+      assertTypedSame[AP](ap, r1)
+      val r2 = prependToHNil(ap)
+      assertTypedSame[AP](ap, r2)
+      val r3 = HNil ::: HNil
+      assertTypedSame[HNil](HNil, r3)
+
+      val r4 = prependWithHNil(pabp)
+      assertTypedSame[PABP](pabp, r4)
+      val r5 = prependToHNil(pabp)
+      assertTypedSame[PABP](pabp, r5)
+    }
+
+    {
+      // must also pass with the default implicit
+      val r1 = HNil ::: ap
+      assertTypedSame[AP](ap, r1)
+      val r2 = ap ::: HNil
+      assertTypedSame[AP](ap, r2)
+
+      val r4 = HNil ::: pabp
+      assertTypedSame[PABP](pabp, r4)
+      val r5 = pabp ::: HNil
+      assertTypedSame[PABP](pabp, r5)
+    }
+
+    {
+      // must compile without requiring an implicit ReversePrepend
+      def reversePrependWithHNil[L <: HList](list: L) = HNil reverse_::: list
+      def reversePrependToHNil[L <: HList : Reverse](list: L) = list reverse_::: HNil
+      val r4 = reversePrependWithHNil(ap)
+      assertTypedSame[AP](ap, r4)
+      val r5 = reversePrependToHNil(ap)
+      assertTypedEquals[Pear :: Apple :: HNil](ap.reverse, r5)
+      val r6 = HNil reverse_::: HNil
+      assertTypedSame[HNil](HNil, r6)
+    }
   }
 
   @Test
