@@ -208,20 +208,21 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
   }
 
+  def extractSingletonValue(tpe: Type): Tree =
+    tpe match {
+      case ConstantType(c: Constant) => Literal(c)
+
+      case SingleType(p, v) if !v.isParameter => mkAttributedRef(p, v)
+
+      case SingletonSymbolType(c) => mkSingletonSymbol(c)
+
+      case _ =>
+        c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
+    }
+
   def materializeImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].dealias
-    val value =
-      tpe match {
-        case ConstantType(c: Constant) => Literal(c)
-
-        case SingleType(p, v) if !v.isParameter => mkAttributedRef(p, v)
-
-        case SingletonSymbolType(c) => mkSingletonSymbol(c)
-
-        case _ =>
-          c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
-      }
-    mkWitness(tpe, value)
+    mkWitness(tpe, extractSingletonValue(tpe))
   }
 
   def extractResult[T](t: Expr[T])(mkResult: (Type, Tree) => Tree): Tree =
