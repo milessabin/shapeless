@@ -75,7 +75,7 @@ resolvers ++= Seq(
 
 Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its new name hashing feature which when
 compiling with shapeless might cause SBT to loop indefinitely consuming all heap. Workarounds are to move to an
-earlier (0.13.5) or later (0.13.7) SBT version or disable name hashing by adding,
+earlier (0.13.5) or later (0.13.7, 0.13.8) SBT version or disable name hashing by adding,
 
 ```scala
 incOptions := incOptions.value.withNameHashing(false)
@@ -121,19 +121,10 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.7 or later. SBT 0.13.6 has an [issue][namehashing] related to its new name hashing
-feature which when compiling shapeless causes SBT to loop indefinitely consuming all heap. Workarounds are to move to
-an earlier or later SBT version or disable name hashing by adding,
-
-```scala
-incOptions := incOptions.value.withNameHashing(false)
-```
-
-to your settings.
-
-The master branch of shapeless is built with Scala 2.11.6 by default. To build with Scala 2.10.x you should check out
-the scala-2.10.x branch. As a general rule all new features and bugfixes are made against master and Scala 2.11.6 and
-merged into the scala-2.10.x branch with only the minimal changes needed for forwards compatibility.
+shapeless is built with SBT 0.13.8 or later, and its master branch is built with Scala 2.11.6 by default. To build
+with Scala 2.10.x you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are
+made against master and Scala 2.11.6 and merged into the scala-2.10.x branch with only the minimal changes needed for
+forwards compatibility.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
