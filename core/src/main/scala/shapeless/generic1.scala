@@ -209,7 +209,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
-        def mkFrr: $frTpt[R] = lazily[$frTpt[R]]
+        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
 
         def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
         def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
@@ -253,15 +253,15 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree) =
     (
       q"""
-        def pack[$nme](u: Either[$hdTpt, $tlTpt]): $lTpt = u match {
-          case Left(hd) => Inl[$hdTpt, $tlTpt](hd)
-          case Right(tl) => Inr[$hdTpt, $tlTpt](tl)
+        def pack[$nme](u: _root_.scala.Either[$hdTpt, $tlTpt]): $lTpt = u match {
+          case _root_.scala.Left(hd) => _root_.shapeless.Inl[$hdTpt, $tlTpt](hd)
+          case _root_.scala.Right(tl) => _root_.shapeless.Inr[$hdTpt, $tlTpt](tl)
         }
       """,
       q"""
-        def unpack[$nme](p: $lTpt): Either[$hdTpt, $tlTpt] = p match {
-          case Inl(hd) => Left[$hdTpt, $tlTpt](hd)
-          case Inr(tl) => Right[$hdTpt, $tlTpt](tl)
+        def unpack[$nme](p: $lTpt): _root_.scala.Either[$hdTpt, $tlTpt] = p match {
+          case _root_.shapeless.Inl(hd) => _root_.scala.Left[$hdTpt, $tlTpt](hd)
+          case _root_.shapeless.Inr(tl) => _root_.scala.Right[$hdTpt, $tlTpt](tl)
         }
       """
     )
@@ -303,8 +303,8 @@ trait IsCons1Macros extends CaseClassMacros {
         type H[$nme] = $hdTpt
         type T[$nme] = $tlTpt
 
-        def mkFhh: $fhTpt[H] = lazily[$fhTpt[H]]
-        def mkFtt: $ftTpt[T] = lazily[$ftTpt[T]]
+        def mkFhh: $fhTpt[H] = _root_.shapeless.lazily[$fhTpt[H]]
+        def mkFtt: $ftTpt[T] = _root_.shapeless.lazily[$ftTpt[T]]
 
         $pack
         $unpack
