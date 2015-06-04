@@ -17,7 +17,7 @@ script:
          ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) &&
          ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x" ||
           "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
-         ! $(cat version.sbt) =~ "-SNAPSHOT"
+         $(cat version.sbt) =~ "-SNAPSHOT"
     ]]; then
       sbt ++${TRAVIS_SCALA_VERSION} test publish ;
     else

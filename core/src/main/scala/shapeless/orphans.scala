@@ -119,7 +119,7 @@ class OrphanMacros[C <: Context](val c: C) extends CaseClassMacros {
     val checkedProbe = c.typeCheck(probe, pt = appTpe, silent = true)
     if(checkedProbe == EmptyTree) {
       if(inst == EmptyTree) {
-        c.abort(c.enclosingPosition, "No derived instance $appTpe")
+        c.abort(c.enclosingPosition, s"No derived instance $appTpe")
       } else {
         inst
       }
