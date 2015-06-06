@@ -16,9 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
 
 package Generic1TestsAux {
@@ -113,6 +110,26 @@ package Generic1TestsAux {
     }
   }
 
+  // Functor syntax test
+  object functorSyntaxTest {
+    import functorSyntax._
+
+    def transform[F[_]: Functor, A, B](ft: F[A])(f: A => B): F[B] = ft.map(f)
+
+    def prodTest(prod: Prod[String]): (Prod[Int], Prod[Int]) = {
+      val p0 = transform(prod)(_.length)
+      val p1 = prod.map(_.length)           // they also have Functor syntax ...
+      (p0,p1)
+    }
+
+    def treeTest(tree: Node[String]): (Node[Int], Node[Int]) = {
+      val t0 = transform(tree)(_.length)
+      val t1 = tree.map(_.length)          // they also have Functor syntax ...
+      (t0, t1)
+ 
+    }
+  }
+
   /** This version of Pointed isn't complete & NOT working but it allows to show bugs in IsHCons1/ISCCons/Generic1 macro generation */
   trait Pointed[F[_]] { def point[A](a: A): F[A] }
 
@@ -197,11 +214,12 @@ package Generic1TestsAux {
   }
 }
 
-class Generic1Tests {
+class Generic1Tests extends SpecLite {
   import Generic1TestsAux._
 
-  @Test
-  def testGeneric1: Unit = {
+"Generic1Tests" should {
+
+  "testGeneric1" in {
     Generic1[Foo, TC1]
     Generic1[Bar, TC1]
     Generic1[Baz, TC1]
@@ -222,8 +240,7 @@ class Generic1Tests {
     typed[TC2[({ type λ[t] = t :: List[t] :: HNil })#λ]](fr)
   }
 
-  @Test
-  def testOverlappingCoproducts1 {
+  "testOverlappingCoproducts1" in {
     val gen = Generic1[Overlapping1, TC1]
     val o: Overlapping1[Int] = OAB1(1)
     val o0 = gen.to(o)
@@ -233,8 +250,7 @@ class Generic1Tests {
     typed[Overlapping1[Int]](s1)
   }
 
-  @Test
-  def testIsHCons1: Unit = {
+  "testIsHCons1" in {
     type L[t] = Id[t] :: t :: String :: (t, t) :: List[Option[t]] :: Option[t] :: List[t] :: HNil
 
     val ihc = the[IsHCons1[L, TC1, TC2]]
@@ -256,9 +272,9 @@ class Generic1Tests {
     val ihcT = implicitly[IsHCons1[T, TC1, TC2]]
   }
 
-  @Test
-  def testFunctor: Unit = {
+  "testFunctor" in {
     import functorSyntax._
+    import functorSyntaxTest._
 
     type R0[t] = t :: HNil
     type R1[t] = t :+: CNil
@@ -300,7 +316,6 @@ class Generic1Tests {
     type OT[t] = Option[(t, t)]
     Functor[OT]
 
-    def transform[F[_]: Functor, A, B](ft: F[A])(f: A => B): F[B] = ft.map(f)
 
     // Option has a Functor
     val o = transform(Option("foo"))(_.length)
@@ -313,8 +328,7 @@ class Generic1Tests {
     // Any case class has a Functor
     val prod = Prod("Three", List("French", "Hens"))
 
-    val p0 = transform(prod)(_.length)
-    val p1 = prod.map(_.length)           // they also have Functor syntax ...
+    val (p0, p1) = prodTest(prod)
 
     val expectedProd = Prod(5, List(6, 4))
     assertEquals(expectedProd, p0)
@@ -330,8 +344,7 @@ class Generic1Tests {
         )
       )
 
-    val t0 = transform(tree)(_.length)
-    val t1 = tree.map(_.length)          // they also have Functor syntax ...
+    val (t0, t1) = treeTest(tree)
 
     val expectedTree =
       Node(
@@ -345,13 +358,14 @@ class Generic1Tests {
     assertEquals(expectedTree, t1)
   }
 
-  @Test
-  def testPointed: Unit = {
+  "testPointed" in  {
     import pointedSyntax._
 
     type R0[t] = None.type :: HNil
     IsHCons1[R0, Pointed, Pointed]
 
     Pointed[Option]
+    assertTrue()
+  }
   }
 }

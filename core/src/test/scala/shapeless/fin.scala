@@ -16,20 +16,16 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
-import testutil._
 
-
-class FinTests {
+class FinTests extends SpecLite {
   import nat._
   import fin._
   import ops.fin._
 
-  @Test
-  def testFromNats {
+  "FinTests" should {
+
+  "testFromNats" in {
     val r1 = Fin[_0, _1]
     assertTypedEquals[FinZero[_1]](FinZero[_1](), r1)
 
@@ -45,8 +41,7 @@ class FinTests {
     """)
   }
 
-  @Test
-  def testToNat {
+  "testToNat" in {
     val r1 = Fin.toNat(Fin[_0, _3])
     assertTypedEquals[_0](_0, r1)
 
@@ -55,5 +50,6 @@ class FinTests {
 
     val r3 = Fin.toNat(Fin[_2, _3])
     assertTypedEquals[_2](_2, r3)
+  }
   }
 }

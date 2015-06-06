@@ -27,8 +27,8 @@ import GitKeys._
 object ShapelessBuild extends Build {
 
   lazy val shapeless = (project in file(".")
-    aggregate (core, examples)
-    dependsOn (core, examples, scratch)
+    aggregate (core, examples, speclite)
+    dependsOn (core, examples, speclite, scratch)
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-root",
@@ -42,6 +42,7 @@ object ShapelessBuild extends Build {
   )
 
   lazy val core = (project
+      dependsOn speclite % "test->test"
       settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings : _*)
       settings(
         moduleName := "shapeless",
@@ -50,8 +51,7 @@ object ShapelessBuild extends Build {
 
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-          "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-          "com.novocode" % "junit-interface" % "0.7" % "test"
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided"
         ),
 
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
@@ -83,15 +83,14 @@ object ShapelessBuild extends Build {
     )
 
   lazy val scratch = (project
-    dependsOn core
+    dependsOn core % "compile;test->test"
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-scratch",
 
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-        "com.novocode" % "junit-interface" % "0.7" % "test"
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
       ),
 
       publish := (),
@@ -99,16 +98,31 @@ object ShapelessBuild extends Build {
     )
   )
 
+  lazy val speclite = (project
+    settings (commonSettings: _*)
+    settings (
+      moduleName := "shapeless-speclite",
+
+      libraryDependencies ++= Seq(
+        // needs compiler for reflection in testinterface only
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        "org.scala-sbt" %  "test-interface" % "1.0"
+      ),
+      test := (),
+      publish := (),
+      publishLocal := ()
+    )
+  )
+
   lazy val examples = (project
-    dependsOn core
+    dependsOn core % "compile;test->test"
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-examples",
 
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-        "com.novocode" % "junit-interface" % "0.7" % "test"
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
       ),
 
       runAllIn(Compile),
@@ -134,7 +148,7 @@ object ShapelessBuild extends Build {
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
-
+      testFrameworks := Seq(new TestFramework("shapeless.test.SpecLiteFramework")),
       scalacOptions       := Seq(
         "-feature",
         "-language:higherKinds",

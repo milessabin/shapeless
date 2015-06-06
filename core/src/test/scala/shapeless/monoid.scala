@@ -16,8 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
 
 import test.illTyped
 
@@ -79,7 +77,7 @@ package MonoidAux {
   }
 }
 
-class MonoidTests {
+class MonoidTests extends SpecLite {
   import MonoidAux._
 
   import MonoidSyntax._
@@ -87,8 +85,9 @@ class MonoidTests {
   case class Foo(i: Int, s: String)
   case class Bar(b: Boolean, s: String, d: Double)
 
-  @Test
-  def testBasics {
+  "MonoidTests" should {
+
+  "testBasics" in {
     implicit val fooInstance = Monoid[Foo]
     implicit val barInstance = Monoid[Bar]
 
@@ -99,8 +98,7 @@ class MonoidTests {
     assertEquals(Bar(true, "foobar", 4.0), b)
   }
 
-  @Test
-  def testAuto {
+  "testAuto" in {
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
 
@@ -108,11 +106,11 @@ class MonoidTests {
     assertEquals(Bar(true, "foobar", 4.0), b)
   }
 
-  @Test
-  def testNonMonoid {
+  "testNonMonoid" in {
     illTyped(
       """
         val quxInstance = Monoid[Qux]
       """)
+  }
   }
 }

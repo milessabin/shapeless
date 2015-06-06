@@ -16,18 +16,16 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
-class NatTests {
+class NatTests extends SpecLite {
   import nat._
   import ops.nat._
   
   trait Check[N <: Nat]
   def check(expected: Nat)(actually : => Check[expected.N]) {}
   
-  @Test
-  def testNat {
+  "NatTests" should {
+
+  "testNat" in {
     implicitly[Succ[_1] =:= _2]
     
     implicitly[Pred.Aux[_19, _18]]
@@ -168,4 +166,5 @@ class NatTests {
     assertEquals(21, toInt(_21))
     assertEquals(22, toInt(_22))
   }
+}
 }

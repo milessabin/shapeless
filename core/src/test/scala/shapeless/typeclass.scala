@@ -16,9 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test.illTyped
 
 package ProductTypeClassAux {
@@ -84,7 +81,7 @@ package TypeClassAux {
   }
 }
 
-class ProductTypeClassTests {
+class ProductTypeClassTests extends SpecLite {
   import ProductTypeClassAux._
   import Image.Syntax
 
@@ -104,52 +101,47 @@ class ProductTypeClassTests {
   illTyped("""Image[Cases[Int, String]]""")
   illTyped("""implicitly[Image[Cases[Int, String]]]""")
 
-  @Test
-  def testManualSingle {
+  "ProductTypeClassTests" should {
+
+  "testManualSingle" in {
     assertEquals(fooResult, Image[Foo])
   }
 
-  @Test
-  def testManualEmpty {
+  "testManualEmpty" in {
     assertEquals(barResult, Image[Bar])
   }
 
-  @Test
-  def testManualTuple {
+  "testManualTuple" in {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
-  @Test
-  def testManualUnit {
+  "testManualUnit" in {
     assertEquals(unitResult, Image[Unit])
   }
 
-  @Test
-  def testAutoSingle {
+  "testAutoSingle" in {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
-  @Test
-  def testAutoEmpty {
+  "testAutoEmpty" in {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
-  @Test
-  def testAutoTuple {
+  "testAutoTuple" in {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
-  @Test
-  def testAutoUnit {
+  "testAutoUnit" in {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
+  }
 }
 
-class TypeClassTests {
+class TypeClassTests extends SpecLite{
   import TypeClassAux._
   import Image.Syntax
 
@@ -179,58 +171,51 @@ class TypeClassTests {
       )
     )
 
-  @Test
-  def testManualSingle {
+  "TypeClassTests" should {
+
+  "testManualSingle" in {
     assertEquals(fooResult, Image[Foo])
   }
 
-  @Test
-  def testManualEmpty {
+  "testManualEmpty" in {
     assertEquals(barResult, Image[Bar])
   }
 
-  @Test
-  def testManualMulti {
+  "testManualMulti" in {
     assertEquals(casesResult, Image[Cases[Int, String]])
   }
 
-  @Test
-  def testManualTuple {
+  "testManualTuple" in {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
-  @Test
-  def testManualUnit {
+  "testManualUnit" in {
     assertEquals(unitResult, Image[Unit])
   }
 
-  @Test
-  def testAutoSingle {
+  "testAutoSingle" in {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
-  @Test
-  def testAutoEmpty {
+  "testAutoEmpty" in {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
-  @Test
-  def testAutoMulti {
+  "testAutoMulti" in {
     assertEquals(casesResult, Image[Cases[Int, String]])
     assertEquals(casesResult, (CaseA(23): Cases[Int, String]).image)
   }
 
-  @Test
-  def testAutoTuple {
+  "testAutoTuple" in {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
-  @Test
-  def testAutoUnit {
+  "testAutoUnit" in {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
+  }
   }
 }

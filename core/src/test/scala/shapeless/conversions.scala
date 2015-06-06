@@ -16,17 +16,15 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
-class ConversionTests {
+class ConversionTests extends SpecLite {
   import ops.function.FnToProduct
   import syntax.std.function._
   import syntax.std.tuple._
   import test._
 
-  @Test
-  def testTuples {
+  "ConversionTests" should {
+
+  "testTuples" in {
     val t1 = (23, "foo", 2.0, true)
     
     val h1 = t1.productElements
@@ -59,11 +57,10 @@ class ConversionTests {
     typed[(Option[Int], Option[String])](t8b)
     assertEquals((Option(2), Option("foo")), t8b)
   }
-  
-  @Test
-  def testFunctions {
-    val sum : (Int, Int) => Int = _+_
-    val prd : (Int, Int, Int) => Int = _*_*_
+
+  "testFunctions" in {
+    val sum: (Int, Int) => Int = _ + _
+    val prd: (Int, Int, Int) => Int = _ * _ * _
     
     val hlsum = sum.toProduct
     typed[(Int :: Int :: HNil) => Int](hlsum)
@@ -78,24 +75,24 @@ class ConversionTests {
     val a = new A {}
     val b = new B {}
     
-    val ab : A => B = (a : A) => b
+    val ab: A => B = (a: A) => b
     
     val hlab = ab.toProduct
     typed[(A :: HNil) => B](hlab)
- 
-    def foo[F, L <: HList, R](f : F, l : L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
+    
+    def foo[F, L <: HList, R](f: F, l: L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
     val ab2 = foo(ab, a :: HNil)
   }
-  
-  @Test
-  def testCaseClasses {
-    case class Foo(a : Int, b : String, c : Double)
-    
+
+  "testCaseClasses" in {
+    case class Foo(a: Int, b: String, c: Double)
+
     val f1 = Foo(23, "foo", 2.3)
     val t1 = Foo.unapply(f1).get
     val hf = t1.productElements
     val f2 = Foo.tupled(hf.tupled)
     assertEquals(f1, f2)
+  }
   }
 }

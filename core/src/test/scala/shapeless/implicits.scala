@@ -16,9 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 trait CachedTC[T]
 object CachedTC {
   implicit def mkTC[T] = new CachedTC[T] {}
@@ -28,11 +25,13 @@ object CachedTest {
   implicit val i: CachedTC[Int] = cachedImplicit
 }
 
-class CachedTest {
+class CachedTest extends SpecLite {
   import CachedTest._
 
-  @Test
-  def testBasics {
+ "CachedTest" should {
+
+  "testBasics" in {
     assertTrue(CachedTest.i != null)
+  }
   }
 }
