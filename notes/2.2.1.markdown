@@ -1,0 +1,38 @@
+This is the final release of [shapeless-2.2.1][shapeless].  These
+release notes provide a summary of changes since shapeless 2.2.0.
+shapeless 2.2.1 should be source and binary compatible with shapeless
+2.1.0+, and for migration from shapeless 2.0.0 the earlier [migration
+guide from shapeless 2.0.0 to 2.1.0][migration] is still applicable and
+is available on the [shapeless wiki][wiki].
+
+Contributors for shapeless 2.2.1 are,
+
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Frank S. Thomas ([@fst9000](https://twitter.com/fst9000))
+* Peter Schmitz ([@peterschmitz\_](https://twitter.com/peterschmitz_))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+This is primarily a bugfix release. The most significant changes are,
+
+* Fixed a macro hygiene bug in Generic1 (thanks to Alexandre
+  Archambault)
+
+* Several fixes and improvements in HList and Coproduct rotations
+  (thanks to Alexandre Archambault).
+
+* Added a prepend operation for Coproducts. Prepend of an HList to HNil
+  no longer rebuilds the entire HList (thanks to Alexandre Archambault).
+
+* Added a method to transform the value at the focus of a Zipper (thanks
+  to Peter Schmitz)
+
+* Added an example illustrating the use of a coproduct Generic
+  representation of an ADT to model a safe enumeration.
+
+* shapeless is now cross built for Scala 2.12.0-M1.
+
+* Snapshot builds are now published for Scala.js by Travis CI
+
+* shapeless in now built with SBT 0.13.8.
