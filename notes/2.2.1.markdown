@@ -36,3 +36,7 @@ This is primarily a bugfix release. The most significant changes are,
 * Snapshot builds are now published for Scala.js by Travis CI
 
 * shapeless in now built with SBT 0.13.8.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
