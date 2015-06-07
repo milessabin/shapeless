@@ -34,6 +34,8 @@ exec $SCALA "$0" "$SBT" "$@"
  * limitations under the License.
  */
 
+import scala.language.postfixOps
+
 import scala.io.Source
 import scala.io.StdIn._
 import scala.sys.process._
@@ -178,7 +180,7 @@ class CrossBranchRelease(val sbt: String) {
 
   def askVersion(when: Boolean, default: String): Try[String] = Try {
     val whenStr = if(when) "for" else "after"
-    println(s"Do you want to use the version number '$default' $when this release? yes/no")
+    println(s"Do you want to use the version number '$default' $whenStr this release? yes/no")
     val answer = readBoolean()
     if (!answer) {
       val newVersion = readLine("Please provide the new release version: ")
