@@ -12,7 +12,7 @@ widely in production systems wherever there are arities to be abstracted over an
 
 ## Finding out more about the project
 
-A full feature overview of shapeless-2.2.0 is in preparation. In the meantime, please refer to the
+A full feature overview of shapeless-2.2.0+ is in preparation. In the meantime, please refer to the
 [release notes][relnotes220] and the feature overview for shapeless-2.0.0 which can be found [here][features200]. If you
 are upgrading from shapeless-2.0.0 you will find the [migration guide][migration210] useful.
 
@@ -85,16 +85,16 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.2.0
+### shapeless-2.2.1
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
-shapeless 2.2.0 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.2.1 is Scala 2.11.6 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
 scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0"
+  "com.chuusai" %% "shapeless" % "2.2.1"
 )
 ```
 
@@ -107,7 +107,7 @@ plugin to your build,
 scalaVersion := "2.10.5"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.0",
+  "com.chuusai" %% "shapeless" % "2.2.1",
   compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 )
 ```
