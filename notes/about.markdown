@@ -11,7 +11,7 @@ Find the project online,
 - Mailing List: [https://groups.google.com/group/shapeless-dev][group]
 - IRC: #shapeless on [freenode][irc]
 
-A some articles on the techniques used have appeared [here][blog]
+Some articles on the techniques used have appeared [here][blog]
 
 shapeless is an Open Source project under the Apache License v2.
 
