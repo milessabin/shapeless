@@ -146,6 +146,7 @@ forwards compatibility.
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Filipe Nepomuceno <filinep@gmail.com>
++ Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
@@ -168,6 +169,7 @@ forwards compatibility.
 + Owein Reese <owreese@gmail.com> [@OweinReese](https://twitter.com/OweinReese)
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
++ Peter Schmitz <petrischmitz@gmail.com> [@peterschmitz\_](https://twitter.com/peterschmitz_)
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
