@@ -24,6 +24,10 @@ import sbtbuildinfo.Plugin._
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys
+import MimaKeys.{previousArtifact, binaryIssueFilters}
+
 object ShapelessBuild extends Build {
 
   lazy val shapeless = (project in file(".")
@@ -42,7 +46,8 @@ object ShapelessBuild extends Build {
   )
 
   lazy val core = (project
-      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings : _*)
+      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++
+                mimaDefaultSettings: _*)
       settings(
         moduleName := "shapeless",
 
@@ -64,6 +69,22 @@ object ShapelessBuild extends Build {
 
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("examples")),
+
+        // Binary compatibility of 2.2.2 checked against 2.2.0 (2.2.1 broke it)
+        previousArtifact := Some(organization.value %% moduleName.value % "2.2.0"),
+        binaryIssueFilters ++= {
+          import com.typesafe.tools.mima.core._
+          import com.typesafe.tools.mima.core.ProblemFilters._
+
+          // Filtering the methods that were added since the checked version
+          // (these only break forward compatibility, not the backward one)
+          Seq(
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.hlist#LowPriorityRotateLeft.hlistRotateLeft"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.hlist#LowPriorityRotateRight.hlistRotateRight"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateLeft.coproductRotateLeft"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight")
+          )
+        },
 
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
         OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),

@@ -20,9 +20,9 @@ script:
           "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
          $(cat version.sbt) =~ "-SNAPSHOT"
     ]]; then
-      sbt ++${TRAVIS_SCALA_VERSION} test publish ;
+      sbt ++${TRAVIS_SCALA_VERSION} test mima-report-binary-issues publish ;
     else
-      sbt ++${TRAVIS_SCALA_VERSION} test ;
+      sbt ++${TRAVIS_SCALA_VERSION} test mima-report-binary-issues ;
     fi
 
 env:
