@@ -19,10 +19,14 @@ import Keys._
 
 import com.typesafe.sbt.osgi.SbtOsgi._
 
-import sbtbuildinfo.Plugin._
+import sbtbuildinfo.{Plugin => BuildInfoPlugin}
+import sbtbuildinfo.Plugin.BuildInfoKey
 
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
+
+import org.typelevel.sbt.Developer
+import org.typelevel.sbt.TypelevelPlugin._
 
 object ShapelessBuild extends Build {
 
@@ -42,7 +46,7 @@ object ShapelessBuild extends Build {
   )
 
   lazy val core = (project
-      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings : _*)
+      settings(commonSettings ++ typelevelDefaultSettings ++ osgiSettings ++ typelevelBuildInfoSettings : _*)
       settings(
         moduleName := "shapeless",
 
@@ -54,8 +58,10 @@ object ShapelessBuild extends Build {
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),
 
+        TypelevelKeys.githubProject := ("milessabin", "shapeless"),
+        TypelevelKeys.githubDevs += Developer("Miles Sabin", "milessabin"),
+
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
-        (sourceGenerators in Compile) <+= buildInfo,
 
         mappings in (Compile, packageSrc) <++=
           (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
@@ -65,13 +71,32 @@ object ShapelessBuild extends Build {
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("examples")),
 
+        pomExtra := pomExtra.value ++ {
+          val (org, project) = TypelevelKeys.githubProject.value
+          <url>https://github.com/{ org }/{ project }</url>
+          <licenses>
+            <license>
+              <name>Apache License</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+              <distribution>repo</distribution>
+            </license>
+          </licenses>
+        },
+
+        publishTo <<= (version).apply { v =>
+          val nexus = "https://oss.sonatype.org/"
+          if (v.trim.endsWith("SNAPSHOT"))
+            Some("Snapshots" at nexus + "content/repositories/snapshots")
+          else
+            Some("Releases" at nexus + "service/local/staging/deploy/maven2")
+        },
+
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
         OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
         OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package"),
 
-        buildInfoPackage := "shapeless",
-        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
-        buildInfoKeys ++= Seq[BuildInfoKey](
+        BuildInfoPlugin.buildInfoPackage := "shapeless",
+        BuildInfoPlugin.buildInfoKeys ++= Seq[BuildInfoKey](
           version,
           scalaVersion,
           gitHeadCommit,
