@@ -547,18 +547,36 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     """
   }
 
+  /** Binary compatibility stub
+   *  Similar to https://github.com/scala/scala/pull/4328/files#diff-873c1cee0e89e8df586c53df0c303ceaR124 */
+  final def `shapeless$GenericMacros$$mkCoproductCases$1`(tpe: Type, index: Int): (CaseDef, CaseDef) = {
+    val name = TermName(c.freshName("pat"))
+
+    def mkCoproductValue(tree: Tree): Tree =
+      (0 until index).foldLeft(q"_root_.shapeless.Inl($tree)": Tree) {
+        case (acc, _) => q"_root_.shapeless.Inr($acc)"
+      }
+
+    val body = mkCoproductValue(q"$name: $tpe")
+    val pat = mkCoproductValue(pq"$name")
+      (
+        cq"$name: $tpe => $body",
+        cq"$pat => $name"
+      )
+  }
+
   private def materializeCoproduct0[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
     if(isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    def mkCoproductCases(tpe: Type, index: Int): CaseDef = {
+    def mkCoproductCases0(tpe: Type, index: Int): CaseDef = {
       val name = TermName(c.freshName("pat"))
       cq"$name: $tpe => $index"
     }
 
     val to = {
-      val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
+      val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases0 _).tupled
       q"""_root_.shapeless.Coproduct.unsafeMakeCoproduct(p match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
