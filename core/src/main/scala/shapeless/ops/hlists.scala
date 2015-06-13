@@ -1501,7 +1501,7 @@ object hlist {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
     implicit def hlistPrepend[PH, PT <: HList, S <: HList]
-     (implicit pt : Prepend[PT, S]): Aux[PH :: PT, S, PH :: pt.Out] =
+     (implicit pt : Prepend[PT, S]): Prepend.Aux[PH :: PT, S, PH :: pt.Out] =
       new Prepend[PH :: PT, S] {
         type Out = PH :: pt.Out
         def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
@@ -1509,6 +1509,12 @@ object hlist {
   }
 
   trait LowPriorityPrepend extends LowestPriorityPrepend {
+    /**
+     * Binary compatibility stub
+     * This one is for https://github.com/milessabin/shapeless/issues/406
+     */
+    override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
+
     implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
@@ -1970,8 +1976,6 @@ object hlist {
   trait RotateLeft[L <: HList, N <: Nat] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object RotateLeft extends LowPriorityRotateLeft {
-    type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
-
     def apply[L <: HList, N <: Nat]
       (implicit rotateLeft: RotateLeft[L, N]): Aux[L, N, rotateLeft.Out] = rotateLeft
 
@@ -1982,6 +1986,8 @@ object hlist {
   }
 
   trait LowPriorityRotateLeft {
+    type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
+
     implicit def hlistRotateLeft[
     L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Before <: HList, After <: HList
     ](implicit
@@ -1998,6 +2004,12 @@ object hlist {
         prepend(after, before)
       }
     }
+
+    /** Binary compatibility stub */
+    def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
+      type Out = L
+      def apply(l: L): Out = l
+    }
   }
 
   /**
@@ -2008,8 +2020,6 @@ object hlist {
   trait RotateRight[L <: HList, N <: Nat] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object RotateRight extends LowPriorityRotateRight {
-    type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
-
     def apply[L <: HList, N <: Nat]
       (implicit rotateRight: RotateRight[L, N]): Aux[L, N, rotateRight.Out] = rotateRight
 
@@ -2020,6 +2030,8 @@ object hlist {
   }
 
   trait LowPriorityRotateRight {
+    type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
+
     implicit def hlistRotateRight[
     L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Size_Diff_NModSize <: Nat
     ](implicit
@@ -2031,6 +2043,11 @@ object hlist {
       type Out = rotateLeft.Out
 
       def apply(l: L): Out = rotateLeft(l)
+    }
+
+    def noopRotateRight[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateRight[L, N] {
+      type Out = L
+      def apply(l: L): Out = l
     }
   }
 
