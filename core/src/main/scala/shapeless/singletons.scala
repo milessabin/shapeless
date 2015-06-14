@@ -33,11 +33,16 @@ trait Witness extends Serializable {
 object Witness extends Dynamic {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
-  def Aux[T0](value0: T0): Aux[T0] = new Witness { type T = T0; val value = value0}
 
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
+
+  def mkWitness[T0](value0: T0): Aux[T0] =
+    new Witness {
+      type T = T0
+      val value = value0
+    }
 
   implicit val witness0: Witness.Aux[_0] =
     new Witness {
@@ -160,7 +165,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     q"""
-      _root_.shapeless.Witness.Aux[$sTpe]($s)
+      _root_.shapeless.Witness.mkWitness[$sTpe]($s)
     """
   }
 

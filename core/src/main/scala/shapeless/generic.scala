@@ -447,19 +447,20 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import internal.constantType
   import Flag._
+
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
     if(isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    if(isProduct(tpe)) materializeProduct0[T, R]
-    else materializeCoproduct0[T, R]
+    if(isProduct(tpe))
+      mkProductGeneric(tpe)
+    else
+      mkCoproductGeneric(tpe)
   }
 
-  private def materializeProduct0[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T]
-
-    def mkProductCases(tpe: Type): (CaseDef, CaseDef) = {
+  def mkProductGeneric(tpe: Type): Tree = {
+    def mkProductCases: (CaseDef, CaseDef) = {
       if(tpe =:= typeOf[Unit])
         (
           cq"() => _root_.shapeless.HNil",
@@ -532,7 +533,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
 
     val (toCases, fromCases) = {
-      val (to, from) = mkProductCases(tpe)
+      val (to, from) = mkProductCases
       (List(to), List(from))
     }
 
@@ -547,19 +548,15 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     """
   }
 
-  private def materializeCoproduct0[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T]
-    if(isReprType(tpe))
-      abort("No Generic instance available for HList or Coproduct")
-
-    def mkCoproductCases(tpe: Type, index: Int): CaseDef = {
+  def mkCoproductGeneric(tpe: Type): Tree = {
+    def mkCoproductCases(tpe0: Type, index: Int): CaseDef = {
       val name = TermName(c.freshName("pat"))
-      cq"$name: $tpe => $index"
+      cq"$name: $tpe0 => $index"
     }
 
     val to = {
       val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
-      q"""_root_.shapeless.Coproduct.unsafeMakeCoproduct(p match { case ..$toCases }, p).asInstanceOf[Repr]"""
+      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct(p match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
     val clsName = TypeName(c.freshName())
