@@ -38,6 +38,12 @@ object Witness extends Dynamic {
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
 
+  def mkWitness[T0](value0: T0): Aux[T0] =
+    new Witness {
+      type T = T0
+      val value = value0
+    }
+
   implicit val witness0: Witness.Aux[_0] =
     new Witness {
       type T = _0
@@ -158,16 +164,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import decorators._
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
-    val name = TypeName(c.freshName())
-
     q"""
-      {
-        final class $name extends _root_.shapeless.Witness {
-          type T = $sTpe
-          val value: $sTpe = $s
-        }
-        new $name
-      }
+      _root_.shapeless.Witness.mkWitness[$sTpe]($s)
     """
   }
 

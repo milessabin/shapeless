@@ -118,6 +118,63 @@ package sexp.ast {
   case class QualifierToken(text: String, field: DatabaseField) extends ContextualToken with Term
 }
 
+/** Example AST with performance problems */
+package sexp.big {
+
+  sealed trait Base
+  case object Foo01 extends Base
+  case object Foo02 extends Base
+  case object Foo03 extends Base
+  case object Foo04 extends Base
+  case object Foo05 extends Base
+  case object Foo06 extends Base
+  case object Foo07 extends Base
+  case object Foo08 extends Base
+  case object Foo09 extends Base
+  case object Foo10 extends Base
+  case object Foo11 extends Base
+  case object Foo12 extends Base
+  case object Foo13 extends Base
+  case object Foo14 extends Base
+  case object Foo15 extends Base
+  case object Foo16 extends Base
+  case object Foo17 extends Base
+  case object Foo18 extends Base
+  case object Foo19 extends Base
+  case object Foo20 extends Base
+  case object Foo21 extends Base
+  case object Foo22 extends Base
+  case object Foo23 extends Base
+  case object Foo24 extends Base
+  case object Foo25 extends Base
+  case object Foo26 extends Base
+  case object Foo27 extends Base
+  case object Foo28 extends Base
+  case object Foo29 extends Base
+  case object Foo30 extends Base
+  case object Foo31 extends Base
+  case object Foo32 extends Base
+  case object Foo33 extends Base
+  case object Foo34 extends Base
+  case object Foo35 extends Base
+  case object Foo36 extends Base
+  case object Foo37 extends Base
+  case object Foo38 extends Base
+  case object Foo39 extends Base
+  case object Foo40 extends Base
+  case object Foo41 extends Base
+  case object Foo42 extends Base
+  case object Foo43 extends Base
+  case object Foo44 extends Base
+  case object Foo45 extends Base
+  case object Foo46 extends Base
+  case object Foo47 extends Base
+  case object Foo48 extends Base
+  case object Foo49 extends Base
+  case object Foo50 extends Base
+
+}
+
 /**
  * examples/runMain shapeless.examples.SexpExamples
  */
@@ -179,6 +236,11 @@ object SexpExamples extends App {
 
   assert(complex.deser(tokenSexp) == Some(token))
   assert(complex.ser(token) == tokenSexp)
+
+
+  // a performance bottleneck example
+  import sexp.big._
+  val slow = SexpConvert[Base]
 
 }
 
