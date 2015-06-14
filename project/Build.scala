@@ -46,8 +46,10 @@ object ShapelessBuild extends Build {
   )
 
   lazy val core = (project
-      settings(commonSettings ++ Publishing.settings ++ osgiSettings ++ buildInfoSettings ++
-                mimaDefaultSettings: _*)
+      settings(
+        commonSettings ++ Publishing.settings ++ osgiSettings ++
+        buildInfoSettings ++ mimaDefaultSettings: _*
+      )
       settings(
         moduleName := "shapeless",
 
@@ -70,7 +72,6 @@ object ShapelessBuild extends Build {
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("examples")),
 
-        // Binary compatibility of 2.2.2 checked against 2.2.0 (2.2.1 broke it)
         previousArtifact := Some(organization.value %% moduleName.value % "2.2.0"),
         binaryIssueFilters ++= {
           import com.typesafe.tools.mima.core._
@@ -82,7 +83,8 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.hlist#LowPriorityRotateLeft.hlistRotateLeft"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.hlist#LowPriorityRotateRight.hlistRotateRight"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateLeft.coproductRotateLeft"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight")
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight"),
+            ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1")
           )
         },
 
