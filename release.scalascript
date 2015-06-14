@@ -258,8 +258,8 @@ class CrossBranchRelease(val sbt: String) {
   }
 
   def verifyBranch(branch: String, scalaVersion: Option[String], upstream: Option[String], build: Boolean): Try[Unit] = {
-    val versionLabel = scalaVersion.map(v => s" (++ v)").getOrElse("")
-    val versionSwitch = scalaVersion.map(v => s"++ v").getOrElse("")
+    val versionLabel = scalaVersion.map(v => s" (++$v)").getOrElse("")
+    val versionSwitch = scalaVersion.map(v => s"++$v").getOrElse("")
     logInfo(s"Verify $branch$versionLabel...")
     for {
       merged <- upstream.fold(Try(true)) { b =>
@@ -279,8 +279,8 @@ class CrossBranchRelease(val sbt: String) {
   }
 
   def release(branch: String, scalaVersion: Option[String]): Try[Unit] = {
-    val versionLabel = scalaVersion.map(v => s" (++ v)").getOrElse("")
-    val versionSwitch = scalaVersion.map(v => s"++ v").getOrElse("")
+    val versionLabel = scalaVersion.map(v => s" (++$v)").getOrElse("")
+    val versionSwitch = scalaVersion.map(v => s"++$v").getOrElse("")
     logInfo(s"Releasing from $branch$versionLabel...")
     for {
       _ <- run(s"git checkout $branch")
