@@ -1,0 +1,30 @@
+This is the final release of [shapeless-2.2.2][shapeless].
+
+These release notes provide a summary of changes since shapeless 2.2.1.
+shapeless 2.2.2 is source and binary compatible with shapeless 2.2.0+ and
+should be binary compatible with shapeless-2.1.0 in most cases.
+
+This is this is a binary compatability bugfix and compile time performance
+release. The changes are,
+
+* Binary compatability with shapeless-2.2.0, which was accidentally broken in
+  shapeless-2.2.1, has been restored. MiMa has been added to the build to make
+  this less likely in the future (thanks to Alexandre Archambault).
+
+* Compile time performance of materialization of Generic instances for types
+  with Coproduct representations has been significantly improved. Testing in
+  the ensime-server project indicates that this gives compile time speedups of
+  more than 10x for real world ADTs with a large fanout, making previously
+  infeasible ADTs a realistic target for automatic type class derivation
+  (thanks to Jason Zaugg and Sam Halliday).
+
+Contributors for shapeless 2.2.2 are,
+
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Jason Zaugg ([@retronym](https://twitter.com/retronym))
+* Sam Halliday ([@fommil](https://twitter.com/fommil))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
