@@ -47,10 +47,11 @@ class CrossBranchRelease(val sbt: String) {
       _ <- checkClean()
       _ <- run("git checkout master")
       verifyBuild <- askBuild()
-      _ <- verifyBranch("master", None, verifyBuild)
-      _ <- verifyBranch("scala-2.10.x", Some("master"), verifyBuild)
-      _ <- verifyBranch("scalajs-2.11.x", Some("master"), verifyBuild)
-      _ <- verifyBranch("scalajs-2.10.x", Some("scala-2.10.x"), verifyBuild)
+      _ <- verifyBranch("master", Some("2.11.6"), None, verifyBuild)
+      _ <- verifyBranch("master", Some("2.12.0-M1"), None, verifyBuild)
+      _ <- verifyBranch("scala-2.10.x", None, Some("master"), verifyBuild)
+      _ <- verifyBranch("scalajs-2.11.x", None, Some("master"), verifyBuild)
+      _ <- verifyBranch("scalajs-2.10.x", None, Some("scala-2.10.x"), verifyBuild)
       curVer <- readVersion()
       relVer <- askVersion(true, curVer)
       nextVer <- askVersion(false, curVer)
@@ -61,10 +62,11 @@ class CrossBranchRelease(val sbt: String) {
       _ <- mergeVersion("master", "scala-2.10.x", relVer)
       _ <- mergeVersion("master", "scalajs-2.11.x", relVer)
       _ <- mergeVersion("scala-2.10.x", "scalajs-2.10.x", relVer)
-      _ <- release("master")
-      _ <- release("scala-2.10.x")
-      _ <- release("scalajs-2.11.x")
-      _ <- release("scalajs-2.10.x")
+      _ <- release("master", Some("2.11.6"))
+      _ <- release("master", Some("2.12.0-M1"))
+      _ <- release("scala-2.10.x", None)
+      _ <- release("scalajs-2.11.x", None)
+      _ <- release("scalajs-2.10.x", None)
       _ <- commitVersion(relVer, nextVer)
       _ <- mergeVersion("master", "scala-2.10.x", nextVer)
       _ <- mergeVersion("master", "scalajs-2.11.x", nextVer)
@@ -255,8 +257,10 @@ class CrossBranchRelease(val sbt: String) {
     } yield {}
   }
 
-  def verifyBranch(branch: String, upstream: Option[String], build: Boolean): Try[Unit] = {
-    logInfo(s"Verify $branch...")
+  def verifyBranch(branch: String, scalaVersion: Option[String], upstream: Option[String], build: Boolean): Try[Unit] = {
+    val versionLabel = scalaVersion.map(v => s" (++ v)").getOrElse("")
+    val versionSwitch = scalaVersion.map(v => s"++ v").getOrElse("")
+    logInfo(s"Verify $branch$versionLabel...")
     for {
       merged <- upstream.fold(Try(true)) { b =>
                   run(s"git branch --contains $b").map { res =>
@@ -267,18 +271,20 @@ class CrossBranchRelease(val sbt: String) {
       _ <- if (build)
              for {
                _ <- run(s"git checkout $branch")
-               _ <- runC(s"$sbt clean compile test:compile test runAll")
+               _ <- runC(s"$sbt $versionSwitch clean compile test:compile test runAll")
              } yield ()
            else
              Success(())
     } yield {}
   }
 
-  def release(branch: String): Try[Unit] = {
-    logInfo(s"Releasing from $branch...")
+  def release(branch: String, scalaVersion: Option[String]): Try[Unit] = {
+    val versionLabel = scalaVersion.map(v => s" (++ v)").getOrElse("")
+    val versionSwitch = scalaVersion.map(v => s"++ v").getOrElse("")
+    logInfo(s"Releasing from $branch$versionLabel...")
     for {
       _ <- run(s"git checkout $branch")
-      _ <- runC(s"$sbt clean core/publish-signed")
+      _ <- runC(s"$sbt $versionSwitch clean core/publish-signed")
     } yield {}
   }
 
