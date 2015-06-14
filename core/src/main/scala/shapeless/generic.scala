@@ -457,44 +457,14 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    def mkCoproductCases(tpe: Type, index: Int): (CaseDef, CaseDef) = {
-      val name = newTermName(c.fresh("pat"))
+    if(isProduct(tpe))
+      mkProductGeneric(tpe)
+    else
+      mkCoproductGeneric(tpe)
+  }
 
-      def mkCoproductValue(tree: Tree): Tree =
-        (0 until index).foldLeft(q"_root_.shapeless.Inl($tree)": Tree) {
-          case (acc, _) => q"_root_.shapeless.Inr($acc)"
-        }
-
-      if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
-        val singleton =
-          tpe match {
-            case SingleType(pre, sym) =>
-              mkAttributedRef(pre, sym)
-            case TypeRef(pre, sym, List()) if sym.isModule =>
-              mkAttributedRef(pre, sym.asModule)
-            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
-              mkAttributedRef(pre, sym.asClass.module)
-            case other =>
-              abort(s"Bad case object-like type $tpe")
-          }
-
-        val body = mkCoproductValue(q"$name.asInstanceOf[$tpe]")
-        val pat = mkCoproductValue(pq"$name")
-        (
-          cq"$name if $name eq $singleton => $body",
-          cq"$pat => $singleton: $tpe"
-        )
-      } else {
-        val body = mkCoproductValue(q"$name: $tpe")
-        val pat = mkCoproductValue(pq"$name")
-        (
-          cq"$name: $tpe => $body",
-          cq"$pat => $name"
-        )
-      }
-    }
-
-    def mkProductCases(tpe: Type): (CaseDef, CaseDef) = {
+  def mkProductGeneric(tpe: Type): Tree = {
+    def mkProductCases: (CaseDef, CaseDef) = {
       if(tpe =:= typeOf[Unit])
         (
           cq"() => _root_.shapeless.HNil",
@@ -566,14 +536,10 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
       }
     }
 
-    val (toCases, fromCases) =
-      if(isProduct(tpe)) {
-        val (to, from) = mkProductCases(tpe)
-        (List(to), List(from))
-      } else {
-        val (to, from) = (ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled).unzip
-        (to, from :+ cq"_ => _root_.scala.Predef.???")
-      }
+    val (toCases, fromCases) = {
+      val (to, from) = mkProductCases
+      (List(to), List(from))
+    }
 
     val clsName = newTypeName(c.fresh())
     q"""
@@ -586,12 +552,50 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     """
   }
 
+  def mkCoproductGeneric(tpe: Type): Tree = {
+    def mkCoproductCases(tpe0: Type, index: Int): CaseDef = {
+      val name = newTermName(c.fresh("pat"))
+
+      if(isCaseObjectLike(tpe0.typeSymbol.asClass)) {
+        val singleton =
+          tpe0 match {
+            case SingleType(pre, sym) =>
+              mkAttributedRef(pre, sym)
+            case TypeRef(pre, sym, List()) if sym.isModule =>
+              mkAttributedRef(pre, sym.asModule)
+            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
+              mkAttributedRef(pre, sym.asClass.module)
+            case other =>
+              abort(s"Bad case object-like type $tpe")
+          }
+
+        cq"$name if $name eq $singleton => $index"
+      } else
+        cq"$name: $tpe0 => $index"
+    }
+
+    val to = {
+      val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
+      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct(p match { case ..$toCases }, p).asInstanceOf[Repr]"""
+    }
+
+    val clsName = newTypeName(c.fresh())
+    q"""
+      final class $clsName extends _root_.shapeless.Generic[$tpe] {
+        type Repr = ${reprTpe(tpe)}
+        def to(p: $tpe): Repr = $to
+        def from(p: Repr): $tpe = _root_.shapeless.Coproduct.unsafeGet(p).asInstanceOf[$tpe]
+      }
+      new $clsName()
+    """
+  }
+
   def mkIsTuple[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
     if(!isTuple(tTpe))
       abort(s"Unable to materialize IsTuple for non-tuple type $tTpe")
 
-    q"""new IsTuple[$tTpe] {}"""
+    q"""new _root_.shapeless.IsTuple[$tTpe] {}"""
   }
 
   def mkHasProductGeneric[T: WeakTypeTag]: Tree = {
@@ -599,7 +603,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(isReprType(tTpe) || !isProduct(tTpe))
       abort(s"Unable to materialize HasProductGeneric for $tTpe")
 
-    q"""new HasProductGeneric[$tTpe] {}"""
+    q"""new _root_.shapeless.HasProductGeneric[$tTpe] {}"""
   }
 
   def mkHasCoproductGeneric[T: WeakTypeTag]: Tree = {
@@ -607,7 +611,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(isReprType(tTpe) || !isCoproduct(tTpe))
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
-    q"""new HasCoproductGeneric[$tTpe] {}"""
+    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe] {}"""
   }
 }
 
