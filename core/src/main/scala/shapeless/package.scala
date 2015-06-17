@@ -132,7 +132,7 @@ package shapeless {
       q"""
         {
           def $ownerNme = ???
-          _root_.shapeless.the[$tpe]
+          _root_.scala.Predef.implicitly[$tpe]
         }
       """
     }
