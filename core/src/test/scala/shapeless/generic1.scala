@@ -50,6 +50,15 @@ package Generic1TestsAux {
 
   case class Prod[T](t: T, ts: List[T])
 
+  sealed trait IList[A]
+  final case class ICons[A](head: A, tail: IList[A]) extends IList[A]
+  final case class INil[A]() extends IList[A]
+
+  object IList {
+    def fromSeq[T](ts: Seq[T]): IList[T] =
+      ts.foldRight(INil[T](): IList[T])(ICons(_, _))
+  }
+
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](l: Tree[T], r: Tree[T]) extends Tree[T]
@@ -209,6 +218,21 @@ class Generic1Tests {
     Generic1[Some, TC1]
     Generic1[Option, TC1]
     Generic1[List, TC1]
+    Generic1[IList, TC1]
+    //
+    // type aliases required here: see https://issues.scala-lang.org/browse/SI-6895
+    type LList[T] = List[List[T]]
+    Generic1[LList, TC1]
+    type LPair[T] = IList[(T, T)]
+    Generic1[LPair, TC1]
+    type PList[T] = (IList[T], IList[T])
+    Generic1[PList, TC1]
+    type PIdList[T] = (T, List[T])
+    Generic1[PIdList, TC1]
+    type Either1[T] = Either[T, Int]
+    Generic1[Either1, TC1]
+    type Either2[T] = Either[Int, T]
+    Generic1[Either2, TC1]
 
     val gen0 = Generic1[Prod, TC2]
 
