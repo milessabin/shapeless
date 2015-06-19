@@ -96,31 +96,18 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Id]]): Tree = {
     val tpe = weakTypeOf[T[_]]
     val frTpe = frTag.tpe.typeConstructor
-    val nme = TypeName(c.freshName)
 
     if(isReprType1(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    def mkCoproductCases(tpe: Type, index: Int): (CaseDef, CaseDef) = {
-      val param = param1(tpe)
+    if(isProduct(tpe))
+      mkProductGeneric1(tpe, frTpe)
+    else
+      mkCoproductGeneric1(tpe, frTpe)
+  }
 
-      val name = TermName(c.freshName("pat"))
-
-      def mkCoproductValue(tree: Tree): Tree =
-        (0 until index).foldLeft(q"_root_.shapeless.Inl($tree)": Tree) {
-          case (acc, _) => q"_root_.shapeless.Inr($acc)"
-        }
-
-      val tpeTpt = appliedTypTree1(tpe, param, nme)
-      val body = mkCoproductValue(q"$name: $tpeTpt")
-      val pat = mkCoproductValue(pq"$name")
-      (
-        cq"$name: $tpeTpt => $body",
-        cq"$pat => $name"
-      )
-    }
-
-    def mkProductCases(tpe: Type): (CaseDef, CaseDef) = {
+  def mkProductGeneric1(tpe: Type, frTpe: Type): Tree = {
+    def mkProductCases: (CaseDef, CaseDef) = {
       if(tpe =:= typeOf[Unit])
         (
           cq"() => _root_.shapeless.HNil",
@@ -191,15 +178,12 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       }
     }
 
-    val (toCases, fromCases) =
-      if(isProduct(tpe)) {
-        val (to, from) = mkProductCases(tpe)
-        (List(to), List(from))
-      } else {
-        val (to, from) = (ctorsOf1(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled).unzip
-        (to, from :+ cq"_ => _root_.scala.Predef.???")
-      }
+    val (toCases, fromCases) = {
+      val (to, from) = mkProductCases
+      (List(to), List(from))
+    }
 
+    val nme = TypeName(c.freshName)
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
     val frTpt = mkAttributedRef(frTpe)
@@ -213,6 +197,41 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
 
         def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
         def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
+      }
+      new $clsName()
+    """
+  }
+
+  def mkCoproductGeneric1(tpe: Type, frTpe: Type): Tree = {
+    def mkCoproductCases(tpe: Type, index: Int): CaseDef = {
+      val name = TermName(c.freshName("pat"))
+
+      val tc = tpe.typeConstructor
+      val params = tc.typeParams.map { _ => Bind(typeNames.WILDCARD, EmptyTree) }
+      val tpeTpt = AppliedTypeTree(mkAttributedRef(tc), params)
+
+      cq"$name: $tpeTpt => $index"
+    }
+
+    val nme = TypeName(c.freshName)
+    val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
+    val reprTpt = reprTypTree1(tpe, nme)
+    val frTpt = mkAttributedRef(frTpe)
+
+    val to = {
+      val toCases = ctorsOf1(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
+      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((ft: Any) match { case ..$toCases }, ft).asInstanceOf[R[$nme]]"""
+    }
+
+    val clsName = TypeName(c.freshName())
+    q"""
+      final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
+        type R[$nme] = $reprTpt
+
+        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
+
+        def to[$nme](ft: $tpeTpt): R[$nme] = $to
+        def from[$nme](rt: R[$nme]): $tpeTpt = _root_.shapeless.Coproduct.unsafeGet(rt).asInstanceOf[$tpeTpt]
       }
       new $clsName()
     """
