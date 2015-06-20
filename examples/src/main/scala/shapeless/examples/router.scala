@@ -62,11 +62,13 @@ object RouterExample extends App {
   val fooBarRouter: Router[Int :+: Symbol :+: CNil] = fooRouter :+: barRouter
   val bazQuxRouter: Router[Double :+: Char :+: CNil] = bazRouter :+: quxRouter
 
-  val allRouter: Router[Int :+: Symbol :+: Double :+: Char :+: CNil] = fooBarRouter :+: bazQuxRouter
+  type All = Int :+: Symbol :+: Double :+: Char :+: CNil
 
-  println(allRouter("foo"))
-  println(allRouter("bar"))
-  println(allRouter("baz"))
-  println(allRouter("qux"))
-  println(allRouter("unknown"))
+  val allRouter: Router[All] = fooBarRouter :+: bazQuxRouter
+
+  assert(allRouter("foo") == Some(Coproduct[All](1)))
+  assert(allRouter("bar") == Some(Coproduct[All]('x)))
+  assert(allRouter("baz") == Some(Coproduct[All](0.0)))
+  assert(allRouter("qux") == Some(Coproduct[All]('z')))
+  assert(allRouter("unknown") == None)
 }
