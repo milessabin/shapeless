@@ -1810,6 +1810,10 @@ class HListTests {
 
     val ls = l.removeElem[String]
     assertTypedEquals[(String, Int :: Boolean :: HNil)](("foo", 1 :: true :: HNil), ls)
+
+    val withDuplicates = 1 :: 'a' :: 'b' :: HNil
+    val remover = implicitly[Remove.Aux[Int :: Char :: Char :: HNil, Char, (Char, Int :: Char :: HNil)]]
+    assertTypedEquals[(Char, Int :: Char :: HNil)](('a', 1 :: 'b' :: HNil), remover(withDuplicates))
   }
 
   @Test
@@ -1827,6 +1831,41 @@ class HListTests {
 
     val lbi = l.removeAll[Boolean :: Int :: HNil]
     assertTypedEquals[(Boolean :: Int :: HNil, String :: HNil)]((true :: 1 :: HNil, "foo" :: HNil), lbi)
+  }
+
+  @Test
+  def testReinsert {
+    type L = Int :: Boolean :: String :: HNil
+
+    val l: L = 1 :: true :: "foo" :: HNil
+
+    val (i, li) = l.removeElem[Int]
+    assertTypedEquals[L](li.reinsert[L](i), l)
+
+    val (b, lb) = l.removeElem[Boolean]
+    assertTypedEquals[L](lb.reinsert[L](b), l)
+
+    val (s, ls) = l.removeElem[String]
+    assertTypedEquals[L](ls.reinsert[L](s), l)
+  }
+
+  @Test
+  def testReinsertAll {
+    type L = Int :: Boolean :: String :: HNil
+
+    val l = 1 :: true :: "foo" :: HNil
+
+    val (nil, lnil) = l.removeAll[HNil]
+    assertTypedEquals[L](lnil.reinsertAll[L](nil), l)
+
+    val (i, li) = l.removeAll[Int :: HNil]
+    assertTypedEquals[L](li.reinsertAll[L](i), l)
+
+    val (b, lb) = l.removeAll[Boolean :: HNil]
+    assertTypedEquals[L](lb.reinsertAll[L](b), l)
+
+    val (bi, lbi) = l.removeAll[Boolean :: Int :: HNil]
+    assertTypedEquals[L](lbi.reinsertAll[L](bi), l)
   }
 
   object combine extends Poly {
