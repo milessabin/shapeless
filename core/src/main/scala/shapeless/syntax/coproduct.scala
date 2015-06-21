@@ -26,6 +26,7 @@ package syntax
  * @author Miles Sabin
  */
 final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
+  import ops.adjoin.Adjoin
   import ops.coproduct._
 
   /**
@@ -243,4 +244,9 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
    */
   def deembed[Sub <: Coproduct](implicit basis: Basis[C, Sub]): basis.Out =
     basis(c)
+
+  /**
+   * Adjoins the elements of this `Coproduct` by flattening any `Coproduct` elements.
+   */
+  def adjoined(implicit adjoin: Adjoin[C]): adjoin.Out = adjoin(c)
 }
