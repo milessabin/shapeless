@@ -16,14 +16,10 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import ops.record._
 import record._
 import syntax.singleton._
 import test._
-import testutil._
 import union._
 
 object LabelledGenericTestsAux {
@@ -142,11 +138,12 @@ object ScalazTaggedAux {
   }
 }
 
-class LabelledGenericTests {
+class LabelledGenericTests extends SpecLite{
   import LabelledGenericTestsAux._
 
-  @Test
-  def testProductBasics {
+  "LabelledGenericTests" should {
+
+  "testProductBasics" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -164,8 +161,7 @@ class LabelledGenericTests {
     assertEquals("Benjamin Pierce" :: "Types and Programming Languages" :: 262162091 :: 44.11 :: HNil, values)
   }
 
-  @Test
-  def testProductWithVarargBasics: Unit = {
+  "testProductWithVarargBasics" in {
     val gen = LabelledGeneric[BookWithMultipleAuthors]
 
     val b0 = gen.to(dp)
@@ -182,8 +178,7 @@ class LabelledGenericTests {
     )
   }
 
-  @Test
-  def testGet {
+  "testGet" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -205,8 +200,7 @@ class LabelledGenericTests {
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
 
-  @Test
-  def testApply {
+  "testApply" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -228,8 +222,7 @@ class LabelledGenericTests {
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
 
-  @Test
-  def testAt {
+  "testAt" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -251,8 +244,7 @@ class LabelledGenericTests {
     assertEquals(44.11, v4, Double.MinPositiveValue)
   }
 
-  @Test
-  def testUpdated {
+  "testUpdated" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -264,8 +256,7 @@ class LabelledGenericTests {
     assertEquals(tapl2, updated)
   }
 
-  @Test
-  def testUpdateWith {
+  "testUpdateWith" in {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -277,8 +268,7 @@ class LabelledGenericTests {
     assertEquals(tapl2, updated)
   }
 
-  @Test
-  def testExtension {
+  "testExtension" in {
     val gen = LabelledGeneric[Book]
     val gen2 = LabelledGeneric[ExtendedBook]
 
@@ -290,8 +280,7 @@ class LabelledGenericTests {
     assertEquals(taplExt, b2)
   }
 
-  @Test
-  def testCoproductBasics {
+  "testCoproductBasics" in {
     type TreeUnion = Union.`'Leaf -> Leaf, 'Node -> Node`.T
 
     val gen = LabelledGeneric[Tree]
@@ -301,8 +290,7 @@ class LabelledGenericTests {
     typed[TreeUnion](gt)
   }
 
-  @Test
-  def testAbstractNonCC {
+  "testAbstractNonCC" in {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
@@ -343,8 +331,7 @@ class LabelledGenericTests {
     assertEquals(2.0, fAbs.asInstanceOf[NonCCB].d, Double.MinPositiveValue)
   }
 
-  @Test
-  def testNonCCWithCompanion {
+  "testNonCCWithCompanion" in {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val rec = ('i ->> 23) :: ('s ->> "foo") :: HNil
@@ -361,8 +348,7 @@ class LabelledGenericTests {
     assertEquals("bar", f.s)
   }
 
-  @Test
-  def testNonCCLazy {
+  "testNonCCLazy" in {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
@@ -380,8 +366,7 @@ class LabelledGenericTests {
     assertEquals(c, fD.next)
   }
 
-  @Test
-  def testScalazTagged {
+  "testScalazTagged" in {
     import ScalazTaggedAux._
 
     implicitly[TC[Int @@ CustomTag]]
@@ -392,5 +377,7 @@ class LabelledGenericTests {
 
     implicitly[TC[Dummy]]
     implicitly[TC[DummyTagged]]
+    assertTrue()
+  }
   }
 }

@@ -16,12 +16,9 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
 
-class SybClassTests {
+class SybClassTests extends SpecLite {
   object gsizeAll extends Poly1 {
     implicit def caseString = at[String](_.length)
     implicit def default[T](implicit data: Lazy[Data[this.type, T, Int]]) = at[T](1+data.value.gmapQ(_).sum)
@@ -72,8 +69,19 @@ class SybClassTests {
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](left: Tree[T], right: Tree[T]) extends Tree[T]
 
-  @Test
-  def testGMapQ {
+  case class A(x: Int, y: Boolean, z: Int)
+
+  object flip extends Poly1 {
+    implicit def apply[T] = at[T](identity)
+    implicit def caseBoolean = at[Boolean](!_)
+  }
+
+  case class Address(street: String, city: String, postcode: String)
+  case class Person(name: String, age: Int, address: Address)
+
+  "SybClassTests" should {  
+
+  "testGMapQ" in {
     val p = (23, "foo")
     val ps = gsizeAll(p)
     assertEquals(5, ps)
@@ -96,8 +104,7 @@ class SybClassTests {
     assertEquals(12, pls)
   }
 
-  @Test
-  def testGMapT {
+  "testGMapT" in {
     val p = (23, "foo")
     val pi = incAll(p)
     assertEquals((24, "foo*"), pi)
@@ -123,8 +130,7 @@ class SybClassTests {
     assertEquals(List(Some(2), None, Some(3)), loi)
   }
 
-  @Test
-  def testEverything {
+  "testEverything" in {
     val e1 = everything(gsize)(plus)(23)
     typed[Int](e1)
     assertEquals(1, e1)
@@ -162,8 +168,7 @@ class SybClassTests {
     assertEquals(11, lps)
   }
 
-  @Test
-  def testEverywhere {
+  "testEverywhere" in {
     val pi = incAll2((23, "foo"))
     typed[(Int, String)](pi)
     assertEquals((24, "foo*"), pi)
@@ -213,8 +218,7 @@ class SybClassTests {
     assertEquals(List(Option(List(Option(List(Option(24)))))), e8)
   }
 
-  @Test
-  def testAtoms {
+  "testAtoms" in {
     val result1 = everywhere(inc)(23)
     typed[Int](result1)
     assertEquals(24, result1)
@@ -244,8 +248,7 @@ class SybClassTests {
     assertEquals(Apple(2), result7)
   }
 
-  @Test
-  def testHList {
+  "testHList" in {
     val l = 23 :: "foo" :: true :: 2.0 :: HNil
 
     val li = everywhere(inc)(l)
@@ -277,8 +280,7 @@ class SybClassTests {
     assertEquals(8, ls3)
   }
 
-  @Test
-  def testCoproduct {
+ "testCoproduct" in {
     type ISBT = Int :+: String :+: Boolean :+: (String, String):+: CNil
 
     val ci = Coproduct[ISBT](23)
@@ -319,15 +321,7 @@ class SybClassTests {
     assertEquals(8, cts)
   }
 
-  case class A(x: Int, y: Boolean, z: Int)
-
-  object flip extends Poly1 {
-    implicit def apply[T] = at[T](identity)
-    implicit def caseBoolean = at[Boolean](!_)
-  }
-
-  @Test
-  def testGeneric1 {
+  "testGeneric1" in {
     val input = A(1, true,  2)
     val expected = A(1, false, 2)
 
@@ -336,8 +330,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  @Test
-  def testGeneric2 {
+  "testGeneric2" in {
     val input = List(A(1, true,  2))
     val expected = List(A(1, false, 2))
 
@@ -346,8 +339,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  @Test
-  def testGeneric3 {
+  "testGeneric3" in {
     val input =    1 :: A(1, true,  2) :: HNil
     val expected = 1 :: A(1, false, 2) :: HNil
 
@@ -356,8 +348,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  @Test
-  def testGeneric4 {
+  "testGeneric4" in {
     val input =    (1, A(1, true,  2))
     val expected = (1, A(1, false, 2))
 
@@ -366,11 +357,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  case class Address(street: String, city: String, postcode: String)
-  case class Person(name: String, age: Int, address: Address)
-
-  @Test
-  def testGeneric5 {
+  "testGeneric5" in {
     val input = Address("Southover Street", "Brighton", "BN2 9UA")
     val expected = Address("Southover Street*", "Brighton*", "BN2 9UA*")
 
@@ -381,8 +368,7 @@ class SybClassTests {
     assertEquals(32, result2)
   }
 
-  @Test
-  def testGeneric6 {
+  "testGeneric6" in {
     val input = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
     val expected = Person("Joe Grey*", 38, Address("Southover Street*", "Brighton*", "BN2 9UA*"))
 
@@ -393,8 +379,7 @@ class SybClassTests {
     assertEquals(42, result2)
   }
 
-  @Test
-  def testHList2 {
+  "testHList2" in {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
     val expected = Pear(1) :: Banana(2) :: Orange(3) :: Apple(4) :: HNil
 
@@ -403,8 +388,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  @Test
-  def testHList3 {
+  "testHList3" in {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
     val expected = "Pomme" :: "Poire" :: "Banane" :: "Orange" :: HNil
 
@@ -413,8 +397,7 @@ class SybClassTests {
     assertEquals(expected, result)
   }
 
-  @Test
-  def testCoproduct2 {
+  "testCoproduct2" in {
     type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
     type PBOA = Pear :+: Banana :+: Orange :+: Apple :+: CNil
 
@@ -447,8 +430,7 @@ class SybClassTests {
     assertEquals(expected4, result4)
   }
 
-  @Test
-  def testRecursion {
+  "testRecursion" in {
     val tree1: Tree[Int] = Leaf(1)
     val expected1: Tree[Int] = Leaf(2)
 
@@ -469,5 +451,6 @@ class SybClassTests {
     val result3 = everywhere(inc)(tree3)
     typed[Tree[Int]](result3)
     assertEquals(expected3, result3)
+  }
   }
 }

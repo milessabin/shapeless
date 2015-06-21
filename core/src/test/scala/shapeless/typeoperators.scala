@@ -18,12 +18,9 @@ package shapeless
 
 import scala.util.Try
 
-import org.junit.Test
-import org.junit.Assert._
+import newtype._, tag._, test._
 
-import newtype._, tag._, test._, testutil._
-
-class TypeOperatorTests {
+class TypeOperatorTests extends SpecLite {
   import TypeOperatorTests._
 
   trait ATag
@@ -34,15 +31,15 @@ class TypeOperatorTests {
     val message = "This object has ATag tag type"
   }
 
-  @Test
-  def testImplicitScopeForTaggedType {
+  "TypeOperatorTests" should {
+
+  "testImplicitScopeForTaggedType" in  {
     val x = tag[ATag](1)
     val s: String = x
     assertEquals(ATag.message, s)
   }
 
-  @Test
-  def testNewtype {
+  "testNewtype" in {
     type MyString = Newtype[String, MyStringOps]
 
     def MyString(s : String) : MyString = newtype(s)
@@ -100,8 +97,7 @@ class TypeOperatorTests {
     implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
   }
 
-  @Test
-  def testTheValues {
+  "testTheValues" in {
     val foo = the[Foo]
     typed[Foo](foo)
     typed[Int](foo.t)
@@ -115,8 +111,7 @@ class TypeOperatorTests {
     typed[Either[String, Double]](bar2.tu)
   }
 
-  @Test
-  def testTheTypes {
+  "testTheTypes" in {
     val t: the.Foo.T = 23
     typed[Int](t)
 
@@ -127,8 +122,7 @@ class TypeOperatorTests {
     typed[Either[String, Double]](tu2)
   }
 
-  @Test
-  def testTheQuantifiers {
+  "testTheQuantifiers" in {
     def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
       val res = the[Bar[T]]
       res
@@ -146,14 +140,8 @@ class TypeOperatorTests {
     typed[Option[Int]](b1)
   }
 
-  @Test
-  def testRejectBogus {
-    try {
-      the.Foo
-      assert(false)
-    } catch {
-      case _: Throwable => // OK
-    }
+  "testRejectBogus" in {
+    assert(Try(the.Foo).isFailure)
 
     //the.Unit  // illTyped fails for this expression
 
@@ -170,12 +158,12 @@ class TypeOperatorTests {
     """)
   }
 
-  @Test
-  def testValueClass {
+  "testValueClass" in {
     implicit val one: AValueClass = AValueClass(1L)
 
     val x = the[AValueClass]
     typed[AValueClass](x)
+  }
   }
 }
 

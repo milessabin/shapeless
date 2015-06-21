@@ -17,12 +17,9 @@
 package shapeless
 package examples
 
-import org.junit.Test
-import org.junit.Assert._
-
 import test._
 
-class StackOverflow1 {
+class StackOverflow1 extends SpecLite {
   // http://stackoverflow.com/questions/7606587
 
   trait FoldCurry[L <: HList, F, Out] {
@@ -40,8 +37,9 @@ class StackOverflow1 {
   
   def foldCurry[L <: HList, F, Out](l : L, f : F)(implicit fc : FoldCurry[L, F, Out]) : Out = fc(l, f)
   
-  @Test
-  def testFoldCurry {
+  "StackOverflow1" should {
+ 
+  "testFoldCurry" in {
     val f1 = (i : Int, j : Int, k : Int, l : Int) => i+j+k+l
     val f1c = f1.curried
     
@@ -60,4 +58,5 @@ class StackOverflow1 {
     typed[(Int, Int, Double)](r2)
     assertEquals((24, 3, 4.0), r2)
   }
+}
 }

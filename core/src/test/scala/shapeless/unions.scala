@@ -16,17 +16,13 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 import labelled.FieldType
 import union._
 import syntax.singleton._
 import test._
-import testutil._
 
-class UnionTests {
-
+class UnionTests extends SpecLite {
+  
   val wI = Witness('i)
   type i = wI.T
 
@@ -38,8 +34,9 @@ class UnionTests {
 
   type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
-  @Test
-  def testGetLiterals {
+  "UnionTests" should {
+
+  "testGetLiterals" in {
     val u1 = Coproduct[U]('i ->> 23)
     val u2 = Coproduct[U]('s ->> "foo")
     val u3 = Coproduct[U]('b ->> true)
@@ -61,8 +58,7 @@ class UnionTests {
     """)
   }
 
-  @Test
-  def testSelectDynamic {
+  "testSelectDynamic" in {
     val u1 = Coproduct[U]('i ->> 23).union
     val u2 = Coproduct[U]('s ->> "foo").union
     val u3 = Coproduct[U]('b ->> true).union
@@ -90,8 +86,7 @@ class UnionTests {
     illTyped("u1.foo")
   }
 
-  @Test
-  def testUnionTypeSelector {
+  "testUnionTypeSelector" in {
     type ii = FieldType[i, Int] :+: CNil
     typed[ii](Coproduct[Union.`'i -> Int`.T]('i ->> 23))
 
@@ -188,8 +183,7 @@ class UnionTests {
     }
   }
 
-  @Test
-  def testNamedArgsInject {
+  "testNamedArgsInject" in {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -211,8 +205,7 @@ class UnionTests {
     """)
   }
 
-  @Test
-  def testFields {
+  "testFields" in {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -247,8 +240,7 @@ class UnionTests {
     }
   }
 
-  @Test
-  def testToMap {
+  "testToMap" in {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -299,8 +291,7 @@ class UnionTests {
     }
   }
 
-  @Test
-  def testMapValues {
+  "testMapValues" in {
     object f extends Poly1 {
       implicit def int = at[Int](i => i > 0)
       implicit def string = at[String](s => s"s: $s")
@@ -342,5 +333,6 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
+  }
   }
 }

@@ -16,9 +16,6 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
 package OrphansTestDefns {
   trait Ca[T]
 
@@ -178,11 +175,12 @@ package OrphansTestDefns {
   case object SimpleNil extends SimpleRec
 }
 
-class OrphansTest {
+class OrphansTest extends SpecLite {
   import OrphansTestDefns._
 
-  @Test
-  def testNoOrphans {
+  "Generic1Tests" should {
+
+  "testNoOrphans" in {
     // Implicit scope only
     assertEquals(Ca.caFoo, implicitly[Ca[Foo]])
     assertEquals(Ca.caFallback, implicitly[Ca[Bar]])
@@ -190,8 +188,7 @@ class OrphansTest {
     assertEquals(Ca.caFallback, implicitly[Ca[Quux]])
   }
 
-  @Test
-  def testStandardPriorityOrphans {
+  "testStandardPriorityOrphans" in {
     // Imported orphans dominate implicit scope
     import CaDeriver._
 
@@ -201,8 +198,7 @@ class OrphansTest {
     assertEquals(Ca.caFallback, implicitly[Ca[Quux]])
   }
 
-  @Test
-  def testLowPriorityOrphans {
+  "testLowPriorityOrphans" in {
     // Imported orphans dominate implicit scope if at least as precise
     import LowPriorityCaDeriver._
 
@@ -212,8 +208,7 @@ class OrphansTest {
     assertEquals(Ca.caFallback, implicitly[Ca[Quux]])
   }
 
-  @Test
-  def testMultiOrphans {
+  "testMultiOrphans" in {
     // Mass derivation of instances of multiple type classes
     import MultiOrphans._
 
@@ -228,8 +223,7 @@ class OrphansTest {
     assertEquals(Cb.cbFallback, implicitly[Cb[Quux]])
   }
 
-  @Test
-  def testDerivedNoOrphans {
+  "testDerivedNoOrphans" in {
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
     assertEquals("Eq.eqFoo", implicitly[Eq[Foo]].toString)
     assertEquals("Eq.fallback", implicitly[Eq[Bar]].toString)
@@ -239,8 +233,7 @@ class OrphansTest {
     assertEquals("Eq.fallback", implicitly[Eq[Tree[Int]]].toString)
   }
 
-  @Test
-  def testDerivedStandardPriorityOrphans {
+  "testDerivedStandardPriorityOrphans" in {
     import EqDeriver._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
@@ -252,8 +245,7 @@ class OrphansTest {
     assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
   }
 
-  @Test
-  def testDerivedLowPriorityOrphans {
+  "testDerivedLowPriorityOrphans" in {
     import LowPriorityEqDeriver._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
@@ -265,8 +257,7 @@ class OrphansTest {
     assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
   }
 
-  @Test
-  def testMultiEqOrphans {
+  "testMultiEqOrphans" in {
     import MultiEqOrphans._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
@@ -276,5 +267,6 @@ class OrphansTest {
     assertEquals("Eq.fallback", implicitly[Eq[Quux]].toString)
     assertEquals("project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))", implicitly[Eq[SimpleRec]].toString)
     assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
+  }
   }
 }
