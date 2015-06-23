@@ -85,7 +85,8 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateLeft.coproductRotateLeft"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight"),
             ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.Generic1Macros.shapeless$Generic1Macros$$mkCoproductCases$1")
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.Generic1Macros.shapeless$Generic1Macros$$mkCoproductCases$1"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.isValueClass")
           )
         },
 
