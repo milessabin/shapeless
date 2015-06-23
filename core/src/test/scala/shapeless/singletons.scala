@@ -21,7 +21,12 @@ import org.junit.Assert._
 
 import shapeless.test._
 
+package SingletonTypeTestsDefns {
+  class ValueTest(val x: Int) extends AnyVal
+}
+
 class SingletonTypesTests {
+  import SingletonTypeTestsDefns._
   import syntax.singleton._
 
   val wTrue = Witness(true)
@@ -532,6 +537,14 @@ class SingletonTypesTests {
 
     illTyped("""
       check(23)(23)
+    """)
+  }
+
+  @Test
+  def testValueClass {
+    val x = new ValueTest(5)
+    illTyped("""
+    val wX = Witness(x)
     """)
   }
 }
