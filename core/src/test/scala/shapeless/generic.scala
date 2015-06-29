@@ -824,3 +824,220 @@ object MixedCCNonCCNested {
   Generic[Bar]
   Generic[Baz]
 }
+
+object EnumDefns0 {
+  sealed trait EnumVal
+  val BarA = new EnumVal { val name = "A" }
+  val BarB = new EnumVal { val name = "B" }
+  val BarC = new EnumVal { val name = "C" }
+}
+
+object EnumDefns1 {
+  sealed trait EnumVal
+  object BarA extends EnumVal { val name = "A" }
+  object BarB extends EnumVal { val name = "B" }
+  object BarC extends EnumVal { val name = "C" }
+}
+
+object EnumDefns2 {
+  sealed trait EnumVal
+  case object BarA extends EnumVal { val name = "A" }
+  case object BarB extends EnumVal { val name = "B" }
+  case object BarC extends EnumVal { val name = "C" }
+}
+
+object EnumDefns3 {
+  sealed trait EnumVal
+  val BarA, BarB, BarC = new EnumVal {}
+}
+
+object EnumDefns4 {
+  sealed trait EnumVal
+  object EnumVal {
+    val BarA = new EnumVal { val name = "A" }
+    val BarB = new EnumVal { val name = "B" }
+    val BarC = new EnumVal { val name = "C" }
+  }
+}
+
+object EnumDefns5 {
+  sealed trait EnumVal
+  object EnumVal {
+    object BarA extends EnumVal { val name = "A" }
+    object BarB extends EnumVal { val name = "B" }
+    object BarC extends EnumVal { val name = "C" }
+  }
+}
+
+object EnumDefns6 {
+  sealed trait EnumVal
+  object EnumVal {
+    case object BarA extends EnumVal { val name = "A" }
+    case object BarB extends EnumVal { val name = "B" }
+    case object BarC extends EnumVal { val name = "C" }
+  }
+}
+
+object EnumDefns7 {
+  sealed trait EnumVal
+  object EnumVal {
+    val BarA, BarB, BarC = new EnumVal {}
+  }
+}
+
+class TestEnum {
+  @Test
+  def testEnum0 {
+    import EnumDefns0._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum1 {
+    import EnumDefns1._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum2 {
+    import EnumDefns2._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum3 {
+    import EnumDefns3._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum4 {
+    import EnumDefns4._
+    import EnumVal._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum5 {
+    import EnumDefns5._
+    import EnumVal._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum6 {
+    import EnumDefns6._
+    import EnumVal._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+
+  @Test
+  def testEnum7 {
+    import EnumDefns7._
+    import EnumVal._
+
+    val gen = Generic[EnumVal]
+    val a0 = gen.to(BarA)
+    assert(a0 == Inl(BarA))
+
+    val b0 = gen.to(BarB)
+    assert(b0 == Inr(Inl(BarB)))
+
+    val c0 = gen.to(BarC)
+    assert(c0 == Inr(Inr(Inl(BarC))))
+  }
+}
+
+package TestPrefixes1 {
+  trait Defs {
+    case class CC(i: Int, s: String)
+
+    sealed trait Sum
+    case class SumI(i: Int) extends Sum
+    case class SumS(s: String) extends Sum
+  }
+
+  object Defs extends Defs
+
+  object Derivations {
+    import shapeless._
+
+    Generic[Defs.CC]
+    Generic[Defs.SumI]
+    Generic[Defs.SumS]
+
+    Generic[Defs.Sum]
+    Generic.materialize[Defs.Sum, Defs.SumI :+: Defs.SumS :+: CNil]
+  }
+}
+
+package TestSingletonMembers {
+  case class CC(i: Int, s: Witness.`"msg"`.T)
+
+  object Derivations2 {
+    Generic[CC]
+  }
+}
