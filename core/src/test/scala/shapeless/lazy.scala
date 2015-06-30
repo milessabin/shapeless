@@ -199,4 +199,9 @@ class LazyTests {
     val bBD = Baz(true)
     typed[Baz.Aux[Boolean, Double]](bBD)
   }
+
+  @Test
+  def testExtractors {
+    implicitly[Lazy[Generic[Symbol]]]
+  }
 }
