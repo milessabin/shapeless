@@ -91,7 +91,14 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.Generic1Macros.shapeless$Generic1Macros$$mkCoproductCases$1"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.isValueClass")
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.isValueClass"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkHListTypTree"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.reprTypTree"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkCompoundTypTree"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkCoproductTypTree"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAnonOrRefinement"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkTypTree"),
+            ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1")
           )
         },
 
