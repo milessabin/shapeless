@@ -9,6 +9,7 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=scalajs-2.10.x)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
 
 ## Finding out more about the project
 
