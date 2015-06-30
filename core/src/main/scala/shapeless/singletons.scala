@@ -172,7 +172,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     q"""
-      _root_.shapeless.Witness.mkWitness[$sTpe]($s)
+      _root_.shapeless.Witness.mkWitness[$sTpe]($s.asInstanceOf[$sTpe])
     """
   }
 

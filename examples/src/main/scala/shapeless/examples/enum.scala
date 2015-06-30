@@ -48,17 +48,10 @@ object ScalaEnumDemo /*extends App*/ {
 // A safer ADT+shapeless alternative ...
 //
 object ShapelessEnumDemo extends App {
-  // ADT as an enumeration. A little more boilerplate ...
+  // ADT as an enumeration. Barely any more boilerplate ...
   sealed trait WeekDay
   object WeekDay {
-    case object Mon extends WeekDay
-    case object Tue extends WeekDay
-    case object Wed extends WeekDay
-    case object Thu extends WeekDay
-    case object Fri extends WeekDay
-    case object Sat extends WeekDay
-    case object Sun extends WeekDay
-
+    val Mon, Tue, Wed, Thu, Fri, Sat, Sun = new WeekDay {}
     val values: Set[WeekDay] = Values
   }
 
