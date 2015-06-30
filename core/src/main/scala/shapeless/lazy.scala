@@ -221,6 +221,22 @@ trait DerivationContext extends CaseClassMacros {
     q"_root_.shapeless.Lazy[$actualType]($tree)"
   }
 
+  // Workaround for https://issues.scala-lang.org/browse/SI-5465
+  class StripUnApplyNodes extends Transformer {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    import global.nme
+
+    override def transform(tree: Tree): Tree = {
+      super.transform {
+        tree match {
+          case UnApply(Apply(Select(qual, nme.unapply | nme.unapplySeq), List(Ident(nme.SELECTOR_DUMMY))), args) =>
+            Apply(transform(qual), transformTrees(args))
+          case t => t
+        }
+      }
+    }
+  }
+
   def mkInstances(primaryTpe: Type): (Tree, Type) = {
     val instances = dict.values.toList
 
@@ -229,7 +245,8 @@ trait DerivationContext extends CaseClassMacros {
     val instTrees: List[Tree] =
       instances.map { instance =>
         import instance._
-        val cleanInst = c.resetLocalAttrs(inst.substituteSymbols(from, to))
+        val cleanInst0 = c.resetLocalAttrs(inst.substituteSymbols(from, to))
+        val cleanInst = new StripUnApplyNodes().transform(cleanInst0)
         q"""lazy val $name: $actualTpe = $cleanInst.asInstanceOf[$actualTpe]"""
       }
 
