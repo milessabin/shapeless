@@ -88,6 +88,26 @@ object IsCCons1 {
   implicit def mkIsCCons1[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
+trait Split1[L[_], FO[_[_]], FI[_[_]]] {
+  type O[_]
+  type I[_]
+
+  lazy val fo: FO[O] = mkFoo
+  lazy val fi: FI[I] = mkFii
+
+  def pack[T](u: O[I[T]]): L[T]
+  def unpack[T](p: L[T]): O[I[T]]
+
+  def mkFoo: FO[O]
+  def mkFii: FI[I]
+}
+
+object Split1 {
+  type Aux[L[_], FO[_[_]], FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
+
+  implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = macro Split1Macros.materialize[L, FO, FI]
+}
+
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import internal.constantType
@@ -327,6 +347,85 @@ trait IsCons1Macros extends CaseClassMacros {
 
         $pack
         $unpack
+      }
+    """
+  }
+}
+
+class Split1Macros(val c: whitebox.Context) {
+  import c.universe._
+
+  def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
+    tpe match {
+      case t if t =:= param =>
+        Ident(arg)
+      case PolyType(params, body) if params.head.asType.toType =:= param =>
+        appliedTypTree1(body, param, arg)
+      case t @ TypeRef(pre, sym, List()) if t.takesTypeArgs =>
+        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
+        AppliedTypeTree(c.internal.gen.mkAttributedRef(pre, sym), argTrees)
+      case TypeRef(pre, sym, List()) =>
+        c.internal.gen.mkAttributedRef(pre, sym)
+      case TypeRef(pre, sym, args) =>
+        val argTrees = args.map(appliedTypTree1(_, param, arg))
+        AppliedTypeTree(c.internal.gen.mkAttributedRef(pre, sym), argTrees)
+      case t if t.takesTypeArgs =>
+        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
+        AppliedTypeTree(c.internal.gen.mkAttributedRef(tpe.typeConstructor.typeSymbol), argTrees)
+      case t =>
+        tq"$tpe"
+    }
+  }
+
+  def materialize[L[_], FO[_[_]], FI[_[_]]]
+    (implicit lTag: WeakTypeTag[L[_]], foTag: WeakTypeTag[FO[Id]], fiTag: WeakTypeTag[FI[Id]]): Tree = {
+    val lTpe = lTag.tpe
+    val foTpe = foTag.tpe.typeConstructor
+    val fiTpe = fiTag.tpe.typeConstructor
+
+    val foTpt = c.internal.gen.mkAttributedRef(foTpe.typeSymbol)
+    val fiTpt = c.internal.gen.mkAttributedRef(fiTpe.typeSymbol)
+
+    val lParam = lTpe.typeParams.head
+    val lParamTpe = lParam.asType.toType
+    val lDealiasedTpe = appliedType(lTpe, lParamTpe).dealias
+
+    val nme = TypeName(c.freshName)
+
+    def balanced(args: List[Type]): Boolean =
+      args.find(_.contains(lParam)).map { pivot =>
+        !(pivot =:= lParamTpe) &&
+        args.forall { arg =>
+          arg =:= pivot || !arg.contains(lParam)
+        }
+      }.getOrElse(false)
+
+    val (oTpt, iTpt) =
+      lDealiasedTpe match {
+        case tpe @ TypeRef(pre, sym, args) if balanced(args) =>
+          val Some(pivot) = args.find(_.contains(lParam))
+          val oPoly = c.internal.polyType(List(lParam), appliedType(tpe.typeConstructor, args.map { arg => if(arg =:= pivot) lParamTpe else arg }))
+          val oTpt = appliedTypTree1(oPoly, lParamTpe, nme)
+          val iPoly = c.internal.polyType(List(lParam), pivot)
+          val iTpt = appliedTypTree1(iPoly, lParamTpe, nme)
+          (oTpt, iTpt)
+        case other =>
+          c.abort(c.enclosingPosition, s"Can't split $other into a non-trivial outer and inner type constructor")
+      }
+
+    val lPoly = c.internal.polyType(List(lParam), lDealiasedTpe)
+    val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
+
+    q"""
+      new _root_.shapeless.Split1[$lTpe, $foTpt, $fiTpt] {
+        type O[$nme] = $oTpt
+        type I[$nme] = $iTpt
+
+        def mkFoo: $foTpt[O] = _root_.shapeless.lazily[$foTpt[O]]
+        def mkFii: $fiTpt[I] = _root_.shapeless.lazily[$fiTpt[I]]
+
+        def pack[$nme](u: O[I[$nme]]): $lTpt = u
+        def unpack[$nme](p: $lTpt): O[I[$nme]] = p
       }
     """
   }
