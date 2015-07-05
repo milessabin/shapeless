@@ -379,3 +379,68 @@ class Generic1Tests {
     Pointed[Option]
   }
 }
+
+object SplitTestDefns {
+  trait Dummy1[F[_]]
+  object Dummy1 {
+    implicit def mkDummy1[F[_]]: Dummy1[F] = new Dummy1[F] {}
+  }
+}
+
+class SplitTests {
+  import SplitTestDefns._
+
+  @Test
+  def testBasics {
+    illTyped("""
+    Split1[List, Dummy1, Dummy1]
+    """)
+
+    Split1[({ type λ[t] = List[List[t]] })#λ, Dummy1, Dummy1]
+
+    Split1[({ type λ[t] = List[List[List[t]]] })#λ, Dummy1, Dummy1]
+
+    type LList[T] = List[List[T]]
+    Split1[LList, Dummy1, Dummy1]
+
+    type ListDiag[T] = List[(T, T)]
+    Split1[ListDiag, Dummy1, Dummy1]
+
+    type ListDiagL[T] = List[(T, List[T])]
+    Split1[ListDiagL, Dummy1, Dummy1]
+
+    illTyped("""
+    Split1[({ type λ[t] = Either[Int, t] })#λ, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[({ type λ[t] = Either[t, Int] })#λ, Dummy1, Dummy1]
+    """)
+
+    Split1[({ type λ[t] = Either[Int, List[t]] })#λ, Dummy1, Dummy1]
+
+    Split1[({ type λ[t] = Either[List[t], Int] })#λ, Dummy1, Dummy1]
+
+    type DiagList[T] = (List[T], List[T])
+    Split1[DiagList, Dummy1, Dummy1]
+
+    illTyped("""
+    Split1[({ type λ[t] = (t, t) })#λ, Dummy1, Dummy1]
+    """)
+
+    type DiDiag[T] = ((T, T), (T, T))
+    Split1[DiDiag, Dummy1, Dummy1]
+
+    illTyped("""
+    Split1[({ type λ[t] = Int => t }), Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[({ type λ[t] = t => Int })#λ, Dummy1, Dummy1]
+    """)
+
+    Split1[({ type λ[t] = Int => List[t] })#λ, Dummy1, Dummy1]
+
+    Split1[({ type λ[t] = List[t] => Int })#λ, Dummy1, Dummy1]
+  }
+}
