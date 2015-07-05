@@ -88,6 +88,26 @@ object IsCCons1 {
   implicit def mkIsCCons1[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
+trait Split1[L[_], FO[_[_]], FI[_[_]]] {
+  type O[_]
+  type I[_]
+
+  lazy val fo: FO[O] = mkFoo
+  lazy val fi: FI[I] = mkFii
+
+  def pack[T](u: O[I[T]]): L[T]
+  def unpack[T](p: L[T]): O[I[T]]
+
+  def mkFoo: FO[O]
+  def mkFii: FI[I]
+}
+
+object Split1 {
+  type Aux[L[_], FO[_[_]], FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
+
+  implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = macro Split1Macros.materialize[L, FO, FI]
+}
+
 class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
   import Flag._
@@ -363,4 +383,76 @@ trait IsCons1Macros extends CaseClassMacros {
       }
     """
   }
+}
+
+class Split1Macros[C <: Context](val c: C) extends CaseClassMacros {
+  import c.universe._
+
+  def materialize[L[_], FO[_[_]], FI[_[_]]]
+    (implicit lTag: WeakTypeTag[L[_]], foTag: WeakTypeTag[FO[Id]], fiTag: WeakTypeTag[FI[Id]]): Tree = {
+    val lTpe = lTag.tpe
+    val foTpe = foTag.tpe.typeConstructor
+    val fiTpe = fiTag.tpe.typeConstructor
+
+    val foTpt = mkAttributedRef(foTpe)
+    val fiTpt = mkAttributedRef(fiTpe)
+
+    val lParam = lTpe match {
+      case TypeRef(_, sym, _) => sym.asType.typeParams.head
+      case PolyType(List(sym), _) => sym
+    }
+    val lParamTpe = lParam.asType.toType
+    val lDealiasedTpe = appliedType(lTpe, List(lParamTpe)).normalize
+
+    val nme = newTypeName(c.fresh)
+
+    def balanced(args: List[Type]): Boolean =
+      args.find(_.contains(lParam)).map { pivot =>
+        !(pivot =:= lParamTpe) &&
+        args.forall { arg =>
+          arg =:= pivot || !arg.contains(lParam)
+        }
+      }.getOrElse(false)
+
+    val (oTpt, iTpt) =
+      lDealiasedTpe match {
+        case tpe @ TypeRef(pre, sym, args) if balanced(args) =>
+          val Some(pivot) = args.find(_.contains(lParam))
+          val oPoly = polyType(List(lParam), appliedType(tpe.typeConstructor, args.map { arg => if(arg =:= pivot) lParamTpe else arg }))
+          val oTpt = appliedTypTree1(oPoly, lParamTpe, nme)
+          val iPoly = polyType(List(lParam), pivot)
+          val iTpt = appliedTypTree1(iPoly, lParamTpe, nme)
+          (oTpt, iTpt)
+        case other =>
+          c.abort(c.enclosingPosition, s"Can't split $other into a non-trivial outer and inner type constructor")
+      }
+
+    val lPoly = polyType(List(lParam), lDealiasedTpe)
+    val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
+
+    q"""
+      new _root_.shapeless.Split1[$lTpe, $foTpt, $fiTpt] {
+        type O[$nme] = $oTpt
+        type I[$nme] = $iTpt
+
+        def mkFoo: $foTpt[O] = _root_.shapeless.lazily[$foTpt[O]]
+        def mkFii: $fiTpt[I] = _root_.shapeless.lazily[$fiTpt[I]]
+
+        def pack[$nme](u: O[I[$nme]]): $lTpt = u
+        def unpack[$nme](p: $lTpt): O[I[$nme]] = p
+      }
+    """
+  }
+}
+
+object Split1Macros {
+  def inst(c: Context) = new Split1Macros[c.type](c)
+
+  def materialize[L[_], FO[_[_]], FI[_[_]]](c: Context)
+    (implicit
+      lTag: c.WeakTypeTag[L[_]],
+      foTag: c.WeakTypeTag[FO[Id]],
+      fiTag: c.WeakTypeTag[FI[Id]]
+    ): c.Expr[Split1[L, FO, FI]] =
+      c.Expr[Split1[L, FO, FI]](inst(c).materialize[L, FO, FI])
 }
