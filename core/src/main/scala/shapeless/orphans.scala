@@ -27,6 +27,12 @@ object Orphan {
   implicit def materializeOrphan[F[_], D, T]: Orphan[F, D, T] = macro OrphanMacros.materializeOrphanImpl[F, D, T]
 }
 
+case class WrappedOrphan[T](instance: T)
+
+object WrappedOrphan {
+  implicit def apply[T]: WrappedOrphan[T] = macro OrphanMacros.materializeWrapped[T]
+}
+
 trait OrphanDeriver[F[_], D] {
   implicit def materialize[T]: F[T] = macro OrphanMacros.materializeImpl[F, D, T]
 }
@@ -144,6 +150,24 @@ class OrphanMacros[C <: Context](val c: C) extends CaseClassMacros {
       }
     }
   }
+
+  def materializeWrapped[T](implicit tTag: WeakTypeTag[T]): Tree = {
+    val open = openImplicits
+    val masks =
+      if(open.size < 2) Nil
+      else {
+        val sym = open(1).sym
+        List(q"def ${sym.name.toTermName} = ???")
+      }
+
+    val tpe = tTag.tpe
+    q"""
+    {
+      ..$masks
+      _root_.shapeless.WrappedOrphan[$tpe](_root_.shapeless.lazily[$tpe])
+    }
+    """
+  }
 }
 
 object OrphanMacros {
@@ -156,4 +180,8 @@ object OrphanMacros {
   def materializeOrphanImpl[F[_], D, T](c: Context)
     (implicit fTag: c.WeakTypeTag[F[_]], dTag: c.WeakTypeTag[D], tTag: c.WeakTypeTag[T]): c.Expr[Orphan[F, D, T]] =
       c.Expr[Orphan[F, D, T]](inst(c).materializeOrphanImpl[F, D, T])
+
+  def materializeWrapped[T](c: Context)
+    (implicit tTag: c.WeakTypeTag[T]): c.Expr[WrappedOrphan[T]] =
+      c.Expr[WrappedOrphan[T]](inst(c).materializeWrapped[T])
 }
