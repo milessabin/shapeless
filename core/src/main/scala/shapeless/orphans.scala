@@ -152,7 +152,7 @@ class OrphanMacros[C <: Context](val c: C) extends CaseClassMacros {
   }
 
   def materializeWrapped[T](implicit tTag: WeakTypeTag[T]): Tree = {
-    val open = c.openImplicits
+    val open = openImplicits
     val masks =
       if(open.size < 2) Nil
       else {
@@ -180,4 +180,8 @@ object OrphanMacros {
   def materializeOrphanImpl[F[_], D, T](c: Context)
     (implicit fTag: c.WeakTypeTag[F[_]], dTag: c.WeakTypeTag[D], tTag: c.WeakTypeTag[T]): c.Expr[Orphan[F, D, T]] =
       c.Expr[Orphan[F, D, T]](inst(c).materializeOrphanImpl[F, D, T])
+
+  def materializeWrapped[T](c: Context)
+    (implicit tTag: c.WeakTypeTag[T]): c.Expr[WrappedOrphan[T]] =
+      c.Expr[WrappedOrphan[T]](inst(c).materializeWrapped[T])
 }
