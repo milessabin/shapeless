@@ -165,7 +165,8 @@ object ShapelessBuild extends Build {
   def commonSettings =
     Seq(
       organization        := "com.chuusai",
-      scalaVersion        := "2.11.6",
+      scalaVersion        := "2.11.7",
+      crossScalaVersions  := Seq("2.11.7", "2.12.0-M1"),
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
