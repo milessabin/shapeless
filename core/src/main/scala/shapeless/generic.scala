@@ -207,54 +207,59 @@ trait CaseClassMacros extends ReprTypes {
 
       val basePre = prefix(tpe)
       val baseSym = classSym(tpe)
-      val baseArgs: List[Type] =
-        if(hk) {
+      val baseTpe =
+        if(!hk) tpe
+        else {
           val tc = tpe.typeConstructor
           val TypeRef(_, sym, _) = tc
           val paramSym = sym.asType.typeParams.head
           val paramTpe = paramSym.asType.toType
-          val appTpe = appliedType(tc, List(paramTpe))
-          typeArgs(appTpe.normalize)
+          appliedType(tc, List(paramTpe))
         }
-        else typeArgs(tpe.normalize)
+      val baseArgs = typeArgs(baseTpe.normalize)
 
-      val ctors = collectCtors(baseSym).sortBy(_.fullName)
+      val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
+      val ctors =
+        ctorSyms flatMap { sym =>
+          def substituteArgs: List[Type] = {
+            val subst = typeArgs(ThisType(sym).baseType(baseSym))
+            sym.typeParams.map { param =>
+              val paramTpe = param.asType.toType
+              baseArgs(subst.indexWhere(_ =:= paramTpe))
+            }
+          }
+
+          val suffix = ownerChain(sym).dropWhile(_ != basePre.typeSymbol)
+          val ctor =
+            if(suffix.isEmpty) {
+              if(sym.isModuleClass) {
+                val moduleSym = sym.asClass.module
+                val modulePre = prefix(moduleSym.typeSignature)
+                singleType(modulePre, moduleSym)
+              } else
+                appliedType(sym.toTypeIn(basePre), substituteArgs)
+            } else {
+              if(sym.isModuleClass) {
+                val path = suffix.tail.map(_.name.toTermName)
+                val (modulePre, moduleSym) = mkDependentRef(basePre, path)
+                singleType(modulePre, moduleSym)
+              } else if(isAnonOrRefinement(sym)) {
+                val path = suffix.tail.init.map(_.name.toTermName)
+                val (valPre, valSym) = mkDependentRef(basePre, path)
+                singleType(valPre, valSym)
+              } else {
+                val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
+                val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
+                typeRef(subTpePre, subTpeSym, substituteArgs)
+              }
+            }
+          if(!isAccessible(ctor))
+            abort(s"$tpe has an inaccessible subtype $ctor")
+          if(ctor <:< baseTpe) Some(ctor) else None
+        }
       if (ctors.isEmpty)
         abort(s"Sealed trait $tpe has no case class subtypes")
-
-      ctors map { sym =>
-        def substituteArgs: List[Type] = {
-          val subst = typeArgs(ThisType(sym).baseType(baseSym))
-          sym.typeParams.map { param =>
-            val paramTpe = param.asType.toType
-            baseArgs(subst.indexWhere(_ =:= paramTpe))
-          }
-        }
-
-        val suffix = ownerChain(sym).dropWhile(_ != basePre.typeSymbol)
-        if(suffix.isEmpty) {
-          if(sym.isModuleClass) {
-            val moduleSym = sym.asClass.module
-            val modulePre = prefix(moduleSym.typeSignature)
-            singleType(modulePre, moduleSym)
-          } else
-            appliedType(sym.toTypeIn(basePre), substituteArgs)
-        } else {
-          if(sym.isModuleClass) {
-            val path = suffix.tail.map(_.name.toTermName)
-            val (modulePre, moduleSym) = mkDependentRef(basePre, path)
-            singleType(modulePre, moduleSym)
-          } else if(isAnonOrRefinement(sym)) {
-            val path = suffix.tail.init.map(_.name.toTermName)
-            val (valPre, valSym) = mkDependentRef(basePre, path)
-            singleType(valPre, valSym)
-          } else {
-            val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
-            val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
-            typeRef(subTpePre, subTpeSym, substituteArgs)
-          }
-        }
-      }
+      ctors
     }
     else
       abort(s"$tpe is not a case class, case class-like, a sealed trait or Unit")
@@ -446,6 +451,16 @@ trait CaseClassMacros extends ReprTypes {
       global.gen.mkAttributedRef(pre, cSym).asInstanceOf[Tree]
     else
       Ident(tpe.typeSymbol.name.toTermName) // Attempt to refer to local companion
+  }
+
+  def isAccessible(tpe: Type): Boolean = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typerContext = typer.context
+    typerContext.isAccessible(
+      tpe.typeSymbol.asInstanceOf[global.Symbol],
+      prefix(tpe).asInstanceOf[global.Type]
+    )
   }
 
   def prefix(tpe: Type): Type = {
