@@ -21,6 +21,7 @@ import org.junit.Assert._
 
 import ops.{ hlist => hl, coproduct => cp }
 import testutil.assertTypedEquals
+import test.illTyped
 
 package GenericTestsAux {
   sealed trait Fruit
@@ -1040,4 +1041,46 @@ package TestSingletonMembers {
   object Derivations2 {
     Generic[CC]
   }
+}
+
+object PathVariantDefns {
+  sealed trait AtomBase {
+    sealed trait Atom
+    case class Zero(value: String) extends Atom
+  }
+
+  trait Atom1 extends AtomBase {
+    case class One(value: String) extends Atom
+  }
+
+  trait Atom2 extends AtomBase {
+    case class Two(value: String) extends Atom
+  }
+
+  object Atoms01 extends AtomBase with Atom1
+  object Atoms02 extends AtomBase with Atom2
+}
+
+object PathVariants {
+  import PathVariantDefns._
+
+  val gen1 = Generic[Atoms01.Atom]
+  implicitly[gen1.Repr =:= (Atoms01.One :+: Atoms01.Zero :+: CNil)]
+
+  val gen2 = Generic[Atoms02.Atom]
+  implicitly[gen2.Repr =:= (Atoms02.Two :+: Atoms02.Zero :+: CNil)]
+}
+
+object PrivateCtorDefns {
+  sealed trait PublicFamily
+  case class PublicChild() extends PublicFamily
+  private case class PrivateChild() extends PublicFamily
+}
+
+object PrivateCtor {
+  import PrivateCtorDefns._
+
+  illTyped("""
+  Generic[Access.PublicFamily]
+  """)
 }
