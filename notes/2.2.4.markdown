@@ -9,8 +9,8 @@ shapeless 2.2.4 is source and binary compatible with shapeless 2.2.0+
 and should be binary compatible with shapeless-2.1.0 in most cases.
 
 * A `Split1` type class has been added allowing complex nested type
-  constructors (ie. F[G[...]]) to be decomposed (ie. as F[\_], G[\_])
-  despite the limitations imposed by [SI-2712](si-2712).
+  constructors (ie. `F[G[...]]`) to be decomposed (ie. as `F[_]`,
+  `G[_]`) despite the limitations imposed by [SI-2712](si-2712).
 
 * An additional mechanism for managing the implicit priority of orphan
   type class instances (`WrappedOrphan`) has been added.
