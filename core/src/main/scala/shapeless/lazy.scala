@@ -28,6 +28,42 @@ trait Lazy[+T] extends Serializable {
   def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
+/**
+ * Allow lower priority implicits to be defined without interfering with implicit scopes.
+ *
+ * When looking for a `Lazy[Priority[T, F]]`,
+ * - first try to find an implicit `T`. In case of success, an implicit `Priority.High[T]` is found
+ *   as a `Priority[T, F]`.
+ * - else try to find an implicit `F` (fallback). In case of success, an implicit `Priority.Low[F]`
+ *   is found as a `Priority[T, F]`.
+ *
+ * Unlike standard implicit prioritization, implicit lookups like
+ *     implicit def lookupTc[T](implicit priority: Lazy[Priority[TC[T], Fallback[T]]]): TC[T] = ???
+ * are allowed, without this definition hindering the lookup for an implicit `TC[T]` elsewhere.
+ *
+ * If the lookup of `TC[T]` or `Fallback[T]` in the example requires other implicit instances like
+ * `TC[U]`, these can be looked up the same way too (first `TC[U]`, else `Fallback[U]` - no matter
+ * whether a `TC[T]` or `Fallback[T]` was found in the first place).
+ *
+ * The method body in the example above will typically be like
+ *     priority.value.fold(identity)(_.makeTC)
+ * where `makeTC` will be a method of `Fallback[T]` returning a `TC[T]`.
+ */
+trait Priority[+T, +F] {
+  def fold[U](high: T => U)(low: F => U): U =
+    this match {
+      case Priority.High(t) => high(t)
+      case Priority.Low(d) => low(d)
+    }
+}
+
+object Priority {
+  implicit def apply[T, F](implicit lz: Lazy[Priority[T, F]]): Priority[T, F] = lz.value
+
+  case class High[+T](t: T) extends Priority[T, Nothing]
+  case class Low[+A](a: A) extends Priority[Nothing, A]
+}
+
 object Lazy {
   implicit def apply[T](t: => T): Lazy[T] = new Lazy[T] {
     lazy val value = t
@@ -115,7 +151,8 @@ trait DerivationContext extends CaseClassMacros {
     name: TermName,
     symbol: Symbol,
     inst: Tree,
-    actualTpe: Type
+    actualTpe: Type,
+    initialized: Boolean
   ) {
     def ident = Ident(symbol)
   }
@@ -126,7 +163,7 @@ trait DerivationContext extends CaseClassMacros {
       val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
       val tree = Ident(sym)
 
-      new Instance(instTpe, nme, sym, tree, instTpe)
+      new Instance(instTpe, nme, sym, tree, instTpe, initialized = false)
     }
   }
 
@@ -136,6 +173,7 @@ trait DerivationContext extends CaseClassMacros {
         case TypeWrapper(tpe0) => tpe =:= tpe0
         case _ => false
       }
+    override def toString = tpe.toString
   }
 
   object TypeWrapper {
@@ -154,43 +192,154 @@ trait DerivationContext extends CaseClassMacros {
     dict = dict-TypeWrapper(d.instTpe)
   }
 
-  def deriveInstance(instTpe: Type, root: Boolean): Tree = {
-    val instTree =
-      dict.get(TypeWrapper(instTpe)) match {
-        case Some(d) => (d.ident, d.actualTpe)
-        case _ =>
-          val instance0 = add(Instance(instTpe))
+  var priorityLookups: Set[TypeWrapper] = Set.empty
 
-          def resolveInstance(tpe: Type): Option[Tree] = {
-            val tree = c.inferImplicitValue(tpe, silent = true)
-            if(tree == EmptyTree || tree.equalsStructure(instance0.ident)) None
-            else Some(tree)
-          }
+  var noUninitialized: Map[TypeWrapper, Int] = Map.empty
 
-          def stripRefinements(tpe: Type): Option[Type] =
-            tpe match {
-              case RefinedType(parents, decls) => Some(parents.head)
-              case _ => None
-            }
+  def addNoUninitialized(tpe: Type): Unit =
+    noUninitialized = noUninitialized.updated(
+      TypeWrapper(tpe),
+      noUninitialized.getOrElse(TypeWrapper(tpe), 0) + 1
+    )
 
-          val extInst =
-            resolveInstance(instTpe).orElse(
-              stripRefinements(instTpe).flatMap(resolveInstance)
-            ).getOrElse {
-              remove(instance0)
-              abort(s"Unable to derive $instTpe")
-            }
+  def removeNoUninitialized(tpe: Type): Unit = {
+    val count = noUninitialized.getOrElse(TypeWrapper(tpe), 0) - 1
+    noUninitialized =
+      if (count <= 0)
+        noUninitialized-TypeWrapper(tpe)
+      else
+        noUninitialized.updated(TypeWrapper(tpe), count)
+  }
 
-          val instance1 = dict(TypeWrapper(instTpe))
-          val actualTpe = extInst.tpe.finalResultType
+  def highPriorityTpe: Type = typeOf[Priority.High[_]].typeConstructor
+  def lowPriorityTpe: Type = typeOf[Priority.Low[_]].typeConstructor
+  def priorityTpe: Type = typeOf[Priority[_, _]].typeConstructor
 
-          val sym = c.internal.setInfo(instance1.symbol, actualTpe)
-          val tree = add(instance1.copy(inst = extInst, actualTpe = actualTpe, symbol = sym)).ident
-          (tree, actualTpe)
+  object PriorityTpe {
+    def unapply(tpe: Type): Option[(Type, Type)] =
+    tpe.dealias match {
+      case TypeRef(_, cpdTpe, List(highTpe, lowTpe))
+         if cpdTpe.asType.toType.typeConstructor =:= priorityTpe =>
+        Some(highTpe, lowTpe)
+      case _ =>
+        None
+    }
+  }
+
+  def deriveInstance(instTpe0: Type, root: Boolean): Tree = {
+    def lookup(instTpe: Type): Either[Boolean, Instance] =
+      dict
+        .get(TypeWrapper(instTpe))
+        .map{ instance =>
+          if (instance.initialized || !noUninitialized.contains(TypeWrapper(instTpe)))
+            Right(instance)
+          else
+            Left(false)
+        }
+        .getOrElse(Left(true))
+
+    def resolveInstance(tpe: Type): Option[Tree] = {
+      val tree = c.inferImplicitValue(tpe, silent = true)
+      if(tree == EmptyTree) None
+      else Some(tree)
+    }
+
+    def stripRefinements(tpe: Type): Option[Type] =
+      tpe match {
+        case RefinedType(parents, decls) => Some(parents.head)
+        case _ => None
       }
 
-    val (tree, actualType) = if(root) mkInstances(instTpe) else instTree
-    q"_root_.shapeless.Lazy[$actualType]($tree)"
+    def derive(instTpe: Type): Option[(Tree, Type)] =
+      lookup(instTpe) match {
+        case Right(d) =>
+          Some((d.ident, d.actualTpe))
+        case Left(createInstance) =>
+          val newInstanceOpt =
+            if (createInstance) Some(add(Instance(instTpe)))
+            else None
+
+          val extInstOpt =
+            resolveInstance(instTpe)
+              .filterNot(tree =>
+                newInstanceOpt.exists(tree equalsStructure _.ident)
+              )
+              .orElse(
+                stripRefinements(instTpe).flatMap(resolveInstance)
+              )
+
+          (newInstanceOpt, extInstOpt) match {
+            case (Some(newInstance), None) =>
+              remove(newInstanceOpt.get)
+              None
+            case (Some(newInstance), Some(extInst)) =>
+              val instance1 = dict(TypeWrapper(instTpe))
+              val actualTpe = extInst.tpe.finalResultType
+
+              val sym = c.internal.setInfo(instance1.symbol, actualTpe)
+              val tree = add(instance1.copy(inst = extInst, actualTpe = actualTpe, symbol = sym, initialized = true)).ident
+              Some((tree, actualTpe))
+            case (None, _) =>
+              extInstOpt.map(t => (t, t.tpe.finalResultType))
+          }
+      }
+
+    def derivePriority(priorityTpe: Type, highInstTpe: Type, lowInstTpe: Type) = {
+      val instance = add(Instance(priorityTpe))
+
+      val high = {
+        priorityLookups = priorityLookups + TypeWrapper(priorityTpe)
+        addNoUninitialized(highInstTpe)
+
+        val high0 =
+          derive(highInstTpe)
+            .map{case (tree, actualType) =>
+              (q"_root_.shapeless.Priority.High[$actualType]($tree)", appliedType(highPriorityTpe, List(actualType)))
+            }
+
+        removeNoUninitialized(highInstTpe)
+        priorityLookups = priorityLookups - TypeWrapper(priorityTpe)
+
+        high0
+      }
+
+      def low =
+        derive(lowInstTpe)
+          .map{case (tree, actualType) =>
+            (q"_root_.shapeless.Priority.Low[$actualType]($tree)", appliedType(lowPriorityTpe, List(actualType)))
+          }
+
+      high.orElse(low) match {
+        case None =>
+          remove(instance)
+          None
+        case Some((extInst, actualTpe)) =>
+          val instance1 = dict(TypeWrapper(priorityTpe))
+          val sym = c.internal.setInfo(instance1.symbol, actualTpe)
+          val tree = add(instance1.copy(inst = extInst, actualTpe = actualTpe, symbol = sym)).ident
+          Some((tree, actualTpe))
+      }
+    }
+
+    val instTreeOpt =
+      instTpe0 match {
+        case PriorityTpe(highTpe, lowTpe) =>
+          if (priorityLookups(TypeWrapper(instTpe0)))
+            abort(s"Not deriving $instTpe0")
+          else
+            derivePriority(instTpe0, highTpe, lowTpe)
+
+        case _ =>
+          derive(instTpe0)
+      }
+
+    instTreeOpt match {
+      case Some((tree0, actualType0)) =>
+        val (tree, actualType) = if (root) mkInstances(instTpe0) else (tree0, actualType0)
+        q"_root_.shapeless.Lazy[$actualType]($tree)"
+      case None =>
+        abort(s"Unable to derive $instTpe0")
+    }
   }
 
   // Workaround for https://issues.scala-lang.org/browse/SI-5465
