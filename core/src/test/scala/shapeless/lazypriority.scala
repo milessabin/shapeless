@@ -43,7 +43,7 @@ class LazyPriorityTests {
     }
   }
 
-  object Deriver {
+  object SimpleDeriver {
     import Definitions._
 
     trait MkTC[T] {
@@ -92,10 +92,91 @@ class LazyPriorityTests {
       priority.value.fold(identity)(_.tc)
   }
 
-  @Test
-  def testLazyPriority(): Unit = {
+
+  object ComposedDeriver {
     import Definitions._
-    import Deriver._
+
+    trait MkTC[T] {
+      def tc: TC[T]
+    }
+
+    trait MkTupleTC[T] extends MkTC[T]
+
+    object MkTupleTC {
+      implicit def hnilMkTC: MkTupleTC[HNil] =
+        new MkTupleTC[HNil] {
+          val tc = TC.of[HNil](_ => "")
+        }
+      implicit def hconsTC[H, T <: HList]
+       (implicit
+         head: Lazy[TC[H]],
+         tail: Lazy[MkTupleTC[T]]
+       ): MkTupleTC[H :: T] =
+        new MkTupleTC[H :: T] {
+          lazy val tc = TC.of[H :: T]{ n =>
+            val tailMsg = tail.value.tc.msg(n-1)
+            head.value.msg(n-1) + (if (tailMsg.isEmpty) "" else ", " + tailMsg)
+          }
+        }
+      implicit def genericTC[F, G]
+       (implicit
+         ev: IsTuple[F],
+         gen: Generic.Aux[F, G],
+         underlying: Lazy[MkTupleTC[G]]
+       ): MkTupleTC[F] =
+        new MkTupleTC[F] {
+          lazy val tc = TC.of[F](n => s"Tuple[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
+
+    trait MkDefaultTC[T] extends MkTC[T]
+
+    object MkDefaultTC {
+      implicit def hnilMkTC: MkDefaultTC[HNil] =
+        new MkDefaultTC[HNil] {
+          val tc = TC.of[HNil](_ => "HNil")
+        }
+      implicit def hconsTC[H, T <: HList]
+       (implicit
+         head: Lazy[TC[H]],
+         tail: Lazy[MkDefaultTC[T]]
+       ): MkDefaultTC[H :: T] =
+        new MkDefaultTC[H :: T] {
+          lazy val tc = TC.of[H :: T](n => s"${head.value.msg(n-1)} :: ${tail.value.tc.msg(n-1)}")
+        }
+      implicit def cnilMkTC: MkDefaultTC[CNil] =
+        new MkDefaultTC[CNil] {
+          val tc = TC.of[CNil](_ => "CNil")
+        }
+      implicit def cconsTC[H, T <: Coproduct]
+       (implicit
+         head: Lazy[TC[H]],
+         tail: Lazy[MkDefaultTC[T]]
+       ): MkDefaultTC[H :+: T] =
+        new MkDefaultTC[H :+: T] {
+          lazy val tc = TC.of[H :+: T](n => s"${head.value.msg(n-1)} :+: ${tail.value.tc.msg(n-1)}")
+        }
+      implicit def genericTC[F, G]
+       (implicit
+         gen: Generic.Aux[F, G],
+         underlying: Lazy[MkDefaultTC[G]]
+       ): MkDefaultTC[F] =
+        new MkDefaultTC[F] {
+          lazy val tc = TC.of[F](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
+
+    implicit def mkTC[T]
+     (implicit
+       priority: Lazy[Priority[TC[T], Implicit[MkTupleTC[T] :+: MkDefaultTC[T] :+: CNil]]]
+     ): TC[T] =
+      priority.value.fold(identity)(_.value.unify.tc)
+  }
+
+  @Test
+  def testSimpleDeriver(): Unit = {
+    import Definitions._
+    import SimpleDeriver._
 
     def validate[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
       val msg = TC[T].msg(n)
@@ -117,6 +198,50 @@ class LazyPriorityTests {
     // Fails with the current Orphan
     validate[(Int, CC1, Boolean)]("Generic[Int :: CC1 :: Boolean :: HNil]")
     validate[(Int, CC2, Boolean)]("Generic[Int :: Generic[Int :: HNil] :: Boolean :: HNil]")
+
+    // Orphan, then derived, then orphans
+    validate[Option[CC2]]("Option[Generic[Int :: HNil]]")
+    validate[(Int, CC2)]("(Int, Generic[Int :: HNil])")
+
+
+    // Cycles
+
+    // Derived (but for TC[Int])
+    validate[Tree0.Leaf.type]("Generic[HNil]")
+    validate[Tree0]("Generic[Generic[HNil] :+: Generic[Generic[Generic[HNil] :+: Generic[Generic[Generic[…] :+: … :+: …] :: Generic[… :+: …] :: Int :: HNil] :+: CNil] :: Generic[Generic[HNil] :+: Generic[Generic[… :+: …] :: Generic[…] :: … :: …] :+: CNil] :: Int :: HNil] :+: CNil]", 12)
+
+    // Orphan
+    validate[Tree.Leaf.type]("Leaf")
+    // Interleaved derived / orphans
+    // Fails with the current Orphan
+    validate[Tree]("Generic[Leaf :+: Generic[Generic[Leaf :+: Generic[Generic[Leaf :+: … :+: …] :: Generic[… :+: …] :: Int :: HNil] :+: CNil] :: Generic[Leaf :+: Generic[Generic[… :+: …] :: Generic[…] :: … :: …] :+: CNil] :: Int :: HNil] :+: CNil]", 12)
+  }
+
+  @Test
+  def testComposedDeriver(): Unit = {
+    import Definitions._
+    import ComposedDeriver._
+
+    def validate[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
+      val msg = TC[T].msg(n)
+      assert(expected == msg)
+    }
+
+    // All orphans
+    validate[Int]("Int")
+    validate[CC1]("CC1")
+    validate[Option[Int]]("Option[Int]")
+    validate[Option[CC1]]("Option[CC1]")
+    validate[(Int, CC1)]("(Int, CC1)")
+    validate[(CC1, Int)]("(CC1, Int)")
+    validate[(CC1, Boolean)]("(CC1, Boolean)")
+
+    // Derived, then orphans
+    validate[CC2]("Generic[Int :: HNil]")
+    validate[Either[Int, CC1]]("Generic[Generic[Int :: HNil] :+: Generic[CC1 :: HNil] :+: CNil]")
+    // Fails with the current Orphan
+    validate[(Int, CC1, Boolean)]("Tuple[Int, CC1, Boolean]")
+    validate[(Int, CC2, Boolean)]("Tuple[Int, Generic[Int :: HNil], Boolean]")
 
     // Orphan, then derived, then orphans
     validate[Option[CC2]]("Option[Generic[Int :: HNil]]")
