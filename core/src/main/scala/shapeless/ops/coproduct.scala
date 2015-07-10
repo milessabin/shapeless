@@ -373,24 +373,23 @@ object coproduct {
         }
   }
 
-  trait LeftFolder[C <: Coproduct, In, F] extends DepFn2[C,In] with Serializable {
-    type Out = In
-  }
+  trait LeftFolder[C <: Coproduct, In, F] extends DepFn2[C,In] with Serializable
 
   object LeftFolder {
-    def apply[C <: Coproduct, In, F](implicit folder: LeftFolder[C, In, F]) = folder
+    def apply[C <: Coproduct, In, F](implicit folder: LeftFolder[C, In, F]): Aux[C, In, F, folder.Out] = folder
+
+    type Aux[C <: Coproduct, In, HF, Out0] = LeftFolder[C, In, HF] { type Out = Out0 }
 
     implicit def hdLeftFolder[H, In, F]
-    (implicit f: Case2.Aux[F, In, H, In]): LeftFolder[H :+: CNil, In, F] = new LeftFolder[H :+: CNil, In, F] {
-      def apply(c: H :+: CNil, in: In): In = c match {
-        case Inl(h) => f(in, h)
-        case Inr(t) => in
-      }
+    (implicit f: Case2.Aux[F, In, H, In]): Aux[H :+: CNil, In, F,In] = new LeftFolder[H :+: CNil, In, F] {
+      type Out = In
+      def apply(c: H :+: CNil, in: In): In = f(in,c.head.get)
     }
 
-    implicit def tlLeftFolder[H, T <: Coproduct, In, F]
-    (implicit ft: LeftFolder[T, In, F], f: Case2.Aux[F, In, H, In]): LeftFolder[H :+: T, In, F] = new LeftFolder[H :+: T, In, F] {
-      def apply(c: H :+: T, in: In) =
+    implicit def tlLeftFolder[H, T <: Coproduct, In, HF, OutH]
+    (implicit f: Case2.Aux[HF, In, H, OutH], ft: Aux[T, In, HF, OutH]): Aux[H :+: T, In, HF, OutH] = new LeftFolder[H :+: T, In, HF] {
+      type Out = OutH
+      def apply(c: H :+: T, in: In): Out =
         c match {
           case Inl(h) => f(in, h)
           case Inr(t) => ft(t, in)
