@@ -55,7 +55,7 @@ import scala.language.experimental.macros
   * sloth: Sloth = Sloth(bar,2)
   *
   * scala> val genAnimal = Generic[Animal]
-  * genAnimal: shapeless.Generic[Animal]{type Repr = shapeless.:+:[Cat,shapeless.:+:[Dog,shapeless.:+:[Koala,shapeless.:+:[Sloth,shapeless.CNil]]]]} = fresh$macro$1$1@7f4a1aaf
+  * genAnimal: shapeless.Generic[Animal]{type Repr = Cat :+: Dog :+: Koala :+: Sloth} = ...
   *
   * scala> def showCoproduct(o: Any) : String = o match {
   *      | case Inl(a) => "Inl(" + showCoproduct(a) + ")"
@@ -77,6 +77,7 @@ import scala.language.experimental.macros
   * res8: String = Inr(Inr(Inr(Inl(Sloth(bar,2)))))
   *
   * scala>
+  * }}}
   */
 sealed trait Coproduct
 
