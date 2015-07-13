@@ -23,8 +23,8 @@ import scala.reflect.macros.{ blackbox, whitebox }
 
 import ops.{ hlist, coproduct }
 
- /** Represents the ability to convert from [[T]], a concrete type (e.g. a case class)
-  * to a generic ( [[HList]] / [[Coproduct]]} based) representation of the type.
+ /** Represents the ability to convert from a concrete type (e.g. a case class)
+  * to a generic ([[HList]] / [[Coproduct]]} based) representation of the type.
   *
   * For example:
   * {{{
@@ -38,10 +38,10 @@ import ops.{ hlist, coproduct }
   * defined class Dog
   *
   * scala> val genCat = Generic[Cat]
-  * genCat: shapeless.Generic[Cat]{type Repr = shapeless.::[String,shapeless.::[Int,shapeless.HNil]]} = fresh$macro$12$1@5a8cfb53
+  * genCat: shapeless.Generic[Cat]{ type Repr = String :: Int :: HNil } = ...
   *
   * scala> val genDog = Generic[Dog]
-  * genDog: shapeless.Generic[Dog]{type Repr = shapeless.::[String,shapeless.::[Int,shapeless.HNil]]} = fresh$macro$15$1@523015b2
+  * genDog: shapeless.Generic[Dog]{ type Repr = String :: Int :: HNil } = ...
   *
   * scala> val garfield = Cat("Garfield", 9)
   * garfield: Cat = Cat(Garfield,9)
@@ -81,7 +81,7 @@ import ops.{ hlist, coproduct }
   * res9: genDog.Repr = odie :: 3 :: HNil
   *
   * scala> val genAnimal = Generic[Animal]
-  * genAnimal: shapeless.Generic[Animal]{type Repr = shapeless.:+:[Cat,shapeless.:+:[Dog,shapeless.CNil]]} = fresh$macro$17$1@7f353130
+  * genAnimal: shapeless.Generic[Animal]{ type Repr = Cat :+: Dog :+: CNil } = ...
   *
   * scala> genAnimal.to(odie)
   * res8: genAnimal.Repr = Dog(odie,3)
@@ -147,9 +147,9 @@ object Generic {
    */
   type Aux[T, Repr0] = Generic[T] { type Repr = Repr0 }
 
-  /** Provides an instance of Generic[T]. Prefer this over finding one with [[implicitly]], or else use [[the]].
+  /** Provides an instance of Generic. Prefer this over finding one with `implicitly`, or else use `the`.
     *
-    * Either of these approaches preserves the Repr type refinement, which [[implicitly]] will lose.
+    * Either of these approaches preserves the Repr type refinement, which `implicitly` will lose.
     *
     */
   def apply[T](implicit gen: Generic[T]): Aux[T, gen.Repr] = gen
@@ -157,7 +157,6 @@ object Generic {
   implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materialize[T, R]
 }
 
-//TODO: More discussion on how to use the labels, e.g. in a codec
 /**
   * LabelledGeneric is similar to Generic, but includes information about field
   * names or class names in addition to the raw structure.
@@ -165,8 +164,8 @@ object Generic {
   * Continuing the example from [[shapeless.Generic]], we use LabelledGeneric to convert an object to an [[shapeless.HList]]:
   *
   * {{{
-  *   scala> val lgenDog = LabelledGeneric[Dog]
-  * lgenDog: shapeless.LabelledGeneric[Dog]{type Repr = shapeless.::[String with shapeless.labelled.KeyTag[Symbol with shapeless.tag.Tagged[String("name")],String],shapeless.::[Int with shapeless.labelled.KeyTag[Symbol with shapeless.tag.Tagged[String("bonesHidden")],Int],shapeless.HNil]]} = shapeless.LabelledGeneric$$anon$1@1647d3ad
+  * scala> val lgenDog = LabelledGeneric[Dog]
+  * lgenDog: shapeless.LabelledGeneric[Dog]{ type Repr = Record.`'name -> String, 'bonesHidden -> Int`.T } = ...
   *
   * scala> lgenDog.to(odie)
   * res15: lgenDog.Repr = odie :: 3 :: HNil
@@ -180,7 +179,7 @@ object Generic {
   *
   * {{{
   * scala> val lgenAnimal = LabelledGeneric[Animal]
-  * lgenAnimal: shapeless.LabelledGeneric[Animal]{type Repr = shapeless.:+:[Cat with shapeless.labelled.KeyTag[Symbol with shapeless.tag.Tagged[String("Cat")],Cat],shapeless.:+:[Dog with shapeless.labelled.KeyTag[Symbol with shapeless.tag.Tagged[String("Dog")],Dog],shapeless.CNil]]} = shapeless.LabelledGeneric$$anon$2@916c6ae
+  * lgenAnimal: shapeless.LabelledGeneric[Animal]{ type Repr = Union.`'Cat -> Cat, 'Dog -> Dog`.T } = ...
   *
   * scala> lgenAnimal.to(odie)
   * res16: lgenAnimal.Repr = Dog(odie,3)
