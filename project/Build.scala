@@ -41,7 +41,9 @@ object ShapelessBuild extends Build {
       (unmanagedSourceDirectories in Test) := Nil,
 
       publish := (),
-      publishLocal := ()
+      publishLocal := (),
+
+      addCommandAlias("validate", ";test;mima-report-binary-issues;doc")
     )
   )
 
