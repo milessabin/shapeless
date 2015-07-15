@@ -5,7 +5,7 @@ scala:
 - 2.12.0-M1
 
 jdk:
-- oraclejdk7
+- oraclejdk8
 - openjdk6
 
 cache:
@@ -15,7 +15,7 @@ cache:
 
 script:
   - if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
-         ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) &&
+         ${JAVA_HOME} == $(jdk_switcher home oraclejdk8) &&
          ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x" ||
           "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
          $(cat version.sbt) =~ "-SNAPSHOT"
