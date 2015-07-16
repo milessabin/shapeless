@@ -947,8 +947,8 @@ class SerializationTests {
     //assertSerializable(implicitly[Lazy[Generic[Wibble]]])
     //assertSerializable(implicitly[Lazy[Generic1[Box, TC1]]])
 
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])
+    //assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])
+    //assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])
   }
 
   @Test
@@ -1066,8 +1066,8 @@ class SerializationTests {
     assertSerializable(DataT[poly.identity.type, List[CNil]])
     assertSerializable(DataT[poly.identity.type, List[C]])
 
-    assertSerializable(implicitly[Everything[gsize.type, plus.type, Wibble]])
-    assertSerializable(implicitly[Everywhere[poly.identity.type, Wibble]])
+    //assertSerializable(implicitly[Everything[gsize.type, plus.type, Wibble]])
+    //assertSerializable(implicitly[Everywhere[poly.identity.type, Wibble]])
   }
 
   @Test
