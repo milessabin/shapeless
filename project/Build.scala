@@ -43,7 +43,7 @@ object ShapelessBuild extends Build {
       publish := (),
       publishLocal := (),
 
-      addCommandAlias("validate", ";test;mima-report-binary-issues;doc")
+      addCommandAlias("validate", ";test;doc")
     )
   )
 
