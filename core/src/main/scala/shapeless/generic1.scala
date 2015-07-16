@@ -207,6 +207,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
     val frTpt = mkAttributedRef(frTpe)
+    val rnme = TypeName(c.freshName)
 
     val clsName = TypeName(c.freshName())
     q"""
@@ -218,7 +219,8 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
         def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
         def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
       }
-      new $clsName()
+      type $rnme[$nme] = $reprTpt
+      new $clsName(): _root_.shapeless.Generic1.Aux[$tpe, $frTpe, $rnme]
     """
   }
 
@@ -237,6 +239,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
     val frTpt = mkAttributedRef(frTpe)
+    val rnme = TypeName(c.freshName)
 
     val to = {
       val toCases = ctorsOf1(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
@@ -253,7 +256,8 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
         def to[$nme](ft: $tpeTpt): R[$nme] = $to
         def from[$nme](rt: R[$nme]): $tpeTpt = _root_.shapeless.Coproduct.unsafeGet(rt).asInstanceOf[$tpeTpt]
       }
-      new $clsName()
+      type $rnme[$nme] = $reprTpt
+      new $clsName(): _root_.shapeless.Generic1.Aux[$tpe, $frTpe, $rnme]
     """
   }
 }
