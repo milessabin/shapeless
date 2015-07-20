@@ -6,7 +6,6 @@ scala:
 
 jdk:
 - oraclejdk8
-- openjdk6
 
 cache:
   directories:
@@ -15,7 +14,6 @@ cache:
 
 script:
   - if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
-         ${JAVA_HOME} == $(jdk_switcher home oraclejdk8) &&
          ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x" ||
           "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
          $(cat version.sbt) =~ "-SNAPSHOT"
