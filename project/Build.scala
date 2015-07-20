@@ -95,7 +95,21 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkCoproductTypTree"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAnonOrRefinement"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkTypTree"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible")
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext#Instance.apply"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext#Instance.copy"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext#Instance.this"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.priorityType"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.priorityTpe"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.PriorityTpe"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.highPriorityTpe"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.lowPriorityTpe"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.addNoUninitialized"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.priorityLookups"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.priorityLookups_="),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.noUninitialized"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.noUninitialized_="),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.DerivationContext.removeNoUninitialized")
           )
         },
 
