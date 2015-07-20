@@ -43,7 +43,7 @@ object ShapelessBuild extends Build {
       publish := (),
       publishLocal := (),
 
-      addCommandAlias("validate", ";test;doc")
+      addCommandAlias("validate", ";test;mima-report-binary-issues;doc")
     )
   )
 
@@ -74,7 +74,14 @@ object ShapelessBuild extends Build {
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("examples")),
 
-        previousArtifact := Some(organization.value %% moduleName.value % "2.2.0"),
+        previousArtifact := {
+          val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+          if (major == 2 && minor == 11)
+            Some(organization.value %% moduleName.value % "2.2.0")
+          else
+            None
+        },
+
         binaryIssueFilters ++= {
           import com.typesafe.tools.mima.core._
           import com.typesafe.tools.mima.core.ProblemFilters._
