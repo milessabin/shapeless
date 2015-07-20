@@ -16,5 +16,7 @@ else
   git pull $1 scalajs-2.11.x
   git checkout scalajs-2.10.x
   git pull $1 scalajs-2.10.x
+  git checkout jdk6-canary
+  git pull $1 jdk6-canary
   git checkout master
 fi
