@@ -52,6 +52,7 @@ class CrossBranchRelease(val sbt: String) {
       _ <- verifyBranch("scala-2.10.x", None, Some("master"), verifyBuild)
       _ <- verifyBranch("scalajs-2.11.x", None, Some("master"), verifyBuild)
       _ <- verifyBranch("scalajs-2.10.x", None, Some("scala-2.10.x"), verifyBuild)
+      _ <- verifyBranch("jdk6-canary", None, Some("master"), verifyBuild)
       curVer <- readVersion()
       relVer <- askVersion(true, curVer)
       nextVer <- askVersion(false, curVer)

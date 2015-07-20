@@ -11,5 +11,7 @@ else
   git merge --no-edit master
   git checkout scalajs-2.10.x
   git merge --no-edit scala-2.10.x
+  git checkout jdk6-canary
+  git merge --no-edit master
   git checkout master
 fi
