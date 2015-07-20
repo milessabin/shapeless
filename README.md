@@ -11,6 +11,13 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
 
+## Projects which use shapeless
+
+There is a wide variety of projects which use shapeless in one way or another ... see the
+[incomplete list of projects][built-with-shapeless] for ideas and inspiration.
+
+[built-with-shapeless]: https://github.com/milessabin/shapeless/wiki/Built-with-shapeless
+
 ## Finding out more about the project
 
 A full feature overview of shapeless-2.2.0+ is in preparation. In the meantime, please refer to the
