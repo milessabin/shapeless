@@ -17,42 +17,21 @@
 import sbt._
 import Keys._
 
-object Publishing extends Sonatype(ShapelessBuild) {
-  def projectUrl    = "https://github.com/milessabin/shapeless"
-  def developerId   = "milessabin"
-  def developerName = "Miles Sabin"
-  def licenseName   = "Apache License"
-  def licenseUrl    = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-}
+object Publishing {
+  import ShapelessBuild._
 
-/* Sonatype Publishing */
+  val projectUrl    = "https://github.com/milessabin/shapeless"
+  val developerId   = "milessabin"
+  val developerName = "Miles Sabin"
+  val licenseName   = "Apache License"
+  val licenseUrl    = "http://www.apache.org/licenses/LICENSE-2.0.txt"
 
-// Please note it's necessary to:
-//
-// 1. PGP sign artifacts using the following plugin:
-// http://www.scala-sbt.org/xsbt-gpg-plugin/
-//
-// 2. Add your sonatype credentials in '~/.ivy2/.credentials' using the following format:
-// realm=Sonatype Nexus Repository Manager
-// host=oss.sonatype.org
-// user=<username>
-// password=<password>
-
-abstract class Sonatype(build: Build) {
-  import build._
-
-  val ossSnapshots = "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-  val ossStaging   = "Sonatype OSS Staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+  val ossSnapshots  = "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+  val ossStaging    = "Sonatype OSS Staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
   
-  def projectUrl: String
-  def developerId: String
-  def developerName: String
-  
-  def licenseName: String
-  def licenseUrl: String
-  def licenseDistribution = "repo"
-  def scmUrl              = projectUrl
-  def scmConnection       = "scm:git:" + scmUrl
+  val licenseDistribution = "repo"
+  val scmUrl              = projectUrl
+  val scmConnection       = "scm:git:" + scmUrl
 
   def generatePomExtra(scalaVersion: String): xml.NodeSeq = {
     <url>{ projectUrl }</url>
@@ -84,12 +63,9 @@ abstract class Sonatype(build: Build) {
     pomExtra <<= (scalaVersion)(generatePomExtra)
   )
 
-  lazy val credentialsSetting = credentials += {
-    Seq("SONATYPE_USER", "SONATYPE_PASS").map(k => sys.env.get(k)) match {
-      case Seq(Some(user), Some(pass)) =>
-        Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)
-      case _                           =>
-        Credentials(Path.userHome / ".ivy2" / ".credentials")
-    }
-  }
+  lazy val credentialsSetting =
+    credentials ++= (for {
+      user <- sys.env.get("SONATYPE_USERNAME")
+      pass <- sys.env.get("SONATYPE_PASSWORD")
+    } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)).toSeq
 }
