@@ -14,7 +14,8 @@ widely in production systems wherever there are arities to be abstracted over an
 ## Projects which use shapeless
 
 There is a wide variety of projects which use shapeless in one way or another ... see the
-[incomplete list of projects][built-with-shapeless] for ideas and inspiration.
+[incomplete list of projects][built-with-shapeless] for ideas and inspiration. If you are using shapeless and your
+project isn't listed yet, please add it.
 
 [built-with-shapeless]: https://github.com/milessabin/shapeless/wiki/Built-with-shapeless
 
