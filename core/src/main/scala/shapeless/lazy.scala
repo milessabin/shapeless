@@ -29,13 +29,14 @@ trait Lazy[+T] extends Serializable {
 }
 
 object Lazy {
-  implicit def apply[T](t: => T): Lazy[T] = new Lazy[T] {
-    lazy val value = t
-  }
+  implicit def apply[T](t: => T): Lazy[T] =
+    new Lazy[T] {
+      lazy val value = t
+    }
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
-  class Values[T <: HList](val values: T)
+  class Values[T <: HList](val values: T) extends Serializable
   object Values {
     implicit val hnilValues: Values[HNil] = new Values(HNil)
     implicit def hconsValues[H, T <: HList](implicit lh: Lazy[H], t: Values[T]): Values[H :: T] =
@@ -189,8 +190,19 @@ trait DerivationContext extends CaseClassMacros {
           (tree, actualTpe)
       }
 
-    val (tree, actualType) = if(root) mkInstances(instTpe) else instTree
-    q"_root_.shapeless.Lazy[$actualType]($tree)"
+    if(root) {
+      val (tree, actualType) = mkInstances(instTpe)
+      val valNme = TermName(c.freshName)
+      q"""
+      val $valNme: $actualType = $tree
+      _root_.shapeless.Lazy[$actualType]($valNme)
+      """
+    } else {
+      val (tree, actualType) = instTree
+      q"""
+      _root_.shapeless.Lazy[$actualType]($tree)
+      """
+    }
   }
 
   // Workaround for https://issues.scala-lang.org/browse/SI-5465

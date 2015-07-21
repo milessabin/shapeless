@@ -23,7 +23,7 @@ import ops.record.{ Keys, Values }
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
  */
-trait ProductTypeClass[C[_]] {
+trait ProductTypeClass[C[_]] extends Serializable {
   /**
    * Given a type class instance for `H`, and a type class instance for a
    * product, produce a type class instance for the product prepended with `H`.
@@ -42,7 +42,7 @@ trait ProductTypeClass[C[_]] {
   def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
 }
 
-trait ProductTypeClassCompanion[C[_]] {
+trait ProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
   val typeClass: ProductTypeClass[C]
@@ -63,7 +63,7 @@ trait ProductTypeClassCompanion[C[_]] {
  * Refines ProductTypeClass with the addition of runtime `String` labels
  * corresponding to the names of the product elements.
  */
-trait LabelledProductTypeClass[C[_]] {
+trait LabelledProductTypeClass[C[_]] extends Serializable {
   /**
    * Given a type class instance for `H`, and a type class instance for a
    * product, produce a type class instance for the product prepended with `H`.
@@ -82,12 +82,12 @@ trait LabelledProductTypeClass[C[_]] {
   def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
 }
 
-trait LabelledProductTypeClassCompanion[C[_]] {
+trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
   val typeClass: LabelledProductTypeClass[C]
 
-  trait Wrap[KV] {
+  trait Wrap[KV] extends Serializable {
     type V
     val unwrap: C[V]
     def label(v: V): KV

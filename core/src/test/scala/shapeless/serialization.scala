@@ -937,15 +937,8 @@ class SerializationTests {
   def testLazy {
     assertSerializable(Lazy(23))
 
-    // The following two fail serialization with a ClassNotFoundException due to
-    // what appears to be incorrect name mangling. Their expansion involves method local
-    // classes with lazy val member which the Scala issue tracker suggests are
-    // problematic. The success of other tests here, esp. testSyb, testFunctor and testShow,
-    // suggest that this won't be a problem in practice, however this needs to have an eye
-    // kept on it.
-
-    //assertSerializable(implicitly[Lazy[Generic[Wibble]]])
-    //assertSerializable(implicitly[Lazy[Generic1[Box, TC1]]])
+    assertSerializable(implicitly[Lazy[Generic[Wibble]]])
+    assertSerializable(implicitly[Lazy[Generic1[Box, TC1]]])
 
     assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])
     assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])

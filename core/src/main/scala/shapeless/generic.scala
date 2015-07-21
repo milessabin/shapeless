@@ -780,7 +780,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         def to(p: $tpe): Repr = (p match { case ..$toCases }).asInstanceOf[Repr]
         def from(p: Repr): $tpe = p match { case ..$fromCases }
       }
-      new $clsName()
+      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
     """
   }
 
@@ -807,7 +807,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         def to(p: $tpe): Repr = $to
         def from(p: Repr): $tpe = _root_.shapeless.Coproduct.unsafeGet(p).asInstanceOf[$tpe]
       }
-      new $clsName()
+      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
     """
   }
 

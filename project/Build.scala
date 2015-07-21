@@ -76,7 +76,14 @@ object ShapelessBuild extends Build {
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("examples")),
 
-        previousArtifact := Some(organization.value %% moduleName.value % "2.2.0"),
+        previousArtifact := {
+          val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+          if (major == 2 && minor == 11)
+            Some(organization.value %% moduleName.value % "2.2.0")
+          else
+            None
+        },
+
         binaryIssueFilters ++= {
           import com.typesafe.tools.mima.core._
           import com.typesafe.tools.mima.core.ProblemFilters._
@@ -169,7 +176,7 @@ object ShapelessBuild extends Build {
     Seq(
       organization        := "com.chuusai",
       scalaVersion        := "2.11.7",
-      crossScalaVersions  := Seq("2.11.7", "2.12.0-M1"),
+      crossScalaVersions  := Seq("2.11.7", "2.12.0-M2"),
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
