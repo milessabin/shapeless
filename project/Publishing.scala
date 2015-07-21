@@ -65,7 +65,7 @@ object Publishing {
 
   lazy val credentialsSetting =
     credentials ++= (for {
-      user <- sys.env.get("SONATYPE_USERNAME")
-      pass <- sys.env.get("SONATYPE_PASSWORD")
+      user <- sys.env.get("SONATYPE_USER")
+      pass <- sys.env.get("SONATYPE_PASS")
     } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)).toSeq
 }
