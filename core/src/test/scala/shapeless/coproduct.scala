@@ -259,6 +259,11 @@ class CoproductTests {
   def testFold {
     import poly.identity
 
+    object addSize extends Poly2 {
+      implicit def default[T](implicit st: size.Case.Aux[T, Int]) =
+        at[Int, T] { (acc, t) => acc + size(t) }
+    }
+
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
@@ -266,6 +271,10 @@ class CoproductTests {
     val foo1b = foo1 fold size
     val foo2b = foo2 fold size
     val foo3b = foo3 fold size
+
+    val foo1c = foo1.foldLeft(42)(addSize)
+    val foo2c = foo2.foldLeft(42)(addSize)
+    val foo3c = foo3.foldLeft(42)(addSize)
 
     typed[Int](foo1b)
     assertEquals(1, foo1b)
@@ -275,6 +284,15 @@ class CoproductTests {
 
     typed[Int](foo3b)
     assertEquals(1, foo3b)
+
+    typed[Int](foo1c)
+    assertEquals(43, foo1c)
+
+    typed[Int](foo2c)
+    assertEquals(45, foo2c)
+
+    typed[Int](foo3c)
+    assertEquals(43, foo3c)
 
     val f1 = Coproduct[APB](Apple())
     val f2 = Coproduct[APB](Pear())
