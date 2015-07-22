@@ -72,10 +72,12 @@ class CrossBranchRelease(val sbt: String) {
       _ <- mergeVersion("master", "scala-2.10.x", nextVer)
       _ <- mergeVersion("master", "scalajs-2.11.x", nextVer)
       _ <- mergeVersion("scala-2.10.x", "scalajs-2.10.x", nextVer)
+      _ <- mergeVersion("master", "jdk6-canary", nextVer)
       _ <- pushVersion(remote, "master")
       _ <- pushVersion(remote, "scala-2.10.x")
       _ <- pushVersion(remote, "scalajs-2.11.x")
       _ <- pushVersion(remote, "scalajs-2.10.x")
+      _ <- pushVersion(remote, "jdk6-canary")
       _ <- pushTag(remote, relVer, tagExists)
       _ <- promote
     } yield {
