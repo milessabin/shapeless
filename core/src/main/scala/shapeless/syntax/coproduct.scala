@@ -171,6 +171,11 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
   def fold(f: Poly)(implicit folder: Folder[f.type, C]): folder.Out = folder(c)
 
   /**
+   * Computes a left fold over this `Coproduct` using the polymorphic binary combining operator `op`.
+   */
+  def foldLeft[In](z: In)(op: Poly)(implicit folder: LeftFolder[C, In, op.type]): folder.Out = folder(c, z)
+
+  /**
    * Returns an `Coproduct` typed as a repetition of the least upper bound of the types of the elements of
    * this `Coproduct`.
    */
