@@ -11,6 +11,7 @@ git checkout scala-2.10.x
 git checkout scalajs-2.11.x
 git checkout scalajs-2.10.x
 git checkout master
+git checkout jdk6-canary
 ${RELEASE_DIR}/release.scalascript
 cd ${LOCAL_REPO}
 rm -Rf ${RELEASE_DIR}
