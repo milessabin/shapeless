@@ -1,0 +1,29 @@
+This is the final release of [shapeless-2.2.5][shapeless].
+
+These release notes provide a summary of changes since shapeless 2.2.4.
+shapeless 2.2.5 is source and binary compatible with shapeless 2.2.0+
+and should be binary compatible with shapeless-2.1.0 in most cases.
+
+* shapeless is now compatible with Scala 2.12.0-M2. Many thanks to
+  [Jason Zaugg][retronym] for his assistance.
+
+* An implementation of `foldLeft` for coproducts has been contributed
+  by Andreas Koestler.
+
+* Some much needed documentation for `Coproduct` and `Generic` has
+  been contributed by [Bryn Keller][brynkeller].
+
+* JDK 6 has been moved from the main Travis build matrix to a separate
+  branch (jdk6-canary) and all published shapeless branches are built
+  against JDK 8.
+
+* A build validation SBT command alias was contributed by
+  [Frank Thomas][fst].
+
+Many thanks everyone who has contributed ideas, enthusiasm and
+encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[retronym]: https://twitter.com/retronym
+[brynkeller]: https://twitter.com/brynkeller
+[fst]: https://twitter.com/fst9000
