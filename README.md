@@ -148,10 +148,12 @@ forwards compatibility.
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alistair Johnson <alistair.johnson@johnsonusm.com>
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
++ Andreas Koestler <Andreas.Kostler@cba.com.au>
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
++ Bryn Keller <xoltar@xoltar.org> [@brynkeller](https://twitter.com/brynkeller)
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
