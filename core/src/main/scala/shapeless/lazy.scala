@@ -204,6 +204,10 @@ object LazyMacros {
           (DerivationContext.establish(dc, c), false)
       }
 
+    if (root)
+      // Sometimes corrupted, and slows things too
+      c.universe.asInstanceOf[scala.tools.nsc.Global].analyzer.resetImplicits()
+
     try {
       dc.State.deriveInstance(tpe, root, strict)
     } finally {
