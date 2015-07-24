@@ -137,18 +137,53 @@ object lazily {
   def apply[T](implicit lv: Lazy[T]): T = lv.value
 }
 
+/**
+ * Wraps an eagerly computed value. Prevents wrongly reported implicit divergence, like `Lazy` does, but,
+ * unlike it, does not circumvent implicit cycles.
+ *
+ * Creation of `Lazy` instances usually triggers the creation of an anonymous class, to compute the wrapped
+ * value (e.g. with the by-name argument of `Lazy.apply`). `Strict` avoids that, which can lead to less
+ * overhead during compilation.
+ */
+trait Strict[+T] extends Serializable {
+  val value: T
+
+  def map[U](f: T => U): Strict[U] = Strict { f(value) }
+  def flatMap[U](f: T => Strict[U]): Strict[U] = Strict { f(value).value }
+}
+
+object Strict {
+  implicit def apply[T](t: T): Strict[T] =
+    new Strict[T] {
+      val value = t
+    }
+
+  def unapply[T](lt: Strict[T]): Option[T] = Some(lt.value)
+
+  implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
+}
+
 class LazyMacros(val c: whitebox.Context) {
   import c.universe._
   import c.ImplicitCandidate
 
-  def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree = {
+  def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
+    mkImpl[I](strict = false)
+
+  def mkStrictImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
+    mkImpl[I](strict = true)
+
+  def mkImpl[I](strict: Boolean)(implicit iTag: WeakTypeTag[I]): Tree = {
     (c.openImplicits.headOption, iTag.tpe.dealias) match {
       case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        LazyMacros.deriveInstance(c)(tpe.map(_.dealias))
+        LazyMacros.deriveInstance(c)(tpe.map(_.dealias), strict)
       case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
-        q"null.asInstanceOf[_root_.shapeless.Lazy[Nothing]]"
+        if (strict)
+          q"null.asInstanceOf[_root_.shapeless.Strict[Nothing]]"
+        else
+          q"null.asInstanceOf[_root_.shapeless.Lazy[Nothing]]"
       case (None, tpe) =>                                     // Non-implicit invocation
-        LazyMacros.deriveInstance(c)(tpe)
+        LazyMacros.deriveInstance(c)(tpe, strict)
       case _ =>
         c.abort(c.enclosingPosition, s"Bad Lazy materialization ${c.openImplicits.head}")
     }
@@ -158,7 +193,7 @@ class LazyMacros(val c: whitebox.Context) {
 object LazyMacros {
   var dcRef: Option[DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type): c.Tree = {
+  def deriveInstance(c: whitebox.Context)(tpe: c.Type, strict: Boolean): c.Tree = {
     val (dc, root) =
       dcRef match {
         case None =>
@@ -170,7 +205,7 @@ object LazyMacros {
       }
 
     try {
-      dc.State.deriveInstance(tpe, root)
+      dc.State.deriveInstance(tpe, root, strict)
     } finally {
       if(root) dcRef = None
     }
@@ -350,11 +385,11 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
       else Some((state0, tree))
     }
 
-    def deriveInstance(instTpe0: Type, root: Boolean): Tree = {
+    def deriveInstance(instTpe0: Type, root: Boolean, strict: Boolean): Tree = {
       if (root) {
         assert(current.isEmpty)
         val open = c.openImplicits
-        val name = if (open.length > 1) open(1).sym.name.toTermName.toString else "lazy"
+        val name = if (open.length > 1) open(1).sym.name.toTermName.toString else if (strict) "strict" else "lazy"
         current = Some(empty.copy(name = name))
       }
 
@@ -362,7 +397,10 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
         case Right((state, inst)) =>
           val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
           current = if (root) None else Some(state)
-          q"_root_.shapeless.Lazy.apply[$actualType]($tree)"
+          if (strict)
+            q"_root_.shapeless.Strict.apply[$actualType]($tree)"
+          else
+            q"_root_.shapeless.Lazy.apply[$actualType]($tree)"
         case Left(err) =>
           abort(err)
       }
