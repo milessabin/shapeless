@@ -193,8 +193,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
         }
 
     high.orElse(low) .map {case (state1, extInst, actualTpe) =>
-      val (state2, inst) = setTree(state1)(priorityTpe, extInst, actualTpe)
-      (state2, inst)
+      state1.closeInst(priorityTpe, extInst, actualTpe)
     }
   }
 
