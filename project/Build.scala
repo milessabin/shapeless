@@ -17,9 +17,17 @@
 import sbt._
 import Keys._
 import com.typesafe.sbteclipse.plugin.EclipsePlugin.{ EclipseKeys, EclipseCreateSrc }
+import com.typesafe.sbt.osgi.SbtOsgi._
 
 object ShapelessBuild extends Build {
   
+val slOsgiSettings = osgiSettings ++ Seq(
+  packageBin in Runtime <<= OsgiKeys.bundle
+  , packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap
+  , OsgiKeys.exportPackage := Seq("shapeless", "shapeless.*")
+  )
+
+
   override lazy val settings = super.settings :+ (
     EclipseKeys.skipParents := false
   )
@@ -63,7 +71,7 @@ object ShapelessBuild extends Build {
           
         mappings in (Compile, packageSrc) <++=
           (mappings in (Compile, packageSrc) in LocalProject("shapeless-examples"))
-      )
+      ) ++ slOsgiSettings
     )
 
   lazy val shapelessExamples = Project(
