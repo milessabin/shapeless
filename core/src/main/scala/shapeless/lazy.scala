@@ -498,7 +498,14 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
         case Right((state, inst)) =>
           val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
           current = if (root) None else Some(state)
-          mkInst(tree, actualType)
+          if (root) {
+            val valNme = TermName(c.freshName)
+            q"""
+            val $valNme: $actualType = $tree
+            ${mkInst(q"$valNme", actualType)}
+            """
+          } else
+            mkInst(tree, actualType)
         case Left(err) =>
           abort(err)
       }
