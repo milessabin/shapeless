@@ -943,11 +943,11 @@ class SerializationTests {
   def testLazy {
     assertSerializable(Lazy(23))
 
-    assertSerializable(implicitly[Lazy[Generic[Wibble]]])
-    assertSerializable(implicitly[Lazy[Generic1[Box, TC1]]])
+    assertSerializableBeforeAfter(implicitly[Lazy[Generic[Wibble]]])(_.value)
+    assertSerializableBeforeAfter(implicitly[Lazy[Generic1[Box, TC1]]])(_.value)
 
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])
+    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])(_.value)
+    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])(_.value)
   }
 
   @Test
@@ -1065,8 +1065,8 @@ class SerializationTests {
     assertSerializable(DataT[poly.identity.type, List[CNil]])
     assertSerializable(DataT[poly.identity.type, List[C]])
 
-    assertSerializable(implicitly[Everything[gsize.type, plus.type, Wibble]])
-    assertSerializable(implicitly[Everywhere[poly.identity.type, Wibble]])
+    assertSerializableBeforeAfter(implicitly[Everything[gsize.type, plus.type, Wibble]])(_(Wibble(2, "a")))
+    assertSerializableBeforeAfter(implicitly[Everywhere[poly.identity.type, Wibble]])(_(Wibble(2, "a")))
   }
 
   @Test
@@ -1079,8 +1079,11 @@ class SerializationTests {
 
   @Test
   def testShow {
-    assertSerializable(Show[Some[Int]])
-    assertSerializable(Show[Option[Int]])
+    assertSerializableBeforeAfter(Show[Some[Int]])(_.show(Some(2)))
+    assertSerializableBeforeAfter(Show[Option[Int]]) { show =>
+      show.show(Some(2))
+      show.show(None)
+    }
     assertSerializable(Show[Tree[Int]])
     assertSerializable(Show[List[Int]])
   }
