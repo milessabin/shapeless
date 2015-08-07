@@ -62,6 +62,12 @@ object SerializationTestDefns {
 
   def assertSerializable[T](t: T): Unit = assertTrue(serializable(t))
 
+  def assertSerializableBeforeAfter[T, U](t: T)(op: T => U): Unit = {
+    assertSerializable(t)
+    op(t)
+    assertSerializable(t)
+  }
+
   object isDefined extends (Option ~>> Boolean) {
     def apply[T](o : Option[T]) = o.isDefined
   }
@@ -1065,10 +1071,10 @@ class SerializationTests {
 
   @Test
   def testFunctor {
-    assertSerializable(Functor[Some])
-    assertSerializable(Functor[Option])
-    assertSerializable(Functor[Tree])
-    assertSerializable(Functor[List])
+    assertSerializableBeforeAfter(Functor[Some])(_.map(Some(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[Option])(_.map(Option(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[Tree])(_.map(Leaf(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[List])(_.map(List(2))(_.toString))
   }
 
   @Test
