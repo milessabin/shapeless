@@ -474,6 +474,18 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   }
 
   /**
+   * Convert this `HList` to a `List[Any]`.
+   */
+  def runtimeList: List[Any] = {
+    def loop(l: HList): List[Any] = l match {
+      case HNil => Nil
+      case hd :: tl => hd :: loop(tl)
+    }
+
+    loop(l)
+  }
+
+  /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
