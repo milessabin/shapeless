@@ -477,12 +477,18 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Convert this `HList` to a `List[Any]`.
    */
   def runtimeList: List[Any] = {
-    def loop(l: HList): List[Any] = l match {
-      case HNil => Nil
-      case hd :: tl => hd :: loop(tl)
+    val builder = List.newBuilder[Any]
+
+    @tailrec def loop(l: HList): Unit = l match {
+      case HNil => ()
+      case hd :: tl =>
+        builder += hd
+        loop(tl)
     }
 
     loop(l)
+
+    builder.result
   }
 
   /**
