@@ -279,6 +279,20 @@ class HListTests {
   }
 
   @Test
+  def testRuntimeLength {
+    assertEquals(0, HNil.runtimeLength)
+    assertEquals(1, (123 :: HNil).runtimeLength)
+    assertEquals(2, ("abc" :: 123 :: HNil).runtimeLength)
+  }
+
+  @Test
+  def testRuntimeList {
+    assertEquals(Nil, HNil.runtimeList)
+    assertEquals(123 :: Nil, (123 :: HNil).runtimeList)
+    assertEquals("abc" :: 123 :: Nil, ("abc" :: 123 :: HNil).runtimeList)
+  }
+
+  @Test
   def testInitLast {
 
     val lp = apbp.last
