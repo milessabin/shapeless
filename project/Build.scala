@@ -43,7 +43,8 @@ object ShapelessBuild extends Build {
       publish := (),
       publishLocal := (),
 
-      addCommandAlias("validate", ";test;mima-report-binary-issues;doc")
+      // Add back mima-report-binary-issues once 2.3.0 final is released
+      addCommandAlias("validate", ";test;doc")
     )
   )
 
@@ -77,7 +78,7 @@ object ShapelessBuild extends Build {
         previousArtifact := {
           val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
           if (major == 2 && minor == 11)
-            Some(organization.value %% moduleName.value % "2.2.0")
+            Some(organization.value %% moduleName.value % "2.3.0")
           else
             None
         },
