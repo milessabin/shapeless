@@ -215,6 +215,34 @@ object nat {
   }
 
   /**
+   * Type class witnessing that `Out` is range `A` to `B`.
+   *
+   * @author Andreas Koestler
+   */
+  trait Range[A <: Nat, B <: Nat] extends Serializable { type Out <: HList }
+
+  object Range {
+    def apply[A <: Nat, B <: Nat](implicit range: Range[A, B]): Aux[A, B, range.Out] = range
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: HList] = Range[A, B] {type Out = Out0}
+
+
+    import shapeless.ops.hlist._
+
+    implicit def range1[A <: Nat]: Aux[A, A, HNil] = new Range[A, A] {
+      type Out = HNil
+    }
+
+    implicit def range2[A <: Nat, B <: Nat, L <: HList, LO <: HList](implicit
+                                                                     r: Range.Aux[A, B, L],
+                                                                     prep: Prepend.Aux[L, B :: HNil, LO]
+                                                                      ): Aux[A, Succ[B], LO] =
+      new Range[A, Succ[B]] {
+        type Out = LO
+      }
+  }
+
+  /**
    * Type class supporting conversion of type-level Nats to value level Ints.
    * 
    * @author Miles Sabin
