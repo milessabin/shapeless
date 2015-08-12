@@ -758,6 +758,34 @@ object hlist {
   }
 
   /**
+   * Type class supporting access to the elements of this `HList` specified by `Ids`. Available only if this `HList`
+   * contains all elements specified in `Ids`.
+   *
+   * @author Andreas Koestler
+   */
+  trait ItemSelector[L <: HList, Ids <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object ItemSelector {
+    def apply[L <: HList, Ids <: HList](implicit sel: ItemSelector[L, Ids]): Aux[L, Ids, sel.Out] = sel
+
+    type Aux[L <: HList, Ids <: HList, Out0 <: HList] = ItemSelector[L, Ids] { type Out = Out0 }
+
+    implicit def ItemSelectorHNil[L <: HList]: Aux[L, HNil, HNil] =
+      new ItemSelector[L, HNil] {
+        type Out = HNil
+        def apply(l : L): Out = HNil
+      }
+
+    implicit def ItemSelectorHList[L <:HList, H <: Nat, T <: HList]
+    (implicit sel : ItemSelector[L, T], at: At[L,H]): Aux[L, H::T, at.Out :: sel.Out] =
+      new ItemSelector[L, H::T] {
+        type Out = at.Out :: sel.Out
+        def apply(l: L): Out = at(l) :: sel(l)
+      }
+  }
+
+
+  /**
    * Type class supporting partitioning this `HList` into those elements of type `U` and the
    * remainder
    *

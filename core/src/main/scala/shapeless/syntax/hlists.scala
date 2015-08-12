@@ -118,6 +118,21 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def select[U](implicit selector : Selector[L, U]) : U = selector(l)
 
   /**
+   * Returns the elements of this `HList` specified by `Ids`. Available only if there is
+   * evidence that this `HList` contains all elements specified in `Ids`.
+   */
+  def selectItems[Ids <: HList](ids :Ids)(implicit selector : ItemSelector[L,Ids]) : selector.Out = selector(l)
+
+  /**
+   * Returns the elements of this `HList` specified by the range of ids in [a,b[
+   * Available only if there is evidence that this `HList` contains all elements in that range
+   */
+  def slice[A <: Nat, B <: Nat, Ids <: HList](a: A, b: B)(implicit
+                                                          range: shapeless.ops.nat.Range.Aux[A,B,Ids],
+                                                          selector: ItemSelector[L,Ids]
+    ): selector.Out = selector(l)
+
+  /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
   def filter[U](implicit partition : Partition[L, U]) : partition.Prefix  = partition.filter(l)
