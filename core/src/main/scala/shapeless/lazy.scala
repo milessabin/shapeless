@@ -21,6 +21,91 @@ import scala.language.experimental.macros
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.whitebox
 
+/**
+ * Wraps a lazily computed value. Also circumvents cycles during implicit search, or wrong implicit divergences
+ * as illustrated below, and holds the corresponding implicit value lazily.
+ *
+ * The following implicit search sometimes fails to compile, because of a wrongly reported implicit divergence,
+ * {{{
+ *   case class ListCC(list: List[CC])
+ *   case class CC(i: Int, s: String)
+ *
+ *   trait TC[T]
+ *
+ *   object TC {
+ *     implicit def intTC: TC[Int] = ???
+ *     implicit def stringTC: TC[String] = ???
+ *     implicit def listTC[T](implicit underlying: TC[T]): TC[List[T]] = ???
+ *
+ *     implicit def genericTC[F, G](implicit
+ *       gen: Generic.Aux[F, G],
+ *       underlying: TC[G]
+ *     ): TC[F] = ???
+ *
+ *     implicit def hnilTC: TC[HNil] = ???
+ *
+ *     implicit def hconsTC[H, T <: HList](implicit
+ *       headTC: TC[H],
+ *       tailTC: TC[T]
+ *     ): TC[H :: T] = ???
+ *   }
+ *
+ *   implicitly[TC[CC]] // fails with: diverging implicit expansion for type TC[CC]
+ * }}}
+ *
+ * This wrongly reported implicit divergence can be circumvented by wrapping some of the implicit values in
+ * `Lazy`,
+ * {{{
+ *   case class ListCC(list: List[CC])
+ *   case class CC(i: Int, s: String)
+ *
+ *   trait TC[T]
+ *
+ *   object TC {
+ *     implicit def listTC[T](implicit underlying: TC[T]): TC[List[T]] = ???
+ *
+ *     implicit def genericTC[F, G](implicit
+ *       gen: Generic.Aux[F, G],
+ *       underlying: Lazy[TC[G]] // wrapped in Lazy
+ *     ): TC[F] = ???
+ *
+ *     implicit def hnilTC: TC[HNil] = ???
+ *
+ *     implicit def hconsTC[H, T <: HList](implicit
+ *       headTC: Lazy[TC[H]], // wrapped in Lazy
+ *       tailTC: TC[T]
+ *     ): TC[H :: T] = ???
+ *   }
+ *
+ *   implicitly[TC[CC]]
+ * }}}
+ *
+ * When looking for an implicit `Lazy[TC[T]]`, the `Lazy.mkLazy` macro will itself trigger the implicit search
+ * for a `TC[T]`. If this search itself triggers searches for types wrapped in `Lazy`, these will be done
+ * only once, their result put in a `lazy val`, and a reference to this `lazy val` will be returned as the corresponding
+ * value. It will then wrap all the resulting values together, and return a reference to the first one.
+ *
+ * E.g. with the above example definitions, when looking up for an implicit `TC[CC]`, the returned tree roughly looks
+ * like
+ * {{{
+ *   TC.genericTC(
+ *     Generic[CC], // actually, the tree returned by Generic.materialize, not written here for the sake of brevity
+ *     Lazy {
+ *       lazy val impl1: TC[List[CC] :: HNil] = TC.hconsTC(
+ *         Lazy(impl2),
+ *         TC.hnilTC
+ *       )
+ *       lazy val impl2: TC[List[CC]] = TC.listTC(TC.genericTC(
+ *         Generic[CC], // actually, the tree returned by Generic.materialize
+ *         Lazy(impl1)  // cycles to the initial TC[List[CC] :: HNil]
+ *       ))
+ *
+ *       impl1
+ *     }
+ *   )
+ * }}}
+ *
+ */
 trait Lazy[+T] extends Serializable {
   val value: T
 
