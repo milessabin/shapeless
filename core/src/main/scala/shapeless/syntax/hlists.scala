@@ -124,10 +124,12 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def selectMany[Ids <: HList](ids :Ids)(implicit sel : SelectMany[L,Ids]) : sel.Out = sel(l)
 
   /**
-   * Returns the elements of this `HList` specified by the range of ids in [a,b[
+   * Returns the elements of this `HList` specified by the range of ids in [A,B[
    * Available only if there is evidence that this `HList` contains all elements in that range
    */
-  def selectRange[A <: Nat, B <: Nat, Ids <: HList](a: A, b: B)(implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
+  def selectRange[A <: Nat, B <: Nat](implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
+
+  def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
 
   /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
