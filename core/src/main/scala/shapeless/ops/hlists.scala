@@ -763,26 +763,43 @@ object hlist {
    *
    * @author Andreas Koestler
    */
-  trait ItemSelector[L <: HList, Ids <: HList] extends DepFn1[L] { type Out <: HList }
+  trait SelectMany[L <: HList, Ids <: HList] extends DepFn1[L] { type Out <: HList }
 
-  object ItemSelector {
-    def apply[L <: HList, Ids <: HList](implicit sel: ItemSelector[L, Ids]): Aux[L, Ids, sel.Out] = sel
+  object SelectMany {
+    def apply[L <: HList, Ids <: HList](implicit sel: SelectMany[L, Ids]): Aux[L, Ids, sel.Out] = sel
 
-    type Aux[L <: HList, Ids <: HList, Out0 <: HList] = ItemSelector[L, Ids] { type Out = Out0 }
+    type Aux[L <: HList, Ids <: HList, Out0 <: HList] = SelectMany[L, Ids] { type Out = Out0 }
 
-    implicit def ItemSelectorHNil[L <: HList]: Aux[L, HNil, HNil] =
-      new ItemSelector[L, HNil] {
+    implicit def SelectManyHNil[L <: HList]: Aux[L, HNil, HNil] =
+      new SelectMany[L, HNil] {
         type Out = HNil
         def apply(l : L): Out = HNil
       }
 
-    implicit def ItemSelectorHList[L <:HList, H <: Nat, T <: HList]
-    (implicit sel : ItemSelector[L, T], at: At[L,H]): Aux[L, H::T, at.Out :: sel.Out] =
-      new ItemSelector[L, H::T] {
+    implicit def SelectManyHList[L <:HList, H <: Nat, T <: HList]
+    (implicit sel : SelectMany[L, T], at: At[L,H]): Aux[L, H::T, at.Out :: sel.Out] =
+      new SelectMany[L, H::T] {
         type Out = at.Out :: sel.Out
         def apply(l: L): Out = at(l) :: sel(l)
       }
   }
+
+  trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
+
+  object SelectRange {
+    def apply[L <: HList, A <: Nat, B <: Nat](implicit sel: SelectRange[L, A, B]): Aux[L, A, B, sel.Out] = sel
+
+    type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
+
+    implicit def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList]
+    (implicit range: shapeless.ops.nat.Range.Aux[A, B, Ids], sel: SelectMany[L, Ids]): Aux[L, A, B, sel.Out] =
+      new SelectRange[L, A, B] {
+        type Out = sel.Out
+
+        def apply(l: L): Out = sel(l)
+      }
+  }
+
 
 
   /**
