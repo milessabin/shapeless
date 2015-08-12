@@ -1285,6 +1285,40 @@ class HListTests {
     val sd = sl.select[Double]
     assertEquals(2.0, sd, Double.MinPositiveValue)
   }
+  @Test
+  def testSelectItems {
+    val si = 1 :: true :: "foo" :: 2.0 :: HNil
+    val si1 = si.selectItems(HNil: HNil)
+    assertTypedEquals[HNil](HNil, si1)
+
+    val si2 = si.selectItems(_0::HNil)
+    assertTypedEquals[Int::HNil](1::HNil, si2)
+
+    val si3 = si.selectItems(_2::HNil)
+    assertTypedEquals[String::HNil]("foo"::HNil, si3)
+
+    val si4 = si.selectItems(_0::_1::_2::_3::HNil)
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si4)
+  }
+  @Test
+  def testSlice: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+    val sl1 = sl.slice(_0,_0)
+    assertTypedEquals[HNil](HNil, sl1)
+
+    val sl2 = sl.slice(_1,_1)
+    assertTypedEquals[HNil](HNil, sl2)
+
+    val sl3 = sl.slice(_0,_2)
+    assertTypedEquals[Int::Boolean::HNil](1::true::HNil, sl3)
+
+    val sl4 = sl.slice(_2,_4)
+    assertTypedEquals[String::Double::HNil]("foo"::2.0::HNil, sl4)
+
+    val sl5 = sl.slice(_0,_4)
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, sl5)
+
+  }
 
   @Test
   def testFilter {
