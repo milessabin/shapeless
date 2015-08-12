@@ -229,7 +229,7 @@ object nat {
 
     import shapeless.ops.hlist._
 
-    implicit def range1[A <: Nat, B <: Nat](implicit lteq: LTEq[B, A]): Aux[A, B, HNil] = new Range[A, B] {
+    implicit def range1[A <: Nat]: Aux[A, A, HNil] = new Range[A, A] {
       type Out = HNil
     }
 
