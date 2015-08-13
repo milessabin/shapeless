@@ -2781,6 +2781,34 @@ class HListTests {
     assertEquals((23, true), ib)
   }
 
+  object FooNat extends NatProductArgs {
+    def applyProduct[L <: HList](args: L): L = args
+  }
+  @Test
+  def testNatProductArgs {
+    val l = FooNat(1, 2, 3)
+    typed[_1 :: _2 :: _3 :: HNil](l)
+
+    val v1 = l.head
+    typed[_1](v1)
+    assertEquals(_1, v1)
+
+    val v2 = l.tail.head
+    typed[_2](v2)
+    assertEquals(_2, v2)
+
+    val v3 = l.tail.tail.head
+    typed[_3](v3)
+    assertEquals(_3, v3)
+
+    val v4 = l.tail.tail.tail
+    typed[HNil](v4)
+
+    illTyped("""
+      r.tail.tail.tail.head
+             """)
+  }
+
   implicit class Interpolator(val sc: StringContext) {
     class Args extends ProductArgs {
       def applyProduct[L <: HList](l: L): L = l
