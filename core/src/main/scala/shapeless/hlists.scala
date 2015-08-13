@@ -181,13 +181,13 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal.constantType
 
-  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(false))
+  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false, mkProductImpl)
 
-  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductNatImpl)
+  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false, mkProductNatImpl)
 
-  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(true))
+  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, true, mkProductImpl)
 
-  def forward(method: Tree, args: Seq[Tree], mkProductImpl: (Seq[Tree]) => Tree): Tree = {
+  def forward(method: Tree, args: Seq[Tree], narrow: Boolean, mkProductImpl: (Seq[Tree], Boolean) => Tree): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
@@ -197,12 +197,12 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val argsTree = mkProductImpl(args)
+    val argsTree = mkProductImpl(args, narrow)
 
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def mkProductImpl(narrow: Boolean)(args: Seq[Tree]): Tree = {
+  def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
         val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
@@ -210,7 +210,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     }._2
   }
 
-  def mkProductNatImpl(args: Seq[Tree]): Tree = {
+  def mkProductNatImpl(args: Seq[Tree], unused: Boolean = false): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
         val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
