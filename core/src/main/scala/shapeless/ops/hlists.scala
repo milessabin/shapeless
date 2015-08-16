@@ -763,6 +763,7 @@ object hlist {
    *
    * @author Andreas Koestler
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectMany[${L}, ${Ids}]. You requested the elements in ${Ids}, but HList ${L} does not contain all of them.")
   trait SelectMany[L <: HList, Ids <: HList] extends DepFn1[L] { type Out <: HList }
 
   object SelectMany {
@@ -784,6 +785,13 @@ object hlist {
       }
   }
 
+  /**
+   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
+   * Avaialable only if this `HList` contains all elements in range
+   *
+   * @author Andreas Koestler
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectRange[${L}, ${A}, ${B}]. You requested the elements in range [${A},${B}[, but HList ${L} does not contain all of them.")
   trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
 
   object SelectRange {
