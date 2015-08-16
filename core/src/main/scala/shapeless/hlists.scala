@@ -127,7 +127,6 @@ object HList extends Dynamic {
  */
 
 trait NatProductArgs extends Dynamic {
-  println("FOO")
   def applyDynamic(method: String)(args: Int*): Any = macro ProductMacros.forwardNatImpl
 }
 /**
