@@ -79,7 +79,7 @@ object ShapelessBuild extends Build {
 
         previousArtifact := {
           val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
-          if (major == 2 && minor == 11)
+          if (major == 2 && minor <= 11)
             Some(organization.value %% moduleName.value % "2.2.0")
           else
             None
@@ -106,6 +106,8 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAnonOrRefinement"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkTypTree"),
             ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
+            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.mkProductImpl"),
+            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.forward"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible")
           )
         },
