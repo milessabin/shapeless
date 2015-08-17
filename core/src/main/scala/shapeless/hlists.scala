@@ -62,7 +62,7 @@ object HList extends Dynamic {
   def apply() = HNil
 
   def apply[T](t: T) = t :: HNil
-  
+
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
 
   /**
@@ -74,7 +74,7 @@ object HList extends Dynamic {
    * Produces a `N1`-length HList made of `N2`-length HLists filled with `elem`.
    */
   def fill[A](n1: Nat, n2: Nat)(elem: A)(implicit fill: Fill[(n1.N, n2.N), A]) : fill.Out = fill(elem)
-  
+
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 
   /**
@@ -87,21 +87,48 @@ object HList extends Dynamic {
 
   /**
    * Allows to specify an `HList` type with a syntax similar to `Record` and `Union`, as follows,
-   * 
+   *
    * {{{
    * type ISB = HList.`Int, String, Boolean`.T
    * }}}
-   * 
+   *
    * Literal types are allowed, so that the following is valid,
-   * 
+   *
    * {{{
    * type ABC = HList.`'a, 'b, 'c`.T
    * type TwoTrueStr = HList.`2, true, "str"`.T
    * }}}
    */
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
+
 }
 
+
+/**
+ * Trait supporting mapping dynamic argument lists of Ints to HList of Nat arguments.
+ *
+ * Mixing in this trait enables method applications of the form,
+ *
+ * {{{
+ * lhs.method(1, 2, 3)
+ * }}}
+ *
+ * to be rewritten as,
+ *
+ * {{{
+ * lhs.methodProduct(_1 :: _2 :: _3)
+ * }}}
+ *
+ * ie. the arguments are rewritten as HList elements of Nat and the application is
+ * rewritten to an application of an implementing method (identified by the
+ * "Product" suffix) which accepts a single HList of Int argument.
+ *
+ * @author Andreas Koestler
+ */
+
+trait NatProductArgs extends Dynamic {
+  def applyDynamic(method: String)(args: Int*): Any = macro ProductMacros.forwardNatImpl
+}
 /**
  * Trait supporting mapping dynamic argument lists to HList arguments.
  *
@@ -120,6 +147,7 @@ object HList extends Dynamic {
  * ie. the arguments are rewritten as HList elements and the application is
  * rewritten to an application of an implementing method (identified by the
  * "Product" suffix) which accepts a single HList argument.
+ *
  */
 trait ProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardImpl
@@ -152,11 +180,13 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal.constantType
 
-  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
+  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(false))
 
-  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, true)
+  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductNatImpl)
 
-  def forward(method: Tree, args: Seq[Tree], narrow: Boolean): Tree = {
+  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(true))
+
+  def forward(method: Tree, args: Seq[Tree], mkProductImpl: (Seq[Tree]) => Tree): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
@@ -166,15 +196,24 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val argsTree = mkProductImpl(args, narrow)
+    val argsTree = mkProductImpl(args)
 
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
+  def mkProductImpl(narrow: Boolean)(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
         val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
+        (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
+    }._2
+  }
+
+  def mkProductNatImpl(args: Seq[Tree]): Tree = {
+    args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
+      case(elem, (accTpe, accTree)) =>
+        val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
+        val (neTpe, neTree) = (matElem.tpe, matElem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
   }

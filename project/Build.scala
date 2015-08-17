@@ -102,7 +102,9 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkCoproductTypTree"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAnonOrRefinement"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkTypTree"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible")
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible"),
+            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.mkProductImpl"),
+            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.forward")
           )
         },
 
