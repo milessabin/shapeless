@@ -106,7 +106,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
       new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
         type Out = $labelsTpe
         def apply(): $labelsTpe = $labelsValue
-      }
+      } : _root_.shapeless.DefaultSymbolicLabelling.Aux[$tTpe, $labelsTpe]
     """
   }
 
