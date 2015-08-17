@@ -1285,6 +1285,52 @@ class HListTests {
     val sd = sl.select[Double]
     assertEquals(2.0, sd, Double.MinPositiveValue)
   }
+  @Test
+  def testSelectMany {
+    val si = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val si1 = si.selectMany[HNil]
+    assertTypedEquals[HNil](HNil, si1)
+
+    val si2 = si.selectMany[_0::HNil]
+    assertTypedEquals[Int::HNil](1::HNil, si2)
+
+    val si3 = si.selectMany[_2::HNil]
+    assertTypedEquals[String::HNil]("foo"::HNil, si3)
+
+    val si4 = si.selectMany[_0::_1::_2::_3::HNil]
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si4)
+  }
+  @Test
+  def testSelectRange: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val sl1  = sl.selectRange[_0,_0]
+    val sl1i = sl.selectRange(0,0)
+    assertTypedEquals[HNil](HNil, sl1)
+    assertTypedEquals[HNil](HNil, sl1i)
+
+    val sl2  = sl.selectRange[_1,_1]
+    val sl2i = sl.selectRange(1,1)
+    assertTypedEquals[HNil](HNil, sl2)
+    assertTypedEquals[HNil](HNil, sl2i)
+
+    val sl3 = sl.selectRange[_0,_2]
+    val sl3i = sl.selectRange(0,2)
+    assertTypedEquals[Int::Boolean::HNil](1::true::HNil, sl3)
+    assertTypedEquals[Int::Boolean::HNil](1::true::HNil, sl3i)
+
+    val sl4 = sl.selectRange[_2,_4]
+    val sl4i = sl.selectRange(2,4)
+    assertTypedEquals[String::Double::HNil]("foo"::2.0::HNil, sl4)
+    assertTypedEquals[String::Double::HNil]("foo"::2.0::HNil, sl4i)
+
+    val sl5 = sl.selectRange[_0,_4]
+    val sl5i = sl.selectRange(0,4)
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, sl5)
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, sl5i)
+
+  }
 
   @Test
   def testFilter {
@@ -2733,6 +2779,34 @@ class HListTests {
     val ib = selectAll('i, 'b).from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
+  }
+
+  object FooNat extends NatProductArgs {
+    def applyProduct[L <: HList](args: L): L = args
+  }
+  @Test
+  def testNatProductArgs {
+    val l = FooNat(1, 2, 3)
+    typed[_1 :: _2 :: _3 :: HNil](l)
+
+    val v1 = l.head
+    typed[_1](v1)
+    assertEquals(_1, v1)
+
+    val v2 = l.tail.head
+    typed[_2](v2)
+    assertEquals(_2, v2)
+
+    val v3 = l.tail.tail.head
+    typed[_3](v3)
+    assertEquals(_3, v3)
+
+    val v4 = l.tail.tail.tail
+    typed[HNil](v4)
+
+    illTyped("""
+      r.tail.tail.tail.head
+             """)
   }
 
   implicit class Interpolator(val sc: StringContext) {
