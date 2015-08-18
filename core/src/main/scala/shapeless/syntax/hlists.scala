@@ -121,7 +121,13 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Returns the elements of this `HList` specified by `Ids`. Available only if there is
    * evidence that this `HList` contains all elements specified in `Ids`.
    */
-  def selectMany[Ids <: HList](implicit sel : SelectMany[L,Ids]) : sel.Out = sel(l)
+  case class SelectManyAux[L <: HList](l: L) extends NatProductArgs {
+    def applyNatProduct[Ids <: HList](implicit sel: SelectMany[L,Ids]): sel.Out = sel(l)
+  }
+
+  def selectManyType[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
+
+  def selectMany = SelectManyAux(l)
 
   /**
    * Returns the elements of this `HList` specified by the range of ids in [A,B[
