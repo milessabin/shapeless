@@ -821,7 +821,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(!isTuple(tTpe))
       abort(s"Unable to materialize IsTuple for non-tuple type $tTpe")
 
-    q"""new _root_.shapeless.IsTuple[$tTpe] {}"""
+    q"""new _root_.shapeless.IsTuple[$tTpe] {} : _root_.shapeless.IsTuple[$tTpe]"""
   }
 
   def mkHasProductGeneric[T: WeakTypeTag]: Tree = {
@@ -829,7 +829,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(isReprType(tTpe) || !isProduct(tTpe))
       abort(s"Unable to materialize HasProductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasProductGeneric[$tTpe] {}"""
+    q"""new _root_.shapeless.HasProductGeneric[$tTpe] {} : _root_.shapeless.HasProductGeneric[$tTpe]"""
   }
 
   def mkHasCoproductGeneric[T: WeakTypeTag]: Tree = {
@@ -837,7 +837,7 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
     if(isReprType(tTpe) || !isCoproduct(tTpe))
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe] {}"""
+    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe] {} : _root_.shapeless.HasCoproductGeneric[$tTpe]"""
   }
 }
 
