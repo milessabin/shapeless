@@ -2852,6 +2852,6 @@ class HListTests {
     assertTypedEquals[Int](hlist1.collectFirst(Foo), 2)
 
     val hlist2 = "foo" :: 2.0 :: HNil
-    illTyped("""hlist.collectFirst(Foo)""")
+    illTyped("""hlist2.collectFirst(Foo)""")
   }
 }
