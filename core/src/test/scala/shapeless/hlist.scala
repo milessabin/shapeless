@@ -2842,4 +2842,16 @@ class HListTests {
       r.tail.tail.tail.head
     """)
   }
+
+  @Test
+  def testCollectFirst {
+    object Foo extends Poly1{
+      implicit def iinst = at[Int]{ _ + 1 }
+    }
+    val hlist1 = "foo" :: 2.0 :: 1 :: HNil
+    assertTypedEquals[Int](hlist1.collectFirst(Foo), 2)
+
+    val hlist2 = "foo" :: 2.0 :: HNil
+    illTyped("""hlist.collectFirst(Foo)""")
+  }
 }
