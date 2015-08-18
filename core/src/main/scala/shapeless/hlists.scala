@@ -203,14 +203,14 @@ class ProductMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
     val lhsTpe = lhs.tpe
 
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"NatProduct")
+    val methodName = newTermName(methodString+"NatProduct")
 
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val meth = lhsTpe.member(methodName).asMethod
 
-    if (!meth.paramLists.isEmpty && (meth.paramLists(0) forall (_.isImplicit))) {
+    if (!meth.paramss.isEmpty && (meth.paramss(0) forall (_.isImplicit))) {
       val typeParamsTree = mkProductNatTypeParamsImpl(args)
       q""" $lhs.$methodName[${typeParamsTree}] """
     } else {
@@ -254,7 +254,7 @@ class ProductMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   def mkProductNatTypeParamsImpl(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, tq"_root_.shapeless.HNil": Tree)) {
       case (elem, (accTpe, _)) =>
-        val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
+        val matElem = c.typeCheck(NatMacros.materializeWidened(c)(c.Expr(elem)).tree)
         val neTpe = matElem.tpe
         (appliedType(hconsTpe, List(neTpe, accTpe)), tq"""_root_.shapeless.::[$neTpe, $accTpe]""")
     }._2
