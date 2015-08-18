@@ -44,7 +44,7 @@ object Generic1 {
   implicit def materialize[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.materialize[T, FR]
 }
 
-trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] {
+trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: HList
 
@@ -66,7 +66,7 @@ object IsHCons1 {
   implicit def mkIsHCons1[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
 }
 
-trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] {
+trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: Coproduct
 
@@ -88,7 +88,7 @@ object IsCCons1 {
   implicit def mkIsCCons1[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
-trait Split1[L[_], FO[_[_]], FI[_[_]]] {
+trait Split1[L[_], FO[_[_]], FI[_[_]]] extends Serializable {
   type O[_]
   type I[_]
 
