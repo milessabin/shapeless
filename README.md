@@ -148,7 +148,7 @@ forwards compatibility.
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alistair Johnson <alistair.johnson@johnsonusm.com>
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
-+ Andreas Koestler <Andreas.Kostler@cba.com.au>
++ Andreas Koestler <andreas.koestler@gmail.com> @AndreasKostler
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)

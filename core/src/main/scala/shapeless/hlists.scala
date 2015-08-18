@@ -180,13 +180,34 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal.constantType
 
-  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(false))
+  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
 
-  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductNatImpl)
+  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forwardNat(method, args)
 
-  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, mkProductImpl(true))
+  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, true)
 
-  def forward(method: Tree, args: Seq[Tree], mkProductImpl: (Seq[Tree]) => Tree): Tree = {
+  def forwardNat(method: Tree, args: Seq[Tree]): Tree = {
+    val lhs = c.prefix.tree
+    val lhsTpe = lhs.tpe
+
+    val q"${methodString: String}" = method
+    val methodName = TermName(methodString+"NatProduct")
+
+    if(lhsTpe.member(methodName) == NoSymbol)
+      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+
+    val meth = lhsTpe.member(methodName).asMethod
+
+    if (!meth.paramLists.isEmpty && (meth.paramLists(0) forall (_.isImplicit))) {
+      val typeParamsTree = mkProductNatTypeParamsImpl(args)
+      q""" $lhs.$methodName[${typeParamsTree}] """
+    } else {
+      val argsTree = mkProductNatImpl(args)
+      q""" $lhs.$methodName($argsTree) """
+    }
+  }
+
+  def forward(method: Tree, args: Seq[Tree], narrow: Boolean): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
@@ -196,12 +217,12 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val argsTree = mkProductImpl(args)
+    val argsTree = mkProductImpl(args, narrow)
 
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def mkProductImpl(narrow: Boolean)(args: Seq[Tree]): Tree = {
+  def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
         val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
@@ -215,6 +236,15 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
         val (neTpe, neTree) = (matElem.tpe, matElem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
+    }._2
+  }
+
+  def mkProductNatTypeParamsImpl(args: Seq[Tree]): Tree = {
+    args.foldRight((hnilTpe, tq"_root_.shapeless.HNil": Tree)) {
+      case (elem, (accTpe, _)) =>
+        val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
+        val neTpe = matElem.tpe
+        (appliedType(hconsTpe, List(neTpe, accTpe)), tq"""_root_.shapeless.::[$neTpe, $accTpe]""")
     }._2
   }
 }
