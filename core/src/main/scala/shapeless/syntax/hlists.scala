@@ -125,7 +125,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     def applyNatProduct[Ids <: HList](implicit sel: SelectMany[L,Ids]): sel.Out = sel(l)
   }
 
-  def selectManyL[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
+  def selectManyType[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
 
   def selectMany = SelectManyAux(l)
 
