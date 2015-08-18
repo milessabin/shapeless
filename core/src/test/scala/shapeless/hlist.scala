@@ -1289,17 +1289,27 @@ class HListTests {
   def testSelectMany {
     val si = 1 :: true :: "foo" :: 2.0 :: HNil
 
-    val si1 = si.selectMany[HNil]
+    val si1 = si.selectManyType[HNil]
     assertTypedEquals[HNil](HNil, si1)
 
-    val si2 = si.selectMany[_0::HNil]
+    val si2 = si.selectManyType[_0::HNil]
     assertTypedEquals[Int::HNil](1::HNil, si2)
 
-    val si3 = si.selectMany[_2::HNil]
+    val si3 = si.selectManyType[_2::HNil]
     assertTypedEquals[String::HNil]("foo"::HNil, si3)
 
-    val si4 = si.selectMany[_0::_1::_2::_3::HNil]
+    val si4 = si.selectManyType[_0::_1::_2::_3::HNil]
     assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si4)
+
+    val si5 = si.selectMany(0)
+    assertTypedEquals[Int::HNil](1::HNil, si5)
+
+    val si6 = si.selectMany(2)
+    assertTypedEquals[String::HNil]("foo"::HNil, si6)
+
+    val si7 = si.selectMany(0,1,2,3)
+    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si7)
+
   }
   @Test
   def testSelectRange: Unit = {
@@ -2782,8 +2792,12 @@ class HListTests {
   }
 
   object FooNat extends NatProductArgs {
-    def applyProduct[L <: HList](args: L): L = args
+    def applyNatProduct[L <: HList](args: L): L = args
   }
+  object FooNatTypeParams extends NatProductArgs {
+    def applyNatProduct[L <: HList](implicit len: Length[L]) = len()
+  }
+
   @Test
   def testNatProductArgs {
     val l = FooNat(1, 2, 3)
@@ -2807,6 +2821,8 @@ class HListTests {
     illTyped("""
       r.tail.tail.tail.head
              """)
+    val res = FooNatTypeParams(1,2,3,4)
+    assertEquals(_4,res)
   }
 
   implicit class Interpolator(val sc: StringContext) {
