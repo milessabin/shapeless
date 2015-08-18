@@ -1076,11 +1076,11 @@ class SerializationTests extends Serializable {
     // I had to disable the first two during https://github.com/milessabin/shapeless/pull/435, with scala 2.12.0-M2.
     // Don't know why they keep capturing their outer class, and the next two don't.
 
-    // assertSerializableBeforeAfter(Show[Some[Int]])(_.show(Some(2)))
-    // assertSerializableBeforeAfter(Show[Option[Int]]) { show =>
-    //   show.show(Some(2))
-    //   show.show(None)
-    // }
+    assertSerializableBeforeAfter(Show[Some[Int]])(_.show(Some(2)))
+    assertSerializableBeforeAfter(Show[Option[Int]]) { show =>
+      show.show(Some(2))
+      show.show(None)
+    }
     assertSerializable(Show[Tree[Int]])
     assertSerializable(Show[List[Int]])
   }
