@@ -613,4 +613,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Adjoins the elements of this `HList` by flattening any `HList` elements.
    */
   def adjoined(implicit adjoin: Adjoin[L]): adjoin.Out = adjoin(l)
+
+  /**
+   * Finds the first element of the HList for which the given Poly is defined, and applies the Poly to it.
+   */ 
+  def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
 }
