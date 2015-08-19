@@ -113,7 +113,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import internal.constantType
   import Flag._
 
-  def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Id]]): Tree = {
+  def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
     val tpe = weakTypeOf[T[_]]
     val frTpe = frTag.tpe.typeConstructor
 
@@ -206,7 +206,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val nme = TypeName(c.freshName)
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
-    val frTpt = mkAttributedRef(frTpe)
+    val frTpt = appliedTypTree1(frTpe, param1(frTpe), TypeName("R"))
     val rnme = TypeName(c.freshName)
 
     val clsName = TypeName(c.freshName())
@@ -214,7 +214,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
-        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
+        def mkFrr: $frTpt = _root_.shapeless.lazily[$frTpt]
 
         def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
         def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
@@ -238,7 +238,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val nme = TypeName(c.freshName)
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
-    val frTpt = mkAttributedRef(frTpe)
+    val frTpt = appliedTypTree1(frTpe, param1(frTpe), TypeName("R"))
     val rnme = TypeName(c.freshName)
 
     val to = {
@@ -251,7 +251,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
-        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
+        def mkFrr: $frTpt = _root_.shapeless.lazily[$frTpt]
 
         def to[$nme](ft: $tpeTpt): R[$nme] = $to
         def from[$nme](rt: R[$nme]): $tpeTpt = _root_.shapeless.Coproduct.unsafeGet(rt).asInstanceOf[$tpeTpt]
