@@ -205,6 +205,12 @@ package Generic1TestsAux {
     }
   }
 
+  trait Trivial1[F[_]]
+
+  object Trivial1 {
+    implicit def trivially[F[_]]: Trivial1[F] = new Trivial1[F] {}
+  }
+
   trait Trivial10[F[_], T]
 
   object Trivial10 {
@@ -422,6 +428,33 @@ class Generic1Tests {
     implicitly[LF[Set]]
     val g3 = Generic1[Foo, LF]
     typed[Trivial11[List, g3.R]](g3.mkFrr)
+
+    type HC[t] = t :: HNil
+    val ih0 = IsHCons1[HC, FI, Trivial1]
+    typed[Trivial10[ih0.H, Int]](ih0.mkFhh)
+    typed[Trivial1[ih0.T]](ih0.mkFtt)
+
+    val ih1 = IsHCons1[HC, Trivial1, FI]
+    typed[Trivial1[ih1.H]](ih1.mkFhh)
+    typed[Trivial10[ih1.T, Int]](ih1.mkFtt)
+
+    type CC[t] = t :+: CNil
+    val ic0 = IsCCons1[CC, FI, Trivial1]
+    typed[Trivial10[ic0.H, Int]](ic0.mkFhh)
+    typed[Trivial1[ic0.T]](ic0.mkFtt)
+
+    val ic1 = IsCCons1[CC, Trivial1, FI]
+    typed[Trivial1[ic1.H]](ic1.mkFhh)
+    typed[Trivial10[ic1.T, Int]](ic1.mkFtt)
+
+    type LO[t] = List[Option[t]]
+    val s0 = Split1[LO, FI, Trivial1]
+    typed[Trivial10[s0.O, Int]](s0.mkFoo)
+    typed[Trivial1[s0.I]](s0.mkFii)
+
+    val s1 = Split1[LO, Trivial1, FI]
+    typed[Trivial1[s1.O]](s1.mkFoo)
+    typed[Trivial10[s1.I, Int]](s1.mkFii)
   }
 }
 

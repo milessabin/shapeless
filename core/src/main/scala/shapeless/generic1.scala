@@ -266,7 +266,7 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
   def mkIsHCons1Impl[L[_], FH[_[_]], FT[_[_]]]
-    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Id]], ftTag: WeakTypeTag[FT[Const[HNil]#λ]]): Tree =
+    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Any]], ftTag: WeakTypeTag[FT[Any]]): Tree =
       mkIsCons1(lTag.tpe, fhTag.tpe.typeConstructor, ftTag.tpe.typeConstructor)
 
   val isCons1TC: Tree = tq"_root_.shapeless.IsHCons1"
@@ -287,7 +287,7 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
   def mkIsCCons1Impl[L[_], FH[_[_]], FT[_[_]]]
-    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Id]], ftTag: WeakTypeTag[FT[Const[CNil]#λ]]): Tree =
+    (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Any]], ftTag: WeakTypeTag[FT[Any]]): Tree =
       mkIsCons1(lTag.tpe, fhTag.tpe.typeConstructor, ftTag.tpe.typeConstructor)
 
   val isCons1TC: Tree = tq"_root_.shapeless.IsCCons1"
@@ -319,9 +319,6 @@ trait IsCons1Macros extends CaseClassMacros {
   def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree)
 
   def mkIsCons1(lTpe: Type, fhTpe: Type, ftTpe: Type): Tree = {
-    val fhTpt = mkAttributedRef(fhTpe)
-    val ftTpt = mkAttributedRef(ftTpe)
-
     val lParam = lTpe.typeParams.head
     val lParamTpe = lParam.asType.toType
     val lDealiasedTpe = appliedType(lTpe, lParamTpe).dealias
@@ -336,18 +333,20 @@ trait IsCons1Macros extends CaseClassMacros {
     val tlPoly = c.internal.polyType(List(lParam), tl)
 
     val nme = TypeName(c.freshName)
+    val fhTpt = appliedTypTree1(fhTpe, param1(fhTpe), TypeName("H"))
+    val ftTpt = appliedTypTree1(ftTpe, param1(ftTpe), TypeName("T"))
     val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
     val hdTpt = appliedTypTree1(hdPoly, lParamTpe, nme)
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, nme)
 
     val (pack, unpack) = mkPackUnpack(nme, lTpt, hdTpt, tlTpt)
     q"""
-      new $isCons1TC[$lTpe, $fhTpt, $ftTpt] {
+      new $isCons1TC[$lTpe, $fhTpe, $ftTpe] {
         type H[$nme] = $hdTpt
         type T[$nme] = $tlTpt
 
-        def mkFhh: $fhTpt[H] = _root_.shapeless.lazily[$fhTpt[H]]
-        def mkFtt: $ftTpt[T] = _root_.shapeless.lazily[$ftTpt[T]]
+        def mkFhh: $fhTpt = _root_.shapeless.lazily[$fhTpt]
+        def mkFtt: $ftTpt = _root_.shapeless.lazily[$ftTpt]
 
         $pack
         $unpack
@@ -365,14 +364,13 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val foTpe = foTag.tpe.typeConstructor
     val fiTpe = fiTag.tpe.typeConstructor
 
-    val foTpt = c.internal.gen.mkAttributedRef(foTpe.typeSymbol)
-    val fiTpt = c.internal.gen.mkAttributedRef(fiTpe.typeSymbol)
-
     val lParam = lTpe.typeParams.head
     val lParamTpe = lParam.asType.toType
     val lDealiasedTpe = appliedType(lTpe, lParamTpe).dealias
 
     val nme = TypeName(c.freshName)
+    val foTpt = appliedTypTree1(foTpe, param1(foTpe), TypeName("O"))
+    val fiTpt = appliedTypTree1(fiTpe, param1(fiTpe), TypeName("I"))
 
     def balanced(args: List[Type]): Boolean =
       args.find(_.contains(lParam)).map { pivot =>
@@ -399,12 +397,12 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
 
     q"""
-      new _root_.shapeless.Split1[$lTpe, $foTpt, $fiTpt] {
+      new _root_.shapeless.Split1[$lTpe, $foTpe, $fiTpe] {
         type O[$nme] = $oTpt
         type I[$nme] = $iTpt
 
-        def mkFoo: $foTpt[O] = _root_.shapeless.lazily[$foTpt[O]]
-        def mkFii: $fiTpt[I] = _root_.shapeless.lazily[$fiTpt[I]]
+        def mkFoo: $foTpt = _root_.shapeless.lazily[$foTpt]
+        def mkFii: $fiTpt = _root_.shapeless.lazily[$fiTpt]
 
         def pack[$nme](u: O[I[$nme]]): $lTpt = u
         def unpack[$nme](p: $lTpt): O[I[$nme]] = p
