@@ -356,30 +356,8 @@ trait IsCons1Macros extends CaseClassMacros {
   }
 }
 
-class Split1Macros(val c: whitebox.Context) {
+class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
-
-  def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
-    tpe match {
-      case t if t =:= param =>
-        Ident(arg)
-      case PolyType(params, body) if params.head.asType.toType =:= param =>
-        appliedTypTree1(body, param, arg)
-      case t @ TypeRef(pre, sym, List()) if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
-        AppliedTypeTree(c.internal.gen.mkAttributedRef(pre, sym), argTrees)
-      case TypeRef(pre, sym, List()) =>
-        c.internal.gen.mkAttributedRef(pre, sym)
-      case TypeRef(pre, sym, args) =>
-        val argTrees = args.map(appliedTypTree1(_, param, arg))
-        AppliedTypeTree(c.internal.gen.mkAttributedRef(pre, sym), argTrees)
-      case t if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
-        AppliedTypeTree(c.internal.gen.mkAttributedRef(tpe.typeConstructor.typeSymbol), argTrees)
-      case t =>
-        tq"$tpe"
-    }
-  }
 
   def materialize[L[_], FO[_[_]], FI[_[_]]]
     (implicit lTag: WeakTypeTag[L[_]], foTag: WeakTypeTag[FO[Id]], fiTag: WeakTypeTag[FI[Id]]): Tree = {
