@@ -2239,5 +2239,35 @@ object hlist {
         }
   }
 
+  /**
+   * Type class witnessing that there exists at least one element of an `HList` for which a `Poly` can be
+   * applied.
+   *
+   * @author Owein Reese
+   */
+  trait CollectFirst[L <: HList, P <: Poly] extends DepFn1[L] with Serializable
+
+  object CollectFirst extends LowPriorityCollectFirst{
+    def apply[L <: HList, P <: Poly](implicit cf: CollectFirst[L, P]): Aux[L, P, cf.Out] = cf
+
+    implicit def hlistEval[H, T <: HList, P <: Poly](implicit ev: Case1[P, H]): Aux[H :: T, P, ev.Result] =
+      new CollectFirst[H :: T, P]{
+        type Out = ev.Result
+
+        def apply(l: H :: T) = ev(l.head)
+      }
+  }
+
+  trait LowPriorityCollectFirst{
+    type Aux[L <: HList, P <: Poly, Out0] = CollectFirst[L, P]{ type Out = Out0 }
+
+    implicit def hlistIterate[H, T <: HList, P <: Poly](implicit cf: CollectFirst[T, P]): Aux[H :: T, P, cf.Out] =
+      new CollectFirst[H :: T, P]{
+        type Out = cf.Out
+
+        def apply(l: H :: T) = cf(l.tail)
+      }
+  }
+
   private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
 }
