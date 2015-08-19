@@ -112,7 +112,7 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
   import Flag._
 
-  def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Id]]): Tree = {
+  def materialize[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
     val tpe = weakTypeOf[T[_]]
     val frTpe = frTag.tpe.typeConstructor
 
@@ -205,7 +205,7 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
     val nme = newTypeName(c.fresh)
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
-    val frTpt = mkAttributedRef(frTpe)
+    val frTpt = appliedTypTree1(frTpe, param1(frTpe), newTypeName("R"))
     val rnme = newTypeName(c.fresh)
 
     val clsName = newTypeName(c.fresh())
@@ -213,7 +213,7 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
-        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
+        def mkFrr: $frTpt = _root_.shapeless.lazily[$frTpt]
 
         def to[$nme](ft: $tpeTpt): R[$nme] = ft match { case ..$toCases }
         def from[$nme](rt: R[$nme]): $tpeTpt = rt match { case ..$fromCases }
@@ -238,7 +238,7 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
     val nme = newTypeName(c.fresh)
     val tpeTpt = appliedTypTree1(tpe, param1(tpe), nme)
     val reprTpt = reprTypTree1(tpe, nme)
-    val frTpt = mkAttributedRef(frTpe)
+    val frTpt = appliedTypTree1(frTpe, param1(frTpe), newTypeName("R"))
     val rnme = newTypeName(c.fresh)
 
     val to = {
@@ -251,7 +251,7 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
 
-        def mkFrr: $frTpt[R] = _root_.shapeless.lazily[$frTpt[R]]
+        def mkFrr: $frTpt = _root_.shapeless.lazily[$frTpt]
 
         def to[$nme](ft: $tpeTpt): R[$nme] = $to
         def from[$nme](rt: R[$nme]): $tpeTpt = _root_.shapeless.Coproduct.unsafeGet(rt).asInstanceOf[$tpeTpt]
@@ -266,7 +266,7 @@ object Generic1Macros {
   def inst(c: Context) = new Generic1Macros[c.type](c)
 
   def materialize[T[_], FR[_[_]]](c: Context)
-    (implicit tTag: c.WeakTypeTag[T[_]], frTag: c.WeakTypeTag[FR[Id]]): c.Expr[Generic1[T, FR]] =
+    (implicit tTag: c.WeakTypeTag[T[_]], frTag: c.WeakTypeTag[FR[Any]]): c.Expr[Generic1[T, FR]] =
       c.Expr[Generic1[T, FR]](inst(c).materialize[T, FR])
 }
 
