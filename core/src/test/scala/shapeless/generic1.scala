@@ -187,7 +187,7 @@ package Generic1TestsAux {
       new Pointed[({type λ[A] = A :+: Const[CNil]#λ[A] })#λ] {
         def point[A](a: A): A :+: Const[CNil]#λ[A] = Inl(a)
       }
-      
+
 
     implicit val constHNilPointed: Pointed[Const[HNil]#λ] =
       new Pointed[Const[HNil]#λ] {
@@ -203,6 +203,24 @@ package Generic1TestsAux {
     class PointedOps[A](a: A) {
       def point[F[_]](implicit F: Pointed[F]): F[A] = F.point(a)
     }
+  }
+
+  trait Trivial10[F[_], T]
+
+  object Trivial10 {
+    implicit def trivially[F[_], T]: Trivial10[F, T] = new Trivial10[F, T] {}
+  }
+
+  trait Trivial01[T, F[_]]
+
+  object Trivial01 {
+    implicit def trivially[T, F[_]]: Trivial01[T, F] = new Trivial01[T, F] {}
+  }
+
+  trait Trivial11[F[_], T[_]]
+
+  object Trivial11 {
+    implicit def trivially[F[_], T[_]]: Trivial11[F, T] = new Trivial11[F, T] {}
   }
 }
 
@@ -377,6 +395,33 @@ class Generic1Tests {
     IsHCons1[R0, Pointed, Pointed]
 
     Pointed[Option]
+  }
+
+  @Test
+  def testPartiallyApplied {
+    implicitly[Trivial10[List, Int]]
+    type FI[f[_]] = Trivial10[f, Int]
+    implicitly[FI[List]]
+    val g0 = Generic1[Foo, FI]
+    typed[Trivial10[g0.R, Int]](g0.mkFrr)
+
+    implicitly[Trivial01[Int, List]]
+    type IF[f[_]] = Trivial01[Int, f]
+    implicitly[IF[List]]
+    val g1 = Generic1[Foo, IF]
+    typed[Trivial01[Int, g0.R]](g1.mkFrr)
+
+    implicitly[Trivial11[Set, List]]
+    type FL[f[_]] = Trivial11[f, List]
+    implicitly[FL[Set]]
+    val g2 = Generic1[Foo, FL]
+    typed[Trivial11[g2.R, List]](g2.mkFrr)
+
+    implicitly[Trivial11[List, Set]]
+    type LF[f[_]] = Trivial11[List, f]
+    implicitly[LF[Set]]
+    val g3 = Generic1[Foo, LF]
+    typed[Trivial11[List, g3.R]](g3.mkFrr)
   }
 }
 
