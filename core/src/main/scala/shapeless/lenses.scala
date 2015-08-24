@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin
+ * Copyright (c) 2012-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tuple
 import ops.record.{ Selector => RSelector, Updater }
 import tag.@@
 
-trait Lens[S, A] extends Dynamic { outer =>
+trait Lens[S, A] extends Dynamic with Serializable { outer =>
   def get(s: S): A
   def set(s: S)(a: A): S
   def modify(s: S)(f: A => A): S = set(s)(f(get(s)))
@@ -61,7 +61,7 @@ trait Lens[S, A] extends Dynamic { outer =>
   }
 }
 
-trait Prism[S, A] extends Dynamic { outer =>
+trait Prism[S, A] extends Dynamic with Serializable { outer =>
   def get(s: S): Option[A]
   def set(s: S)(a: A): S
   def modify(s: S)(f: A => A): S = get(s).map(f).map(a => set(s)(a)).getOrElse(s)
@@ -348,7 +348,7 @@ object MkSelectDynamicOptic extends LowPriorityMkSelectDynamicOptic {
     }
 }
 
-trait MkGenericLens[T] {
+trait MkGenericLens[T] extends Serializable {
   type Repr
   def apply(): Lens[T, Repr]
 }
@@ -367,7 +367,7 @@ object MkGenericLens {
     }
 }
 
-trait MkLabelledGenericLens[T] {
+trait MkLabelledGenericLens[T] extends Serializable {
   type Repr
   def apply(): Lens[T, Repr]
 }
@@ -386,7 +386,7 @@ object MkLabelledGenericLens {
     }
 }
 
-trait MkHListNthLens[L <: HList, N <: Nat] {
+trait MkHListNthLens[L <: HList, N <: Nat] extends Serializable {
   type Elem
   def apply(): Lens[L, Elem]
 }
@@ -406,7 +406,7 @@ object MkHListNthLens {
     }
 }
 
-trait MkHListSelectLens[L <: HList, U] {
+trait MkHListSelectLens[L <: HList, U] extends Serializable {
   def apply(): Lens[L, U]
 }
 
@@ -422,7 +422,7 @@ object MkHListSelectLens {
       }
 }
 
-trait MkCoproductSelectPrism[C <: Coproduct, T] {
+trait MkCoproductSelectPrism[C <: Coproduct, T] extends Serializable {
   def apply(): Prism[C, T]
 }
 
@@ -438,7 +438,7 @@ object MkCoproductSelectPrism {
       }
 }
 
-trait MkRecordSelectLens[R <: HList, K] {
+trait MkRecordSelectLens[R <: HList, K] extends Serializable {
   type Elem
   def apply(): Lens[R, Elem]
 }

@@ -1,0 +1,115 @@
+This is the fifth release candidate for [shapeless-2.2.0][shapeless]. 
+These release notes provide a summary of changes since shapeless 2.1.0.
+shapeless 2.2.0 should be source and binary compatible with shapeless
+2.1.0, and for migration from shapeless 2.0.0 the earlier
+[migration guide from shapeless 2.0.0 to 2.1.0][migration] is still
+applicable and is available on the [shapeless wiki][wiki].
+
+Experience with updating [shapeless-contrib][contrib] to shapeless 2.2.0
+has led to some significant changes being made since RC4, and also
+opened up a window for a few low-risk additions and bug fixes,
+
+* A mechanism providing greater control over the implicit priority of
+  derived orphan type class instances has been added. This finally
+  allows shapeless-contrib to be updated to use shapeless-2.2.0.
+
+* Generic derivation for coproducts now correctly handles cases where
+  the type parameters of constructors is a subset and/or permutation of
+  the type parameters of the data type. This allows correct type class
+  derivation for types like Cat's `Xor` and `Ior`, and Scalaz's
+  disjunction.
+
+* A mechanism allowing expensive implicit definitions to be cached
+  simply has been added.
+
+* A number of tests have been made more portable so that they don't
+  fail when run under Scala.js due to spurious platform-specifics.
+
+* The `ToList` and `ToTraversable` are now serializable so long as a
+  serializable instances of `CanBuildFrom` is available.
+
+* A `Max` type class has been added for `Nat` types.
+
+* A `fields` method has been added to records and unions.
+
+* There are now `Generic` instances for ADTs with constructors which
+  are included via multiple inheritance paths.
+
+* `Witness` instances are now available for the singleton types of
+  stable values.
+
+* The test for "case-class-likeness" has been tightened to exclude some
+  unexpected types (notably arrays).
+
+* A hygiene bug in `Typeable` has been fixed.
+
+* A bug in the handling of singleton types in `Generic1` was fixed.
+
+Since the shapeless 2.2.0-RC3 release a bug was found and fixed in the
+new SingletonProductArgs implementation.
+
+Since the shapeless 2.2.0-RC2 release a bug was found and fixed in the
+new SingletonProductArgs implementation.
+
+Since the shapeless 2.2.0-RC1 release the following changes have been
+made,
+
+* If you are using Scala 2.10.x it is no longer necessary to provide an
+  explicit Scala version suffix for your shapeless dependency. You must
+  still ensure that you are using Scala version 2.10.2 or greater, with
+  Scala 2.10.5 (or switching to 2.11.x) strongly recommended.
+
+* All the major types and type classes now extend Serializable for
+  compatibility with libraries and systems which use Java
+  serialization.
+
+* A mechanism to replace Scala's now deprecated auto-tupling has been
+  added via the [ProductArgs][prodargs] and SingletonProductArgs traits.
+
+* A number of issues relating to the generation of Generic instances
+  for method local case classes have been fixed.
+
+The earlier 2.2.0-RC1 release included a number of [bug fixes][fixes]
+and the following new features and enhancements,
+
+* Added support for derivation of type classes for higher-kinded types.
+  See in particular the new [example][functor] illustrating the
+  application of this to the automatic derivation of Functor type class
+  instances for ADTs.
+
+* Added support for Generic representation of types with repeated
+  (ie. vararg) constructor arguments.
+
+* Added a useful toString to instances of the Typeable type class.
+
+* Added a useful toString to Sized containers.
+
+* Improved the CSV serialization example.
+
+* Reorganized the SBT project modules.
+  The "shapeless-" prefix has been dropped from all the module names
+  and it is now possible to drop into the Scala REPL with shapeless
+  on the classpath using just the "console" command.
+
+A big "Thank You!" to everyone who has contributed to this release,
+
++ Alexander Konovalov ([@alexknvl](https://twitter.com/alexknvl))
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
++ Alistair Johnson
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
++ Denis Mikhaylov [@notxcain](https://twitter.com/@notxcain)
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
++ Pascal Voitot [@mandubian](https://twitter.com/mandubian)
++ Sam Halliday [@fommil](https://twitter.com/fommil)
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
+[contrib]: https://github.com/typelevel/shapeless-contrib
+[prodargs]: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/hlists.scala#L124
+[fixes]: https://github.com/milessabin/shapeless/issues?q=milestone%3Ashapeless-2.2.0+is%3Aclosed
+[functor]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/functor.scala
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ package syntax
  *
  * @author Miles Sabin
  */
-final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal {
+final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializable {
+  import ops.adjoin.Adjoin
   import ops.coproduct._
 
   /**
@@ -170,6 +171,11 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal {
   def fold(f: Poly)(implicit folder: Folder[f.type, C]): folder.Out = folder(c)
 
   /**
+   * Computes a left fold over this `Coproduct` using the polymorphic binary combining operator `op`.
+   */
+  def foldLeft[In](z: In)(op: Poly)(implicit folder: LeftFolder[C, In, op.type]): folder.Out = folder(c, z)
+
+  /**
    * Returns an `Coproduct` typed as a repetition of the least upper bound of the types of the elements of
    * this `Coproduct`.
    */
@@ -243,4 +249,9 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal {
    */
   def deembed[Sub <: Coproduct](implicit basis: Basis[C, Sub]): basis.Out =
     basis(c)
+
+  /**
+   * Adjoins the elements of this `Coproduct` by flattening any `Coproduct` elements.
+   */
+  def adjoined(implicit adjoin: Adjoin[C]): adjoin.Out = adjoin(c)
 }

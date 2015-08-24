@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import tag.@@
  * 
  * @author Miles Sabin
  */
-final class UnionOps[C <: Coproduct](val c : C) extends AnyVal {
+final class UnionOps[C <: Coproduct](val c : C) extends AnyVal with Serializable {
   import shapeless.union._
   import ops.union._
 
@@ -54,6 +54,11 @@ final class UnionOps[C <: Coproduct](val c : C) extends AnyVal {
    * Returns a `Coproduct` of the values of this union.
    */
   def values(implicit values: Values[C]): values.Out = values(c)
+
+  /**
+   * Returns a `Coproduct` made of the key-value pairs of this union.
+   */
+  def fields(implicit fields: Fields[C]): fields.Out = fields(c)
 
   /**
    * Returns a `Map` whose keys and values are typed as the Lub of the keys

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import tag.@@
  * 
  * @author Miles Sabin
  */
-final class RecordOps[L <: HList](val l : L) extends AnyVal {
+final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   import shapeless.labelled._
   import ops.record._
 
@@ -98,6 +98,11 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal {
    * Returns an `HList` of the values of this record.
    */
   def values(implicit values: Values[L]): values.Out = values(l)
+
+  /**
+   * Returns a `HList` made of the key-value pairs of this record.
+   */
+  def fields(implicit fields: Fields[L]): fields.Out = fields(l)
 
   /**
    * Returns a `Map` whose keys and values are typed as the Lub of the keys

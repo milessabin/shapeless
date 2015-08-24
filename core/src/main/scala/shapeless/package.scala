@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import scala.language.experimental.macros
+
+import scala.reflect.macros.whitebox
+
 package object shapeless {
   def unexpected : Nothing = sys.error("Unexpected invocation")
 
@@ -102,4 +106,35 @@ package object shapeless {
   type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
   def everywhere(f: Poly): EverywhereAux[f.type] {} = new EverywhereAux[f.type]
+
+  def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
+}
+
+package shapeless {
+  class CachedImplicitMacros(val c: whitebox.Context) {
+    import c.universe._
+
+    def dropLocal(nme: TermName): TermName = {
+      val LOCAL_SUFFIX_STRING = " "
+      val TermName(nmeString) = nme
+      if(nmeString endsWith LOCAL_SUFFIX_STRING)
+        TermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
+      else
+        nme
+    }
+
+    def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
+      val tTpe = weakTypeOf[T]
+      val owner = c.internal.enclosingOwner
+      val ownerNme = dropLocal(owner.name.toTermName)
+      val tpe = if(tTpe.typeSymbol.isParameter) owner.typeSignature else tTpe
+
+      q"""
+        {
+          def $ownerNme = ???
+          _root_.scala.Predef.implicitly[$tpe]
+        }
+      """
+    }
+  }
 }

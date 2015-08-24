@@ -25,7 +25,7 @@ import scala.reflect.macros.{ blackbox, whitebox }
 import tag.@@
 import scala.util.Try
 
-trait Witness {
+trait Witness extends Serializable {
   type T
   val value: T {}
 }
@@ -37,6 +37,12 @@ object Witness extends Dynamic {
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
+
+  def mkWitness[T0](value0: T0): Aux[T0] =
+    new Witness {
+      type T = T0
+      val value = value0
+    }
 
   implicit val witness0: Witness.Aux[_0] =
     new Witness {
@@ -105,10 +111,20 @@ trait SingletonTypeUtils extends ReprTypes {
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
       case (Literal(k: Constant), _) => Some(constantType(k))
       case (LiteralSymbol(s), _) => Some(SingletonSymbolType(s))
-      case (_, keyType: SingleType) => Some(keyType)
+      case (_, keyType @ SingleType(p, v)) if !v.isParameter && !isValueClass(v) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
         Some(sops.tpe.member(TypeName("T")).typeSignature)
       case _ => None
+    }
+  }
+
+  def narrowValue(t: Tree): (Type, Tree) = {
+    t match {
+      case Literal(k: Constant) =>
+        val tpe = constantType(k)
+        (tpe, q"$t.asInstanceOf[$tpe]")
+      case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
+      case _ => (t.tpe, t)
     }
   }
 
@@ -137,6 +153,11 @@ trait SingletonTypeUtils extends ReprTypes {
     // to result in a runtime exception if the value is used in term position.
     Literal(Constant(())).setType(carrier)
   }
+
+  def isValueClass(sym: Symbol): Boolean = {
+    val tSym = sym.typeSignature.typeSymbol
+    tSym.isClass && tSym.asClass.isDerivedValueClass
+  }
 }
 
 class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
@@ -148,16 +169,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import decorators._
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
-    val name = TypeName(c.freshName())
-
     q"""
-      {
-        final class $name extends _root_.shapeless.Witness {
-          type T = $sTpe
-          val value: $sTpe = $s
-        }
-        new $name
-      }
+      _root_.shapeless.Witness.mkWitness[$sTpe]($s.asInstanceOf[$sTpe])
     """
   }
 
@@ -198,20 +211,21 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
   }
 
+  def extractSingletonValue(tpe: Type): Tree =
+    tpe match {
+      case ConstantType(c: Constant) => Literal(c)
+
+      case SingleType(p, v) if !v.isParameter && !isValueClass(v) => mkAttributedRef(p, v)
+
+      case SingletonSymbolType(c) => mkSingletonSymbol(c)
+
+      case _ =>
+        c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
+    }
+
   def materializeImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].dealias
-    val value =
-      tpe match {
-        case ConstantType(c: Constant) => Literal(c)
-
-        case SingleType(p, v) if !v.isParameter => mkAttributedRef(p, v)
-
-        case SingletonSymbolType(c) => mkSingletonSymbol(c)
-
-        case _ =>
-          c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
-      }
-    mkWitness(tpe, value)
+    mkWitness(tpe, extractSingletonValue(tpe))
   }
 
   def extractResult[T](t: Expr[T])(mkResult: (Type, Tree) => Tree): Tree =
@@ -219,14 +233,20 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
-      case (tpe @ SingleType(p, v), tree) if !v.isParameter =>
+      case (tpe @ SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
         mkResult(tpe, tree)
 
       case (SymTpe, LiteralSymbol(s)) =>
         mkResult(SingletonSymbolType(s), mkSingletonSymbol(s))
 
+      case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
+        val sym = tree.symbol.asTerm
+        val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
+        val symTpe = c.internal.singleType(pre, sym)
+        mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
+
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable value")
+        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable reference value")
     }
 
   def convertImpl[T](t: Expr[T]): Tree = extractResult(t)(mkWitness)

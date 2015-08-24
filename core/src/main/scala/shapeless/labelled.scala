@@ -37,7 +37,7 @@ object labelled {
   }
 }
 
-trait DefaultSymbolicLabelling[T] extends DepFn0 { type Out <: HList }
+trait DefaultSymbolicLabelling[T] extends DepFn0 with Serializable { type Out <: HList }
 
 object DefaultSymbolicLabelling {
   type Aux[T, Out0] = DefaultSymbolicLabelling[T] { type Out = Out0 }
@@ -106,7 +106,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
       new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
         type Out = $labelsTpe
         def apply(): $labelsTpe = $labelsValue
-      }
+      } : _root_.shapeless.DefaultSymbolicLabelling.Aux[$tTpe, $labelsTpe]
     """
   }
 

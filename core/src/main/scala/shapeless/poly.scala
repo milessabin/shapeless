@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ object PolyDefns extends Cases {
    *
    * @author Miles Sabin
    */
-  abstract class Case[P, L <: HList] {
+  abstract class Case[P, L <: HList] extends Serializable {
     type Result
     val value : L => Result
 
@@ -185,7 +185,7 @@ object PolyDefns extends Cases {
  *
  * @author Miles Sabin
  */
-trait Poly extends PolyApply {
+trait Poly extends PolyApply with Serializable {
   import poly._
 
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
@@ -198,7 +198,7 @@ trait Poly extends PolyApply {
 
   /** The type of the case representing this polymorphic function at argument types `L`. */
   type ProductCase[L <: HList] = Case[this.type, L]
-  object ProductCase {
+  object ProductCase extends Serializable {
     /** The type of a case of this polymorphic function of the form `L => R` */
     type Aux[L <: HList, Result0] = ProductCase[L] { type Result = Result0 }
 
@@ -213,7 +213,7 @@ trait Poly extends PolyApply {
 
   def use[T, L <: HList, R](t : T)(implicit cb: CaseBuilder[T, L, R]) = cb(t)
 
-  trait CaseBuilder[T, L <: HList, R] {
+  trait CaseBuilder[T, L <: HList, R] extends Serializable {
     def apply(t: T): ProductCase.Aux[L, R]
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ import scala.annotation.tailrec
  *
  * @author Miles Sabin
  */
-final class HListOps[L <: HList](l : L) {
+final class HListOps[L <: HList](l : L) extends Serializable {
+  import ops.adjoin.Adjoin
   import ops.hlist._
 
   /**
@@ -115,6 +116,26 @@ final class HListOps[L <: HList](l : L) {
    * if there is evidence that this `HList` has an element of type `U`.
    */
   def select[U](implicit selector : Selector[L, U]) : U = selector(l)
+
+  /**
+   * Returns the elements of this `HList` specified by `Ids`. Available only if there is
+   * evidence that this `HList` contains all elements specified in `Ids`.
+   */
+  case class SelectManyAux[L <: HList](l: L) extends NatProductArgs {
+    def applyNatProduct[Ids <: HList](implicit sel: SelectMany[L,Ids]): sel.Out = sel(l)
+  }
+
+  def selectManyType[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
+
+  def selectMany = SelectManyAux(l)
+
+  /**
+   * Returns the elements of this `HList` specified by the range of ids in [A,B[
+   * Available only if there is evidence that this `HList` contains all elements in that range
+   */
+  def selectRange[A <: Nat, B <: Nat](implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
+
+  def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
 
   /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
@@ -473,6 +494,24 @@ final class HListOps[L <: HList](l : L) {
   }
 
   /**
+   * Convert this `HList` to a `List[Any]`.
+   */
+  def runtimeList: List[Any] = {
+    val builder = List.newBuilder[Any]
+
+    @tailrec def loop(l: HList): Unit = l match {
+      case HNil => ()
+      case hd :: tl =>
+        builder += hd
+        loop(tl)
+    }
+
+    loop(l)
+
+    builder.result
+  }
+
+  /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
@@ -569,4 +608,14 @@ final class HListOps[L <: HList](l : L) {
   class PatchAux[N <: Nat, M <: Nat]{
     def apply[In <: HList](in: In)(implicit patcher: Patcher[N, M, L, In]): patcher.Out = patcher(l, in)
   }
+
+  /**
+   * Adjoins the elements of this `HList` by flattening any `HList` elements.
+   */
+  def adjoined(implicit adjoin: Adjoin[L]): adjoin.Out = adjoin(l)
+
+  /**
+   * Finds the first element of the HList for which the given Poly is defined, and applies the Poly to it.
+   */ 
+  def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
 }

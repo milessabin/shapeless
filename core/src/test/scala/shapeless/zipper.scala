@@ -73,6 +73,10 @@ class ZipperTests {
     val l5 = l.toZipper.right.right.right.insert("bar").reify
     typed[Int :: String :: Double :: String :: HNil](l5)
     assertEquals(1 :: "foo" :: 3.0 :: "bar" :: HNil, l5)
+
+    val l6 = l.toZipper.right.modify(_.toUpperCase).reify
+    typed[Int :: String :: Double :: HNil](l6)
+    assertEquals(1 :: "FOO" :: 3.0 :: HNil, l6)
   }
 
   @Test
@@ -176,6 +180,10 @@ class ZipperTests {
     typed[Person](updatedCity.root.reify)
     assertEquals(Person("Joe Grey", 37, Address("Southover Street", "London", "BN2 9UA")), updatedCity.up.reify)
     
+    val agedPerson = z.right.modify(_ + 1).reify
+    typed[Person](agedPerson)
+    assertEquals(Person("Joe Grey", 38, Address("Southover Street", "Brighton", "BN2 9UA")), agedPerson)
+
     val reifiedAddress = z.right.right.down.reify
     typed[Address](reifiedAddress)
     
@@ -194,14 +202,14 @@ class ZipperTests {
     
     val z2 = dept.toZipper
     
-    val z3 = z2.down.put("King Agamemnon").right.put(8000).up.right.down.right.down.right.put(3000).root.reify
+    val z3 = z2.down.put("King Agamemnon").right.put(8000).up.right.down.right.down.right.put(3000).up.right.down.right.modify(_ * 2).root.reify
     typed[D](z3)
     assertEquals(
      Dept(
        Employee("King Agamemnon", 8000),
        Employee("Menelaus", 3000) ::
        Employee("Achilles", 3000) ::
-       Employee("Odysseus", 2000) ::
+       Employee("Odysseus", 4000) ::
        HNil), z3)
   }
 }

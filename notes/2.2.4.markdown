@@ -1,0 +1,48 @@
+This is the final release of [shapeless-2.2.4][shapeless].
+
+shapeless-2.2.4 is primarily a bugfix release, but includes two new
+features (`Split1` and `WrappedOrphan`) to support type class derivation
+for [Cats][cats]. Expect to hear a lot more about this shortly ...
+
+These release notes provide a summary of changes since shapeless 2.2.3.
+shapeless 2.2.4 is source and binary compatible with shapeless 2.2.0+
+and should be binary compatible with shapeless-2.1.0 in most cases.
+
+* A `Split1` type class has been added allowing complex nested type
+  constructors (ie. `F[G[...]]`) to be decomposed (ie. as `F[_]`,
+  `G[_]`) despite the limitations imposed by [SI-2712](si-2712).
+
+* An additional mechanism for managing the implicit priority of orphan
+  type class instances (`WrappedOrphan`) has been added.
+
+* A number of bugs relating to `Generic` instances for types with non-
+  trivial dependent prefixes or inaccessible constructors have been
+  fixed ([#369][issue-369], [#417][issue-417], [#418][issue-418],
+  [#421][issue-421] and [#424][issue-424]).
+
+* The `Witness` macro no longer attempts to produce singleton types for
+  instances of values types ([#379][issue-379]).
+
+* An interaction between [SI-5465][si-5465] and `Lazy` which caused
+  generation of `Generic` instances of case-class-like types with an
+  unapply method has been fixed ([#422][issue-422])
+
+* shapeless master is now built with Scala 2.11.7.
+
+* Scala.js has been bumped to 0.6.4 and shapeless builds for Scala.js
+  and Scala 2.11.7 and 2.12.0-M1 are now being published.
+
+Many thanks everyone who has contributed ideas, enthusiasm and
+encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[cats]: https://github.com/non/cats
+[si-2712]: https://issues.scala-lang.org/browse/SI-2712
+[issue-369]: https://github.com/milessabin/shapeless/issues/369
+[issue-417]: https://github.com/milessabin/shapeless/issues/417
+[issue-418]: https://github.com/milessabin/shapeless/issues/418
+[issue-421]: https://github.com/milessabin/shapeless/issues/421
+[issue-424]: https://github.com/milessabin/shapeless/issues/424
+[issue-379]: https://github.com/milessabin/shapeless/issues/379
+[si-5465]: https://issues.scala-lang.org/browse/SI-5465
+[issue-422]: https://github.com/milessabin/shapeless/issues/422

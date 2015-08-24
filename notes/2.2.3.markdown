@@ -1,0 +1,26 @@
+This is the final release of [shapeless-2.2.3][shapeless].
+
+These release notes provide a summary of changes since shapeless 2.2.2.
+shapeless 2.2.3 is source and binary compatible with shapeless 2.2.0+
+and should be binary compatible with shapeless-2.1.0 in most cases.
+
+The changes are,
+
+* Generic1 now supports nested type constructors.
+
+* Added an Adjoin type class which [flattens][router] HLists and
+  Coproducts by one layer (thanks to Travis Brown).
+
+* Fixed an incompatibility between cachedImplicit and the orphan type
+  class derivation mechanism ([#391][issue-391]).
+
+Contributors for shapeless 2.2.3 are,
+
+* Travis Brown ([@travisbrown](https://twitter.com/travisbrown))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[router]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/router.scala
+[issue-391]: https://github.com/milessabin/shapeless/issues/391

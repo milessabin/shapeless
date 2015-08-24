@@ -1,0 +1,113 @@
+This is the final release of [shapeless-2.2.0][shapeless].  These
+release notes provide a summary of changes since shapeless 2.1.0.
+shapeless 2.2.0 should be source and binary compatible with shapeless
+2.1.0, and for migration from shapeless 2.0.0 the earlier [migration
+guide from shapeless 2.0.0 to 2.1.0][migration] is still applicable and
+is available on the [shapeless wiki][wiki].
+
+Contributors for shapeless 2.2.0 are,
+
+* Alexander Konovalov ([@alexknvl](https://twitter.com/alexknvl))
+* Alexandre Archambault ([@alxarchambault](https://twitter.com/alxarchambault))
+* Alistair Johnson
+* Ben Hutchison ([@ben_hutchison](https://twitter.com/ben_hutchison))
+* Dale Wijnand ([@dwijnand](https://twitter.com/dwijnand))
+* David Barri ([@japgolly](https://twitter.com/japgolly))
+* Denis Mikhaylov [@notxcain](https://twitter.com/@notxcain)
+* Jean-Remi Desjardins ([@jrdesjardins](https://twitter.com/jrdesjardins))
+* Johnny Everson ([@johnny_everson](https://twitter.com/johnny_everson))
+* Pascal Voitot [@mandubian](https://twitter.com/mandubian)
+* Sam Halliday [@fommil](https://twitter.com/fommil)
+* Sébastien Doeraene ([@sjrdoeraene](https://twitter.com/sjrdoeraene))
+* Simon Hafner ([@reactormonk](https://twitter.com/reactormonk))
+* Vladimir Matveev ([@netvlm](https://twitter.com/netvlm))
+
+Many thanks to all of you and everyone else who has contributed ideas,
+enthusiasm and encouragement.
+
+There are a large number of new features, refactorings and [bug
+fixes][fixes] in shapeless 2.2.0. The most significant of these are,
+
+* Scala.js is now officially supported. Many thanks to Alistair Johnson,
+  Ben Hutchison, David Barri and Sébastien Doeraene for their assistance
+  with this.
+
+* Support for Spark (and other libraries and systems which use Java
+  serialization) has been improved by having all the major types and
+  type classes extend Serializable.
+
+* Added support for derivation of type classes for higher-kinded types.
+  See in particular the new [example][functor] illustrating the
+  application of this to the automatic derivation of Functor type class
+  instances for ADTs.
+
+* Generic derivation for coproducts now correctly handles cases where
+  the type parameters of constructors is a subset and/or permutation of
+  the type parameters of the data type. This allows correct type class
+  derivation for types like Cat's `Xor` and `Ior`, and Scalaz's
+  disjunction.
+
+* Added support for Generic representation of types with repeated
+  (ie. vararg) constructor arguments.
+
+* There are now `Generic` instances for ADTs with constructors which
+  are included via multiple inheritance paths.
+
+* The test for "case-class-likeness" has been tightened to exclude some
+  unexpected types (notably arrays).
+
+* A mechanism providing greater control over the implicit priority of
+  derived orphan type class instances has been added. This finally
+  allows shapeless-contrib to be updated to use shapeless-2.2.0.
+
+* A mechanism allowing expensive implicit definitions to be cached
+  simply has been added.
+
+* `Witness` instances are now available for the singleton types of
+  stable values.
+
+* A mechanism to replace Scala's now deprecated auto-tupling has been
+  added via the [ProductArgs][prodargs] and SingletonProductArgs traits.
+  This supports some [new examples][basecopy] illustrating a generic
+  solution to the common problem of functional update of a family of
+  case classes through their common supertype.
+
+* A `Max` type class has been added for `Nat` types.
+
+* A `fields` method has been added to records and unions.
+
+* Added a useful toString to instances of the Typeable type class.
+
+* Added a useful toString to Sized containers.
+
+* Improved the CSV serialization example.
+
+* Added an example of [merging][merge] instances of one case class into
+  another.
+
+* With the addition of Scala.js support there are now four branches to
+  release from simultaneously. Many thanks to Johnny Everson for his
+  contribution of a script to automate this process.
+
+* A number of tests have been made more portable so that they don't
+  fail when run under Scala.js due to spurious platform-specifics.
+
+* If you are using Scala 2.10.x it is no longer necessary to provide an
+  explicit Scala version suffix for your shapeless dependency. You must
+  still ensure that you are using Scala version 2.10.2 or greater, with
+  Scala 2.10.5 (or switching to 2.11.x) strongly recommended.
+
+* Reorganized the SBT project modules.
+  The "shapeless-" prefix has been dropped from all the module names
+  and it is now possible to drop into the Scala REPL with shapeless
+  on the classpath using just the "console" command.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
+[wiki]: https://github.com/milessabin/shapeless/wiki
+[contrib]: https://github.com/typelevel/shapeless-contrib
+[prodargs]: https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/hlists.scala#L124
+[fixes]: https://github.com/milessabin/shapeless/issues?q=milestone%3Ashapeless-2.2.0+is%3Aclosed
+[functor]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/functor.scala
+[basecopy]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/basecopy.scala
+[merge]: https://github.com/milessabin/shapeless/blob/master/examples/src/main/scala/shapeless/examples/caseclassmerge.scala

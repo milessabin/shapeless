@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Dale Wijnand
+ * Copyright (c) 2011-15 Dale Wijnand
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package syntax
  *
  * @author Dale Wijnand
  */
-final class NatOps[N <: Nat](val n : Nat) extends AnyVal {
+final class NatOps[N <: Nat](val n : Nat) extends AnyVal with Serializable {
   import ops.nat._
 
   /**

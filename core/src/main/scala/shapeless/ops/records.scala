@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ package record {
    * @author Miles Sabin
    */
   @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
-  trait Selector[L <: HList, K] {
+  trait Selector[L <: HList, K] extends DepFn1[L] with Serializable {
     type Out
     def apply(l : L): Out
   }
@@ -59,11 +59,41 @@ package record {
   }
 
   /**
+   * Type class supporting multiple record field selection.
+   *
+   * @author Miles Sabin
+   */
+  @annotation.implicitNotFound(msg = "No fields ${K} in record ${L}")
+  trait SelectAll[L <: HList, K <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  object SelectAll {
+    def apply[L <: HList, K <: HList](implicit sa: SelectAll[L, K]): Aux[L, K, sa.Out] = sa
+
+    type Aux[L <: HList, K <: HList, Out0 <: HList] = SelectAll[L, K] { type Out = Out0 }
+
+    implicit def hnilSelectAll[L <: HList]: Aux[L, HNil, HNil] =
+      new SelectAll[L, HNil] {
+        type Out = HNil
+        def apply(l: L): Out = HNil
+      }
+
+    implicit def hconsSelectAll[L <: HList, KH, KT <: HList]
+      (implicit
+        sh: Selector[L, KH],
+        st: SelectAll[L, KT]
+      ): Aux[L, KH :: KT, sh.Out :: st.Out] =
+      new SelectAll[L, KH :: KT] {
+        type Out = sh.Out :: st.Out
+        def apply(l: L): Out = sh(l) :: st(l)
+      }
+  }
+
+  /**
    * Type class supporting record update and extension.
    *
    * @author Miles Sabin
    */
-  trait Updater[L <: HList, F] extends DepFn2[L, F] { type Out <: HList }
+  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList }
 
   trait LowPriorityUpdater {
     type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
@@ -97,7 +127,7 @@ package record {
    *
    * @author Miles Sabin
    */
-  trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] { type Out <: HList }
+  trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
   trait LowPriorityMerger {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Merger[L, M] { type Out = Out0 }
@@ -140,7 +170,7 @@ package record {
    * @author Joni Freeman
    */
   @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
-  trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] { type Out <: HList }
+  trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] with Serializable { type Out <: HList }
 
   object Modifier {
     def apply[L <: HList, F, A, B](implicit modifier: Modifier[L, F, A, B]): Aux[L, F, A, B, modifier.Out] = modifier
@@ -167,7 +197,7 @@ package record {
    * @author Miles Sabin
    */
   @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
-  trait Remover[L <: HList, K] extends DepFn1[L]
+  trait Remover[L <: HList, K] extends DepFn1[L] with Serializable
 
   trait LowPriorityRemover {
     type Aux[L <: HList, K, Out0] = Remover[L, K] { type Out = Out0 }
@@ -199,7 +229,7 @@ package record {
    * @author Joni Freeman
    */
   @annotation.implicitNotFound(msg = "No field ${K1} in record ${L}")
-  trait Renamer[L <: HList, K1, K2] extends DepFn1[L] { type Out <: HList }
+  trait Renamer[L <: HList, K1, K2] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object Renamer {
     def apply[L <: HList, K1, K2](implicit renamer: Renamer[L, K1, K2]): Aux[L, K1, K2, renamer.Out] = renamer
@@ -225,7 +255,7 @@ package record {
    *
    * @author Miles Sabin
    */
-  trait Keys[L <: HList] extends DepFn0 { type Out <: HList }
+  trait Keys[L <: HList] extends DepFn0 with Serializable { type Out <: HList }
 
   object Keys {
     def apply[L <: HList](implicit keys: Keys[L]): Aux[L, keys.Out] = keys
@@ -250,7 +280,7 @@ package record {
    *
    * @author Miles Sabin
    */
-  trait Values[L <: HList] extends DepFn1[L] { type Out <: HList }
+  trait Values[L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object Values {
     def apply[L <: HList](implicit values: Values[L]): Aux[L, values.Out] = values
@@ -271,12 +301,42 @@ package record {
   }
 
   /**
+   * Type class supporting converting this record to a `HList` of key-value pairs.
+   *
+   * @author Alexandre Archambault
+   */
+  trait Fields[L <: HList] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object Fields {
+    def apply[L <: HList](implicit fields: Fields[L]): Aux[L, fields.Out] = fields
+
+    type Aux[L <: HList, Out0 <: HList] = Fields[L] { type Out = Out0 }
+
+    implicit def hnilFields[L <: HNil]: Aux[L, L] =
+      new Fields[L] {
+        type Out = L
+        def apply(l: L) = l
+      }
+
+    implicit def hconsFields[K, V, T <: HList](implicit
+      key: Witness.Aux[K],
+      tailFields: Fields[T]
+    ): Aux[FieldType[K, V] :: T, (K, V) :: tailFields.Out] =
+      new Fields[FieldType[K, V] :: T] {
+        type Out = (K, V) :: tailFields.Out
+        def apply(l: FieldType[K, V] :: T) = (key.value -> l.head) :: tailFields(l.tail)
+      }
+  }
+
+  /**
    * Type class supporting converting this record to a `Map` whose keys and values
    * are typed as the Lub of the keys and values of this record.
    *
    * @author Alexandre Archambault
    */
-  trait ToMap[L <: HList] extends DepFn1[L] {
+  trait ToMap[L <: HList] extends DepFn1[L] with Serializable {
     type Key
     type Value
     type Out = Map[Key, Value]
@@ -325,7 +385,7 @@ package record {
    *
    * @author Alexandre Archambault
    */
-  trait MapValues[HF, L <: HList] extends DepFn1[L] { type Out <: HList }
+  trait MapValues[HF, L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
   object MapValues {
     def apply[HF, L <: HList](implicit mapValues: MapValues[HF, L]): Aux[HF, L, mapValues.Out] = mapValues
