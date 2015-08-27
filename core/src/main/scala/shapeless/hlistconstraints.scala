@@ -23,7 +23,19 @@ import ops.hlist.Selector
  */
 trait UnaryTCConstraint[L <: HList, TC[_]] extends Serializable
 
-object UnaryTCConstraint {
+trait LowPriorityUnaryTCConstraint0 {
+  implicit def hlistIdUnaryTC[L <: HList] = new UnaryTCConstraint[L, Id] {}
+}
+
+trait LowPriorityUnaryTCConstraint extends LowPriorityUnaryTCConstraint0 {
+
+  implicit def hnilConstUnaryTC[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
+
+  implicit def hlistConstUnaryTC[H, T <: HList](implicit utct : UnaryTCConstraint[T, Const[H]#λ]) =
+    new UnaryTCConstraint[H :: T, Const[H]#λ] {}
+}
+
+object UnaryTCConstraint extends LowPriorityUnaryTCConstraint {
   def apply[L <: HList, TC[_]](implicit utcc: UnaryTCConstraint[L, TC]): UnaryTCConstraint[L, TC] = utcc
 
   type *->*[TC[_]] = {
@@ -31,14 +43,8 @@ object UnaryTCConstraint {
   } 
   
   implicit def hnilUnaryTC[TC[_]] = new UnaryTCConstraint[HNil, TC] {}
-  implicit def hlistUnaryTC1[H, T <: HList, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
+  implicit def hlistUnaryTC[H, T <: HList, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
     new UnaryTCConstraint[TC[H] :: T, TC] {}
-  
-  implicit def hlistUnaryTC2[L <: HList] = new UnaryTCConstraint[L, Id] {}
-  
-  implicit def hlistUnaryTC3[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
-  implicit def hlistUnaryTC4[H, T <: HList](implicit utct : UnaryTCConstraint[T, Const[H]#λ]) =
-    new UnaryTCConstraint[H :: T, Const[H]#λ] {}
 }
 
 /**
