@@ -169,6 +169,24 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def removeAll[SL <: HList](implicit removeAll : RemoveAll[L, SL]): removeAll.Out = removeAll(l)
 
   /**
+   * Reinserts an element `U` into this `HList` to return another `HList` `O`.
+   */
+  def reinsert[O <: HList] = new ReinsertAux[O]
+
+  class ReinsertAux[O <: HList] {
+    def apply[U](u: U)(implicit remove: Remove.Aux[O, U, (U, L)]): O = remove.reinsert((u, l))
+  }
+
+  /**
+   * Reinserts the elements of `SL` into this `HList` to return another `HList` `O`.
+   */
+  def reinsertAll[O <: HList] = new ReinsertAllAux[O]
+
+  class ReinsertAllAux[O <: HList] {
+    def apply[SL <: HList](sl: SL)(implicit removeAll: RemoveAll.Aux[O, SL, (SL, L)]): O = removeAll.reinsert((sl, l))
+  }
+
+  /**
    * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U` returning both
    * the replaced element and the updated `HList`. Available only if there is evidence that this `HList` has an element
    * of type `U`.
