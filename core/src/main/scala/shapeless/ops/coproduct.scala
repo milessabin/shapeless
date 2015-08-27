@@ -496,18 +496,21 @@ object coproduct {
 
       implicit def cpZipWithIndexImpl[CH, CT <: Coproduct, N <: Nat, OutC <: Coproduct]
       (implicit
-       impl: Impl.Aux[CT, Succ[N], OutC],
-       extend: ExtendRightBy[(CH, N) :+: CNil, OutC],
+       impl: Impl[CT, Succ[N]],
        w: Witness.Aux[N]
-        ): Aux[CH :+: CT, N, extend.Out] =
+        ): Aux[CH :+: CT, N, (CH, N) :+: impl.Out] =
         new Impl[CH :+: CT, N] {
-          type Out = extend.Out
+          type Out = (CH, N) :+: impl.Out
 
-          def apply(c: CH :+: CT): Out = extend(Coproduct[(CH, N) :+: CNil]((c.head.get, w.value)))
+          def apply(c: CH :+: CT): Out = c match {
+            case Inl(h) => Inl((h, w.value))
+            case Inr(t) => Inr(impl(t))
+          }
         }
     }
 
   }
+
 
 
   /**
