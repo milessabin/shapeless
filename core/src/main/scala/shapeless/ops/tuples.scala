@@ -796,6 +796,28 @@ object tuple {
   }
 
   /**
+   * Type class supporting zipping a tuple with its element indices, resulting in a tuple of tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  trait ZipWithIndex[T] extends DepFn1[T] with Serializable
+
+  object ZipWithIndex {
+    def apply[T](implicit zip: ZipWithIndex[T]): Aux[T, zip.Out] = zip
+
+    type Aux[T, Out0] = ZipWithIndex[T] { type Out = Out0 }
+
+    implicit def zipConst[T, L1 <: HList, L2 <: HList]
+    (implicit gen: Generic.Aux[T, L1], zipper: hl.ZipWithIndex.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
+      new ZipWithIndex[T] {
+        type Out = tp.Out
+        def apply(t: T): tp.Out = tp(zipper(gen.to(t)))
+      }
+  }
+
+
+  /**
    * Type class supporting unification of this tuple.
    *
    * @author Miles Sabin

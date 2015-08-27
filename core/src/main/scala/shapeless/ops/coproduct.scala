@@ -18,6 +18,7 @@ package shapeless
 package ops
 
 import poly._
+import sun.util.resources.CurrencyNames_iw_IL
 
 object coproduct {
   trait Inject[C <: Coproduct, I] extends Serializable {
@@ -423,6 +424,92 @@ object coproduct {
             }
           }
   }
+
+  /**
+   * Type class supporting zipping this `Coproduct` with a `Coproduct` returning a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  trait ZipOne[C1 <: Coproduct, C2 <: Coproduct] extends DepFn2[C1, C2] with Serializable { type Out <: Coproduct }
+
+  object ZipOne {
+    def apply[C1 <: Coproduct, C2 <: Coproduct](implicit zip: ZipOne[C1, C2]): Aux[C1, C2, zip.Out] = zip
+
+    type Aux[C1 <: Coproduct, C2 <: Coproduct, Out0 <: Coproduct] = ZipOne[C1, C2] {type Out = Out0}
+
+    implicit def singleZipOne[C1H, C2H]: Aux[C1H :+: CNil, C2H :+: CNil, (C1H, C2H) :+: CNil] =
+      new ZipOne[C1H :+: CNil, C2H :+: CNil] {
+        type Out = (C1H, C2H) :+: CNil
+
+        def apply(c: C1H :+: CNil, c2: C2H :+: CNil): Out = Coproduct[Out]((c.head.get, c2.head.get))
+      }
+
+    implicit def cpZipOne[C1H, C1T <: Coproduct, C2H, C2T <: Coproduct, OutC <: Coproduct]
+    (implicit
+     zot: ZipOne.Aux[C1T, C2T, OutC],
+     extend: ExtendRightBy[(C1H, C2H) :+: CNil, OutC]
+      ): Aux[C1H :+: C1T, C2H :+: C2T, extend.Out] = new ZipOne[C1H :+: C1T, C2H :+: C2T] {
+      type Out = extend.Out
+
+      def apply(c: C1H :+: C1T, c2: C2H :+: C2T): Out = extend(Coproduct[(C1H, C2H) :+: CNil](c.head.get, c2.head.get))
+    }
+  }
+
+  /**
+   * Type class supporting zipping a `Coproduct` with its element indices, resulting in a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  trait ZipWithIndex[C <: Coproduct] extends DepFn1[C] with Serializable { type Out <: Coproduct; type Idx <: Nat }
+
+  object ZipWithIndex {
+
+    import shapeless.Nat._
+
+    def apply[C <: Coproduct](implicit zipper: ZipWithIndex[C]): Aux[C, zipper.Out] = zipper
+
+    type Aux[C <: Coproduct, Out0 <: Coproduct] = ZipWithIndex[C] {type Out = Out0}
+
+    implicit def cpZipWithIndex[C <: Coproduct]
+    (implicit impl: Impl[C, _0]): Aux[C, impl.Out] = new ZipWithIndex[C] {
+      type Out = impl.Out
+
+      def apply(c: C): Out = impl(c)
+    }
+
+    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
+      type Out <: Coproduct
+    }
+
+    object Impl {
+      def apply[C <: Coproduct, N <: Nat](implicit impl: Impl[C, N]): Aux[C, N, impl.Out] = impl
+
+      type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] {type Out = Out0}
+
+      implicit def singleZipWithIndexImpl[CH, N <: Nat]
+      (implicit w: Witness.Aux[N]): Aux[CH :+: CNil, N, (CH, N) :+: CNil] = new Impl[CH :+: CNil, N] {
+        type Out = (CH, N) :+: CNil
+
+        def apply(c: CH :+: CNil): Out = Coproduct[Out]((c.head.get, w.value))
+      }
+
+      implicit def cpZipWithIndexImpl[CH, CT <: Coproduct, N <: Nat, OutC <: Coproduct]
+      (implicit
+       impl: Impl.Aux[CT, Succ[N], OutC],
+       extend: ExtendRightBy[(CH, N) :+: CNil, OutC],
+       w: Witness.Aux[N]
+        ): Aux[CH :+: CT, N, extend.Out] =
+        new Impl[CH :+: CT, N] {
+          type Out = extend.Out
+
+          def apply(c: CH :+: CT): Out = extend(Coproduct[(CH, N) :+: CNil]((c.head.get, w.value)))
+        }
+    }
+
+  }
+
 
   /**
    * Type class supporting computing the type-level Nat corresponding to the length of this `Coproduct'.

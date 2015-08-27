@@ -197,6 +197,18 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
   def zipWithKeys[K <: HList](implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
 
   /**
+   * Zips this `Coproduct` with the argument `Coproduct` returning a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipOne[O <: Coproduct](o : O)(implicit zipper: ZipOne[C,O]): zipper.Out = zipper(c,o)
+
+  /**
+   * Zips this `Coproduct` with its element indices, resulting in a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipWithIndex(implicit zipper: ZipWithIndex[C]): zipper.Out = zipper(c)
+
+  /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
    */
   def rotateLeft[N <: Nat](implicit rotateLeft: RotateLeft[C, N]): rotateLeft.Out = rotateLeft(c)

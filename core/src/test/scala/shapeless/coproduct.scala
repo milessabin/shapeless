@@ -309,6 +309,33 @@ class CoproductTests {
   }
 
   @Test
+  def testZip {
+    val c1 = Coproduct[ISB](42)
+    val c2 = Coproduct[ISB]("foo")
+    val c3 = Coproduct[ISB](32)
+
+    val z1 = c1 zipOne c2
+    val v1 = z1.select[(Int,Int)]
+    typed[Option[(Int,Int)]](v1)
+    assertEquals(None, v1)
+
+    val z2 = c1 zipOne c3
+    val v2 = z2.select[(Int,Int)]
+    typed[Option[(Int,Int)]](v2)
+    assertEquals(Some((42,32)), v2)
+
+    import shapeless.Nat._
+
+    val zi1 = c1.zipWithIndex
+    val vz1 = zi1.select[(Int,_0)]
+    val vz2 = zi1.select[(String,_1)]
+    typed[Option[(Int,_0)]](vz1)
+    typed[Option[(String,_1)]](vz2)
+    assertEquals(Some((42,_0)), vz1)
+    assertEquals(None, vz2)
+
+  }
+  @Test
   def testWithKeys {
     import syntax.singleton._
     import union._
