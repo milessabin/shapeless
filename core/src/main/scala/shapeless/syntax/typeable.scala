@@ -21,7 +21,7 @@ object typeable {
   implicit def typeableOps[T](t : T): TypeableOps[T] = new TypeableOps(t)
 }
 
-final class TypeableOps[T](t : T) extends Serializable {
+final class TypeableOps[T](val t : T) extends AnyVal with Serializable {
   /**
    * Cast the receiver to a value of type `U` if possible. This operation will be as precise wrt erasure as possible
    * given the in-scope `Typeable` instances available.
