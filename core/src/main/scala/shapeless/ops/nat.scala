@@ -219,7 +219,9 @@ object nat {
    *
    * @author Andreas Koestler
    */
-  trait Range[A <: Nat, B <: Nat] extends Serializable { type Out <: HList }
+  trait Range[A <: Nat, B <: Nat] extends DepFn0 with Serializable {
+    type Out <: HList
+  }
 
   object Range {
     def apply[A <: Nat, B <: Nat](implicit range: Range[A, B]): Aux[A, B, range.Out] = range
@@ -231,14 +233,19 @@ object nat {
 
     implicit def range1[A <: Nat]: Aux[A, A, HNil] = new Range[A, A] {
       type Out = HNil
+
+      def apply(): Out = HNil
     }
 
     implicit def range2[A <: Nat, B <: Nat, L <: HList, LO <: HList](implicit
+                                                                     w: Witness.Aux[B],
                                                                      r: Range.Aux[A, B, L],
                                                                      prep: Prepend.Aux[L, B :: HNil, LO]
                                                                       ): Aux[A, Succ[B], LO] =
       new Range[A, Succ[B]] {
         type Out = LO
+
+        def apply(): Out = r() :+ w.value
       }
   }
 
