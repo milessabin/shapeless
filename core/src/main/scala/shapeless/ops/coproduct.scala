@@ -18,7 +18,6 @@ package shapeless
 package ops
 
 import poly._
-import sun.util.resources.CurrencyNames_iw_IL
 
 object coproduct {
   trait Inject[C <: Coproduct, I] extends Serializable {
