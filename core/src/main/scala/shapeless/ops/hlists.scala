@@ -913,19 +913,13 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  @implicitNotFound("Implicit not found: shapeless.Ops.Remove[${L}, ${E}]. You requested to remove an element of type ${E}, but there is none in the HList ${L}.")
-  trait Remove[L <: HList, E] extends DepFn1[L] with Serializable
+  @implicitNotFound("Implicit not found: shapeless.Ops.Remove[${L}, ${E}]. You requested to remove an element of type ${E}, but there is no unique candidate in the HList ${L}.")
+  trait Remove[L <: HList, E] extends DepFn1[L] with Serializable {
+    def reinsert(out: Out): L
+  }
 
-  object Remove {
-    def apply[L <: HList, E](implicit remove: Remove[L, E]): Aux[L, E, remove.Out] = remove
-
+  trait LowPriorityRemove {
     type Aux[L <: HList, E, Out0] = Remove[L, E] { type Out = Out0 }
-
-    implicit def remove[H, T <: HList]: Aux[H :: T, H, (H, T)] =
-      new Remove[H :: T, H] {
-        type Out = (H, T)
-        def apply(l : H :: T): Out = (l.head, l.tail)
-      }
 
     implicit def recurse[H, T <: HList, E, OutT <: HList](implicit r : Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
       new Remove[H :: T, E] {
@@ -934,6 +928,20 @@ object hlist {
           val (e, tail) = r(l.tail)
           (e, l.head :: tail)
         }
+
+        def reinsert(out: (E, H :: OutT)): H :: T = out._2.head :: r.reinsert((out._1, out._2.tail))
+      }
+  }
+
+  object Remove extends LowPriorityRemove {
+    def apply[L <: HList, E](implicit remove: Remove[L, E]): Aux[L, E, remove.Out] = remove
+
+    implicit def remove[H, T <: HList]: Aux[H :: T, H, (H, T)] =
+      new Remove[H :: T, H] {
+        type Out = (H, T)
+        def apply(l : H :: T): Out = (l.head, l.tail)
+
+        def reinsert(out: (H, T)): H :: T = out._1 :: out._2
       }
   }
 
@@ -946,7 +954,9 @@ object hlist {
    * @author Stacy Curl
    */
   @implicitNotFound("Implicit not found: shapeless.Ops.RemoveAll[${L}, ${SL}]. You requested to remove elements of the types ${SL}, but not all were found in HList ${L}.")
-  trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L] with Serializable
+  trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L] with Serializable {
+    def reinsert(out: Out): L
+  }
 
   object RemoveAll {
     def apply[L <: HList, SL <: HList](implicit remove: RemoveAll[L, SL]): Aux[L, SL, remove.Out] = remove
@@ -957,6 +967,8 @@ object hlist {
       new RemoveAll[L, HNil] {
         type Out = (HNil, L)
         def apply(l : L): Out = (HNil, l)
+
+        def reinsert(out: (HNil, L)): L = out._2
       }
 
     implicit def hlistRemoveAll[L <: HList, E, RemE <: HList, Rem <: HList, SLT <: HList]
@@ -968,6 +980,9 @@ object hlist {
             val (sl, left) = st(rem)
             (e :: sl, left)
           }
+
+          def reinsert(out: (E :: SLT, Rem)): L =
+            rt.reinsert((out._1.head, st.reinsert((out._1.tail, out._2))))
         }
   }
 

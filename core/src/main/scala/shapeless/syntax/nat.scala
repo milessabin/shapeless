@@ -22,7 +22,7 @@ package syntax
  *
  * @author Dale Wijnand
  */
-final class NatOps[N <: Nat](n : Nat) extends Serializable {
+final class NatOps[N <: Nat](val n : Nat) extends AnyVal with Serializable {
   import ops.nat._
 
   /**
