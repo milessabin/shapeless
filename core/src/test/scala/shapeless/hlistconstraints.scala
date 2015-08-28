@@ -55,6 +55,15 @@ class HListConstraintsTests {
     illTyped("""
     acceptConst(l5)
     """)
+
+    def acceptTypeConstructor[F[_], L <: HList : *->*[F]#λ](l : L) = true
+
+    acceptTypeConstructor(l1)  // Compiles - F = Option
+    acceptTypeConstructor(l2)  // Compiles - F = Id
+    acceptTypeConstructor(l3)  // Compiles - F = Id
+    acceptTypeConstructor(l4)  // Compiles - F = Const[String]
+    acceptTypeConstructor(l5)  // Compiles - F = Id
+    acceptTypeConstructor(HNil: HNil)
   }
   
   @Test
