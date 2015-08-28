@@ -25,7 +25,7 @@ import tag.@@
  * 
  * @author Miles Sabin
  */
-final class UnionOps[C <: Coproduct](c : C) extends Serializable {
+final class UnionOps[C <: Coproduct](val c : C) extends AnyVal with Serializable {
   import shapeless.union._
   import ops.union._
 

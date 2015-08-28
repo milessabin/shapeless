@@ -35,7 +35,10 @@ sealed trait HList extends Product with Serializable
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
-  override def toString = head+" :: "+tail.toString
+  override def toString = head match {
+    case _: ::[_, _] => "("+head+") :: "+tail.toString
+    case _ => head+" :: "+tail.toString
+  }
 }
 
 /**

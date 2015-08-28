@@ -22,7 +22,7 @@ object product {
   implicit def productOps[P <: Product](p: P): ProductOps[P] = new ProductOps[P](p)
 }
 
-final class ProductOps[P](p: P) {
+final class ProductOps[P](val p: P) extends AnyVal {
   import ops.product._
 
   /**
