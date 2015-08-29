@@ -17,6 +17,9 @@
 package shapeless
 package ops
 
+import scala.language.experimental.macros
+import scala.reflect.macros.{ blackbox, whitebox }
+
 import poly._
 
 //object record {
@@ -37,25 +40,39 @@ package record {
     def apply(l : L): Out
   }
 
-  trait LowPrioritySelector {
+  object Selector {
     type Aux[L <: HList, K, Out0] = Selector[L, K] { type Out = Out0 }
 
-    implicit def hlistSelect[H, T <: HList, K]
-      (implicit st : Selector[T, K]): Aux[H :: T, K, st.Out] =
-        new Selector[H :: T, K] {
-          type Out = st.Out
-          def apply(l : H :: T): Out = st(l.tail)
-        }
-  }
-
-  object Selector extends LowPrioritySelector {
     def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
 
-    implicit def hlistSelect1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, V] =
-      new Selector[FieldType[K, V] :: T, K] {
-        type Out = V
-        def apply(l : FieldType[K, V] :: T): Out = l.head
+    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+  }
+
+  class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
+      val lTpe = lTag.tpe.dealias
+      val kTpe = kTag.tpe.dealias
+      if(!(lTpe <:< hlistTpe))
+        abort(s"$lTpe is not a record type")
+
+      val lTpes = unpackHListTpe(lTpe).zipWithIndex.flatMap { case (fTpe, i) =>
+        val (k, v) = unpackFieldType(fTpe)
+        if(k.dealias =:= kTpe) Some((v, i)) else None
       }
+      lTpes.headOption match {
+        case Some((vTpe, i)) =>
+          q"""
+            new _root_.shapeless.ops.record.Selector[$lTpe, $kTpe] {
+              type Out = $vTpe
+              def apply(l: $lTpe): $vTpe = _root_.shapeless.HList.unsafeGet(l, $i).asInstanceOf[$vTpe]
+            }: _root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]
+          """
+        case _ =>
+          abort(s"No field $kTpe in record type $lTpe")
+      }
+    }
   }
 
   /**
@@ -95,31 +112,38 @@ package record {
    */
   trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList }
 
-  trait LowPriorityUpdater {
+  object Updater {
     type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
 
-    implicit def hlistUpdater1[H, T <: HList, K, V]
-      (implicit ut : Updater[T, FieldType[K, V]]): Aux[H :: T, FieldType[K, V], H :: ut.Out] =
-        new Updater[H :: T, FieldType[K, V]] {
-          type Out = H :: ut.Out
-          def apply(l: H :: T, f: FieldType[K, V]): Out = l.head :: ut(l.tail, f)
-        }
-  }
-
-  object Updater extends LowPriorityUpdater {
     def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
 
-    implicit def hnilUpdater[L <: HNil, F]: Aux[L, F, F :: HNil] =
-      new Updater[L, F] {
-        type Out = F :: HNil
-        def apply(l: L, f: F): Out = f :: HNil
-      }
+    implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
+  }
 
-    implicit def hlistUpdater2[K, V, T <: HList]: Aux[FieldType[K, V] :: T, FieldType[K, V], FieldType[K, V] :: T] =
-      new Updater[FieldType[K, V] :: T, FieldType[K, V]] {
-        type Out = FieldType[K, V] :: T
-        def apply(l: FieldType[K, V] :: T, f: FieldType[K, V]): Out = f :: l.tail
+  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
+      val lTpe = lTag.tpe.dealias
+      val fTpe = fTag.tpe.dealias
+      if(!(lTpe <:< hlistTpe))
+        abort(s"$lTpe is not a record type")
+
+      val lTpes = unpackHListTpe(lTpe)
+      val (uTpes, i) = {
+        val i0 = lTpes.indexWhere(_.dealias =:= fTpe)
+        if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
+        else (lTpes.updated(i0, fTpe), i0)
       }
+      val uTpe = mkHListTpe(uTpes)
+      q"""
+        new _root_.shapeless.ops.record.Updater[$lTpe, $fTpe] {
+          type Out = $uTpe
+          def apply(l: $lTpe, f: $fTpe): $uTpe =
+            _root_.shapeless.HList.unsafeUpdate(l, $i, f).asInstanceOf[$uTpe]
+        }: _root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]
+      """
+    }
   }
 
   /**

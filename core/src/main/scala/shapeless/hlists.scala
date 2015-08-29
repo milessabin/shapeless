@@ -104,6 +104,25 @@ object HList extends Dynamic {
    */
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
 
+  @tailrec
+  def unsafeGet(l: HList, i: Int): Any = {
+    val c = l.asInstanceOf[::[Any, HList]]
+    if(i == 0) c.head
+    else unsafeGet(c.tail, i-1)
+  }
+
+  def unsafeUpdate(l: HList, i: Int, e: Any): HList = {
+    @tailrec
+    def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList) =
+      l match {
+        case HNil => (prefix, e :: HNil)
+        case hd :: (tl : HList) if i == 0 => (prefix, e :: tl)
+        case hd :: (tl : HList) => loop(tl, i-1, hd :: prefix)
+      }
+
+    val (prefix, suffix) = loop(l, i, Nil)
+    prefix.foldLeft(suffix) { (tl, hd) => hd :: tl }
+  }
 }
 
 

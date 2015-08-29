@@ -19,6 +19,8 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
+import scala.annotation.tailrec
+
 /** Encodes a coproduct type, such as a sealed family of case classes.
   *
   * Each constructor from the family gets an encoding in terms of nested Inr and Inl.
@@ -108,6 +110,7 @@ object Coproduct extends Dynamic {
   def unsafeMkCoproduct(length: Int, value: Any) =
     (0 until length).foldLeft[Coproduct](Inl(value))((accum, _) => Inr(accum))
 
+  @tailrec
   def unsafeGet(c: Coproduct): Any = c match {
     case Inl(h) => h
     case Inr(c) => unsafeGet(c)
