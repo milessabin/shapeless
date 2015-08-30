@@ -131,10 +131,10 @@ class NatTests {
 
     import shapeless.testutil._
 
-    assertTypedEquals[r1.Out](HNil, r1())
-    assertTypedEquals[r2.Out](_0::HNil, r2())
-    assertTypedEquals[r3.Out](HNil, r3())
-    assertTypedEquals[r4.Out](_1::_2::_3::_4::HNil, r4())
+    assertTypedEquals[HNil](HNil, r1())
+    assertTypedEquals[_0::HNil](_0::HNil, r2())
+    assertTypedEquals[HNil](HNil, r3())
+    assertTypedEquals[_1::_2::_3::_4::HNil](_1::_2::_3::_4::HNil, r4())
 
     // Type level
     assertEquals(0, toInt[_0])
