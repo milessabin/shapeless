@@ -460,7 +460,7 @@ trait CaseClassMacros extends ReprTypes {
       val HNilTpe = hnilTpe
       val HConsPre = prefix(hconsTpe)
       val HConsSym = hconsTpe.typeSymbol
-      u.dealias match {
+      u.normalize match {
         case t if t <:< HNilTpe => acc
         case TypeRef(pre, HConsSym, List(hd, tl)) if pre =:= HConsPre => unfold(tl, hd :: acc)
         case _ => abort(s"$tpe is not an HList type")
@@ -473,7 +473,7 @@ trait CaseClassMacros extends ReprTypes {
   def unpackFieldType(tpe: Type): (Type, Type) = {
     val KeyTagPre = prefix(keyTagTpe)
     val KeyTagSym = keyTagTpe.typeSymbol
-    tpe.dealias match {
+    tpe.normalize match {
       case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => (k, v0)
       case _ => abort(s"$tpe is not a field type")
     }
