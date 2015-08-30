@@ -268,6 +268,7 @@ trait ReprTypes {
 
   def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
+  def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_, _]].typeConstructor
 }
 
 trait CaseClassMacros extends ReprTypes {
@@ -446,6 +447,31 @@ trait CaseClassMacros extends ReprTypes {
 
   def mkCoproductTpe(items: List[Type]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, items)
+
+  def unpackHListTpe(tpe: Type): List[Type] = {
+    @tailrec
+    def unfold(u: Type, acc: List[Type]): List[Type] = {
+      val HNilTpe = hnilTpe
+      val HConsPre = prefix(hconsTpe)
+      val HConsSym = hconsTpe.typeSymbol
+      u.dealias match {
+        case t if t <:< HNilTpe => acc
+        case TypeRef(pre, HConsSym, List(hd, tl)) if pre =:= HConsPre => unfold(tl, hd :: acc)
+        case _ => abort(s"$tpe is not an HList type")
+      }
+    }
+
+    unfold(tpe, List()).reverse
+  }
+
+  def unpackFieldType(tpe: Type): (Type, Type) = {
+    val KeyTagPre = prefix(keyTagTpe)
+    val KeyTagSym = keyTagTpe.typeSymbol
+    tpe.dealias match {
+      case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => (k, v0)
+      case _ => abort(s"$tpe is not a field type")
+    }
+  }
 
   def mkTypTree(tpe: Type): Tree = {
     tpe match {
