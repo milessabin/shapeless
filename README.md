@@ -144,6 +144,7 @@ forwards compatibility.
 
 ## Contributors
 
++ Alessandro Lacava <alessandrolacava@gmail.com> [@lambdista](https://twitter.com/lambdista)
 + Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alistair Johnson <alistair.johnson@johnsonusm.com>
