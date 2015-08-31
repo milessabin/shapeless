@@ -454,9 +454,9 @@ trait CaseClassMacros extends ReprTypes {
       val HNilTpe = hnilTpe
       val HConsPre = prefix(hconsTpe)
       val HConsSym = hconsTpe.typeSymbol
-      u.dealias match {
-        case t if t <:< HNilTpe => acc
-        case TypeRef(pre, HConsSym, List(hd, tl)) if pre =:= HConsPre => unfold(tl, hd :: acc)
+      if(u <:< HNilTpe) acc
+      else (u baseType HConsSym) match {
+        case TypeRef(pre, _, List(hd, tl)) if pre =:= HConsPre => unfold(tl, hd :: acc)
         case _ => abort(s"$tpe is not an HList type")
       }
     }

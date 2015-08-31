@@ -46,6 +46,12 @@ package record {
     def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
 
     implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+
+  }
+
+  class UnsafeSelector(i: Int) extends Selector[HList, Any] {
+    type Out = Any
+    def apply(l: HList): Any = HList.unsafeGet(l, i)
   }
 
   class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
@@ -59,15 +65,13 @@ package record {
 
       val lTpes = unpackHListTpe(lTpe).zipWithIndex.flatMap { case (fTpe, i) =>
         val (k, v) = unpackFieldType(fTpe)
-        if(k.dealias =:= kTpe) Some((v, i)) else None
+        if(k =:= kTpe) Some((v, i)) else None
       }
       lTpes.headOption match {
         case Some((vTpe, i)) =>
           q"""
-            new _root_.shapeless.ops.record.Selector[$lTpe, $kTpe] {
-              type Out = $vTpe
-              def apply(l: $lTpe): $vTpe = _root_.shapeless.HList.unsafeGet(l, $i).asInstanceOf[$vTpe]
-            }: _root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]
+            new _root_.shapeless.ops.record.UnsafeSelector($i).
+              asInstanceOf[_root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]]
           """
         case _ =>
           abort(s"No field $kTpe in record type $lTpe")
@@ -120,6 +124,11 @@ package record {
     implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
   }
 
+  class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
+    type Out = HList
+    def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
+  }
+
   class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -131,17 +140,14 @@ package record {
 
       val lTpes = unpackHListTpe(lTpe)
       val (uTpes, i) = {
-        val i0 = lTpes.indexWhere(_.dealias =:= fTpe)
+        val i0 = lTpes.indexWhere(_ =:= fTpe)
         if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
         else (lTpes.updated(i0, fTpe), i0)
       }
       val uTpe = mkHListTpe(uTpes)
       q"""
-        new _root_.shapeless.ops.record.Updater[$lTpe, $fTpe] {
-          type Out = $uTpe
-          def apply(l: $lTpe, f: $fTpe): $uTpe =
-            _root_.shapeless.HList.unsafeUpdate(l, $i, f).asInstanceOf[$uTpe]
-        }: _root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]
+        new _root_.shapeless.ops.record.UnsafeUpdater($i)
+          .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
       """
     }
   }
