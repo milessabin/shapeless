@@ -240,6 +240,8 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
 
   /**
    * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
+   *
+   * For instance, `Int :+: String :+: CNil` can be embedded in `Int :+: Bool :+: String :+: CNil`.
    */
   def embed[Super <: Coproduct](implicit basis: Basis[Super, C]): Super =
     basis.inverse(Right(c))
