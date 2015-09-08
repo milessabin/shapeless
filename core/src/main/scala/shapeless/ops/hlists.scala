@@ -1867,6 +1867,38 @@ object hlist {
   }
 
   /**
+   * Type class supporting zipping a `HList` with its element indices,  resulting in a 'HList' of  tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  trait ZipWithIndex[L <: HList] extends Serializable with DepFn1[L] {
+    type Out <: HList
+  }
+
+  object ZipWithIndex {
+
+    def apply[L <: HList](implicit zipper: ZipWithIndex[L]): Aux[L, zipper.Out] = zipper
+
+    type Aux[L <: HList, Out0 <: HList] = ZipWithIndex[L] {type Out = Out0}
+
+    implicit def hnilZipperOps = new ZipWithIndex[HNil] {
+      type Out = HNil
+
+      def apply(l: HNil): Out = HNil
+    }
+
+    implicit def hlistZipperOps[L <: HList, N <: Nat, RL <: HList](implicit
+                                                                   len: Length.Aux[L, N],
+                                                                   range: shapeless.ops.nat.Range.Aux[_0, N, RL],
+                                                                   zipper: Zip[L :: RL :: HNil]) = new ZipWithIndex[L] {
+      type Out = zipper.Out
+
+      def apply(l: L): Out = zipper(l :: range.apply :: HNil)
+    }
+  }
+
+  /**
    * Type Class witnessing that an 'HList' can be collected with a 'Poly' to produce an 'HList'
    *
    * @author Stacy Curl

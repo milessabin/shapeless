@@ -475,6 +475,14 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     zipWith(l, r)
 
   /**
+   * Zips this `HList` with its element indices,  resulting in a 'HList' of  tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  def zipWithIndex(implicit zipWithIndex: ZipWithIndex[L]): zipWithIndex.Out = zipWithIndex(l)
+
+  /**
    * Transposes this `HList`.
    */
   def transpose(implicit transpose : Transposer[L]) : transpose.Out = transpose(l)
