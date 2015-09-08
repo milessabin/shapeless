@@ -124,6 +124,18 @@ class NatTests {
     implicitly[Range.Aux[_1,_2,_1::HNil]]
     implicitly[Range.Aux[_1,_4, _1::_2::_3::HNil]]
 
+    val r1 = the[Range[_0,_0]]
+    val r2 = the[Range[_0,_1]]
+    val r3 = the[Range[_1,_1]]
+    val r4 = the[Range[_1,_5]]
+
+    import shapeless.testutil._
+
+    assertTypedEquals[HNil](HNil, r1())
+    assertTypedEquals[_0::HNil](_0::HNil, r2())
+    assertTypedEquals[HNil](HNil, r3())
+    assertTypedEquals[_1::_2::_3::_4::HNil](_1::_2::_3::_4::HNil, r4())
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
