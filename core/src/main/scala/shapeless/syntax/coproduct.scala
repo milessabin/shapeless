@@ -195,6 +195,12 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
    * Converts this `Coproduct` of values into a union with given keys. A type argument must be provided.
    */
   def zipWithKeys[K <: HList](implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
+  
+  /**
+   * Zips this `Coproduct` with its element indices, resulting in a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipWithIndex(implicit zipper: ZipWithIndex[C]): zipper.Out = zipper(c)
 
   /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
@@ -240,6 +246,8 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
 
   /**
    * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
+   *
+   * For instance, `Int :+: String :+: CNil` can be embedded in `Int :+: Bool :+: String :+: CNil`.
    */
   def embed[Super <: Coproduct](implicit basis: Basis[Super, C]): Super =
     basis.inverse(Right(c))

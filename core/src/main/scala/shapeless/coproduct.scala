@@ -83,16 +83,32 @@ import scala.annotation.tailrec
   */
 sealed trait Coproduct
 
+/** Like Either, the :+: type defines a new type that can contain either H or T.
+  */
 sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
 
+/** `H :+: T` can either be `H` or `T`.
+  * In this case it is `H`.
+  */
 final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T] {
   override def toString = head.toString
 }
 
+/** `H :+: T` can either be `H` or `T`.
+  * In this case it is `T`.
+  */
 final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
   override def toString = tail.toString
 }
 
+/** The CNil type is used to terminate a 'list' of :+: alternatives.
+  *
+  * Like the Nil constructor of List, it does not convey real information.
+  * This is achieved by not having any value for CNil.
+  *
+  * This makes the type `Int :+: CNil` equivalent to `Int`, because the right (`Inr`) alternative
+  * of `:+:` can not be constructed properly.
+  */
 sealed trait CNil extends Coproduct
 
 object Coproduct extends Dynamic {
