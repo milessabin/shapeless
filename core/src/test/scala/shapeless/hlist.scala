@@ -2028,6 +2028,22 @@ class HListTests {
       assertTypedEquals[Int :: String :: Double :: HNil](3 :: "foo -> 2.3" :: 4.6 :: HNil, r5)
     }
 
+    def testZipWithIndex: Unit = {
+
+      // HNil zipWithIndex
+      val r1 = (HNil: HNil).zipWithIndex
+      assertTypedEquals[HNil](HNil, r1)
+
+      // One element HList zipWithIndex
+      val r2 = (0::HNil).zipWithIndex
+      assertTypedEquals[(Int,_0)::HNil]((0,_0)::HNil, r2)
+
+      // HList zipWithIndex
+      val r3 = (0::1::2::3::HNil).zipWithIndex
+      assertTypedEquals[(Int,_0)::(Int,_1)::(Int,_2)::(Int,_3)::HNil]((0,_0)::(1,_1)::(2,_2)::(3,_3)::HNil, r3)
+
+    }
+
     { // invalid polys
       illTyped("""
         (1 :: HNil).zipWith(2 :: HNil)(empty)

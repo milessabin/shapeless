@@ -1399,6 +1399,24 @@ class TupleTests {
   }
 
   @Test
+  def testZipWithIndex {
+
+    // Unit zipWithIndex
+    val l1 = ()
+    val zl1 = ().zipWithIndex
+    typed[Unit](zl1)
+    assertEquals((), zl1)
+
+    // Tuple zipWithIndex
+    val l2 = (1, true, "a")
+    val zl2 = l2.zipWithIndex
+    typed[((Int, _0), (Boolean, _1), (String, _2))](zl2)
+    assertEquals(((1, _0), (true, _1), ("a", _2)), zl2)
+
+  }
+
+
+  @Test
   def testPropagation {
     def useHead[P <: Product](p: P)(implicit ic: ops.tuple.IsComposite[P]) = p.head
 

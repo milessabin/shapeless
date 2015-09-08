@@ -379,7 +379,13 @@ final class TupleOps[T](t: T) extends Serializable {
    * ({element from original tuple}, {supplied constant})
    */
   def zipConst[C](c: C)(implicit zipper: ZipConst[T, C]): zipper.Out = zipper(t, c)
-  
+
+  /**
+   * Zips this tuple with its element indices, resulting in a tuple of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipWithIndex(implicit zipper: ZipWithIndex[T]): zipper.Out = zipper(t)
+
   /**
    * Transposes this tuple.
    */
