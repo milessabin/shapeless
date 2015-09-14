@@ -177,7 +177,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
   }
 
   def mkWitnessWith(parent: Type, sTpe: Type, s: Tree, i: Tree): Tree = {
-    val name = newTypeName(c.fresh())
+    val name = newTypeName(c.fresh("anon$"))
     val iTpe =
       (i.tpe match {
         case NullaryMethodType(resTpe) => resTpe
@@ -202,7 +202,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
   }
 
   def mkOps(sTpe: Type, w: Tree): Tree = {
-    val name = newTypeName(c.fresh())
+    val name = newTypeName(c.fresh("anon$"))
 
     q"""
       {

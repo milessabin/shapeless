@@ -564,7 +564,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
         assert(current.isEmpty)
         val open = c.openImplicits
         val name = "lazy"
-        current = Some(empty.copy(name = name))
+        current = Some(empty.copy(name = "anon$"+name))
       }
 
       ctx.derive(current.get)(instTpe0) match {
