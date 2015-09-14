@@ -209,7 +209,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val frTpt = appliedTypTree1(frTpe, param1(frTpe), TypeName("R"))
     val rnme = TypeName(c.freshName)
 
-    val clsName = TypeName(c.freshName())
+    val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
@@ -246,7 +246,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((ft: Any) match { case ..$toCases }, ft).asInstanceOf[R[$nme]]"""
     }
 
-    val clsName = TypeName(c.freshName())
+    val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic1[$tpe, $frTpe] {
         type R[$nme] = $reprTpt
