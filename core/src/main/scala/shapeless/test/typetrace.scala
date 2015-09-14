@@ -20,7 +20,7 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.Context
 
-trait TypeTrace[T]
+class TypeTrace[T]
 
 object TypeTrace {
   implicit def apply[T]: TypeTrace[T] = macro TypeTraceMacros.applyImpl[T]
@@ -33,7 +33,7 @@ class TypeTraceMacros[C <: Context](val c: C) {
     val tTpe = weakTypeOf[T]
     println(s"Trace: $tTpe ${tTpe.normalize} ${tTpe.getClass.getName} ${tTpe.normalize.getClass.getName}")
 
-    q"""new _root_.shapeless.test.TypeTrace[$tTpe] {}"""
+    q"""new _root_.shapeless.test.TypeTrace[$tTpe]"""
   }
 }
 
