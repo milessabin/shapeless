@@ -128,8 +128,6 @@ package Generic1TestsAux {
   object Pointed extends Pointed0 {
     def apply[F[_]](implicit f: Lazy[Pointed[F]]): Pointed[F] = f.value
 
-    import scala.language.experimental.macros
-
     implicit val idPointed: Pointed[Id] =
       new Pointed[Id] {
         def point[A](a: A): Id[A] = a

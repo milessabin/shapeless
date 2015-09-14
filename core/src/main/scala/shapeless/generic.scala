@@ -237,19 +237,19 @@ object LabelledGeneric {
 
 class nonGeneric extends StaticAnnotation
 
-trait IsTuple[T] extends Serializable
+class IsTuple[T] extends Serializable
 
 object IsTuple {
   implicit def apply[T]: IsTuple[T] = macro GenericMacros.mkIsTuple[T]
 }
 
-trait HasProductGeneric[T] extends Serializable
+class HasProductGeneric[T] extends Serializable
 
 object HasProductGeneric {
   implicit def apply[T]: HasProductGeneric[T] = macro GenericMacros.mkHasProductGeneric[T]
 }
 
-trait HasCoproductGeneric[T] extends Serializable
+class HasCoproductGeneric[T] extends Serializable
 
 object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]
@@ -799,7 +799,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       (List(to), List(from))
     }
 
-    val clsName = TypeName(c.freshName())
+    val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTypTree(tpe)}
@@ -826,7 +826,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
-    val clsName = TypeName(c.freshName())
+    val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTypTree(tpe)}
@@ -842,7 +842,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     if(!isTuple(tTpe))
       abort(s"Unable to materialize IsTuple for non-tuple type $tTpe")
 
-    q"""new _root_.shapeless.IsTuple[$tTpe] {} : _root_.shapeless.IsTuple[$tTpe]"""
+    q"""new _root_.shapeless.IsTuple[$tTpe]: _root_.shapeless.IsTuple[$tTpe]"""
   }
 
   def mkHasProductGeneric[T: WeakTypeTag]: Tree = {
@@ -850,7 +850,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     if(isReprType(tTpe) || !isProduct(tTpe))
       abort(s"Unable to materialize HasProductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasProductGeneric[$tTpe] {} : _root_.shapeless.HasProductGeneric[$tTpe]"""
+    q"""new _root_.shapeless.HasProductGeneric[$tTpe]: _root_.shapeless.HasProductGeneric[$tTpe]"""
   }
 
   def mkHasCoproductGeneric[T: WeakTypeTag]: Tree = {
@@ -858,6 +858,6 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     if(isReprType(tTpe) || !isCoproduct(tTpe))
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe] {} : _root_.shapeless.HasCoproductGeneric[$tTpe]"""
+    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe]: _root_.shapeless.HasCoproductGeneric[$tTpe]"""
   }
 }

@@ -175,7 +175,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def mkWitnessWith(parent: Type, sTpe: Type, s: Tree, i: Tree): Tree = {
-    val name = TypeName(c.freshName())
+    val name = TypeName(c.freshName("anon$"))
     val iTpe = i.tpe.finalResultType
 
     q"""
@@ -191,7 +191,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def mkOps(sTpe: Type, w: Tree): Tree = {
-    val name = TypeName(c.freshName())
+    val name = TypeName(c.freshName("anon$"))
 
     q"""
       {
