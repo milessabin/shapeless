@@ -246,10 +246,6 @@ trait Poly extends PolyApply with Serializable {
  */
 object Poly extends PolyInst {
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
-
-  def apply(f : Any): Poly = macro PolyMacros.applyImpl
-
-  implicit def lift1(f: Nothing => Any): Poly = macro PolyMacros.lift1Impl
 }
 
 /**
@@ -285,71 +281,6 @@ class PolyMacros[C <: Context](val c: C) {
 
     q""" $value.caseUniv[$tTpe] """
   }
-
-  def liftAux(f: Expr[Any]): Tree = {
-    def wrongShape =
-      c.abort(
-        c.enclosingPosition,
-        s"Expression ${f.tree} has the wrong shape to be converted to a polymorphic function value"
-      )
-
-    def mkModule(mSym: Symbol, df: Tree): Tree = {
-      val methodTpe = mSym.typeSignature
-      val mTArgs = mSym.asMethod.typeParams.map(_ => tq"T")
-
-      val paramSym = mSym.asMethod.paramss match {
-        case List(List(ps)) => ps
-        case _ => wrongShape
-      }
-
-      def extractTc(tpe: Type): (Tree, Tree) = {
-        mSym.asMethod.typeParams match {
-          case List() =>
-            val sym = tpe.typeSymbol
-            (tq"_root_.shapeless.Const[$sym]#λ", tq"$sym")
-
-          case List(mTParam) if tpe.typeSymbol == mTParam =>
-            (tq"_root_.shapeless.Id", tq"T")
-
-          case List(mTParam) if !tpe.contains(mTParam) =>
-            val sym = tpe.typeSymbol
-            (tq"_root_.shapeless.Const[$sym]#λ", tq"$sym")
-
-          case List(mTParam) if !tpe.typeConstructor.contains(mTParam) =>
-            val sym = tpe.typeConstructor.typeSymbol
-            (tq"$sym", tq"$sym[T]")
-
-          case _ => wrongShape
-        }
-      }
-
-      val (fTc, fTa) = extractTc(paramSym.typeSignature)
-      val (gTc, gTa) = extractTc(mSym.asMethod.returnType)
-
-      val moduleName = newTermName(c.fresh)
-
-      q"""
-        {
-          $df
-          object $moduleName extends _root_.shapeless.poly.~>[$fTc, $gTc] {
-            def apply[T](t: $fTa): $gTa = $mSym[..$mTArgs](t)
-          }
-          $moduleName
-        }
-      """
-    }
-
-    f.tree match {
-      //case q""" { ($_) => $m[..$_]($_) } """ =>
-      case Block(List(), q""" ($a) => $m[..$ta]($e) """) =>
-        mkModule(m.symbol, EmptyTree)
-
-      case q""" { ${df: DefDef} } """ =>
-        mkModule(df.symbol, df)
-
-      case _ => wrongShape
-    }
-  }
 }
 
 object PolyMacros {
@@ -360,10 +291,4 @@ object PolyMacros {
   def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
     (c: Context): c.Expr[Case[P, FT :: HNil]] =
       c.Expr[Case[P, FT :: HNil]](inst(c).materializeFromValueImpl[P, FT, T])
-
-  def applyImpl(c: Context)(f: c.Expr[Any]): c.Expr[Poly] =
-    c.Expr[Poly](inst(c).liftAux(f))
-
-  def lift1Impl(c: Context)(f: c.Expr[Nothing => Any]): c.Expr[Poly] =
-    c.Expr[Poly](inst(c).liftAux(f))
 }
