@@ -49,7 +49,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
     def cast(t: Any): Option[T] = {
-      if(t != null && (cB isAssignableFrom t.getClass)) Some(t.asInstanceOf[T]) else None
+      if(t != null && cB.isInstance(t)) Some(t.asInstanceOf[T]) else None
     }
   }
 
