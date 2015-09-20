@@ -45,7 +45,7 @@ object Default {
 
   type Aux[T, Out0 <: HList] = Default[T] { type Out = Out0 }
 
-  implicit def materialize[T, L <: HList]: Aux[T, L] = macro DefaultMacros.mkDefaultValues[T, L]
+  implicit def materialize[T, L <: HList]: Aux[T, L] = macro DefaultMacros.materialize[T, L]
 }
 
 class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
@@ -54,7 +54,7 @@ class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
   def someTpe = typeOf[Some[_]].typeConstructor
   def noneTpe = typeOf[None.type]
 
-  def mkDefaultValues[T: WeakTypeTag, L: WeakTypeTag]: Tree = {
+  def materialize[T: WeakTypeTag, L: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
 
     if (!isCaseClassLike(classSym(tpe)))

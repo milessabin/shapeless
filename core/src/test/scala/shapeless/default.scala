@@ -8,7 +8,7 @@ object DefaultTestDefinitions {
   case class CC(i: Int, s: String = "b", flagOpt: Option[Boolean] = Some(true))
 
   sealed trait Base
-  case class BaseI(i: Int)
+  case class BaseI(i: Int) extends Base
 
   trait Dummy
 
@@ -16,7 +16,7 @@ object DefaultTestDefinitions {
     case class CC(i: Int, s: String = "b", flagOpt: Option[Boolean] = Some(true))
   }
 
-  object DefinitionsObj extends Definitions
+  val definitions = new Definitions {}
 
 }
 
@@ -39,12 +39,12 @@ class DefaultTests {
   @Test
   def simpleFromPath {
     {
-      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[DefinitionsObj.CC].apply()
+      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[definitions.CC].apply()
       assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
     }
 
     {
-      val default = Default[DefinitionsObj.CC].apply()
+      val default = Default[definitions.CC].apply()
       assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
     }
   }
