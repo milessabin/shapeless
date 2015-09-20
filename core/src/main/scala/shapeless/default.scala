@@ -30,7 +30,7 @@ import scala.reflect.macros.whitebox
  *
  * @author Alexandre Archambault
  */
-trait Default[T] extends DepFn0 {
+trait Default[T] extends DepFn0 with Serializable {
   type Out <: HList
 }
 

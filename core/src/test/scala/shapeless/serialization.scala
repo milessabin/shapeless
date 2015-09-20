@@ -1123,4 +1123,11 @@ class SerializationTests {
     assertSerializable(l13)
     assertSerializable(l14)
   }
+
+  @Test
+  def testDefault {
+    val d1 = Default[DefaultTestDefinitions.CC]
+
+    assertSerializable(d1)
+  }
 }
