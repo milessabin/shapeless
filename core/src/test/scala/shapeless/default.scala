@@ -99,4 +99,51 @@ class DefaultTests {
     illTyped(" Default.AsRecord[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
+  @Test
+  def simpleAsOptions {
+    illTyped(
+      " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[CC].apply() ",
+      "type mismatch.*"
+    )
+
+    {
+      val default: Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil = Default.AsOptions[CC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+
+    {
+      val default = Default.AsOptions[CC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+  }
+
+  @Test
+  def simpleFromPathAsOptions {
+    illTyped(
+      " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[definitions.CC].apply() ",
+      "type mismatch.*"
+    )
+
+    {
+      val default: Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil = Default.AsOptions[definitions.CC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+
+    {
+      val default = Default[definitions.CC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+  }
+
+  @Test
+  def invalidAsOptions {
+    illTyped(" Default.AsOptions[Base] ", "could not find implicit value for parameter default: .*")
+
+    illTyped(" Default.AsOptions[Dummy] ", "could not find implicit value for parameter default: .*")
+
+    illTyped(" Default.AsOptions[Any] ", "could not find implicit value for parameter default: .*")
+    Default.AsOptions[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
+    illTyped(" Default.AsOptions[Array[Int]] ", "could not find implicit value for parameter default: .*")
+  }
+
 }

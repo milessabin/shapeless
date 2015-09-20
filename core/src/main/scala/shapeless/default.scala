@@ -125,6 +125,87 @@ object Default {
         def apply() = helper(default())
       }
   }
+
+
+  /**
+   * Provides default values of case class-like types, as a HList of options.
+   *
+   * Unlike `Default`, `Out` is made of elements like `Option[...]` instead of `None.type` and `Some[...]`.
+   * Thus, the availability of default values cannot be checked through types, only through values (via the `apply`
+   * method).
+   *
+   * This representation can be more convenient to deal with when one only check the default values at run-time.
+   *
+   * Method `apply` provides the HList of default values, typed as `Out`.
+   *
+   * Example
+   * {{{
+   *   case class CC(i: Int, s: String = "b")
+   *
+   *   val default = Default.AsOptions[CC]
+   *
+   *   // default.Out is  Option[Int] :: Option[String] :: HNil
+   *   // default() returns
+   *   //   None :: Some("b") :: HNil
+   *   // typed as default.Out
+   * }}}
+   *
+   * @author Alexandre Archambault
+   */
+  trait AsOptions[T] extends DepFn0 with Serializable {
+    type Out <: HList
+  }
+
+  object AsOptions {
+    def apply[T](implicit default: AsOptions[T]): Aux[T, default.Out] = default
+
+    type Aux[T, Out0 <: HList] = AsOptions[T] { type Out = Out0 }
+
+    trait Helper[L <: HList, Repr <: HList] extends DepFn1[L] with Serializable {
+      type Out <: HList
+    }
+
+    object Helper {
+      def apply[L <: HList, Repr <: HList](implicit helper: Helper[L, Repr]): Aux[L, Repr, helper.Out] = helper
+
+      type Aux[L <: HList, Repr <: HList, Out0 <: HList] = Helper[L, Repr] { type Out = Out0 }
+
+      implicit def hnilHelper: Aux[HNil, HNil, HNil] =
+        new Helper[HNil, HNil] {
+          type Out = HNil
+          def apply(l: HNil) = HNil
+        }
+
+      implicit def hconsSomeHelper[H, T <: HList, ReprT <: HList, OutT <: HList]
+       (implicit
+         tailHelper: Aux[T, ReprT, OutT]
+       ): Aux[Some[H] :: T, H :: ReprT, Option[H] :: OutT] =
+        new Helper[Some[H] :: T, H :: ReprT] {
+          type Out = Option[H] :: OutT
+          def apply(l: Some[H] :: T) = l.head :: tailHelper(l.tail)
+        }
+
+      implicit def hconsNoneHelper[H, T <: HList, ReprT <: HList, OutT <: HList]
+       (implicit
+         tailHelper: Aux[T, ReprT, OutT]
+       ): Aux[None.type :: T, H :: ReprT, Option[H] :: OutT] =
+        new Helper[None.type :: T, H :: ReprT] {
+          type Out = Option[H] :: OutT
+          def apply(l: None.type :: T) = None :: tailHelper(l.tail)
+        }
+    }
+
+    implicit def asOption[T, Repr <: HList, Options <: HList, Out0 <: HList]
+     (implicit
+       default: Default.Aux[T, Options],
+       gen: Generic.Aux[T, Repr],
+       helper: Helper.Aux[Options, Repr, Out0]
+     ): Aux[T, Out0] =
+      new AsOptions[T] {
+        type Out = Out0
+        def apply() = helper(default())
+      }
+  }
 }
 
 class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
