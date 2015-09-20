@@ -1127,7 +1127,9 @@ class SerializationTests {
   @Test
   def testDefault {
     val d1 = Default[DefaultTestDefinitions.CC]
+    val d2 = Default.AsRecord[DefaultTestDefinitions.CC]
 
     assertSerializable(d1)
+    assertSerializable(d2)
   }
 }

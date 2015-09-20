@@ -1,5 +1,7 @@
 package shapeless
 
+import shapeless.record.Record
+
 import org.junit.Test
 import shapeless.test.illTyped
 
@@ -58,6 +60,43 @@ class DefaultTests {
     illTyped(" Default[Any] ", "could not find implicit value for parameter default: .*")
     Default[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
     illTyped(" Default[Array[Int]] ", "could not find implicit value for parameter default: .*")
+  }
+
+  @Test
+  def simpleAsRecord {
+    {
+      val default: Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T = Default.AsRecord[CC].apply()
+      assert(default == Record(s = "b", flagOpt = Some(true)))
+    }
+
+    {
+      val default = Default.AsRecord[CC].apply()
+      assert(default == Record(s = "b", flagOpt = Some(true)))
+    }
+  }
+
+  @Test
+  def simpleFromPathAsRecord {
+    {
+      val default: Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T = Default.AsRecord[definitions.CC].apply()
+      assert(default == Record(s = "b", flagOpt = Some(true)))
+    }
+
+    {
+      val default = Default.AsRecord[definitions.CC].apply()
+      assert(default == Record(s = "b", flagOpt = Some(true)))
+    }
+  }
+
+  @Test
+  def invalidAsRecord {
+    illTyped(" Default.AsRecord[Base] ", "could not find implicit value for parameter default: .*")
+
+    illTyped(" Default.AsRecord[Dummy] ", "could not find implicit value for parameter default: .*")
+
+    illTyped(" Default.AsRecord[Any] ", "could not find implicit value for parameter default: .*")
+    Default.AsRecord[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
+    illTyped(" Default.AsRecord[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
 }
