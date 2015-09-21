@@ -8,13 +8,18 @@ object AnnotationTestsDefinitions {
   case class First()
   case class Second(i: Int, s: String)
 
+  case class Other()
+  case class Last(b: Boolean)
+
   case class Unused()
 
-  case class CC(
+  @Other case class CC(
     @First i: Int,
     s: String,
     @Second(2, "b") ob: Option[Boolean]
   )
+
+  @Last(true) trait Something
 
   sealed trait Base
   @First case class BaseI(i: Int) extends Base
@@ -26,6 +31,30 @@ object AnnotationTestsDefinitions {
 
 class AnnotationTests {
   import AnnotationTestsDefinitions._
+
+  def simpleAnnotation {
+    {
+      val other = Annotation[Other, CC].apply()
+      assert(other == Other())
+
+      val last = Annotation[Last, Something].apply()
+      assert(last == Last(true))
+    }
+
+    {
+      val other: Other = Annotation[Other, CC].apply()
+      assert(other == Other())
+
+      val last: Last = Annotation[Last, Something].apply()
+      assert(last == Last(true))
+    }
+  }
+
+  @Test
+  def invalidAnnotation {
+    illTyped(" Annotation[Other, Dummy] ", "could not find implicit value for parameter annotation: .*")
+    illTyped(" Annotation[Dummy, CC] ", "could not find implicit value for parameter annotation: .*")
+  }
 
   @Test
   def simpleAnnotations {

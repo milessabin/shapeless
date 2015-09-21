@@ -4,6 +4,43 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 /**
+ * Evidence that type `T` has annotation `A`, and provides an instance of the annotation.
+ *
+ * If type `T` has an annotation of type `A`, then an implicit `Annotation[A, T]` can be found, and its `apply` method
+ * provides an instance of the annotation.
+ *
+ * Example:
+ * {{{
+ *   case class First(i: Int)
+ *
+ *   @First(3) trait Something
+ *   
+ *
+ *   val somethingFirst = Annotation[First, Something].apply()
+ *   assert(somethingFirst == First(3))
+ * }}}
+ *
+ * @tparam A: annotation type
+ * @tparam T: annotated type
+ *
+ * @author Alexandre Archambault
+ */
+trait Annotation[A, T] extends Serializable {
+  def apply(): A
+}
+
+object Annotation {
+  def apply[A,T](implicit annotation: Annotation[A, T]): Annotation[A, T] = annotation
+
+  def mkAnnotation[A, T](annotation: => A): Annotation[A, T] =
+    new Annotation[A, T] {
+      def apply() = annotation
+    }
+
+  implicit def materialize[A, T]: Annotation[A, T] = macro AnnotationMacros.materializeAnnotation[A, T]
+}
+
+/**
  * Provides the annotations of type `A` of the fields or constructors of case class-like or sum type `T`.
  *
  * If type `T` is case class-like, this type class inspects its fields and provides their annotations of type `A`. If
@@ -84,6 +121,28 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       args => q"${companionRef(tpe)}(..$args)"
     else
       args => q"new $tpe(..$args)"
+  }
+
+  def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
+    val annTpe = weakTypeOf[A]
+
+    if (!isProduct(annTpe))
+      abort(s"$annTpe is not a case class-like type")
+
+    val construct0 = construct(annTpe)
+
+    val tpe = weakTypeOf[T]
+
+    val annTreeOpt = tpe.typeSymbol.annotations.collectFirst {
+      case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+    }
+
+    annTreeOpt match {
+      case Some(annTree) =>
+        q"_root_.shapeless.Annotation.mkAnnotation[$annTpe, $tpe]($annTree)"
+      case None =>
+        abort(s"No $annTpe annotation found on $tpe")
+    }
   }
 
   def materializeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
