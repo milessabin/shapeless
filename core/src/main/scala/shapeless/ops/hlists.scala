@@ -236,6 +236,39 @@ object hlist {
   }
 
   /**
+   * Type class computing the sum type corresponding to this `HList`.
+   *
+   */
+  trait lowPriorityToSum {
+    implicit def hlistToSum[H, T <: HList](implicit ut: ToSum[T]): ToSum.Aux[H :: T, H :+: ut.Out] =
+      new ToSum[H :: T] {
+        type Out = H :+: ut.Out
+      }
+  }
+
+  trait ToSum[L <: HList] extends Serializable {
+    type Out <: Coproduct
+  }
+
+  object ToSum extends lowPriorityToSum {
+    def apply[L <: HList](implicit tcp: ToSum[L]): Aux[L, tcp.Out] = tcp
+
+    type Aux[L <: HList, Out0 <: Coproduct] = ToSum[L] {type Out = Out0}
+
+    implicit val hnilToSum: Aux[HNil, CNil] =
+      new ToSum[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToSum[H, T <: HList, OutL <: HList](implicit
+                                                          fn: FilterNot.Aux[T, H, OutL],
+                                                          ut: ToSum[OutL]): Aux[H :: T, H :+: ut.Out] =
+      new ToSum[H :: T] {
+        type Out = H :+: ut.Out
+      }
+  }
+
+  /**
    * Type class supporting computing the type-level Nat corresponding to the length of this `HList`.
    *
    * @author Miles Sabin

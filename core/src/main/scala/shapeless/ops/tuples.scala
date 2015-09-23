@@ -985,6 +985,59 @@ object tuple {
   }
 
   /**
+   * Type class computing the coproduct type corresponding to this tuple.
+   *
+   * @author Andreas Koestler
+   */
+  trait ToCoproduct[T] extends Serializable { type Out <: Coproduct }
+
+  object ToCoproduct {
+    def apply[T](implicit tcp: ToCoproduct[T]): Aux[T, tcp.Out] = tcp
+
+    type Aux[T, Out0 <: Coproduct] = ToCoproduct[T] {type Out = Out0}
+
+    implicit val hnilToCoproduct: Aux[HNil, CNil] =
+      new ToCoproduct[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToCoproduct[T, L <: HList](implicit
+                                                 gen: Generic.Aux[T, L],
+                                                 ut: hl.ToCoproduct[L]
+                                                  ): Aux[T, ut.Out] =
+      new ToCoproduct[T] {
+        type Out = ut.Out
+      }
+  }
+
+  /**
+   * Type class computing the sum type corresponding to this tuple.
+   *
+   * @author Andreas Koestler
+   */
+  trait ToSum[T] extends Serializable { type Out <: Coproduct }
+
+  object ToSum {
+    def apply[T](implicit tcp: ToSum[T]): Aux[T, tcp.Out] = tcp
+
+    type Aux[T, Out0 <: Coproduct] = ToSum[T] {type Out = Out0}
+
+    implicit val hnilToSum: Aux[HNil, CNil] =
+      new ToSum[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToSum[T, L <: HList](implicit
+                                           gen: Generic.Aux[T, L],
+                                           ut: hl.ToSum[L]
+                                            ): Aux[T, ut.Out] =
+      new ToSum[T] {
+        type Out = ut.Out
+      }
+  }
+
+
+  /**
    * Type Class witnessing that this tuple can be collected with a 'Poly' to produce a new tuple
    *
    * @author Stacy Curl

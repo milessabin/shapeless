@@ -516,6 +516,30 @@ class TupleTests {
   }
 
   @Test
+  def testToCoproduct {
+    import ops.tuple._
+
+    type PISB = (Int, String, Boolean)
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    type CISBb = the.`ToCoproduct[PISB]`.Out
+    implicitly[CISBa =:= CISBb]
+  }
+
+  @Test
+  def testToSum {
+    import ops.tuple._
+    
+    type PISB = (Int, String, Boolean)
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    type SISBa = the.`ToSum[PISB]`.Out
+    implicitly[CISBa =:= SISBa]
+
+    type PIISSB = (Int, Int, String, String, Boolean)
+    type SISBb = the.`ToSum[PIISSB]`.Out
+    implicitly[CISBa =:= SISBb]
+  }
+
+  @Test
   def testToList {
     import ops.tuple.ToList
 

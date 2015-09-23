@@ -2725,6 +2725,18 @@ class HListTests {
   }
 
   @Test
+  def testToSum {
+    type PISB = Int :: String :: Boolean :: HNil
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    type SISBa = the.`ToSum[PISB]`.Out
+    implicitly[CISBa =:= SISBa]
+
+    type PIISSB = Int :: Int :: String :: String :: Boolean :: HNil
+    type SISBb = the.`ToSum[PIISSB]`.Out
+    implicitly[CISBa =:= SISBb]
+  }
+
+  @Test
   def testHListTypeSelector {
     import syntax.singleton._
 
