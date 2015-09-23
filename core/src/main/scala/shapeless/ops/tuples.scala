@@ -1219,4 +1219,33 @@ object tuple {
           def apply(t: T, in: InT) = tp(patch(gen.to(t), genIn.to(in)))
         }
   }
+
+  /**
+   * Typeclass supporting grouping this `Tuple` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * @author Andreas Koestler
+   */
+  trait Grouper[T, N <: Nat, Step <: Nat] extends DepFn1[T] with Serializable
+
+  object Grouper {
+    def apply[T, N <: Nat, Step <: Nat](implicit g: Grouper[T, N, Step]): Aux[T, N, Step, g.Out] = g
+
+    type Aux[T, N <: Nat, Step <: Nat, Out0] = Grouper[T, N, Step] {
+      type Out = Out0
+    }
+
+    implicit def tupleGrouper[T, N <: Nat, Step <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     gen: Generic.Aux[T, L],
+     grouper: hl.Grouper.Aux[L, N, Step, OutL],
+     tupler: hl.Tupler[OutL]
+      ): Aux[T, N, Step, tupler.Out] = new Grouper[T, N, Step] {
+      type Out = tupler.Out
+
+      def apply(t: T): Out = tupler(grouper(gen.to(t)))
+    }
+
+  }
+
 }

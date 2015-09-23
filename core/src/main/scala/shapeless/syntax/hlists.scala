@@ -644,4 +644,12 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Finds the first element of the HList for which the given Poly is defined, and applies the Poly to it.
    */ 
   def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
+
+  /**
+   * Groups the elements of this `HList` into tuples of `n` elements, offset by `step`
+   *
+   * @author Andreas Koestler
+   */
+  def group(n: Nat, step: Nat)(implicit grouper: Grouper[L, n.N, step.N]): grouper.Out = grouper(l)
+
 }

@@ -2937,4 +2937,43 @@ class HListTests {
     val hlist2 = "foo" :: 2.0 :: HNil
     illTyped("""hlist2.collectFirst(Foo)""")
   }
+
+  @Test
+  def testGrouper {
+    object toInt extends Poly1 {
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+    }
+    def range[R <: HList](a: Nat, b: Nat)(implicit
+                                          range: ops.nat.Range.Aux[a.N, b.N, R],
+                                          mapper: ops.hlist.Mapper[toInt.type, R]
+      ) = mapper(range())
+
+    def group[L <: HList](l: L, n: Nat, step: Nat)(implicit grouper: Grouper[L, n.N, step.N]) = grouper(l)
+
+    // partition a HList of 20 items into 5 (20/4) tuples of 4 items
+    assertEquals(
+      (0, 1, 2, 3) ::(4, 5, 6, 7) ::(8, 9, 10, 11) ::(12, 13, 14, 15) ::(16, 17, 18, 19) :: HNil,
+      range(0, 20) group (4, 4)
+    )
+
+    // partition a HList of 22 items into 5 (20/4) tuples of 4 items
+    // the last two items do not make a complete partition and are dropped.
+    assertEquals(
+      (0, 1, 2, 3) ::(4, 5, 6, 7) ::(8, 9, 10, 11) ::(12, 13, 14, 15) ::(16, 17, 18, 19) :: HNil,
+      range(0, 22) group (4, 4)
+    )
+
+    // uses the step to select the starting point for each partition
+    assertEquals(
+      (0, 1, 2, 3) ::(6, 7, 8, 9) ::(12, 13, 14, 15) :: HNil,
+      range(0, 20) group (4, 6)
+    )
+
+    // if the step is smaller than the partition size, items will be reused
+    assertEquals(
+      (0, 1, 2, 3) ::(3, 4, 5, 6) ::(6, 7, 8, 9) ::(9, 10, 11, 12) ::(12, 13, 14, 15) ::(15, 16, 17, 18) :: HNil,
+      range(0, 20) group (4, 3)
+    )
+
+  }
 }

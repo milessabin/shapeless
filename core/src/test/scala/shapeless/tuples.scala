@@ -1763,4 +1763,45 @@ class TupleTests {
       assertTypedEquals[(Int, String, String)](out, out2)
     }
   }
+
+  @Test
+  def testGrouper {
+    object toInt extends Poly1 {
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+    }
+    def range[R <: HList, T, OutL <: HList](a: Nat, b: Nat)(implicit
+                                                            range: ops.nat.Range.Aux[a.N, b.N, R],
+                                                            mapper: ops.hlist.Mapper.Aux[toInt.type, R, OutL],
+                                                            tupler: ops.hlist.Tupler.Aux[OutL, T]
+      ) = tupler(mapper(range()))
+
+    //def group[T](t: T, n: Nat, step: Nat)(implicit grouper: ops.tuple.Grouper[T, n.N, step.N]) = grouper(t)
+
+
+    // partition a Tuple of 20 items into 5 (20/4) tuples of 4 items
+    assertEquals(
+      ((0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 10, 11), (12, 13, 14, 15), (16, 17, 18, 19)),
+      range(0,20) group (4, 4)
+    )
+
+    // partition a Tuple of 22 items into 5 (20/4) tuples of 4 items
+    // the last two items do not make a complete partition and are dropped.
+    assertEquals(
+      ((0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 10, 11), (12, 13, 14, 15), (16, 17, 18, 19)),
+      range(0, 22) group (4, 4)
+    )
+
+    // uses the step to select the starting point for each partition
+    assertEquals(
+      ((0, 1, 2, 3), (6, 7, 8, 9), (12, 13, 14, 15)),
+      range(0, 20) group (4, 6)
+    )
+
+    // if the step is smaller than the partition size, items will be reused
+    assertEquals(
+      ((0, 1, 2, 3), (3, 4, 5, 6), (6, 7, 8, 9), (9, 10, 11, 12), (12, 13, 14, 15), (15, 16, 17, 18)),
+      range(0, 20) group (4, 3)
+    )
+
+  }
 }

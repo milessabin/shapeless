@@ -898,6 +898,55 @@ object hlist {
     }
   }
 
+
+ /**
+  * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
+  * apart. If `Step` equals `N` then the groups do not overlap.
+  *
+  * @author Andreas Koestler
+  */
+ trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  trait LowPriorityGrouper {
+
+    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat]
+    (implicit
+     takeN: ops.hlist.Take.Aux[L, N, OutT],
+     dropN: ops.hlist.Drop.Aux[L, Step, OutD],
+     tup: ops.hlist.Tupler.Aux[OutT, T],
+     grouper: Grouper[OutD, N, Step]
+      ): Grouper.Aux[L, N, Step, tup.Out :: grouper.Out] = new Grouper[L, N, Step] {
+      type Out = tup.Out :: grouper.Out
+
+      def apply(l: L) = tup(takeN(l)) :: grouper(dropN(l))
+    }
+  }
+
+  object Grouper extends LowPriorityGrouper {
+    def apply[L <: HList, N <: Nat, Step <: Nat](implicit g: Grouper[L, N, Step]): Aux[L, N, Step, g.Out] = g
+
+    type Aux[L <: HList, N <: Nat, Step <: Nat, Out0] = Grouper[L, N, Step] {
+      type Out = Out0
+    }
+
+    implicit def hnilGrouper[N <: Nat]: Aux[HNil, N, N, HNil] = new Grouper[HNil, N, N] {
+      type Out = HNil
+
+      def apply(l: HNil): Out = HNil
+    }
+
+    implicit def hlistGrouper1[L <: HList, A <: Nat, B <: Nat, Step <: Nat](implicit
+                                                                            len: ops.hlist.Length.Aux[L, A],
+                                                                            lt: ops.nat.LT[A, B]
+                                                                             ): Aux[L, B, Step, HNil] = new Grouper[L, B, Step] {
+      type Out = HNil
+
+      def apply(l: L): Out = HNil
+    }
+  }
+
   /**
    * Type class supporting access to the all elements of this `HList` of type `U`.
    *

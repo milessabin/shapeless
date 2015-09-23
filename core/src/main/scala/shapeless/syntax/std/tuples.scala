@@ -484,4 +484,11 @@ final class TupleOps[T](t: T) extends Serializable {
   class PatchAux[N <: Nat, M <: Nat]{
     def apply[In](in: In)(implicit patcher: Patcher[N, M, T, In]): patcher.Out = patcher(t, in)
   }
+
+  /**
+   * Groups the elements of this `Tuple` into tuples of `n` elements, offset by `step`
+   *
+   * @author Andreas Koestler
+   */
+  def group(n: Nat, step: Nat)(implicit grouper: Grouper[T, n.N, step.N]): grouper.Out = grouper(t)
 }
