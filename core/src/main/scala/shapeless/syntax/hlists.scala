@@ -538,7 +538,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   }
 
   /**
-   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * Converts this `HList` to a `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
   def to[M[_]](implicit ts : ToTraversable[L, M]) : ts.Out = ts(l)
