@@ -491,4 +491,11 @@ final class TupleOps[T](t: T) extends Serializable {
    * @author Andreas Koestler
    */
   def group(n: Nat, step: Nat)(implicit grouper: Grouper[T, n.N, step.N]): grouper.Out = grouper(t)
+
+  /**
+   * Groups the elements of this `Tuple` into tuples of `n` elements, offset by `step`
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   * @author Andreas Koestler
+   */
+  def group[Pad](n: Nat, step: Nat, pad: Pad)(implicit grouper: PaddedGrouper[T, n.N, step.N, Pad]): grouper.Out = grouper(t, pad)
 }

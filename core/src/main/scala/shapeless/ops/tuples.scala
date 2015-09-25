@@ -1229,11 +1229,9 @@ object tuple {
   trait Grouper[T, N <: Nat, Step <: Nat] extends DepFn1[T] with Serializable
 
   object Grouper {
-    def apply[T, N <: Nat, Step <: Nat](implicit g: Grouper[T, N, Step]): Aux[T, N, Step, g.Out] = g
+    def apply[T, N <: Nat, Step <: Nat](implicit grouper: Grouper[T, N, Step]): Aux[T, N, Step, grouper.Out] = grouper
 
-    type Aux[T, N <: Nat, Step <: Nat, Out0] = Grouper[T, N, Step] {
-      type Out = Out0
-    }
+    type Aux[T, N <: Nat, Step <: Nat, Out0] = Grouper[T, N, Step] {type Out = Out0}
 
     implicit def tupleGrouper[T, N <: Nat, Step <: Nat, L <: HList, OutL <: HList]
     (implicit
@@ -1247,5 +1245,39 @@ object tuple {
     }
 
   }
+
+  /**
+   * Typeclass supporting grouping this `Tuple` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * Use the elements in `Pad` as necessary to complete last partition
+   * up to `n` items. In case there are not enough padding elements, return a partition
+   * with less than `n` items.
+   *
+   * @author Andreas Koestler
+   */
+  trait PaddedGrouper[T, N <: Nat, Step <: Nat, Pad] extends DepFn2[T, Pad] with Serializable
+
+  object PaddedGrouper {
+    def apply[T, N <: Nat, Step <: Nat, Pad](implicit
+                                             grouper: PaddedGrouper[T, N, Step, Pad]
+                                              ): Aux[T, N, Step, Pad, grouper.Out] = grouper
+
+    type Aux[T, N <: Nat, Step <: Nat, Pad, Out0] = PaddedGrouper[T, N, Step, Pad] {type Out = Out0}
+
+    implicit def tuplePaddedGrouper[Pad, PadL <: HList, T, N <: Nat, Step <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     genL: Generic.Aux[T, L],
+     genPad: Generic.Aux[Pad, PadL],
+     grouper: hl.PaddedGrouper.Aux[L, N, Step, PadL, OutL],
+     tupler: hl.Tupler[OutL]
+      ): Aux[T, N, Step, Pad, tupler.Out] = new PaddedGrouper[T, N, Step, Pad] {
+      type Out = tupler.Out
+
+      def apply(t: T, pad: Pad): Out = tupler(grouper(genL.to(t), genPad.to(pad)))
+    }
+
+  }
+
 
 }

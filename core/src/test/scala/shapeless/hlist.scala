@@ -2948,15 +2948,15 @@ class HListTests {
                                           mapper: ops.hlist.Mapper[toInt.type, R]
       ) = mapper(range())
 
-    def group[L <: HList](l: L, n: Nat, step: Nat)(implicit grouper: Grouper[L, n.N, step.N]) = grouper(l)
-
-    // partition a HList of 20 items into 5 (20/4) tuples of 4 items
+    // group HNil
+    assertEquals( HNil : HNil, (HNil: HNil) group (2,1) )
+    // group a HList of 20 items into 5 (20/4) tuples of 4 items
     assertEquals(
       (0, 1, 2, 3) ::(4, 5, 6, 7) ::(8, 9, 10, 11) ::(12, 13, 14, 15) ::(16, 17, 18, 19) :: HNil,
       range(0, 20) group (4, 4)
     )
 
-    // partition a HList of 22 items into 5 (20/4) tuples of 4 items
+    // group a HList of 22 items into 5 (20/4) tuples of 4 items
     // the last two items do not make a complete partition and are dropped.
     assertEquals(
       (0, 1, 2, 3) ::(4, 5, 6, 7) ::(8, 9, 10, 11) ::(12, 13, 14, 15) ::(16, 17, 18, 19) :: HNil,
@@ -2973,6 +2973,18 @@ class HListTests {
     assertEquals(
       (0, 1, 2, 3) ::(3, 4, 5, 6) ::(6, 7, 8, 9) ::(9, 10, 11, 12) ::(12, 13, 14, 15) ::(15, 16, 17, 18) :: HNil,
       range(0, 20) group (4, 3)
+    )
+
+    // when there are not enough items to fill the last partition, a pad can be supplied.
+    assertEquals(
+      (0, 1, 2) ::(6, 7, 8) ::(12, 13, 14) ::(18, 19, 'a') :: HNil,
+      range(0, 20) group (3, 6, 'a'::HNil)
+    )
+
+    // but only as many pad elements are used as necessary to fill the final partition.
+    assertEquals(
+      (0, 1, 2, 3) ::(6, 7, 8, 9) ::(12, 13, 14, 15) ::(18, 19, 'a', 'b') :: HNil,
+      range(0, 20) group (4, 6, 'a'::'b'::'c'::'d'::'e'::'f'::'g'::HNil)
     )
 
   }

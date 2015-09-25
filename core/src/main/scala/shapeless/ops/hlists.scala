@@ -911,41 +911,112 @@ object hlist {
 
   trait LowPriorityGrouper {
 
-    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat]
+    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat, LL <: Nat, M <: Nat]
     (implicit
-     takeN: ops.hlist.Take.Aux[L, N, OutT],
-     dropN: ops.hlist.Drop.Aux[L, Step, OutD],
+     len: Length.Aux[L, LL],
+     min: ops.nat.Min.Aux[LL, Step, M],
+     take: ops.hlist.Take.Aux[L, N, OutT],
+     drop: ops.hlist.Drop.Aux[L, M, OutD],
      tup: ops.hlist.Tupler.Aux[OutT, T],
      grouper: Grouper[OutD, N, Step]
       ): Grouper.Aux[L, N, Step, tup.Out :: grouper.Out] = new Grouper[L, N, Step] {
       type Out = tup.Out :: grouper.Out
 
-      def apply(l: L) = tup(takeN(l)) :: grouper(dropN(l))
+      def apply(l: L) = tup(take(l)) :: grouper(drop(l))
     }
   }
 
   object Grouper extends LowPriorityGrouper {
-    def apply[L <: HList, N <: Nat, Step <: Nat](implicit g: Grouper[L, N, Step]): Aux[L, N, Step, g.Out] = g
+    def apply[L <: HList, N <: Nat, Step <: Nat](implicit
+                                                 grouper: Grouper[L, N, Step]
+                                                  ): Aux[L, N, Step, grouper.Out] = grouper
 
     type Aux[L <: HList, N <: Nat, Step <: Nat, Out0] = Grouper[L, N, Step] {
       type Out = Out0
     }
 
-    implicit def hnilGrouper[N <: Nat]: Aux[HNil, N, N, HNil] = new Grouper[HNil, N, N] {
+    implicit def hnilGrouper[N <: Nat, Step <: Nat]: Aux[HNil, N, Step, HNil] = new Grouper[HNil, N, Step] {
       type Out = HNil
 
       def apply(l: HNil): Out = HNil
     }
 
-    implicit def hlistGrouper1[L <: HList, A <: Nat, B <: Nat, Step <: Nat](implicit
+    implicit def hlistGrouper1[L <: HList, A <: Nat, N <: Nat, Step <: Nat](implicit
                                                                             len: ops.hlist.Length.Aux[L, A],
-                                                                            lt: ops.nat.LT[A, B]
-                                                                             ): Aux[L, B, Step, HNil] = new Grouper[L, B, Step] {
+                                                                            lt: ops.nat.LT[A, N]
+                                                                             ): Aux[L, N, Step, HNil] = new Grouper[L, N, Step] {
       type Out = HNil
 
       def apply(l: L): Out = HNil
     }
   }
+
+  /**
+   * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   * In case there are not enough padding elements, return a partition
+   * with less than `n` items.
+   *
+   * @author Andreas Koestler
+   */
+  trait LowPriorityPaddedGrouper {
+    implicit def incompletePaddedGrouper[
+    L <: HList,
+    N <: Nat,
+    Step <: Nat,
+    Pad <: HList,
+    PL <: HList,
+    LPL <: Nat,
+    S <: Nat,
+    MI <: Nat,
+    T <: HList,
+    M <: Nat,
+    LL <: Nat]
+    (implicit
+     len1: Length.Aux[L, LL],
+     prep: Prepend.Aux[L, Pad, PL],
+     len2: Length.Aux[PL, LPL],
+     mod: ops.nat.Mod.Aux[LL, Step, M],
+     sum: ops.nat.Sum.Aux[LL, M, S],
+     min: ops.nat.Min.Aux[LPL, S, MI],
+     take: Take.Aux[PL, MI, T],
+     grouper: Grouper[T, N, Step]
+      ): PaddedGrouper.Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+      type Out = grouper.Out
+
+      def apply(l: L, pad: Pad): Out = grouper(take(prep(l, pad)))
+    }
+
+  }
+  trait PaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList] extends DepFn2[L, Pad] with Serializable {
+    type Out <: HList
+  }
+
+  object PaddedGrouper extends LowPriorityPaddedGrouper {
+    def apply[L <: HList, N <: Nat, Step <: Nat, Pad <: HList](implicit
+                                                               grouper: PaddedGrouper[L, N, Step, Pad]
+                                                                ): Aux[L, N, Step, Pad, grouper.Out] = grouper
+
+    type Aux[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, Out0] = PaddedGrouper[L, N, Step, Pad] {
+      type Out = Out0
+    }
+
+    implicit def defaultPaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, A <: Nat, B <: Nat]
+    (implicit
+     len: Length.Aux[L, A],
+     mod: ops.nat.Mod.Aux[A, Step, B],
+     eq: B =:= _0,
+     grouper: Grouper[L, N, Step]
+      ): Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+      type Out = grouper.Out
+
+      def apply(l: L, pad: Pad): Out = grouper(l)
+    }
+
+  }
+
 
   /**
    * Type class supporting access to the all elements of this `HList` of type `U`.

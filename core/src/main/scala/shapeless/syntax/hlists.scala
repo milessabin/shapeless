@@ -652,4 +652,11 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    */
   def group(n: Nat, step: Nat)(implicit grouper: Grouper[L, n.N, step.N]): grouper.Out = grouper(l)
 
+  /**
+   * Groups the elements of this `HList` into tuples of `n` elements, offset by `step`
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   * @author Andreas Koestler
+   */
+  def group[Pad <: HList](n: Nat, step: Nat, pad: Pad)(implicit grouper: PaddedGrouper[L, n.N, step.N, Pad]): grouper.Out = grouper(l, pad)
+
 }
