@@ -87,8 +87,11 @@ class NatTests {
     implicitly[LTEq[_2, _3]]
 
     def relativeToN[N <: Nat]: Unit = {
+      implicitly[LT[_0, Succ[N]]]
+      implicitly[LT[N, Succ[N]]]
       implicitly[LTEq[_0, N]]
       implicitly[LTEq[N, N]]
+      implicitly[LTEq[N, Succ[N]]]
     }
 
     implicitly[Min.Aux[_0, _0, _0]]
