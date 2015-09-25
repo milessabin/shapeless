@@ -22,8 +22,6 @@ import org.junit.Assert._
 class NatTests {
   import nat._
   import ops.nat._
-
-  type N <: Nat
   
   trait Check[N <: Nat]
   def check(expected: Nat)(actually : => Check[expected.N]) {}
@@ -87,8 +85,11 @@ class NatTests {
     implicitly[LT[_10, _15]]
     implicitly[LTEq[_2, _2]]
     implicitly[LTEq[_2, _3]]
-    implicitly[LTEq[_0, N]]
-    implicitly[LTEq[N, N]]
+
+    def relativeToN[N <: Nat]: Unit = {
+      implicitly[LTEq[_0, N]]
+      implicitly[LTEq[N, N]]
+    }
 
     implicitly[Min.Aux[_0, _0, _0]]
     implicitly[Min.Aux[_5, _2, _2]]
