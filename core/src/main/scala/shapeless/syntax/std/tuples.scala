@@ -194,6 +194,19 @@ final class TupleOps[T](t: T) extends Serializable {
    */
   def updateWith[U] = new UpdateWithAux[U]
 
+  /**
+   * Replaces the `N`th element of this `Tuple` with the result of calling the supplied function on it.
+   * Available only if there is evidence that this `Tuple` has `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  class UpdateAtAux[N <: Nat] {
+    def apply[F](f : F)(implicit upd: ModifierAt[T, N, F]): upd.Out = upd(t, f)
+  }
+  def updateAt[F](n: Nat, f : F)(implicit upd: ModifierAt[T, n.N, F]): upd.Out = upd(t, f)
+
+  def updateAt[N <: Nat] = new UpdateAtAux[N]
+
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2
   }
