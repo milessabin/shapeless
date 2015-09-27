@@ -250,6 +250,56 @@ object nat {
   }
 
   /**
+   * Type class implementing Euclidean algorithm for calculating the GCD
+   *
+   * @author Andreas Koestler
+   */
+  trait LowPriorityGCD {
+    implicit def defaultCase[A <: Nat, B <: Nat, T <: Nat](implicit
+                                                           mod: Mod.Aux[A, B, T],
+                                                           gcd: GCD[B, T]): GCD.Aux[A, B, gcd.Out] = new GCD[A, B] {
+      type Out = gcd.Out
+    }
+  }
+  trait GCD[A <: Nat, B <: Nat] extends Serializable {
+    type Out <: Nat
+  }
+
+  object GCD extends LowPriorityGCD {
+    def apply[A <: Nat, B <: Nat](implicit gcd: GCD[A, B]): Aux[A, B, gcd.Out] = gcd
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: Nat] = GCD[A, B] {type Out = Out0}
+
+    implicit def terminationCase[A <: Nat]: Aux[A, _0, A] = new GCD[A, _0] {
+      type Out = A
+    }
+  }
+
+  /**
+   * Type class for calculating the Least Common Multiple
+   *
+   * @author Andreas Koestler
+   */
+  trait LCM[A <: Nat, B <: Nat] extends Serializable {
+    type Out <: Nat
+  }
+
+  object LCM {
+    def apply[A <: Nat, B <: Nat](implicit lcm: LCM[A, B]): Aux[A, B, lcm.Out] = lcm
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: Nat] = LCM[A, B] {type Out = Out0}
+
+    implicit def lcm[A <: Nat, B <: Nat, M <: Nat, N <: Nat, Res <: Nat]
+    (implicit
+     prod: Prod.Aux[A, B, M],
+     gcd: GCD.Aux[A, B, N],
+     div: Div[M, N]
+      ): Aux[A, B, div.Out] = new LCM[A, B] {
+      type Out = div.Out
+    }
+  }
+
+  /**
    * Type class supporting conversion of type-level Nats to value level Ints.
    * 
    * @author Miles Sabin
