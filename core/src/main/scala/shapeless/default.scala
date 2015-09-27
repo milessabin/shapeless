@@ -1,7 +1,7 @@
 package shapeless
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 import shapeless.labelled.{ FieldType, field }
 
@@ -208,7 +208,7 @@ object Default {
   }
 }
 
-class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
+class DefaultMacros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
 
   def someTpe = typeOf[Some[_]].typeConstructor
@@ -223,11 +223,11 @@ class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
     lazy val companion = companionRef(tpe)
 
     def wrapTpeTree(idx: Int, argTpe: Type) = {
-      val method = TermName(s"apply$$default$$${idx + 1}")
+      val method = newTermName(s"apply$$default$$${idx + 1}")
 
-      tpe.companion.member(method) match {
+      tpe.typeSymbol.companionSymbol.typeSignature.member(method) match {
         case NoSymbol => (noneTpe, q"_root_.scala.None")
-        case defaultArg => (appliedType(someTpe, argTpe), q"_root_.scala.Some($companion.$method)")
+        case defaultArg => (appliedType(someTpe, List(argTpe)), q"_root_.scala.Some($companion.$method)")
       }
     }
 
@@ -243,4 +243,11 @@ class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
 
     q"_root_.shapeless.Default.mkDefault[$tpe, $resultTpe]($resultTree)"
   }
+}
+
+object DefaultMacros {
+  def inst(c: Context) = new DefaultMacros[c.type](c)
+
+  def materialize[T: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: Context): c.Expr[Default.Aux[T, L]] =
+    c.Expr[Default.Aux[T, L]](inst(c).materialize[T, L])
 }
