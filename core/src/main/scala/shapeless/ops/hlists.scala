@@ -956,12 +956,11 @@ object hlist {
    * apart. If `Step` equals `N` then the groups do not overlap.
    *
    * Use elements in `pad` as necessary to complete last group up to `n` items.
-   * In case there are not enough padding elements, return a partition
-   * with less than `n` items.
    *
    * @author Andreas Koestler
    */
   trait LowPriorityPaddedGrouper {
+
     implicit def incompletePaddedGrouper[
     L <: HList,
     N <: Nat,
@@ -984,12 +983,14 @@ object hlist {
      take: Take.Aux[PL, MI, T],
      grouper: Grouper[T, N, Step]
       ): PaddedGrouper.Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+
       type Out = grouper.Out
 
       def apply(l: L, pad: Pad): Out = grouper(take(prep(l, pad)))
     }
 
   }
+
   trait PaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList] extends DepFn2[L, Pad] with Serializable {
     type Out <: HList
   }
@@ -1010,6 +1011,7 @@ object hlist {
      eq: B =:= _0,
      grouper: Grouper[L, N, Step]
       ): Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+
       type Out = grouper.Out
 
       def apply(l: L, pad: Pad): Out = grouper(l)
