@@ -136,6 +136,21 @@ class NatTests {
     assertTypedEquals[HNil](HNil, r3())
     assertTypedEquals[_1::_2::_3::_4::HNil](_1::_2::_3::_4::HNil, r4())
 
+    // GCD tests
+
+    implicitly[GCD.Aux[_0, _0, _0]]
+    implicitly[GCD.Aux[_0, _1, _1]]
+    implicitly[GCD.Aux[_1, _0, _1]]
+    implicitly[GCD.Aux[_21, _14, _7]]
+    implicitly[GCD.Aux[_20, _10, _10]]
+
+    // LCM tests
+    implicitly[LCM.Aux[_0, _1, _0]]
+    implicitly[LCM.Aux[_1, _0, _0]]
+    implicitly[LCM.Aux[_2, _3, _6]]
+    implicitly[LCM.Aux[_4, _6, _12]]
+    implicitly[LCM.Aux[_3, _7, _21]]
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
