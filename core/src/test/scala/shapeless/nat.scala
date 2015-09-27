@@ -141,16 +141,15 @@ class NatTests {
     implicitly[GCD.Aux[_0, _0, _0]]
     implicitly[GCD.Aux[_0, _1, _1]]
     implicitly[GCD.Aux[_1, _0, _1]]
-    implicitly[GCD.Aux[_21, _14, _7]]
-    implicitly[GCD.Aux[_20, _10, _10]]
+    implicitly[GCD.Aux[_9, _6, _3]]
+    implicitly[GCD.Aux[_12, _6, _6]]
 
     // LCM tests
     implicitly[LCM.Aux[_0, _1, _0]]
     implicitly[LCM.Aux[_1, _0, _0]]
     implicitly[LCM.Aux[_2, _3, _6]]
     implicitly[LCM.Aux[_4, _6, _12]]
-    implicitly[LCM.Aux[_3, _7, _21]]
-
+    
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
