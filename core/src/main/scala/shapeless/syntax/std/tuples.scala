@@ -200,23 +200,29 @@ final class TupleOps[T](t: T) extends Serializable {
    *
    * @author Andreas Koestler
    */
-  class UpdateAtAux[N <: Nat] {
-    def apply[F](f : F)(implicit upd: ModifierAt[T, N, F]): upd.Out = upd(t, f)
-  }
-  def updateAt[F](n: Nat, f : F)(implicit upd: ModifierAt[T, n.N, F]): upd.Out = upd(t, f)
+  //class UpdateAtWithAux[N <: Nat] {
+  //  def apply[F](f : F)(implicit upd: ModifierAt[T, N, F]): upd.Out = upd(t, f)
+  //}
+  def updateAtWith[U](n: NatWith[TAT])(f : n.instance.Out => U)(implicit
+                                                                upd: ModifierAt[T, n.N, n.instance.Out, U]
+    ): upd.Out = upd(t, f)
 
-  def updateAt[N <: Nat] = new UpdateAtAux[N]
+  type TAT[N <: Nat] = At[T, N]
+  //def updateAtWith[N <: Nat] = new UpdateAtWithAux[N]
+
+
 
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2
   }
-  
+
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. An explicit type argument
    * must be provided for `N`. Available only if there is evidence that this tuple has at least ''n'' elements.
    */
   def updatedAt[N <: Nat] = new UpdatedAtAux[N]
-  
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. Available only if there is
    * evidence that this tuple has at least ''n'' elements.

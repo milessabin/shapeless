@@ -1827,14 +1827,14 @@ class TupleTests {
   def testModifierAt = {
 
     // first element
-    assertEquals((1, (42, 2, 3)), (1, 2, 3) updateAt(0, (_: Int) => 42))
+    assertEquals((1, (42, 2, 3)), (1, 2, 3) updateAtWith(0)( _ => 42 ))
 
     //last element
-    assertEquals((3, (1, 2, 42)), (1, 2, 3) updateAt(2, (_: Int) => 42))
+    assertEquals((3, (1, 2, 42)), (1, 2, 3) updateAtWith(2)( _ => 42 ))
 
     //different type
-    import Nat._2
-    assertEquals((3, (1, 2, 42.0)), (1, 2, 3) updateAt[_2]((_: Int) => 42.0))
+    //import Nat._2
+    //assertEquals((3, (1, 2, 42.0)), (1, 2, 3) updateAtWith[_2]((_: Int) => 42.0))
 
   }
 }

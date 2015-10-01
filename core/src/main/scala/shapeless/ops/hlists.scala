@@ -1337,31 +1337,26 @@ object hlist {
    *
    * @author Andreas Koestler
    */
-  trait ModifierAt[L <: HList, N <: Nat, F] extends DepFn2[L, F]
+  trait ModifierAt[L <: HList, N <: Nat, U, V] extends DepFn2[L, U => V]
 
   object ModifierAt {
-    def apply[L <: HList, N <: Nat, F](implicit modifier: ModifierAt[L, N, F]): Aux[L, N, F, modifier.Out] = modifier
+    def apply[L <: HList, N <: Nat, U, V](implicit modifier: ModifierAt[L, N, U, V]): Aux[L, N, U, V, modifier.Out] = modifier
 
-    type Aux[L <: HList, N <: Nat, F, Out0] = ModifierAt[L, N, F] {type Out = Out0}
-    
-    implicit def hlistModifierAt1[H, T <: HList, F, R](implicit
-                                                       ftp: FnToProduct.Aux[F, H :: HNil => R]
-                                                        ): Aux[H :: T, _0, F, (H, R :: T)]
-    =
-      new ModifierAt[H :: T, _0, F] {
-        type Out = (H, R :: T)
+    type Aux[L <: HList, N <: Nat, U, V, Out0] = ModifierAt[L, N, U, V] {type Out = Out0}
 
-        def apply(l: H :: T, f: F): Out = (l.head, ftp(f)(l.head :: HNil) :: l.tail)
-      }
+    implicit def hlistModifierAt[L <: HList, OutL <: HList, N <: Nat, F, U, V]
+    (implicit
+     at: At.Aux[L, N, U],
+     replacer: ReplaceAt.Aux[L, N, V, (U, OutL)]
+      ): Aux[L, N, U, V, (U, OutL)] =
+      new ModifierAt[L, N, U, V] {
+        type Out = (U, OutL)
 
-    implicit def hlistModifierAt2[F, H, T <: HList, N <: Nat, U, Out0 <: HList]
-    (implicit ut: Aux[T, N, F, (U, Out0)]): Aux[H :: T, Succ[N], F, (U, H :: Out0)] =
-      new ModifierAt[H :: T, Succ[N], F] {
-        type Out = (U, H :: Out0)
+        import syntax.std.function._
 
-        def apply(l: H :: T, f: F): Out = {
-          val (u, outT) = ut(l.tail, f)
-          (u, l.head :: outT)
+        def apply(l: L, f: U => V): Out = {
+          val (u, res) = replacer(l, f(at(l)))
+          (u, res)
         }
       }
   }

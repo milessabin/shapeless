@@ -69,8 +69,8 @@ trait LowPriorityWitnessWith {
 }
 
 object WitnessWith extends LowPriorityWitnessWith {
-  type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0  }
-  type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
+  type Aux[TC[_], T0] = WitnessWith[TC] {type T = T0}
+  type Lt[TC[_], Lub] = WitnessWith[TC] {type T <: Lub}
 
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC]
 }
@@ -111,6 +111,25 @@ object Widen {
 }
 
 @macrocompat.bundle
+  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
+
+}
+
+trait NatWith[TC[_ <: Nat]] {
+
+  type N <: Nat
+
+  val instance: TC[N]
+}
+
+object NatWith {
+
+  type Aux[TC[_ <: Nat], N0 <: Nat] = NatWith[TC] {type N = N0}
+
+  implicit def apply[TC[_ <: Nat]](i: Int): NatWith[TC] = macro SingletonTypeMacros.convertInstanceImplNat[TC]
+
+}
+
 trait SingletonTypeUtils extends ReprTypes {
   import c.universe.{ Try => _, _ }
   import internal._, decorators._
@@ -230,6 +249,22 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     """
   }
 
+  def mkWitnessNat(parent: Type, sTpe: Type, s: Tree, i: Tree): Tree = {
+    val name = TypeName(c.freshName("anon$"))
+    val iTpe = i.tpe.finalResultType
+
+    q"""
+      {
+        final class $name extends $parent {
+          val instance: $iTpe = $i
+          type N = $sTpe
+          val value: $sTpe = $s
+        }
+        new $name
+      }
+    """
+  }
+
   def mkOps(sTpe: Type, w: Tree): Tree = {
     val name = TypeName(c.freshName("anon$"))
 
@@ -273,7 +308,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
-      case (tpe @ SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
+      case (tpe@SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
         mkResult(tpe, tree)
 
       case (SymTpe, LiteralSymbol(s)) =>
@@ -281,13 +316,14 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
       case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
         val sym = tree.symbol.asTerm
-        val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
+        val pre = if (sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
         val symTpe = c.internal.singleType(pre, sym)
         mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
 
       case _ =>
         c.abort(c.enclosingPosition, s"Expression $t does not evaluate to a constant or a stable reference value")
     }
+  }
 
   def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
 
