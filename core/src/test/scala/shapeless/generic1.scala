@@ -302,6 +302,20 @@ class Generic1Tests {
     val ihcT = implicitly[IsHCons1[T, TC1, TC2]]
   }
 
+  trait Singleton1[T[_]]
+  object Singleton1 {
+    implicit val hnilInstance: Singleton1[Const[HNil]#λ] = new Singleton1[Const[HNil]#λ] {}
+  }
+
+  @Test
+  def testSingletons {
+    type Unit1[t] = Unit
+    type None1[t] = None.type
+
+    implicitly[Generic1[Unit1, Singleton1]]
+    implicitly[Generic1[None1, Singleton1]]
+  }
+
   @Test
   def testFunctor: Unit = {
     import functorSyntax._
@@ -518,5 +532,26 @@ class SplitTests {
     Split1[({ type λ[t] = Int => List[t] })#λ, Dummy1, Dummy1]
 
     Split1[({ type λ[t] = List[t] => Int })#λ, Dummy1, Dummy1]
+
+    type HNil1[t] = HNil
+    type HCons1[t] = t :: HNil
+    type CNil1[t] = CNil
+    type CCons[t] = t :+: CNil
+
+    illTyped("""
+    Split1[HNil1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[HCons1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[CNil1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[CCons1, Dummy1, Dummy1]
+    """)
   }
 }

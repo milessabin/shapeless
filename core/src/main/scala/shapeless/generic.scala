@@ -289,6 +289,9 @@ trait CaseClassMacros extends ReprTypes {
   def isProduct(tpe: Type): Boolean =
     tpe =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
+  def isProduct1(tpe: Type): Boolean =
+    appliedType(tpe, List(typeOf[Any])).normalize =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+
   def isCoproduct(tpe: Type): Boolean = {
     val sym = tpe.typeSymbol
     if(!sym.isClass) false
@@ -573,7 +576,7 @@ trait CaseClassMacros extends ReprTypes {
 
   def reprTypTree1(tpe: Type, arg: TypeName): Tree = {
     val param = param1(tpe)
-    if(isProduct(tpe)) mkHListTypTree1(fieldsOf(tpe).map(_._2), param, arg)
+    if(isProduct1(tpe)) mkHListTypTree1(fieldsOf(tpe).map(_._2), param, arg)
     else mkCoproductTypTree1(ctorsOf1(tpe), param, arg)
   }
 

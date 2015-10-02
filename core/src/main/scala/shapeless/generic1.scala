@@ -117,9 +117,9 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
     val frTpe = frTag.tpe.typeConstructor
 
     if(isReprType1(tpe))
-      abort("No Generic instance available for HList or Coproduct")
+      abort("No Generic1 instance available for HList or Coproduct")
 
-    if(isProduct(tpe))
+    if(isProduct1(tpe))
       mkProductGeneric1(tpe, frTpe)
     else
       mkCoproductGeneric1(tpe, frTpe)
@@ -127,14 +127,14 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
 
   def mkProductGeneric1(tpe: Type, frTpe: Type): Tree = {
     def mkProductCases: (CaseDef, CaseDef) = {
-      if(tpe =:= typeOf[Unit])
+      if(appliedType(tpe, List(typeOf[Any])).normalize =:= typeOf[Unit])
         (
           cq"() => _root_.shapeless.HNil",
           cq"_root_.shapeless.HNil => ()"
         )
       else if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
         val singleton =
-          tpe match {
+          appliedType(tpe, List(typeOf[Any])).normalize match {
             case SingleType(pre, sym) =>
               mkAttributedRef(pre, sym)
             case TypeRef(pre, sym, List()) if sym.isModule =>
@@ -146,8 +146,8 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
           }
 
         (
-          cq"_: $tpe => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => $singleton: $tpe"
+          cq"x if x eq $singleton => _root_.shapeless.HNil",
+          cq"_root_.shapeless.HNil => $singleton"
         )
       } else {
         val sym = tpe.typeSymbol
@@ -373,6 +373,7 @@ trait IsCons1Macros extends CaseClassMacros {
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, nme)
 
     val (pack, unpack) = mkPackUnpack(nme, lTpt, hdTpt, tlTpt)
+
     q"""
       new $isCons1TC[$lTpe, $fhTpe, $ftTpe] {
         type H[$nme] = $hdTpt
@@ -396,6 +397,9 @@ class Split1Macros[C <: Context](val c: C) extends CaseClassMacros {
     val lTpe = lTag.tpe
     val foTpe = foTag.tpe.typeConstructor
     val fiTpe = fiTag.tpe.typeConstructor
+
+    if(isReprType1(lTpe))
+      abort("No Split1 instance available for HList or Coproduct")
 
     val lParam = lTpe match {
       case TypeRef(_, sym, _) => sym.asType.typeParams.head
