@@ -5,6 +5,11 @@ import shapeless.record.Record
 import org.junit.Test
 import shapeless.test.illTyped
 
+// Intentionally defined as a top-level class - (compile time) reflection API not behaving
+// the same way compared to definitions in a singleton, like CC below.
+// See https://github.com/milessabin/shapeless/issues/474
+case class DefaultCC(i: Int, s: String = "b", flagOpt: Option[Boolean] = Some(true))
+
 object DefaultTestDefinitions {
 
   case class CC(i: Int, s: String = "b", flagOpt: Option[Boolean] = Some(true))
@@ -27,6 +32,16 @@ class DefaultTests {
 
   @Test
   def simple {
+    {
+      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[DefaultCC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+
+    {
+      val default = Default[DefaultCC].apply()
+      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
+    }
+
     {
       val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[CC].apply()
       assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
