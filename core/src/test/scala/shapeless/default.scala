@@ -4,6 +4,7 @@ import shapeless.record.Record
 
 import org.junit.Test
 import shapeless.test.illTyped
+import shapeless.testutil.assertTypedEquals
 
 // Intentionally defined as a top-level class - (compile time) reflection API not behaving
 // the same way compared to definitions in a singleton, like CC below.
@@ -32,38 +33,30 @@ class DefaultTests {
 
   @Test
   def simple {
-    {
-      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[DefaultCC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
+    val default = Default[CC].apply()
+    assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
+      None :: Some("b") :: Some(Some(true)) :: HNil,
+      default
+    )
+  }
 
-    {
-      val default = Default[DefaultCC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
-
-    {
-      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
-
-    {
-      val default = Default[CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
+  @Test
+  def topLevel {
+    // See https://github.com/milessabin/shapeless/issues/474
+    val default = Default[DefaultCC].apply()
+    assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
+      None :: Some("b") :: Some(Some(true)) :: HNil,
+      default
+    )
   }
 
   @Test
   def simpleFromPath {
-    {
-      val default: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default[definitions.CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
-
-    {
-      val default = Default[definitions.CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
+    val default = Default[definitions.CC].apply()
+    assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
+      None :: Some("b") :: Some(Some(true)) :: HNil,
+      default
+    )
   }
 
   @Test
@@ -79,28 +72,20 @@ class DefaultTests {
 
   @Test
   def simpleAsRecord {
-    {
-      val default: Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T = Default.AsRecord[CC].apply()
-      assert(default == Record(s = "b", flagOpt = Some(true)))
-    }
-
-    {
-      val default = Default.AsRecord[CC].apply()
-      assert(default == Record(s = "b", flagOpt = Some(true)))
-    }
+    val default = Default.AsRecord[CC].apply()
+    assertTypedEquals[Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T](
+      Record(s = "b", flagOpt = Some(true)),
+      default
+    )
   }
 
   @Test
   def simpleFromPathAsRecord {
-    {
-      val default: Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T = Default.AsRecord[definitions.CC].apply()
-      assert(default == Record(s = "b", flagOpt = Some(true)))
-    }
-
-    {
-      val default = Default.AsRecord[definitions.CC].apply()
-      assert(default == Record(s = "b", flagOpt = Some(true)))
-    }
+    val default = Default.AsRecord[definitions.CC].apply()
+    assertTypedEquals[Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T](
+      Record(s = "b", flagOpt = Some(true)),
+      default
+    )
   }
 
   @Test
@@ -121,15 +106,11 @@ class DefaultTests {
       "type mismatch.*"
     )
 
-    {
-      val default: Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil = Default.AsOptions[CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
-
-    {
-      val default = Default.AsOptions[CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
+    val default = Default.AsOptions[CC].apply()
+    assertTypedEquals[Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil](
+      None :: Some("b") :: Some(Some(true)) :: HNil,
+      default
+    )
   }
 
   @Test
@@ -139,15 +120,11 @@ class DefaultTests {
       "type mismatch.*"
     )
 
-    {
-      val default: Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil = Default.AsOptions[definitions.CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
-
-    {
-      val default = Default[definitions.CC].apply()
-      assert(default == None :: Some("b") :: Some(Some(true)) :: HNil)
-    }
+    val default = Default.AsOptions[definitions.CC].apply()
+    assertTypedEquals[Option[Int] :: Option[String] :: Option[Option[Boolean]] :: HNil](
+      None :: Some("b") :: Some(Some(true)) :: HNil,
+      default
+    )
   }
 
   @Test
