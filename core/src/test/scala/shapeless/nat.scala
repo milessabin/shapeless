@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-15 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
+import shapeless.test.illTyped
 
 class NatTests {
   import nat._
@@ -85,6 +86,22 @@ class NatTests {
     implicitly[LT[_10, _15]]
     implicitly[LTEq[_2, _2]]
     implicitly[LTEq[_2, _3]]
+
+    illTyped(""" implicitly[LT[_5, _5]] """)
+    illTyped(""" implicitly[LTEq[_6, _5]] """)
+
+    def relativeToN[N <: Nat]: Unit = {
+      implicitly[LT[_0, Succ[N]]]
+      implicitly[LT[N, Succ[N]]]
+      implicitly[LTEq[_0, N]]
+      implicitly[LTEq[N, N]]
+      implicitly[LTEq[N, Succ[N]]]
+
+      illTyped(""" implicitly[LT[_0, N]] """)
+      illTyped(""" implicitly[LT[N, N]] """)
+      illTyped(""" implicitly[LTEq[_1, N]] """)
+      illTyped(""" implicitly[LTEq[Succ[N], N]] """)
+    }
 
     implicitly[Min.Aux[_0, _0, _0]]
     implicitly[Min.Aux[_5, _2, _2]]
