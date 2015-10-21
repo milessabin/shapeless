@@ -327,7 +327,7 @@ class PriorityTests {
     validateTC[(CC1, Int)]("(CC1, Int)")
     validateTC[(CC1, Boolean)]("(CC1, Boolean)")
 
-    Lazy.mkLazy[TC[CC2]]
+    //Lazy.mkLazy[TC[CC2]]
 
     // Derived, then orphans
     validateTC[CC2]("Generic[Int :: HNil]")
