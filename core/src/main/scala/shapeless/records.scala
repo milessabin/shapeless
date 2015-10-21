@@ -51,8 +51,8 @@ object record {
    * named argument syntax. Values of the type just defined can be created as follows,
    *
    * {{{
-   * val xyz = Union(x = 23, y = "foo", z = true)
-   * xyz.get('y) // == Some("foo")
+   * val xyz = Record(x = 23, y = "foo", z = true)
+   * xyz('y) // == "foo"
    * }}}
    */
   object Record extends Dynamic {

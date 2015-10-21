@@ -222,6 +222,9 @@ class DefaultMacros[C <: Context](val c: C) extends CaseClassMacros {
 
     lazy val companion = companionRef(tpe)
 
+    // Fixes https://github.com/milessabin/shapeless/issues/474
+    tpe.typeSymbol.companion.info.members
+
     def wrapTpeTree(idx: Int, argTpe: Type) = {
       val method = newTermName(s"apply$$default$$${idx + 1}")
 
