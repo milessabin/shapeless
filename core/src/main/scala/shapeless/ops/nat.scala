@@ -132,13 +132,17 @@ object nat {
    */
   trait LT[A <: Nat, B <: Nat] extends Serializable
 
-  object LT {
+  object LT extends LT0 {
     def apply[A <: Nat, B <: Nat](implicit lt: A < B): LT[A, B] = lt
-
-    type <[A <: Nat, B <: Nat] = LT[A, B]
 
     implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
     implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
+  }
+
+  trait LT0 {
+    type <[A <: Nat, B <: Nat] = LT[A, B]
+
+    implicit def lt3[A <: Nat] = new <[A, Succ[A]] {}
   }
 
   /**
@@ -148,14 +152,18 @@ object nat {
    */
   trait LTEq[A <: Nat, B <: Nat] extends Serializable
 
-  object LTEq {
+  object LTEq extends LTEq0 {
     def apply[A <: Nat, B <: Nat](implicit lteq: A <= B): LTEq[A, B] = lteq
 
+    implicit def ltEq1[A <: Nat] = new <=[A, A] {}
+    implicit def ltEq2[A <: Nat] = new <=[A, Succ[A]] {}
+  }
+
+  trait LTEq0 {
     type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 
-    implicit def ltEq1 = new <=[_0, _0] {}
-    implicit def ltEq2[B <: Nat] = new <=[_0, Succ[B]] {}
-    implicit def ltEq3[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
+    implicit def ltEq3[B <: Nat] = new <=[_0, B] {}
+    implicit def ltEq4[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
   }
 
   /**
