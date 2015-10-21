@@ -17,6 +17,7 @@
 package shapeless
 package ops
 
+import function._
 import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
 
@@ -1203,6 +1204,37 @@ object hlist {
             (u, l.head :: outT)
           }
         }
+  }
+
+  /**
+   * Type class supporting replacement of the `N`th element of this `HList` with the result of
+   * calling `F` on it.
+   * Available only if this `HList` contains at least `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  trait ModifierAt[L <: HList, N <: Nat, U, V] extends DepFn2[L, U => V]
+
+  object ModifierAt {
+    def apply[L <: HList, N <: Nat, U, V](implicit modifier: ModifierAt[L, N, U, V]): Aux[L, N, U, V, modifier.Out] = modifier
+
+    type Aux[L <: HList, N <: Nat, U, V, Out0] = ModifierAt[L, N, U, V] {type Out = Out0}
+
+    implicit def hlistModifierAt[L <: HList, OutL <: HList, N <: Nat, F, U, V]
+    (implicit
+     at: At.Aux[L, N, U],
+     replacer: ReplaceAt.Aux[L, N, V, (U, OutL)]
+      ): Aux[L, N, U, V, (U, OutL)] =
+      new ModifierAt[L, N, U, V] {
+        type Out = (U, OutL)
+
+        import syntax.std.function._
+
+        def apply(l: L, f: U => V): Out = {
+          val (u, res) = replacer(l, f(at(l)))
+          (u, res)
+        }
+      }
   }
 
   /**

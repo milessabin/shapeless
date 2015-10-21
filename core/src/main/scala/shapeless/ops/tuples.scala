@@ -314,6 +314,35 @@ object tuple {
   }
 
   /**
+   * Type class supporting replacement of the `N`th element of this `Tuple` with the result of
+   * calling `F` on it.
+   * Available only if this `Tuple` contains at least `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  trait ModifierAt[T, N <: Nat, U, V] extends DepFn2[T, U => V]
+
+  object ModifierAt {
+    def apply[T, N <: Nat, U, V](implicit modifier: ModifierAt[T, N, U, V]): Aux[T, N, U, V, modifier.Out] = modifier
+
+    type Aux[T, N <: Nat, U, V, Out0] = ModifierAt[T, N, U, V] {type Out = Out0}
+
+    implicit def modifyTuple[S, T, U, V, N <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     gen: Generic.Aux[T, L],
+     modifier: hl.ModifierAt.Aux[L, N, U, V, (S, OutL)],
+     tup: hl.Tupler[OutL]
+      ): Aux[T, N, U, V, (S, tup.Out)] = new ModifierAt[T, N, U, V] {
+
+      type Out = (S, tup.Out)
+
+      def apply(t: T, f: U => V) = {
+        val (u, rep) = modifier(gen.to(t), f);
+        (u, tup(rep))
+      }
+    }
+  }
+  /**
    * Type class supporting retrieval of the first ''n'' elements of this tuple. Available only if this tuple has at
    * least ''n'' elements.
    *

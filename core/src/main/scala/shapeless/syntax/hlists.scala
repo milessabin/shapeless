@@ -221,6 +221,23 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def updateWith[U, V, Out <: HList](f : U => V)
     (implicit replacer : Modifier.Aux[L, U, V, (U, Out)]) : Out = replacer.apply(l, f)._2
 
+  /**
+   * Replaces the `N`th element of this `HList` with the result of calling the supplied function on it.
+   * Available only if there is evidence that this `HList` has `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  //class UpdateAtWithAux[N <: Nat] {
+  //  def apply[F](f : F)(implicit upd: ModifierAt[L, N, F]): upd.Out = upd(l, f)
+  //}
+  //def updateAtWith[N <: Nat] = new UpdateAtAux[N]
+
+  def updateAtWith[F, V](n: NatWith[LAT])(f : n.instance.Out => V)(implicit
+                                                                   upd: ModifierAt[L, n.N, n.instance.Out, V]
+    ): upd.Out = upd(l, f)
+
+  type LAT[N <: Nat] = At[L, N]
+
   class UpdatedTypeAux[U] {
     def apply[V, Out <: HList](v : V)
       (implicit replacer : Replacer.Aux[L, U, V, (U, Out)]) : Out = replacer(l, v)._2
