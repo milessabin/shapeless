@@ -81,14 +81,15 @@ class CachedMacros(val c: whitebox.Context) {
 
     val concurrentLazy = !CachedMacros.deriving && LazyMacros.dcRef.nonEmpty
 
-    // Ensuring we are not caching trees derived during a Lazy/Strict lookup, as these trees
-    // can reference values (other entries of the Lazy/Strict derivation) that should not be
-    // accessible if re-using the tree in other contexts, after caching.
+    // Ensuring we are not caching parts of trees derived during a Lazy/Strict lookup
+    // (but caching the full tree of a Lazy/Strict is fine), as these can reference values
+    // (other entries of the Lazy/Strict derivation) that should not be accessible if
+    // re-using the tree in other contexts, after caching.
     if (concurrentLazy)
-      println(
-        s"Warning: first Cached[$tpe] after a Lazy/Strict (at ${c.enclosingPosition})\n" +
-        "You might want to consider caching an implicit looked up for earlier, so that " +
-        "the first Lazy/Strict itself gets cached."
+      c.warning(c.enclosingPosition,
+        s"Cached[$tpe] called from a Lazy/Strict, you might want to consider caching " +
+        "an implicit earlier, so that the whole Lazy/Strict itself gets cached. Caching " +
+        "is disabled here."
       )
 
     if (CachedMacros.deriving || concurrentLazy) {
