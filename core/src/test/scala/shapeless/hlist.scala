@@ -29,7 +29,7 @@ class HListTests {
   import syntax.singleton._
   import syntax.typeable._
   import ops.hlist._
-  import ops.record._
+  import ops.record.SelectAll
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil
