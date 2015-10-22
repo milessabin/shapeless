@@ -257,7 +257,7 @@ object HasCoproductGeneric {
 
 trait ReprTypes {
   val c: blackbox.Context
-  import c.universe._
+  import c.universe.{ Symbol => _, _ }
 
   def hlistTpe = typeOf[HList]
   def hnilTpe = typeOf[HNil]
@@ -269,6 +269,7 @@ trait ReprTypes {
   def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
   def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_, _]].typeConstructor
+  def symbolTpe = typeOf[Symbol]
 }
 
 trait CaseClassMacros extends ReprTypes {
