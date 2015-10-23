@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin
+ * Copyright (c) 2015 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,20 @@ package shapeless.syntax.std
 import shapeless.HList
 import shapeless.ops.maps.FromMap
 
-import scala.collection.GenTraversable
-
 /**
  * Conversions between `Map` and `Records`.
- *
- *
  */
 object maps {
-  implicit def traversableOps[T <: Map[_ <: Any, Any]](t: T) = new MapOps[T](t)
+  implicit def mapOps[K, V](m: Map[K, V]) = new MapOps[K, V](m)
 }
 
-final class MapOps[T <: Map[_ <: Any, Any]](t: T) {
+final class MapOps[K, V](m: Map[K, V]) {
   /**
    * Extracts value from map to form Record L. Map must contain all the keys and the values
    * and of the correct types.
-   * @param fl
-   * @tparam L
+   * @param fm
+   * @tparam R
    * @return Some[L] with values from Map or None if map does not match L
    */
-  def toRecord[L <: HList](implicit fl: FromMap[L]): Option[ L] = fl(
-    t.asInstanceOf[Map[Any, Any]])
+  def toRecord[R <: HList](implicit fm: FromMap[R]): Option[R] = fm(m)
 }

@@ -17,49 +17,38 @@
 package shapeless.ops
 
 import shapeless._
-import shapeless.labelled.FieldType
+import labelled._
 
 object maps {
-
   /**
    * Type class supporting type safe conversion of Map to Records.
-   *
-   *
    */
-  trait FromMap[Out <: HList] extends Serializable {
-    def apply(l: Map[Any, Any]): Option[Out]
+  trait FromMap[R <: HList] extends Serializable {
+    def apply[K, V](m: Map[K, V]): Option[R]
   }
 
   /**
    * `FromMap` type class instances.
-   *
-   *
    */
   object FromMap {
+    def apply[R <: HList](implicit fm: FromMap[R]) = fm
 
-    def apply[Out <: HList](implicit from: FromMap[Out]) = from
-
-    implicit def hnilFromMap[T] = new FromMap[HNil] {
-
-      override def apply(l: Map[Any, Any]) = Some(HNil)
-    }
-
-    import labelled._
-
-    implicit def hlistFromMap[K, V, OutT <: HList](implicit flt: FromMap[OutT], oc: Typeable[V],
-                                                   wit: Witness.Aux[K]) = new
-        FromMap[FieldType[K, V] :: OutT] {
-
-      import labelled._
-
-      def apply(mm: Map[Any, Any]): Option[FieldType[K, V] :: OutT] = {
-
-        val key = wit.value
-
-        for {value <- mm.get(key)
-             typed <- oc.cast(value)
-             rest <- flt(mm)} yield field[K](typed) :: rest
+    implicit def hnilFromMap[T]: FromMap[HNil] =
+      new FromMap[HNil] {
+        def apply[K, V](m: Map[K, V]): Option[HNil] = Some(HNil)
       }
-    }
+
+
+    implicit def hlistFromMap[K0, V0, T <: HList]
+      (implicit wk: Witness.Aux[K0], tv: Typeable[V0], fmt: FromMap[T]): FromMap[FieldType[K0, V0] :: T] =
+        new FromMap[FieldType[K0, V0] :: T] {
+          def apply[K, V](m: Map[K, V]): Option[FieldType[K0, V0] :: T] = {
+            for {
+              value <- m.get(wk.value.asInstanceOf[K])
+              typed <- tv.cast(value)
+              rest <- fmt(m)
+            } yield field[K0](typed) :: rest
+          }
+        }
   }
 }

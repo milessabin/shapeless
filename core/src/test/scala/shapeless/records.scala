@@ -23,6 +23,7 @@ class RecordTests {
   import labelled._
   import record._
   import syntax.singleton._
+  import syntax.std.maps._
   import test._
   import testutil._
   import ops.record.RemoveAll
@@ -132,14 +133,10 @@ class RecordTests {
 
   @Test
   def testFromMap {
-    import record._
-    import test._
-
-    type T1 = Record.`'stringVal -> String,'intVal->Int,'boolVal->Boolean`.T
+    type T1 = Record.`'stringVal -> String, 'intVal -> Int, 'boolVal -> Boolean`.T
 
     val in = Map('intVal -> 4, 'stringVal -> "Blarr", 'boolVal -> true)
 
-    import syntax.std.maps._
 
     val recOption = in.toRecord[T1]
 
@@ -158,8 +155,6 @@ class RecordTests {
     val recEither2 = in2.toRecord[T1]
 
     assert(recEither2.isEmpty)
-
-
   }
 
   @Test
