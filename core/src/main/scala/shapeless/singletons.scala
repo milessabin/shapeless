@@ -75,6 +75,41 @@ object WitnessWith extends LowPriorityWitnessWith {
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
 }
 
+/**
+ * Provides the widen type of a singleton type.
+ *
+ * Type member `Out` of an implicitly available `Witness[T]` instance is the widen type
+ * of `T`, and the `apply` method explicitly converts a `T` to an `Out`.
+ *
+ * E.g. if `T` is ``Witness.`2`.T``, `Out` is `Int`.
+ *
+ * It somehow complements `Witness`, providing the corresponding non-witnessed standard type, if any.
+ *
+ * Example of use,
+ * {{
+ *   val w = Widen[Witness.`2`.T]
+ *   // w.Out is Int
+ *   // w(2) is typed as Int
+ * }}
+ *
+ * @author Alexandre Archambault
+ */
+trait Widen[T] extends DepFn1[T] { type Out >: T }
+
+object Widen {
+  def apply[T](implicit widen: Widen[T]): Aux[T, widen.Out] = widen
+
+  type Aux[T, Out0 >: T] = Widen[T] { type Out = Out0 }
+
+  def instance[T, Out0 >: T](f: T => Out0): Aux[T, Out0] =
+    new Widen[T] {
+      type Out = Out0
+      def apply(t: T) = f(t)
+    }
+
+  implicit def materialize[T, Out]: Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
+}
+
 trait SingletonTypeUtils extends ReprTypes {
   import c.universe.{ Try => _, _ }
   import internal._, decorators._
@@ -305,5 +340,19 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
 
     typeCarrier(tpe)
+  }
+
+  def materializeWiden[T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
+    val tpe = weakTypeOf[T].dealias
+
+    val widenTpe = tpe match {
+      case SingletonSymbolType(s) => symbolTpe
+      case _ => tpe.widen
+    }
+
+    if (widenTpe =:= tpe)
+      c.abort(c.enclosingPosition, s"Don't know how to widen $tpe")
+    else
+      q"_root_.shapeless.Widen.instance[$tpe, $widenTpe](x => x)"
   }
 }

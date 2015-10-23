@@ -254,6 +254,94 @@ package record {
   }
 
   /**
+   * Type class supporting removal and re-insertion of an element (possibly unlabelled).
+   *
+   * @author Travis Brown
+   */
+  @annotation.implicitNotFound(msg = "No field or element type ${E} in record ${L}")
+  trait Remove[L, E] extends DepFn1[L] with Serializable {
+    def reinsert(out: Out): L
+  }
+
+  trait LowPriorityRemove {
+    type Aux[L <: HList, E, Out0] = Remove[L, E] { type Out = Out0 }
+
+    implicit def hconsRemove[H, T <: HList, E, OutT <: HList]
+      (implicit rt: Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
+        new Remove[H :: T, E] {
+          type Out = (E, H :: OutT)
+
+          def apply(l: H :: T): Out = {
+            val (e, tail) = rt(l.tail)
+            (e, l.head :: tail)
+          }
+
+          def reinsert(out: Out): H :: T = out._2.head :: rt.reinsert((out._1, out._2.tail))
+        }
+  }
+
+  object Remove extends LowPriorityRemove {
+    def apply[L <: HList, E](implicit remove: Remove[L, E]): Aux[L, E, remove.Out] = remove
+
+    implicit def removeHead[K, V, T <: HList]: Aux[FieldType[K, V] :: T, FieldType[K, V], (FieldType[K, V], T)] =
+      new Remove[FieldType[K, V] :: T, FieldType[K, V]] {
+        type Out = (FieldType[K, V], T)
+
+        def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
+        def reinsert(out: Out): FieldType[K, V] :: T = out._1 :: out._2
+      }
+
+    implicit def removeUnlabelledHead[K, V, T <: HList]: Aux[FieldType[K, V] :: T, V, (V, T)] =
+      new Remove[FieldType[K, V] :: T, V] {
+        type Out = (V, T)
+
+        def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
+        def reinsert(out: Out): FieldType[K, V] :: T = field[K](out._1) :: out._2
+      }
+  }
+
+  /**
+   * Type class supporting removal and re-insertion of an `HList` of elements (possibly unlabelled).
+   *
+   * @author Travis Brown
+   */
+  @annotation.implicitNotFound(msg = "Not all of the field or element types ${A} are in record ${L}")
+  trait RemoveAll[L <: HList, A <: HList] extends DepFn1[L] {
+    def reinsert(out: Out): L
+  }
+
+  object RemoveAll {
+    type Aux[L <: HList, A <: HList, Out0] = RemoveAll[L, A] { type Out = Out0 }
+
+    def apply[L <: HList, A <: HList](implicit removeAll: RemoveAll[L, A]): Aux[L, A, removeAll.Out] = removeAll
+
+    implicit def hnilRemoveAll[L <: HList]: Aux[L, HNil, (HNil, L)] =
+      new RemoveAll[L, HNil] {
+        type Out = (HNil, L)
+
+        def apply(l: L): Out = (HNil, l)
+        def reinsert(out: Out): L = out._2
+      }
+
+    implicit def hconsRemoveAll[L <: HList, H, T <: HList, OutT <: HList, RemovedH, RemainderH <: HList, RemovedT <: HList, RemainderT <: HList]
+      (implicit
+        rt: RemoveAll.Aux[L, T, (RemovedT, RemainderT)],
+        rh: Remove.Aux[RemainderT, H, (RemovedH, RemainderH)]
+      ): Aux[L, H :: T, (RemovedH :: RemovedT, RemainderH)] =
+        new RemoveAll[L, H :: T] {
+          type Out = (RemovedH :: RemovedT, RemainderH)
+
+          def apply(l: L): Out = {
+            val (removedT, remainderT) = rt(l)
+            val (removedH, remainderH) = rh(remainderT)
+            (removedH :: removedT, remainderH)
+          }
+
+          def reinsert(out: Out): L = rt.reinsert((out._1.tail, rh.reinsert((out._1.head, out._2))))
+        }
+  }
+
+  /**
    * Type class supporting renaming of a record field.
    *
    * @author Joni Freeman
