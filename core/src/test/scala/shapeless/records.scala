@@ -131,6 +131,63 @@ class RecordTests {
   }
 
   @Test
+  def testFromMap {
+    import record._
+    import test._
+
+    type T1 = Record.`'stringVal -> String,'intVal->Int,'boolVal->Boolean`.T
+
+    val in = Map('intVal -> 4, 'stringVal -> "Blarr", 'boolVal -> true)
+
+    import syntax.std.maps._
+
+    val recOption = in.toRecord[T1]
+
+    assert(recOption.isDefined)
+
+    val rec: T1 = recOption.get
+
+    typed[T1](rec)
+
+    assert(rec('stringVal) == "Blarr", "stringVal mismatch")
+    assert(rec('intVal) == 4, "int val mismatch")
+    assert(rec('boolVal), "Boolean val match")
+
+    val in2 = Map('intVal -> 4, 'stringVal -> "Blarr")
+
+    val recEither2 = in2.toRecord[T1]
+
+    assert(recEither2.isEmpty)
+
+
+  }
+
+  @Test
+  def testFromMap2 {
+    import test._
+
+    type T = FieldType[intField1.type, Int] :: FieldType[stringField1.type, String] :: FieldType[boolField1.type, Boolean] :: FieldType[doubleField1.type, Double] :: HNil
+
+
+    val in = Map(intField1 -> 4, stringField1 -> "Blarr", boolField1 -> true, doubleField1 -> 5.0)
+
+    import syntax.std.maps._
+
+    val recOption = in.toRecord[T]
+
+    assert(recOption.isDefined)
+
+    val rec: T = recOption.get
+
+    typed[T](rec)
+
+    assert(rec(intField1) == 4)
+    assert(rec(stringField1) == "Blarr")
+    assert(rec(doubleField1) == 5.0)
+  }
+
+
+  @Test
   def testAtLiterals {
     val r1 =
       ("intField1"    ->>    23) ::
