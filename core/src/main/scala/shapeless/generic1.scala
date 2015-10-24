@@ -153,13 +153,19 @@ trait Split10 {
 }
 
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
+  import c.ImplicitCandidate
   import c.universe._
   import internal.constantType
   import Flag._
 
   def mkGeneric1Impl[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
     val tpe = tTag.tpe
-    val frTpe = frTag.tpe.typeConstructor
+
+    val frTpe =
+      c.openImplicits.headOption match {
+        case Some(ImplicitCandidate(_, _, TypeRef(_, _, List(_, tpe)), _)) => tpe
+        case other => frTag.tpe.typeConstructor
+      }
 
     if(isReprType1(tpe))
       abort("No Generic1 instance available for HList or Coproduct")
@@ -357,6 +363,7 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
 }
 
 trait IsCons1Macros extends CaseClassMacros {
+  import c.ImplicitCandidate
   import c.universe._
 
   val isCons1TC: Tree
@@ -364,10 +371,16 @@ trait IsCons1Macros extends CaseClassMacros {
 
   def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree)
 
-  def mkIsCons1(lTpe: Type, fhTpe: Type, ftTpe: Type): Tree = {
+  def mkIsCons1(lTpe: Type, fhTpe0: Type, ftTpe0: Type): Tree = {
     val lParam = lTpe.typeParams.head
     val lParamTpe = lParam.asType.toType
     val lDealiasedTpe = appliedType(lTpe, lParamTpe).dealias
+
+    val (fhTpe, ftTpe) =
+      c.openImplicits.headOption match {
+        case Some(ImplicitCandidate(_, _, TypeRef(_, _, List(_, fh, ft)), _)) => (fh, ft)
+        case other => (fhTpe0, ftTpe0)
+      }
 
     if(!(lDealiasedTpe.typeConstructor =:= consTpe))
       abort("Not H/CCons")
@@ -404,13 +417,18 @@ trait IsCons1Macros extends CaseClassMacros {
 }
 
 class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
+  import c.ImplicitCandidate
   import c.universe._
 
   def mkSplit1Impl[L[_], FO[_[_]], FI[_[_]]]
     (implicit lTag: WeakTypeTag[L[_]], foTag: WeakTypeTag[FO[Any]], fiTag: WeakTypeTag[FI[Any]]): Tree = {
     val lTpe = lTag.tpe
-    val foTpe = foTag.tpe.typeConstructor
-    val fiTpe = fiTag.tpe.typeConstructor
+
+    val (foTpe, fiTpe) =
+      c.openImplicits.headOption match {
+        case Some(ImplicitCandidate(_, _, TypeRef(_, _, List(_, fo, fi)), _)) => (fo, fi)
+        case other => (foTag.tpe.typeConstructor, fiTag.tpe.typeConstructor)
+      }
 
     if(isReprType1(lTpe))
       abort("No Split1 instance available for HList or Coproduct")
