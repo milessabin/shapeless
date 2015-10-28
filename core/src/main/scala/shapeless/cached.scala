@@ -55,7 +55,7 @@ import scala.reflect.macros.Context
 case class Cached[+T](value: T) extends AnyVal
 
 object Cached {
-  implicit def materialize[I]: Cached[I] = macro CachedMacros.materialize[I]
+  implicit def materialize[I]: Cached[I] = macro CachedMacros.materializeCached[I]
 
   def implicitly[T](implicit cached: Cached[T]): T = cached.value
 }
@@ -64,14 +64,14 @@ object CachedMacros {
   var deriving = false
   var cache = List.empty[(Any, Any)]
 
-  def materialize[T: c.WeakTypeTag](c: Context): c.Expr[Cached[T]] = {
+  def materializeCached[T: c.WeakTypeTag](c: Context): c.Expr[Cached[T]] = {
     import c.universe._
 
     val cmSym = typeOf[CachedMacros.type].typeSymbol
     cmSym.attachments.all.headOption match {
       case Some(cm) =>
         if (cm == CachedMacros)
-          c.Expr[Cached[T]](new CachedMacros[c.type](c).materialize[T])
+          c.Expr[Cached[T]](new CachedMacros[c.type](c).materializeCached[T])
         else
           cm.asInstanceOf[
             { def materialize[T: c.WeakTypeTag](c: Context): c.Expr[Cached[T]] }
@@ -79,7 +79,7 @@ object CachedMacros {
       case None =>
         cmSym.updateAttachment[CachedMacros.type](this)
         try {
-          c.Expr[Cached[T]](new CachedMacros[c.type](c).materialize[T])
+          c.Expr[Cached[T]](new CachedMacros[c.type](c).materializeCached[T])
         } finally {
           cmSym.removeAttachment[LazyMacros.type]
         }
@@ -87,10 +87,10 @@ object CachedMacros {
   }
 }
 
-class CachedMacros[C <: Context](val c: C) {
+class CachedMacros[C <: Context](c0: C) extends LazyMacros(c0) {
   import c.universe._
 
-  def materialize[T: WeakTypeTag]: Tree = {
+  def materializeCached[T: WeakTypeTag]: Tree = {
     // Getting the actual type parameter T, using the same trick as Lazy/Strict
     val tpe = (c.openImplicits.headOption, weakTypeOf[T]) match {
       case (Some((TypeRef(_, _, List(tpe)), _)), _) =>
@@ -129,10 +129,14 @@ class CachedMacros[C <: Context](val c: C) {
         }
 
         treeOpt.getOrElse {
-          val tree0 = c.inferImplicitValue(tpe)
-          if (tree0 == EmptyTree)
-            c.abort(c.enclosingPosition, s"Implicit $tpe not found")
-          val tree = q"_root_.shapeless.Cached($tree0)"
+          // Cached instances are derived like Lazy or Strict instances.
+          // Trying to derive them in a standalone way raised
+          // https://github.com/fommil/spray-json-shapeless/issues/14.
+          val tree = mkImpl[T](
+            (tree, actualType) => q"_root_.shapeless.Cached[$actualType]($tree)",
+            q"null.asInstanceOf[_root_.shapeless.Cached[Nothing]]"
+          )
+
           CachedMacros.cache = (tpe -> tree) :: CachedMacros.cache
           tree
         }
