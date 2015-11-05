@@ -36,7 +36,7 @@ class UnionTests {
   val sB = Witness('b)
   type b = sB.T
 
-  type U = Witness.`'i`.Field[Int] :+: Witness.`'s`.Field[String] :+: Witness.`'b`.Field[Boolean] :+: CNil
+  type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
   @Test
   def testGetLiterals {
@@ -132,7 +132,7 @@ class UnionTests {
     }
 
     {
-      type U = Witness.`'i`.->>[Int] :+: Witness.`'s`.->>[String] :+: Witness.`'b`.->>[Boolean] :+: CNil
+      type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
       val u0 = Inl('i ->> 23)
       val u1 = Inr(Inl('s ->> "foo"))
@@ -229,7 +229,7 @@ class UnionTests {
       assertTypedEquals(Coproduct[UF]('b.narrow -> true), f3)
     }
 
-    type US = Witness.`"first"`.->>[Option[Int]] :+: Witness.`"second"`.->>[Option[Boolean]] :+: Witness.`"third"`.->>[Option[String]] :+: CNil
+    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
     val us1 = Coproduct[US]("first" ->> Option(2))
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
@@ -273,8 +273,7 @@ class UnionTests {
       assertTypedEquals(Map[Symbol, Any]('b -> true), m3)
     }
 
-    type US = Witness.`"first"`.->>[Option[Int]] :+: Witness.`"second"`.->>[Option[Boolean]] :+: Witness.`"third"`.->>[Option[String]] :+: CNil
-
+    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
     val us1 = Coproduct[US]("first" ->> Option(2))
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
@@ -313,7 +312,7 @@ class UnionTests {
       val u2 = Union[U](s = "foo")
       val u3 = Union[U](b = true)
 
-      type R = Witness.`'i`.->>[Boolean] :+: Witness.`'s`.->>[String] :+: Witness.`'b`.->>[String] :+: CNil
+      type R = Union.`'i -> Boolean, 's -> String, 'b -> String`.T
 
       val res1 = u1.mapValues(f)
       val res2 = u2.mapValues(f)
@@ -330,7 +329,7 @@ class UnionTests {
         implicit def otherTypes[X] = at[X](identity)
       }
 
-      type U = Witness.`"foo"`.->>[String] :+: Witness.`"bar"`.->>[Boolean] :+: Witness.`"baz"`.->>[Double] :+: CNil
+      type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
       val u1 = Coproduct[U]("foo" ->> "joe")
       val u2 = Coproduct[U]("bar" ->> true)
       val u3 = Coproduct[U]("baz" ->> 2.0)
@@ -343,5 +342,19 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
+  }
+
+  @Test
+  def testAltSyntax: Unit = {
+    type U0 =
+    Witness.`"foo"`.->>[String] :+:
+      Witness.`"bar"`.->>[Boolean] :+:
+      Witness.`"baz"`.->>[Double] :+:
+      CNil
+
+    type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
+
+    implicitly[U =:= U0]
+
   }
 }
