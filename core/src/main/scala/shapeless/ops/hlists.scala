@@ -2472,4 +2472,27 @@ object hlist {
   }
 
   private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
+
+  /**
+    * Type class supporting foreach on a HList
+    */
+  trait ForEach[In <: HList, HF] extends DepFn1[In] with Serializable {
+    type Out = Unit
+  }
+
+  object ForEach {
+    def apply[In <: HList, HF](implicit fe: ForEach[In, HF]): ForEach[In, HF] = fe
+
+    implicit def hnilForEach[HF] = new ForEach[HNil, HF] {
+      def apply(l: HNil): Unit = ()
+    }
+
+    implicit def hlistForEach[InH, InT <: HList, HF <: Poly]
+    (implicit feT: ForEach[InT, HF], hc: Case1[HF, InH]) = new ForEach[InH :: InT, HF] {
+      def apply(l: InH :: InT) = {
+        hc(l.head)
+        feT(l.tail)
+      }
+    }
+  }
 }

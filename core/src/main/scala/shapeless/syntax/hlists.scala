@@ -646,6 +646,11 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
 
   /**
+    * Applies the given Poly function returning Unit to all elements of HList in sequence
+    */
+  def foreach[P <: Poly](p: P)(implicit fe: ForEach[L, p.type]): Unit = fe(l)
+
+  /**
    * Groups the elements of this `HList` into tuples of `n` elements, offset by `step`
    *
    * @author Andreas Koestler

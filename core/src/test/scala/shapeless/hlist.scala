@@ -2939,6 +2939,24 @@ class HListTests {
   }
 
   @Test
+  def testForeach = {
+    var count = 0
+    var string = ""
+    object Foo extends Poly1 {
+      implicit def iincr = at[Int] { count += _ }
+      implicit def sappend = at[String] { string += _ }
+    }
+
+    val hlist1 = "foo" :: 2 :: 5 :: "bar" :: HNil
+    hlist1.foreach(Foo)
+    assertTypedEquals[Int](count, 7)
+    assertTypedEquals[String](string, "foobar")
+
+    var hlist2 = "foo" :: Seq(4) :: 5 :: HNil
+    illTyped("""hlist2.foreach(Foo)""")
+  }
+
+  @Test
   def testGrouper {
     object toInt extends Poly1 {
       implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
