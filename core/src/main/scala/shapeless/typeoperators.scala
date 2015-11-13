@@ -111,10 +111,10 @@ object the extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
-object TheMacros {
-  def applyImpl(c: whitebox.Context)(t: c.Tree): c.Tree = t
+class TheMacros(val c: whitebox.Context) {
+  def applyImpl(t: c.Tree): c.Tree = t
 
-  def implicitlyImpl(c: whitebox.Context)(tpeSelector: c.Tree): c.Tree = {
+  def implicitlyImpl(tpeSelector: c.Tree): c.Tree = {
     import c.universe.{ Try => _, _ }
     import internal._, decorators._
 
