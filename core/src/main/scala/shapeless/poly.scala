@@ -18,7 +18,7 @@ package shapeless
 
 import language.existentials
 import language.experimental.macros
- 
+
 import reflect.macros.Context
 
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
@@ -27,13 +27,13 @@ object PolyDefns extends Cases {
 
   /**
    * Type-specific case of a polymorphic function.
-   * 
+   *
    * @author Miles Sabin
    */
   abstract class Case[P, L <: HList] extends Serializable {
     type Result
     val value : L => Result
-    
+
     def apply(t : L) = value(t)
     def apply()(implicit ev: HNil =:= L) = value(HNil)
     def apply[T](t: T)(implicit ev: (T :: HNil) =:= L) = value(t :: HNil)
@@ -43,7 +43,7 @@ object PolyDefns extends Cases {
   object Case extends CaseInst {
     type Aux[P, L <: HList, Result0] = Case[P, L] { type Result = Result0 }
     type Hom[P, T] = Aux[P, T :: HNil, T]
-    
+
     def apply[P, L <: HList, R](v : L => R): Aux[P, L, R] = new Case[P, L] {
       type Result = R
       val value = v
@@ -67,7 +67,7 @@ object PolyDefns extends Cases {
 
   /**
    * Represents the composition of two polymorphic function values.
-   *  
+   *
    * @author Miles Sabin
    */
   class Compose[F, G](f : F, g : G) extends Poly
@@ -127,7 +127,7 @@ object PolyDefns extends Cases {
 
   /**
    * Base class for lifting a `Function1` to a `Poly1` over the universal domain, yielding an `HList` with the result as
-   * its only element if the argument is in the original functions domain, `HNil` otherwise. 
+   * its only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
     implicit def subT[U <: T] = at[U](f(_) :: HNil)
@@ -142,18 +142,18 @@ object PolyDefns extends Cases {
 
   /**
    * Base class for lifting a `Poly` to a `Poly` over the universal domain, yielding an `HList` with the result as it's
-   * only element if the argument is in the original functions domain, `HNil` otherwise. 
+   * only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class LiftU[P <: Poly](p : P)  extends LowPriorityLiftU {
     implicit def defined[L <: HList](implicit caseT : Case[P, L]) = new ProductCase[L] {
       type Result = caseT.Result :: HNil
       val value = (l : L) => caseT(l) :: HNil
-    } 
+    }
   }
 
   /**
    * Base trait for natural transformations.
-   * 
+   *
    * @author Miles Sabin
    */
   trait ~>[F[_], G[_]] extends Poly1 {
@@ -182,14 +182,14 @@ object PolyDefns extends Cases {
 
 /**
  * Base trait for polymorphic values.
- * 
+ *
  * @author Miles Sabin
  */
 trait Poly extends PolyApply with Serializable {
   import poly._
 
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
-  
+
   def andThen(f: Poly) = new Compose[f.type, this.type](f, this)
 
   def rotateLeft[N <: Nat] = new RotateLeft[this.type, N](this)
@@ -201,7 +201,7 @@ trait Poly extends PolyApply with Serializable {
   object ProductCase extends Serializable {
     /** The type of a case of this polymorphic function of the form `L => R` */
     type Aux[L <: HList, Result0] = ProductCase[L] { type Result = Result0 }
-    
+
     /** The type of a case of this polymorphic function of the form `T => T` */
     type Hom[T] = Aux[T :: HNil, T]
 
@@ -210,20 +210,20 @@ trait Poly extends PolyApply with Serializable {
       val value = v
     }
   }
-  
+
   def use[T, L <: HList, R](t : T)(implicit cb: CaseBuilder[T, L, R]) = cb(t)
 
   trait CaseBuilder[T, L <: HList, R] extends Serializable {
     def apply(t: T): ProductCase.Aux[L, R]
   }
-  
+
   trait LowPriorityCaseBuilder {
     implicit def valueCaseBuilder[T]: CaseBuilder[T, HNil, T] =
       new CaseBuilder[T, HNil, T] {
         def apply(t: T) = ProductCase((_: HNil) => t)
       }
   }
-  
+
   object CaseBuilder extends LowPriorityCaseBuilder {
     import ops.function.FnToProduct
     implicit def fnCaseBuilder[F, H, T <: HList, Result]
@@ -232,7 +232,7 @@ trait Poly extends PolyApply with Serializable {
           def apply(f: F) = ProductCase((l : H :: T) => fntp(f)(l))
         }
   }
-  
+
   def caseAt[L <: HList](implicit c: ProductCase[L]) = c
 
   def apply[R](implicit c : ProductCase.Aux[HNil, R]) : R = c()
@@ -241,7 +241,7 @@ trait Poly extends PolyApply with Serializable {
 /**
  * Provides implicit conversions from polymorphic function values to monomorphic function values, eg. for use as
  * arguments to ordinary higher order functions.
- *  
+ *
  * @author Miles Sabin
  */
 object Poly extends PolyInst {

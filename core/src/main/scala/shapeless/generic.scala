@@ -627,13 +627,6 @@ trait CaseClassMacros extends ReprTypes {
     classSym
   }
 
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
-    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val gPre = pre.asInstanceOf[global.Type]
-    val gSym = sym.asInstanceOf[global.Symbol]
-    global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
-  }
-
   // See https://github.com/milessabin/shapeless/issues/212
   def companionRef(tpe: Type): Tree = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
@@ -669,6 +662,13 @@ trait CaseClassMacros extends ReprTypes {
     val pre = gTpe.prefix
     val sym = gTpe.typeSymbol
     global.gen.mkAttributedRef(pre, sym).asInstanceOf[Tree]
+  }
+
+  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gPre = pre.asInstanceOf[global.Type]
+    val gSym = sym.asInstanceOf[global.Symbol]
+    global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
   }
 
   def isNonGeneric(sym: Symbol): Boolean = {
