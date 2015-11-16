@@ -208,7 +208,7 @@ object Default {
   }
 }
 
-class DefaultMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
+class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
   def someTpe = typeOf[Some[_]].typeConstructor
