@@ -2026,31 +2026,51 @@ object hlist {
    * ({element from input tuple}, {element index})
    *
    * @author Andreas Koestler
+   * @author Alexandre Archambault
    */
-  trait ZipWithIndex[L <: HList] extends Serializable with DepFn1[L] {
+  trait ZipWithIndex[L <: HList] extends DepFn1[L] with Serializable {
     type Out <: HList
   }
 
   object ZipWithIndex {
+    def apply[L <: HList](implicit zipWithIndex: ZipWithIndex[L]): Aux[L, zipWithIndex.Out] =
+      zipWithIndex
 
-    def apply[L <: HList](implicit zipper: ZipWithIndex[L]): Aux[L, zipper.Out] = zipper
+    type Aux[L <: HList, Out0 <: HList] = ZipWithIndex[L] { type Out = Out0 }
 
-    type Aux[L <: HList, Out0 <: HList] = ZipWithIndex[L] {type Out = Out0}
 
-    implicit def hnilZipperOps = new ZipWithIndex[HNil] {
-      type Out = HNil
-
-      def apply(l: HNil): Out = HNil
+    trait Helper[L <: HList, N <: Nat] extends DepFn2[L, N] with Serializable {
+      type Out <: HList
     }
 
-    implicit def hlistZipperOps[L <: HList, N <: Nat, RL <: HList](implicit
-                                                                   len: Length.Aux[L, N],
-                                                                   range: shapeless.ops.nat.Range.Aux[_0, N, RL],
-                                                                   zipper: Zip[L :: RL :: HNil]) = new ZipWithIndex[L] {
-      type Out = zipper.Out
+    object Helper {
+      def apply[L <: HList, N <: Nat](implicit helper: Helper[L, N]): Aux[L, N, helper.Out] = helper
 
-      def apply(l: L): Out = zipper(l :: range.apply :: HNil)
+      type Aux[L <: HList, N <: Nat, Out0 <: HList] = Helper[L, N] { type Out = Out0 }
+
+      implicit def hnil[N <: Nat]: Aux[HNil, N, HNil] =
+        new Helper[HNil, N] {
+          type Out = HNil
+          def apply(l: HNil, n: N) = HNil
+        }
+
+      implicit def hcons[H, T <: HList, OutT <: HList, N <: Nat]
+       (implicit
+         tail: Helper.Aux[T, Succ[N], OutT]
+       ): Aux[H :: T, N, (H, N) :: OutT] =
+        new Helper[H :: T, N] {
+          type Out = (H, N) :: OutT
+          def apply(l: H :: T, n: N) = (l.head -> n) :: tail(l.tail, Succ[N]())
+        }
     }
+
+
+    implicit def default[L <: HList, P <: HList]
+     (implicit helper: Helper.Aux[L, _0, P]): Aux[L, P] =
+      new ZipWithIndex[L] {
+        type Out = P
+        def apply(l: L) = helper(l, Nat._0)
+      }
   }
 
   /**
