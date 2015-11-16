@@ -182,8 +182,14 @@ trait SingletonTypeUtils[C <: Context] extends ReprTypes {
   def parseType(typeStr: String): Option[c.Type] =
     parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
-  def typeCarrier(tpe: c.Type) = {
-    val carrier = c.typeCheck(q"null.asInstanceOf[{ type T = $tpe }]", silent = true).tpe
+  def typeCarrier(tpe: c.Type) =
+    mkTypeCarrier(tq"{ type T = $tpe }")
+
+  def fieldTypeCarrier(tpe: c.Type) =
+    mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
+
+  def mkTypeCarrier(tree:c.Tree) = {
+    val carrier = c.typeCheck(q"null.asInstanceOf[$tree]").tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
@@ -349,7 +355,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
       parseLiteralType(tpeString)
         .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
 
-    typeCarrier(tpe)
+    fieldTypeCarrier(tpe)
   }
 
   def materializeWiden[T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
