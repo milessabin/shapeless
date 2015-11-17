@@ -225,12 +225,23 @@ class DefaultMacros[C <: Context](val c: C) extends CaseClassMacros {
     // Fixes https://github.com/milessabin/shapeless/issues/474
     tpe.typeSymbol.companionSymbol.typeSignature.members
 
-    def wrapTpeTree(idx: Int, argTpe: Type) = {
-      val method = newTermName(s"apply$$default$$${idx + 1}")
+    def methodFrom(tpe: Type, name: String): Option[Symbol] = {
+      val m = tpe.member(newTermName(name))
+      if (m == NoSymbol)
+        None
+      else
+        Some(m)
+    }
 
-      tpe.typeSymbol.companionSymbol.typeSignature.member(method) match {
-        case NoSymbol => (noneTpe, q"_root_.scala.None")
-        case defaultArg => (appliedType(someTpe, List(argTpe)), q"_root_.scala.Some($companion.$method)")
+    def wrapTpeTree(idx: Int, argTpe: Type) = {
+      val methodOpt = methodFrom(tpe.typeSymbol.companionSymbol.typeSignature, s"apply$$default$$${idx + 1}")
+        .orElse(methodFrom(companion.symbol.typeSignature, s"$$lessinit$$greater$$default$$${idx + 1}"))
+
+      methodOpt match {
+        case Some(method) =>
+          (appliedType(someTpe, List(argTpe)), q"_root_.scala.Some($companion.$method)")
+        case None =>
+          (noneTpe, q"_root_.scala.None")
       }
     }
 
