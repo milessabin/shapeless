@@ -20,7 +20,7 @@ import scala.language.dynamics
 import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.Context
 
 import tag.@@
 import scala.util.Try
@@ -61,6 +61,7 @@ object Witness extends Dynamic {
 
 trait WitnessWith[TC[_]] extends Witness {
   val instance: TC[T]
+  type Out
 }
 
 trait LowPriorityWitnessWith {
@@ -110,9 +111,9 @@ object Widen {
   implicit def materialize[T, Out]: Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
 }
 
-trait SingletonTypeUtils extends ReprTypes {
+trait SingletonTypeUtils[C <: Context] extends ReprTypes {
+  val c: C
   import c.universe.{ Try => _, _ }
-  import internal._, decorators._
 
   def singletonOpsTpe = typeOf[syntax.SingletonOps]
   val SymTpe = typeOf[scala.Symbol]
@@ -128,7 +129,7 @@ trait SingletonTypeUtils extends ReprTypes {
     val atatTpe = typeOf[@@[_,_]].typeConstructor
     val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
 
-    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, constantType(Constant(s))))
+    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, ConstantType(Constant(s))))
 
     def unapply(t: Type): Option[String] =
       t match {
@@ -144,11 +145,11 @@ trait SingletonTypeUtils extends ReprTypes {
 
   object SingletonType {
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (Literal(k: Constant), _) => Some(ConstantType(k))
       case (LiteralSymbol(s), _) => Some(SingletonSymbolType(s))
       case (_, keyType @ SingleType(p, v)) if !v.isParameter && !isValueClass(v) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
-        Some(sops.tpe.member(TypeName("T")).typeSignature)
+        Some(sops.tpe.member(newTypeName("T")).typeSignature)
       case _ => None
     }
   }
@@ -156,7 +157,7 @@ trait SingletonTypeUtils extends ReprTypes {
   def narrowValue(t: Tree): (Type, Tree) = {
     t match {
       case Literal(k: Constant) =>
-        val tpe = constantType(k)
+        val tpe = ConstantType(k)
         (tpe, q"$t.asInstanceOf[$tpe]")
       case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
       case _ => (t.tpe, t)
@@ -166,16 +167,16 @@ trait SingletonTypeUtils extends ReprTypes {
   def parseLiteralType(typeStr: String): Option[c.Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
+      checked = c.typeCheck(parsed, silent = true)
+      if checked != EmptyTree
       tpe <- SingletonType.unapply(checked)
     } yield tpe
 
   def parseStandardType(typeStr: String): Option[c.Type] =
     for {
       parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
+      checked = c.typeCheck(parsed, silent = true)
+      if checked != EmptyTree
     } yield checked.tpe
 
   def parseType(typeStr: String): Option[c.Type] =
@@ -188,7 +189,7 @@ trait SingletonTypeUtils extends ReprTypes {
     mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
 
   def mkTypeCarrier(tree:c.Tree) = {
-    val carrier = c.typecheck(tree, mode = c.TYPEmode).tpe
+    val carrier = c.typeCheck(q"null.asInstanceOf[$tree]").tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
@@ -201,13 +202,13 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 }
 
-class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
+class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
   import syntax.SingletonOps
+  import c.universe._
+
   type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
 
   import c.universe._
-  import internal._
-  import decorators._
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     q"""
@@ -216,14 +217,23 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def mkWitnessWith(parent: Type, sTpe: Type, s: Tree, i: Tree): Tree = {
-    val name = TypeName(c.freshName("anon$"))
-    val iTpe = i.tpe.finalResultType
+    val name = newTypeName(c.fresh("anon$"))
+    val iTpe =
+      (i.tpe match {
+        case NullaryMethodType(resTpe) => resTpe
+        case other => other
+      }).normalize
+    val iOut = iTpe.member(newTypeName("Out")) match {
+      case NoSymbol => definitions.NothingClass
+      case other => other
+    }
 
     q"""
       {
         final class $name extends $parent {
           val instance: $iTpe = $i
           type T = $sTpe
+          type Out = $iOut
           val value: $sTpe = $s
         }
         new $name
@@ -232,7 +242,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def mkOps(sTpe: Type, w: Tree): Tree = {
-    val name = TypeName(c.freshName("anon$"))
+    val name = newTypeName(c.fresh("anon$"))
 
     q"""
       {
@@ -265,7 +275,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     }
 
   def materializeImpl[T: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T].dealias
+    val tpe = weakTypeOf[T].normalize
     mkWitness(tpe, extractSingletonValue(tpe))
   }
 
@@ -282,8 +292,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
       case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
         val sym = tree.symbol.asTerm
-        val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
-        val symTpe = c.internal.singleType(pre, sym)
+        val pre = if(sym.owner.isClass) ThisType(sym.owner) else NoPrefix
+        val symTpe = SingleType(pre, sym)
         mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
 
       case _ =>
@@ -349,7 +359,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def materializeWiden[T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T].dealias
+    val tpe = weakTypeOf[T].normalize
 
     val widenTpe = tpe match {
       case SingletonSymbolType(s) => symbolTpe
@@ -361,4 +371,37 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     else
       q"_root_.shapeless.Widen.instance[$tpe, $widenTpe](x => x)"
   }
+}
+
+object SingletonTypeMacros {
+  import syntax.SingletonOps
+
+  def inst(c: Context) = new SingletonTypeMacros[c.type](c)
+
+  def materializeImpl[T: c.WeakTypeTag](c: Context): c.Expr[Witness.Aux[T]] =
+    c.Expr[Witness.Aux[T]](inst(c).materializeImpl[T])
+
+  def convertImpl[T](c: Context)(t: c.Expr[T]): c.Expr[Witness.Lt[T]] = 
+    c.Expr[Witness.Lt[T]](inst(c).convertImpl(t))
+
+  def convertInstanceImpl1[TC[_], T](c: Context)(t: c.Expr[T])
+    (implicit tcTag: c.WeakTypeTag[TC[_]]):
+      c.Expr[WitnessWith.Lt[TC, T]] = c.Expr[WitnessWith.Lt[TC, T]](inst(c).convertInstanceImpl1[TC, T](t))
+
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: Context)(t: c.Expr[T])
+    (implicit tc2Tag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S]):
+      c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] =
+        c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]](inst(c).convertInstanceImpl2[H, TC2, S, T](t))
+
+  def mkSingletonOps(c: Context)(t: c.Expr[Any]): c.Expr[SingletonOps] =
+    c.Expr[SingletonOps](inst(c).mkSingletonOps(t))
+
+  def narrowSymbol[S <: String : c.WeakTypeTag](c: Context)(t: c.Expr[scala.Symbol]):
+    c.Expr[scala.Symbol @@ S] = c.Expr[scala.Symbol @@ S](inst(c).narrowSymbol[S](t))
+
+  def witnessTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).witnessTypeImpl(tpeSelector.tree))
+
+  def materializeWiden[T: c.WeakTypeTag, Out0: c.WeakTypeTag](c: Context): c.Expr[Widen[T] { type Out = Out0 }] =
+    c.Expr[Widen[T] { type Out = Out0 }](inst(c).materializeWiden[T, Out0])
 }

@@ -58,9 +58,12 @@ object ShapelessBuild extends Build {
 
         managedSourceDirectories in Test := Nil,
 
+        addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+          "org.scalamacros" %% "quasiquotes" % "2.0.0",
           "com.novocode" % "junit-interface" % "0.7" % "test"
         ),
 
@@ -77,7 +80,7 @@ object ShapelessBuild extends Build {
 
         previousArtifact := {
           val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
-          if (major == 2 && minor == 11)
+          if (major == 2 && minor <= 11)
             Some(organization.value %% moduleName.value % "2.3.0")
           else
             None
@@ -94,7 +97,7 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.hlist#LowPriorityRotateRight.hlistRotateRight"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateLeft.coproductRotateLeft"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.ops.coproduct#LowPriorityRotateRight.coproductRotateRight"),
-            ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.Generic1Macros.shapeless$Generic1Macros$$mkCoproductCases$1"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.isValueClass"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkHListTypTree"),
@@ -103,9 +106,10 @@ object ShapelessBuild extends Build {
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkCoproductTypTree"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAnonOrRefinement"),
             ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.mkTypTree"),
-            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible"),
+            ProblemFilters.exclude[IncompatibleResultTypeProblem]("shapeless.GenericMacros.shapeless$GenericMacros$$mkCoproductCases$1"),
             ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.mkProductImpl"),
-            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.forward")
+            ProblemFilters.exclude[IncompatibleMethTypeProblem]("shapeless.ProductMacros.forward"),
+            ProblemFilters.exclude[MissingMethodProblem]("shapeless.CaseClassMacros.isAccessible")
           )
         },
 
@@ -132,6 +136,8 @@ object ShapelessBuild extends Build {
     settings (
       moduleName := "shapeless-scratch",
 
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
@@ -148,6 +154,8 @@ object ShapelessBuild extends Build {
     settings (commonSettings: _*)
     settings (
       moduleName := "shapeless-examples",
+
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
 
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
@@ -173,8 +181,8 @@ object ShapelessBuild extends Build {
   def commonSettings =
     Seq(
       organization        := "com.chuusai",
-      scalaVersion        := "2.11.7",
-      crossScalaVersions  := Seq("2.11.7", "2.12.0-M3"),
+
+      scalaVersion        := "2.10.6",
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),

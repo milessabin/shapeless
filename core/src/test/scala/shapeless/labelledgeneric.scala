@@ -79,13 +79,6 @@ object LabelledGenericTestsAux {
   }
 }
 
-object ShapelessTaggedAux {
-  import tag.@@
-
-  trait CustomTag
-  case class Dummy(i: Int @@ CustomTag)
-}
-
 object ScalazTaggedAux {
   import labelled.FieldType
 
@@ -388,15 +381,6 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testShapelessTagged {
-    import ShapelessTaggedAux._
-
-    val lgen = LabelledGeneric[Dummy]
-    val s = s"${lgen from Record(i=tag[CustomTag](0))}"
-    assertEquals(s, "Dummy(0)")
-  }
-
-  @Test
   def testScalazTagged {
     import ScalazTaggedAux._
 
@@ -407,17 +391,6 @@ class LabelledGenericTests {
     implicitly[LabelledGeneric[Dummy]]
 
     implicitly[TC[Dummy]]
-
-    type R = Record.`'i -> Int @@ CustomTag`.T
-    val lgen = LabelledGeneric[Dummy]
-    implicitly[lgen.Repr =:= R]
-    implicitly[TC[R]]
-
     implicitly[TC[DummyTagged]]
-
-    type RT = Record.`'b -> Boolean, 'i -> Int @@ CustomTag`.T
-    val lgent = LabelledGeneric[DummyTagged]
-    implicitly[lgent.Repr =:= RT]
-    implicitly[TC[RT]]
   }
 }

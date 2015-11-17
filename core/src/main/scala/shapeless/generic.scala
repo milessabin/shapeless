@@ -19,7 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.annotation.{ StaticAnnotation, tailrec }
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.Context
 
 import ops.{ hlist, coproduct }
 
@@ -256,7 +256,7 @@ object HasCoproductGeneric {
 }
 
 trait ReprTypes {
-  val c: blackbox.Context
+  val c: Context
   import c.universe.{ Symbol => _, _ }
 
   def hlistTpe = typeOf[HList]
@@ -273,10 +273,7 @@ trait ReprTypes {
 }
 
 trait CaseClassMacros extends ReprTypes {
-  val c: whitebox.Context
-
   import c.universe._
-  import internal.constantType
   import Flag._
 
   def abort(msg: String) =
@@ -286,7 +283,7 @@ trait CaseClassMacros extends ReprTypes {
     tpe <:< hlistTpe || tpe <:< coproductTpe
 
   def isReprType1(tpe: Type): Boolean = {
-    val normalized = appliedType(tpe, WildcardType).dealias
+    val normalized = appliedType(tpe, List(WildcardType)).normalize
     normalized <:< hlistTpe || normalized <:< coproductTpe
   }
 
@@ -294,14 +291,14 @@ trait CaseClassMacros extends ReprTypes {
     tpe =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
   def isProduct1(tpe: Type): Boolean =
-    appliedType(tpe, List(typeOf[Any])).dealias =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+    appliedType(tpe, List(typeOf[Any])).normalize =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
   def isCoproduct(tpe: Type): Boolean = {
     val sym = tpe.typeSymbol
     if(!sym.isClass) false
     else {
       val sym = classSym(tpe)
-      (sym.isTrait || sym.isAbstract) && sym.isSealed
+      (sym.isTrait || sym.isAbstractClass) && sym.isSealed
     }
   }
 
@@ -334,12 +331,15 @@ trait CaseClassMacros extends ReprTypes {
     val tSym = tpe.typeSymbol
     if(tSym.isClass && isAnonOrRefinement(tSym)) Nil
     else
-      tpe.decls.toList collect {
-        case sym: TermSymbol if isCaseAccessorLike(sym) => (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+      tpe.declarations.toList collect {
+        case sym: TermSymbol if isCaseAccessorLike(sym) =>
+          val NullaryMethodType(restpe) = sym.typeSignatureIn(tpe)
+          (sym.name.toTermName, restpe)
       }
   }
 
-  def productCtorsOf(tpe: Type): List[Symbol] = tpe.decls.toList.filter(_.isConstructor)
+  def productCtorsOf(tpe: Type): List[Symbol] =
+    tpe.declarations.toList.filter { x => x.isMethod && x.asMethod.isConstructor }
 
   def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, false)
   def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, true)
@@ -369,23 +369,29 @@ trait CaseClassMacros extends ReprTypes {
     if(isProduct(tpe))
       List(tpe)
     else if(isCoproduct(tpe)) {
+      def typeArgs(tpe: Type) = tpe match {
+        case TypeRef(_, _, args) => args
+        case _ => Nil
+      }
+
       val basePre = prefix(tpe)
       val baseSym = classSym(tpe)
       val baseTpe =
         if(!hk) tpe
         else {
           val tc = tpe.typeConstructor
-          val paramSym = tc.typeParams.head
+          val TypeRef(_, sym, _) = tc
+          val paramSym = sym.asType.typeParams.head
           val paramTpe = paramSym.asType.toType
-          appliedType(tc, paramTpe)
+          appliedType(tc, List(paramTpe))
         }
-      val baseArgs = baseTpe.dealias.typeArgs
+      val baseArgs = typeArgs(baseTpe.normalize)
 
       val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
       val ctors =
         ctorSyms flatMap { sym =>
           def substituteArgs: List[Type] = {
-            val subst = c.internal.thisType(sym).baseType(baseSym).typeArgs
+            val subst = typeArgs(ThisType(sym).baseType(baseSym))
             sym.typeParams.map { param =>
               val paramTpe = param.asType.toType
               baseArgs(subst.indexWhere(_ =:= paramTpe))
@@ -398,22 +404,22 @@ trait CaseClassMacros extends ReprTypes {
               if(sym.isModuleClass) {
                 val moduleSym = sym.asClass.module
                 val modulePre = prefix(moduleSym.typeSignature)
-                c.internal.singleType(modulePre, moduleSym)
+                singleType(modulePre, moduleSym)
               } else
                 appliedType(sym.toTypeIn(basePre), substituteArgs)
             } else {
               if(sym.isModuleClass) {
                 val path = suffix.tail.map(_.name.toTermName)
                 val (modulePre, moduleSym) = mkDependentRef(basePre, path)
-                c.internal.singleType(modulePre, moduleSym)
+                singleType(modulePre, moduleSym)
               } else if(isAnonOrRefinement(sym)) {
                 val path = suffix.tail.init.map(_.name.toTermName)
                 val (valPre, valSym) = mkDependentRef(basePre, path)
-                c.internal.singleType(valPre, valSym)
+                singleType(valPre, valSym)
               } else {
                 val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
                 val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
-                c.internal.typeRef(subTpePre, subTpeSym, substituteArgs)
+                typeRef(subTpePre, subTpeSym, substituteArgs)
               }
             }
           if(!isAccessible(ctor))
@@ -440,7 +446,7 @@ trait CaseClassMacros extends ReprTypes {
     }
 
   def mkLabelTpe(name: Name): Type =
-    appliedType(atatTpe, List(typeOf[scala.Symbol], constantType(nameAsValue(name))))
+    appliedType(atatTpe, List(typeOf[scala.Symbol], ConstantType(nameAsValue(name))))
 
   def mkFieldTpe(name: Name, valueTpe: Type): Type = {
     appliedType(fieldTypeTpe, List(mkLabelTpe(name), valueTpe))
@@ -471,7 +477,7 @@ trait CaseClassMacros extends ReprTypes {
   def unpackFieldType(tpe: Type): (Type, Type) = {
     val KeyTagPre = prefix(keyTagTpe)
     val KeyTagSym = keyTagTpe.typeSymbol
-    tpe.dealias match {
+    tpe.normalize match {
       case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => (k, v0)
       case _ => abort(s"$tpe is not a field type")
     }
@@ -497,7 +503,7 @@ trait CaseClassMacros extends ReprTypes {
       case PolyType(params, body) if params.head.asType.toType =:= param =>
         appliedTypTree1(body, param, arg)
       case t @ TypeRef(pre, sym, List()) if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
+        val argTrees = sym.asType.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
       case TypeRef(pre, sym, List()) =>
         mkAttributedRef(pre, sym)
@@ -505,7 +511,7 @@ trait CaseClassMacros extends ReprTypes {
         val argTrees = args.map(appliedTypTree1(_, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
       case t if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
+        val argTrees = t.typeSymbol.asType.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
         AppliedTypeTree(mkAttributedRef(tpe.typeConstructor), argTrees)
       case t =>
         tq"$tpe"
@@ -537,7 +543,7 @@ trait CaseClassMacros extends ReprTypes {
   def unfoldCompoundTpe(compoundTpe: Type, nil: Type, cons: Type): List[Type] = {
     @tailrec
     def loop(tpe: Type, acc: List[Type]): List[Type] =
-      tpe.dealias match {
+      tpe.normalize match {
         case TypeRef(_, consSym, List(hd, tl))
           if consSym.asType.toType.typeConstructor =:= cons => loop(tl, hd :: acc)
         case `nil` => acc
@@ -559,7 +565,7 @@ trait CaseClassMacros extends ReprTypes {
 
   def param1(tpe: Type): Type =
     tpe match {
-      case t if(tpe.takesTypeArgs) => t.typeParams.head.asType.toType
+      case t @ TypeRef(_, sym, args) if(t.takesTypeArgs) => sym.asType.typeParams.head.asType.toType
       case TypeRef(_, _, List(arg)) => arg
       case _ => NoType
     }
@@ -583,12 +589,12 @@ trait CaseClassMacros extends ReprTypes {
       val tpe = sym.typeSignature
       (for {
         ctor <- unique(productCtorsOf(tpe))
-        params <- unique(ctor.asMethod.paramLists)
+        params <- unique(ctor.asMethod.paramss)
       } yield params.size == fieldsOf(tpe).size).getOrElse(false)
     }
 
     sym.isCaseClass ||
-    (!sym.isAbstract && !sym.isTrait &&
+    (!sym.isAbstractClass && !sym.isTrait &&
      sym.knownDirectSubclasses.isEmpty && checkCtor)
   }
 
@@ -626,8 +632,7 @@ trait CaseClassMacros extends ReprTypes {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
     val gTpe = tpe.asInstanceOf[global.Type]
     val pre = gTpe.prefix
-    val sym = gTpe.typeSymbol
-    val cSym = sym.companionSymbol
+    val cSym = patchedCompanionSymbolOf(tpe.typeSymbol).asInstanceOf[global.Symbol]
     if(cSym != NoSymbol)
       global.gen.mkAttributedRef(pre, cSym).asInstanceOf[Tree]
     else
@@ -642,6 +647,55 @@ trait CaseClassMacros extends ReprTypes {
       tpe.typeSymbol.asInstanceOf[global.Symbol],
       prefix(tpe).asInstanceOf[global.Type]
     )
+  }
+
+  // Cut-n-pasted (with most original comments) and slightly adapted from
+  // https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
+  def patchedCompanionSymbolOf(original: Symbol): Symbol = {
+    // see https://github.com/scalamacros/paradise/issues/7
+    // also see https://github.com/scalamacros/paradise/issues/64
+
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val ctx = typer.context
+    val owner = original.owner
+
+    import global.analyzer.Context
+
+    original.companionSymbol.orElse {
+      import global.{ abort => aabort, _ }
+      implicit class PatchedContext(ctx: Context) {
+        trait PatchedLookupResult { def suchThat(criterion: Symbol => Boolean): Symbol }
+        def patchedLookup(name: Name, expectedOwner: Symbol) = new PatchedLookupResult {
+          override def suchThat(criterion: Symbol => Boolean): Symbol = {
+            var res: Symbol = NoSymbol
+            var ctx = PatchedContext.this.ctx
+            while (res == NoSymbol && ctx.outer != ctx) {
+              // NOTE: original implementation says `val s = ctx.scope lookup name`
+              // but we can't use it, because Scope.lookup returns wrong results when the lookup is ambiguous
+              // and that triggers https://github.com/scalamacros/paradise/issues/64
+              val s = {
+                val lookupResult = ctx.scope.lookupAll(name).filter(criterion).toList
+                lookupResult match {
+                  case Nil => NoSymbol
+                  case List(unique) => unique
+                  case _ => aabort(s"unexpected multiple results for a companion symbol lookup for $original#{$original.id}")
+                }
+              }
+              if (s != NoSymbol && s.owner == expectedOwner)
+                res = s
+              else
+                ctx = ctx.outer
+            }
+            res
+          }
+        }
+      }
+      ctx.patchedLookup(original.asInstanceOf[global.Symbol].name.companionName, owner.asInstanceOf[global.Symbol]).suchThat(sym =>
+        (original.isTerm || sym.hasModuleFlag) &&
+          (sym isCoDefinedWith original.asInstanceOf[global.Symbol])
+      ).asInstanceOf[c.universe.Symbol]
+    }
   }
 
   def prefix(tpe: Type): Type = {
@@ -669,15 +723,15 @@ trait CaseClassMacros extends ReprTypes {
     def check(sym: Symbol): Boolean = {
       // See https://issues.scala-lang.org/browse/SI-7424
       sym.typeSignature                   // force loading method's signature
-      sym.annotations.foreach(_.tree.tpe) // force loading all the annotations
+      sym.annotations.foreach(_.tpe) // force loading all the annotations
 
-      sym.annotations.exists(_.tree.tpe =:= typeOf[nonGeneric])
+      sym.annotations.exists(_.tpe =:= typeOf[nonGeneric])
     }
 
     // See https://issues.scala-lang.org/browse/SI-7561
     check(sym) ||
     (sym.isTerm && sym.asTerm.isAccessor && check(sym.asTerm.accessed)) ||
-    sym.overrides.exists(isNonGeneric)
+    sym.allOverriddenSymbols.exists(isNonGeneric)
   }
 
   def isTuple(tpe: Type): Boolean =
@@ -694,9 +748,8 @@ trait CaseClassMacros extends ReprTypes {
     }
 }
 
-class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
+class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
-  import internal.constantType
   import Flag._
 
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
@@ -721,11 +774,11 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         val singleton =
           tpe match {
             case SingleType(pre, sym) =>
-              c.internal.gen.mkAttributedRef(pre, sym)
+              mkAttributedRef(pre, sym)
             case TypeRef(pre, sym, List()) if sym.isModule =>
-              c.internal.gen.mkAttributedRef(pre, sym.asModule)
+              mkAttributedRef(pre, sym.asModule)
             case TypeRef(pre, sym, List()) if sym.isModuleClass =>
-              c.internal.gen.mkAttributedRef(pre, sym.asClass.module)
+              mkAttributedRef(pre, sym.asClass.module)
             case other =>
               abort(s"Bad case object-like type $tpe")
           }
@@ -738,15 +791,15 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
         val sym = tpe.typeSymbol
         val isCaseClass = sym.asClass.isCaseClass
         def hasNonGenericCompanionMember(name: String): Boolean = {
-          val mSym = sym.companion.typeSignature.member(TermName(name))
+          val mSym = sym.companionSymbol.typeSignature.member(newTermName(name))
           mSym != NoSymbol && !isNonGeneric(mSym)
         }
 
-        val binders = fieldsOf(tpe).map { case (name, tpe) => (TermName(c.freshName("pat")), name, tpe, isVararg(tpe)) }
+        val binders = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe, isVararg(tpe)) }
 
         val to =
           if(isCaseClass || hasNonGenericCompanionMember("unapply")) {
-            val wcard = Star(Ident(termNames.WILDCARD))  // like pq"_*" except that it does work
+            val wcard = Star(Ident(nme.WILDCARD))  // like pq"_*" except that it does work
             val lhs = pq"${companionRef(tpe)}(..${binders.map(x => if (x._4) pq"${x._1} @ $wcard" else pq"${x._1}")})"
             val rhs =
               binders.foldRight(q"_root_.shapeless.HNil": Tree) {
@@ -760,7 +813,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
               }
             cq"$lhs => $rhs"
           } else {
-            val lhs = TermName(c.freshName("pat"))
+            val lhs = newTermName(c.fresh("pat"))
             val rhs =
               fieldsOf(tpe).foldRight(q"_root_.shapeless.HNil": Tree) {
                 case ((name, tpe), acc) => q"_root_.shapeless.::($lhs.$name, $acc)"
@@ -803,7 +856,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       (List(to), List(from))
     }
 
-    val clsName = TypeName(c.freshName("anon$"))
+    val clsName = newTypeName(c.fresh("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTypTree(tpe)}
@@ -830,7 +883,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
-    val clsName = TypeName(c.freshName("anon$"))
+    val clsName = newTypeName(c.fresh("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTypTree(tpe)}
@@ -864,4 +917,20 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     q"""new _root_.shapeless.HasCoproductGeneric[$tTpe]: _root_.shapeless.HasCoproductGeneric[$tTpe]"""
   }
+}
+
+object GenericMacros {
+  def inst(c: Context) = new GenericMacros[c.type](c)
+
+  def materialize[T: c.WeakTypeTag, R: c.WeakTypeTag](c: Context): c.Expr[Generic.Aux[T, R]] =
+    c.Expr[Generic.Aux[T, R]](inst(c).materialize[T, R])
+
+  def mkIsTuple[T: c.WeakTypeTag](c: Context): c.Expr[IsTuple[T]] =
+    c.Expr[IsTuple[T]](inst(c).mkIsTuple[T])
+
+  def mkHasProductGeneric[T: c.WeakTypeTag](c: Context): c.Expr[HasProductGeneric[T]] = 
+    c.Expr[HasProductGeneric[T]](inst(c).mkHasProductGeneric[T])
+
+  def mkHasCoproductGeneric[T: c.WeakTypeTag](c: Context): c.Expr[HasCoproductGeneric[T]] =
+    c.Expr[HasCoproductGeneric[T]](inst(c).mkHasCoproductGeneric[T])
 }

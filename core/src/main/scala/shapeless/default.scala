@@ -1,7 +1,7 @@
 package shapeless
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 import shapeless.labelled.{ FieldType, field }
 
@@ -208,7 +208,7 @@ object Default {
   }
 }
 
-class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
+class DefaultMacros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
 
   def someTpe = typeOf[Some[_]].typeConstructor
@@ -223,14 +223,25 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
     lazy val companion = companionRef(tpe)
 
     // Fixes https://github.com/milessabin/shapeless/issues/474
-    tpe.typeSymbol.companion.info.members
+    tpe.typeSymbol.companionSymbol.typeSignature.members
+
+    def methodFrom(tpe: Type, name: String): Option[Symbol] = {
+      val m = tpe.member(newTermName(name))
+      if (m == NoSymbol)
+        None
+      else
+        Some(m)
+    }
 
     def wrapTpeTree(idx: Int, argTpe: Type) = {
-      val method = TermName(s"apply$$default$$${idx + 1}")
+      val methodOpt = methodFrom(tpe.typeSymbol.companionSymbol.typeSignature, s"apply$$default$$${idx + 1}")
+        .orElse(methodFrom(companion.symbol.typeSignature, s"$$lessinit$$greater$$default$$${idx + 1}"))
 
-      tpe.companion.member(method) match {
-        case NoSymbol => (noneTpe, q"_root_.scala.None")
-        case defaultArg => (appliedType(someTpe, argTpe), q"_root_.scala.Some($companion.$method)")
+      methodOpt match {
+        case Some(method) =>
+          (appliedType(someTpe, List(argTpe)), q"_root_.scala.Some($companion.$method)")
+        case None =>
+          (noneTpe, q"_root_.scala.None")
       }
     }
 
@@ -246,4 +257,11 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     q"_root_.shapeless.Default.mkDefault[$tpe, $resultTpe]($resultTree)"
   }
+}
+
+object DefaultMacros {
+  def inst(c: Context) = new DefaultMacros[c.type](c)
+
+  def materialize[T: c.WeakTypeTag, L <: HList: c.WeakTypeTag](c: Context): c.Expr[Default.Aux[T, L]] =
+    c.Expr[Default.Aux[T, L]](inst(c).materialize[T, L])
 }

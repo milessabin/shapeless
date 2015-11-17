@@ -134,7 +134,7 @@ class TypeOperatorTests {
       res
     }
 
-    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
+    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[U0] = {
       val res: Option[the.`Bar[T]`.U] = None
       res
     }

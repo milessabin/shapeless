@@ -1,7 +1,7 @@
 package shapeless
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Looking for an implicit `Lazy[Priority[H, L]]` will look up for an implicit `H`,
@@ -40,7 +40,7 @@ object Priority extends LazyExtensionCompanion {
 
   implicit def init[H, L]: Priority[H, L] = macro initImpl
 
-  def instantiate(ctx0: DerivationContext) =
+  def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type } =
     new PriorityLookupExtension {
       type Ctx = ctx0.type
       val ctx: ctx0.type = ctx0
@@ -76,7 +76,7 @@ object Mask {
 
 
 trait PriorityTypes {
-  type C <: whitebox.Context
+  type C <: Context
   val c: C
 
   import c.universe._
@@ -88,7 +88,7 @@ trait PriorityTypes {
 
   object PriorityTpe {
     def unapply(tpe: Type): Option[(Type, Type)] =
-      tpe.dealias match {
+      tpe.normalize match {
         case TypeRef(_, cpdTpe, List(highTpe, lowTpe))
           if cpdTpe.asType.toType.typeConstructor =:= priorityTpe =>
           Some(highTpe, lowTpe)
@@ -101,7 +101,7 @@ trait PriorityTypes {
 
   object MaskTpe {
     def unapply(tpe: Type): Option[(Type, Type)] =
-      tpe.dealias match {
+      tpe.normalize match {
         case TypeRef(_, cpdTpe, List(mTpe, tTpe))
           if cpdTpe.asType.toType.typeConstructor =:= maskTpe =>
           Some(mTpe, tTpe)
@@ -170,7 +170,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
             if (mask.isEmpty)
               (tree0, actualTpe)
             else {
-              val mTpe = internal.constantType(Constant(mask))
+              val mTpe = ConstantType(Constant(mask))
               (q"_root_.shapeless.Mask.mkMask[$mTpe, $actualTpe]($tree0)", appliedType(maskTpe, List(mTpe, actualTpe)))
             }
 

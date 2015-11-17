@@ -19,7 +19,7 @@ package shapeless
 import language.existentials
 import language.experimental.macros
 
-import reflect.macros.whitebox
+import reflect.macros.Context
 
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
@@ -260,7 +260,7 @@ trait Poly0 extends Poly {
   }
 }
 
-class PolyMacros(val c: whitebox.Context) {
+class PolyMacros[C <: Context](val c: C) {
   import c.universe._
 
   import PolyDefns.Case
@@ -271,7 +271,7 @@ class PolyMacros(val c: whitebox.Context) {
     val tTpe = weakTypeOf[T]
 
     val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-    if(c.openImplicits.tail.exists(_.pt =:= recTpe))
+    if(c.openImplicits.tail.exists(_._1 =:= recTpe))
       c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
 
     val value = pTpe match {
@@ -281,4 +281,14 @@ class PolyMacros(val c: whitebox.Context) {
 
     q""" $value.caseUniv[$tTpe] """
   }
+}
+
+object PolyMacros {
+  import PolyDefns.Case
+
+  def inst(c: Context) = new PolyMacros[c.type](c)
+
+  def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag]
+    (c: Context): c.Expr[Case[P, FT :: HNil]] =
+      c.Expr[Case[P, FT :: HNil]](inst(c).materializeFromValueImpl[P, FT, T])
 }

@@ -237,14 +237,14 @@ class ProductTests {
       val l = e.toSized[List]
       val expected = Sized[List]()
       equalInferredTypes(expected, l)
-      assertTypedEquals(expected, l)
+      assertTypedEquals(expected.unsized, l.unsized)
     }
 
     {
       val a = e.toSized[Array]
       val expected = Sized[Array]()
       equalInferredTypes(expected, a)
-      assertArrayEquals0(expected, a)
+      assertArrayEquals0(expected.unsized, a.unsized)
     }
 
     val foo = Foo(1, "b")
@@ -253,14 +253,14 @@ class ProductTests {
       val l = foo.toSized[List]
       val expected = Sized[List](1, "b")
       equalInferredTypes(expected, l)
-      assertTypedEquals(expected, l)
+      assertTypedEquals(expected.unsized, l.unsized)
     }
 
     {
       val a = foo.toSized[Array]
       val expected = Sized[Array](1, "b")
       equalInferredTypes(expected, a)
-      assertArrayEquals0(expected, a)
+      assertArrayEquals0(expected.unsized, a.unsized)
     }
 
     val baz = Baz("a", foo)
@@ -269,14 +269,14 @@ class ProductTests {
       val l = baz.toSized[List]
       val expected = Sized[List]("a", foo)
       equalInferredTypes(expected, l)
-      assertTypedEquals(expected, l)
+      assertTypedEquals(expected.unsized, l.unsized)
     }
 
     {
       val a = baz.toSized[Array]
       val expected = Sized[Array]("a", foo)
       equalInferredTypes(expected, a)
-      assertArrayEquals0(expected, a)
+      assertArrayEquals0(expected.unsized, a.unsized)
     }
   }
   

@@ -131,6 +131,14 @@ object SerializationTestDefns {
 
   case class Box[T](t: T)
 
+  type K = HList.`'a, 'b, 'c`.T
+  type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
+  type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
+  type RM = Record.`'c -> Boolean, 'd -> Double`.T
+  type KA = Witness.`'a`.T
+  type KB = Witness.`'b`.T
+  type KC = Witness.`'c`.T
+
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
   case class Node[T](l: Tree[T], r: Tree[T]) extends Tree[T]
@@ -308,7 +316,6 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
-    type K = HList.`'a, 'b, 'c`.T
 
     assertSerializable(IsHCons[L])
 
@@ -496,11 +503,6 @@ class SerializationTests {
   def testRecords {
     import ops.record._
 
-    type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type RM = Record.`'c -> Boolean, 'd -> Double`.T
-    type KA = Witness.`'a`.T
-    type KB = Witness.`'b`.T
-    type KC = Witness.`'c`.T
     type FA = FieldType[KA, Int]
     type FB = FieldType[KB, String]
     type FC = FieldType[KC, Boolean]
@@ -551,7 +553,6 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
-    type K = HList.`'a, 'b, 'c`.T
 
     assertSerializable(Inject[L, Int])
     assertSerializable(Inject[L, String])
@@ -659,10 +660,6 @@ class SerializationTests {
   def testUnions {
     import ops.union._
 
-    type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type KA = Witness.`'a`.T
-    type KB = Witness.`'b`.T
-
     assertSerializable(Selector[U, KA])
     assertSerializable(Selector[U, KB])
 
@@ -695,7 +692,6 @@ class SerializationTests {
     type LT = ((Int, String), (Boolean, Double), (Char, Float))
     type AL = ((Int => Double), (String => Char), (Boolean => Float))
     type I3 = (Int, Int, Int)
-    type K = HList.`'a, 'b, 'c`.T
 
     assertSerializable(IsComposite[L])
 
@@ -1025,8 +1021,6 @@ class SerializationTests {
     type OL = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
     type I3 = Int :: Int :: Int :: HNil
     type IS = Int :: String :: HNil
-    type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type K = HList.`'a, 'b, 'c`.T
 
     assertSerializable(UnaryTCConstraint[HNil, Option])
     assertSerializable(UnaryTCConstraint[OL, Option])

@@ -18,7 +18,7 @@ package shapeless
 package ops
 
 import scala.language.experimental.macros
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.Context
 
 import poly._
 
@@ -45,7 +45,7 @@ package record {
 
     def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
 
-    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K, O]
 
   }
 
@@ -54,12 +54,12 @@ package record {
     def apply(l: HList): Any = HList.unsafeGet(l, i)
   }
 
-  class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
+  class SelectorMacros[C <: Context](val c: C) extends CaseClassMacros {
     import c.universe._
 
     def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val kTpe = kTag.tpe.dealias
+      val lTpe = lTag.tpe.normalize
+      val kTpe = kTag.tpe.normalize
       if(!(lTpe <:< hlistTpe))
         abort(s"$lTpe is not a record type")
 
@@ -77,6 +77,13 @@ package record {
           abort(s"No field $kTpe in record type $lTpe")
       }
     }
+  }
+
+  object SelectorMacros {
+    def inst(c: Context) = new SelectorMacros[c.type](c)
+
+    def applyImpl[L <: HList: c.WeakTypeTag, K: c.WeakTypeTag, O](c: Context): c.Expr[Selector.Aux[L, K, O]] =
+      c.Expr[Selector.Aux[L, K, O]](inst(c).applyImpl[L, K])
   }
 
   /**
@@ -121,7 +128,7 @@ package record {
 
     def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
 
-    implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
+    implicit def mkUpdater[L <: HList, F, O <: HList]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F, O]
   }
 
   class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
@@ -129,12 +136,12 @@ package record {
     def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
   }
 
-  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
+  class UpdaterMacros[C <: Context](val c: C) extends CaseClassMacros {
     import c.universe._
 
     def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val fTpe = fTag.tpe.dealias
+      val lTpe = lTag.tpe.normalize
+      val fTpe = fTag.tpe.normalize
       if(!(lTpe <:< hlistTpe))
         abort(s"$lTpe is not a record type")
 
@@ -150,6 +157,14 @@ package record {
           .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
       """
     }
+  }
+
+  object UpdaterMacros {
+    def inst(c: Context) = new UpdaterMacros[c.type](c)
+
+    def applyImpl[L <: HList: c.WeakTypeTag, F: c.WeakTypeTag, O <: HList]
+      (c: Context): c.Expr[Updater.Aux[L, F, O]] =
+        c.Expr[Updater.Aux[L, F, O]](inst(c).applyImpl[L, F])
   }
 
   /**

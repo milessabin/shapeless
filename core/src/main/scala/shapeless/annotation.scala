@@ -1,7 +1,7 @@
 package shapeless
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Evidence that type `T` has annotation `A`, and provides an instance of the annotation.
@@ -101,7 +101,7 @@ object Annotations {
   implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeAnnotations[A, T, Out]
 }
 
-class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
+class AnnotationMacros[C <: Context](val c: C) extends CaseClassMacros {
   import c.universe._
 
   def someTpe = typeOf[Some[_]].typeConstructor
@@ -113,7 +113,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     val sym = tpe.typeSymbol
     val isCaseClass = sym.asClass.isCaseClass
     def hasNonGenericCompanionMember(name: String): Boolean = {
-      val mSym = sym.companion.typeSignature.member(TermName(name))
+      val mSym = sym.companionSymbol.typeSignature.member(newTermName(name))
       mSym != NoSymbol && !isNonGeneric(mSym)
     }
 
@@ -134,7 +134,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     val tpe = weakTypeOf[T]
 
     val annTreeOpt = tpe.typeSymbol.annotations.collectFirst {
-      case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+      case ann if ann.tpe =:= annTpe => construct0(ann.scalaArgs)
     }
 
     annTreeOpt match {
@@ -158,9 +158,9 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     val annTreeOpts =
       if (isProduct(tpe)) {
         val constructorSyms = tpe
-          .member(termNames.CONSTRUCTOR)
+          .member(nme.CONSTRUCTOR)
           .asMethod
-          .paramLists
+          .paramss
           .flatten
           .map { sym => sym.name.decodedName.toString -> sym }
           .toMap
@@ -169,20 +169,20 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
           val paramConstrSym = constructorSyms(name.decodedName.toString)
 
           paramConstrSym.annotations.collectFirst {
-            case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+            case ann if ann.tpe =:= annTpe => construct0(ann.scalaArgs)
           }
         }
       } else if (isCoproduct(tpe))
         ctorsOf(tpe).map { cTpe =>
           cTpe.typeSymbol.annotations.collectFirst {
-            case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+            case ann if ann.tpe =:= annTpe => construct0(ann.scalaArgs)
           }
         }
       else
         abort(s"$tpe is not case class like or the root of a sealed family of types")
 
     val wrapTpeTrees = annTreeOpts.map {
-      case Some(annTree) => appliedType(someTpe, annTpe) -> q"_root_.scala.Some($annTree)"
+      case Some(annTree) => appliedType(someTpe, List(annTpe)) -> q"_root_.scala.Some($annTree)"
       case None => noneTpe -> q"_root_.scala.None"
     }
 
@@ -193,4 +193,14 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     q"_root_.shapeless.Annotations.mkAnnotations[$annTpe, $tpe, $outTpe]($outTree)"
   }
+}
+
+object AnnotationMacros {
+  def inst(c: Context) = new AnnotationMacros[c.type](c)
+
+  def materializeAnnotation[A: c.WeakTypeTag, T: c.WeakTypeTag](c: Context): c.Expr[Annotation[A, T]] =
+    c.Expr[Annotation[A, T]](inst(c).materializeAnnotation[A, T])
+
+  def materializeAnnotations[A: c.WeakTypeTag, T: c.WeakTypeTag, Out <: HList : c.WeakTypeTag](c: Context): c.Expr[Annotations.Aux[A, T, Out]] =
+    c.Expr[Annotations.Aux[A, T, Out]](inst(c).materializeAnnotations[A, T, Out])
 }

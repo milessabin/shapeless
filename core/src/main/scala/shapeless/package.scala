@@ -16,7 +16,7 @@
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 package object shapeless {
   def unexpected : Nothing = sys.error("Unexpected invocation")
@@ -111,21 +111,27 @@ package object shapeless {
 }
 
 package shapeless {
-  class CachedImplicitMacros(val c: whitebox.Context) {
+  class CachedImplicitMacros[C <: Context](val c: C) {
     import c.universe._
 
     def dropLocal(nme: TermName): TermName = {
       val LOCAL_SUFFIX_STRING = " "
-      val TermName(nmeString) = nme
+      val nmeString = nme.decoded
       if(nmeString endsWith LOCAL_SUFFIX_STRING)
-        TermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
+        newTermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
       else
         nme
     }
 
+    def enclosingOwner: Symbol = {
+      val internalContext = c.asInstanceOf[scala.reflect.macros.runtime.Context]
+      val internalOwner = internalContext.callsiteTyper.context.owner
+      internalOwner.asInstanceOf[Symbol]
+    }
+
     def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
       val tTpe = weakTypeOf[T]
-      val owner = c.internal.enclosingOwner
+      val owner = enclosingOwner
       val ownerNme = dropLocal(owner.name.toTermName)
       val tpe = if(tTpe.typeSymbol.isParameter) owner.typeSignature else tTpe
 
@@ -136,5 +142,12 @@ package shapeless {
         }
       """
     }
+  }
+
+  object CachedImplicitMacros {
+    def inst(c: Context) = new CachedImplicitMacros[c.type](c)
+
+    def cachedImplicitImpl[T: c.WeakTypeTag](c: Context): c.Expr[T] =
+      c.Expr[T](inst(c).cachedImplicitImpl[T])
   }
 }

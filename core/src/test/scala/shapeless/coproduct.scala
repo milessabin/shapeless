@@ -23,6 +23,8 @@ import test._
 import testutil._
 
 import ops.coproduct._
+import ops.union._
+import union._
 
 class CoproductTests {
   type ISB = Int :+: String :+: Boolean :+: CNil
@@ -325,11 +327,8 @@ class CoproductTests {
   }
   @Test
   def testWithKeys {
-    import syntax.singleton._
-    import union._
-    import ops.union._
-
     type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+
     val cKeys = Keys[U].apply()
 
     val u1 = Coproduct[ISB](23).zipWithKeys(cKeys)

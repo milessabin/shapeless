@@ -20,12 +20,12 @@ import org.junit.Test
 import org.junit.Assert._
 
 import labelled.FieldType
+import union._
+import syntax.singleton._
+import test._
+import testutil._
 
 class UnionTests {
-  import union._
-  import syntax.singleton._
-  import test._
-  import testutil._
 
   val wI = Witness('i)
   type i = wI.T

@@ -19,7 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 
 import scala.annotation.tailrec
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Base trait for type level natural numbers.
@@ -73,7 +73,7 @@ object Nat extends Nats {
 }
 
 object NatMacros {
-  def mkNatTpt(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
+  def mkNatTpt(c: Context)(i: c.Expr[Int]): c.Tree = {
     import c.universe._
 
     val n = i.tree match {
@@ -97,22 +97,26 @@ object NatMacros {
     mkNatTpt(n, Ident(_0Sym))
   }
 
-  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
+  def materializeSingleton(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
 
     val natTpt = mkNatTpt(c)(i)
-    val moduleName = TermName(c.freshName("nat_"))
+    val moduleName = newTermName(c.fresh("nat_"))
 
-    q"""
-      object $moduleName extends $natTpt
-      $moduleName
-    """
+    c.Expr[Nat] {
+      q"""
+        object $moduleName extends $natTpt
+        $moduleName
+      """
+    }
   }
 
-  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
+  def materializeWidened(c: Context)(i: c.Expr[Int]): c.Expr[Nat] = {
     import c.universe._
     val natTpt = mkNatTpt(c)(i)
 
-    q""" new $natTpt """
+    c.Expr[Nat] {
+      q""" new $natTpt """
+    }
   }
 }

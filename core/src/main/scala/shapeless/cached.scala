@@ -1,7 +1,8 @@
 package shapeless
 
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.language.reflectiveCalls
+import scala.reflect.macros.Context
 
 /**
  * Wraps a cached implicit `T`.
@@ -62,17 +63,38 @@ object Cached {
 object CachedMacros {
   var deriving = false
   var cache = List.empty[(Any, Any)]
+
+  def materializeCached[T: c.WeakTypeTag](c: Context): c.Expr[Cached[T]] = {
+    import c.universe._
+
+    val cmSym = typeOf[CachedMacros.type].typeSymbol
+    cmSym.attachments.all.headOption match {
+      case Some(cm) =>
+        if (cm == CachedMacros)
+          c.Expr[Cached[T]](new CachedMacros[c.type](c).materializeCached[T])
+        else
+          cm.asInstanceOf[
+            { def materialize[T: c.WeakTypeTag](c: Context): c.Expr[Cached[T]] }
+          ].materialize[T](c)
+      case None =>
+        cmSym.updateAttachment[CachedMacros.type](this)
+        try {
+          c.Expr[Cached[T]](new CachedMacros[c.type](c).materializeCached[T])
+        } finally {
+          cmSym.removeAttachment[LazyMacros.type]
+        }
+    }
+  }
 }
 
-class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) {
+class CachedMacros[C <: Context](c0: C) extends LazyMacros(c0) {
   import c.universe._
-  import c.ImplicitCandidate
 
   def materializeCached[T: WeakTypeTag]: Tree = {
     // Getting the actual type parameter T, using the same trick as Lazy/Strict
     val tpe = (c.openImplicits.headOption, weakTypeOf[T]) match {
-      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        tpe.map(_.dealias)
+      case (Some((TypeRef(_, _, List(tpe)), _)), _) =>
+        tpe.map(_.normalize)
       case (None, tpe) =>                                     // Non-implicit invocation
         tpe
       case _ =>

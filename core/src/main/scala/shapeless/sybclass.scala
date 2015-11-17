@@ -175,11 +175,19 @@ object EverythingAux {
 
 class EverywhereAux[F] extends Poly
 
-object EverywhereAux {
+trait EverywhereAux0 {
+  implicit def default0[E, F <: Poly, T, U]
+    (implicit
+      unpack: Unpack1[E, EverywhereAux, F],
+      data: Lazy[DataT.Aux[E, T, U]]
+    ): Case1.Aux[E, T, U] = Case1[E, T, U](t => data.value.gmapT(t))
+}
+
+object EverywhereAux extends EverywhereAux0 {
   implicit def default[E, F <: Poly, T, U, V]
     (implicit
       unpack: Unpack1[E, EverywhereAux, F],
       data: Lazy[DataT.Aux[E, T, U]],
-      f: Case1.Aux[F, U, V] = Case1[F, U, U](identity)
+      f: Case1.Aux[F, U, V]
     ): Case1.Aux[E, T, V] = Case1[E, T, V](t => f(data.value.gmapT(t)))
 }

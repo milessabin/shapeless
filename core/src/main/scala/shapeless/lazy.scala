@@ -17,9 +17,10 @@
 package shapeless
 
 import scala.language.experimental.macros
+import scala.language.reflectiveCalls
 
 import scala.collection.immutable.ListMap
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Wraps a lazily computed value. Also circumvents cycles during implicit search, or wrong implicit divergences
@@ -163,9 +164,8 @@ object Strict {
   implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
 }
 
-class LazyMacros(val c: whitebox.Context) {
+class LazyMacros[C <: Context](val c: C) {
   import c.universe._
-  import c.ImplicitCandidate
 
   def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
     mkImpl[I](
@@ -180,9 +180,9 @@ class LazyMacros(val c: whitebox.Context) {
     )
 
   def mkImpl[I](mkInst: (c.Tree, c.Type) => c.Tree, nullInst: => c.Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
-    (c.openImplicits.headOption, iTag.tpe.dealias) match {
-      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        LazyMacros.deriveInstance(c)(tpe.map(_.dealias), mkInst)
+    (c.openImplicits.headOption, iTag.tpe.normalize) match {
+      case (Some((TypeRef(_, _, List(tpe)), _)), _) =>
+        LazyMacros.deriveInstance(c)(tpe.map(_.normalize), mkInst)
       case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
         nullInst
       case (None, tpe) =>                                     // Non-implicit invocation
@@ -194,9 +194,58 @@ class LazyMacros(val c: whitebox.Context) {
 }
 
 object LazyMacros {
+  def inst(c: Context) = new LazyMacros[c.type](c)
+
+  def mkLazyImpl[I: c.WeakTypeTag](c: Context): c.Expr[Lazy[I]] = {
+    import c.universe._
+
+    mkImpl[I, Lazy](c)(
+      c.Expr[Lazy[I]](inst(c).mkLazyImpl[I]),
+      lm =>
+        lm.asInstanceOf[
+          { def mkLazyImpl(c: Context)(i: c.WeakTypeTag[I]): c.Expr[Lazy[I]] }
+        ].mkLazyImpl(c)(weakTypeTag[I])
+    )
+  }
+
+  def mkStrictImpl[I: c.WeakTypeTag](c: Context): c.Expr[Strict[I]] = {
+    import c.universe._
+
+    mkImpl[I, Strict](c)(
+      c.Expr[Strict[I]](inst(c).mkStrictImpl[I]),
+      lm =>
+        lm.asInstanceOf[
+          { def mkStrictImpl(c: Context)(i: c.WeakTypeTag[I]): c.Expr[Strict[I]] }
+        ].mkStrictImpl(c)(weakTypeTag[I])
+    )
+  }
+
+  def mkImpl[I: c.WeakTypeTag, L[I]](c: Context)(
+    f: => c.Expr[L[I]],
+    f0: Any => c.Expr[L[I]]
+  ): c.Expr[L[I]] = {
+    import c.universe._
+
+    val lmSym = typeOf[LazyMacros.type].typeSymbol
+    lmSym.attachments.all.headOption match {
+      case Some(lm) =>
+        if(lm == LazyMacros)
+          f
+        else
+          f0(lm)
+      case None =>
+        lmSym.updateAttachment[LazyMacros.type](this)
+        try {
+          f
+        } finally {
+            lmSym.removeAttachment[LazyMacros.type]
+        }
+    }
+  }
+
   var dcRef: Option[DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type, mkInst: (c.Tree, c.Type) => c.Tree): c.Tree = {
+  def deriveInstance(c: Context)(tpe: c.Type, mkInst: (c.Tree, c.Type) => c.Tree): c.Tree = {
     val (dc, root) =
       dcRef match {
         case None =>
@@ -222,13 +271,13 @@ object LazyMacros {
 object DerivationContext {
   type Aux[C0] = DerivationContext { type C = C0 }
 
-  def apply(c0: whitebox.Context): Aux[c0.type] =
+  def apply(c0: Context): Aux[c0.type] =
     new DerivationContext {
       type C = c0.type
       val c: C = c0
     }
 
-  def establish(dc: DerivationContext, c0: whitebox.Context): Aux[c0.type] =
+  def establish(dc: DerivationContext, c0: Context): Aux[c0.type] =
     dc.asInstanceOf[DerivationContext { type C = c0.type }]
 }
 
@@ -281,7 +330,7 @@ trait LazyExtension {
 trait LazyExtensionCompanion {
   def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type }
 
-  def initImpl(c: whitebox.Context): Nothing = {
+  def initImpl(c: Context): Nothing = {
     val ctx = LazyMacros.dcRef.getOrElse(
       c.abort(c.enclosingPosition, "")
     )
@@ -294,7 +343,7 @@ trait LazyExtensionCompanion {
 }
 
 trait LazyDefinitions {
-  type C <: whitebox.Context
+  type C <: Context
   val c: C
 
   import c.universe._
@@ -312,8 +361,8 @@ trait LazyDefinitions {
 
   object Instance {
     def apply(instTpe: Type) = {
-      val nme = TermName(c.freshName("inst"))
-      val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
+      val nme = newTermName(c.fresh("inst"))
+      val sym = NoSymbol.newTermSymbol(nme).setTypeSignature(instTpe)
 
       new Instance(instTpe, nme, sym, None, instTpe, Nil)
     }
@@ -356,7 +405,7 @@ trait LazyDefinitions {
 }
 
 trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions { ctx =>
-  type C <: whitebox.Context
+  type C <: Context
   val c: C
 
   import c.universe._
@@ -397,7 +446,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
       if (root) {
         assert(current.isEmpty)
         val open = c.openImplicits
-        val name = if (open.length > 1) open(1).sym.name.toTermName.toString else "lazy"
+        val name = "lazy"
         current = Some(empty.copy(name = "anon$"+name))
       }
 
@@ -406,7 +455,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
           val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
           current = if (root) None else Some(state)
           if (root) {
-            val valNme = TermName(c.freshName)
+            val valNme = newTermName(c.fresh("inst"))
             q"""
             val $valNme: $actualType = $tree
             ${mkInst(q"$valNme", actualType)}
@@ -447,7 +496,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
       assert(open.nonEmpty)
       assert(open.head.instTpe =:= tpe)
       val instance = open.head
-      val sym = c.internal.setInfo(instance.symbol, actualTpe)
+      val sym = instance.symbol.setTypeSignature(actualTpe)
       val instance0 = instance.copy(inst = Some(tree), actualTpe = actualTpe, symbol = sym)
       (copy(open = open.tail).update(instance0), instance0)
     }
@@ -500,7 +549,10 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
         )
 
     extInstOpt.map {case (state0, extInst) =>
-      (state0, extInst, extInst.tpe.finalResultType)
+      (state0, extInst, extInst.tpe match {
+        case NullaryMethodType(restpe) => restpe
+        case other => other
+      })
     }
   }
 
@@ -554,7 +606,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
     val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
 
     def clean(inst: Tree) = {
-      val cleanInst = c.untypecheck(c.internal.substituteSymbols(inst, from, to))
+      val cleanInst = c.resetLocalAttrs(inst.substituteSymbols(from, to))
       new StripUnApplyNodes().transform(cleanInst)
     }
 
@@ -583,7 +635,7 @@ trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions {
 
       val primaryInstance = state.lookup(primaryTpe).right.get._2
       val primaryNme = primaryInstance.name
-      val clsName = TypeName(c.freshName(state.name))
+      val clsName = newTypeName(c.fresh(state.name))
 
       val tree =
         q"""

@@ -18,7 +18,7 @@ package shapeless.test
 
 import scala.language.experimental.macros
 
-import scala.reflect.macros.blackbox
+import scala.reflect.macros.Context
 
 class TypeTrace[T]
 
@@ -26,13 +26,20 @@ object TypeTrace {
   implicit def apply[T]: TypeTrace[T] = macro TypeTraceMacros.applyImpl[T]
 }
 
-class TypeTraceMacros(val c: blackbox.Context) {
+class TypeTraceMacros[C <: Context](val c: C) {
   import c.universe._
 
   def applyImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
     val tTpe = weakTypeOf[T]
-    println(s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}")
+    println(s"Trace: $tTpe ${tTpe.normalize} ${tTpe.getClass.getName} ${tTpe.normalize.getClass.getName}")
 
     q"""new _root_.shapeless.test.TypeTrace[$tTpe]"""
   }
+}
+
+object TypeTraceMacros {
+  def inst(c: Context) = new TypeTraceMacros[c.type](c)
+
+  def applyImpl[T: c.WeakTypeTag](c: Context): c.Expr[TypeTrace[T]] =
+    c.Expr[TypeTrace[T]](inst(c).applyImpl[T])
 }

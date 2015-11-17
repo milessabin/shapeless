@@ -19,7 +19,7 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 import scala.util.Try
 
 object tag {
@@ -106,26 +106,25 @@ object newtype {
  * }}}
  */
 object the extends Dynamic {
-  def apply[T](implicit t: T): T = macro TheMacros.applyImpl
+  def apply[T](implicit t: T): T = macro TheMacros.applyImpl[T]
 
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
-class TheMacros(val c: whitebox.Context) {
-  def applyImpl(t: c.Tree): c.Tree = t
+object TheMacros {
+  def applyImpl[T](c: Context)(t: c.Expr[T]): c.Expr[T] = t
 
-  def implicitlyImpl(tpeSelector: c.Tree): c.Tree = {
+  def implicitlyImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] = {
     import c.universe.{ Try => _, _ }
-    import internal._, decorators._
 
-    val q"${tpeString: String}" = tpeSelector
-    val dummyNme = c.freshName
+    val q"${tpeString: String}" = tpeSelector.tree
+    val dummyNme = c.fresh
 
     val tpe =
       (for {
         parsed <- Try(c.parse(s"{ type $dummyNme = "+tpeString+" }")).toOption
-        checked = c.typecheck(parsed, silent = true)
-        if checked.nonEmpty
+        checked = c.typeCheck(parsed, silent = true)
+        if !checked.isEmpty
       } yield {
         val q"{ type $dummyNme = $tpt }" = checked
         tpt.tpe
@@ -142,7 +141,9 @@ class TheMacros(val c: whitebox.Context) {
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(inferred.tpe)
+    c.Expr[Any](
+      Literal(Constant(())).setType(inferred.tpe)
+    )
   }
 }
 

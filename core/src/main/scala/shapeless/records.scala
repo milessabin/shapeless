@@ -19,7 +19,7 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.Context
 
 /**
  * Record operations on `HList`'s with field-like elements.
@@ -88,9 +88,24 @@ trait RecordArgs extends Dynamic {
   def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
 }
 
-class RecordMacros(val c: whitebox.Context) {
+object RecordMacros {
+  def inst(c: Context) = new RecordMacros[c.type](c)
+
+  def mkRecordEmptyImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[HList] =
+    c.Expr[HList](inst(c).mkRecordEmptyImpl(method.tree)(rec.map(_.tree): _*))
+
+  def mkRecordNamedImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[HList] =
+    c.Expr[HList](inst(c).mkRecordNamedImpl(method.tree)(rec.map(_.tree): _*))
+
+  def forwardImpl(c: Context)(method: c.Expr[String])(): c.Expr[Any] =
+    c.Expr[Any](inst(c).forwardNamedImpl(method.tree)())
+
+  def forwardNamedImpl(c: Context)(method: c.Expr[String])(rec: c.Expr[Any]*): c.Expr[Any] =
+    c.Expr[Any](inst(c).forwardNamedImpl(method.tree)(rec.map(_.tree): _*))
+}
+
+class RecordMacros[C <: Context](val c: C) {
   import c.universe._
-  import internal.constantType
   import labelled.FieldType
 
   val hconsValueTree = reify {  ::  }.tree
@@ -121,7 +136,7 @@ class RecordMacros(val c: whitebox.Context) {
     val lhsTpe = lhs.tpe
 
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"Record")
+    val methodName = newTermName(methodString+"Record")
 
     if(lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
@@ -133,7 +148,7 @@ class RecordMacros(val c: whitebox.Context) {
 
   def mkRecordImpl(rec: Tree*): Tree = {
     def mkSingletonSymbolType(c: Constant): Type =
-      appliedType(atatTpe, List(SymTpe, constantType(c)))
+      appliedType(atatTpe, List(SymTpe, ConstantType(c)))
 
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
@@ -142,8 +157,10 @@ class RecordMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      //case q""" scala.Tuple2.apply(${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      case Apply(TypeApply(Select(_, _), List(_, _)), List(Literal(k: Constant), v)) => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
+        println(showRaw(elem))
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }
 
