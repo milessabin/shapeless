@@ -138,4 +138,23 @@ class DefaultTests {
     illTyped(" Default.AsOptions[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
+  @Test
+  def localClass {
+    case class Default0(d: Double = 1.0)
+
+    val default0 = Default[Default0].apply()
+    assertTypedEquals[Some[Double] :: HNil](
+      Some(1.0) :: HNil,
+      default0
+    )
+
+    case class Default1(d: Double, s: String = "b", df: Default0 = Default0())
+
+    val default1 = Default[Default1].apply()
+    assertTypedEquals[None.type :: Some[String] :: Some[Default0] :: HNil](
+      None :: Some("b") :: Some(Default0()) :: HNil,
+      default1
+    )
+  }
+
 }
