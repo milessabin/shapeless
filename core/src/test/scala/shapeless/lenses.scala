@@ -309,6 +309,15 @@ class OpticTestsDynamic extends LensTests {
   val postcodeLens = lens[Person].address.postcode
 }
 
+class AscribedOpticTestsDynamic extends LensTests {
+  val nameLens: Lens[Person, String]     = lens[Person].name
+  val ageLens: Lens[Person, Int]         = lens[Person].age
+  val addressLens: Lens[Person, Address] = lens[Person].address
+  val streetLens: Lens[Person, String]   = lens[Person].address.street
+  val cityLens: Lens[Person, String]     = lens[Person].address.city
+  val postcodeLens: Lens[Person, String] = lens[Person].address.postcode
+}
+
 class OpticTests {
   @Test
   def testBasics {
