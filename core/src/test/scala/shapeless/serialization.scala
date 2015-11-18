@@ -388,6 +388,12 @@ class SerializationTests {
 
     assertSerializable(RemoveAll[L, IS])
 
+    assertSerializable(Union[L, IS])
+
+    assertSerializable(Intersection[L, IS])
+
+    assertSerializable(Diff[L, IS])
+
     assertSerializable(Replacer[L, Int, String])
 
     assertSerializable(Modifier[L, Int, String])
