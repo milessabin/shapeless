@@ -287,11 +287,16 @@ trait CaseClassMacros extends ReprTypes {
     normalized <:< hlistTpe || normalized <:< coproductTpe
   }
 
+  def lowerKind(tpe: Type): Type =
+    if(tpe.takesTypeArgs)
+      appliedType(tpe, List(typeOf[Any])).normalize
+    else tpe
+
   def isProduct(tpe: Type): Boolean =
-    tpe =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+    tpe =:= typeOf[Unit] || (!(tpe =:= typeOf[AnyRef]) && tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
   def isProduct1(tpe: Type): Boolean =
-    appliedType(tpe, List(typeOf[Any])).normalize =:= typeOf[Unit] || (tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+    lowerKind(tpe) =:= typeOf[Unit] || (!(lowerKind(tpe) =:= typeOf[AnyRef]) && tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
 
   def isCoproduct(tpe: Type): Boolean = {
     val sym = tpe.typeSymbol
@@ -340,6 +345,13 @@ trait CaseClassMacros extends ReprTypes {
 
   def productCtorsOf(tpe: Type): List[Symbol] =
     tpe.declarations.toList.filter { x => x.isMethod && x.asMethod.isConstructor }
+
+  def accessiblePrimaryCtorOf(tpe: Type): Option[Symbol] = {
+    for {
+      ctor <- tpe.declarations.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor }
+      if !ctor.isJava || productCtorsOf(tpe).size == 1
+    } yield ctor
+  }
 
   def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, false)
   def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, true)
@@ -439,6 +451,11 @@ trait CaseClassMacros extends ReprTypes {
   def nameAsValue(name: Name): Constant = Constant(nameAsString(name))
 
   def nameOf(tpe: Type) = tpe.typeSymbol.name
+
+  def mkHListValue(elems: List[Tree]): Tree =
+    elems.foldRight(q"_root_.shapeless.HNil": Tree) {
+      case (elem, acc) => q"_root_.shapeless.::($elem, $acc)"
+    }
 
   def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
     items.foldRight(nil) {
@@ -588,13 +605,13 @@ trait CaseClassMacros extends ReprTypes {
 
       val tpe = sym.typeSignature
       (for {
-        ctor <- unique(productCtorsOf(tpe))
+        ctor <- accessiblePrimaryCtorOf(tpe)
         params <- unique(ctor.asMethod.paramss)
       } yield params.size == fieldsOf(tpe).size).getOrElse(false)
     }
 
     sym.isCaseClass ||
-    (!sym.isAbstractClass && !sym.isTrait &&
+    (!sym.isAbstractClass && !sym.isTrait && !(sym == typeOf[Object].typeSymbol) &&
      sym.knownDirectSubclasses.isEmpty && checkCtor)
   }
 
@@ -640,12 +657,22 @@ trait CaseClassMacros extends ReprTypes {
   }
 
   def isAccessible(tpe: Type): Boolean = {
+      val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+      val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+      val typerContext = typer.context
+      typerContext.isAccessible(
+        tpe.typeSymbol.asInstanceOf[global.Symbol],
+        prefix(tpe).asInstanceOf[global.Type]
+      )
+  }
+
+  def isAccessible(pre: Type, sym: Symbol): Boolean = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
     val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val typerContext = typer.context
     typerContext.isAccessible(
-      tpe.typeSymbol.asInstanceOf[global.Symbol],
-      prefix(tpe).asInstanceOf[global.Type]
+      sym.asInstanceOf[global.Symbol],
+      pre.asInstanceOf[global.Type]
     )
   }
 
@@ -746,6 +773,203 @@ trait CaseClassMacros extends ReprTypes {
         appliedType(typeOf[scala.collection.Seq[_]].typeConstructor, args)
       case _ => tpe
     }
+
+  trait CtorDtor {
+    def construct(args: List[Tree]): Tree
+    def binding: (Tree, List[Tree])
+    def reprBinding: (Tree, List[Tree])
+  }
+
+  object CtorDtor {
+    def apply(tpe: Type): CtorDtor = {
+      val sym = tpe.typeSymbol
+      val isCaseClass = sym.asClass.isCaseClass
+
+      val repWCard = Star(Ident(nme.WILDCARD))  // like pq"_*" except that it does work
+
+      def finalResultType(tpe: Type): Type = {
+        val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+        val gTpe = tpe.asInstanceOf[global.Type]
+        gTpe.finalResultType.asInstanceOf[Type]
+      }
+
+      def narrow(tree: Tree, tpe: Type): Tree =
+        tpe match {
+          case ConstantType(c) =>
+            q"$c.asInstanceOf[$tpe]"
+          case _ =>
+            tree
+        }
+
+      def narrow1(tree: Tree, tpe: Type): Tree =
+        if(isVararg(tpe))
+          q"$tree: _*"
+        else
+          narrow(tree, tpe)
+
+      def unByName(tpe: Type): Type =
+        tpe match {
+          case TypeRef(_, sym, List(tpe)) if sym == definitions.ByNameParamClass => tpe
+          case tpe => tpe
+        }
+
+      def equalTypes(as: List[Type], bs: List[Type]): Boolean =
+        as.length == bs.length && (as zip bs).foldLeft(true) { case (acc, (a, b)) => acc && unByName(a) =:= unByName(b) }
+
+      def alignFields(tpe: Type, ts: List[Type]): Option[List[(TermName, Type)]] = {
+        val fields = fieldsOf(tpe)
+        if(fields.length != ts.length) None
+        else {
+          @tailrec
+          def loop(fields: Seq[(TermName, Type)], ts: Seq[Type], acc: List[(TermName, Type)]): Option[List[(TermName, Type)]] =
+            ts match {
+              case Nil => Some(acc.reverse)
+              case Seq(hd, tl @ _*) =>
+                fields.span { case (_, tpe) => !(tpe =:= hd) } match {
+                  case (fpre, List(f, fsuff @ _*)) => loop(fpre ++ fsuff, tl, f :: acc)
+                  case _ => None
+                }
+            }
+
+          loop(fields, ts, Nil)
+        }
+      }
+
+      object HasApply {
+        def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
+          val companionTpe = sym.companionSymbol.typeSignature
+          val applySym = companionTpe.member(newTermName("apply"))
+          if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
+            val applyParamss = applySym.asMethod.paramss
+            if(applyParamss.length == 1)
+              alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.typeSignatureIn(companionTpe))))
+            else None
+          } else None
+        }
+      }
+
+      object HasUnapply {
+        def unapply(tpe: Type): Option[List[Type]] = {
+          val companionTpe = sym.companionSymbol.typeSignature
+          val unapplySym = companionTpe.member(newTermName("unapply"))
+          if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
+            finalResultType(unapplySym.asMethod.typeSignatureIn(companionTpe)).baseType(typeOf[Option[_]].typeSymbol) match {
+              case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
+              case TypeRef(_, _, args @ List(arg)) => Some(args)
+              case _ => None
+            }
+          else None
+        }
+      }
+
+      object HasUniqueCtor {
+        def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
+          val ctorSym = tpe.declarations.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) }.getOrElse(NoSymbol)
+          if(!isNonGeneric(ctorSym)) {
+            val ctorTpe = ctorSym.asMethod.typeSignatureIn(tpe)
+            val ctorParamss = ctorSym.asMethod.paramss
+            if(ctorParamss.length == 1)
+              alignFields(tpe, ctorTpe.asInstanceOf[MethodType].params.map(param => unByName(param.typeSignature)))
+            else None
+          } else None
+        }
+      }
+
+      object HasApplyUnapply {
+        def unapply(tpe: Type): Option[List[(TermName, Type)]] =
+          (tpe, tpe) match {
+            case (HasApply(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
+            case _ => None
+          }
+      }
+
+      object HasCtorUnapply {
+        def unapply(tpe: Type): Option[List[(TermName, Type)]] =
+          (tpe, tpe) match {
+            case(HasUniqueCtor(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
+            case _ => None
+          }
+      }
+
+      def mkCtorDtor0(elems0: List[(TermName, Type)]) = {
+        val elems = elems0.map { case (name, tpe) => (newTermName(c.fresh("pat")), tpe) }
+        val pattern = pq"${companionRef(tpe)}(..${elems.map { case (binder, tpe) => if(isVararg(tpe)) pq"$binder @ $repWCard" else pq"$binder"}})"
+        val reprPattern =
+          elems.foldRight(q"_root_.shapeless.HNil": Tree) {
+            case ((bound, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
+          }
+        new CtorDtor {
+          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}(..$args)"
+          def binding: (Tree, List[Tree]) = (pattern, elems.map { case (binder, tpe) => narrow(q"$binder", tpe) })
+          def reprBinding: (Tree, List[Tree]) = (reprPattern, elems.map { case (binder, tpe) => narrow1(q"$binder", tpe) })
+        }
+      }
+
+      def mkCtorDtor1(elems: List[(TermName, TermName, Type)], pattern: Tree, rhs: List[Tree]) = {
+        val reprPattern =
+          elems.foldRight(q"_root_.shapeless.HNil": Tree) {
+            case ((bound, _, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
+          }
+        new CtorDtor {
+          def construct(args: List[Tree]): Tree = q"new $tpe(..$args)"
+          def binding: (Tree, List[Tree]) = (pattern, rhs)
+          def reprBinding: (Tree, List[Tree]) = (reprPattern, elems.map { case (binder, _, tpe) => narrow1(q"$binder", tpe) })
+        }
+      }
+
+      lowerKind(tpe) match {
+        // case 1: Unit
+        case tpe if tpe =:= typeOf[Unit] =>
+          new CtorDtor {
+            def construct(args: List[Tree]): Tree = q"()"
+            def binding: (Tree, List[Tree]) = (pq"()", Nil)
+            def reprBinding: (Tree, List[Tree]) = (pq"_root_.shapeless.HNil", Nil)
+          }
+
+        // case 2: singleton
+        case tpe if isCaseObjectLike(tpe.typeSymbol.asClass) =>
+          val singleton =
+            tpe match {
+              case SingleType(pre, sym) =>
+                mkAttributedRef(pre, sym)
+              case TypeRef(pre, sym, List()) if sym.isModule =>
+                mkAttributedRef(pre, sym.asModule)
+              case TypeRef(pre, sym, List()) if sym.isModuleClass =>
+                mkAttributedRef(pre, sym.asClass.module)
+              case other =>
+                abort(s"Bad case object-like type $tpe")
+            }
+          new CtorDtor {
+            def construct(args: List[Tree]): Tree = q"$singleton: $tpe"
+            def binding: (Tree, List[Tree]) = (pq"_: $tpe", Nil)
+            def reprBinding: (Tree, List[Tree]) = (pq"_root_.shapeless.HNil", Nil)
+          }
+
+        // case 3: case class
+        case tpe if isCaseClass => mkCtorDtor0(fieldsOf(tpe))
+
+        // case 4: exactly one matching public apply/unapply
+        case HasApplyUnapply(args) => mkCtorDtor0(args)
+
+        // case 5: concrete, exactly one public constructor with matching public unapply
+        case HasCtorUnapply(args) =>
+          val elems = args.map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) }
+          val pattern = pq"${companionRef(tpe)}(..${elems.map { case (binder, _, tpe) => if(isVararg(tpe)) pq"$binder @ $repWCard" else pq"$binder" }})"
+          val rhs = elems.map { case (binder, _, tpe) => narrow(q"$binder", tpe) }
+          mkCtorDtor1(elems, pattern, rhs)
+
+        // case 6: concrete, exactly one public constructor with matching accessible fields
+        case HasUniqueCtor(args) =>
+          val elems = args.map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) }
+          val binder = newTermName(c.fresh("pat"))
+          val pattern = pq"$binder"
+          val rhs = elems.map { case (_, name, tpe) => narrow(q"$binder.$name", tpe) }
+          mkCtorDtor1(elems, pattern, rhs)
+
+        case _ => abort(s"Bad product type $tpe")
+      }
+    }
+  }
 }
 
 class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
@@ -764,104 +988,18 @@ class GenericMacros[C <: Context](val c: C) extends CaseClassMacros {
   }
 
   def mkProductGeneric(tpe: Type): Tree = {
-    def mkProductCases: (CaseDef, CaseDef) = {
-      if(tpe =:= typeOf[Unit])
-        (
-          cq"() => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => ()"
-        )
-      else if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
-        val singleton =
-          tpe match {
-            case SingleType(pre, sym) =>
-              mkAttributedRef(pre, sym)
-            case TypeRef(pre, sym, List()) if sym.isModule =>
-              mkAttributedRef(pre, sym.asModule)
-            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
-              mkAttributedRef(pre, sym.asClass.module)
-            case other =>
-              abort(s"Bad case object-like type $tpe")
-          }
-
-        (
-          cq"_: $tpe => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => $singleton: $tpe"
-        )
-      } else {
-        val sym = tpe.typeSymbol
-        val isCaseClass = sym.asClass.isCaseClass
-        def hasNonGenericCompanionMember(name: String): Boolean = {
-          val mSym = sym.companionSymbol.typeSignature.member(newTermName(name))
-          mSym != NoSymbol && !isNonGeneric(mSym)
-        }
-
-        val binders = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe, isVararg(tpe)) }
-
-        val to =
-          if(isCaseClass || hasNonGenericCompanionMember("unapply")) {
-            val wcard = Star(Ident(nme.WILDCARD))  // like pq"_*" except that it does work
-            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => if (x._4) pq"${x._1} @ $wcard" else pq"${x._1}")})"
-            val rhs =
-              binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((bound, name, tpe, _), acc) =>
-                  tpe match {
-                    case ConstantType(c) =>
-                      q"_root_.shapeless.::($c, $acc)"
-                    case _ =>
-                      q"_root_.shapeless.::($bound, $acc)"
-                  }
-              }
-            cq"$lhs => $rhs"
-          } else {
-            val lhs = newTermName(c.fresh("pat"))
-            val rhs =
-              fieldsOf(tpe).foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((name, tpe), acc) => q"_root_.shapeless.::($lhs.$name, $acc)"
-              }
-            cq"$lhs => $rhs"
-          }
-
-        val from = {
-          val lhs =
-            binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-              case ((bound, _, _, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
-            }
-
-          val rhs = {
-            val ctorArgs = binders.map { case (bound, name, tpe, vararg) =>
-              if (vararg) q"$bound: _*"
-              else
-                tpe match {
-                  case ConstantType(c) =>
-                    q"$c.asInstanceOf[$tpe]"
-                  case _ =>
-                    Ident(bound)
-                }
-            }
-            if(isCaseClass || hasNonGenericCompanionMember("apply"))
-              q"${companionRef(tpe)}(..$ctorArgs)"
-            else
-              q"new $tpe(..$ctorArgs)"
-          }
-
-          cq"$lhs => $rhs"
-        }
-
-        (to, from)
-      }
-    }
-
-    val (toCases, fromCases) = {
-      val (to, from) = mkProductCases
-      (List(to), List(from))
-    }
+    val ctorDtor = CtorDtor(tpe)
+    val (p, ts) = ctorDtor.binding
+    val to = cq""" $p => ${mkHListValue(ts)} """
+    val (rp, rts) = ctorDtor.reprBinding
+    val from = cq""" $rp => ${ctorDtor.construct(rts)} """
 
     val clsName = newTypeName(c.fresh("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
         type Repr = ${reprTypTree(tpe)}
-        def to(p: $tpe): Repr = (p match { case ..$toCases }).asInstanceOf[Repr]
-        def from(p: Repr): $tpe = p match { case ..$fromCases }
+        def to(p: $tpe): Repr = (p match { case $to }).asInstanceOf[Repr]
+        def from(p: Repr): $tpe = p match { case $from }
       }
       new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
     """
