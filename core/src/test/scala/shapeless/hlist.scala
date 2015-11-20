@@ -3087,4 +3087,16 @@ class HListTests {
     )
 
   }
+
+  @Test
+  def testTypeclassInstances {
+    trait F[A]
+    implicit object FInt extends F[Int]
+    implicit object FString extends F[String]
+    
+    assertEquals(HNil, implicitly[TypeClassInstances[F, HNil]].instances)
+    assertEquals(FInt :: HNil, implicitly[TypeClassInstances[F, Int :: HNil]].instances)
+    assertEquals(FString :: FInt :: HNil, implicitly[TypeClassInstances[F, String :: Int :: HNil]].instances)
+    illTyped("implicitly[TypeClassInstances[F, Long :: String :: Int :: HNil]]")
+  }
 }

@@ -2616,4 +2616,34 @@ object hlist {
   }
 
   private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
+
+
+  /**
+   * Typeclass witnessing that all the elements of an HList have instances of the given typeclass.
+   * Courtesy of mpilquist.
+   *
+   * @author Tin Pavlinic
+  */
+  sealed trait TypeClassInstances[F[_], In <: HList] {
+    type Out <: HList
+    def instances: Out
+  }
+
+  object TypeClassInstances {
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = TypeClassInstances[F, In0] {type Out = Out0}
+
+    implicit def hnil[F[_]]: TypeClassInstances.Aux[F, HNil, HNil] = new TypeClassInstances[F, HNil] {
+      type Out = HNil
+      def instances = HNil
+    }
+
+    implicit def hcons[F[_], H, T <: HList](implicit
+                                            headInstance: F[H],
+                                            tailInstances: TypeClassInstances[F, T]
+                                             ): TypeClassInstances.Aux[F, H :: T, F[H] :: tailInstances.Out] = new TypeClassInstances[F, H :: T] {
+      type Out = F[H] :: tailInstances.Out
+
+      def instances = headInstance :: tailInstances.instances
+    }
+  }
 }
