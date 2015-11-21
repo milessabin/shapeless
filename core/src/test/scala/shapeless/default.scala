@@ -66,7 +66,7 @@ class DefaultTests {
     illTyped(" Default[Dummy] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default[Any] ", "could not find implicit value for parameter default: .*")
-    Default[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
+    illTyped(" Default[AnyRef] ", "could not find implicit value for parameter default: .*")
     illTyped(" Default[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
@@ -95,7 +95,7 @@ class DefaultTests {
     illTyped(" Default.AsRecord[Dummy] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default.AsRecord[Any] ", "could not find implicit value for parameter default: .*")
-    Default.AsRecord[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
+    illTyped(" Default.AsRecord[AnyRef] ", "could not find implicit value for parameter default: .*")
     illTyped(" Default.AsRecord[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
@@ -134,7 +134,7 @@ class DefaultTests {
     illTyped(" Default.AsOptions[Dummy] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default.AsOptions[Any] ", "could not find implicit value for parameter default: .*")
-    Default.AsOptions[AnyRef] // this one shouldn't compile - related to https://github.com/milessabin/shapeless/issues/453
+    illTyped(" Default.AsOptions[AnyRef] ", "could not find implicit value for parameter default: .*")
     illTyped(" Default.AsOptions[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
