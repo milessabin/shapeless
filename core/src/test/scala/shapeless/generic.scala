@@ -1084,3 +1084,42 @@ object PrivateCtor {
   Generic[Access.PublicFamily]
   """)
 }
+
+object Thrift {
+  object TProduct {
+    def apply(a: Double, b: String): TProduct = new Immutable(a, b)
+
+    def unapply(tp: TProduct): Option[Product2[Double, String]] = Some(tp)
+
+    //class Immutable(val a: Double, val b: String) extends TProduct
+
+    class Immutable(
+      val a: Double,
+      val b: String,
+      val _passthroughFields: scala.collection.immutable.Map[Short, Byte]
+    ) extends TProduct {
+      def this(
+        a: Double,
+        b: String
+      ) = this(
+        a,
+        b,
+        Map.empty
+      )
+    }
+  }
+
+  trait TProduct extends Product2[Double, String] {
+    def a: Double
+    def b: String
+
+    def _1 = a
+    def _2 = b
+
+    override def productPrefix: String = "TProduct"
+
+    def canEqual(t: Any): Boolean = true
+  }
+
+  Generic[TProduct.Immutable]
+}

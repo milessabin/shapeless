@@ -175,81 +175,11 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
   }
 
   def mkProductGeneric1(tpe: Type, frTpe: Type): Tree = {
-    def mkProductCases: (CaseDef, CaseDef) = {
-      if(appliedType(tpe, List(typeOf[Any])).normalize =:= typeOf[Unit])
-        (
-          cq"() => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => ()"
-        )
-      else if(isCaseObjectLike(tpe.typeSymbol.asClass)) {
-        val singleton =
-          appliedType(tpe, List(typeOf[Any])).normalize match {
-            case SingleType(pre, sym) =>
-              mkAttributedRef(pre, sym)
-            case TypeRef(pre, sym, List()) if sym.isModule =>
-              mkAttributedRef(pre, sym.asModule)
-            case TypeRef(pre, sym, List()) if sym.isModuleClass =>
-              mkAttributedRef(pre, sym.asClass.module)
-            case other =>
-              abort(s"Bad case object-like type $tpe")
-          }
-
-        (
-          cq"x if x eq $singleton => _root_.shapeless.HNil",
-          cq"_root_.shapeless.HNil => $singleton"
-        )
-      } else {
-        val sym = tpe.typeSymbol
-        val isCaseClass = sym.asClass.isCaseClass
-        def hasNonGenericCompanionMember(name: String): Boolean = {
-          val mSym = sym.companionSymbol.typeSignature.member(newTermName(name))
-          mSym != NoSymbol && !isNonGeneric(mSym)
-        }
-
-        val binders = fieldsOf(tpe).map { case (name, tpe) => (newTermName(c.fresh("pat")), name, tpe) }
-
-        val to =
-          if(isCaseClass || hasNonGenericCompanionMember("unapply")) {
-            val lhs = pq"${companionRef(tpe)}(..${binders.map(x => pq"${x._1}")})"
-            val rhs =
-              binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((bound, name, tpe), acc) => q"_root_.shapeless.::($bound, $acc)"
-              }
-            cq"$lhs => $rhs"
-          } else {
-            val lhs = newTermName(c.fresh("pat"))
-            val rhs =
-              fieldsOf(tpe).foldRight(q"_root_.shapeless.HNil": Tree) {
-                case ((name, tpe), acc) => q"_root_.shapeless.::($lhs.$name, $acc)"
-              }
-            cq"$lhs => $rhs"
-          }
-
-        val from = {
-          val lhs =
-            binders.foldRight(q"_root_.shapeless.HNil": Tree) {
-              case ((bound, _, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
-            }
-
-          val rhs = {
-            val ctorArgs = binders.map { case (bound, name, tpe) => Ident(bound) }
-            if(isCaseClass || hasNonGenericCompanionMember("apply"))
-              q"${companionRef(tpe)}(..$ctorArgs)"
-            else
-              q"new $tpe(..$ctorArgs)"
-          }
-
-          cq"$lhs => $rhs"
-        }
-
-        (to, from)
-      }
-    }
-
-    val (toCases, fromCases) = {
-      val (to, from) = mkProductCases
-      (List(to), List(from))
-    }
+    val ctorDtor = CtorDtor(tpe)
+    val (p, ts) = ctorDtor.binding
+    val to = cq""" $p => ${mkHListValue(ts)} """
+    val (rp, rts) = ctorDtor.reprBinding
+    val from = cq""" $rp => ${ctorDtor.construct(rts)} """
 
     val nme = newTypeName(c.fresh)
     val reprTpt = reprTypTree1(tpe, nme)
@@ -265,8 +195,8 @@ class Generic1Macros[C <: Context](val c: C) extends CaseClassMacros {
 
         def mkFrr: Apply1[$frTpe, R] = _root_.shapeless.lazily[Apply1[$frTpe, R]]
 
-        def to[$nme](ft: Apply0[$tpe, $nme]): R[$nme] = ft match { case ..$toCases }
-        def from[$nme](rt: R[$nme]): Apply0[$tpe, $nme] = rt match { case ..$fromCases }
+        def to[$nme](ft: Apply0[$tpe, $nme]): R[$nme] = (ft match { case $to }).asInstanceOf[R[$nme]]
+        def from[$nme](rt: R[$nme]): Apply0[$tpe, $nme] = rt match { case $from }
       }
       type $rnme[$nme] = $reprTpt
       new $clsName(): _root_.shapeless.Generic1.Aux[$tpe, $frTpe, $rnme]
