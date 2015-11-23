@@ -61,7 +61,6 @@ object Witness extends Dynamic {
 
 trait WitnessWith[TC[_]] extends Witness {
   val instance: TC[T]
-  type Out
 }
 
 trait LowPriorityWitnessWith {
@@ -223,17 +222,12 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
         case NullaryMethodType(resTpe) => resTpe
         case other => other
       }).normalize
-    val iOut = iTpe.member(newTypeName("Out")) match {
-      case NoSymbol => definitions.NothingClass
-      case other => other
-    }
 
     q"""
       {
         final class $name extends $parent {
           val instance: $iTpe = $i
           type T = $sTpe
-          type Out = $iOut
           val value: $sTpe = $s
         }
         new $name
