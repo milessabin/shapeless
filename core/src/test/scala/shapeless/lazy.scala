@@ -286,6 +286,13 @@ class LazyStrictTests {
   def testExtractors {
     implicitly[Lazy[Generic[Symbol]]]
     implicitly[Strict[Generic[Symbol]]]
+
+    val x = {
+      case class Leaf[A](value: A)
+      implicitly[Lazy[Generic[Leaf[Int]]]]
+      implicitly[Strict[Generic[Leaf[Int]]]]
+      ()
+    }
   }
 
 
