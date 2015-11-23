@@ -16,14 +16,23 @@
 
 package shapeless
 
-import scala.reflect.runtime.universe._
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
 
 package object test {
   def typed[T](t : => T) {}
 
   def sameTyped[T](t1: => T)(t2: => T) {}
 
-  def showType[T: TypeTag]: String = typeOf[T].dealias.toString
+  def showType[T]: String = macro TestMacros.showTypeNoValue[T]
 
-  def showType[T: TypeTag](t: => T): String = typeOf[T].dealias.toString
+  def showType[T](t: => T): String = macro TestMacros.showType[T]
+}
+
+class TestMacros(val c: blackbox.Context) {
+  import c.universe._
+
+  def showTypeNoValue[T: WeakTypeTag]: c.Expr[String] = reify(weakTypeOf[T].dealias.toString)
+
+  def showType[T: WeakTypeTag](t: c.Expr[T]): c.Expr[String] = reify(weakTypeOf[T].dealias.toString)
 }

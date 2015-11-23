@@ -28,12 +28,14 @@ import scala.reflect.macros.{ whitebox, TypecheckException }
  * Credit: Stefan Zeiger (@StefanZeiger)
  */
 object illTyped {
-  def apply(code: String): Unit = macro applyImplNoExp
-  def apply(code: String, expected: String): Unit = macro applyImpl
+  def apply(code: String): Unit = macro IllTypedMacros.applyImplNoExp
+  def apply(code: String, expected: String): Unit = macro IllTypedMacros.applyImpl
+}
 
-  def applyImplNoExp(c: whitebox.Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
+class IllTypedMacros(val c: whitebox.Context) {
+  def applyImplNoExp(code: c.Expr[String]): c.Expr[Unit] = applyImpl(code, null)
 
-  def applyImpl(c: whitebox.Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+  def applyImpl(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._
 
     val Expr(Literal(Constant(codeStr: String))) = code
