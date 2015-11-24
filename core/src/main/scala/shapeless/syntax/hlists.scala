@@ -167,7 +167,31 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * types in `SL`.
    */
   def removeAll[SL <: HList](implicit removeAll : RemoveAll[L, SL]): removeAll.Out = removeAll(l)
-
+  
+  /**
+   * Returns the union between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * order-preserving multi-set union. If type `T` appears n times in this `HList` and m > n times in `M`, the
+   * resulting `HList` contains the first n elements of type `T` in this `HList`, followed by the last m - n element
+   * of type `T` in `M`.
+   */
+  def union[M <: HList](s: M)(implicit union: Union[L, M]): union.Out = union(l, s)
+  
+  /**
+   * Returns the intersection between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * multiset intersection. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
+   * contains the first m elements of type `T` in this `HList`.
+   * Also available if `M` contains types absent in this `HList`.
+   */
+  def intersect[M <: HList](implicit intersection: Intersection[L, M]): intersection.Out = intersection(l)
+  
+  /**
+   * Returns the difference between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * multiset difference. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
+   * contains the last n - m elements of type `T` in this `HList`.
+   * Also available if `M` contains types absent in this `HList`.
+   */
+  def diff[M <: HList](implicit diff: Diff[L, M]): diff.Out = diff(l)
+  
   /**
    * Reinserts an element `U` into this `HList` to return another `HList` `O`.
    */
