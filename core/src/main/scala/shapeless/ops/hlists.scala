@@ -1145,7 +1145,7 @@ object hlist {
    * Type class supporting `HList` union. In case of duplicate types, this operation is a order-preserving multi-set union.
    * If type `T` appears n times in this `HList` and m > n times in `M`, the resulting `HList` contains the first n elements
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
-   * 
+   *
    * @author Olivier Blanvillain
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
@@ -2624,23 +2624,30 @@ object hlist {
    *
    * @author Tin Pavlinic
   */
-  sealed trait TypeClassInstances[F[_], In <: HList] {
+  sealed trait LiftAll[F[_], In <: HList] {
     type Out <: HList
     def instances: Out
   }
 
-  object TypeClassInstances {
-    type Aux[F[_], In0 <: HList, Out0 <: HList] = TypeClassInstances[F, In0] {type Out = Out0}
+  object LiftAll {
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
 
-    implicit def hnil[F[_]]: TypeClassInstances.Aux[F, HNil, HNil] = new TypeClassInstances[F, HNil] {
+    def apply[F[_]] = new Curried[F]
+    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+
+
+
+
+    implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
       type Out = HNil
       def instances = HNil
     }
 
     implicit def hcons[F[_], H, T <: HList](implicit
                                             headInstance: F[H],
-                                            tailInstances: TypeClassInstances[F, T]
-                                             ): TypeClassInstances.Aux[F, H :: T, F[H] :: tailInstances.Out] = new TypeClassInstances[F, H :: T] {
+                                            tailInstances: LiftAll[F, T]
+                                             ): LiftAll.Aux[F, H :: T, F[H] :: tailInstances.Out] = new LiftAll[F, H :: T] {
       type Out = F[H] :: tailInstances.Out
 
       def instances = headInstance :: tailInstances.instances
