@@ -2636,21 +2636,16 @@ object hlist {
     def apply[F[_]] = new Curried[F]
     def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
 
-
-
-
     implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
       type Out = HNil
       def instances = HNil
     }
 
-    implicit def hcons[F[_], H, T <: HList](implicit
-                                            headInstance: F[H],
-                                            tailInstances: LiftAll[F, T]
-                                             ): LiftAll.Aux[F, H :: T, F[H] :: tailInstances.Out] = new LiftAll[F, H :: T] {
-      type Out = F[H] :: tailInstances.Out
-
-      def instances = headInstance :: tailInstances.instances
+    implicit def hcons[F[_], H, T <: HList]
+      (implicit headInstance: F[H], tailInstances: LiftAll[F, T]): Aux[F, H :: T, F[H] :: tailInstances.Out] =
+        new LiftAll[F, H :: T] {
+          type Out = F[H] :: tailInstances.Out
+          def instances = headInstance :: tailInstances.instances
     }
   }
 }
