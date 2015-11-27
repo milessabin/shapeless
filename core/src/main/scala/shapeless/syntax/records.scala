@@ -81,6 +81,9 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    */
   def -[V, Out <: HList](k: Witness)(implicit remover : Remover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
 
+  /**
+   * Returns the union of this record and another record.
+   */
   def merge[M <: HList](m: M)(implicit merger: Merger[L, M]): merger.Out = merger(l, m)
 
   /**
@@ -95,7 +98,7 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def keys(implicit keys: Keys[L]): keys.Out = keys()
 
   /**
-   * Returns an `HList` of the values of this record.
+   * Returns a `HList` of the values of this record.
    */
   def values(implicit values: Values[L]): values.Out = values(l)
 

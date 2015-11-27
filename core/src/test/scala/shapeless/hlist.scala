@@ -1834,6 +1834,105 @@ class HListTests {
   }
 
   @Test
+  def testUnion {
+    type L1 = String :: Long :: HNil
+    val l1: L1 = "foo" :: 3L :: HNil
+
+    type L2 = Int :: String :: Boolean :: HNil
+    val l2: L2 = 2 :: "bar" :: true :: HNil
+
+    type L3 = Int :: Int :: HNil
+    val l3: L3 = 1 :: 2 :: HNil
+
+    type L4 = Int :: Int :: Int :: HNil
+    val l4: L4 = 4 :: 5 :: 6 :: HNil
+
+    val lnil = l1.union(HNil)
+    assertTypedEquals[L1](l1, lnil)
+
+    val lself = l1.union(l1)
+    assertTypedEquals[L1](l1, lself)
+
+    val l12 = l1.union(l2)
+    assertTypedEquals[String :: Long :: Int :: Boolean :: HNil]("foo" :: 3L :: 2 :: true :: HNil, l12)
+
+    val l21 = l2.union(l1)
+    assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](2 :: "bar" :: true :: 3L :: HNil, l21)
+
+    val ldup1 = (l3).union(l4)
+    assertTypedEquals[Int :: Int :: Int :: HNil](1 :: 2 :: 6 :: HNil, ldup1)
+
+    val ldup2 = (l4).union(l3)
+    assertTypedEquals[Int :: Int :: Int :: HNil](4 :: 5 :: 6 :: HNil, ldup2)
+  }
+
+  @Test
+  def testIntersection {
+    type L1 = String :: Long :: Int :: HNil
+    val l1: L1 = "foo" :: 1L :: 3 :: HNil
+
+    type L2 = Int :: String :: Boolean :: HNil
+    val l2: L2 = 2 :: "bar" :: true :: HNil
+
+    type L3 = Int :: String :: Int :: HNil
+    val l3: L3 = 4 :: "foo" :: 5 :: HNil
+
+    val lnil = l1.intersect[HNil]
+    assertTypedEquals[HNil](HNil, lnil)
+
+    val lself = l1.intersect[L1]
+    assertTypedEquals[L1](l1, lself)
+
+    val l12 = l1.intersect[L2]
+    assertTypedEquals[String :: Int :: HNil]("foo" :: 3 :: HNil, l12)
+
+    val l21 = l2.intersect[L1]
+    assertTypedEquals[Int :: String :: HNil](2 :: "bar" :: HNil, l21)
+
+    val ldup1 = (l3).intersect[Int :: HNil]
+    assertTypedEquals[Int :: HNil](4 :: HNil, ldup1)
+
+    val ldup2 = (l3).intersect[Int :: Int :: HNil]
+    assertTypedEquals[Int :: Int :: HNil](4 :: 5 :: HNil, ldup2)
+
+    val ldup3 = (l3).intersect[String :: HNil]
+    assertTypedEquals[String :: HNil]("foo" :: HNil, ldup3)
+  }
+
+  @Test
+  def testDiff {
+    type L1 = String :: Long :: Int :: HNil
+    val l1: L1 = "foo" :: 1L :: 3 :: HNil
+
+    type L2 = Int :: String :: Boolean :: HNil
+    val l2: L2 = 2 :: "bar" :: true :: HNil
+
+    type L3 = Int :: Boolean :: Int :: HNil
+    val l3: L3 = 4 :: false :: 5 :: HNil
+
+    val lnil = l1.diff[HNil]
+    assertTypedEquals[L1](l1, lnil)
+
+    val lself = l1.diff[L1]
+    assertTypedEquals[HNil](HNil, lself)
+
+    val l12 = l1.diff[L2]
+    assertTypedEquals[Long :: HNil](1L :: HNil, l12)
+
+    val l21 = l2.diff[L1]
+    assertTypedEquals[Boolean :: HNil](true :: HNil, l21)
+
+    val ldup1 = (l3).diff[Int :: HNil]
+    assertTypedEquals[Boolean :: Int :: HNil](false :: 5 :: HNil, ldup1)
+
+    val ldup2 = (l3).diff[Int :: Int :: HNil]
+    assertTypedEquals[Boolean :: HNil](false :: HNil, ldup2)
+
+    val ldup3 = (l3).diff[Boolean :: HNil]
+    assertTypedEquals[Int :: Int :: HNil](4 :: 5 :: HNil, ldup3)
+  }
+
+  @Test
   def testReinsert {
     type L = Int :: Boolean :: String :: HNil
 
@@ -2987,5 +3086,19 @@ class HListTests {
       range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
+  }
+
+  @Test
+  def testLiftAll {
+    trait F[A]
+    implicit object FInt extends F[Int]
+    implicit object FString extends F[String]
+
+    assertEquals(HNil, implicitly[LiftAll[F, HNil]].instances)
+    assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :: HNil]].instances)
+    assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :: Int :: HNil]].instances)
+    illTyped("implicitly[LiftAll[F, Long :: String :: Int :: HNil]]")
+
+    assertEquals(FInt :: HNil, LiftAll[F](1 :: HNil).instances)
   }
 }
