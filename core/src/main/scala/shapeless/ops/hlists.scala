@@ -1145,7 +1145,7 @@ object hlist {
    * Type class supporting `HList` union. In case of duplicate types, this operation is a order-preserving multi-set union.
    * If type `T` appears n times in this `HList` and m > n times in `M`, the resulting `HList` contains the first n elements
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
-   * 
+   *
    * @author Olivier Blanvillain
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
@@ -2616,4 +2616,36 @@ object hlist {
   }
 
   private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
+
+
+  /**
+   * Typeclass witnessing that all the elements of an HList have instances of the given typeclass.
+   * Courtesy of mpilquist.
+   *
+   * @author Tin Pavlinic
+  */
+  sealed trait LiftAll[F[_], In <: HList] {
+    type Out <: HList
+    def instances: Out
+  }
+
+  object LiftAll {
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
+
+    def apply[F[_]] = new Curried[F]
+    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+
+    implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
+      type Out = HNil
+      def instances = HNil
+    }
+
+    implicit def hcons[F[_], H, T <: HList]
+      (implicit headInstance: F[H], tailInstances: LiftAll[F, T]): Aux[F, H :: T, F[H] :: tailInstances.Out] =
+        new LiftAll[F, H :: T] {
+          type Out = F[H] :: tailInstances.Out
+          def instances = headInstance :: tailInstances.instances
+    }
+  }
 }

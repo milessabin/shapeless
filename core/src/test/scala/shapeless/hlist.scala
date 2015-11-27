@@ -3087,4 +3087,18 @@ class HListTests {
     )
 
   }
+
+  @Test
+  def testLiftAll {
+    trait F[A]
+    implicit object FInt extends F[Int]
+    implicit object FString extends F[String]
+
+    assertEquals(HNil, implicitly[LiftAll[F, HNil]].instances)
+    assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :: HNil]].instances)
+    assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :: Int :: HNil]].instances)
+    illTyped("implicitly[LiftAll[F, Long :: String :: Int :: HNil]]")
+
+    assertEquals(FInt :: HNil, LiftAll[F](1 :: HNil).instances)
+  }
 }
