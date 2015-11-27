@@ -144,7 +144,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       }
       def describe = parents map(_.describe) mkString " with "
     }
-  
+
   /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT: Typeable[T]): Typeable[Option[T]] =
     new Typeable[Option[T]]{
@@ -196,22 +196,20 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     }
 
   /** Typeable instance for `GenTraversable`.
-   *  Note that the contents be will tested for conformance to the element type.
-   *
-   *  In Scala 2.10.x Lazy is required to prevent spurious divergence wrt
-   *  the instance for Any.
-   */
+   *  Note that the contents be will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Lazy[Typeable[T]]): Typeable[CC[T]] =
+    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with GenTraversable[T]] =
+    // Nb. the apparently redundant `with GenTraversable[T]` is a workaround for a
+    // Scala 2.10.x bug which causes conflicts between this instance and `anyTypeable`.
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =
         if(t == null) None
         else if(mCC.runtimeClass isAssignableFrom t.getClass) {
           val cc = t.asInstanceOf[CC[Any]]
-          if(cc.forall(x => castT.value.cast(x).isDefined)) Some(t.asInstanceOf[CC[T]])
+          if(cc.forall(x => castT.cast(x).isDefined)) Some(t.asInstanceOf[CC[T]])
           else None
         } else None
-      def describe = s"${mCC.runtimeClass.getSimpleName}[${castT.value.describe}]"
+      def describe = s"${mCC.runtimeClass.getSimpleName}[${castT.describe}]"
     }
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
