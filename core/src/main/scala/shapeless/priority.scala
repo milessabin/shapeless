@@ -37,8 +37,9 @@ object Priority extends LazyExtensionCompanion {
   def apply[H, L](implicit lzPriority: Lazy[Priority[H, L]]): Priority[H, L] =
     lzPriority.value
 
+  def id = "priority"
 
-  implicit def init[H, L]: Priority[H, L] = macro initImpl
+  implicit def init[H, L]: Priority[H, L] = macro initImpl[Priority[H, L]]
 
   def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type } =
     new PriorityLookupExtension {
@@ -128,7 +129,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
       copy(priorityLookups = priorityLookups.filter(_ != TypeWrapper(tpe)))
   }
 
-  def id = "priority"
+  def id = Priority.id
 
   def initialState = ThisState(Nil)
 

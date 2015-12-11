@@ -271,9 +271,9 @@ trait ComposedDeriver[TC[_] <: {def msg(n: Int): String}] {
 
   implicit def mkTC[T]
    (implicit
-     priority: Cached[Strict[Priority[TC[T], MkTC[T]]]]
+     priority: Cached[Priority[TC[T], MkTC[T]]]
    ): TC[T] =
-    priority.value.value.fold(identity)(_.tc)
+    priority.value.fold(identity)(_.tc)
 }
 
 
@@ -282,9 +282,9 @@ object SimpleTCDeriver extends SimpleDeriver[TC] {
 
   implicit def mkTC[T]
    (implicit
-     priority: Cached[Strict[Priority[TC[T], MkTC[T]]]]
+     priority: Cached[Priority[TC[T], MkTC[T]]]
    ): TC[T] =
-    priority.value.value.fold(identity)(_.tc)
+    priority.value.fold(identity)(_.tc)
 }
 
 object ComposedTCDeriver extends ComposedDeriver[TC] {
@@ -296,9 +296,9 @@ object SimpleTC0Deriver extends SimpleDeriver[TC0] {
 
   implicit def mkTC[T]
    (implicit
-     priority: Cached[Strict[Priority[Mask[Witness.`"TC0.defaultTC"`.T, TC0[T]], MkTC[T]]]]
+     priority: Cached[Priority[Mask[Witness.`"TC0.defaultTC"`.T, TC0[T]], MkTC[T]]]
    ): TC0[T] =
-    priority.value.value.fold(_.value)(_.tc)
+    priority.value.fold(_.value)(_.tc)
 }
 
 

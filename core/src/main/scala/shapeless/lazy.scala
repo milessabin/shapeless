@@ -276,15 +276,44 @@ trait LazyExtension {
 trait LazyExtensionCompanion {
   def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type }
 
-  def initImpl(c: whitebox.Context): Nothing = {
-    val ctx = LazyMacros.dcRef.getOrElse(
-      c.abort(c.enclosingPosition, "")
-    )
+  def id: String
 
-    val extension = instantiate(ctx)
-    ctx.State.addExtension(extension)
+  def initImpl[T](c: whitebox.Context)(implicit tag: c.WeakTypeTag[T]): c.Tree = {
+    import c.universe._
+    import c.ImplicitCandidate
 
-    c.abort(c.enclosingPosition, s"Added extension ${extension.id}")
+    val tpe = (c.openImplicits.headOption, tag.tpe.dealias) match {
+      case (Some(ImplicitCandidate(_, _, tpe, _)), _) =>
+        tpe.map(_.dealias)
+      case (None, tpe) =>
+        tpe
+      case _ =>
+        c.abort(c.enclosingPosition, s"Bad materialization ${c.openImplicits.head}")
+    }
+
+    LazyMacros.dcRef match {
+      case None =>
+        val res = c.inferImplicitValue(appliedType(typeOf[Strict[_]].typeConstructor, tpe))
+        if (res == EmptyTree)
+          c.abort(c.enclosingPosition, s"Can't find an implicit $tpe")
+        else
+          q"$res.value"
+      case Some(ctx0) =>
+        val ctx = DerivationContext.establish(ctx0, c)
+        if (ctx.State.hasExtension(id)) {
+          val res0 = ctx.State.deriveInstance(
+            tpe,
+            root = false,
+            (tree, actualType) => q"_root_.shapeless.Strict.apply[$actualType]($tree)"
+          )
+
+          q"$res0.value"
+        } else {
+          val extension = instantiate(ctx)
+          ctx.State.addExtension(extension)
+          c.abort(c.enclosingPosition, s"Added extension ${extension.id}")
+        }
+    }
   }
 }
 
@@ -360,6 +389,9 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
 
     private var current = Option.empty[State]
     private var addExtensions = List.empty[ExtensionWithState[ctx.type, _]]
+
+    def hasExtension(id: String): Boolean =
+      current.exists(_.extensions.exists(_.extension.id == id))
 
     def addExtension(extension: LazyExtension { type Ctx = ctx0.type }): Unit = {
       addExtensions = ExtensionWithState(extension) :: addExtensions
