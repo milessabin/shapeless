@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin 
+ * Copyright (c) 2012-14, 2016 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ object UnfoldExamples extends App {
         fsn : Case.Aux[Succ[N], (FSN, Succ[Succ[N]])],
         sum : Sum.Aux[FN, FSN, FSSN],
         fssn : Witness.Aux[FSSN]) =
-      at[Succ[Succ[N]]](_ => (fssn.value, Succ[Succ[Succ[N]]]))
+      at[Succ[Succ[N]]](_ => ((fssn.value: FSSN), Succ[Succ[Succ[N]]]))
   }
 
   object toInt extends Poly1 {

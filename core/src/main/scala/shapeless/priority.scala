@@ -40,7 +40,7 @@ object Priority extends LazyExtensionCompanion {
 
   implicit def init[H, L]: Priority[H, L] = macro initImpl
 
-  def instantiate(ctx0: DerivationContext) =
+  def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type } =
     new PriorityLookupExtension {
       type Ctx = ctx0.type
       val ctx: ctx0.type = ctx0
@@ -75,7 +75,7 @@ object Mask {
 }
 
 
-trait PriorityTypes {
+trait PriorityTypes extends MacroCompatLite {
   type C <: whitebox.Context
   val c: C
 
@@ -171,7 +171,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
               (tree0, actualTpe)
             else {
               val mTpe = internal.constantType(Constant(mask))
-              (q"_root_.shapeless.Mask.mkMask[$mTpe, $actualTpe]($tree0)", appliedType(maskTpe, List(mTpe, actualTpe)))
+              (q"_root_.shapeless.Mask.mkMask[$mTpe, $actualTpe]($tree0)", c.universe.appliedType(maskTpe, List(mTpe, actualTpe)))
             }
 
           val extState2 = extState1
@@ -180,7 +180,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
           (
             update(state2, extState2),
             q"_root_.shapeless.Priority.High[$actualType]($tree)",
-            appliedType(highPriorityTpe, List(actualType))
+            c.universe.appliedType(highPriorityTpe, List(actualType))
           )
         }
     }
@@ -189,7 +189,7 @@ trait PriorityLookupExtension extends LazyExtension with PriorityTypes {
       ctx.derive(state)(lowInstTpe)
         .right.toOption
         .map{case (state1, inst) =>
-          (state1, q"_root_.shapeless.Priority.Low[${inst.actualTpe}](${inst.ident})", appliedType(lowPriorityTpe, List(inst.actualTpe)))
+          (state1, q"_root_.shapeless.Priority.Low[${inst.actualTpe}](${inst.ident})", c.universe.appliedType(lowPriorityTpe, List(inst.actualTpe)))
         }
 
     high.orElse(low) .map {case (state1, extInst, actualTpe) =>

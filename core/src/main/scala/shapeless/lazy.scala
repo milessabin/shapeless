@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-15 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,6 +163,7 @@ object Strict {
   implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
 }
 
+@macrocompat.bundle
 class LazyMacros(val c: whitebox.Context) {
   import c.universe._
   import c.ImplicitCandidate
@@ -212,24 +213,19 @@ object LazyMacros {
       c.universe.asInstanceOf[scala.tools.nsc.Global].analyzer.resetImplicits()
 
     try {
-      dc.State.deriveInstance(tpe, root, mkInst)
+      // BACKPORT: scalac 2.11 doesn't need these asInstanceOf's
+      dc.State.deriveInstance(
+        tpe.asInstanceOf[dc.c.universe.Type],
+        root,
+        mkInst.asInstanceOf[(dc.c.universe.Tree, dc.c.universe.Type) => dc.c.universe.Tree]
+      ).asInstanceOf[c.Tree]
     } finally {
       if(root) dcRef = None
     }
   }
 }
 
-object DerivationContext {
-  type Aux[C] = DerivationContext { val c: C }
-
-  def apply(c0: whitebox.Context): Aux[c0.type] =
-    new DerivationContext {
-      val c: c0.type = c0
-    }
-
-  def establish(dc: DerivationContext, c0: whitebox.Context): Aux[c0.type] =
-    dc.asInstanceOf[Aux[c0.type]]
-}
+object DerivationContext extends DerivationContextCreator
 
 trait LazyExtension {
   type Ctx <: DerivationContext
@@ -292,6 +288,7 @@ trait LazyExtensionCompanion {
   }
 }
 
+@macrocompat.bundle
 trait LazyDefinitions {
   val c: whitebox.Context
 
@@ -353,6 +350,7 @@ trait LazyDefinitions {
 
 }
 
+@macrocompat.bundle
 trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
   import c.universe._
 
@@ -401,7 +399,10 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
           val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
           current = if (root) None else Some(state)
           if (root) {
-            val valNme = TermName(c.freshName)
+            // BACKPORT: Requires 2.11+, throws exceptions during constructors phase
+            // can't compile examples' basecopy and core test's generic
+          //val valNme = TermName(c.freshName)
+            val valNme = TermName(c.freshName("inst"))
             q"""
             val $valNme: $actualType = $tree
             ${mkInst(q"$valNme", actualType)}

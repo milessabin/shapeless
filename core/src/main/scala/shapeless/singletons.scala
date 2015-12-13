@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-15 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,6 +110,7 @@ object Widen {
   implicit def materialize[T, Out]: Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
 }
 
+@macrocompat.bundle
 trait SingletonTypeUtils extends ReprTypes {
   import c.universe.{ Try => _, _ }
   import internal._, decorators._
@@ -201,6 +202,7 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 }
 
+@macrocompat.bundle
 class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal._
@@ -315,7 +317,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
         val parent = weakTypeOf[WitnessWith[({ type λ[X] = TC2[S, X] })#λ]].map {
           case TypeRef(prefix, sym, args) if sym.isFreeType =>
-            typeRef(NoPrefix, tc2.typeSymbol, args)
+            internal.typeRef(NoPrefix, tc2.typeSymbol, args)
           case tpe => tpe
         }
 

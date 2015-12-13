@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-14, 2016 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,8 +273,7 @@ class SingletonTypesTests {
     val wFoo = Witness(Foo)
     val wBar = Witness(bar)
 
-    typed[Foo.type](wFoo.value)
-    typed[bar.type](wBar.value)
+    // Note: Further tests in SingletonTypes211Tests
 
     val cFoo = convert(Foo)
     val cBar = convert(bar)
@@ -287,34 +286,6 @@ class SingletonTypesTests {
 
     sameTyped(bcFoo)(Witness(Foo))
     sameTyped(bcBar)(Witness(bar))
-  }
-
-  class PathDependentSingleton1 {
-    val o: AnyRef = new Object {}
-    val wO = Witness(o)
-    type OT = wO.T
-    implicitly[OT =:= o.type]
-
-    val x0: OT = wO.value
-    val x1: o.type = wO.value
-
-    val x2 = wO.value
-    typed[o.type](x2)
-    typed[OT](x2)
-  }
-
-  object PathDependentSingleton2 {
-    val o: AnyRef = new Object {}
-    val wO = Witness(o)
-    type OT = wO.T
-    implicitly[OT =:= o.type]
-
-    val x0: OT = wO.value
-    val x1: o.type = wO.value
-
-    val x2 = wO.value
-    typed[o.type](x2)
-    typed[OT](x2)
   }
 
   @Test

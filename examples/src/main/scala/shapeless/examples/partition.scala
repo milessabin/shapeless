@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14 Miles Sabin
+ * Copyright (c) 2012-14, 2016 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ object ADTPartitionExample extends App {
    * Partition a list into a record of lists for each constructor.
    */
   def partitionRecord[A, C <: Coproduct, Out <: HList](as: List[A])
-    (implicit gen: LabelledGeneric.Aux[A, C], partitioner: Partitioner.Aux[C, Out]) =
+    (implicit gen: LabelledGeneric.Aux[A, C], partitioner: Partitioner.Aux[C, Out]): Out =
       partitioner(as.map(gen.to))
 
   import ADTPartitionExampleTypes._

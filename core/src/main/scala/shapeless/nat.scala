@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,8 +72,16 @@ object Nat extends Nats {
   implicit def natOps[N <: Nat](n : N) : NatOps[N] = new NatOps(n)
 }
 
-class NatMacros(val c: whitebox.Context) extends NatMacroDefns
+@macrocompat.bundle
+class NatMacros(val c: whitebox.Context) extends NatMacroDefns {
+  import c.universe._
 
+  // BACKPORT: No need to hand-foward in 2.11+ (macro-compat bug milessabin/macro-compat#47)
+  def materializeSingleton(i: Tree): Tree = materializeSingletonFn(i)
+  def materializeWidened(i: Tree): Tree = materializeWidenedFn(i)
+}
+
+@macrocompat.bundle
 trait NatMacroDefns {
   val c: whitebox.Context
   import c.universe._
@@ -100,7 +108,7 @@ trait NatMacroDefns {
     mkNatTpt(n, Ident(_0Sym))
   }
 
-  def materializeSingleton(i: Tree): Tree = {
+  def materializeSingletonFn(i: Tree): Tree = {
     val natTpt = mkNatTpt(i)
     val moduleName = TermName(c.freshName("nat_"))
 
@@ -110,7 +118,7 @@ trait NatMacroDefns {
     """
   }
 
-  def materializeWidened(i: Tree): Tree = {
+  def materializeWidenedFn(i: Tree): Tree = {
     val natTpt = mkNatTpt(i)
 
     q""" new $natTpt """

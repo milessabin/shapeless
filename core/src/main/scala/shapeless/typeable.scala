@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,7 +335,8 @@ object TypeCase {
   }
 }
 
-class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
+@macrocompat.bundle
+class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils with TypeableMacrosMixin {
   import c.universe._
   import internal._
 
@@ -347,17 +348,25 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
     val AC = definitions.AnyClass
     val NC = definitions.NothingClass
 
-    val dealiased = tpe.dealias
+    // BACKPORT: Simple .dealias works under 2.11+
+  //val dealiased = tpe.dealias
+    val dealiased = tpe.dealiasForExistentialType
+
     dealiased match {
-      case TypeRef(_, NC, _) =>
+      // BACKPORT: In 2.11+ NC isn't volatile
+    //case TypeRef(_, NC, _) =>
+      case TypeRef(_, nc, _) if nc == NC =>
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
-      case ExistentialType(quantified, underlying) =>
-        val tArgs = dealiased.typeArgs
+      case ExistentialType(_, underlying) =>
+        // BACKPORT: Simple .typeArgs works under 2.11+
+      //val tArgs = dealiased.typeArgs
+        val tArgs = dealiased.typeArgsForExistentialType
         val normalized = appliedType(dealiased.typeConstructor, tArgs)
 
-        if(normalized =:= dealiased)
-          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+        // BACKPORT: This is only true under 2.11+
+      //if(normalized =:= dealiased)
+      //  c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
 
         val normalizedTypeable = c.inferImplicitValue(appliedType(typeableTpe, List(normalized)))
         if(normalizedTypeable == EmptyTree)

@@ -72,8 +72,8 @@ being [good candidates to take on][lowhangingfruit]. No contribution is too smal
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
-Central. Snapshots of the master and scala-2.10.x branches are built using [Travis CI][ci] and automatically published
-to the Sonatype OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
+Central. Snapshots of the master branch are built using [Travis CI][ci] and automatically published to the Sonatype
+OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
 
 ```scala
 resolvers ++= Seq(
@@ -179,10 +179,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.8 or later, and its master branch is built with Scala 2.11.7 by default. To build
-with Scala 2.10.x you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are
-made against master and Scala 2.11.7 and merged into the scala-2.10.x branch with only the minimal changes needed for
-forwards compatibility.
+shapeless is built with SBT 0.13.9 or later, and its master branch is built with Scala 2.11.7 by default but also
+cross-builds for 2.10.6 and 2.12.x.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 

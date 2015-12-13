@@ -1,17 +1,20 @@
 package shapeless
 
+import scala.annotation.{ Annotation => saAnnotation }
 import org.junit.Test
 import shapeless.test.illTyped
 
 object AnnotationTestsDefinitions {
 
-  case class First()
-  case class Second(i: Int, s: String)
+  // BACKPORT: No need to extend scala.annotation.Annotation in 2.11+
 
-  case class Other()
-  case class Last(b: Boolean)
+  case class First() extends saAnnotation
+  case class Second(i: Int, s: String) extends saAnnotation
 
-  case class Unused()
+  case class Other() extends saAnnotation
+  case class Last(b: Boolean) extends saAnnotation
+
+  case class Unused() extends saAnnotation
 
   @Other case class CC(
     @First i: Int,

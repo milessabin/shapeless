@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-14, 2016 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,8 @@ class TypeOperatorTests {
       res
     }
 
-    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
+    // Note: Slightly different method signature in TypeOperator211Tests
+    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[U0] = {
       val res: Option[the.`Bar[T]`.U] = None
       res
     }
