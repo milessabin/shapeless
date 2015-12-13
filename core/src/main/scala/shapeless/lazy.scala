@@ -179,7 +179,7 @@ class LazyMacros(val c: whitebox.Context) {
       q"null.asInstanceOf[_root_.shapeless.Strict[Nothing]]"
     )
 
-  def mkImpl[I](mkInst: (c.Tree, c.Type) => c.Tree, nullInst: => c.Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
+  def mkImpl[I](mkInst: (Tree, Type) => Tree, nullInst: => Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
     (c.openImplicits.headOption, iTag.tpe.dealias) match {
       case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
         LazyMacros.deriveInstance(c)(tpe.map(_.dealias), mkInst)

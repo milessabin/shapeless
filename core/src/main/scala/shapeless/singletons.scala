@@ -163,7 +163,7 @@ trait SingletonTypeUtils extends ReprTypes {
     }
   }
 
-  def parseLiteralType(typeStr: String): Option[c.Type] =
+  def parseLiteralType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
       checked = c.typecheck(parsed, silent = true)
@@ -171,23 +171,23 @@ trait SingletonTypeUtils extends ReprTypes {
       tpe <- SingletonType.unapply(checked)
     } yield tpe
 
-  def parseStandardType(typeStr: String): Option[c.Type] =
+  def parseStandardType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
       checked = c.typecheck(parsed, silent = true)
       if checked.nonEmpty
     } yield checked.tpe
 
-  def parseType(typeStr: String): Option[c.Type] =
+  def parseType(typeStr: String): Option[Type] =
     parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
-  def typeCarrier(tpe: c.Type) =
+  def typeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe }")
 
-  def fieldTypeCarrier(tpe: c.Type) =
+  def fieldTypeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
 
-  def mkTypeCarrier(tree:c.Tree) = {
+  def mkTypeCarrier(tree: Tree) = {
     val carrier = c.typecheck(tree, mode = c.TYPEmode).tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
@@ -339,7 +339,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     }
   }
 
-  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+  def witnessTypeImpl(tpeSelector: Tree): Tree = {
     val q"${tpeString: String}" = tpeSelector
     val tpe =
       parseLiteralType(tpeString)
