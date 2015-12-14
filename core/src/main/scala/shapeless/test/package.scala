@@ -32,7 +32,7 @@ package object test {
 class TestMacros(val c: blackbox.Context) {
   import c.universe._
 
-  def showTypeNoValue[T: WeakTypeTag]: c.Expr[String] = reify(weakTypeOf[T].dealias.toString)
+  def showTypeNoValue[T: WeakTypeTag]: Tree = q"${weakTypeOf[T].dealias.toString}"
 
-  def showType[T: WeakTypeTag](t: c.Expr[T]): c.Expr[String] = reify(weakTypeOf[T].dealias.toString)
+  def showType[T: WeakTypeTag](t: Tree): Tree = showTypeNoValue[T]
 }

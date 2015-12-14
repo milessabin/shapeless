@@ -36,7 +36,7 @@ object Witness extends Dynamic {
 
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
-  implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl[T]
+  implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl
 
   def mkWitness[T0](value0: T0): Aux[T0] =
     new Witness {
@@ -65,14 +65,14 @@ trait WitnessWith[TC[_]] extends Witness {
 
 trait LowPriorityWitnessWith {
   implicit def apply2[H, TC2[_ <: H, _], S <: H, T](t: T): WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T] =
-    macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S, T]
+    macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S]
 }
 
 object WitnessWith extends LowPriorityWitnessWith {
   type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0  }
   type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
 
-  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
+  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC]
 }
 
 /**
@@ -163,7 +163,7 @@ trait SingletonTypeUtils extends ReprTypes {
     }
   }
 
-  def parseLiteralType(typeStr: String): Option[c.Type] =
+  def parseLiteralType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
       checked = c.typecheck(parsed, silent = true)
@@ -171,23 +171,23 @@ trait SingletonTypeUtils extends ReprTypes {
       tpe <- SingletonType.unapply(checked)
     } yield tpe
 
-  def parseStandardType(typeStr: String): Option[c.Type] =
+  def parseStandardType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
       checked = c.typecheck(parsed, silent = true)
       if checked.nonEmpty
     } yield checked.tpe
 
-  def parseType(typeStr: String): Option[c.Type] =
+  def parseType(typeStr: String): Option[Type] =
     parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
-  def typeCarrier(tpe: c.Type) =
+  def typeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe }")
 
-  def fieldTypeCarrier(tpe: c.Type) =
+  def fieldTypeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
 
-  def mkTypeCarrier(tree:c.Tree) = {
+  def mkTypeCarrier(tree: Tree) = {
     val carrier = c.typecheck(tree, mode = c.TYPEmode).tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
@@ -269,8 +269,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     mkWitness(tpe, extractSingletonValue(tpe))
   }
 
-  def extractResult[T](t: Expr[T])(mkResult: (Type, Tree) => Tree): Tree =
-    (t.actualType, t.tree) match {
+  def extractResult(t: Tree)(mkResult: (Type, Tree) => Tree): Tree =
+    (t.tpe, t.tree) match {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
@@ -290,7 +290,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable reference value")
     }
 
-  def convertImpl[T](t: Expr[T]): Tree = extractResult(t)(mkWitness)
+  def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
 
   def inferInstance(tci: Type): Tree = {
     val i = c.inferImplicitValue(tci)
@@ -299,7 +299,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     i
   }
 
-  def convertInstanceImpl1[TC[_], T](t: Expr[T])
+  def convertInstanceImpl1[TC[_]](t: Tree)
     (implicit tcTag: WeakTypeTag[TC[_]]): Tree =
       extractResult(t) { (sTpe, value) =>
         val tc = tcTag.tpe.typeConstructor
@@ -310,7 +310,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         mkWitnessWith(parent, sTpe, value, i)
       }
 
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](t: Expr[T])
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H](t: Tree)
     (implicit tc2Tag: WeakTypeTag[TC2[_, _]], sTag: WeakTypeTag[S]): Tree =
       extractResult(t) { (sTpe, value) =>
         val tc2 = tc2Tag.tpe.typeConstructor
@@ -327,10 +327,10 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         mkWitnessWith(parent, sTpe, value, i)
       }
 
-  def mkSingletonOps(t: Expr[Any]): Tree =
+  def mkSingletonOps(t: Tree): Tree =
     extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
 
-  def narrowSymbol[S <: String : WeakTypeTag](t: Expr[scala.Symbol]): Tree = {
+  def narrowSymbol[S <: String : WeakTypeTag](t: Tree): Tree = {
     (weakTypeOf[S], t.tree) match {
       case (ConstantType(Constant(s1: String)), LiteralSymbol(s2)) if s1 == s2 =>
         mkSingletonSymbol(s1)
@@ -339,7 +339,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     }
   }
 
-  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+  def witnessTypeImpl(tpeSelector: Tree): Tree = {
     val q"${tpeString: String}" = tpeSelector
     val tpe =
       parseLiteralType(tpeString)

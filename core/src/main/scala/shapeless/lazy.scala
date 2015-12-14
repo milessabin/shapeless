@@ -179,7 +179,7 @@ class LazyMacros(val c: whitebox.Context) {
       q"null.asInstanceOf[_root_.shapeless.Strict[Nothing]]"
     )
 
-  def mkImpl[I](mkInst: (c.Tree, c.Type) => c.Tree, nullInst: => c.Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
+  def mkImpl[I](mkInst: (Tree, Type) => Tree, nullInst: => Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
     (c.openImplicits.headOption, iTag.tpe.dealias) match {
       case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
         LazyMacros.deriveInstance(c)(tpe.map(_.dealias), mkInst)
@@ -220,16 +220,15 @@ object LazyMacros {
 }
 
 object DerivationContext {
-  type Aux[C0] = DerivationContext { type C = C0 }
+  type Aux[C] = DerivationContext { val c: C }
 
   def apply(c0: whitebox.Context): Aux[c0.type] =
     new DerivationContext {
-      type C = c0.type
-      val c: C = c0
+      val c: c0.type = c0
     }
 
   def establish(dc: DerivationContext, c0: whitebox.Context): Aux[c0.type] =
-    dc.asInstanceOf[DerivationContext { type C = c0.type }]
+    dc.asInstanceOf[Aux[c0.type]]
 }
 
 trait LazyExtension {
@@ -294,8 +293,7 @@ trait LazyExtensionCompanion {
 }
 
 trait LazyDefinitions {
-  type C <: whitebox.Context
-  val c: C
+  val c: whitebox.Context
 
   import c.universe._
 
@@ -356,9 +354,6 @@ trait LazyDefinitions {
 }
 
 trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions { ctx =>
-  type C <: whitebox.Context
-  val c: C
-
   import c.universe._
 
   object State {

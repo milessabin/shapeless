@@ -72,14 +72,17 @@ object Nat extends Nats {
   implicit def natOps[N <: Nat](n : N) : NatOps[N] = new NatOps(n)
 }
 
-object NatMacros {
-  def mkNatTpt(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
+class NatMacros(val c: whitebox.Context) extends NatMacroDefns
 
-    val n = i.tree match {
+trait NatMacroDefns {
+  val c: whitebox.Context
+  import c.universe._
+
+  def mkNatTpt(i: Tree): Tree = {
+    val n = i match {
       case Literal(Constant(n: Int)) => n
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
+        c.abort(c.enclosingPosition, s"Expression $i does not evaluate to an Int constant")
     }
 
     if (n < 0)
@@ -97,10 +100,8 @@ object NatMacros {
     mkNatTpt(n, Ident(_0Sym))
   }
 
-  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
-
-    val natTpt = mkNatTpt(c)(i)
+  def materializeSingleton(i: Tree): Tree = {
+    val natTpt = mkNatTpt(i)
     val moduleName = TermName(c.freshName("nat_"))
 
     q"""
@@ -109,9 +110,8 @@ object NatMacros {
     """
   }
 
-  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
-    val natTpt = mkNatTpt(c)(i)
+  def materializeWidened(i: Tree): Tree = {
+    val natTpt = mkNatTpt(i)
 
     q""" new $natTpt """
   }

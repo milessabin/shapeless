@@ -33,15 +33,17 @@ object illTyped {
 }
 
 class IllTypedMacros(val c: whitebox.Context) {
-  def applyImplNoExp(code: c.Expr[String]): c.Expr[Unit] = applyImpl(code, null)
+  import c.universe._
 
-  def applyImpl(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+  def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
+
+  def applyImpl(code: Tree, expected: Tree): Tree = {
     import c.universe._
 
-    val Expr(Literal(Constant(codeStr: String))) = code
+    val Literal(Constant(codeStr: String)) = code
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")
-      case Expr(Literal(Constant(s: String))) =>
+      case Literal(Constant(s: String)) =>
         (Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.DOTALL), "Expected error matching: "+s)
     }
 
@@ -56,6 +58,6 @@ class IllTypedMacros(val c: whitebox.Context) {
           c.abort(c.enclosingPosition, "Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
     }
 
-    reify(())
+    q"()"
   }
 }

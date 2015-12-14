@@ -198,7 +198,7 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
-class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
+class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
   import internal.constantType
 
@@ -255,7 +255,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   def mkProductNatImpl(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
-        val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
+        val matElem = c.typecheck(materializeWidened(elem))
         val (neTpe, neTree) = (matElem.tpe, matElem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
@@ -264,7 +264,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   def mkProductNatTypeParamsImpl(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, tq"_root_.shapeless.HNil": Tree)) {
       case (elem, (accTpe, _)) =>
-        val matElem = c.typecheck(NatMacros.materializeWidened(c)(c.Expr(elem)))
+        val matElem = c.typecheck(materializeWidened(elem))
         val neTpe = matElem.tpe
         (appliedType(hconsTpe, List(neTpe, accTpe)), tq"""_root_.shapeless.::[$neTpe, $accTpe]""")
     }._2
