@@ -163,7 +163,7 @@ trait SingletonTypeUtils[C <: Context] extends ReprTypes {
     }
   }
 
-  def parseLiteralType(typeStr: String): Option[c.Type] =
+  def parseLiteralType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(typeStr)).toOption
       checked = c.typeCheck(parsed, silent = true)
@@ -171,23 +171,23 @@ trait SingletonTypeUtils[C <: Context] extends ReprTypes {
       tpe <- SingletonType.unapply(checked)
     } yield tpe
 
-  def parseStandardType(typeStr: String): Option[c.Type] =
+  def parseStandardType(typeStr: String): Option[Type] =
     for {
       parsed <- Try(c.parse(s"null.asInstanceOf[$typeStr]")).toOption
       checked = c.typeCheck(parsed, silent = true)
       if checked != EmptyTree
     } yield checked.tpe
 
-  def parseType(typeStr: String): Option[c.Type] =
+  def parseType(typeStr: String): Option[Type] =
     parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
-  def typeCarrier(tpe: c.Type) =
+  def typeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe }")
 
-  def fieldTypeCarrier(tpe: c.Type) =
+  def fieldTypeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
 
-  def mkTypeCarrier(tree:c.Tree) = {
+  def mkTypeCarrier(tree: Tree) = {
     val carrier = c.typeCheck(q"null.asInstanceOf[$tree]").tpe
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
@@ -202,11 +202,6 @@ trait SingletonTypeUtils[C <: Context] extends ReprTypes {
 }
 
 class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] {
-  import syntax.SingletonOps
-  import c.universe._
-
-  type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
-
   import c.universe._
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
@@ -273,8 +268,8 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
     mkWitness(tpe, extractSingletonValue(tpe))
   }
 
-  def extractResult[T](t: Expr[T])(mkResult: (Type, Tree) => Tree): Tree =
-    (t.actualType, t.tree) match {
+  def extractResult(t: Tree)(mkResult: (Type, Tree) => Tree): Tree =
+    (t.tpe, t) match {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
@@ -291,10 +286,10 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
         mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
 
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable reference value")
+        c.abort(c.enclosingPosition, s"Expression $t does not evaluate to a constant or a stable reference value")
     }
 
-  def convertImpl[T](t: Expr[T]): Tree = extractResult(t)(mkWitness)
+  def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
 
   def inferInstance(tci: Type): Tree = {
     val i = c.inferImplicitValue(tci)
@@ -303,7 +298,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
     i
   }
 
-  def convertInstanceImpl1[TC[_], T](t: Expr[T])
+  def convertInstanceImpl1[TC[_]](t: Tree)
     (implicit tcTag: WeakTypeTag[TC[_]]): Tree =
       extractResult(t) { (sTpe, value) =>
         val tc = tcTag.tpe.typeConstructor
@@ -314,7 +309,7 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
         mkWitnessWith(parent, sTpe, value, i)
       }
 
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](t: Expr[T])
+  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H](t: Tree)
     (implicit tc2Tag: WeakTypeTag[TC2[_, _]], sTag: WeakTypeTag[S]): Tree =
       extractResult(t) { (sTpe, value) =>
         val tc2 = tc2Tag.tpe.typeConstructor
@@ -331,19 +326,19 @@ class SingletonTypeMacros[C <: Context](val c: C) extends SingletonTypeUtils[C] 
         mkWitnessWith(parent, sTpe, value, i)
       }
 
-  def mkSingletonOps(t: Expr[Any]): Tree =
+  def mkSingletonOps(t: Tree): Tree =
     extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
 
-  def narrowSymbol[S <: String : WeakTypeTag](t: Expr[scala.Symbol]): Tree = {
-    (weakTypeOf[S], t.tree) match {
+  def narrowSymbol[S <: String : WeakTypeTag](t: Tree): Tree = {
+    (weakTypeOf[S], t) match {
       case (ConstantType(Constant(s1: String)), LiteralSymbol(s2)) if s1 == s2 =>
         mkSingletonSymbol(s1)
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
+        c.abort(c.enclosingPosition, s"Expression $t is not an appropriate Symbol literal")
     }
   }
 
-  def witnessTypeImpl(tpeSelector: c.Tree): c.Tree = {
+  def witnessTypeImpl(tpeSelector: Tree): Tree = {
     val q"${tpeString: String}" = tpeSelector
     val tpe =
       parseLiteralType(tpeString)
@@ -376,22 +371,22 @@ object SingletonTypeMacros {
     c.Expr[Witness.Aux[T]](inst(c).materializeImpl[T])
 
   def convertImpl[T](c: Context)(t: c.Expr[T]): c.Expr[Witness.Lt[T]] = 
-    c.Expr[Witness.Lt[T]](inst(c).convertImpl(t))
+    c.Expr[Witness.Lt[T]](inst(c).convertImpl(t.tree))
 
   def convertInstanceImpl1[TC[_], T](c: Context)(t: c.Expr[T])
     (implicit tcTag: c.WeakTypeTag[TC[_]]):
-      c.Expr[WitnessWith.Lt[TC, T]] = c.Expr[WitnessWith.Lt[TC, T]](inst(c).convertInstanceImpl1[TC, T](t))
+      c.Expr[WitnessWith.Lt[TC, T]] = c.Expr[WitnessWith.Lt[TC, T]](inst(c).convertInstanceImpl1[TC](t.tree))
 
   def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H, T](c: Context)(t: c.Expr[T])
     (implicit tc2Tag: c.WeakTypeTag[TC2[_, _]], sTag: c.WeakTypeTag[S]):
       c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]] =
-        c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]](inst(c).convertInstanceImpl2[H, TC2, S, T](t))
+        c.Expr[WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T]](inst(c).convertInstanceImpl2[H, TC2, S](t.tree))
 
   def mkSingletonOps(c: Context)(t: c.Expr[Any]): c.Expr[SingletonOps] =
-    c.Expr[SingletonOps](inst(c).mkSingletonOps(t))
+    c.Expr[SingletonOps](inst(c).mkSingletonOps(t.tree))
 
   def narrowSymbol[S <: String : c.WeakTypeTag](c: Context)(t: c.Expr[scala.Symbol]):
-    c.Expr[scala.Symbol @@ S] = c.Expr[scala.Symbol @@ S](inst(c).narrowSymbol[S](t))
+    c.Expr[scala.Symbol @@ S] = c.Expr[scala.Symbol @@ S](inst(c).narrowSymbol[S](t.tree))
 
   def witnessTypeImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
     c.Expr[Any](inst(c).witnessTypeImpl(tpeSelector.tree))
