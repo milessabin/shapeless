@@ -112,11 +112,12 @@ object the extends Dynamic {
 }
 
 class TheMacros(val c: whitebox.Context) {
-  def applyImpl(t: c.Tree): c.Tree = t
+  import c.universe.{ Try => _, _ }
+  import internal._, decorators._
 
-  def implicitlyImpl(tpeSelector: c.Tree): c.Tree = {
-    import c.universe.{ Try => _, _ }
-    import internal._, decorators._
+  def applyImpl(t: Tree): Tree = t
+
+  def implicitlyImpl(tpeSelector: Tree): Tree = {
 
     val q"${tpeString: String}" = tpeSelector
     val dummyNme = c.freshName

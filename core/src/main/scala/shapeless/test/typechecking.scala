@@ -33,9 +33,11 @@ object illTyped {
 }
 
 class IllTypedMacros(val c: whitebox.Context) {
-  def applyImplNoExp(code: c.Expr[String]): c.Expr[Unit] = applyImpl(code, null)
+  import c.universe._
 
-  def applyImpl(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
+  def applyImplNoExp(code: Expr[String]): Expr[Unit] = applyImpl(code, null)
+
+  def applyImpl(code: Expr[String], expected: Expr[String]): Expr[Unit] = {
     import c.universe._
 
     val Expr(Literal(Constant(codeStr: String))) = code
