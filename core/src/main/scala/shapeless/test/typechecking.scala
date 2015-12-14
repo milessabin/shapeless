@@ -28,18 +28,20 @@ import scala.reflect.macros.{ Context, TypecheckException }
  * Credit: Stefan Zeiger (@StefanZeiger)
  */
 object illTyped {
-  def apply(code: String): Unit = macro applyImplNoExp
-  def apply(code: String, expected: String): Unit = macro applyImpl
+  def apply(code: String): Unit = macro IllTypedMacros.applyImplNoExp
+  def apply(code: String, expected: String): Unit = macro IllTypedMacros.applyImpl
+}
 
-  def applyImplNoExp(c: Context)(code: c.Expr[String]) = applyImpl(c)(code, null)
+class IllTypedMacros[C <: Context](val c: C) {
+  import c.universe._
 
-  def applyImpl(c: Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] = {
-    import c.universe._
+  def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
 
-    val Expr(Literal(Constant(codeStr: String))) = code
+  def applyImpl(code: Tree, expected: Tree): Tree = {
+    val Literal(Constant(codeStr: String)) = code
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")
-      case Expr(Literal(Constant(s: String))) =>
+      case Literal(Constant(s: String)) =>
         (Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.DOTALL), "Expected error matching: "+s)
     }
 
@@ -54,6 +56,16 @@ object illTyped {
           c.abort(c.enclosingPosition, "Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
     }
 
-    reify(())
+    q"()"
   }
+}
+
+object IllTypedMacros {
+  def inst(c: Context) = new IllTypedMacros[c.type](c)
+
+  def applyImplNoExp(c: Context)(code: c.Expr[String]): c.Expr[Unit] =
+    c.Expr[Unit](inst(c).applyImplNoExp(code.tree))
+
+  def applyImpl(c: Context)(code: c.Expr[String], expected: c.Expr[String]): c.Expr[Unit] =
+    c.Expr[Unit](inst(c).applyImpl(code.tree, expected.tree))
 }

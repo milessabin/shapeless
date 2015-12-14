@@ -111,13 +111,13 @@ object the extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
-object TheMacros {
-  def applyImpl[T](c: Context)(t: c.Expr[T]): c.Expr[T] = t
+class TheMacros[C <: Context](val c: C) {
+  import c.universe.{ Try => _, _ }
 
-  def implicitlyImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] = {
-    import c.universe.{ Try => _, _ }
+  def applyImpl(t: Tree): Tree = t
 
-    val q"${tpeString: String}" = tpeSelector.tree
+  def implicitlyImpl(tpeSelector: Tree): Tree = {
+    val q"${tpeString: String}" = tpeSelector
     val dummyNme = c.fresh
 
     val tpe =
@@ -141,10 +141,18 @@ object TheMacros {
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
-    c.Expr[Any](
-      Literal(Constant(())).setType(inferred.tpe)
-    )
+    Literal(Constant(())).setType(inferred.tpe)
   }
+}
+
+object TheMacros {
+  def inst(c: Context) = new TheMacros[c.type](c)
+
+  def applyImpl[T](c: Context)(t: c.Expr[T]): c.Expr[T] =
+    c.Expr[T](inst(c).applyImpl(t.tree))
+
+  def implicitlyImpl(c: Context)(tpeSelector: c.Expr[String]): c.Expr[Any] =
+    c.Expr[Any](inst(c).implicitlyImpl(tpeSelector.tree))
 }
 
 /**
@@ -164,4 +172,3 @@ object Lub {
     def right(b : T): T = b
   }
 }
-
