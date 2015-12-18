@@ -165,46 +165,27 @@ object nat {
     implicit def ltEq3[B <: Nat] = new <=[_0, B] {}
     implicit def ltEq4[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
   }
-  
+
   /**
    * Type class witnessing that `A` is greater than `B`.
-   * 
+   *
    * @author ryoppy
    */
-  trait GT[A <: Nat, B <: Nat] extends Serializable
-
-  object GT extends GT0 {
-    def apply[A <: Nat, B <: Nat](implicit gt: A > B): GT[A, B] = gt
-
-    implicit def gt1[A <: Nat] = new >[Succ[A], _0] {}
-    implicit def gt2[A <: Nat, B <: Nat](implicit gt : A > B) = new >[Succ[A], Succ[B]] {}
-  }
-
-  trait GT0 {
+  type GT[A <: Nat, B <: Nat] = LT[B, A]
+  object GT {
+    def apply[A <: Nat, B <: Nat](implicit gt: GT[A, B]): GT[A, B] = gt
     type >[A <: Nat, B <: Nat] = GT[A, B]
-
-    implicit def gt3[A <: Nat] = new >[Succ[A], A] {}
   }
 
   /**
    * Type class witnessing that `A` is greater than or equal to `B`.
-   * 
+   *
    * @author ryoppy
    */
-  trait GTEq[A <: Nat, B <: Nat] extends Serializable
-
-  object GTEq extends GTEq0 {
-    def apply[A <: Nat, B <: Nat](implicit gteq: A >= B): GTEq[A, B] = gteq
-
-    implicit def gtEq1[A <: Nat] = new >=[A, A] {}
-    implicit def gtEq2[A <: Nat] = new >=[Succ[A], A] {}
-  }
-
-  trait GTEq0 {
+  type GTEq[A <: Nat, B <: Nat] = LTEq[B, A]
+  object GTEq {
+    def apply[A <: Nat, B <: Nat](implicit gteq: GTEq[A, B]): GTEq[A, B] = gteq
     type >=[A <: Nat, B <: Nat] = GTEq[A, B]
-
-    implicit def gtEq3[A <: Nat] = new >=[A, _0] {}
-    implicit def gtEq4[A <: Nat, B <: Nat](implicit gteq : A >= B) = new >=[Succ[A], Succ[B]] {}
   }
 
   /**
