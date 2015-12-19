@@ -2648,4 +2648,41 @@ object hlist {
           def instances = headInstance :: tailInstances.instances
     }
   }
+
+  /**
+   * Type class supporting producing a HList of shape `N` padded with elements of type `A`.
+   *
+   * @author ryoppy
+   */
+  trait PadTo[N, A, L <: HList] extends DepFn2[A, L] with Serializable { type Out <: HList }
+
+  object PadTo {
+    def apply[N, A, L <: HList](implicit padTo: PadTo[N, A, L]): Aux[N, A, L, padTo.Out] = padTo
+
+    type Aux[N, A, L <: HList, Out0] = PadTo[N, A, L] { type Out = Out0 }
+
+    implicit def padToHNil0[A]: Aux[_0, A, HNil, HNil] =
+      new PadTo[_0, A, HNil] {
+        type Out = HNil
+        def apply(a: A, l: HNil) = l
+      }
+
+    implicit def padTo0[A, H, T <: HList](implicit padTo: PadTo[_0, A, T]): Aux[_0, A, H :: T, H :: padTo.Out] =
+      new PadTo[_0, A, H :: T] {
+        type Out = H :: padTo.Out
+        def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
+      }
+
+    implicit def padToHNil[N <: Nat, A](implicit padTo: PadTo[N, A, HNil]): Aux[Succ[N], A, HNil, A :: padTo.Out] =
+      new PadTo[Succ[N], A, HNil] {
+        type Out = A :: padTo.Out
+        def apply(a: A, l: HNil) = a :: padTo(a, l)
+      }
+
+    implicit def padTo1[N <: Nat, A, H, T <: HList](implicit padTo: PadTo[N, A, T]): Aux[Succ[N], A, H :: T, H :: padTo.Out] =
+      new PadTo[Succ[N], A, H :: T] {
+        type Out = H :: padTo.Out
+        def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
+      }
+  }
 }
