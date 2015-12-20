@@ -2667,12 +2667,6 @@ object hlist {
         def apply(a: A, l: HNil) = l
       }
 
-    implicit def padTo0[A, H, T <: HList](implicit padTo: PadTo[_0, A, T]): Aux[_0, A, H :: T, H :: padTo.Out] =
-      new PadTo[_0, A, H :: T] {
-        type Out = H :: padTo.Out
-        def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
-      }
-
     implicit def padToHNil[N <: Nat, A](implicit padTo: PadTo[N, A, HNil]): Aux[Succ[N], A, HNil, A :: padTo.Out] =
       new PadTo[Succ[N], A, HNil] {
         type Out = A :: padTo.Out

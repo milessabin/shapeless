@@ -3107,7 +3107,7 @@ class HListTests {
     val p1 = (1 :: "a" :: HNil).padTo(3, 0)
     assertTypedEquals[Int :: String :: Int :: HNil](1 :: "a" :: 0 :: HNil, p1)
 
-    val p2 = (1 :: "a" :: HNil).padTo(1, 0)
+    val p2 = (1 :: "a" :: HNil).padTo(2, 0)
     assertTypedEquals[Int :: String :: HNil](1 :: "a" :: HNil, p2)
 
     val p3 = (HNil: HNil).padTo(2, "a")
@@ -3115,5 +3115,7 @@ class HListTests {
 
     val p4 = (HNil: HNil).padTo(0, "a")
     assertTypedEquals[HNil](HNil, p4)
+
+    illTyped(""" (1 :: "a" :: HNil).padTo(1, 0) """)
   }
 }
