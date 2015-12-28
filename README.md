@@ -107,6 +107,16 @@ libraryDependencies ++= Seq(
 )
 ```
 
+shapeless is also available for projects using the Maven build tool via the following dependency,
+
+```xml
+<dependency>
+  <groupId>com.chuusai</groupId>
+  <artifactId>shapeless_2.11</artifactId>
+  <version>2.2.5</version>
+</dependency>
+```
+
 If you are using Scala 2.10.x, note that unlike earlier versions, it is no longer necessary to provide an explicit
 Scala version suffix for your shapeless dependency. You must however ensure that you are using Scala version 2.10.2
 or greater, with Scala 2.10.6 (or switching to 2.11.x) strongly recommended. You should also add the macro paradise
@@ -121,25 +131,38 @@ libraryDependencies ++= Seq(
 )
 ```
 
-shapeless is also available for projects using the Maven build tool. To include shapeless for projects using Scala
-2.11.x you should add the following dependency to your pom file,
+For Maven builds the dependency is,
 
 ```xml
 <dependency>
-    <groupId>com.chuusai</groupId>
-    <artifactId>shapeless_2.11</artifactId>
-    <version>2.2.5</version>
+  <groupId>com.chuusai</groupId>
+  <artifactId>shapeless_2.10</artifactId>
+  <version>2.2.5</version>
 </dependency>
 ```
 
-or similarly for projects using Scala 2.10.x,
+With macro paradise added as a compiler plugin to the build configuration,
 
 ```xml
-<dependency>
-    <groupId>com.chuusai</groupId>
-    <artifactId>shapeless_2.10</artifactId>
-    <version>2.2.5</version>
-</dependency>
+<plugins>
+  ...
+  <plugin>
+    ...
+    <configuration>
+      ...
+      <compilerPlugins>
+        <compilerPlugin>
+          <groupId>org.scala-lang.plugins</groupId>
+          <artifactId>macro-paradise_2.10</artifactId>
+          <version>2.1.0</version>
+        </compilerPlugin>
+      </compilerPlugins>
+      ...
+    </configuration>
+    ...
+  </plugin>
+  ...
+</plugins>
 ```
 
 ### shapeless-2.2.1
