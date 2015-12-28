@@ -121,6 +121,27 @@ libraryDependencies ++= Seq(
 )
 ```
 
+shapeless is also available for projects using the Maven build tool. To include shapeless for projects using Scala
+2.11.x you should add the following dependency to your pom file,
+
+```xml
+<dependency>
+    <groupId>com.chuusai</groupId>
+    <artifactId>shapeless_2.11</artifactId>
+    <version>2.2.5</version>
+</dependency>
+```
+
+or similarly for projects using Scala 2.10.x,
+
+```xml
+<dependency>
+    <groupId>com.chuusai</groupId>
+    <artifactId>shapeless_2.10</artifactId>
+    <version>2.2.5</version>
+</dependency>
+```
+
 ### shapeless-2.2.1
 
 The shapeless-2.2.1 release accidentally broke binary compatability with shapeless-2.2.0 and has been deprecated.
