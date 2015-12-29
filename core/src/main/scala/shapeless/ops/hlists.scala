@@ -2679,4 +2679,37 @@ object hlist {
         def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
       }
   }
+
+  /**
+   * Type class supporting the slicing of an `HList`
+   *
+   * @author ryoppy
+   */
+  trait Slice[N, U, L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  object Slice {
+    def apply[N, U, L <: HList](implicit slice: Slice[N, U, L]): Aux[N, U, L, slice.Out] = slice
+
+    type Aux[N, U, L <: HList, Out0] = Slice[N, U, L] { type Out = Out0 }
+
+    implicit def slice0[L <: HList]: Aux[_0, _0, L, HNil] =
+      new Slice[_0, _0, L] {
+        type Out = HNil
+        def apply(l: L) = HNil
+      }
+
+    implicit def slice1[N <: Nat, U <: Nat, H, T <: HList]
+      (implicit slice: Slice[N, U, T]): Aux[Succ[N], Succ[U], H :: T, slice.Out] =
+        new Slice[Succ[N], Succ[U], H :: T] {
+          type Out = slice.Out
+          def apply(l: H :: T): Out = slice(l.tail)
+        }
+
+    implicit def slice2[U <: Nat, H, T <: HList]
+      (implicit slice: Slice[_0, U, T]): Aux[_0, Succ[U], H :: T, H :: slice.Out] =
+        new Slice[_0, Succ[U], H :: T] {
+          type Out = H :: slice.Out
+          def apply(l: H :: T): Out = l.head :: slice(l.tail)
+        }
+  }
 }
