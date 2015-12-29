@@ -687,4 +687,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Appends `elem` until a given length `N` is reached.
    */
   def padTo[A](n: Nat, elem: A)(implicit padTo: PadTo[n.N, A, L]): padTo.Out = padTo(elem, l)
+
+  /**
+   * Slices beginning at index `from` and afterwards, up until index `until`
+   */
+  def slice(from: Nat, until: Nat)(implicit slice: Slice[from.N, until.N, L]): slice.Out = slice(l)
 }

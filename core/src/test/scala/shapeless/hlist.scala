@@ -3118,4 +3118,22 @@ class HListTests {
 
     illTyped(""" (1 :: "a" :: HNil).padTo(1, 0) """)
   }
+
+  @Test
+  def testSlice {
+    val r1 = (1 :: "a" :: 3 :: HNil).slice(0, 2)
+    assertTypedEquals[Int :: String :: HNil](1 :: "a" :: HNil, r1)
+
+    val r2 = (1 :: "a" :: 3 :: HNil).slice(1, 2)
+    assertTypedEquals[String :: HNil]("a" :: HNil, r2)
+
+    val r3 = (1 :: "a" :: 3 :: HNil).slice(2, 3)
+    assertTypedEquals[Int :: HNil](3 :: HNil, r3)
+
+    val r4 = (HNil: HNil).slice(0, 0)
+    assertTypedEquals[HNil](HNil, r4)
+
+    illTyped(""" (1 :: "a" :: 3 :: HNil).slice(0, 4) """)
+    illTyped(""" (1 :: "a" :: 3 :: HNil).slice(1, 0) """)
+  }
 }
