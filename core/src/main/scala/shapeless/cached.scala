@@ -112,7 +112,7 @@ class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) {
           // https://github.com/fommil/spray-json-shapeless/issues/14.
           val tree = mkImpl[T](
             (tree, actualType) => q"_root_.shapeless.Cached[$actualType]($tree)",
-            q"null.asInstanceOf[_root_.shapeless.Cached[Nothing]]"
+            q"null.asInstanceOf[_root_.shapeless.Cached[_root_.scala.Nothing]]"
           )
 
           CachedMacros.cache = (tpe -> tree) :: CachedMacros.cache

@@ -185,7 +185,7 @@ trait SingletonTypeUtils extends ReprTypes {
     mkTypeCarrier(tq"{ type T = $tpe }")
 
   def fieldTypeCarrier(tpe: Type) =
-    mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = shapeless.labelled.FieldType[$tpe,V] }")
+    mkTypeCarrier(tq"{ type T = $tpe ; type ->>[V] = Field[V] ; type Field[V] = _root_.shapeless.labelled.FieldType[$tpe,V] }")
 
   def mkTypeCarrier(tree: Tree) = {
     val carrier = c.typecheck(tree, mode = c.TYPEmode).tpe
