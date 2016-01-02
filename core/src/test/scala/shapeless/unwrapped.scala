@@ -147,4 +147,13 @@ class UnwrappedTests {
     assert((unwrapped: String) == ms.stringValue)
   }
 
+  @Test
+  def testSyntax: Unit = {
+    import syntax.unwrapped._
+    val w = "testing".wrap[AvWrapper]
+    test.typed(w: AvWrapper)
+    val u = w.unwrap
+    test.typed(u: String)
+  }
+
 }
