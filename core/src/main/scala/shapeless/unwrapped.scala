@@ -26,6 +26,7 @@ trait Unwrapped[W] extends Serializable {
 
 object Unwrapped extends UnwrappedInstances {
   type Aux[W, U0] = Unwrapped[W] { type U = U0 }
+  def apply[W](implicit w: Unwrapped[W]): Aux[W, w.U] = w
 }
 
 trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
