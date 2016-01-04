@@ -2529,7 +2529,7 @@ object hlist {
   trait Fill[N, A] extends DepFn1[A] with Serializable { type Out <: HList }
 
   object Fill {
-    def apply[N, A](implicit fill: Fill[N, A]) = fill
+    def apply[N, A](implicit fill: Fill[N, A]): Aux[N, A, fill.Out] = fill
 
     type Aux[N, A, Out0] = Fill[N, A] { type Out = Out0 }
 
@@ -2539,17 +2539,17 @@ object hlist {
         def apply(elem: A) = HNil
       }
 
-    implicit def fill1Succ[N <: Nat, A]
-      (implicit prev: Fill[N, A]): Aux[Succ[N], A, A :: prev.Out] =
+    implicit def fill1Succ[N <: Nat, A, OutT <: HList]
+      (implicit prev: Aux[N, A, OutT]): Aux[Succ[N], A, A :: OutT] =
         new Fill[Succ[N], A] {
-          type Out = A :: prev.Out
+          type Out = A :: OutT
           def apply(elem: A) = elem :: prev(elem)
         }
 
-    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut]
-      (implicit subFill: Fill.Aux[N2, A, SubOut], fill: Fill[N1, SubOut]): Aux[(N1, N2), A, fill.Out] =
+    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut, OutT <: HList]
+      (implicit subFill: Aux[N2, A, SubOut], fill: Aux[N1, SubOut, OutT]): Aux[(N1, N2), A, OutT] =
         new Fill[(N1, N2), A] {
-          type Out = fill.Out
+          type Out = OutT
           def apply(elem: A) = fill(subFill(elem))
         }
   }
@@ -2647,5 +2647,69 @@ object hlist {
           type Out = F[H] :: tailInstances.Out
           def instances = headInstance :: tailInstances.instances
     }
+  }
+
+  /**
+   * Type class supporting producing a HList of shape `N` padded with elements of type `A`.
+   *
+   * @author ryoppy
+   */
+  trait PadTo[N, A, L <: HList] extends DepFn2[A, L] with Serializable { type Out <: HList }
+
+  object PadTo {
+    def apply[N, A, L <: HList](implicit padTo: PadTo[N, A, L]): Aux[N, A, L, padTo.Out] = padTo
+
+    type Aux[N, A, L <: HList, Out0] = PadTo[N, A, L] { type Out = Out0 }
+
+    implicit def padToHNil0[A]: Aux[_0, A, HNil, HNil] =
+      new PadTo[_0, A, HNil] {
+        type Out = HNil
+        def apply(a: A, l: HNil) = l
+      }
+
+    implicit def padToHNil[N <: Nat, A](implicit padTo: PadTo[N, A, HNil]): Aux[Succ[N], A, HNil, A :: padTo.Out] =
+      new PadTo[Succ[N], A, HNil] {
+        type Out = A :: padTo.Out
+        def apply(a: A, l: HNil) = a :: padTo(a, l)
+      }
+
+    implicit def padTo1[N <: Nat, A, H, T <: HList](implicit padTo: PadTo[N, A, T]): Aux[Succ[N], A, H :: T, H :: padTo.Out] =
+      new PadTo[Succ[N], A, H :: T] {
+        type Out = H :: padTo.Out
+        def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
+      }
+  }
+
+  /**
+   * Type class supporting the slicing of an `HList`
+   *
+   * @author ryoppy
+   */
+  trait Slice[N, U, L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  object Slice {
+    def apply[N, U, L <: HList](implicit slice: Slice[N, U, L]): Aux[N, U, L, slice.Out] = slice
+
+    type Aux[N, U, L <: HList, Out0] = Slice[N, U, L] { type Out = Out0 }
+
+    implicit def slice0[L <: HList]: Aux[_0, _0, L, HNil] =
+      new Slice[_0, _0, L] {
+        type Out = HNil
+        def apply(l: L) = HNil
+      }
+
+    implicit def slice1[N <: Nat, U <: Nat, H, T <: HList]
+      (implicit slice: Slice[N, U, T]): Aux[Succ[N], Succ[U], H :: T, slice.Out] =
+        new Slice[Succ[N], Succ[U], H :: T] {
+          type Out = slice.Out
+          def apply(l: H :: T): Out = slice(l.tail)
+        }
+
+    implicit def slice2[U <: Nat, H, T <: HList]
+      (implicit slice: Slice[_0, U, T]): Aux[_0, Succ[U], H :: T, H :: slice.Out] =
+        new Slice[_0, Succ[U], H :: T] {
+          type Out = H :: slice.Out
+          def apply(l: H :: T): Out = l.head :: slice(l.tail)
+        }
   }
 }
