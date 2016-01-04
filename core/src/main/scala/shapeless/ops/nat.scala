@@ -167,6 +167,28 @@ object nat {
   }
 
   /**
+   * Type class witnessing that `A` is greater than `B`.
+   *
+   * @author ryoppy
+   */
+  type GT[A <: Nat, B <: Nat] = LT[B, A]
+  object GT {
+    def apply[A <: Nat, B <: Nat](implicit gt: GT[A, B]): GT[A, B] = gt
+    type >[A <: Nat, B <: Nat] = GT[A, B]
+  }
+
+  /**
+   * Type class witnessing that `A` is greater than or equal to `B`.
+   *
+   * @author ryoppy
+   */
+  type GTEq[A <: Nat, B <: Nat] = LTEq[B, A]
+  object GTEq {
+    def apply[A <: Nat, B <: Nat](implicit gteq: GTEq[A, B]): GTEq[A, B] = gteq
+    type >=[A <: Nat, B <: Nat] = GTEq[A, B]
+  }
+
+  /**
    * Type class witnessing that `Out` is `A` min `B`.
    *
    * @author George Leontiev
