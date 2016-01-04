@@ -90,7 +90,7 @@ class NatTests {
     illTyped(""" implicitly[LT[_5, _5]] """)
     illTyped(""" implicitly[LTEq[_6, _5]] """)
 
-    def relativeToN[N <: Nat]: Unit = {
+    def relativeToN_LT[N <: Nat]: Unit = {
       implicitly[LT[_0, Succ[N]]]
       implicitly[LT[N, Succ[N]]]
       implicitly[LTEq[_0, N]]
@@ -101,6 +101,27 @@ class NatTests {
       illTyped(""" implicitly[LT[N, N]] """)
       illTyped(""" implicitly[LTEq[_1, N]] """)
       illTyped(""" implicitly[LTEq[Succ[N], N]] """)
+    }
+    
+    implicitly[GT[_5, _3]]
+    implicitly[GT[_15, _10]]
+    implicitly[GTEq[_2, _2]]
+    implicitly[GTEq[_3, _2]]
+
+    illTyped(""" implicitly[GT[_5, _5]] """)
+    illTyped(""" implicitly[GTEq[_5, _6]] """)
+
+    def relativeToN_GT[N <: Nat]: Unit = {
+      implicitly[GT[Succ[N], _0]]
+      implicitly[GT[Succ[N], N]]
+      implicitly[GTEq[N, _0]]
+      implicitly[GTEq[N, N]]
+      implicitly[GTEq[Succ[N], N]]
+
+      illTyped(""" implicitly[GT[N, _0]] """)
+      illTyped(""" implicitly[GT[N, N]] """)
+      illTyped(""" implicitly[GTEq[N, _1]] """)
+      illTyped(""" implicitly[GTEq[N, Succ[N]]] """)
     }
 
     implicitly[Min.Aux[_0, _0, _0]]

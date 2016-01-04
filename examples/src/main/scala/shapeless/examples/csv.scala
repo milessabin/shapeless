@@ -47,7 +47,7 @@ Markus,Persson,32"""
 /** Exception to throw if something goes wrong during CSV parsing */
 class CSVException(s: String) extends RuntimeException
 
-/** Trait for types that can be serialized to/deserielized from CSV */
+/** Trait for types that can be serialized to/deserialized from CSV */
 trait CSVConverter[T] {
   def from(s: String): Try[T]
   def to(t: T): String
