@@ -115,27 +115,58 @@ package shapeless {
   class CachedImplicitMacros(val c: whitebox.Context) {
     import c.universe._
 
-    def dropLocal(nme: TermName): TermName = {
-      val LOCAL_SUFFIX_STRING = " "
-      val TermName(nmeString) = nme
-      if(nmeString endsWith LOCAL_SUFFIX_STRING)
-        TermName(nmeString.dropRight(LOCAL_SUFFIX_STRING.length))
-      else
-        nme
-    }
-
     def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
+      val casted = c.asInstanceOf[reflect.macros.runtime.Context]
+      val typer = casted.callsiteTyper
+      val global: casted.universe.type = casted.universe
+      val analyzer: global.analyzer.type = global.analyzer
+      val tCtx = typer.context
+      val owner = tCtx.owner
       val tTpe = weakTypeOf[T]
-      val owner = c.internal.enclosingOwner
-      val ownerNme = dropLocal(owner.name.toTermName)
-      val tpe = if(tTpe.typeSymbol.isParameter) owner.typeSignature else tTpe
-
-      q"""
-        {
-          def $ownerNme = ???
-          _root_.scala.Predef.implicitly[$tpe]
+      val application = casted.macroApplication
+      val tpe = {
+        if (tTpe.typeSymbol.isParameter) owner.tpe
+        else tTpe
+      }.asInstanceOf[global.Type]
+      // Run our own custom implicit search that isn't allowed to find
+      // the thing we are enclosed in
+      val sCtx = tCtx.makeImplicit(true)
+      val is = new analyzer.ImplicitSearch(
+        tree=application,
+        pt=tpe,
+        isView=false,
+        context0=sCtx,
+        pos0=c.enclosingPosition.asInstanceOf[global.Position]
+      ) {
+        override def searchImplicit(
+          implicitInfoss: List[List[analyzer.ImplicitInfo]],
+          isLocalToCallsite: Boolean
+        ): analyzer.SearchResult = {
+          val filteredInput = implicitInfoss.map { infos =>
+            infos.filter(_.sym.accessedOrSelf != owner)
+          }
+          super.searchImplicit(filteredInput, isLocalToCallsite)
         }
-      """
+      }
+      val best = is.bestImplicit
+      if (best.isFailure) {
+        val errs = sCtx.reporter.errors
+        errs.foreach { err =>
+          c.error(
+            err.errPos.asInstanceOf[Position],
+            err.errMsg
+          )
+        }
+        val errorMsg = tpe.typeSymbolDirect match {
+          case analyzer.ImplicitNotFoundMsg(msg) =>
+            msg.format(TermName("evidence").asInstanceOf[global.TermName], tpe)
+          case _ =>
+            s"Could not find an implict $tpe to cache"
+        }
+        c.abort(c.enclosingPosition, errorMsg)
+      } else {
+        best.tree.asInstanceOf[Tree]
+      }
     }
   }
 }

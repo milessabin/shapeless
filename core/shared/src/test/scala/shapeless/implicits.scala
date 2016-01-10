@@ -22,6 +22,7 @@ import org.junit.Assert._
 trait CachedTC[T]
 object CachedTC {
   implicit def mkTC[T] = new CachedTC[T] {}
+  implicit val cached: CachedTC[String] = cachedImplicit
 }
 
 object CachedTest {
@@ -34,5 +35,21 @@ class CachedTest {
   @Test
   def testBasics {
     assertTrue(CachedTest.i != null)
+  }
+
+  trait Foo[A]
+  object Foo {
+    implicit def materialize[A]: Foo[A] = new Foo[A] {}
+  }
+
+  case class Bar(x: Int)
+  object Bar {
+    implicit val foo: Foo[Bar] = cachedImplicit
+  }
+
+  @Test
+  def testCompanion {
+    assertTrue(CachedTC.cached != null)
+    assertTrue(Bar.foo != null)
   }
 }
