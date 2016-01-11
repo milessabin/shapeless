@@ -38,8 +38,6 @@ class IllTypedMacros(val c: whitebox.Context) {
   def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
 
   def applyImpl(code: Tree, expected: Tree): Tree = {
-    import c.universe._
-
     val Literal(Constant(codeStr: String)) = code
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")

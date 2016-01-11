@@ -652,7 +652,7 @@ trait CaseClassMacros extends ReprTypes {
 
   def isAccessible(tpe: Type): Boolean = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val typerContext = typer.context
     typerContext.isAccessible(
       tpe.typeSymbol.asInstanceOf[global.Symbol],
@@ -667,7 +667,7 @@ trait CaseClassMacros extends ReprTypes {
     // also see https://github.com/scalamacros/paradise/issues/64
 
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val ctx = typer.context
     val owner = original.owner
 

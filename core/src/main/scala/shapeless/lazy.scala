@@ -353,7 +353,7 @@ trait LazyDefinitions {
 
 }
 
-trait DerivationContext extends shapeless.CaseClassMacros with LazyDefinitions { ctx =>
+trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
   import c.universe._
 
   object State {

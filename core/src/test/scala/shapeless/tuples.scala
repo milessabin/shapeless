@@ -528,7 +528,7 @@ class TupleTests {
   @Test
   def testToSum {
     import ops.tuple._
-    
+
     type PISB = (Int, String, Boolean)
     type CISBa = Int :+: String :+: Boolean :+: CNil
     type SISBa = the.`ToSum[PISB]`.Out

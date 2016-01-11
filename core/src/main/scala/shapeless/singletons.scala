@@ -202,9 +202,6 @@ trait SingletonTypeUtils extends ReprTypes {
 }
 
 class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
-  import syntax.SingletonOps
-  type SingletonOpsLt[Lub] = SingletonOps { type T <: Lub }
-
   import c.universe._
   import internal._
   import decorators._
@@ -270,7 +267,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
   }
 
   def extractResult(t: Tree)(mkResult: (Type, Tree) => Tree): Tree =
-    (t.tpe, t.tree) match {
+    (t.tpe, t) match {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
@@ -287,7 +284,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
         mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
 
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${t.tree} does not evaluate to a constant or a stable reference value")
+        c.abort(c.enclosingPosition, s"Expression $t does not evaluate to a constant or a stable reference value")
     }
 
   def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
@@ -331,11 +328,11 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
     extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
 
   def narrowSymbol[S <: String : WeakTypeTag](t: Tree): Tree = {
-    (weakTypeOf[S], t.tree) match {
+    (weakTypeOf[S], t) match {
       case (ConstantType(Constant(s1: String)), LiteralSymbol(s2)) if s1 == s2 =>
         mkSingletonSymbol(s1)
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${t.tree} is not an appropriate Symbol literal")
+        c.abort(c.enclosingPosition, s"Expression $t is not an appropriate Symbol literal")
     }
   }
 
