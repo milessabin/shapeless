@@ -67,5 +67,5 @@ object Publishing {
     credentials ++= (for {
       user <- sys.env.get("SONATYPE_USER")
       pass <- sys.env.get("SONATYPE_PASS")
-    } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)).toSeq
+    } yield Credentials("Nexus Repository Manager", "oss.sonatype.org", user, pass)).toSeq
 }
