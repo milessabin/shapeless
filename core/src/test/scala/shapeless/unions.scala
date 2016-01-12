@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin
+ * Copyright (c) 2014-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import org.junit.Test
 import org.junit.Assert._
 
 import labelled.FieldType
+import union._
+import syntax.singleton._
+import test._
+import testutil._
 
 class UnionTests {
-  import union._
-  import syntax.singleton._
-  import test._
-  import testutil._
 
   val wI = Witness('i)
   type i = wI.T

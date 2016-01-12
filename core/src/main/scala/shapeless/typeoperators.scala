@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,7 @@ object the extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
+@macrocompat.bundle
 class TheMacros(val c: whitebox.Context) {
   import c.universe.{ Try => _, _ }
   import internal._, decorators._

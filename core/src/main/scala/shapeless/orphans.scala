@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Miles Sabin
+ * Copyright (c) 2015-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ trait OrphanDeriver[F[_], D] {
   implicit def materialize[T]: F[T] = macro OrphanMacros.materializeImpl[F, D, T]
 }
 
+@macrocompat.bundle
 class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

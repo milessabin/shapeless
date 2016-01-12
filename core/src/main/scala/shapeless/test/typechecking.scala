@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,13 @@ object illTyped {
   def apply(code: String, expected: String): Unit = macro IllTypedMacros.applyImpl
 }
 
+@macrocompat.bundle
 class IllTypedMacros(val c: whitebox.Context) {
   import c.universe._
 
   def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
 
   def applyImpl(code: Tree, expected: Tree): Tree = {
-    import c.universe._
-
     val Literal(Constant(codeStr: String)) = code
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")

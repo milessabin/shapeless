@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,10 @@ object ShapelessBuild extends Build {
         libraryDependencies ++= Seq(
           "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
           "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+          paradisePlugin,
+          "org.typelevel" %% "macro-compat" % "1.1.1-SNAPSHOT",
           "com.novocode" % "junit-interface" % "0.7" % "test"
-        ),
+        ) ++ quasiquotesLib.value.toSeq,
 
         (sourceGenerators in Compile) <+= (sourceManaged in Compile) map Boilerplate.gen,
         (sourceGenerators in Compile) <+= buildInfo,
@@ -135,6 +137,7 @@ object ShapelessBuild extends Build {
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        paradisePlugin,
         "com.novocode" % "junit-interface" % "0.7" % "test"
       ),
 
@@ -152,8 +155,9 @@ object ShapelessBuild extends Build {
       libraryDependencies ++= Seq(
         // needs compiler for `scala.tools.reflect.Eval`
         "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        paradisePlugin,
         "com.novocode" % "junit-interface" % "0.7" % "test"
-      ),
+      ) ++ quasiquotesLib.value.toSeq,
 
       runAllIn(Compile),
 
@@ -174,7 +178,7 @@ object ShapelessBuild extends Build {
     Seq(
       organization        := "com.chuusai",
       scalaVersion        := "2.11.7",
-      crossScalaVersions  := Seq("2.11.7", "2.12.0-M3"),
+      crossScalaVersions  := Seq("2.10.6", "2.11.7", "2.12.0-M3"),
 
       (unmanagedSourceDirectories in Compile) <<= (scalaSource in Compile)(Seq(_)),
       (unmanagedSourceDirectories in Test) <<= (scalaSource in Test)(Seq(_)),
@@ -187,6 +191,33 @@ object ShapelessBuild extends Build {
         "-deprecation",
         "-unchecked"),
 
+      resolvers += Opts.resolver.sonatypeSnapshots, // temp, for macro-compat
+
       initialCommands in console := """import shapeless._"""
-    )
+    ) ++ crossVersionSharedSources
+
+  val paradisePlugin = ("org.scalamacros"  % "paradise"    % "2.1.0").compilerPlugin cross CrossVersion.full
+  val quasiquotesLib = ("org.scalamacros" %% "quasiquotes" % "2.1.0").ifScala210
+
+  def scalaPartV = Def setting (CrossVersion partialVersion scalaVersion.value)
+
+  implicit final class AnyWithIfScala10[A](val __x: A) {
+    def ifScala210 = Def setting (scalaPartV.value collect { case (2, 10) => __x })
+  }
+
+  implicit final class ModuleIdWithCompilerPlugin(val __x: ModuleID) {
+    def compilerPlugin = sbt.compilerPlugin(__x)
+  }
+
+  lazy val crossVersionSharedSources: Seq[Setting[_]] =
+    Seq(Compile, Test).map { sc =>
+      (unmanagedSourceDirectories in sc) ++= {
+        (unmanagedSourceDirectories in sc ).value.map { dir: File =>
+          scalaPartV.value match {
+            case Some((2, y)) if y == 10 => new File(dir.getPath + "_2.10")
+            case Some((2, y)) if y >= 11 => new File(dir.getPath + "_2.11+")
+          }
+        }
+      }
+    }
 }

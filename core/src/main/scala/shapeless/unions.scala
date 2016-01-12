@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ object union {
   }
 }
 
+@macrocompat.bundle
 class UnionMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType
@@ -77,7 +78,9 @@ class UnionMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      // Backport: the quasiquote variant requires 2.11+
+    //case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      case Apply(TypeApply(Select(_, _), List(_, _)), List(Literal(k: Constant), v)) => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }

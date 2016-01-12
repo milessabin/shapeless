@@ -64,6 +64,7 @@ object CachedMacros {
   var cache = List.empty[(Any, Any)]
 }
 
+@macrocompat.bundle
 class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) {
   import c.universe._
   import c.ImplicitCandidate

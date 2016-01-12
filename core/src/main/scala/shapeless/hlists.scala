@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin 
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,6 +198,7 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
+@macrocompat.bundle
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
   import internal.constantType
@@ -255,7 +256,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
   def mkProductNatImpl(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
       case(elem, (accTpe, accTree)) =>
-        val matElem = c.typecheck(materializeWidened(elem))
+        val matElem = c.typecheck(materializeWidenedFn(elem))
         val (neTpe, neTree) = (matElem.tpe, matElem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
@@ -264,7 +265,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
   def mkProductNatTypeParamsImpl(args: Seq[Tree]): Tree = {
     args.foldRight((hnilTpe, tq"_root_.shapeless.HNil": Tree)) {
       case (elem, (accTpe, _)) =>
-        val matElem = c.typecheck(materializeWidened(elem))
+        val matElem = c.typecheck(materializeWidenedFn(elem))
         val neTpe = matElem.tpe
         (appliedType(hconsTpe, List(neTpe, accTpe)), tq"""_root_.shapeless.::[$neTpe, $accTpe]""")
     }._2

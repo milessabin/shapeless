@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-15 Lars Hupel, Miles Sabin
+ * Copyright (c) 2012-16 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,6 +255,7 @@ object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]
 }
 
+@macrocompat.bundle
 trait ReprTypes {
   val c: blackbox.Context
   import c.universe.{ Symbol => _, _ }
@@ -272,7 +273,8 @@ trait ReprTypes {
   def symbolTpe = typeOf[Symbol]
 }
 
-trait CaseClassMacros extends ReprTypes {
+@macrocompat.bundle
+trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
   val c: whitebox.Context
 
   import c.universe._
@@ -340,7 +342,10 @@ trait CaseClassMacros extends ReprTypes {
     if(tSym.isClass && isAnonOrRefinement(tSym)) Nil
     else
       tpe.decls.toList collect {
-        case sym: TermSymbol if isCaseAccessorLike(sym) => (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+        case sym: TermSymbol if isCaseAccessorLike(sym) =>
+          // BACKPORT: .toTermName is redundant and .finalResultType does the right things in 2.11+
+        //(sym.name, sym.typeSignatureIn(tpe).finalResultType)
+          (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultTpeForNullaryMethodType)
       }
   }
 
@@ -348,7 +353,9 @@ trait CaseClassMacros extends ReprTypes {
 
   def accessiblePrimaryCtorOf(tpe: Type): Option[Symbol] = {
     for {
-      ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }
+      // BACKPORT: isAccessible requires 2.11+
+    //ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }
+      ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessibleOpt(sym.info) }
       if !ctor.isJava || productCtorsOf(tpe).size == 1
     } yield ctor
   }
@@ -652,7 +659,7 @@ trait CaseClassMacros extends ReprTypes {
 
   def isAccessible(tpe: Type): Boolean = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typer = c2.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val typerContext = typer.context
     typerContext.isAccessible(
       tpe.typeSymbol.asInstanceOf[global.Symbol],
@@ -667,7 +674,7 @@ trait CaseClassMacros extends ReprTypes {
     // also see https://github.com/scalamacros/paradise/issues/64
 
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c.asInstanceOf[reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typer = c2.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val ctx = typer.context
     val owner = original.owner
 
@@ -817,7 +824,9 @@ trait CaseClassMacros extends ReprTypes {
         def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
           val companionTpe = sym.companion.info
           val applySym = companionTpe.member(TermName("apply"))
-          if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(applySym.info)) {
+          // BACKPORT: In 2.11+ can use the single param isAccessible
+        //if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(applySym.info)) {
+          if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
             val applyParamss = applySym.asMethod.paramLists
             if(applyParamss.length == 1)
               alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.infoIn(companionTpe))))
@@ -830,7 +839,9 @@ trait CaseClassMacros extends ReprTypes {
         def unapply(tpe: Type): Option[List[Type]] = {
           val companionTpe = sym.companion.info
           val unapplySym = companionTpe.member(TermName("unapply"))
-          if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(unapplySym.info))
+          // BACKPORT: In 2.11+ can use the single param isAccessible
+        //if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(unapplySym.info))
+          if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
             unapplySym.asMethod.infoIn(companionTpe).finalResultType.baseType(symbolOf[Option[_]]) match {
               case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
               case TypeRef(_, _, args @ List(arg)) => Some(args)
@@ -842,7 +853,9 @@ trait CaseClassMacros extends ReprTypes {
 
       object HasUniqueCtor {
         def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
-          val ctorSym = tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }.getOrElse(NoSymbol)
+          // BACKPORT: In 2.11+ can use the single param isAccessible
+        //val ctorSym = tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }.getOrElse(NoSymbol)
+          val ctorSym = tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) }.getOrElse(NoSymbol)
           if(!isNonGeneric(ctorSym)) {
             val ctorParamss = ctorSym.asMethod.infoIn(tpe).paramLists
             if(ctorParamss.length == 1)
@@ -949,6 +962,7 @@ trait CaseClassMacros extends ReprTypes {
   }
 }
 
+@macrocompat.bundle
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import internal.constantType

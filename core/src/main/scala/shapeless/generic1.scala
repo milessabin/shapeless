@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Miles Sabin
+ * Copyright (c) 2015-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +152,7 @@ trait Split10 {
     macro Split1Macros.mkSplit1Impl[L, FO, ({ type λ[t[_]] = FI[U, t] })#λ]
 }
 
+@macrocompat.bundle
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._
@@ -244,6 +245,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   }
 }
 
+@macrocompat.bundle
 class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
@@ -265,6 +267,7 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
     )
 }
 
+@macrocompat.bundle
 class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
@@ -292,6 +295,7 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
     )
 }
 
+@macrocompat.bundle
 trait IsCons1Macros extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._
@@ -346,6 +350,7 @@ trait IsCons1Macros extends CaseClassMacros {
   }
 }
 
+@macrocompat.bundle
 class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._

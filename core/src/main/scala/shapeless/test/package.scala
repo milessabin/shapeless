@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ package object test {
   def showType[T](t: => T): String = macro TestMacros.showType[T]
 }
 
+@macrocompat.bundle
 class TestMacros(val c: blackbox.Context) {
   import c.universe._
 

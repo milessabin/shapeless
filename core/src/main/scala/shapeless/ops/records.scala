@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ package record {
     def apply(l: HList): Any = HList.unsafeGet(l, i)
   }
 
+  @macrocompat.bundle
   class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -129,6 +130,7 @@ package record {
     def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
   }
 
+  @macrocompat.bundle
   class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 

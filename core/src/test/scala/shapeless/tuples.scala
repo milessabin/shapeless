@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -521,22 +521,26 @@ class TupleTests {
 
     type PISB = (Int, String, Boolean)
     type CISBa = Int :+: String :+: Boolean :+: CNil
-    type CISBb = the.`ToCoproduct[PISB]`.Out
-    implicitly[CISBa =:= CISBb]
+    val CISBb = ToCoproduct[PISB]
+    implicitly[CISBa =:= CISBb.Out]
+
+    // Note: Slightly different tests in Tuple211Tests
   }
 
   @Test
   def testToSum {
     import ops.tuple._
-    
+
     type PISB = (Int, String, Boolean)
     type CISBa = Int :+: String :+: Boolean :+: CNil
-    type SISBa = the.`ToSum[PISB]`.Out
-    implicitly[CISBa =:= SISBa]
+    val SISBa = ToSum[PISB]
+    implicitly[CISBa =:= SISBa.Out]
 
     type PIISSB = (Int, Int, String, String, Boolean)
-    type SISBb = the.`ToSum[PIISSB]`.Out
-    implicitly[CISBa =:= SISBb]
+    val SISBb = ToSum[PIISSB]
+    implicitly[CISBa =:= SISBb.Out]
+
+    // Note: Slightly different tests in Tuple211Tests
   }
 
   @Test
@@ -1769,11 +1773,14 @@ class TupleTests {
     object toInt extends Poly1 {
       implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
     }
-    def range[R <: HList, T, OutL <: HList](a: Nat, b: Nat)(implicit
+
+    def range[R <: HList, OutL <: HList](a: Nat, b: Nat)(implicit
                                                             range: ops.nat.Range.Aux[a.N, b.N, R],
                                                             mapper: ops.hlist.Mapper.Aux[toInt.type, R, OutL],
-                                                            tupler: ops.hlist.Tupler.Aux[OutL, T]
-      ) = tupler(mapper(range()))
+                                                            tupler: ops.hlist.Tupler[OutL]
+      ): tupler.Out = tupler(mapper(range()))
+
+    // Note: Slightly different method signature in Tuple211Tests
 
     // group Unit
     assertEquals( (), () group (2,1) )
