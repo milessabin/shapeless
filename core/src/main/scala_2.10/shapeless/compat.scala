@@ -50,20 +50,6 @@ trait CaseClassMacrosMixin {
   val c: blackbox.Context
   import c.universe._
 
-  def isAccessibleOpt(tpe: Type): Boolean = true
-
-  def isAccessible(tpe: Type): Boolean
-
-  def isAccessible(pre: Type, sym: Symbol): Boolean = {
-    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
-    val typerContext = typer.context
-    typerContext.isAccessible(
-      sym.asInstanceOf[global.Symbol],
-      pre.asInstanceOf[global.Type]
-    )
-  }
-
   implicit class TypeWithFinalResultTpeForNullaryMethodType(tpe: Type) {
     def finalResultTpeForNullaryMethodType: Type = {
       val NullaryMethodType(restpe) = tpe

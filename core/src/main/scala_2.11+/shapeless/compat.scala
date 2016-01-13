@@ -36,12 +36,6 @@ trait CaseClassMacrosMixin {
   val c: blackbox.Context
   import c.universe._
 
-  def isAccessibleOpt(tpe: Type): Boolean = isAccessible(tpe)
-
-  def isAccessible(tpe: Type): Boolean
-
-  def isAccessible(pre: Type, sym: Symbol): Boolean = isAccessible(sym.info)
-
   implicit class TypeWithFinalResultTpeForNullaryMethodType(tpe: Type) {
     def finalResultTpeForNullaryMethodType: Type = tpe.finalResultType
   }

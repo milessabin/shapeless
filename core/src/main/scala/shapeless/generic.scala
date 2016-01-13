@@ -297,11 +297,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
       appliedType(tpe, List(typeOf[Any])).dealias
     else tpe
 
+  def isProductAux(tpe: Type): Boolean =
+    tpe.typeSymbol.isClass && (isCaseClassLike(classSym(tpe)) || HasApplyUnapply(tpe) || HasCtorUnapply(tpe))
+
   def isProduct(tpe: Type): Boolean =
-    tpe =:= typeOf[Unit] || (!(tpe =:= typeOf[AnyRef]) && tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+    tpe =:= typeOf[Unit] || (!(tpe =:= typeOf[AnyRef]) && isProductAux(tpe))
 
   def isProduct1(tpe: Type): Boolean =
-    lowerKind(tpe) =:= typeOf[Unit] || (!(lowerKind(tpe) =:= typeOf[AnyRef]) && tpe.typeSymbol.isClass && isCaseClassLike(classSym(tpe)))
+    lowerKind(tpe) =:= typeOf[Unit] || (!(lowerKind(tpe) =:= typeOf[AnyRef]) && isProductAux(tpe))
 
   def isCoproduct(tpe: Type): Boolean = {
     val sym = tpe.typeSymbol
@@ -353,9 +356,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
 
   def accessiblePrimaryCtorOf(tpe: Type): Option[Symbol] = {
     for {
-      // BACKPORT: isAccessible requires 2.11+
-    //ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }
-      ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessibleOpt(sym.info) }
+      ctor <- tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) }
       if !ctor.isJava || productCtorsOf(tpe).size == 1
     } yield ctor
   }
@@ -657,15 +658,17 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
       Ident(tpe.typeSymbol.name.toTermName) // Attempt to refer to local companion
   }
 
-  def isAccessible(tpe: Type): Boolean = {
+  def isAccessible(pre: Type, sym: Symbol): Boolean = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
     val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val typerContext = typer.context
     typerContext.isAccessible(
-      tpe.typeSymbol.asInstanceOf[global.Symbol],
-      prefix(tpe).asInstanceOf[global.Type]
+      sym.asInstanceOf[global.Symbol],
+      pre.asInstanceOf[global.Type]
     )
   }
+  def isAccessible(tpe: Type): Boolean =
+    isAccessible(prefix(tpe), tpe.typeSymbol)
 
   // Cut-n-pasted (with most original comments) and slightly adapted from
   // https://github.com/scalamacros/paradise/blob/c14c634923313dd03f4f483be3d7782a9b56de0e/plugin/src/main/scala/org/scalamacros/paradise/typechecker/Namers.scala#L568-L613
@@ -765,6 +768,93 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
       case _ => tpe
     }
 
+  def unByName(tpe: Type): Type =
+    tpe match {
+      case TypeRef(_, sym, List(tpe)) if sym == definitions.ByNameParamClass => tpe
+      case tpe => tpe
+    }
+
+  def equalTypes(as: List[Type], bs: List[Type]): Boolean =
+    as.length == bs.length && (as zip bs).foldLeft(true) { case (acc, (a, b)) => acc && unByName(a) =:= unByName(b) }
+
+  def alignFields(tpe: Type, ts: List[Type]): Option[List[(TermName, Type)]] = {
+    val fields = fieldsOf(tpe)
+    if(fields.length != ts.length) None
+    else {
+      @tailrec
+      def loop(fields: Seq[(TermName, Type)], ts: Seq[Type], acc: List[(TermName, Type)]): Option[List[(TermName, Type)]] =
+        ts match {
+          case Nil => Some(acc.reverse)
+          case Seq(hd, tl @ _*) =>
+            fields.span { case (_, tpe) => !(tpe =:= hd) } match {
+              case (fpre, List(f, fsuff @ _*)) => loop(fpre ++ fsuff, tl, f :: acc)
+              case _ => None
+            }
+        }
+
+      loop(fields, ts, Nil)
+    }
+  }
+
+  object HasApply {
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
+      val sym = tpe.typeSymbol
+      val companionTpe = sym.companion.info
+      val applySym = companionTpe.member(TermName("apply"))
+      if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
+        val applyParamss = applySym.asMethod.paramLists
+        if(applyParamss.length == 1)
+          alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.infoIn(companionTpe))))
+        else None
+      } else None
+    }
+  }
+
+  object HasUnapply {
+    def unapply(tpe: Type): Option[List[Type]] = {
+      val sym = tpe.typeSymbol
+      val companionTpe = sym.companion.info
+      val unapplySym = companionTpe.member(TermName("unapply"))
+      if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
+        unapplySym.asMethod.infoIn(companionTpe).finalResultType.baseType(symbolOf[Option[_]]) match {
+          case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
+          case TypeRef(_, _, args @ List(arg)) => Some(args)
+          case _ => None
+        }
+      else None
+    }
+  }
+
+  object HasUniqueCtor {
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] =
+      tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) } match {
+        case Some(ctorSym) if !isNonGeneric(ctorSym) =>
+          val ctorParamss = ctorSym.asMethod.infoIn(tpe).paramLists
+          if(ctorParamss.length == 1)
+            alignFields(tpe, ctorParamss.head.map(param => unByName(param.info)))
+          else None
+        case _ => None
+      }
+  }
+
+  object HasApplyUnapply {
+    def apply(tpe: Type): Boolean = unapply(tpe).isDefined
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] =
+      (tpe, tpe) match {
+        case (HasApply(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
+        case _ => None
+      }
+  }
+
+  object HasCtorUnapply {
+    def apply(tpe: Type): Boolean = unapply(tpe).isDefined
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] =
+      (tpe, tpe) match {
+        case(HasUniqueCtor(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
+        case _ => None
+      }
+  }
+
   trait CtorDtor {
     def construct(args: List[Tree]): Tree
     def binding: (Tree, List[Tree])
@@ -791,95 +881,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
           q"$tree: _*"
         else
           narrow(tree, tpe)
-
-      def unByName(tpe: Type): Type =
-        tpe match {
-          case TypeRef(_, sym, List(tpe)) if sym == definitions.ByNameParamClass => tpe
-          case tpe => tpe
-        }
-
-      def equalTypes(as: List[Type], bs: List[Type]): Boolean =
-        as.length == bs.length && (as zip bs).foldLeft(true) { case (acc, (a, b)) => acc && unByName(a) =:= unByName(b) }
-
-      def alignFields(tpe: Type, ts: List[Type]): Option[List[(TermName, Type)]] = {
-        val fields = fieldsOf(tpe)
-        if(fields.length != ts.length) None
-        else {
-          @tailrec
-          def loop(fields: Seq[(TermName, Type)], ts: Seq[Type], acc: List[(TermName, Type)]): Option[List[(TermName, Type)]] =
-            ts match {
-              case Nil => Some(acc.reverse)
-              case Seq(hd, tl @ _*) =>
-                fields.span { case (_, tpe) => !(tpe =:= hd) } match {
-                  case (fpre, List(f, fsuff @ _*)) => loop(fpre ++ fsuff, tl, f :: acc)
-                  case _ => None
-                }
-            }
-
-          loop(fields, ts, Nil)
-        }
-      }
-
-      object HasApply {
-        def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
-          val companionTpe = sym.companion.info
-          val applySym = companionTpe.member(TermName("apply"))
-          // BACKPORT: In 2.11+ can use the single param isAccessible
-        //if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(applySym.info)) {
-          if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
-            val applyParamss = applySym.asMethod.paramLists
-            if(applyParamss.length == 1)
-              alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.infoIn(companionTpe))))
-            else None
-          } else None
-        }
-      }
-
-      object HasUnapply {
-        def unapply(tpe: Type): Option[List[Type]] = {
-          val companionTpe = sym.companion.info
-          val unapplySym = companionTpe.member(TermName("unapply"))
-          // BACKPORT: In 2.11+ can use the single param isAccessible
-        //if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(unapplySym.info))
-          if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
-            unapplySym.asMethod.infoIn(companionTpe).finalResultType.baseType(symbolOf[Option[_]]) match {
-              case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
-              case TypeRef(_, _, args @ List(arg)) => Some(args)
-              case _ => None
-            }
-          else None
-        }
-      }
-
-      object HasUniqueCtor {
-        def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
-          // BACKPORT: In 2.11+ can use the single param isAccessible
-        //val ctorSym = tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(sym.info) }.getOrElse(NoSymbol)
-          val ctorSym = tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) }.getOrElse(NoSymbol)
-          if(!isNonGeneric(ctorSym)) {
-            val ctorParamss = ctorSym.asMethod.infoIn(tpe).paramLists
-            if(ctorParamss.length == 1)
-              alignFields(tpe, ctorParamss.head.map(param => unByName(param.info)))
-            else None
-          } else None
-        }
-      }
-
-      object HasApplyUnapply {
-        def unapply(tpe: Type): Option[List[(TermName, Type)]] =
-          (tpe, tpe) match {
-            case (HasApply(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
-            case _ => None
-          }
-      }
-
-      object HasCtorUnapply {
-        def unapply(tpe: Type): Option[List[(TermName, Type)]] =
-          (tpe, tpe) match {
-            case(HasUniqueCtor(as), HasUnapply(bs)) if equalTypes(as.map(_._2), bs) => Some(as)
-            case _ => None
-          }
-      }
 
       def mkCtorDtor0(elems0: List[(TermName, Type)]) = {
         val elems = elems0.map { case (name, tpe) => (TermName(c.freshName("pat")), tpe) }
