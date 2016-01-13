@@ -22,11 +22,11 @@ trait DerivationContextCreator {
   type Aux[C] = DerivationContext { val c: C }
 
   def apply(c1: whitebox.Context): Aux[c1.type] = {
-    val c2 = c1.asInstanceOf[macrocompat.CompatContext[c1.type]]
+    val cc = c1.asInstanceOf[macrocompat.CompatContext[c1.type]]
     class DerivationContextClass(val c: macrocompat.CompatContext[c1.type]) extends DerivationContext {
       type C = c1.type
     }
-    establish(new DerivationContextClass(c2), c1)
+    establish(new DerivationContextClass(cc), c1)
   }
 
   def establish(dc: DerivationContext, c: whitebox.Context): Aux[c.type] =
@@ -50,15 +50,13 @@ trait CaseClassMacrosMixin {
   val c: blackbox.Context
   import c.universe._
 
-  protected def c2: blackbox.Context = c.asInstanceOf[macrocompat.CompatContext[c.type]].c
-
   def isAccessibleOpt(tpe: Type): Boolean = true
 
   def isAccessible(tpe: Type): Boolean
 
   def isAccessible(pre: Type, sym: Symbol): Boolean = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val typer = c2.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
+    val typer = c.asInstanceOf[scala.reflect.macros.runtime.Context].callsiteTyper.asInstanceOf[global.analyzer.Typer]
     val typerContext = typer.context
     typerContext.isAccessible(
       sym.asInstanceOf[global.Symbol],

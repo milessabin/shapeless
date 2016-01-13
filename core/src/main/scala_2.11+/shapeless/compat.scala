@@ -36,8 +36,6 @@ trait CaseClassMacrosMixin {
   val c: blackbox.Context
   import c.universe._
 
-  protected def c2: blackbox.Context = c
-
   def isAccessibleOpt(tpe: Type): Boolean = isAccessible(tpe)
 
   def isAccessible(tpe: Type): Boolean
