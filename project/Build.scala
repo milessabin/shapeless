@@ -191,6 +191,9 @@ object ShapelessBuild extends Build {
         "-deprecation",
         "-unchecked"),
 
+      scalacOptions in console in Compile -= "-Xfatal-warnings",
+      scalacOptions in console in Test    -= "-Xfatal-warnings",
+
       resolvers += Opts.resolver.sonatypeSnapshots, // temp, for macro-compat
 
       initialCommands in console := """import shapeless._"""
