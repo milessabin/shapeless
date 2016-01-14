@@ -34,6 +34,8 @@ class HListTests {
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil
 
+  type III = Int :: Int :: Int :: HNil
+
   type SISS = Set[Int] :: Set[String] :: HNil
   type OIOS = Option[Int] :: Option[String] :: HNil
 
@@ -3136,4 +3138,12 @@ class HListTests {
     illTyped(""" (1 :: "a" :: 3 :: HNil).slice(0, 4) """)
     illTyped(""" (1 :: "a" :: 3 :: HNil).slice(1, 0) """)
   }
+
+  @Test
+  def testToSizedHList {
+    val ns = List(1,2,3,4)
+    assertTypedEquals[Option[III]](None, ns.toSizedHList(3))
+    assertTypedEquals[Option[IIII]](Some(1 :: 2 :: 3 :: 4 :: HNil), ns.toSizedHList(4))
+  }
+
 }
