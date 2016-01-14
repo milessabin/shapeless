@@ -274,7 +274,7 @@ trait ReprTypes {
 }
 
 @macrocompat.bundle
-trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
+trait CaseClassMacros extends ReprTypes {
   val c: whitebox.Context
 
   import c.universe._
@@ -346,9 +346,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosMixin {
     else
       tpe.decls.toList collect {
         case sym: TermSymbol if isCaseAccessorLike(sym) =>
-          // BACKPORT: .toTermName is redundant and .finalResultType does the right things in 2.11+
-        //(sym.name, sym.typeSignatureIn(tpe).finalResultType)
-          (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultTpeForNullaryMethodType)
+          (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultType)
       }
   }
 

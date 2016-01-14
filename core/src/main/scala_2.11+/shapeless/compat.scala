@@ -32,15 +32,6 @@ trait MacroCompatLite {
   val c: blackbox.Context
 }
 
-trait CaseClassMacrosMixin {
-  val c: blackbox.Context
-  import c.universe._
-
-  implicit class TypeWithFinalResultTpeForNullaryMethodType(tpe: Type) {
-    def finalResultTpeForNullaryMethodType: Type = tpe.finalResultType
-  }
-}
-
 trait TypeableMacrosMixin {
   val c: blackbox.Context
   import c.universe._
