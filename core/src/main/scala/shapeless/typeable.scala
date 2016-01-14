@@ -336,7 +336,7 @@ object TypeCase {
 }
 
 @macrocompat.bundle
-class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils with TypeableMacrosMixin {
+class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal._
 
@@ -348,9 +348,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils with Ty
     val AC = definitions.AnyClass
     val NC = definitions.NothingClass
 
-    // BACKPORT: Simple .dealias works under 2.11+
-  //val dealiased = tpe.dealias
-    val dealiased = tpe.dealiasForExistentialType
+    val dealiased = tpe.dealias
 
     dealiased match {
       // BACKPORT: In 2.11+ NC isn't volatile
@@ -359,14 +357,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils with Ty
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
       case ExistentialType(_, underlying) =>
-        // BACKPORT: Simple .typeArgs works under 2.11+
-      //val tArgs = dealiased.typeArgs
-        val tArgs = dealiased.typeArgsForExistentialType
+        val tArgs = dealiased.typeArgs
         val normalized = appliedType(dealiased.typeConstructor, tArgs)
-
-        // BACKPORT: This is only true under 2.11+
-      //if(normalized =:= dealiased)
-      //  c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
 
         val normalizedTypeable = c.inferImplicitValue(appliedType(typeableTpe, List(normalized)))
         if(normalizedTypeable == EmptyTree)

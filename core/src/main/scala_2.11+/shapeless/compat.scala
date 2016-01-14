@@ -31,13 +31,3 @@ trait DerivationContextCreator {
 trait MacroCompatLite {
   val c: blackbox.Context
 }
-
-trait TypeableMacrosMixin {
-  val c: blackbox.Context
-  import c.universe._
-
-  implicit class TypeWrapperForExistentialType(tpe: Type) {
-    def dealiasForExistentialType: Type = tpe.dealias
-    def typeArgsForExistentialType: List[Type] = tpe.typeArgs
-  }
-}

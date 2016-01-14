@@ -45,25 +45,3 @@ trait MacroCompatLite {
     def constantType(c: Constant): ConstantType = ConstantType(c)
   }
 }
-
-trait TypeableMacrosMixin {
-  val c: blackbox.Context
-  import c.universe._
-
-  implicit class TypeWrapperForExistentialType(tpe: Type) {
-    def dealiasForExistentialType: Type = tpe match {
-      case existential: ExistentialType => existential
-      case other => other.normalize
-    }
-
-    def typeArgsForExistentialType: List[Type] = {
-      val ExistentialType(_, underlying) = tpe
-      // From macro-compat
-      val typeArgs = underlying match {
-        case TypeRef(_, _, args) => args
-        case _ => Nil
-      }
-      typeArgs.map { tpe => if(tpe.typeSymbol.asType.isExistential) typeOf[Any] else tpe }
-    }
-  }
-}
