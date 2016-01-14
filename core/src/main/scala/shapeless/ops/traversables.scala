@@ -57,7 +57,7 @@ object traversable {
    * 
    * @author Rob Norris
    */
-  trait ToSizedHList[CC[T] <: GenTraversable[T], A, N <: Nat] {
+  trait ToSizedHList[CC[T] <: GenTraversable[T], A, N <: Nat] extends Serializable {
     type Out
     def apply(cc: CC[A]): Out
   }
