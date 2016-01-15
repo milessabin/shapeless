@@ -27,13 +27,21 @@ import scala.collection.GenTraversable
  * typed [[shapeless.HList]] if possible. 
  * 
  * @author Miles Sabin
+ * @author Rob Norris
  */
 object traversable {
   implicit def traversableOps[T <% GenTraversable[_]](t : T) = new TraversableOps(t)
+  implicit def traversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) = new TraversableOps2(as)
 }
 
 final class TraversableOps[T <% GenTraversable[_]](t : T) {
   import ops.traversable._
 
   def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+}
+
+final class TraversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) {
+  import ops.traversable._
+
+  def toSizedHList(n: Nat)(implicit ts: ToSizedHList[CC, A, n.N]): ts.Out = ts(as)
 }
