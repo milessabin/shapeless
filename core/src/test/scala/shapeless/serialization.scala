@@ -902,9 +902,6 @@ class SerializationTests {
     assertSerializable(FromTraversable[L])
 
     // To satisfy serialization of `ToSizedHList` we must provide a serializable `IsTraversableLike`
-    // that will get picked up for the `ops.sized.ToHList` we're using. I'm not convinced that this
-    // is entirely ethical since real-life usage will almost certainly fail, or at least until the
-    // instance in stdlib is fixed. - rob/tpolecat
     import scala.collection.generic.IsTraversableLike
     implicit val hack: IsTraversableLike[List[Int]] { type A = Int } = null
     assertSerializable(ToSizedHList[List, Int, _4])
