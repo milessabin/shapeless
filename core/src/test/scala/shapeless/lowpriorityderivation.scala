@@ -1,13 +1,11 @@
 package shapeless
 
-import Definitions._
-
 import scala.language.reflectiveCalls
 import scala.collection.generic.CanBuildFrom
 import org.junit.Test
 
 
-object Definitions {
+object LowPriorityDerivationTests {
 
   case class CC1(i: Int)
   case class CC2(i: Int)
@@ -76,233 +74,237 @@ object Definitions {
     implicit def tuple2TC[A: TC0, B: TC0]: TC0[(A, B)] = instance[(A, B)](n => s"(${apply[A].msg(n-1)}, ${apply[B].msg(n-1)})")
     implicit val cc1TC: TC0[CC1] = instance[CC1](_ => "CC1")
   }
-}
 
-trait SimpleDeriver[TC[_] <: {def msg(n: Int): String}] {
-  def instance[T](msg0: Int => String): TC[T]
+  trait SimpleDeriver[TC[_] <: {def msg(n: Int): String}] {
+    def instance[T](msg0: Int => String): TC[T]
 
-  trait MkHListTC[L <: HList] {
-    def tc: TC[L]
-  }
+    trait MkHListTC[L <: HList] {
+      def tc: TC[L]
+    }
 
-  object MkHListTC {
-    implicit def hnilMkTC: MkHListTC[HNil] =
-      new MkHListTC[HNil] {
-        val tc = instance[HNil](_ => "HNil")
-      }
-    implicit def hconsMkTC[H, T <: HList]
-     (implicit
-       head: Strict[TC[H]],
-       tail: MkHListTC[T]
-     ): MkHListTC[H :: T] =
-      new MkHListTC[H :: T] {
-        lazy val tc = instance[H :: T](n => s"${head.value.msg(n-1)} :: ${tail.tc.msg(n-1)}")
-      }
-  }
-
-  trait MkCoproductTC[C <: Coproduct] {
-    def tc: TC[C]
-  }
-
-  object MkCoproductTC {
-    implicit def cnilMkTC: MkCoproductTC[CNil] =
-      new MkCoproductTC[CNil] {
-        val tc = instance[CNil](_ => "CNil")
-      }
-    implicit def cconsMkTC[H, T <: Coproduct]
-     (implicit
-       head: Strict[TC[H]],
-       tail: MkCoproductTC[T]
-     ): MkCoproductTC[H :+: T] =
-      new MkCoproductTC[H :+: T] {
-        lazy val tc = instance[H :+: T](n => s"${head.value.msg(n-1)} :+: ${tail.tc.msg(n-1)}")
-      }
-  }
-
-  trait MkTC[T] {
-    def tc: TC[T]
-  }
-
-  object MkTC {
-    implicit def genericProductMkTC[P, L <: HList]
-     (implicit
-       gen: Generic.Aux[P, L],
-       underlying: Lazy[MkHListTC[L]]
-     ): MkTC[P] =
-      new MkTC[P] {
-        lazy val tc = instance[P](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
-      }
-    implicit def genericCoproductMkTC[S, C <: Coproduct]
-     (implicit
-       gen: Generic.Aux[S, C],
-       underlying: Lazy[MkCoproductTC[C]]
-     ): MkTC[S] =
-      new MkTC[S] {
-        lazy val tc = instance[S](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
-      }
-  }
-}
-
-trait ComposedDeriver[TC[_] <: {def msg(n: Int): String}] {
-  def instance[T](msg0: Int => String): TC[T]
-
-  trait MkTC[T] {
-    def tc: TC[T]
-  }
-
-  trait MkStdTC[T] extends MkTC[T]
-
-  trait LowestPriorityMkTC {
-    implicit def mkDefaultTC[T](implicit mkDefaultTC: MkDefaultTC[T]): MkTC[T] = mkDefaultTC
-  }
-
-  trait LowPriorityMkTC extends LowestPriorityMkTC {
-    implicit def mkTupleTC[T](implicit mkTupleTC: MkTupleTC[T]): MkTC[T] = mkTupleTC
-  }
-
-  object MkTC extends LowPriorityMkTC {
-    implicit def mkStdTC[T](implicit mkStdTC: MkStdTC[T]): MkTC[T] = mkStdTC
-  }
-
-  object MkStdTC {
-    implicit val doubleTC: MkStdTC[Double] =
-      new MkStdTC[Double] {
-        val tc = instance[Double](_ => "Double")
-      }
-
-    implicit def mkCollWriter[M[_], T]
-     (implicit
-       underlying: TC[T],
-       cbf: CanBuildFrom[Nothing, T, M[T]]
-     ): MkStdTC[M[T]] =
-      new MkStdTC[M[T]] {
-        lazy val tc = instance[M[T]](n => s"${cbf().result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
-      }
-  }
-
-  trait MkGenericTupleTC[T] extends MkTC[T]
-
-  object MkGenericTupleTC {
-    implicit def hnilMkTC: MkGenericTupleTC[HNil] =
-      new MkGenericTupleTC[HNil] {
-        val tc = instance[HNil](_ => "")
-      }
-    implicit def hconsMkTC[H, T <: HList]
-     (implicit
-       head: Strict[TC[H]],
-       tail: MkGenericTupleTC[T]
-     ): MkGenericTupleTC[H :: T] =
-      new MkGenericTupleTC[H :: T] {
-        lazy val tc = instance[H :: T]{ n =>
-          val tailMsg = tail.tc.msg(n-1)
-          head.value.msg(n-1) + (if (tailMsg.isEmpty) "" else ", " + tailMsg)
+    object MkHListTC {
+      implicit def hnilMkTC: MkHListTC[HNil] =
+        new MkHListTC[HNil] {
+          val tc = instance[HNil](_ => "HNil")
         }
-      }
+      implicit def hconsMkTC[H, T <: HList]
+       (implicit
+         head: Strict[TC[H]],
+         tail: MkHListTC[T]
+       ): MkHListTC[H :: T] =
+        new MkHListTC[H :: T] {
+          lazy val tc = instance[H :: T](n => s"${head.value.msg(n-1)} :: ${tail.tc.msg(n-1)}")
+        }
+    }
+
+    trait MkCoproductTC[C <: Coproduct] {
+      def tc: TC[C]
+    }
+
+    object MkCoproductTC {
+      implicit def cnilMkTC: MkCoproductTC[CNil] =
+        new MkCoproductTC[CNil] {
+          val tc = instance[CNil](_ => "CNil")
+        }
+      implicit def cconsMkTC[H, T <: Coproduct]
+       (implicit
+         head: Strict[TC[H]],
+         tail: MkCoproductTC[T]
+       ): MkCoproductTC[H :+: T] =
+        new MkCoproductTC[H :+: T] {
+          lazy val tc = instance[H :+: T](n => s"${head.value.msg(n-1)} :+: ${tail.tc.msg(n-1)}")
+        }
+    }
+
+    trait MkTC[T] {
+      def tc: TC[T]
+    }
+
+    object MkTC {
+      implicit def genericProductMkTC[P, L <: HList]
+       (implicit
+         gen: Generic.Aux[P, L],
+         underlying: Lazy[MkHListTC[L]]
+       ): MkTC[P] =
+        new MkTC[P] {
+          lazy val tc = instance[P](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+      implicit def genericCoproductMkTC[S, C <: Coproduct]
+       (implicit
+         gen: Generic.Aux[S, C],
+         underlying: Lazy[MkCoproductTC[C]]
+       ): MkTC[S] =
+        new MkTC[S] {
+          lazy val tc = instance[S](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
   }
 
-  trait MkTupleTC[T] extends MkTC[T]
+  trait ComposedDeriver[TC[_] <: {def msg(n: Int): String}] {
+    def instance[T](msg0: Int => String): TC[T]
 
-  object MkTupleTC {
-    implicit def genericMkTC[F, G]
+    trait MkTC[T] {
+      def tc: TC[T]
+    }
+
+    trait MkStdTC[T] extends MkTC[T]
+
+    trait LowestPriorityMkTC {
+      implicit def mkDefaultTC[T](implicit mkDefaultTC: MkDefaultTC[T]): MkTC[T] = mkDefaultTC
+    }
+
+    trait LowPriorityMkTC extends LowestPriorityMkTC {
+      implicit def mkTupleTC[T](implicit mkTupleTC: MkTupleTC[T]): MkTC[T] = mkTupleTC
+    }
+
+    object MkTC extends LowPriorityMkTC {
+      implicit def mkStdTC[T](implicit mkStdTC: MkStdTC[T]): MkTC[T] = mkStdTC
+    }
+
+    object MkStdTC {
+      implicit val doubleTC: MkStdTC[Double] =
+        new MkStdTC[Double] {
+          val tc = instance[Double](_ => "Double")
+        }
+
+      implicit def mkCollWriter[M[_], T]
+       (implicit
+         underlying: TC[T],
+         cbf: CanBuildFrom[Nothing, T, M[T]]
+       ): MkStdTC[M[T]] =
+        new MkStdTC[M[T]] {
+          lazy val tc = instance[M[T]](n => s"${cbf().result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
+        }
+    }
+
+    trait MkGenericTupleTC[T] extends MkTC[T]
+
+    object MkGenericTupleTC {
+      implicit def hnilMkTC: MkGenericTupleTC[HNil] =
+        new MkGenericTupleTC[HNil] {
+          val tc = instance[HNil](_ => "")
+        }
+      implicit def hconsMkTC[H, T <: HList]
+       (implicit
+         head: Strict[TC[H]],
+         tail: MkGenericTupleTC[T]
+       ): MkGenericTupleTC[H :: T] =
+        new MkGenericTupleTC[H :: T] {
+          lazy val tc = instance[H :: T]{ n =>
+            val tailMsg = tail.tc.msg(n-1)
+            head.value.msg(n-1) + (if (tailMsg.isEmpty) "" else ", " + tailMsg)
+          }
+        }
+    }
+
+    trait MkTupleTC[T] extends MkTC[T]
+
+    object MkTupleTC {
+      implicit def genericMkTC[F, G]
+       (implicit
+         ev: IsTuple[F],
+         gen: Generic.Aux[F, G],
+         underlying: Lazy[MkGenericTupleTC[G]]
+       ): MkTupleTC[F] =
+        new MkTupleTC[F] {
+          lazy val tc = instance[F](n => s"Tuple[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
+
+    trait MkHListTC[L <: HList] extends MkTC[L]
+
+    object MkHListTC {
+      implicit def hnilMkTC: MkHListTC[HNil] =
+        new MkHListTC[HNil] {
+          val tc = instance[HNil](_ => "HNil")
+        }
+      implicit def hconsMkTC[H, T <: HList]
+       (implicit
+         head: Strict[TC[H]],
+         tail: MkHListTC[T]
+       ): MkHListTC[H :: T] =
+        new MkHListTC[H :: T] {
+          lazy val tc = instance[H :: T](n => s"${head.value.msg(n-1)} :: ${tail.tc.msg(n-1)}")
+        }
+    }
+
+    trait MkCoproductTC[C <: Coproduct] extends MkTC[C]
+
+    object MkCoproductTC {
+      implicit def cnilMkTC: MkCoproductTC[CNil] =
+        new MkCoproductTC[CNil] {
+          val tc = instance[CNil](_ => "CNil")
+        }
+      implicit def cconsMkTC[H, T <: Coproduct]
+       (implicit
+         head: Strict[TC[H]],
+         tail: MkCoproductTC[T]
+       ): MkCoproductTC[H :+: T] =
+        new MkCoproductTC[H :+: T] {
+          lazy val tc = instance[H :+: T](n => s"${head.value.msg(n-1)} :+: ${tail.tc.msg(n-1)}")
+        }
+    }
+
+    trait MkDefaultTC[T] extends MkTC[T]
+
+    object MkDefaultTC {
+      implicit def genericCoproductMkTC[S, C <: Coproduct]
+       (implicit
+         gen: Generic.Aux[S, C],
+         underlying: Lazy[MkCoproductTC[C]]
+       ): MkDefaultTC[S] =
+        new MkDefaultTC[S] {
+          lazy val tc = instance[S](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+      implicit def genericProductMkTC[P, L <: HList]
+       (implicit
+         gen: Generic.Aux[P, L],
+         underlying: Lazy[MkHListTC[L]]
+       ): MkDefaultTC[P] =
+        new MkDefaultTC[P] {
+          lazy val tc = instance[P](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
+
+    implicit def mkTC[T]
      (implicit
-       ev: IsTuple[F],
-       gen: Generic.Aux[F, G],
-       underlying: Lazy[MkGenericTupleTC[G]]
-     ): MkTupleTC[F] =
-      new MkTupleTC[F] {
-        lazy val tc = instance[F](n => s"Tuple[${underlying.value.tc.msg(n-1)}]")
-      }
+       ev: Cached[LowPriority[TC[T]]],
+       cached: Cached[MkTC[T]]
+     ): TC[T] =
+      cached.value.tc
   }
 
-  trait MkHListTC[L <: HList] extends MkTC[L]
 
-  object MkHListTC {
-    implicit def hnilMkTC: MkHListTC[HNil] =
-      new MkHListTC[HNil] {
-        val tc = instance[HNil](_ => "HNil")
-      }
-    implicit def hconsMkTC[H, T <: HList]
+  object SimpleTCDeriver extends SimpleDeriver[TC] {
+    def instance[T](msg0: Int => String) = TC.instance(msg0)
+
+    implicit def mkTC[T]
      (implicit
-       head: Strict[TC[H]],
-       tail: MkHListTC[T]
-     ): MkHListTC[H :: T] =
-      new MkHListTC[H :: T] {
-        lazy val tc = instance[H :: T](n => s"${head.value.msg(n-1)} :: ${tail.tc.msg(n-1)}")
-      }
+       ev: Cached[LowPriority[TC[T]]],
+       cached: Cached[MkTC[T]]
+     ): TC[T] =
+      cached.value.tc
   }
 
-  trait MkCoproductTC[C <: Coproduct] extends MkTC[C]
-
-  object MkCoproductTC {
-    implicit def cnilMkTC: MkCoproductTC[CNil] =
-      new MkCoproductTC[CNil] {
-        val tc = instance[CNil](_ => "CNil")
-      }
-    implicit def cconsMkTC[H, T <: Coproduct]
-     (implicit
-       head: Strict[TC[H]],
-       tail: MkCoproductTC[T]
-     ): MkCoproductTC[H :+: T] =
-      new MkCoproductTC[H :+: T] {
-        lazy val tc = instance[H :+: T](n => s"${head.value.msg(n-1)} :+: ${tail.tc.msg(n-1)}")
-      }
+  object ComposedTCDeriver extends ComposedDeriver[TC] {
+    def instance[T](msg0: Int => String) = TC.instance(msg0)
   }
 
-  trait MkDefaultTC[T] extends MkTC[T]
+  object SimpleTC0Deriver extends SimpleDeriver[TC0] {
+    def instance[T](msg0: Int => String) = TC0.instance(msg0)
 
-  object MkDefaultTC {
-    implicit def genericCoproductMkTC[S, C <: Coproduct]
+    implicit def mkTC[T]
      (implicit
-       gen: Generic.Aux[S, C],
-       underlying: Lazy[MkCoproductTC[C]]
-     ): MkDefaultTC[S] =
-      new MkDefaultTC[S] {
-        lazy val tc = instance[S](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
-      }
-    implicit def genericProductMkTC[P, L <: HList]
-     (implicit
-       gen: Generic.Aux[P, L],
-       underlying: Lazy[MkHListTC[L]]
-     ): MkDefaultTC[P] =
-      new MkDefaultTC[P] {
-        lazy val tc = instance[P](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
-      }
+       ev: Cached[LowPriority[Ignoring[Witness.`"TC0.defaultTC"`.T, TC0[T]]]],
+       cached: Cached[MkTC[T]]
+     ): TC0[T] =
+      cached.value.tc
   }
-
-  implicit def mkTC[T]
-   (implicit
-     priority: Cached[Strict[Priority[TC[T], MkTC[T]]]]
-   ): TC[T] =
-    priority.value.value.fold(identity)(_.tc)
 }
 
 
-object SimpleTCDeriver extends SimpleDeriver[TC] {
-  def instance[T](msg0: Int => String) = TC.instance(msg0)
-
-  implicit def mkTC[T]
-   (implicit
-     priority: Cached[Strict[Priority[TC[T], MkTC[T]]]]
-   ): TC[T] =
-    priority.value.value.fold(identity)(_.tc)
-}
-
-object ComposedTCDeriver extends ComposedDeriver[TC] {
-  def instance[T](msg0: Int => String) = TC.instance(msg0)
-}
-
-object SimpleTC0Deriver extends SimpleDeriver[TC0] {
-  def instance[T](msg0: Int => String) = TC0.instance(msg0)
-
-  implicit def mkTC[T]
-   (implicit
-     priority: Cached[Strict[Priority[Mask[Witness.`"TC0.defaultTC"`.T, TC0[T]], MkTC[T]]]]
-   ): TC0[T] =
-    priority.value.value.fold(_.value)(_.tc)
-}
-
-
-class PriorityTests {
+class LowPriorityDerivationTests {
+  import LowPriorityDerivationTests._
 
   def validateTC[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC[T].msg(n)
@@ -395,7 +397,7 @@ class PriorityTests {
   }
 
   @Test
-  def simpleWithMask {
+  def simpleWithIgnoring {
     import SimpleTC0Deriver._
 
     // More or less cut-n-pasted from 'simple above, I don't really see they could be factored

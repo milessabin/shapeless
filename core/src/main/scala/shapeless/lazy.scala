@@ -227,66 +227,6 @@ object LazyMacros {
 
 object DerivationContext extends DerivationContextCreator
 
-trait LazyExtension {
-  type Ctx <: DerivationContext
-  val ctx: Ctx
-
-  import ctx._
-  import c.universe._
-
-  /** Uniquely identifies a `LazyExtension`. Only one extension with a given id is taken into account, during a
-    * Lazy / Strict implicit search. */
-  def id: String
-
-  /** State of this extension, kept and provided back during Lazy / Strict implicit search. */
-  type ThisState
-
-  /** Initial state of this extension, upon initialization. */
-  def initialState: ThisState
-
-  /**
-   * Called during a `Lazy` or `Strict` implicit materialization.
-   *
-   * If this extension handles @tpe, it should return either `Some(Right(...))` upon success, or
-   * `Some(Left(...))` upon failure. The latter will make the current implicit search fail.
-   *
-   * If it does not handle this type, it should return `None`. Materialization will then go on with other
-   * extensions, or standard implicit search.
-   */
-  def derive(
-    state: State,
-    extState: ThisState,
-    update: (State, ThisState) => State )(
-    tpe: Type
-  ): Option[Either[String, (State, Instance)]]
-}
-
-/**
- * Lazy extension companions should extend this trait, and return a new `LazyExtension` instance via
- * `instantiate`.
- *
- * These companions typically provide a materializer method like
- * {{{
- *   implicit def init[H]: Wrapper[T] = macro initImpl
- * }}},
- * where `Wrapper` is the wrapper type that this extension handles, and `initImpl` is provided by
- * the `LazyExtensionCompanion` trait. This initializes the extension upon first use during
- * a `Lazy` / `Strict` implicit search.
- */
-trait LazyExtensionCompanion {
-  def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type }
-
-  def initImpl(c: whitebox.Context): Nothing = {
-    val ctx = LazyMacros.dcRef.getOrElse(
-      c.abort(c.enclosingPosition, "")
-    )
-
-    val extension = instantiate(ctx)
-    ctx.State.addExtension(extension)
-
-    c.abort(c.enclosingPosition, s"Added extension ${extension.id}")
-  }
-}
 
 @macrocompat.bundle
 trait LazyDefinitions {
@@ -328,30 +268,10 @@ trait LazyDefinitions {
     def unapply(tw: TypeWrapper): Option[Type] = Some(tw.tpe)
   }
 
-
-  case class ExtensionWithState[S <: DerivationContext, T](
-    extension: LazyExtension { type Ctx = S; type ThisState = T },
-    state: T
-  ) {
-    import extension.ctx
-
-    def derive(
-      state0: ctx.State,
-      update: (ctx.State, ExtensionWithState[S, T]) => ctx.State )(
-      tpe: ctx.c.Type
-    ): Option[Either[String, (ctx.State, ctx.Instance)]] =
-      extension.derive(state0, state, (ctx, t) => update(ctx, copy(state = t)))(tpe)
-  }
-
-  object ExtensionWithState {
-    def apply(extension: LazyExtension): ExtensionWithState[extension.Ctx, extension.ThisState] =
-      ExtensionWithState(extension, extension.initialState)
-  }
-
 }
 
 @macrocompat.bundle
-trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
+trait DerivationContext extends CaseClassMacros with LazyDefinitions with LowPriorityTypes { ctx =>
   import c.universe._
 
   object State {
@@ -359,17 +279,6 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
     val empty = State("", ListMap.empty, Nil, Nil)
 
     private var current = Option.empty[State]
-    private var addExtensions = List.empty[ExtensionWithState[ctx.type, _]]
-
-    def addExtension(extension: LazyExtension { type Ctx = ctx0.type }): Unit = {
-      addExtensions = ExtensionWithState(extension) :: addExtensions
-    }
-
-    def takeNewExtensions(): List[ExtensionWithState[ctx.type, _]] = {
-      val addExtensions0 = addExtensions
-      addExtensions = Nil
-      addExtensions0
-    }
 
     def resolveInstance(state: State)(tpe: Type): Option[(State, Tree)] = {
       val former = State.current
@@ -382,7 +291,7 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
           State.current = former
         }
 
-        if (tree == EmptyTree || addExtensions.nonEmpty) None
+        if (tree == EmptyTree) None
         else Some((state0, tree))
       }
 
@@ -419,7 +328,8 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
     name: String,
     dict: ListMap[TypeWrapper, Instance],
     open: List[Instance],
-    extensions: List[ExtensionWithState[ctx.type, _]]
+    /** Types whose derivation must fail no matter what */
+    prevent: List[TypeWrapper]
   ) {
     def addDependency(tpe: Type): State = {
       import scala.::
@@ -500,34 +410,90 @@ trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
     }
   }
 
-  def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
-    val fromExtensions: Option[Either[String, (State, Instance)]] =
-      state.extensions.zipWithIndex.foldRight(Option.empty[Either[String, (State, Instance)]]) {
-        case (_, acc @ Some(_)) => acc
-        case ((ext, idx), None) =>
-          def update(state: State, withState: ExtensionWithState[ctx.type, _]) =
-            state.copy(extensions = state.extensions.updated(idx, withState))
 
-          ext.derive(state, update)(tpe)
+  private def deriveLowPriorityHelper(
+    state: State,
+    wrappedTpe: Type,
+    innerTpe: Type,
+    ignoring: String
+  ): (State, Instance) = {
+    val tmpState = state.copy(prevent = state.prevent :+ TypeWrapper(wrappedTpe))
+
+    val existingInstOpt = ctx.derive(tmpState)(innerTpe).right.toOption.flatMap {
+      case (state2, inst) =>
+        if (inst.inst.isEmpty)
+          resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
+        else
+          Some(inst.inst.get)
+    }
+
+    val existingInstAvailable = existingInstOpt.exists { actualTree =>
+      def ignored = actualTree match {
+        case TypeApply(method, other) => method.toString().endsWith(ignoring)
+        case _ => false
       }
 
-    val result: Either[String, (State, Instance)] =
-      fromExtensions.getOrElse {
+      ignoring.isEmpty || !ignored
+    }
+
+    if (existingInstAvailable)
+      c.abort(c.enclosingPosition, s"$innerTpe available elsewhere")
+    else {
+      val innerTpe0 =
+        if (ignoring.isEmpty)
+          innerTpe
+        else
+          appliedType(ignoringTpe, List(internal.constantType(Constant(ignoring)), innerTpe))
+
+      val low = q"""
+        new _root_.shapeless.LowPriority[$innerTpe0] {} : _root_.shapeless.LowPriority[$innerTpe0]
+      """
+      val lowTpe = appliedType(lowPriorityTpe, List(innerTpe0))
+
+      state.closeInst(wrappedTpe, low, lowTpe)
+    }
+  }
+
+  private def withIgnored(tpe: Type): Either[String, (Type, String)] =
+    tpe match {
+      case IgnoringTpe(mTpe, innerTpe0) =>
+        mTpe match {
+          case ConstantType(Constant(ignored: String)) if ignored.nonEmpty => Right((innerTpe0, ignored))
+          case _ => Left(s"Unsupported ignored type: $mTpe")
+        }
+      case _ => Right((tpe, ""))
+    }
+
+  def deriveLowPriority(
+    state0: State,
+    instTpe: Type
+  ): Option[Either[String, (State, Instance)]] =
+    instTpe match {
+      case LowPriorityTpe(innerTpe) =>
+        val res =
+          for {
+            state <- state0.lookup(instTpe).left
+            tpeIgnored <- withIgnored(innerTpe).right
+          } yield {
+            val (tpe, ignored) = tpeIgnored
+            deriveLowPriorityHelper(state, instTpe, tpe, ignored)
+          }
+
+        Some(res)
+
+      case _ => None
+    }
+
+  def derive(state: State)(tpe: Type): Either[String, (State, Instance)] =
+    if (state.prevent.contains(TypeWrapper(tpe)))
+      Left(s"Not deriving $tpe")
+    else
+      deriveLowPriority(state, tpe).getOrElse {
         state.lookup(tpe).left.flatMap { state0 =>
           val inst = state0.dict(TypeWrapper(tpe))
-          resolve(state0)(inst)
-            .toRight(s"Unable to derive $tpe")
+          resolve(state0)(inst).toRight(s"Unable to derive $tpe")
         }
       }
-
-    // Check for newly added extensions, and re-derive with them.
-    lazy val current = state.extensions.map(_.extension.id).toSet
-    val newExtensions0 = State.takeNewExtensions().filter(ext => !current(ext.extension.id))
-    if (newExtensions0.nonEmpty)
-      derive(state.copy(extensions = newExtensions0 ::: state.extensions))(tpe)
-    else
-      result
-  }
 
   // Workaround for https://issues.scala-lang.org/browse/SI-5465
   class StripUnApplyNodes extends Transformer {
