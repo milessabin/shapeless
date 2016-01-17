@@ -37,20 +37,9 @@ import scala.reflect.macros.whitebox
  */
 trait LowPriority[T] extends Serializable
 
-object LowPriority extends LazyExtensionCompanion {
-  def apply[T](implicit nf: Strict[LowPriority[T]]): LowPriority[T] =
+object LowPriority {
+  implicit def apply[T](implicit nf: Strict[LowPriority[T]]): LowPriority[T] =
     nf.value
-
-
-  def id = "low-priority"
-
-  implicit def init[T]: LowPriority[T] = macro initImpl[LowPriority[T]]
-
-  def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type } =
-    new LowPriorityExtension {
-      type Ctx = ctx0.type
-      val ctx: ctx0.type = ctx0
-    }
 }
 
 /**
@@ -96,10 +85,9 @@ object LowPriority extends LazyExtensionCompanion {
  */
 trait Ignoring[M, T]
 
-
+@macrocompat.bundle
 trait LowPriorityTypes {
-  type C <: whitebox.Context
-  val c: C
+  val c: whitebox.Context
 
   import c.universe._
 
@@ -131,115 +119,3 @@ trait LowPriorityTypes {
   }
 
 }
-
-trait LowPriorityExtension extends LazyExtension with LowPriorityTypes {
-  type C = ctx.c.type
-  lazy val c: C = ctx.c
-
-  import ctx._
-  import c.universe._
-
-  case class ThisState(
-    /**
-     * `LowPriority` types whose derivation must fail no matter what.
-     *
-     * In the initial lookup for a `LowPriority[T]`, a `T` will be looked for elsewhere.
-     * During the latter search, `LowPriority[T]` will be in this list, so that further
-     * derivations of `LowPriority[T]` will fail, effectively *preventing* the implicit that should
-     * be given a lower priority to be found.
-     */
-    prevent: List[TypeWrapper]
-  ) {
-    def :+(tpe: Type): ThisState =
-      copy(prevent = TypeWrapper(tpe) :: prevent)
-
-    def allowed(tpe: Type): Either[String, Unit] =
-      if (prevent.contains(TypeWrapper(tpe)))
-        Left(s"Not deriving $tpe")
-      else
-        Right(())
-  }
-
-  def id = LowPriority.id
-
-  def initialState = ThisState(Nil)
-
-  def deriveLowPriority(
-    state: State,
-    extState: ThisState,
-    update: (State, ThisState) => State )(
-    wrappedTpe: Type,
-    innerTpe: Type,
-    ignoring: String
-  ): (State, Instance) = {
-    val tmpState = update(state, extState :+ wrappedTpe)
-
-    val existingInstOpt = ctx.derive(tmpState)(innerTpe).right.toOption.flatMap {
-      case (state2, inst) =>
-        if (inst.inst.isEmpty)
-          resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
-        else
-          Some(inst.inst.get)
-    }
-
-    val existingInstAvailable = existingInstOpt.exists { actualTree =>
-      def ignored = actualTree match {
-        case TypeApply(method, other) => method.toString().endsWith(ignoring)
-        case _ => false
-      }
-
-      ignoring.isEmpty || !ignored
-    }
-
-    if (existingInstAvailable)
-      c.abort(c.enclosingPosition, s"$innerTpe available elsewhere")
-    else {
-      val innerTpe0 =
-        if (ignoring.isEmpty)
-          innerTpe
-        else
-          appliedType(ignoringTpe, List(internal.constantType(Constant(ignoring)), innerTpe))
-
-      val low = q"""
-        new _root_.shapeless.LowPriority[$innerTpe0] {} : _root_.shapeless.LowPriority[$innerTpe0]
-      """
-      val lowTpe = appliedType(lowPriorityTpe, List(innerTpe0))
-
-      state.closeInst(wrappedTpe, low, lowTpe)
-    }
-  }
-
-  private def withIgnored(tpe: Type): Either[String, (Type, String)] =
-    tpe match {
-      case IgnoringTpe(mTpe, innerTpe0) =>
-        mTpe match {
-          case ConstantType(Constant(ignored: String)) if ignored.nonEmpty => Right((innerTpe0, ignored))
-          case _ => Left(s"Unsupported ignored type: $mTpe")
-        }
-      case _ => Right((tpe, ""))
-    }
-
-  def derive(
-    state0: State,
-    extState: ThisState,
-    update: (State, ThisState) => State )(
-    instTpe: Type
-  ): Option[Either[String, (State, Instance)]] =
-    instTpe match {
-      case LowPriorityTpe(innerTpe) =>
-        val res =
-          for {
-            _ <- extState.allowed(instTpe).right
-            state <- state0.lookup(instTpe).left
-            tpeIgnored <- withIgnored(innerTpe).right
-          } yield {
-            val (tpe, ignored) = tpeIgnored
-            deriveLowPriority(state, extState, update)(instTpe, tpe, ignored)
-          }
-
-        Some(res)
-
-      case _ => None
-    }
-}
-
