@@ -1,6 +1,6 @@
 package shapeless
 
-import Definitions._
+import LowPriorityDerivationTests._
 
 import org.junit.Test
 

@@ -53,6 +53,50 @@ object LowPriority extends LazyExtensionCompanion {
     }
 }
 
+/**
+ * Allows to ignore some implicits in a `LowPriority[T]`.
+ *
+ * Use like ``LowPriority[Ignoring[Witness.`"ignoredMethod"`.T, T]]``.
+ *
+ * Typical usage is when a fallback for type class `TC` is defined in its companion, like
+ * {{{
+ *   object TC {
+ *     implicit def anyTC[T]: TC[T] = ...
+ *   }
+ * }}}
+ *
+ * With the example of `LowPriority[T]` above,
+ * {{{
+ *   trait TC[T] {
+ *     def prop: Option[Boolean]
+ *   }
+ *
+ *   trait LowPriTC {
+ *     // default low priority TC[T] for any T, with field `prop` equal to `None`
+ *     implicit def anyTC[T]: TC[T] = new TC[T] { def prop = None }
+ *   }
+ *
+ *   object TC extends LowPriTC {
+ *     // TC[Int] available by default, with field `prop` equal to `Some(true)`
+ *     implicit val intTC: TC[Int] = new TC[Int] { def prop = Some(true) }
+ *   }
+ *
+ *   // extra `TC[T]`, with field `prop` equal to `Some(false)`
+ *   implicit def extraTC[T](implicit ev: LowPriority[Ignoring[Witness.`"anyTC"`.T, TC[T]]]): TC[T] =
+ *     new TC[T] { def prop = Some(false) }
+ *
+ *   // Already available instance `intTC` is still found, because `extraTC[Int]` requires a
+ *   // `LowPriority[TC[Int]]`, that will refuse to materialize (because `LowPriority` is able to
+ *   // know about the already available `intTC`.)
+ *   assert(implicitly[TC[Int]].prop == true)
+ *
+ *   // `extraTC[String]` is found, as the default `anyTC[String]` is ignored,
+ *   assert(implicitly[TC[String]].prop == false)
+ * }}}
+ */
+trait Ignoring[M, T]
+
+
 trait LowPriorityTypes {
   type C <: whitebox.Context
   val c: C
@@ -73,13 +117,13 @@ trait LowPriorityTypes {
       }
   }
 
-  def maskTpe: Type = typeOf[Mask[_, _]].typeConstructor
+  def ignoringTpe: Type = typeOf[Ignoring[_, _]].typeConstructor
 
-  object LowPriorityMaskTpe {
+  object IgnoringTpe {
     def unapply(tpe: Type): Option[(Type, Type)] =
       tpe.dealias match {
         case TypeRef(_, cpdTpe, List(mTpe, tTpe))
-          if cpdTpe.asType.toType.typeConstructor =:= maskTpe =>
+          if cpdTpe.asType.toType.typeConstructor =:= ignoringTpe =>
           Some(mTpe, tTpe)
         case _ =>
           None
@@ -126,7 +170,7 @@ trait LowPriorityExtension extends LazyExtension with LowPriorityTypes {
     update: (State, ThisState) => State )(
     wrappedTpe: Type,
     innerTpe: Type,
-    mask: String
+    ignoring: String
   ): (State, Instance) = {
     val tmpState = update(state, extState :+ wrappedTpe)
 
@@ -139,22 +183,22 @@ trait LowPriorityExtension extends LazyExtension with LowPriorityTypes {
     }
 
     val existingInstAvailable = existingInstOpt.exists { actualTree =>
-      def masked = actualTree match {
-        case TypeApply(method, other) => method.toString().endsWith(mask)
+      def ignored = actualTree match {
+        case TypeApply(method, other) => method.toString().endsWith(ignoring)
         case _ => false
       }
 
-      mask.isEmpty || !masked
+      ignoring.isEmpty || !ignored
     }
 
     if (existingInstAvailable)
       c.abort(c.enclosingPosition, s"$innerTpe available elsewhere")
     else {
       val innerTpe0 =
-        if (mask.isEmpty)
+        if (ignoring.isEmpty)
           innerTpe
         else
-          appliedType(maskTpe, List(internal.constantType(Constant(mask)), innerTpe))
+          appliedType(ignoringTpe, List(internal.constantType(Constant(ignoring)), innerTpe))
 
       val low = q"""
         new _root_.shapeless.LowPriority[$innerTpe0] {} : _root_.shapeless.LowPriority[$innerTpe0]
@@ -165,12 +209,12 @@ trait LowPriorityExtension extends LazyExtension with LowPriorityTypes {
     }
   }
 
-  private def withMask(tpe: Type): Either[String, (Type, String)] =
+  private def withIgnored(tpe: Type): Either[String, (Type, String)] =
     tpe match {
-      case LowPriorityMaskTpe(mTpe, innerTpe0) =>
+      case IgnoringTpe(mTpe, innerTpe0) =>
         mTpe match {
-          case ConstantType(Constant(mask: String)) if mask.nonEmpty => Right((innerTpe0, mask))
-          case _ => Left(s"Unsupported mask type: $mTpe")
+          case ConstantType(Constant(ignored: String)) if ignored.nonEmpty => Right((innerTpe0, ignored))
+          case _ => Left(s"Unsupported ignored type: $mTpe")
         }
       case _ => Right((tpe, ""))
     }
@@ -187,10 +231,10 @@ trait LowPriorityExtension extends LazyExtension with LowPriorityTypes {
           for {
             _ <- extState.allowed(instTpe).right
             state <- state0.lookup(instTpe).left
-            tpeMask <- withMask(innerTpe).right
+            tpeIgnored <- withIgnored(innerTpe).right
           } yield {
-            val (tpe, mask) = tpeMask
-            deriveLowPriority(state, extState, update)(instTpe, tpe, mask)
+            val (tpe, ignored) = tpeIgnored
+            deriveLowPriority(state, extState, update)(instTpe, tpe, ignored)
           }
 
         Some(res)

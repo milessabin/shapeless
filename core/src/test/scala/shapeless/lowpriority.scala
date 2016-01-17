@@ -53,7 +53,7 @@ object LowPriorityTests {
     case class CC2(s: String)
 
     object Extra {
-      implicit def extraTC[T](implicit notFound: LowPriority[Mask[Witness.`"anyTC"`.T, TC[T]]]): TC[T] =
+      implicit def extraTC[T](implicit notFound: LowPriority[Ignoring[Witness.`"anyTC"`.T, TC[T]]]): TC[T] =
         new TC[T] { def prop = Some(false) }
     }
   }
