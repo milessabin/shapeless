@@ -197,7 +197,7 @@ object ShapelessBuild extends Build {
       resolvers += Opts.resolver.sonatypeSnapshots, // temp, for macro-compat
 
       initialCommands in console := """import shapeless._"""
-    ) ++ crossVersionSharedSources
+    )
 
   val paradisePlugin = ("org.scalamacros"  % "paradise"    % "2.1.0").compilerPlugin cross CrossVersion.full
   val quasiquotesLib = ("org.scalamacros" %% "quasiquotes" % "2.1.0").ifScala210
@@ -211,16 +211,4 @@ object ShapelessBuild extends Build {
   implicit final class ModuleIdWithCompilerPlugin(val __x: ModuleID) {
     def compilerPlugin = sbt.compilerPlugin(__x)
   }
-
-  lazy val crossVersionSharedSources: Seq[Setting[_]] =
-    Seq(Compile, Test).map { sc =>
-      (unmanagedSourceDirectories in sc) ++= {
-        (unmanagedSourceDirectories in sc ).value.map { dir: File =>
-          scalaPartV.value match {
-            case Some((2, y)) if y == 10 => new File(dir.getPath + "_2.10")
-            case Some((2, y)) if y >= 11 => new File(dir.getPath + "_2.11+")
-          }
-        }
-      }
-    }
 }
