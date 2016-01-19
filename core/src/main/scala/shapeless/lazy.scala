@@ -164,7 +164,7 @@ object Strict {
 }
 
 @macrocompat.bundle
-class LazyMacros(val c: whitebox.Context) {
+class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import c.ImplicitCandidate
 
@@ -183,416 +183,282 @@ class LazyMacros(val c: whitebox.Context) {
   def mkImpl[I](mkInst: (Tree, Type) => Tree, nullInst: => Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
     (c.openImplicits.headOption, iTag.tpe.dealias) match {
       case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        LazyMacros.deriveInstance(c)(tpe.map(_.dealias), mkInst)
+        LazyMacros.deriveInstance(this)(tpe.map(_.dealias), mkInst)
       case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
         nullInst
       case (None, tpe) =>                                     // Non-implicit invocation
-        LazyMacros.deriveInstance(c)(tpe, mkInst)
+        LazyMacros.deriveInstance(this)(tpe, mkInst)
       case _ =>
         c.abort(c.enclosingPosition, s"Bad Lazy materialization ${c.openImplicits.head}")
+    }
+  }
+
+  trait LazyDefinitions {
+    case class Instance(
+      instTpe: Type,
+      name: TermName,
+      symbol: Symbol,
+      inst: Option[Tree],
+      actualTpe: Type,
+      dependsOn: List[Type]
+    ) {
+      def ident = Ident(symbol)
+    }
+
+    object Instance {
+      def apply(instTpe: Type) = {
+        val nme = TermName(c.freshName("inst"))
+        val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
+
+        new Instance(instTpe, nme, sym, None, instTpe, Nil)
+      }
+    }
+
+    class TypeWrapper(val tpe: Type) {
+      override def equals(other: Any): Boolean =
+        other match {
+          case TypeWrapper(tpe0) => tpe =:= tpe0
+          case _ => false
+        }
+      override def toString = tpe.toString
+    }
+
+    object TypeWrapper {
+      def apply(tpe: Type) = new TypeWrapper(tpe)
+      def unapply(tw: TypeWrapper): Option[Type] = Some(tw.tpe)
+    }
+  }
+
+  class DerivationContext extends LazyDefinitions {
+    object State {
+      val empty = State("", ListMap.empty, Nil)
+
+      private var current = Option.empty[State]
+
+      def resolveInstance(state: State)(tpe: Type): Option[(State, Tree)] = {
+        val former = State.current
+        State.current = Some(state)
+        val (state0, tree) =
+          try {
+            val tree = c.inferImplicitValue(tpe, silent = true)
+            (State.current.get, tree)
+          } finally {
+            State.current = former
+          }
+
+          if (tree == EmptyTree) None
+          else Some((state0, tree))
+        }
+
+      def deriveInstance(instTpe0: Type, root: Boolean, mkInst: (Tree, Type) => Tree): Tree = {
+        if (root) {
+          assert(current.isEmpty)
+          val open = c.openImplicits
+          val name = if (open.length > 1) open(1).sym.name.toTermName.toString else "lazy"
+          current = Some(empty.copy(name = "anon$"+name))
+        }
+
+        derive(current.get)(instTpe0) match {
+          case Right((state, inst)) =>
+            val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
+            current = if (root) None else Some(state)
+            if (root) {
+              val valNme = TermName(c.freshName("inst"))
+              q"""
+              val $valNme: $actualType = $tree
+              ${mkInst(q"$valNme", actualType)}
+              """
+            } else
+              mkInst(tree, actualType)
+          case Left(err) =>
+            abort(err)
+        }
+      }
+    }
+
+    case class State(
+      name: String,
+      dict: ListMap[TypeWrapper, Instance],
+      open: List[Instance]
+    ) {
+      def addDependency(tpe: Type): State = {
+        import scala.::
+        val open0 = open match {
+          case Nil => Nil
+          case h :: t => h.copy(dependsOn = if (h.instTpe =:= tpe || h.dependsOn.exists(_ =:= tpe)) h.dependsOn else tpe :: h.dependsOn) :: t
+        }
+        copy(open = open0)
+      }
+
+      private def update(inst: Instance): State =
+        copy(dict = dict.updated(TypeWrapper(inst.instTpe), inst))
+
+      def openInst(tpe: Type): (State, Instance) = {
+        val inst = Instance(tpe)
+        val state0 = addDependency(tpe)
+        (state0.copy(open = inst :: state0.open).update(inst), inst)
+      }
+
+      def closeInst(tpe: Type, tree: Tree, actualTpe: Type): (State, Instance) = {
+        assert(open.nonEmpty)
+        assert(open.head.instTpe =:= tpe)
+        val instance = open.head
+        val sym = c.internal.setInfo(instance.symbol, actualTpe)
+        val instance0 = instance.copy(inst = Some(tree), actualTpe = actualTpe, symbol = sym)
+        (copy(open = open.tail).update(instance0), instance0)
+      }
+
+      def lookup(instTpe: Type): Either[State, (State, Instance)] =
+        dict.get(TypeWrapper(instTpe)) match {
+          case Some(i) => Right((addDependency(instTpe), i))
+          case None => Left(openInst(instTpe)._1)
+        }
+
+
+      def dependsOn(tpe: Type): List[Instance] = {
+        import scala.::
+        def helper(tpes: List[List[Type]], acc: List[Instance]): List[Instance] =
+          tpes match {
+            case Nil => acc
+            case Nil :: t =>
+              helper(t, acc)
+            case (h :: t0) :: t =>
+              if (acc.exists(_.instTpe =:= h))
+                helper(t0 :: t, acc)
+              else {
+                val inst = dict(TypeWrapper(h))
+                helper(inst.dependsOn :: t0 :: t, inst :: acc)
+              }
+          }
+
+        helper(List(List(tpe)), Nil)
+      }
+    }
+
+    def stripRefinements(tpe: Type): Option[Type] =
+      tpe match {
+        case RefinedType(parents, decls) => Some(parents.head)
+        case _ => None
+      }
+
+    def resolve(state: State)(inst: Instance): Option[(State, Instance)] =
+      resolve0(state)(inst.instTpe)
+        .filter{case (_, tree, _) => !tree.equalsStructure(inst.ident) }
+        .map {case (state0, extInst, actualTpe) =>
+          state0.closeInst(inst.instTpe, extInst, actualTpe)
+        }
+
+    def resolve0(state: State)(tpe: Type): Option[(State, Tree, Type)] = {
+      val extInstOpt =
+        State.resolveInstance(state)(tpe)
+          .orElse(
+            stripRefinements(tpe).flatMap(State.resolveInstance(state))
+          )
+
+      extInstOpt.map {case (state0, extInst) =>
+        (state0, extInst, extInst.tpe.finalResultType)
+      }
+    }
+
+    def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
+      state.lookup(tpe).left.flatMap { state0 =>
+        val inst = state0.dict(TypeWrapper(tpe))
+        resolve(state0)(inst)
+          .toRight(s"Unable to derive $tpe")
+      }
+    }
+
+    // Workaround for https://issues.scala-lang.org/browse/SI-5465
+    class StripUnApplyNodes extends Transformer {
+      val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+      import global.nme
+
+      override def transform(tree: Tree): Tree = {
+        super.transform {
+          tree match {
+            case UnApply(Apply(Select(qual, nme.unapply | nme.unapplySeq), List(Ident(nme.SELECTOR_DUMMY))), args) =>
+              Apply(transform(qual), transformTrees(args))
+            case UnApply(Apply(TypeApply(Select(qual, nme.unapply | nme.unapplySeq), _), List(Ident(nme.SELECTOR_DUMMY))), args) =>
+              Apply(transform(qual), transformTrees(args))
+            case t => t
+          }
+        }
+      }
+    }
+
+    def mkInstances(state: State)(primaryTpe: Type): (Tree, Type) = {
+      val instances = state.dict.values.toList
+      val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
+
+      def clean(inst: Tree) = {
+        val cleanInst = c.untypecheck(c.internal.substituteSymbols(inst, from, to))
+        new StripUnApplyNodes().transform(cleanInst)
+      }
+
+      if (instances.length == 1) {
+        val instance = instances.head
+        import instance._
+        inst match {
+          case Some(inst) =>
+            val cleanInst = clean(inst)
+            (q"$cleanInst.asInstanceOf[$actualTpe]", actualTpe)
+          case None =>
+            abort(s"Uninitialized $instTpe lazy implicit")
+        }
+      } else {
+        val instTrees =
+          instances.map { instance =>
+            import instance._
+            inst match {
+              case Some(inst) =>
+                val cleanInst = clean(inst)
+                q"""lazy val $name: $actualTpe = $cleanInst.asInstanceOf[$actualTpe]"""
+              case None =>
+                abort(s"Uninitialized $instTpe lazy implicit")
+            }
+          }
+
+        val primaryInstance = state.lookup(primaryTpe).right.get._2
+        val primaryNme = primaryInstance.name
+        val clsName = TypeName(c.freshName(state.name))
+
+        val tree =
+          q"""
+            final class $clsName extends _root_.scala.Serializable {
+              ..$instTrees
+            }
+            (new $clsName).$primaryNme
+           """
+        val actualType = primaryInstance.actualTpe
+
+        (tree, actualType)
+      }
     }
   }
 }
 
 object LazyMacros {
-  var dcRef: Option[DerivationContext] = None
+  var dcRef: Option[LazyMacros#DerivationContext] = None
 
-  def deriveInstance(c: whitebox.Context)(tpe: c.Type, mkInst: (c.Tree, c.Type) => c.Tree): c.Tree = {
+  def deriveInstance(lm: LazyMacros)(tpe: lm.c.Type, mkInst: (lm.c.Tree, lm.c.Type) => lm.c.Tree): lm.c.Tree = {
     val (dc, root) =
       dcRef match {
         case None =>
-          val dc = DerivationContext(c)
+          val dc = new lm.DerivationContext
           dcRef = Some(dc)
           (dc, true)
         case Some(dc) =>
-          (DerivationContext.establish(dc, c), false)
+          (dc.asInstanceOf[lm.DerivationContext], false)
       }
 
     if (root)
       // Sometimes corrupted, and slows things too
-      c.universe.asInstanceOf[scala.tools.nsc.Global].analyzer.resetImplicits()
+      lm.c.universe.asInstanceOf[scala.tools.nsc.Global].analyzer.resetImplicits()
 
     try {
-      // BACKPORT: scalac 2.11 doesn't need these asInstanceOf's
-      dc.State.deriveInstance(
-        tpe.asInstanceOf[dc.c.universe.Type],
-        root,
-        mkInst.asInstanceOf[(dc.c.universe.Tree, dc.c.universe.Type) => dc.c.universe.Tree]
-      ).asInstanceOf[c.Tree]
+      dc.State.deriveInstance(tpe, root, mkInst)
     } finally {
       if(root) dcRef = None
-    }
-  }
-}
-
-object DerivationContext extends DerivationContextCreator
-
-trait LazyExtension {
-  type Ctx <: DerivationContext
-  val ctx: Ctx
-
-  import ctx._
-  import c.universe._
-
-  /** Uniquely identifies a `LazyExtension`. Only one extension with a given id is taken into account, during a
-    * Lazy / Strict implicit search. */
-  def id: String
-
-  /** State of this extension, kept and provided back during Lazy / Strict implicit search. */
-  type ThisState
-
-  /** Initial state of this extension, upon initialization. */
-  def initialState: ThisState
-
-  /**
-   * Called during a `Lazy` or `Strict` implicit materialization.
-   *
-   * If this extension handles @tpe, it should return either `Some(Right(...))` upon success, or
-   * `Some(Left(...))` upon failure. The latter will make the current implicit search fail.
-   *
-   * If it does not handle this type, it should return `None`. Materialization will then go on with other
-   * extensions, or standard implicit search.
-   */
-  def derive(
-    state: State,
-    extState: ThisState,
-    update: (State, ThisState) => State )(
-    tpe: Type
-  ): Option[Either[String, (State, Instance)]]
-}
-
-/**
- * Lazy extension companions should extend this trait, and return a new `LazyExtension` instance via
- * `instantiate`.
- *
- * These companions typically provide a materializer method like
- * {{{
- *   implicit def init[H]: Wrapper[T] = macro initImpl
- * }}},
- * where `Wrapper` is the wrapper type that this extension handles, and `initImpl` is provided by
- * the `LazyExtensionCompanion` trait. This initializes the extension upon first use during
- * a `Lazy` / `Strict` implicit search.
- */
-trait LazyExtensionCompanion {
-  def instantiate(ctx0: DerivationContext): LazyExtension { type Ctx = ctx0.type }
-
-  def initImpl(c: whitebox.Context): Nothing = {
-    val ctx = LazyMacros.dcRef.getOrElse(
-      c.abort(c.enclosingPosition, "")
-    )
-
-    val extension = instantiate(ctx)
-    ctx.State.addExtension(extension)
-
-    c.abort(c.enclosingPosition, s"Added extension ${extension.id}")
-  }
-}
-
-@macrocompat.bundle
-trait LazyDefinitions {
-  val c: whitebox.Context
-
-  import c.universe._
-
-  case class Instance(
-    instTpe: Type,
-    name: TermName,
-    symbol: Symbol,
-    inst: Option[Tree],
-    actualTpe: Type,
-    dependsOn: List[Type]
-  ) {
-    def ident = Ident(symbol)
-  }
-
-  object Instance {
-    def apply(instTpe: Type) = {
-      val nme = TermName(c.freshName("inst"))
-      val sym = c.internal.setInfo(c.internal.newTermSymbol(NoSymbol, nme), instTpe)
-
-      new Instance(instTpe, nme, sym, None, instTpe, Nil)
-    }
-  }
-
-  class TypeWrapper(val tpe: Type) {
-    override def equals(other: Any): Boolean =
-      other match {
-        case TypeWrapper(tpe0) => tpe =:= tpe0
-        case _ => false
-      }
-    override def toString = tpe.toString
-  }
-
-  object TypeWrapper {
-    def apply(tpe: Type) = new TypeWrapper(tpe)
-    def unapply(tw: TypeWrapper): Option[Type] = Some(tw.tpe)
-  }
-
-
-  case class ExtensionWithState[S <: DerivationContext, T](
-    extension: LazyExtension { type Ctx = S; type ThisState = T },
-    state: T
-  ) {
-    import extension.ctx
-
-    def derive(
-      state0: ctx.State,
-      update: (ctx.State, ExtensionWithState[S, T]) => ctx.State )(
-      tpe: ctx.c.Type
-    ): Option[Either[String, (ctx.State, ctx.Instance)]] =
-      extension.derive(state0, state, (ctx, t) => update(ctx, copy(state = t)))(tpe)
-  }
-
-  object ExtensionWithState {
-    def apply(extension: LazyExtension): ExtensionWithState[extension.Ctx, extension.ThisState] =
-      ExtensionWithState(extension, extension.initialState)
-  }
-
-}
-
-@macrocompat.bundle
-trait DerivationContext extends CaseClassMacros with LazyDefinitions { ctx =>
-  import c.universe._
-
-  object State {
-    final val ctx0: ctx.type = ctx
-    val empty = State("", ListMap.empty, Nil, Nil)
-
-    private var current = Option.empty[State]
-    private var addExtensions = List.empty[ExtensionWithState[ctx.type, _]]
-
-    def addExtension(extension: LazyExtension { type Ctx = ctx0.type }): Unit = {
-      addExtensions = ExtensionWithState(extension) :: addExtensions
-    }
-
-    def takeNewExtensions(): List[ExtensionWithState[ctx.type, _]] = {
-      val addExtensions0 = addExtensions
-      addExtensions = Nil
-      addExtensions0
-    }
-
-    def resolveInstance(state: State)(tpe: Type): Option[(State, Tree)] = {
-      val former = State.current
-      State.current = Some(state)
-      val (state0, tree) =
-        try {
-          val tree = c.inferImplicitValue(tpe, silent = true)
-          (State.current.get, tree)
-        } finally {
-          State.current = former
-        }
-
-        if (tree == EmptyTree || addExtensions.nonEmpty) None
-        else Some((state0, tree))
-      }
-
-    def deriveInstance(instTpe0: Type, root: Boolean, mkInst: (Tree, Type) => Tree): Tree = {
-      if (root) {
-        assert(current.isEmpty)
-        val open = c.openImplicits
-        val name = if (open.length > 1) open(1).sym.name.toTermName.toString else "lazy"
-        current = Some(empty.copy(name = "anon$"+name))
-      }
-
-      ctx.derive(current.get)(instTpe0) match {
-        case Right((state, inst)) =>
-          val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
-          current = if (root) None else Some(state)
-          if (root) {
-            // BACKPORT: Requires 2.11+, throws exceptions during constructors phase
-            // can't compile examples' basecopy and core test's generic
-          //val valNme = TermName(c.freshName)
-            val valNme = TermName(c.freshName("inst"))
-            q"""
-            val $valNme: $actualType = $tree
-            ${mkInst(q"$valNme", actualType)}
-            """
-          } else
-            mkInst(tree, actualType)
-        case Left(err) =>
-          abort(err)
-      }
-    }
-  }
-
-  case class State(
-    name: String,
-    dict: ListMap[TypeWrapper, Instance],
-    open: List[Instance],
-    extensions: List[ExtensionWithState[ctx.type, _]]
-  ) {
-    def addDependency(tpe: Type): State = {
-      import scala.::
-      val open0 = open match {
-        case Nil => Nil
-        case h :: t => h.copy(dependsOn = if (h.instTpe =:= tpe || h.dependsOn.exists(_ =:= tpe)) h.dependsOn else tpe :: h.dependsOn) :: t
-      }
-      copy(open = open0)
-    }
-
-    private def update(inst: Instance): State =
-      copy(dict = dict.updated(TypeWrapper(inst.instTpe), inst))
-
-    def openInst(tpe: Type): (State, Instance) = {
-      val inst = Instance(tpe)
-      val state0 = addDependency(tpe)
-      (state0.copy(open = inst :: state0.open).update(inst), inst)
-    }
-
-    def closeInst(tpe: Type, tree: Tree, actualTpe: Type): (State, Instance) = {
-      assert(open.nonEmpty)
-      assert(open.head.instTpe =:= tpe)
-      val instance = open.head
-      val sym = c.internal.setInfo(instance.symbol, actualTpe)
-      val instance0 = instance.copy(inst = Some(tree), actualTpe = actualTpe, symbol = sym)
-      (copy(open = open.tail).update(instance0), instance0)
-    }
-
-    def lookup(instTpe: Type): Either[State, (State, Instance)] =
-      dict.get(TypeWrapper(instTpe)) match {
-        case Some(i) => Right((addDependency(instTpe), i))
-        case None => Left(openInst(instTpe)._1)
-      }
-
-
-    def dependsOn(tpe: Type): List[Instance] = {
-      import scala.::
-      def helper(tpes: List[List[Type]], acc: List[Instance]): List[Instance] =
-        tpes match {
-          case Nil => acc
-          case Nil :: t =>
-            helper(t, acc)
-          case (h :: t0) :: t =>
-            if (acc.exists(_.instTpe =:= h))
-              helper(t0 :: t, acc)
-            else {
-              val inst = dict(TypeWrapper(h))
-              helper(inst.dependsOn :: t0 :: t, inst :: acc)
-            }
-        }
-
-      helper(List(List(tpe)), Nil)
-    }
-  }
-
-  def stripRefinements(tpe: Type): Option[Type] =
-    tpe match {
-      case RefinedType(parents, decls) => Some(parents.head)
-      case _ => None
-    }
-
-  def resolve(state: State)(inst: Instance): Option[(State, Instance)] =
-    resolve0(state)(inst.instTpe)
-      .filter{case (_, tree, _) => !tree.equalsStructure(inst.ident) }
-      .map {case (state0, extInst, actualTpe) =>
-        state0.closeInst(inst.instTpe, extInst, actualTpe)
-      }
-
-  def resolve0(state: State)(tpe: Type): Option[(State, Tree, Type)] = {
-    val extInstOpt =
-      State.resolveInstance(state)(tpe)
-        .orElse(
-          stripRefinements(tpe).flatMap(State.resolveInstance(state))
-        )
-
-    extInstOpt.map {case (state0, extInst) =>
-      (state0, extInst, extInst.tpe.finalResultType)
-    }
-  }
-
-  def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
-    val fromExtensions: Option[Either[String, (State, Instance)]] =
-      state.extensions.zipWithIndex.foldRight(Option.empty[Either[String, (State, Instance)]]) {
-        case (_, acc @ Some(_)) => acc
-        case ((ext, idx), None) =>
-          def update(state: State, withState: ExtensionWithState[ctx.type, _]) =
-            state.copy(extensions = state.extensions.updated(idx, withState))
-
-          ext.derive(state, update)(tpe)
-      }
-
-    val result: Either[String, (State, Instance)] =
-      fromExtensions.getOrElse {
-        state.lookup(tpe).left.flatMap { state0 =>
-          val inst = state0.dict(TypeWrapper(tpe))
-          resolve(state0)(inst)
-            .toRight(s"Unable to derive $tpe")
-        }
-      }
-
-    // Check for newly added extensions, and re-derive with them.
-    lazy val current = state.extensions.map(_.extension.id).toSet
-    val newExtensions0 = State.takeNewExtensions().filter(ext => !current(ext.extension.id))
-    if (newExtensions0.nonEmpty)
-      derive(state.copy(extensions = newExtensions0 ::: state.extensions))(tpe)
-    else
-      result
-  }
-
-  // Workaround for https://issues.scala-lang.org/browse/SI-5465
-  class StripUnApplyNodes extends Transformer {
-    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    import global.nme
-
-    override def transform(tree: Tree): Tree = {
-      super.transform {
-        tree match {
-          case UnApply(Apply(Select(qual, nme.unapply | nme.unapplySeq), List(Ident(nme.SELECTOR_DUMMY))), args) =>
-            Apply(transform(qual), transformTrees(args))
-          case UnApply(Apply(TypeApply(Select(qual, nme.unapply | nme.unapplySeq), _), List(Ident(nme.SELECTOR_DUMMY))), args) =>
-            Apply(transform(qual), transformTrees(args))
-          case t => t
-        }
-      }
-    }
-  }
-
-  def mkInstances(state: State)(primaryTpe: Type): (Tree, Type) = {
-    val instances = state.dict.values.toList
-    val (from, to) = instances.map { d => (d.symbol, NoSymbol) }.unzip
-
-    def clean(inst: Tree) = {
-      val cleanInst = c.untypecheck(c.internal.substituteSymbols(inst, from, to))
-      new StripUnApplyNodes().transform(cleanInst)
-    }
-
-    if (instances.length == 1) {
-      val instance = instances.head
-      import instance._
-      inst match {
-        case Some(inst) =>
-          val cleanInst = clean(inst)
-          (q"$cleanInst.asInstanceOf[$actualTpe]", actualTpe)
-        case None =>
-          abort(s"Uninitialized $instTpe lazy implicit")
-      }
-    } else {
-      val instTrees =
-        instances.map { instance =>
-          import instance._
-          inst match {
-            case Some(inst) =>
-              val cleanInst = clean(inst)
-              q"""lazy val $name: $actualTpe = $cleanInst.asInstanceOf[$actualTpe]"""
-            case None =>
-              abort(s"Uninitialized $instTpe lazy implicit")
-          }
-        }
-
-      val primaryInstance = state.lookup(primaryTpe).right.get._2
-      val primaryNme = primaryInstance.name
-      val clsName = TypeName(c.freshName(state.name))
-
-      val tree =
-        q"""
-          final class $clsName extends _root_.scala.Serializable {
-            ..$instTrees
-          }
-          (new $clsName).$primaryNme
-         """
-      val actualType = primaryInstance.actualTpe
-
-      (tree, actualType)
     }
   }
 }
