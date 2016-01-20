@@ -90,16 +90,12 @@ sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
 /** `H :+: T` can either be `H` or `T`.
   * In this case it is `H`.
   */
-final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T] {
-  override def toString = head.toString
-}
+final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T]
 
 /** `H :+: T` can either be `H` or `T`.
   * In this case it is `T`.
   */
-final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
-  override def toString = tail.toString
-}
+final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T]
 
 /** The CNil type is used to terminate a 'list' of :+: alternatives.
   *
