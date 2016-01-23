@@ -114,6 +114,7 @@ package shapeless {
   @macrocompat.bundle
   class CachedImplicitMacros(val c: whitebox.Context) {
     import c.universe._
+    import scala.reflect.macros.TypecheckException
 
     def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
       val casted = c.asInstanceOf[reflect.macros.runtime.Context]
@@ -128,16 +129,40 @@ package shapeless {
         if (tTpe.typeSymbol.isParameter) owner.tpe
         else tTpe
       }.asInstanceOf[global.Type]
+
       // Run our own custom implicit search that isn't allowed to find
       // the thing we are enclosed in
       val sCtx = tCtx.makeImplicit(true)
+
+      trait ImplicitSearchCompat extends analyzer.ImplicitsContextErrors { self: analyzer.ImplicitSearch =>
+        import analyzer.global.{Type, Tree}
+        import analyzer.{ImplicitInfo, Context}
+        def AmbiguousImplicitError(
+          info1: ImplicitInfo,
+          info2: ImplicitInfo,
+          pre1: String, pre2: String,
+          trailer: String
+        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit
+
+        def AmbiguousImplicitError(
+            info1: ImplicitInfo, tree1: Tree,
+            info2: ImplicitInfo, tree2: Tree,
+            pre1: String, pre2: String,
+            trailer: String
+        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit
+      }
+
       val is = new analyzer.ImplicitSearch(
         tree=application,
         pt=tpe,
         isView=false,
         context0=sCtx,
         pos0=c.enclosingPosition.asInstanceOf[global.Position]
-      ) {
+      ) with ImplicitSearchCompat {
+
+        import analyzer.global.{Type, Tree}
+        import analyzer.{ImplicitInfo, Context}
+
         override def searchImplicit(
           implicitInfoss: List[List[analyzer.ImplicitInfo]],
           isLocalToCallsite: Boolean
@@ -147,21 +172,47 @@ package shapeless {
           }
           super.searchImplicit(filteredInput, isLocalToCallsite)
         }
-      }
-      val best = is.bestImplicit
-      if (best.isFailure) {
-        val errs = sCtx.reporter.errors
-        errs.foreach { err =>
-          c.error(
-            err.errPos.asInstanceOf[Position],
-            err.errMsg
-          )
+
+        override def AmbiguousImplicitError(
+          info1: ImplicitInfo, tree1: Tree,
+          info2: ImplicitInfo, tree2: Tree,
+          pre1: String, pre2: String,
+          trailer: String
+        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit = {
+          AmbiguousImplicitError(info1, info2, pre1, pre2, trailer)(isView, pt, tree)
         }
+
+        override def AmbiguousImplicitError(
+          info1: ImplicitInfo,
+          info2: ImplicitInfo,
+          pre1: String, pre2: String,
+          trailer: String
+        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit = {
+          if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
+            val coreMsg =
+              s"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
+                  | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
+                  | $trailer""".stripMargin.trim
+            val msg = s"ambiguous implicit values:\n${coreMsg}match expected type $pt"
+            c.abort(c.enclosingPosition, msg)
+          }
+        }
+
+      }
+
+      val best = is.bestImplicit
+
+      sCtx.reporter.errors.foreach { err =>
+        c.abort(err.errPos.asInstanceOf[c.Position], err.errMsg)
+      }
+
+      if (best.isFailure) {
+
         val errorMsg = tpe.typeSymbolDirect match {
           case analyzer.ImplicitNotFoundMsg(msg) =>
             msg.format(TermName("evidence").asInstanceOf[global.TermName], tpe)
           case _ =>
-            s"Could not find an implict $tpe to cache"
+            s"Could not find an implicit $tpe to cache"
         }
         c.abort(c.enclosingPosition, errorMsg)
       } else {

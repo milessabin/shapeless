@@ -19,6 +19,8 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import test.illTyped
+
 trait CachedTC[T]
 object CachedTC {
   implicit def mkTC[T] = new CachedTC[T] {}
@@ -51,5 +53,32 @@ class CachedTest {
   def testCompanion {
     assertTrue(CachedTC.cached != null)
     assertTrue(Bar.foo != null)
+  }
+
+  @Test
+  def testDivergent {
+    illTyped(
+      "cachedImplicit[math.Ordering[Ordered[Int]]]",
+      "diverging implicit expansion for type .*"
+    )
+  }
+
+  @Test
+  def testAmbiguous {
+    implicit val a = new Foo[String] { }
+    implicit val b = new Foo[String] { }
+    illTyped(
+      "cachedImplicit[Foo[String]]",
+      """ambiguous implicit values:.*"""
+    )
+  }
+
+  @Test
+  def testNotFound {
+    trait T[X]
+    illTyped(
+      "cachedImplicit[T[String]]",
+      "could not find an implicit.*"
+    )
   }
 }
