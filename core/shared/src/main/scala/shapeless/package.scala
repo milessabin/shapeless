@@ -134,7 +134,9 @@ package shapeless {
       // the thing we are enclosed in
       val sCtx = tCtx.makeImplicit(true)
 
-      trait ImplicitSearchCompat extends analyzer.ImplicitsContextErrors { self: analyzer.ImplicitSearch =>
+      // 2.12 changed the signature on a method we need to override. In order to allow us to define
+      // both versions below with the "override" modifier, we need an interface that contains both.
+      trait CompatImplicitSearch extends analyzer.ImplicitsContextErrors { self: analyzer.ImplicitSearch =>
         import analyzer.global.{Type, Tree}
         import analyzer.{ImplicitInfo, Context}
         def AmbiguousImplicitError(
@@ -158,7 +160,7 @@ package shapeless {
         isView=false,
         context0=sCtx,
         pos0=c.enclosingPosition.asInstanceOf[global.Position]
-      ) with ImplicitSearchCompat {
+      ) with CompatImplicitSearch {
 
         import analyzer.global.{Type, Tree}
         import analyzer.{ImplicitInfo, Context}
@@ -193,11 +195,10 @@ package shapeless {
               s"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
                   | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
                   | $trailer""".stripMargin.trim
-            val msg = s"ambiguous implicit values:\n${coreMsg}match expected type $pt"
+            val msg = s"ambiguous implicit values:\n${coreMsg}\nmatch expected type $pt"
             c.abort(c.enclosingPosition, msg)
           }
         }
-
       }
 
       val best = is.bestImplicit
