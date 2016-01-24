@@ -164,9 +164,27 @@ object Strict {
 }
 
 @macrocompat.bundle
-class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
+trait OpenImplicitMacros extends compat.CompatLite {
+  val c: whitebox.Context
+
   import c.universe._
-  import c.ImplicitCandidate
+
+  def openImplicitTpe: Option[Type] =
+    c.openImplicits.headOption.map(x => (x: ImplicitCandidate211).pt)
+
+  def openImplicitTpeParam: Option[Type] =
+    openImplicitTpe.map {
+      case TypeRef(_, _, List(tpe)) =>
+        tpe.map(_.dealias)
+      case other =>
+        c.abort(c.enclosingPosition, s"Bad materialization: $other")
+    }
+
+}
+
+@macrocompat.bundle
+class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros {
+  import c.universe._
 
   def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
     mkImpl[I](
@@ -181,15 +199,14 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
     )
 
   def mkImpl[I](mkInst: (Tree, Type) => Tree, nullInst: => Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
-    (c.openImplicits.headOption, iTag.tpe.dealias) match {
-      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        LazyMacros.deriveInstance(this)(tpe.map(_.dealias), mkInst)
-      case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
-        nullInst
-      case (None, tpe) =>                                     // Non-implicit invocation
-        LazyMacros.deriveInstance(this)(tpe, mkInst)
-      case _ =>
-        c.abort(c.enclosingPosition, s"Bad Lazy materialization ${c.openImplicits.head}")
+    openImplicitTpeParam match {
+      case Some(tpe) => LazyMacros.deriveInstance(this)(tpe, mkInst)
+      case None =>
+        val tpe = iTag.tpe.dealias
+        if (tpe.typeSymbol.isParameter)
+          nullInst
+        else
+          LazyMacros.deriveInstance(this)(tpe, mkInst)
     }
   }
 
