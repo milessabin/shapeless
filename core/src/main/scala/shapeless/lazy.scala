@@ -164,13 +164,13 @@ object Strict {
 }
 
 @macrocompat.bundle
-trait OpenImplicitMacros extends compat.CompatLite {
+trait OpenImplicitMacros {
   val c: whitebox.Context
 
   import c.universe._
 
   def openImplicitTpe: Option[Type] =
-    c.openImplicits.headOption.map(x => (x: ImplicitCandidate211).pt)
+    c.openImplicits.headOption.map(_.pt)
 
   def openImplicitTpeParam: Option[Type] =
     openImplicitTpe.map {
@@ -183,7 +183,7 @@ trait OpenImplicitMacros extends compat.CompatLite {
   def secondOpenImplicitTpe: Option[Type] =
     c.openImplicits match {
       case (List(_, second, _ @ _*)) =>
-        Some((second: ImplicitCandidate211).pt)
+        Some(second.pt)
       case _ => None
     }
 
