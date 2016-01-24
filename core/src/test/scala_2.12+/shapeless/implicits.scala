@@ -29,8 +29,8 @@ class CachedTest212 {
   @Test
   def testAmbiguous {
     @annotation.implicitAmbiguous("Custom ambiguous message")
-    implicit val a = new Foo[String] { }
-    implicit val b = new Foo[String] { }
+    implicit def a = new Foo[String] { }
+    implicit def b = new Foo[String] { }
     illTyped(
       "cachedImplicit[Foo[String]]",
       "Custom ambiguous message"
