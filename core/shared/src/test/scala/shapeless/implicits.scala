@@ -81,4 +81,14 @@ class CachedTest {
       "could not find an implicit.*"
     )
   }
+
+  @Test
+  def testCustomMessage {
+    @annotation.implicitNotFound("custom message")
+    trait T[X]
+    illTyped(
+      "cachedImplicit[T[String]]",
+      "custom message"
+    )
+  }
 }
