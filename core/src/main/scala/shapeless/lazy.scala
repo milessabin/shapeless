@@ -164,9 +164,34 @@ object Strict {
 }
 
 @macrocompat.bundle
-class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
+trait OpenImplicitMacros {
+  val c: whitebox.Context
+
   import c.universe._
-  import c.ImplicitCandidate
+
+  def openImplicitTpe: Option[Type] =
+    c.openImplicits.headOption.map(_.pt)
+
+  def openImplicitTpeParam: Option[Type] =
+    openImplicitTpe.map {
+      case TypeRef(_, _, List(tpe)) =>
+        tpe.map(_.dealias)
+      case other =>
+        c.abort(c.enclosingPosition, s"Bad materialization: $other")
+    }
+
+  def secondOpenImplicitTpe: Option[Type] =
+    c.openImplicits match {
+      case (List(_, second, _ @ _*)) =>
+        Some(second.pt)
+      case _ => None
+    }
+
+}
+
+@macrocompat.bundle
+class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros with LowPriorityTypes {
+  import c.universe._
 
   def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
     mkImpl[I](
@@ -181,15 +206,14 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
     )
 
   def mkImpl[I](mkInst: (Tree, Type) => Tree, nullInst: => Tree)(implicit iTag: WeakTypeTag[I]): Tree = {
-    (c.openImplicits.headOption, iTag.tpe.dealias) match {
-      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        LazyMacros.deriveInstance(this)(tpe.map(_.dealias), mkInst)
-      case (None, tpe) if tpe.typeSymbol.isParameter =>       // Workaround for presentation compiler
-        nullInst
-      case (None, tpe) =>                                     // Non-implicit invocation
-        LazyMacros.deriveInstance(this)(tpe, mkInst)
-      case _ =>
-        c.abort(c.enclosingPosition, s"Bad Lazy materialization ${c.openImplicits.head}")
+    openImplicitTpeParam match {
+      case Some(tpe) => LazyMacros.deriveInstance(this)(tpe, mkInst)
+      case None =>
+        val tpe = iTag.tpe.dealias
+        if (tpe.typeSymbol.isParameter)
+          nullInst
+        else
+          LazyMacros.deriveInstance(this)(tpe, mkInst)
     }
   }
 
@@ -231,7 +255,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   class DerivationContext extends LazyDefinitions {
     object State {
-      val empty = State("", ListMap.empty, Nil)
+      val empty = State("", ListMap.empty, Nil, Nil)
 
       private var current = Option.empty[State]
 
@@ -279,7 +303,9 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
     case class State(
       name: String,
       dict: ListMap[TypeWrapper, Instance],
-      open: List[Instance]
+      open: List[Instance],
+      /** Types whose derivation must fail no matter what */
+      prevent: List[TypeWrapper]
     ) {
       def addDependency(tpe: Type): State = {
         import scala.::
@@ -360,11 +386,75 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros {
       }
     }
 
+
+    def deriveLowPriority(
+      state0: State,
+      instTpe: Type
+    ): Option[Either[String, (State, Instance)]] = {
+
+      def helper(
+        state: State,
+        wrappedTpe: Type,
+        innerTpe: Type,
+        ignoring: String
+      ): (State, Instance) = {
+
+        val tmpState = state.copy(prevent = state.prevent :+ TypeWrapper(wrappedTpe))
+
+        val existingInstOpt = derive(tmpState)(innerTpe).right.toOption.flatMap {
+          case (state2, inst) =>
+            if (inst.inst.isEmpty)
+              resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
+            else
+              Some(inst.inst.get)
+        }
+
+        val existingInstAvailable = existingInstOpt.exists { actualTree =>
+          def ignored = actualTree match {
+            case TypeApply(method, other) => method.toString().endsWith(ignoring)
+            case _ => false
+          }
+
+          ignoring.isEmpty || !ignored
+        }
+
+        if (existingInstAvailable)
+          c.abort(c.enclosingPosition, s"$innerTpe available elsewhere")
+
+        val lowTpe =
+          if (ignoring.isEmpty)
+            appliedType(lowPriorityForTpe, List(innerTpe))
+          else
+            appliedType(lowPriorityForIgnoringTpe, List(internal.constantType(Constant(ignoring)), innerTpe))
+
+        val low = q"null: $lowTpe"
+
+        state.closeInst(wrappedTpe, low, lowTpe)
+      }
+
+      if (state0.prevent.contains(TypeWrapper(instTpe)))
+        Some(Left(s"Not deriving $instTpe"))
+      else
+        instTpe match {
+          case LowPriorityFor(ignored, tpe) =>
+            val res = state0.lookup(instTpe) match {
+              case Left(state) => helper(state, instTpe, tpe, ignored)
+              case Right(res) => res
+            }
+
+            Some(Right(res))
+
+          case _ => None
+        }
+    }
+
     def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
-      state.lookup(tpe).left.flatMap { state0 =>
-        val inst = state0.dict(TypeWrapper(tpe))
-        resolve(state0)(inst)
-          .toRight(s"Unable to derive $tpe")
+      deriveLowPriority(state, tpe).getOrElse {
+        state.lookup(tpe).left.flatMap { state0 =>
+          val inst = state0.dict(TypeWrapper(tpe))
+          resolve(state0)(inst)
+            .toRight(s"Unable to derive $tpe")
+        }
       }
     }
 

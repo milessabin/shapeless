@@ -65,20 +65,12 @@ object CachedMacros {
 }
 
 @macrocompat.bundle
-class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) {
+class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) with OpenImplicitMacros {
   import c.universe._
-  import c.ImplicitCandidate
 
   def materializeCached[T: WeakTypeTag]: Tree = {
     // Getting the actual type parameter T, using the same trick as Lazy/Strict
-    val tpe = (c.openImplicits.headOption, weakTypeOf[T]) match {
-      case (Some(ImplicitCandidate(_, _, TypeRef(_, _, List(tpe)), _)), _) =>
-        tpe.map(_.dealias)
-      case (None, tpe) =>                                     // Non-implicit invocation
-        tpe
-      case _ =>
-        c.abort(c.enclosingPosition, s"Bad Cached materialization ${c.openImplicits.head}")
-    }
+    val tpe = openImplicitTpeParam.getOrElse(weakTypeOf[T])
 
     val concurrentLazy = !CachedMacros.deriving && LazyMacros.dcRef.nonEmpty
 
