@@ -99,7 +99,6 @@ object Zipper {
 
   def apply[L <: HList](l : L) : Zipper[L, HNil, L, None.type] = Zipper[L, HNil, L, None.type](HNil, l, None)
 
-  // BACKPORT: Can't make the wrapped zipper a private val until 2.11+
   implicit class Modifier[C, L <: HList, RH, RT <: HList, P](val zipper: Zipper[C, L, RH :: RT, P]) extends AnyVal {
     import ops.zipper._
     /** Modifies the element at the cursor by the use of function f. Available only if the underlying `HList` is non-empty. */
