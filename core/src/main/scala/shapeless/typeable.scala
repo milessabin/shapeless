@@ -339,21 +339,18 @@ object TypeCase {
 class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal._
+  import definitions.NothingClass
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
 
     val typeableTpe = typeOf[Typeable[_]].typeConstructor
     val genericTpe = typeOf[Generic[_]].typeConstructor
-    val AC = definitions.AnyClass
-    val NC = definitions.NothingClass
 
     val dealiased = tpe.dealias
 
     dealiased match {
-      // BACKPORT: In 2.11+ NC isn't volatile
-    //case TypeRef(_, NC, _) =>
-      case TypeRef(_, nc, _) if nc == NC =>
+      case t: TypeRef if t.sym == NothingClass =>
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
       case ExistentialType(_, underlying) =>
