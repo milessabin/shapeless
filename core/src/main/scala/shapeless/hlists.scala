@@ -254,20 +254,23 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
   }
 
   def mkProductNatImpl(args: Seq[Tree]): Tree = {
-    args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
-      case(elem, (accTpe, accTree)) =>
-        val matElem = c.typecheck(materializeWidenedFn(elem))
-        val (neTpe, neTree) = (matElem.tpe, matElem)
-        (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
+    args.foldRight((tq"_root_.shapeless.HNil", q"_root_.shapeless.HNil: $hnilTpe"): (Tree, Tree)) {
+      case(NatLiteral(n), (accTpt, accTree)) =>
+        val neTpt = mkNatTpt(n)
+        val neTree = mkNatValue(n)
+        (tq"""_root_.shapeless.::[$neTpt, $accTpt]""", q"""_root_.shapeless.::[$neTpt, $accTpt]($neTree, $accTree)""")
+      case (elem, _) =>
+        c.abort(c.enclosingPosition, s"Expression $elem does not evaluate to a non-negative Int literal")
     }._2
   }
 
   def mkProductNatTypeParamsImpl(args: Seq[Tree]): Tree = {
-    args.foldRight((hnilTpe, tq"_root_.shapeless.HNil": Tree)) {
-      case (elem, (accTpe, _)) =>
-        val matElem = c.typecheck(materializeWidenedFn(elem))
-        val neTpe = matElem.tpe
-        (appliedType(hconsTpe, List(neTpe, accTpe)), tq"""_root_.shapeless.::[$neTpe, $accTpe]""")
+    args.foldRight((tq"_root_.shapeless.HNil", tq"_root_.shapeless.HNil"): (Tree, Tree)) {
+      case (NatLiteral(n), (accTpt, _)) =>
+        val neTpt = mkNatTpt(n)
+        (tq"""_root_.shapeless.::[$neTpt, $accTpt]""", tq"""_root_.shapeless.::[$neTpt, $accTpt]""")
+       case (elem, _) =>
+        c.abort(c.enclosingPosition, s"Expression $elem does not evaluate to a non-negative Int literal")
     }._2
   }
 }
