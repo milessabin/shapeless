@@ -78,9 +78,7 @@ class UnionMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      // Backport: the quasiquote variant requires 2.11+
-    //case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
-      case Apply(TypeApply(Select(_, _), List(_, _)), List(Literal(k: Constant), v)) => mkElem(mkSingletonSymbolType(k), v)
+      case q""" $prefix(${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }
