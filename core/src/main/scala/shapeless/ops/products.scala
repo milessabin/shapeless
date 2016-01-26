@@ -156,7 +156,7 @@ object product {
     ): Aux[P, M, Lub0, N0] =
       new ToSized[P, M] {
         type Lub = Lub0
-        type N = N0 // Comment this line -> scalac crashes
+        type N = N0
         def apply(p: P) = toSized(gen.to(p))
       }
 
