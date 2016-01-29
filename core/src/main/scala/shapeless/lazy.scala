@@ -18,6 +18,7 @@ package shapeless
 
 import scala.language.experimental.macros
 
+import scala.annotation.implicitNotFound
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.whitebox
 
@@ -106,6 +107,7 @@ import scala.reflect.macros.whitebox
  * }}}
  *
  */
+@implicitNotFound("could not find Lazy implicit value of type ${T}")
 trait Lazy[+T] extends Serializable {
   val value: T
 
@@ -192,6 +194,8 @@ trait OpenImplicitMacros {
 @macrocompat.bundle
 class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros with LowPriorityTypes {
   import c.universe._
+  import c.internal._
+  import decorators._
 
   def mkLazyImpl[I](implicit iTag: WeakTypeTag[I]): Tree =
     mkImpl[I](
@@ -215,6 +219,19 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
         else
           LazyMacros.deriveInstance(this)(tpe, mkInst)
     }
+  }
+
+  def resetAnnotation: Unit = {
+    symbolOf[Lazy[Any]].setAnnotations(
+      Annotation(
+        c.typecheck(
+          q"""
+            new _root_.scala.annotation.implicitNotFound("could not find Lazy implicit value of type $${T}")
+          """,
+          silent = false
+        )
+      )
+    )
   }
 
   trait LazyDefinitions {
@@ -265,6 +282,12 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
         val (state0, tree) =
           try {
             val tree = c.inferImplicitValue(tpe, silent = true)
+            if(tree.isEmpty) {
+              tpe.typeSymbol.annotations.
+                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { infAnn =>
+                  symbolOf[Lazy[Any]].setAnnotations(infAnn)
+                }
+            }
             (State.current.get, tree)
           } finally {
             State.current = former
@@ -534,6 +557,7 @@ object LazyMacros {
     val (dc, root) =
       dcRef match {
         case None =>
+          lm.resetAnnotation
           val dc = new lm.DerivationContext
           dcRef = Some(dc)
           (dc, true)
