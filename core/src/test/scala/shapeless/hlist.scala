@@ -1763,6 +1763,7 @@ class HListTests {
 
     val tl = l2 match {
       case 23 #: 3.0 #: s #: xs => (s, xs)
+      case _ => sys.error("Not matched")
     }
 
     assertTypedEquals[String]("foo", tl._1)
