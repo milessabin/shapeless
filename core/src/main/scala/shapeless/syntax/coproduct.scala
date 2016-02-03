@@ -176,8 +176,7 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
   def foldLeft[In](z: In)(op: Poly)(implicit folder: LeftFolder[C, In, op.type]): folder.Out = folder(c, z)
 
   /**
-   * Returns an `Coproduct` typed as a repetition of the least upper bound of the types of the elements of
-   * this `Coproduct`.
+   * Returns the value of this `Coproduct`, typed as the least upper bound of this `Coproduct` elements' types
    */
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
