@@ -86,11 +86,8 @@ object NatWith {
 
   implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] = macro SingletonTypeMacros.convertInstanceImplNat[TC]
 
-  implicit def apply1[T, TC[_, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
-    macro SingletonTypeMacros.convertInstanceImplNat1[T, TC]
-
-  implicit def apply2[T <: HList, TC[_ <: HList, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
-    macro SingletonTypeMacros.convertInstanceImplNat1[T, TC]
+  implicit def apply2[B, T <: B, TC[_ <: B, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
+    macro SingletonTypeMacros.convertInstanceImplNat1[B, T, TC]
 }
 
 /**
@@ -334,39 +331,31 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
   }
 
   def convertInstanceImplNat[TC[_ <: Nat]](i: Tree)
-    (implicit tcTag: WeakTypeTag[TC[Nothing]]): Tree = {
-      val (n, nTpe) =
-        i match {
-          case NatLiteral(n) => (mkNatValue(n), mkNatTpe(n))
-          case _ =>
-            c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
-        }
+    (implicit tcTag: WeakTypeTag[TC[Nothing]]): Tree =
+      convertInstanceImplNatAux(i, tcTag.tpe)
+
+  def convertInstanceImplNat1[B, T <: B, TC[_ <: B, _ <: Nat]](i: Tree)
+    (implicit tTag: WeakTypeTag[T], tcTag: WeakTypeTag[TC[Nothing, Nothing]]): Tree = {
+      val tTpe = tTag.tpe
       val tc = tcTag.tpe.typeConstructor
-      val nwTC = typeOf[NatWith[Any]].typeConstructor
-      val parent = appliedType(nwTC, List(tc))
-      val tci = appliedType(tc, List(nTpe))
-      val iInst = inferInstance(tci)
-      mkWitnessNat(parent, nTpe, n, iInst)
+      val tcParam = tc.typeParams(1)
+      val tcTpe = c.internal.polyType(List(tcParam), appliedType(tc, List(tTpe, tcParam.asType.toType)))
+      convertInstanceImplNatAux(i, tcTpe)
     }
 
-  def convertInstanceImplNat1[T, TC[_ <: HList, _ <: Nat]](i: Tree)
-    (implicit tTag: WeakTypeTag[T], tcTag: WeakTypeTag[TC[Nothing, Nothing]]): Tree = {
+  def convertInstanceImplNatAux(i: Tree, tcTpe: Type): Tree = {
       val (n, nTpe) =
         i match {
           case NatLiteral(n) => (mkNatValue(n), mkNatTpe(n))
           case _ =>
             c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
         }
-      val t = tTag.tpe
-      val tcTpe = tcTag.tpe.typeConstructor
-      val tcParam = tcTpe.typeParams(1)
-      val tc = c.internal.polyType(List(tcParam), appliedType(tcTpe, List(t, tcParam.asType.toType)))
       val nwTC = typeOf[NatWith[Any]].typeConstructor
-      val parent = appliedType(nwTC, List(tc))
-      val tci = appliedType(tcTpe, List(t, nTpe))
-      val iInst = inferInstance(tci)
+      val parent = appliedType(nwTC, List(tcTpe))
+      val instTpe = appliedType(tcTpe, List(nTpe))
+      val iInst = inferInstance(instTpe)
       mkWitnessNat(parent, nTpe, n, iInst)
-    }
+  }
 
   def convertInstanceImpl1[TC[_]](t: Tree)
     (implicit tcTag: WeakTypeTag[TC[_]]): Tree =
