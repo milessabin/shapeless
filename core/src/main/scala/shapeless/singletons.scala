@@ -69,10 +69,28 @@ trait LowPriorityWitnessWith {
 }
 
 object WitnessWith extends LowPriorityWitnessWith {
-  type Aux[TC[_], T0] = WitnessWith[TC] {type T = T0}
-  type Lt[TC[_], Lub] = WitnessWith[TC] {type T <: Lub}
+  type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0 }
+  type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
 
   implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC]
+}
+
+trait NatWith[TC[_ <: Nat]] {
+  type N <: Nat
+
+  val instance: TC[N]
+}
+
+object NatWith {
+  type Aux[TC[_ <: Nat], N0 <: Nat] = NatWith[TC] { type N = N0 }
+
+  implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] = macro SingletonTypeMacros.convertInstanceImplNat[TC]
+
+  implicit def apply1[T, TC[_, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
+    macro SingletonTypeMacros.convertInstanceImplNat1[T, TC]
+
+  implicit def apply2[T <: HList, TC[_ <: HList, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
+    macro SingletonTypeMacros.convertInstanceImplNat1[T, TC]
 }
 
 /**
@@ -107,32 +125,15 @@ object Widen {
       def apply(t: T) = f(t)
     }
 
+  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC]
+
   implicit def materialize[T, Out]: Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
 }
 
 @macrocompat.bundle
-  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC, T]
-
-}
-
-trait NatWith[TC[_ <: Nat]] {
-
-  type N <: Nat
-
-  val instance: TC[N]
-}
-
-object NatWith {
-
-  type Aux[TC[_ <: Nat], N0 <: Nat] = NatWith[TC] {type N = N0}
-
-  implicit def apply[TC[_ <: Nat]](i: Int): NatWith[TC] = macro SingletonTypeMacros.convertInstanceImplNat[TC]
-
-}
-
 trait SingletonTypeUtils extends ReprTypes {
   import c.universe.{ Try => _, _ }
-  import internal._, decorators._
+  import internal.decorators._
 
   def singletonOpsTpe = typeOf[syntax.SingletonOps]
   val SymTpe = typeOf[scala.Symbol]
@@ -148,7 +149,7 @@ trait SingletonTypeUtils extends ReprTypes {
     val atatTpe = typeOf[@@[_,_]].typeConstructor
     val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
 
-    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, constantType(Constant(s))))
+    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, c.internal.constantType(Constant(s))))
 
     def unapply(t: Type): Option[String] =
       t match {
@@ -164,7 +165,7 @@ trait SingletonTypeUtils extends ReprTypes {
 
   object SingletonType {
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(constantType(k))
+      case (Literal(k: Constant), _) => Some(c.internal.constantType(k))
       case (LiteralSymbol(s), _) => Some(SingletonSymbolType(s))
       case (_, keyType @ SingleType(p, v)) if !v.isParameter && !isValueClass(v) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
@@ -176,7 +177,7 @@ trait SingletonTypeUtils extends ReprTypes {
   def narrowValue(t: Tree): (Type, Tree) = {
     t match {
       case Literal(k: Constant) =>
-        val tpe = constantType(k)
+        val tpe = c.internal.constantType(k)
         (tpe, q"$t.asInstanceOf[$tpe]")
       case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
       case _ => (t.tpe, t)
@@ -222,10 +223,9 @@ trait SingletonTypeUtils extends ReprTypes {
 }
 
 @macrocompat.bundle
-class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
+class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
-  import internal._
-  import decorators._
+  import internal.decorators._
 
   def mkWitness(sTpe: Type, s: Tree): Tree = {
     q"""
@@ -308,7 +308,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
-      case (tpe@SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
+      case (tpe @ SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
         mkResult(tpe, tree)
 
       case (SymTpe, LiteralSymbol(s)) =>
@@ -316,14 +316,13 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
 
       case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
         val sym = tree.symbol.asTerm
-        val pre = if (sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
+        val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
         val symTpe = c.internal.singleType(pre, sym)
         mkResult(symTpe, q"$sym.asInstanceOf[$symTpe]")
 
       case _ =>
         c.abort(c.enclosingPosition, s"Expression $t does not evaluate to a constant or a stable reference value")
     }
-  }
 
   def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
 
@@ -333,6 +332,41 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils {
       c.abort(c.enclosingPosition, s"Unable to resolve implicit value of type $tci")
     i
   }
+
+  def convertInstanceImplNat[TC[_ <: Nat]](i: Tree)
+    (implicit tcTag: WeakTypeTag[TC[Nothing]]): Tree = {
+      val (n, nTpe) =
+        i match {
+          case NatLiteral(n) => (mkNatValue(n), mkNatTpe(n))
+          case _ =>
+            c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
+        }
+      val tc = tcTag.tpe.typeConstructor
+      val nwTC = typeOf[NatWith[Any]].typeConstructor
+      val parent = appliedType(nwTC, List(tc))
+      val tci = appliedType(tc, List(nTpe))
+      val iInst = inferInstance(tci)
+      mkWitnessNat(parent, nTpe, n, iInst)
+    }
+
+  def convertInstanceImplNat1[T, TC[_ <: HList, _ <: Nat]](i: Tree)
+    (implicit tTag: WeakTypeTag[T], tcTag: WeakTypeTag[TC[Nothing, Nothing]]): Tree = {
+      val (n, nTpe) =
+        i match {
+          case NatLiteral(n) => (mkNatValue(n), mkNatTpe(n))
+          case _ =>
+            c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
+        }
+      val t = tTag.tpe
+      val tcTpe = tcTag.tpe.typeConstructor
+      val tcParam = tcTpe.typeParams(1)
+      val tc = c.internal.polyType(List(tcParam), appliedType(tcTpe, List(t, tcParam.asType.toType)))
+      val nwTC = typeOf[NatWith[Any]].typeConstructor
+      val parent = appliedType(nwTC, List(tc))
+      val tci = appliedType(tcTpe, List(t, nTpe))
+      val iInst = inferInstance(tci)
+      mkWitnessNat(parent, nTpe, n, iInst)
+    }
 
   def convertInstanceImpl1[TC[_]](t: Tree)
     (implicit tcTag: WeakTypeTag[TC[_]]): Tree =

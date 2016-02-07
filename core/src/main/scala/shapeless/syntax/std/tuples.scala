@@ -200,17 +200,8 @@ final class TupleOps[T](t: T) extends Serializable {
    *
    * @author Andreas Koestler
    */
-  //class UpdateAtWithAux[N <: Nat] {
-  //  def apply[F](f : F)(implicit upd: ModifierAt[T, N, F]): upd.Out = upd(t, f)
-  //}
-  def updateAtWith[U](n: NatWith[TAT])(f : n.instance.Out => U)(implicit
-                                                                upd: ModifierAt[T, n.N, n.instance.Out, U]
-    ): upd.Out = upd(t, f)
-
-  type TAT[N <: Nat] = At[T, N]
-  //def updateAtWith[N <: Nat] = new UpdateAtWithAux[N]
-
-
+  def updateAtWith[U](n: NatWith[({ type λ[t <: Nat] = At[T, t] })#λ])(f: n.instance.Out => U)
+    (implicit upd: ModifierAt[T, n.N, n.instance.Out, U]): upd.Out = upd(t, f)
 
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2

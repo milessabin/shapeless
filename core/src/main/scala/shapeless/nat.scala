@@ -108,6 +108,19 @@ trait NatMacroDefns {
     loop(i, Ident(_0Sym))
   }
 
+  def mkNatTpe(i: Int): Type = {
+    val succTpe = typeOf[Succ[_]].typeConstructor
+    val _0Tpe = typeOf[_0]
+
+    @tailrec
+    def loop(i: Int, acc: Type): Type = {
+      if(i == 0) acc
+      else loop(i-1, appliedType(succTpe, acc))
+    }
+
+    loop(i, _0Tpe)
+  }
+
   def mkNatValue(i: Int): Tree =
     q""" new ${mkNatTpt(i)} """
 }

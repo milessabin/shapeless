@@ -251,16 +251,8 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    *
    * @author Andreas Koestler
    */
-  //class UpdateAtWithAux[N <: Nat] {
-  //  def apply[F](f : F)(implicit upd: ModifierAt[L, N, F]): upd.Out = upd(l, f)
-  //}
-  //def updateAtWith[N <: Nat] = new UpdateAtAux[N]
-
-  def updateAtWith[F, V](n: NatWith[LAT])(f : n.instance.Out => V)(implicit
-                                                                   upd: ModifierAt[L, n.N, n.instance.Out, V]
-    ): upd.Out = upd(l, f)
-
-  type LAT[N <: Nat] = At[L, N]
+  def updateAtWith[V](n: NatWith[({ type λ[n <: Nat] = At[L, n]})#λ])(f: n.instance.Out => V)
+    (implicit upd: ModifierAt[L, n.N, n.instance.Out, V]): upd.Out = upd(l, f)
 
   class UpdatedTypeAux[U] {
     def apply[V, Out <: HList](v : V)

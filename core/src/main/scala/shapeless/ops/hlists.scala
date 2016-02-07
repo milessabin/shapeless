@@ -17,15 +17,14 @@
 package shapeless
 package ops
 
-import function._
 import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
-
-import poly._
-
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
+
+import function._
+import poly._
 
 object hlist {
   /**
