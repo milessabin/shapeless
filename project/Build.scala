@@ -111,8 +111,9 @@ object ShapelessBuild extends Build {
           )
         },
 
+        OsgiKeys.bundleSymbolicName := "shapeless",
         OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
-        OsgiKeys.importPackage := Seq("""scala.*;version="$<range;[==,=+);$<@>>""""),
+        OsgiKeys.importPackage := Seq("""!scala.quasiquotes,scala.*;version="$<range;[==,=+);$<@>>""""),
         OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package"),
 
         buildInfoPackage := "shapeless",
