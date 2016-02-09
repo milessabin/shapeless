@@ -26,6 +26,20 @@ object DefaultTestDefinitions {
 
   val definitions = new Definitions {}
 
+  object ApplyWithDefault1 {
+    case class CC(i: Int, s: String)
+    object CC {
+      def apply(i: Int = 0): CC = CC(i, "")
+    }
+  }
+
+  object ApplyWithDefault2 {
+    case class CC(i: Int, s: String)
+    object CC {
+      def apply(i: Int, d: Int = 0): CC = CC(i, d.toString)
+    }
+  }
+
 }
 
 class DefaultTests {
@@ -154,6 +168,24 @@ class DefaultTests {
     assertTypedEquals[None.type :: Some[String] :: Some[Default0] :: HNil](
       None :: Some("b") :: Some(Default0()) :: HNil,
       default1
+    )
+  }
+
+  @Test
+  def applyWithDefault1 {
+    val default = Default[ApplyWithDefault1.CC].apply()
+    assertTypedEquals[None.type :: None.type :: HNil](
+      None :: None :: HNil,
+      default
+    )
+  }
+
+  @Test
+  def applyWithDefault2 {
+    val default = Default[ApplyWithDefault2.CC].apply()
+    assertTypedEquals[None.type :: None.type :: HNil](
+      None :: None :: HNil,
+      default
     )
   }
 
