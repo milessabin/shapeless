@@ -593,6 +593,20 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def toArray[Lub](implicit toTraversableAux : ToTraversable.Aux[L, Array, Lub]) : toTraversableAux.Out = toTraversableAux(l)
 
   /**
+    * Converts this `HList` to a `M` of elements embedded in a minimal `Coproduct` encompassing the types of every
+    * elements of this `HList`.
+    *
+    * For example :
+    *
+    *   (1 :: "qux" :: 42 :: "bar" :: HNil).toPrecise[Vector]
+    *
+    * Would return a Vector[Int :+: String :+: CNil]
+    *
+    * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
+    */
+  def toPrecise[M[_] <: Traversable[_]](implicit toPreciseTraversable: ToPreciseTraversable[L, M]): toPreciseTraversable.Out = toPreciseTraversable(l)
+
+  /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */

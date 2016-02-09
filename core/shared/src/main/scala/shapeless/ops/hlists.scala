@@ -625,6 +625,81 @@ object hlist {
   }
 
   /**
+    * Type class supporting conversion of this `HList` to a `M` with elements typed as
+    * a minimal `Coproduct` Cop such as each type of the elements of L appears once in Cop.
+    *
+    * @author Valentin Kasas
+    */
+  trait ToPreciseTraversable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
+    type Cop <: Coproduct
+    type Out = M[Cop]
+  }
+
+  trait LowPriorityToPreciseTraversable {
+    type Aux[L <: HList, M[_], C <: Coproduct] = ToPreciseTraversable[L, M] {type Cop = C}
+
+    /**
+      * Auxiliary type class witnessing that type `T` is not a member of `Coproduct` `C`
+      */
+    trait NotIn[C <: Coproduct, T]
+
+    object NotIn {
+      implicit def notInCNil[T]: NotIn[CNil, T] = new NotIn[CNil, T] {}
+
+      implicit def notInCCons[CH, CT <: Coproduct, T]
+        (implicit
+         diff: CH =:!= T,
+         notInTail: NotIn[CT, T]): NotIn[CH :+: CT, T] = new NotIn[CH :+: CT, T]{}
+    }
+
+    implicit def hconsToPreciseTraversable1[LH, LT <: HList, M[_], CT <: Coproduct]
+      (implicit
+       coproductOfT  : Aux[LT, M, CT],
+       cbf           : CanBuildFrom[M[CT], CT, M[CT]],
+       asTraversable : M[CT] <:< Traversable[CT],
+       injectOut     : coproduct.Inject[CT, LH]): Aux[LH :: LT, M, CT] =
+        new ToPreciseTraversable[LH :: LT, M] {
+          type Cop = CT
+          def apply(l : LH :: LT): Out = {
+            val builder = cbf()
+            builder += injectOut(l.head)
+            asTraversable(coproductOfT(l.tail)).foreach( builder += _)
+            builder.result()
+          }
+        }
+  }
+
+  object ToPreciseTraversable extends LowPriorityToPreciseTraversable{
+
+    implicit def hnilToPreciseTraversable[L <: HNil, M[_]]
+    (implicit cbf: CanBuildFrom[M[CNil], CNil, M[CNil]]): Aux[L, M, CNil] =
+      new ToPreciseTraversable[L, M] {
+        type Cop = CNil
+        def apply(l: L) = cbf().result()
+      }
+
+
+    implicit def hconsToPreciseTraversable0[LH, LT <: HList, M[_], CT <: Coproduct]
+      (implicit
+       coproductOfT  : Aux[LT, M, CT],
+       cbf           : CanBuildFrom[M[CT], LH :+: CT, M[LH :+: CT]],
+       asTraversable : M[CT] <:< Traversable[CT],
+       notIn         : NotIn[CT, LH],
+       injectOut     : coproduct.Inject[LH :+: CT, LH],
+       basisTail     : coproduct.Basis[LH :+: CT,CT]): Aux[LH :: LT, M, LH :+: CT] =
+        new ToPreciseTraversable[LH :: LT, M] {
+          type Cop = LH :+: CT
+          def apply(l : LH :: LT): Out = {
+            val builder = cbf()
+            builder += injectOut(l.head)
+            val tail = coproductOfT(l.tail)
+            asTraversable(tail).foreach(elem => builder += elem.embed[Cop])
+            builder.result()
+          }
+        }
+  }
+
+  /**
    * Type aliases and constructors provided for backward compatibility
    **/
   type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]

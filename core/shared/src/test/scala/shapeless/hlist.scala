@@ -67,6 +67,9 @@ class HListTests {
   type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
   type PABP = Pear :: Apple :: Banana :: Pear :: HNil
 
+  type APc = Apple :+: Pear :+: CNil
+  type ABPc = Apple :+: Banana :+: Pear :+: CNil
+
   val a : Apple = Apple()
   val p : Pear = Pear()
   val b : Banana = Banana()
@@ -728,6 +731,26 @@ class HListTests {
     val m2e = m2eim2esm2eim2eem2ed.to[List]
     // equalType(m2eim2esm2eim2eem2edList, m2e)
     assertTypedEquals[List[M2[_ >: Int with String with Double, _]]](m2eim2esm2eim2eem2edList, m2e)
+  }
+
+  @Test
+  def testToPreciseList {
+    val r1 = HNil.toPrecise[List]
+    assertTypedEquals[List[CNil]](Nil, r1)
+
+    val r2 = ap.toPrecise[List]
+    assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p)), r2)
+
+    val r3 = apap.toPrecise[List]
+    assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p), Coproduct[APc](a), Coproduct[APc](p)), r3)
+
+    val r4 = apbp.toPrecise[Vector]
+    assertTypedEquals[Vector[ABPc]](Vector[ABPc](Coproduct[ABPc](a), Coproduct[ABPc](p), Coproduct[ABPc](b), Coproduct[ABPc](p)), r4)
+
+    illTyped{
+      """(1 :: "foo" :: HNil).toPrecise[Array]"""
+    }
+
   }
 
   @Test
