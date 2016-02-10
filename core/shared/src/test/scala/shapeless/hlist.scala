@@ -747,6 +747,25 @@ class HListTests {
     val r4 = apbp.toPrecise[Vector]
     assertTypedEquals[Vector[ABPc]](Vector[ABPc](Coproduct[ABPc](a), Coproduct[ABPc](p), Coproduct[ABPc](b), Coproduct[ABPc](p)), r4)
 
+    def equalInferedCoproducts[A <: Coproduct, B <: Coproduct](a: A, b: B)(implicit bInA: ops.coproduct.Basis[A, B], aInB: ops.coproduct.Basis[B, A]){}
+    val abpc = Coproduct[ABPc](a)
+
+    val r5 = (a :: b :: a :: p :: b :: a :: HNil).toPrecise[Set]
+    equalInferedCoproducts(abpc, r5.head)
+
+    val r6 = (p :: a :: a :: p :: p :: b :: HNil).toPrecise[Set]
+    equalInferedCoproducts(abpc, r6.head)
+
+    val r7 = (a :: b :: p :: HNil).toPrecise[Seq]
+    equalInferedCoproducts(abpc, r7.head)
+
+
+    val r8 = (a :: b :: HNil).toPrecise[Seq]
+
+    illTyped{
+      """equalInferedCoproducts(abpc, r8.head)"""
+    }
+
     illTyped{
       """(1 :: "foo" :: HNil).toPrecise[Array]"""
     }
