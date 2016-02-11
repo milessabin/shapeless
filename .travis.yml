@@ -14,20 +14,13 @@ cache:
     - $HOME/.sbt
 
 script:
-  - if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
-         ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x" ||
-          "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
-         $(cat version.sbt) =~ "-SNAPSHOT"
-    ]]; then
-      sbt ++${TRAVIS_SCALA_VERSION} validate publish ;
-    else
-      sbt ++${TRAVIS_SCALA_VERSION} validate ;
-    fi
+  - travis_wait 40 scripts/travis-publish.sh
 
 env:
   global:
   - secure: jFz1aWhx2zBWz1jNTeqxxfy2+4v25SiJIlO2HGd0Iu3921Rd7lJp+4fnSZlwxcDpIS5/laqu7jAxOR2o2QecBNQBtBMwSFfTFsAnJNHi6c2qB4Ns2HBJrYjoQ/sZFEqoJw62M5/ECU2qK+TzLdDYdULqlF4inlkIrVEj2av7oyw=
   - secure: yK4+dMyjKhoNOvDvUsGR/Q9iYeP4pe6ibKX7o4WkHyTYb9ohS4CrrcpSF2N8eSqAQK7I/CW66tLH01HFPp2vQ4L+zlmJi6bLkxEZCvXXbMBbUMHdaiLvTsvJeu+DlwA1BlGPkAGLrD7SvGK38R7A7NQT3AutEz3V6XUMWWd2CDs=
+
 sudo: false
 
 notifications:

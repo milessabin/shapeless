@@ -1,3 +1,6 @@
+# Ignore local configuration
+.sbtrc
+
 scratch/
 target/
 
