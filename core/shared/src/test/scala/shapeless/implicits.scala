@@ -69,7 +69,7 @@ class CachedTest {
     implicit val b = new Foo[String] { }
     illTyped(
       "cachedImplicit[Foo[String]]",
-      """ambiguous implicit values:.*"""
+      """ambiguous implicit values:.*|could not find an implicit.*"""
     )
   }
 

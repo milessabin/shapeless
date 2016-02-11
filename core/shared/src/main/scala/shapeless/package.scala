@@ -133,27 +133,7 @@ package shapeless {
 
       // Run our own custom implicit search that isn't allowed to find
       // the thing we are enclosed in
-      val sCtx = tCtx.makeImplicit(true)
-
-      // 2.12 changed the signature on a method we need to override. In order to allow us to define
-      // both versions below with the "override" modifier, we need an interface that contains both.
-      trait CompatImplicitSearch extends analyzer.ImplicitsContextErrors { self: analyzer.ImplicitSearch =>
-        import analyzer.global.{Type, Tree}
-        import analyzer.{ImplicitInfo, Context}
-        def AmbiguousImplicitError(
-          info1: ImplicitInfo,
-          info2: ImplicitInfo,
-          pre1: String, pre2: String,
-          trailer: String
-        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit
-
-        def AmbiguousImplicitError(
-            info1: ImplicitInfo, tree1: Tree,
-            info2: ImplicitInfo, tree2: Tree,
-            pre1: String, pre2: String,
-            trailer: String
-        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit
-      }
+      val sCtx = tCtx.makeImplicit(false)
 
       val is = new analyzer.ImplicitSearch(
         tree=application,
@@ -161,7 +141,7 @@ package shapeless {
         isView=false,
         context0=sCtx,
         pos0=c.enclosingPosition.asInstanceOf[global.Position]
-      ) with CompatImplicitSearch {
+      ) {
 
         import analyzer.global.{Type, Tree}
         import analyzer.{ImplicitInfo, Context}
@@ -175,68 +155,6 @@ package shapeless {
           }
           super.searchImplicit(filteredInput, isLocalToCallsite)
         }
-
-        // Lift a little bit of compiler code. This could be avoided
-        // by using variant sources
-        object ImplicitAmbiguousMsg {
-          import global._
-          val ImplicitAmbiguousClass = global.rootMirror.getClassIfDefined("scala.annotation.implicitAmbiguous")
-          def unapply(sym: global.Symbol): Option[Message] = {
-            val msg = sym.getAnnotation(ImplicitAmbiguousClass).flatMap { _.stringArg(0) }
-            msg.map(new Message(sym, _))
-          }
-          class Message(sym: Symbol, msg: String) {
-            private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
-            private def interpolate(text: String, vars: Map[String, String]) =
-              Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-                  case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
-              })
-            private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
-            def format(typeArgs: List[String]): String =
-              interpolate(msg, Map((typeParamNames zip typeArgs): _*))
-          }
-        }
-
-        override def AmbiguousImplicitError(
-          info1: ImplicitInfo, tree1: Tree,
-          info2: ImplicitInfo, tree2: Tree,
-          pre1: String, pre2: String,
-          trailer: String
-        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit = {
-
-          import global._
-
-          def treeTypeArgs(annotatedTree: Tree): List[String] = annotatedTree match {
-            case TypeApply(_, args) => args.map(_.toString)
-            case Block(_, Function(_, treeInfo.Applied(_, targs, _))) => targs.map(_.toString)
-            case _ => Nil
-          }
-
-          (info1.sym, info2.sym) match {
-            case (ImplicitAmbiguousMsg(msg), _) =>
-              c.abort(c.enclosingPosition, msg.format(treeTypeArgs(tree1)))
-            case (_, ImplicitAmbiguousMsg(msg)) =>
-              c.abort(c.enclosingPosition, msg.format(treeTypeArgs(tree2)))
-            case (_, _) =>
-              AmbiguousImplicitError(info1, info2, pre1, pre2, trailer)(isView, pt, tree)
-          }
-        }
-
-        override def AmbiguousImplicitError(
-          info1: ImplicitInfo,
-          info2: ImplicitInfo,
-          pre1: String, pre2: String,
-          trailer: String
-        )(isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context): Unit = {
-          if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
-            val coreMsg =
-              s"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
-                  | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
-                  | $trailer""".stripMargin.trim
-            val msg = s"ambiguous implicit values:\n${coreMsg}\nmatch expected type $pt"
-            c.abort(c.enclosingPosition, msg)
-          }
-        }
       }
 
       val best = is.bestImplicit
@@ -245,7 +163,7 @@ package shapeless {
         c.abort(err.errPos.asInstanceOf[c.Position], err.errMsg)
       }
 
-      if (best.isFailure) {
+      if (best.isFailure || best.isAmbiguousFailure) {
 
         val errorMsg = tpe.typeSymbolDirect match {
           case analyzer.ImplicitNotFoundMsg(msg) =>
