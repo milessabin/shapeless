@@ -241,4 +241,5 @@ cross-builds for 2.10.6 and 2.12.x.
 + Tin Pavlinic <tin.pavlinic@gmail.com> [@triggerNZ](https://twitter.com/triggerNZ)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
++ Valentin Kasas <valentin.kasas@gmail.com> [@ValentinKasas](https://twitter.com/ValentinKasas)
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
