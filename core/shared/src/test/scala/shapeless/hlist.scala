@@ -735,32 +735,32 @@ class HListTests {
 
   @Test
   def testToPreciseList {
-    val r1 = HNil.toPrecise[List]
+    val r1 = HNil.toCoproduct[List]
     assertTypedEquals[List[CNil]](Nil, r1)
 
-    val r2 = ap.toPrecise[List]
+    val r2 = ap.toCoproduct[List]
     assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p)), r2)
 
-    val r3 = apap.toPrecise[List]
+    val r3 = apap.toCoproduct[List]
     assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p), Coproduct[APc](a), Coproduct[APc](p)), r3)
 
-    val r4 = apbp.toPrecise[Vector]
+    val r4 = apbp.toCoproduct[Vector]
     assertTypedEquals[Vector[ABPc]](Vector[ABPc](Coproduct[ABPc](a), Coproduct[ABPc](p), Coproduct[ABPc](b), Coproduct[ABPc](p)), r4)
 
     def equalInferedCoproducts[A <: Coproduct, B <: Coproduct](a: A, b: B)(implicit bInA: ops.coproduct.Basis[A, B], aInB: ops.coproduct.Basis[B, A]){}
     val abpc = Coproduct[ABPc](a)
 
-    val r5 = (a :: b :: a :: p :: b :: a :: HNil).toPrecise[Set]
+    val r5 = (a :: b :: a :: p :: b :: a :: HNil).toCoproduct[Set]
     equalInferedCoproducts(abpc, r5.head)
 
-    val r6 = (p :: a :: a :: p :: p :: b :: HNil).toPrecise[Set]
+    val r6 = (p :: a :: a :: p :: p :: b :: HNil).toCoproduct[Set]
     equalInferedCoproducts(abpc, r6.head)
 
-    val r7 = (a :: b :: p :: HNil).toPrecise[Seq]
+    val r7 = (a :: b :: p :: HNil).toCoproduct[Seq]
     equalInferedCoproducts(abpc, r7.head)
 
 
-    val r8 = (a :: b :: HNil).toPrecise[Seq]
+    val r8 = (a :: b :: HNil).toCoproduct[Seq]
 
     illTyped{
       """equalInferedCoproducts(abpc, r8.head)"""
