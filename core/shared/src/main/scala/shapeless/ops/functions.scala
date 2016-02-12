@@ -24,10 +24,13 @@ object function {
    * 
    * @author Miles Sabin
    */
-  trait FnToProduct[F] extends DepFn1[F] with Serializable
+  trait FnToProduct[-F] extends Serializable {
+    type Out
+    def apply(f: F): Out
+  }
 
   object FnToProduct extends FnToProductInstances {
-    def apply[F](implicit fntop: FnToProduct[F]): Aux[F, fntop.Out] = fntop
+    def apply[F <: AnyRef](implicit fntop: FnToProduct[F]): Aux[F, fntop.Out] = fntop
   }
 
   /**
