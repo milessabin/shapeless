@@ -67,6 +67,9 @@ class HListTests {
   type PBPA = Pear :: Banana :: Pear :: Apple :: HNil
   type PABP = Pear :: Apple :: Banana :: Pear :: HNil
 
+  type APc = Apple :+: Pear :+: CNil
+  type ABPc = Apple :+: Banana :+: Pear :+: CNil
+
   val a : Apple = Apple()
   val p : Pear = Pear()
   val b : Banana = Banana()
@@ -728,6 +731,45 @@ class HListTests {
     val m2e = m2eim2esm2eim2eem2ed.to[List]
     // equalType(m2eim2esm2eim2eem2edList, m2e)
     assertTypedEquals[List[M2[_ >: Int with String with Double, _]]](m2eim2esm2eim2eem2edList, m2e)
+  }
+
+  @Test
+  def testToPreciseList {
+    val r1 = HNil.toCoproduct[List]
+    assertTypedEquals[List[CNil]](Nil, r1)
+
+    val r2 = ap.toCoproduct[List]
+    assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p)), r2)
+
+    val r3 = apap.toCoproduct[List]
+    assertTypedEquals[List[APc]](List(Coproduct[APc](a), Coproduct[APc](p), Coproduct[APc](a), Coproduct[APc](p)), r3)
+
+    val r4 = apbp.toCoproduct[Vector]
+    assertTypedEquals[Vector[ABPc]](Vector[ABPc](Coproduct[ABPc](a), Coproduct[ABPc](p), Coproduct[ABPc](b), Coproduct[ABPc](p)), r4)
+
+    def equalInferedCoproducts[A <: Coproduct, B <: Coproduct](a: A, b: B)(implicit bInA: ops.coproduct.Basis[A, B], aInB: ops.coproduct.Basis[B, A]){}
+    val abpc = Coproduct[ABPc](a)
+
+    val r5 = (a :: b :: a :: p :: b :: a :: HNil).toCoproduct[Set]
+    equalInferedCoproducts(abpc, r5.head)
+
+    val r6 = (p :: a :: a :: p :: p :: b :: HNil).toCoproduct[Set]
+    equalInferedCoproducts(abpc, r6.head)
+
+    val r7 = (a :: b :: p :: HNil).toCoproduct[Seq]
+    equalInferedCoproducts(abpc, r7.head)
+
+
+    val r8 = (a :: b :: HNil).toCoproduct[Seq]
+
+    illTyped{
+      """equalInferedCoproducts(abpc, r8.head)"""
+    }
+
+    illTyped{
+      """(1 :: "foo" :: HNil).toPrecise[Array]"""
+    }
+
   }
 
   @Test
