@@ -234,16 +234,51 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
         Some(m)
     }
 
-    def wrapTpeTree(idx: Int, argTpe: Type) = {
-      val methodOpt = methodFrom(tpe.companion, s"apply$$default$$${idx + 1}")
-        .orElse(methodFrom(companion.symbol.info, s"$$lessinit$$greater$$default$$${idx + 1}"))
+    val primaryConstructor = tpe.decls.collectFirst {
+      case m if m.isMethod && m.asMethod.isPrimaryConstructor =>
+        m.asMethod
+    }.getOrElse {
+      c.abort(c.enclosingPosition, s"Cannot get primary constructor of $tpe")
+    }
 
-      methodOpt match {
-        case Some(method) =>
-          (appliedType(someTpe, argTpe), q"_root_.scala.Some($companion.$method)")
-        case None =>
-          (noneTpe, q"_root_.scala.None")
-      }
+    def methodHasDefaults(m: MethodSymbol): Boolean =
+      m.asMethod.paramLists.flatten.exists(_.asTerm.isParamWithDefault)
+
+    // The existence of multiple apply overloads with default values gets checked
+    // after the macro runs. Their existence can make the macro expansion fail,
+    // as multiple overloads can define the functions we look for below, possibly
+    // with wrong types, making the compilation fail with the wrong error.
+    // We do this check here to detect that beforehand.
+    def overloadsWithDefaultCount(tpe: Type): Int = tpe.members.count { m =>
+      m.isMethod && m.name.toString == "apply" && methodHasDefaults(m.asMethod)
+    }
+
+    val mainOverloadsWithDefaultCount = overloadsWithDefaultCount(tpe.companion)
+    val secondOverloadsWithDefaultCount = overloadsWithDefaultCount(companion.symbol.info)
+
+    val oneOverloadWithDefaults = mainOverloadsWithDefaultCount == 1 || (
+      mainOverloadsWithDefaultCount == 0 && secondOverloadsWithDefaultCount == 1
+    )
+
+    // Checking if the primary constructor has default parameters, and returning
+    // a Default instance with non-empty types / values only if that holds.
+    // The apply$default$... methods below may still exist without these, if an additional
+    // apply method has default parameters. We want to ignore them in this case.
+    val hasDefaults = oneOverloadWithDefaults && methodHasDefaults(primaryConstructor)
+
+    def wrapTpeTree(idx: Int, argTpe: Type) = {
+      if (hasDefaults) {
+        val methodOpt = methodFrom(tpe.companion, s"apply$$default$$${idx + 1}")
+          .orElse(methodFrom(companion.symbol.info, s"$$lessinit$$greater$$default$$${idx + 1}"))
+
+        methodOpt match {
+          case Some(method) =>
+            (appliedType(someTpe, argTpe), q"_root_.scala.Some($companion.$method)")
+          case None =>
+            (noneTpe, q"_root_.scala.None")
+        }
+      } else
+        (noneTpe, q"_root_.scala.None")
     }
 
     val wrapTpeTrees = fieldsOf(tpe).zipWithIndex.map {case ((_, argTpe), idx) =>
