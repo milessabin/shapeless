@@ -88,13 +88,14 @@ class ConversionTests {
     val ab2 = foo(ab, a :: HNil)
 
     class HListSyntax[A <: HList, F <: AnyRef](a: A) {
-       def $$[U](f: F)(implicit cftp: FnToProduct.Aux[f.type, A => U]): U = cftp(f)(a)
+      def applied[U](f: F)(implicit cftp: FnToProduct.Aux[f.type, A => U]): U = cftp(f)(a)
     }
+
     implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
                                                   (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
       new HListSyntax[A, F](a)
 
-    val res = (2 :: "a" :: 1.3 :: HNil) $$ ((i, s, d) => (s * i, d * i)) // Function argument types inferred
+    val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
 
     assert((res: (String, Double)) == ("aa", 2.6))
 
