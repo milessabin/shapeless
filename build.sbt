@@ -160,10 +160,11 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
     (unmanagedSourceDirectories in sc) ++= {
-      (unmanagedSourceDirectories in sc ).value.map { dir: File =>
+      (unmanagedSourceDirectories in sc ).value.flatMap { dir: File =>
         CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, y)) if y == 10 => new File(dir.getPath + "_2.10")
-          case Some((2, y)) if y >= 11 => new File(dir.getPath + "_2.11+")
+          case Some((2, y)) if y == 10 => List(new File(dir.getPath + "_2.10"))
+          case Some((2, y)) if y >= 11 => List(new File(dir.getPath + "_2.11+"))
+          case Some((2, y)) if y >= 12 => List(new File(dir.getPath + "_2.11+"), new File(dir.getPath + "_2.12+"))
         }
       }
     }
