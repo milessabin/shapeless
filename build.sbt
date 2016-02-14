@@ -84,7 +84,15 @@ lazy val root = project.in(file("."))
   .settings(coreSettings:_*)
   .settings(noPublishSettings)
 
-lazy val core = crossProject.crossType(CrossType.Full)
+lazy val CrossTypeMixed: CrossType = new CrossType {
+  def projectDir(crossBase: File, projectType: String): File =
+    crossBase / projectType
+
+  def sharedSrcDir(projectBase: File, conf: String): Option[File] =
+    Some(projectBase.getParentFile / "src" / conf / "scala")
+}
+
+lazy val core = crossProject.crossType(CrossTypeMixed)
   .configure(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
