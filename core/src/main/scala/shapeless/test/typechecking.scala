@@ -47,8 +47,9 @@ class IllTypedMacros(val c: whitebox.Context) {
     }
 
     try {
-      val dummy = TermName(c.freshName)
-      c.typecheck(c.parse(s"{ val $dummy = { $codeStr } ; () }"))
+      val dummy0 = TermName(c.freshName)
+      val dummy1 = TermName(c.freshName)
+      c.typecheck(c.parse(s"object $dummy0 { val $dummy1 = { $codeStr } }"))
       c.abort(c.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
     } catch {
       case e: TypecheckException =>
