@@ -172,6 +172,7 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
 lazy val publishSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseTagName := s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
