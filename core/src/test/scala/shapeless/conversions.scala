@@ -92,7 +92,7 @@ class ConversionTests {
     }
 
     implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
-                                                  (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
+      (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
       new HListSyntax[A, F](a)
 
     val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
