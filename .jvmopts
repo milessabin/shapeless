@@ -1,2 +1,2 @@
--Xms2048m
--Xmx2048m
+-Xms3072m
+-Xmx3072m
