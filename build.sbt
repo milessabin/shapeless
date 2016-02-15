@@ -2,8 +2,6 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
 import ReleaseTransformations._
 
-import sbtbuildinfo.Plugin.{ buildInfoSettings => defaultBuildInfoSettings, _ }
-
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys
 import MimaKeys.{ previousArtifacts, binaryIssueFilters }
@@ -96,16 +94,10 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .configure(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
-  .settings(buildInfoSettings:_*)
+  .configure(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
-    sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen),
-    sourceGenerators in Compile <+= buildInfo,
-
-    mappings in (Compile, packageSrc) <++=
-      (sourceManaged in Compile, managedSources in Compile) map { (base, srcs) =>
-        (srcs pair (Path.rebase(base/"sbt-buildinfo", "shapeless") | Path.relativeTo(base) | Path.flat))
-      }
+    sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen)
   )
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
@@ -224,18 +216,15 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   }
 )
 
-lazy val buildInfoSettings = defaultBuildInfoSettings ++ Seq(
-  buildInfoPackage := "shapeless",
-  buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
-  buildInfoKeys ++= Seq[BuildInfoKey](
-    version,
-    scalaVersion,
-    gitHeadCommit,
-    BuildInfoKey.action("buildTime") {
-      System.currentTimeMillis
-    }
+def buildInfoSetup(crossProject: CrossProject): CrossProject = {
+  def transform(project: Project) = project enablePlugins BuildInfoPlugin settings (
+    buildInfoPackage := "shapeless",
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
+    buildInfoOptions += BuildInfoOption.BuildTime
   )
-)
+  crossProject jvmConfigure transform jsConfigure transform
+}
 
 lazy val osgiSettings = defaultOsgiSettings ++ Seq(
   OsgiKeys.bundleSymbolicName := "shapeless",
