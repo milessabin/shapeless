@@ -27,7 +27,7 @@ addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
-addCommandAlias("releaseAll", ";root;release")
+addCommandAlias("releaseAll", ";root;release skip-tests")
 
 lazy val commonSettings = Seq(
   scalacOptions := Seq(
