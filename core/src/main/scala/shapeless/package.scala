@@ -162,7 +162,7 @@ package shapeless {
         }
         c.abort(c.enclosingPosition, errorMsg)
       } else {
-        best.tree.asInstanceOf[Tree]
+        c.untypecheck(best.tree.asInstanceOf[Tree])
       }
     }
   }

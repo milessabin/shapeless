@@ -191,7 +191,16 @@ object Generic {
   *
   * @tparam T the type which this instance can convert to and from a labelled generic representation
   */
-trait LabelledGeneric[T] extends Generic[T]
+trait LabelledGeneric[T] extends Serializable {
+  /** The generic representation type for {T}, which will be composed of {Coproduct} and {HList} types  */
+  type Repr
+
+  /** Convert an instance of the concrete type to the generic value representation */
+  def to(t : T) : Repr
+
+  /** Convert an instance of the generic representation to an instance of the concrete type */
+  def from(r : Repr) : T
+}
 
 object LabelledGeneric {
 

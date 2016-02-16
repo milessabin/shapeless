@@ -19,6 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import labelled.FieldType
 import test.illTyped
 
 trait CachedTC[T]
@@ -96,5 +97,36 @@ class CachedTest {
     val q = Quux(23, "foo")
     val h: Int = gen.to(q).head
     val th: String = gen.to(q).tail.head
+  }
+
+  case class Quux2(i: Int, s: String)
+  object Quux2 {
+    val gen0 = cachedImplicit[Generic[Quux2]]
+    implicit val gen: Generic.Aux[Quux2, gen0.Repr] = gen0
+
+    val lgen0 = cachedImplicit[LabelledGeneric[Quux2]]
+    implicit val lgen: LabelledGeneric.Aux[Quux2, lgen0.Repr] = lgen0
+  }
+
+  @Test
+  def testRefined2 {
+    assert(Quux2.gen != null)
+    assert(Quux2.gen eq Quux2.gen0)
+    assert(Quux2.lgen != null)
+    assert(Quux2.lgen eq Quux2.lgen0)
+
+    val gen = Generic[Quux2]
+    assert(gen eq Quux2.gen0)
+
+    val lgen = LabelledGeneric[Quux2]
+    assert(lgen eq Quux2.lgen0)
+
+    val q = Quux2(23, "foo")
+
+    val h: Int = gen.to(q).head
+    val th: String = gen.to(q).tail.head
+
+    val lh: FieldType[Witness.`'i`.T, Int] = lgen.to(q).head
+    val lth: FieldType[Witness.`'s`.T, String] = lgen.to(q).tail.head
   }
 }
