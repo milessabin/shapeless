@@ -52,12 +52,13 @@ class ~?>[K[_], V[_]] extends Serializable {
   class λ[K, V] extends Serializable
 }
 
-object ~?> {
+object ~?> extends NatTRel0 {
   implicit def rel[K[_], V[_]] : K ~?> V = new (K ~?> V)
-  
-  implicit def witness[K[_], V[_], T](implicit rel : K ~?> V) : rel.λ[K[T], V[T]] = new rel.λ[K[T], V[T]]
 
   implicit def idKeyWitness[V[_], T](implicit rel : Id ~?> V) : rel.λ[T, V[T]] = new rel.λ[Id[T], V[T]]
   implicit def idValueWitness[K[_], T](implicit rel : K ~?> Id) : rel.λ[K[T], T] = new rel.λ[K[T], Id[T]]  
 }
 
+trait NatTRel0 {
+  implicit def witness[K[_], V[_], T](implicit rel : K ~?> V) : rel.λ[K[T], V[T]] = new rel.λ[K[T], V[T]]
+}
