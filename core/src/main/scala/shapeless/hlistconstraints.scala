@@ -152,6 +152,6 @@ object IsDistinctConstraint {
 
   implicit def hnilIsDistinct = new IsDistinctConstraint[HNil] {}
   implicit def hlistIsDistinct[H, T <: HList](implicit d: IsDistinctConstraint[T],
-                                              nc: NotContainsConstraint[T, H]): IsDistinctConstraint[H :: T] =
+                                                      nc: NotContainsConstraint[T, H]): IsDistinctConstraint[H :: T] =
     new IsDistinctConstraint[H :: T] {}
 }
