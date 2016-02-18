@@ -18,6 +18,8 @@ package shapeless
 
 import ops.hlist.Selector
 
+import scala.annotation.implicitNotFound
+
 /**
  * Type class witnessing that every element of `L` has `TC` as its outer type constructor. 
  */
@@ -117,4 +119,39 @@ object ValueConstraint {
   implicit def hnilValues[M <: HList] = new ValueConstraint[HNil, M] {}
   implicit def hlistValues[K, V, T <: HList, M <: HList]
     (implicit bct : ValueConstraint[T, M], sel : Selector[M, V]) = new ValueConstraint[FieldType[K, V] :: T, M] {}
+}
+
+/**
+ * Type class witnessing that `L` doesn't contain elements of type `U`
+ */
+@implicitNotFound("Implicit not found: shapeless.NotContainsConstraint[${L}, ${U}]. This HList already contains element of type ${U}.")
+trait NotContainsConstraint[L <: HList, U] extends Serializable
+
+object NotContainsConstraint {
+
+  def apply[L <: HList, U](implicit ncc: NotContainsConstraint[L, U]): NotContainsConstraint[L, U] = ncc
+
+  type NotContains[U] = {
+    type λ[L <: HList] = NotContainsConstraint[L, U]
+  }
+
+  implicit def hnilNotContains[U] = new NotContainsConstraint[HNil, U] {}
+  implicit def hlistNotContains[H, T <: HList, U](implicit nc: T NotContainsConstraint U, neq: U =:!= H) =
+    new NotContainsConstraint[H :: T, U] {}
+}
+
+/**
+ * Type class witnessing that all elements of `L` have distinct types
+ */
+@implicitNotFound("Implicit not found: shapeless.IsDistinctConstraint[${L}]. Some elements have the same type.")
+trait IsDistinctConstraint[L <: HList] extends Serializable
+
+object IsDistinctConstraint {
+
+  def apply[L <: HList](implicit idc: IsDistinctConstraint[L]): IsDistinctConstraint[L] = idc
+
+  implicit def hnilIsDistinct = new IsDistinctConstraint[HNil] {}
+  implicit def hlistIsDistinct[H, T <: HList](implicit d: IsDistinctConstraint[T],
+                                              nc: NotContainsConstraint[T, H]): IsDistinctConstraint[H :: T] =
+    new IsDistinctConstraint[H :: T] {}
 }
