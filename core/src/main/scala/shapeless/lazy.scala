@@ -132,7 +132,7 @@ object Lazy {
 
   def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
 
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacrosRef.mkLazyImpl[I]
 }
 
 object lazily {
@@ -162,7 +162,7 @@ object Strict {
 
   def unapply[T](lt: Strict[T]): Option[T] = Some(lt.value)
 
-  implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
+  implicit def mkStrict[I]: Strict[I] = macro LazyMacrosRef.mkStrictImpl[I]
 }
 
 @macrocompat.bundle
@@ -188,7 +188,6 @@ trait OpenImplicitMacros {
         Some(second.pt)
       case _ => None
     }
-
 }
 
 @macrocompat.bundle
