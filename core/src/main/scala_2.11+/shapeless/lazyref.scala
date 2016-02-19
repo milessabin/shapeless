@@ -16,6 +16,8 @@
 
 package shapeless
 
+import scala.reflect.macros.whitebox
+
 /*
  * Workaround for Scala 2.10 consle macro classloader bug. See,
  *
@@ -24,7 +26,16 @@ package shapeless
  *
  * See corresponding definition for 2.10
  */
-object LazyMacrosRef {
-  def deriveInstance(lm: LazyMacros)(tpe: lm.c.Type, mkInst: (lm.c.Tree, lm.c.Type) => lm.c.Tree): lm.c.Tree =
-    LazyMacros.deriveInstance(lm)(tpe, mkInst)
+class LazyMacrosRef(val c: whitebox.Context) {
+  import c.universe._
+
+  def mkLazyImpl[I: WeakTypeTag]: Tree = {
+    val i = new LazyMacros(c)
+    i.mkLazyImpl[I].asInstanceOf[Tree]
+  }
+
+  def mkStrictImpl[I: WeakTypeTag]: Tree = {
+    val i = new LazyMacros(c)
+    i.mkStrictImpl[I].asInstanceOf[Tree]
+  }
 }
