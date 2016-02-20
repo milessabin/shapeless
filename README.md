@@ -96,6 +96,30 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
+### shapeless-2.3.0-RC2
+
+Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M3. The main line of development for
+shapeless 2.3.0 is Scala 2.11.7 with Scala 2.10.x supported via the macro paradise compiler plugin.
+
+```scala
+scalaVersion := "2.11.7"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.3.0-RC2"
+)
+```
+
+If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
+
+```scala
+scalaVersion := "2.10.6"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.3.0-RC2",
+  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+)
+```
+
 ### shapeless-2.2.5
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
@@ -129,7 +153,7 @@ scalaVersion := "2.10.6"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.2.5",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
 
