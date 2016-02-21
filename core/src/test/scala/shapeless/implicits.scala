@@ -22,17 +22,67 @@ import org.junit.Assert._
 import labelled.FieldType
 import test.illTyped
 
-trait CachedTC[T]
-object CachedTC {
-  implicit def mkTC[T] = new CachedTC[T] {}
-  implicit val cached: CachedTC[String] = cachedImplicit
-}
+object CachedTestDefns {
+  trait CachedTC[T]
+  object CachedTC {
+    implicit def mkTC[T] = new CachedTC[T] {}
+    implicit val cached: CachedTC[String] = cachedImplicit
+  }
 
-object CachedTest {
-  implicit val i: CachedTC[Int] = cachedImplicit
+  object CachedTest {
+    implicit val i: CachedTC[Int] = cachedImplicit
+  }
+
+  // Cats/Algebra Eq
+  trait Eq[T] {
+    def eqv(x: T, y: T): Boolean
+  }
+
+  object Eq {
+    implicit val eqInt: Eq[Int] =
+      new Eq[Int] {
+        def eqv(x: Int, y: Int): Boolean = x == y
+      }
+
+    implicit def eqGeneric[T, R]
+      (implicit
+        gen: Generic.Aux[T, R],
+        eqRepr: Lazy[Eq[R]]
+      ): Eq[T] =
+        new Eq[T] {
+          def eqv(x: T, y: T): Boolean =
+            eqRepr.value.eqv(gen.to(x), gen.to(y))
+        }
+
+    // Base case for products
+    implicit val eqHNil: Eq[HNil] = new Eq[HNil] {
+      def eqv(x: HNil, y: HNil): Boolean = true
+    }
+
+    // Induction step for products
+    implicit def eqHCons[H, T <: HList]
+      (implicit
+        eqH: Lazy[Eq[H]],
+        eqT: Lazy[Eq[T]]
+      ): Eq[H :: T] =
+        new Eq[H :: T] {
+          def eqv(x: H :: T, y: H :: T): Boolean =
+            eqH.value.eqv(x.head, y.head) && eqT.value.eqv(x.tail, y.tail)
+        }
+  }
+
+  implicit class EqOps[T](x: T)(implicit eqT: Eq[T]) {
+    def ===(y: T): Boolean = eqT.eqv(x, y)
+  }
+
+  case class Wibble(i: Int)
+  object Wibble {
+    implicit val eqw: Eq[Wibble] = cachedImplicit
+  }
 }
 
 class CachedTest {
+  import CachedTestDefns._
   import CachedTest._
 
   @Test
@@ -128,5 +178,10 @@ class CachedTest {
 
     val lh: FieldType[Witness.`'i`.T, Int] = lgen.to(q).head
     val lth: FieldType[Witness.`'s`.T, String] = lgen.to(q).tail.head
+  }
+
+  @Test
+  def testLazyRecursion {
+    assert(Wibble.eqw != null)
   }
 }
