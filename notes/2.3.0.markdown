@@ -3,7 +3,7 @@ shapeless 2.2.5.
 
 ### Prominent changes
 
-84 pull requests have been merged and 55 issues have been closed and since 2.2.5 ... the complete list can be found in
+84 pull requests have been merged and 61 issues have been closed and since 2.2.5 ... the complete list can be found in
 the 2.3.0 github milestone for [issues][230issues] and [PRs][230prs].
 
 The project branch and build structure has been completely reworked. shapeless is now built for all permutations
