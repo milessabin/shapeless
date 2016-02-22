@@ -3,7 +3,7 @@ shapeless 2.2.5.
 
 ### Prominent changes
 
-84 pull requests have been merged and 61 issues have been closed and since 2.2.5 ... the complete list can be found in
+85 pull requests have been merged and 61 issues have been closed and since 2.2.5 ... the complete list can be found in
 the 2.3.0 github milestone for [issues][230issues] and [PRs][230prs].
 
 The project branch and build structure has been completely reworked. shapeless is now built for all permutations
@@ -15,60 +15,63 @@ are,
 
 #### ADTs
 
-* Many bug fixes and improvements in the implementation of Generic.
-* Many bug fixes and improvements in the implementations of Generic1, IsHCons1, IsCons1 and Split1 in support of
-  [Kittens][kittens].
+* Many bug fixes and improvements in the implementation of `Generic`.
+* Many bug fixes and improvements in the implementations of `Generic1`, `IsHCons1`, `IsCons1` and `Split1` in support
+  of [Kittens][kittens].
 * Added Annotation and Annotations type classes providing evidence of the presence of annotations on a type, or on the
   elements or constructors of an ADT.
-* Added Default, AsRecord and AsOptions type classes providing evidence of the default values for the constructors of
-  product types as HLists of Options or records.
-* LabelledGeneric[T] no longer extends Generic[T].
+* Added `Default`, `AsRecord` and `AsOptions` type classes providing evidence of the default values for the
+  constructors of product types as `HLists` of `Options` or records.
+* `LabelledGeneric[T]` no longer extends `Generic[T]`.
 
 #### HLists/Coproducts/tuples/records
 
 * Dramatically improved compile time performance for record select and update.
-* Added zipWithIndex method and ZipWithIndex type class for HLists, Coproducts and tuples.
-* Added ToCoproduct/ToSum type classes for HLists and tuples.
-* Added toCoproduct method and ToCoproductTraversable type class allowing conversion of an HList to a homogenous
-  collection of the Coproduct of its element types.
-* Added selectMany, selectManyType and selectRange methods and SelectMany and SelectRange type classes allowing
-  elements of an HList to be selected given a set or range of Nat indices.
-* Added group method and Grouper and PaddedGrouper type classes allowing HLists and tuples to be subdivided into
-  smaller tuples of a given size.
-* Added union, intersect, diff methods and Union, Intersection and Diff type classes supporting set-like operations on
-  HLists.
-* Added updateAtWith method and ModifierAt type class supporting functional update of elements of HLists and tuples at
-  a given Nat index.
-* Added collectFirst method and CollectFirst type class which applies a Poly to the first compatible element of an
-  HList.
-* Added LiftAll type class which collects instances of a type class for each element of an HList.
-* Added padTo and slice methods and PadTo and Slice type classes which support padding and slicing HLists to/by Nat
-  indices.
-* Added toRecord method and FromMap type class which supports type safe conversion of a homogenous Map to a record.
-* Added remove and removeAll methods and Remove and RemoveAll type classes supporting removing of one or more fields
-  from a record. These operations are reversible via reinsert and reinsertAll.
-* Added toSizedHList method and ToSizedHList type class which support conversion of a homogenous collection to an
-  HList of a known size.
-* Improved readability of toString for nested HLists.
-* Improved toString for Coproducts.
+* Added `zipWithIndex` method and `ZipWithIndex` type class for `HLists`, `Coproducts` and tuples.
+* Added `ToCoproduct`/`ToSum` type classes for `HLists` and tuples.
+* Added `toCoproduct` method and `ToCoproductTraversable` type class allowing conversion of an `HList` to a homogenous
+  collection of the `Coproduct` of its element types.
+* Added `selectMany`, `selectManyType` and `selectRange` methods and `SelectMany` and `SelectRange` type classes
+  allowing elements of an `HList` to be selected given a set or range of `Nat` indices.
+* Added `group` method and `Grouper` and `PaddedGrouper` type classes allowing `HLists` and tuples to be subdivided
+  into smaller tuples of a given size.
+* Added `union`, `intersect`, `diff` methods and `Union`, `Intersection` and `Diff` type classes supporting set-like
+  operations on `HLists`.
+* Added `updateAtWith` method and `ModifierAt` type class supporting functional update of elements of `HLists` and
+  tuples at a given `Nat` index.
+* Added `collectFirst` method and `CollectFirst` type class which applies a `Poly` to the first compatible element of
+  an `HList`.
+* Added `LiftAll` type class which collects instances of a type class for each element of an `HList`.
+* Added `padTo` and `slice` methods and `PadTo` and `Slice` type classes which support padding and slicing `HLists`
+  to/by `Nat` indices.
+* Added `toRecord` method and `FromMap` type class which supports type safe conversion of a homogenous `Map` to a
+  record.
+* Added `remove` and `removeAll` methods and `Remove` and `RemoveAll` type classes supporting removing of one or more
+  fields from a record. These operations are reversible via `reinsert` and `reinsertAll`.
+* Added `toSizedHList` method and `ToSizedHList` type class which support conversion of a homogenous collection to an
+  `HList` of a known size.
+* Added `impossible` method to `CNil`.
+* Improved readability of `toString` for nested `HLists`.
+* Improved `toString` for `Coproducts`.
 
 #### Infrastructure
 
-* cachedImplicit now uses a more reliable mechanism for preventing self-loops.
-* Added Strict and Cached type constructors which modify the semantics of Lazy by eliminating unnecessary closures and
-  by sharing instances respectively.
-* Added LowPriority mechanism for controlling the priority of instances during implicit resolution.
-* User supplied @implicitNotFound annotations are now propagated through `Lazy`.
-* Added NatProductArgs which allows argument lists of Int literals to be mapped to HLists of Nats.
-* Added Range, GCD, LCM, GT and GTEq type classes for Nats.
-* Added NatWith which supports conversion of Int literals to Nat values and simultaneously summoning a specified type
-  class at the corresponding Nat type.
-* Added Widen type class which allows the widening of a singleton type and value to the corresponding non-singleton
+* `cachedImplicit` now uses a more reliable mechanism for preventing self-loops.
+* Added `Strict` and `Cached` type constructors which modify the semantics of `Lazy` by eliminating unnecessary
+  closures and by sharing instances respectively.
+* Added `LowPriority` mechanism for controlling the priority of instances during implicit resolution.
+* User supplied `@implicitNotFound` annotations are now propagated through `Lazy`.
+* Added `NatProductArgs` which allows argument lists of `Int` literals to be mapped to `HLists` of `Nats`.
+* Added `Range`, `GCD`, `LCM`, `GT` and `GTEq` type classes for `Nats`.
+* Added `NatWith` which supports conversion of `Int` literals to `Nat` values and simultaneously summoning a
+  specified type class at the corresponding `Nat` type.
+* Added `Widen` type class which allows the widening of a singleton type and value to the corresponding non-singleton
   type.
-* Added runtimeList method allowing conversion of an HList to a List[Any] efficiently when precise types are not
+* Added `runtimeList` method allowing conversion of an `HList` to a `List[Any]` efficiently when precise types are not
   needed.
-* Added unwrapped method and Unwrapped type class which allow access to the value underlying a newtype or value class.
-* The experimental support for lifting polymorphic methods to Poly values has been removed.
+* Added `unwrapped` method and `Unwrapped` type class which allow access to the value underlying a newtype or value
+  class.
+* The experimental support for lifting polymorphic methods to `Poly` values has been removed.
 
 ### Source and binary compatibility
 
@@ -89,6 +92,7 @@ Contributors for shapeless 2.3.0 are,
 * Frank S. Thomas [@fst9000](https://twitter.com/fst9000)
 * Hamish Dickenson [@hamishdickson](https://twitter.com/hamishdickson)
 * Matthew Taylor
+* Michael Donaghy
 * Michael Pilquist [@mpilquist](https://twitter.com/mpilquist)
 * Miles Sabin [@milessabin](https://twitter.com/milessabin)
 * Neville Li [@sinisa_lyh](https://twitter.com/sinisa_lyh)
