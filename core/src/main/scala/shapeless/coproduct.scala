@@ -105,7 +105,9 @@ final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T]
   * This makes the type `Int :+: CNil` equivalent to `Int`, because the right (`Inr`) alternative
   * of `:+:` can not be constructed properly.
   */
-sealed trait CNil extends Coproduct
+sealed trait CNil extends Coproduct {
+  def impossible: Nothing
+}
 
 object Coproduct extends Dynamic {
   import ops.coproduct.Inject
