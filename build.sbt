@@ -74,7 +74,7 @@ lazy val commonJvmSettings = Seq(
   parallelExecution in Test := false
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings
+lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++ releaseSettings
 
 lazy val root = project.in(file("."))
   .aggregate(coreJS, coreJVM)
@@ -170,9 +170,6 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   }
 
 lazy val publishSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
@@ -234,7 +231,10 @@ lazy val osgiSettings = defaultOsgiSettings ++ Seq(
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
 
-lazy val sharedReleaseProcess = Seq(
+lazy val releaseSettings = Seq(
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseTagName := s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
