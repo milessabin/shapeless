@@ -81,7 +81,7 @@ import scala.annotation.tailrec
   * scala>
   * }}}
   */
-sealed trait Coproduct
+sealed trait Coproduct extends Product with Serializable
 
 /** Like Either, the :+: type defines a new type that can contain either H or T.
   */
