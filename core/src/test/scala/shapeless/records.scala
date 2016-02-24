@@ -887,4 +887,18 @@ class RecordTests {
       assertEquals(2.0, v3, Double.MinPositiveValue)
     }
   }
+
+  @Test
+  def testSwapRecord {
+    import shapeless.ops.record.SwapRecord
+
+    val rt = Record.`'x -> Int, 'y -> String, 'z -> Boolean`
+    type TestRecord = rt.T
+
+    val (x, y, z) = (Witness('x), Witness('y), Witness('z))
+
+    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply
+
+    assertEquals(fields.toList, List('x, 'y, 'z))
+  }
 }
