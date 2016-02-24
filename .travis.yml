@@ -1,4 +1,6 @@
 language: scala
+install:
+  - pip install --user codecov
 
 scala:
 - 2.10.6
@@ -14,7 +16,7 @@ cache:
     - $HOME/.sbt
 
 script:
-  - travis_wait 45 scripts/travis-publish.sh
+  - travis_wait 60 scripts/travis-publish.sh
 
 env:
   global:

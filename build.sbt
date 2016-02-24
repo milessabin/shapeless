@@ -12,6 +12,12 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ osgiSettings => defaultOsgiSettings, _ }
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
+lazy val scoverageSettings = Seq(
+  coverageMinimum := 60,
+  coverageFailOnMinimum := false,
+  coverageExcludedFiles := ".*/src/test/.*"
+)
+
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
   scalaVersion := "2.11.8",
@@ -66,6 +72,22 @@ def configureJUnit(crossProject: CrossProject) = {
   )
 }
 
+val cmdlineProfile = sys.props.getOrElse("sbt.profile", default = "")
+
+def profile(crossProject: CrossProject) = cmdlineProfile match {
+  case "2.12.x" =>
+    crossProject
+      .jsConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
+      .jvmConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
+
+  case _ => crossProject
+}
+
+def profile: Project ⇒ Project = p => cmdlineProfile match {
+  case "2.12.x" => p.disablePlugins(scoverage.ScoverageSbtPlugin)
+  case _ => p
+}
+
 lazy val commonJsSettings = Seq(
   scalacOptions += {
     val tagOrHash =
@@ -76,16 +98,20 @@ lazy val commonJsSettings = Seq(
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
   scalaJSUseRhino in Global := false,
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  coverageExcludedPackages := ".*"
 )
 
 lazy val commonJvmSettings = Seq(
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  coverageExcludedPackages := "shapeless.examples.*"
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++ releaseSettings
+lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
+  releaseSettings ++ scoverageSettings
 
 lazy val root = project.in(file("."))
+  .configure(profile)
   .aggregate(coreJS, coreJVM)
   .dependsOn(coreJS, coreJVM)
   .settings(coreSettings:_*)
@@ -101,6 +127,7 @@ lazy val CrossTypeMixed: CrossType = new CrossType {
 
 lazy val core = crossProject.crossType(CrossTypeMixed)
   .configure(configureJUnit)
+  .configure(profile)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
   .configure(buildInfoSetup)
@@ -117,6 +144,7 @@ lazy val coreJS = core.js
 
 lazy val scratch = crossProject.crossType(CrossType.Pure)
   .configure(configureJUnit)
+  .configure(profile)
   .dependsOn(core)
   .settings(moduleName := "scratch")
   .settings(coreSettings:_*)
@@ -137,6 +165,7 @@ def runAllIn(config: Configuration) = {
 
 lazy val examples = crossProject.crossType(CrossType.Pure)
   .configure(configureJUnit)
+  .configure(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
   .settings(runAllIn(Compile))
