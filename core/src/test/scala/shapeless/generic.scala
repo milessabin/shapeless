@@ -599,6 +599,14 @@ class GenericTests {
     illTyped(" Generic[Union.`'i -> Int, 's -> String`.T] ")
   }
 
+  @Test
+  def testHasNoGeneric {
+    HasNoGeneric[Array[Int]]
+    HasNoGeneric[String]
+    illTyped(" HasNoGeneric[Fruit] ")
+    illTyped(" HasNoGeneric[(Int, String)] ")
+  }
+
   sealed trait Color
   case object Green extends Color
   object Color {
