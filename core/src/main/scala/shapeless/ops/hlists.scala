@@ -849,20 +849,43 @@ object hlist {
   trait Selector[L <: HList, U] extends DepFn1[L] with Serializable { type Out = U }
 
   object Selector {
-    def apply[L <: HList, U](implicit selector: Selector[L, U]): Aux[L, U] = selector
 
-    type Aux[L <: HList, U] = Selector[L, U]
+    def apply[L <: HList, U](implicit selector: Selector[L, U]): Selector[L, U] = selector
 
-    implicit def select[H, T <: HList]: Aux[H :: T, H] =
+    implicit def select[H, T <: HList]: Selector[H :: T, H] =
       new Selector[H :: T, H] {
         def apply(l : H :: T) = l.head
       }
 
     implicit def recurse[H, T <: HList, U]
-      (implicit st : Selector[T, U]): Aux[H :: T, U] =
+      (implicit st : Selector[T, U]): Selector[H :: T, U] =
         new Selector[H :: T, U] {
           def apply(l : H :: T) = st(l.tail)
         }
+  }
+
+  /**
+    * Type class supporting multiple HList field selection.
+    * Can be used to witness that given HList contains certain set of field types.
+    * Simplified version of shapeless.ops.record.SelectAll
+    *
+    * @author Ievgen Garkusha
+    */
+  @annotation.implicitNotFound(msg = "Field types set of ${S} is not fully contained in type definition of ${L}")
+  trait SelectAll[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out = S }
+
+  object SelectAll {
+
+    implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
+      new SelectAll[L, HNil] {
+        def apply(l: L): Out = HNil
+      }
+
+    implicit def hconsSelectAll[L <: HList, H, S <: HList]
+    (implicit sh: Selector[L, H], st: SelectAll[L, S]): SelectAll[L, H :: S] =
+      new SelectAll[L, H :: S] {
+        def apply(l: L): Out = sh(l) :: st(l)
+      }
   }
 
   /**
