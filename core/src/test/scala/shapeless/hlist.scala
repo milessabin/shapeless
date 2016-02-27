@@ -3017,13 +3017,13 @@ class HListTests {
     val hsub = new TypeCaptured(1 :: "2":: true :: HNil)
 
     //testing with plain HList
-    assertTypedEquals[hsuper._type](getFieldsByTypesOfSuper[hsub._type, hsuper._type](hsub.value), hsuper.value)
+    assertTypedEquals[hsuper._type](hsuper.value, getFieldsByTypesOfSuper[hsub._type, hsuper._type](hsub.value))
 
     val rsuper = new TypeCaptured(Record(b = true, c = "blah"))
     val rsub =  new TypeCaptured(Record(a = 1, b = true, c = "blah"))
 
     //testing with Record
-    assertTypedEquals[rsuper._type](getFieldsByTypesOfSuper[rsub._type, rsuper._type](rsub.value), rsuper.value)
+    assertTypedEquals[rsuper._type](rsuper.value, getFieldsByTypesOfSuper[rsub._type, rsuper._type](rsub.value))
 
   }
 
