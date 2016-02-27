@@ -421,6 +421,31 @@ package record {
   }
 
   /**
+    * Type class supporting collecting the keys tagged by value types as a `HList` of `FieldType[V, K]`.
+    *
+    * @author Kailuo Wang
+    */
+  trait SwapRecord[L <: HList] extends DepFn0 with Serializable { type Out <: HList }
+
+  object SwapRecord {
+    def apply[L <: HList](implicit sr: SwapRecord[L]): Aux[L, sr.Out] = sr
+
+    type Aux[L <: HList, Out0 <: HList] = SwapRecord[L] { type Out = Out0 }
+
+    implicit def hnilSwapRecord[L <: HNil]: Aux[L, HNil] =
+      new SwapRecord[L] {
+        type Out = HNil
+        def apply(): Out = HNil
+      }
+
+    implicit def hlistSwapRecord[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
+      new SwapRecord[FieldType[K, V] :: T] {
+        type Out = FieldType[V, K] :: kt.Out
+        def apply(): Out = field[V](wk.value) :: kt()
+      }
+  }
+
+  /**
    * Type class supporting converting this record to a `HList` of key-value pairs.
    *
    * @author Alexandre Archambault
