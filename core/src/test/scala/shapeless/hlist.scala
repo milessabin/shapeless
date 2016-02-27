@@ -3002,6 +3002,31 @@ class HListTests {
     assertEquals((23, true), ib)
   }
 
+  @Test
+  def selectAllTest: Unit ={
+    import shapeless._, record._ , ops.hlist.SelectAll
+
+    //is there any way to do it without runtime overhead?
+    class TypeCaptured[T](val value: T) {
+      type _type = T
+    }
+
+    def getFieldsByTypesOfSuper[Sub <: HList, Super <: HList](l: Sub)(implicit sa: SelectAll[Sub, Super]) = sa(l)
+
+    val hsuper = new TypeCaptured("2":: true :: HNil)
+    val hsub = new TypeCaptured(1 :: "2":: true :: HNil)
+
+    //testing with plain HList
+    assertTypedEquals[hsuper._type](hsuper.value, getFieldsByTypesOfSuper[hsub._type, hsuper._type](hsub.value))
+
+    val rsuper = new TypeCaptured(Record(b = true, c = "blah"))
+    val rsub =  new TypeCaptured(Record(a = 1, b = true, c = "blah"))
+
+    //testing with Record
+    assertTypedEquals[rsuper._type](rsuper.value, getFieldsByTypesOfSuper[rsub._type, rsuper._type](rsub.value))
+
+  }
+
   object FooNat extends NatProductArgs {
     def applyNatProduct[L <: HList](args: L): L = args
   }
