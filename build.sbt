@@ -201,7 +201,7 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  previousArtifacts := Set(), // Set(organization.value %% moduleName.value % "2.3.0"),
+  previousArtifacts := Set(organization.value %% moduleName.value % "2.3.0"),
 
   binaryIssueFilters ++= {
     import com.typesafe.tools.mima.core._
