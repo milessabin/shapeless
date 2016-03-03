@@ -66,6 +66,14 @@ def configureJUnit(crossProject: CrossProject) = {
 }
 
 lazy val commonJsSettings = Seq(
+  scalacOptions += {
+    val tagOrHash =
+      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lines_!.head
+      else tagName.value
+    val a = (baseDirectory in LocalRootProject).value.toURI.toString
+    val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
+    s"-P:scalajs:mapSourceURI:$a->$g/"
+  },
   scalaJSUseRhino in Global := false,
   parallelExecution in Test := false
 )
@@ -231,10 +239,14 @@ lazy val osgiSettings = defaultOsgiSettings ++ Seq(
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
 
+lazy val tagName = Def.setting{
+  s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
+}
+
 lazy val releaseSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
+  releaseTagName := tagName.value,
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
