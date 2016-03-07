@@ -22,6 +22,11 @@ import org.junit.Assert._
 import shapeless.test.illTyped
 
 class HListConstraintsTests {
+
+  trait Fruit
+  case object Apple extends Fruit
+  case object Pear extends Fruit
+
   @Test
   def testUnaryTCConstraint {
     import UnaryTCConstraint._
@@ -88,10 +93,6 @@ class HListConstraintsTests {
   def testLUBConstraint {
     import LUBConstraint._
     
-    trait Fruit
-    case object Apple extends Fruit
-    case object Pear extends Fruit
-    
     def acceptLUB[L <: HList : <<:[Fruit]#λ](l : L) = true
     
     val l1 = Apple :: Pear :: Apple :: Pear :: HNil
@@ -144,4 +145,48 @@ class HListConstraintsTests {
     acceptValues(book)
     """)
   }
+
+  @Test
+  def testNotContainsConstraint {
+
+    import NotContainsConstraint._
+
+    def notContains[L <: HList:NotContains[String]#λ, U](l: L, u: U)(implicit ev: NotContainsConstraint[L, U]) = true
+
+    notContains(HNil: HNil, 2)
+    notContains(2 :: HNil, "str")
+    notContains(Pear :: 2 :: HNil, Apple)
+    notContains(Pear :: 2 :: HNil, new Fruit{})
+
+    illTyped("""
+    notContains(2 :: HNil, 3)
+    """)
+
+    illTyped("""
+    notContains("str" :: Pear :: 2 :: HNil, Pear)
+    """)
+  }
+
+  @Test
+  def testIsDistinctConstraint {
+
+    def isDistinct[L <: HList](l: L)(implicit ev: IsDistinctConstraint[L]) = true
+
+    isDistinct(HNil: HNil)
+    isDistinct(2 :: HNil)
+    isDistinct("str" :: Pear :: Apple :: new Fruit{} :: 2 :: HNil)
+
+    illTyped("""
+    isDistinct(10 :: 2 :: HNil)
+    """)
+
+    illTyped("""
+    isDistinct(10 :: "str" :: 5 :: HNil)
+    """)
+
+    illTyped("""
+    isDistinct(Pear :: true :: "str" :: 2 :: false :: HNil)
+    """)
+  }
+
 }
