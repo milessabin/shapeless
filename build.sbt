@@ -22,7 +22,7 @@ addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;compile;test")
+addCommandAlias("validate", ";root;validateJVM;validateJS")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
 
