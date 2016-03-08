@@ -553,15 +553,16 @@ object LazyMacros {
   var dcRef: Option[LazyMacros#DerivationContext] = None
 
   def deriveInstance(lm: LazyMacros)(tpe: lm.c.Type, mkInst: (lm.c.Tree, lm.c.Type) => lm.c.Tree): lm.c.Tree = {
-    val (dc, root) =
+    import lm.c.symbolOf, lm.c.internal.decorators._
+
+    val (dc, root, annots) =
       dcRef match {
         case None =>
-          lm.resetAnnotation
           val dc = new lm.DerivationContext
           dcRef = Some(dc)
-          (dc, true)
+          (dc, true, symbolOf[Lazy[Any]].annotations)
         case Some(dc) =>
-          (dc.asInstanceOf[lm.DerivationContext], false)
+          (dc.asInstanceOf[lm.DerivationContext], false, Nil)
       }
 
     if (root)
@@ -571,7 +572,10 @@ object LazyMacros {
     try {
       dc.State.deriveInstance(tpe, root, mkInst)
     } finally {
-      if(root) dcRef = None
+      if(root) {
+        dcRef = None
+        symbolOf[Lazy[Any]].setAnnotations(annots.head)
+      }
     }
   }
 }

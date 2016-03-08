@@ -112,6 +112,7 @@ lazy val scratch = crossProject.crossType(CrossType.Pure)
   .settings(moduleName := "scratch")
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
+  .settings(scalacOptions += "-Xlint:missing-interpolator")
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
 
