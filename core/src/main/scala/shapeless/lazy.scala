@@ -220,18 +220,36 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
     }
   }
 
-  def resetAnnotation: Unit = {
-    symbolOf[Lazy[Any]].setAnnotations(
-      Annotation(
-        c.typecheck(
-          q"""
-            new _root_.scala.annotation.implicitNotFound("could not find Lazy implicit value of type $${T}")
-          """,
-          silent = false
-        )
+  def setAnnotation(msg: String): Unit = {
+    val tree0 =
+      c.typecheck(
+        q"""
+          new _root_.scala.annotation.implicitNotFound("dummy")
+        """,
+        silent = false
       )
-    )
+
+    class SubstMessage extends Transformer {
+      val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+      import global.nme
+
+      override def transform(tree: Tree): Tree = {
+        super.transform {
+          tree match {
+            case Literal(Constant("dummy")) => Literal(Constant(msg))
+            case t => t
+          }
+        }
+      }
+    }
+
+    val tree = new SubstMessage().transform(tree0)
+
+    symbolOf[Lazy[Any]].setAnnotations(Annotation(tree))
   }
+
+  def resetAnnotation: Unit =
+    setAnnotation("could not find Lazy implicit value of type ${T}")
 
   trait LazyDefinitions {
     case class Instance(
@@ -284,7 +302,16 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             if(tree.isEmpty) {
               tpe.typeSymbol.annotations.
                 find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { infAnn =>
-                  symbolOf[Lazy[Any]].setAnnotations(infAnn)
+                  val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+                  val analyzer: global.analyzer.type = global.analyzer
+                  val gTpe = tpe.asInstanceOf[global.Type]
+                  val errorMsg = gTpe.typeSymbolDirect match {
+                    case analyzer.ImplicitNotFoundMsg(msg) =>
+                      msg.format(TermName("evidence").asInstanceOf[global.TermName], gTpe)
+                    case _ =>
+                      s"Implicit value of type $tpe not found"
+                  }
+                  setAnnotation(errorMsg)
                 }
             }
             (State.current.get, tree)
@@ -571,7 +598,9 @@ object LazyMacros {
     try {
       dc.State.deriveInstance(tpe, root, mkInst)
     } finally {
-      if(root) dcRef = None
+      if(root) {
+        dcRef = None
+      }
     }
   }
 }
