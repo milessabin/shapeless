@@ -46,7 +46,7 @@ object union {
    * named argument syntax. Values of the type just defined can be created as follows,
    *
    * {{{
-   * val y = Union[Xyx](y = "foo")
+   * val y = Union[Xyz](y = "foo")
    * y.get('y) // == Some("foo")
    * }}}
    */
