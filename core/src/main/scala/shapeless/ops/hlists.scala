@@ -1251,8 +1251,12 @@ object hlist {
   trait LowPriorityUnion {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
+    // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
     implicit def hlistUnion1[H, T <: HList, M <: HList]
-      (implicit u: Union[T, M]): Aux[H :: T, M, H :: u.Out] =
+      (implicit
+       u: Union[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, H :: u.Out] =
         new Union[H :: T, M] {
           type Out = H :: u.Out
           def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
@@ -1262,12 +1266,14 @@ object hlist {
   object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
+    // let ∅ ∩ M = M
     implicit def hlistUnion[M <: HList]: Aux[HNil, M, M] =
       new Union[HNil, M] {
         type Out = M
         def apply(l: HNil, m: M): Out = m
       }
 
+    // let (H :: T) ∪ M  =  H :: (T ∪ (M - H)) when H ∈ M
     implicit def hlistUnion2[H, T <: HList, M <: HList, MR <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],
@@ -1293,8 +1299,12 @@ object hlist {
   trait LowPriorityIntersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
+    // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
     implicit def hlistIntersection1[H, T <: HList, M <: HList]
-      (implicit i: Intersection[T, M]): Aux[H :: T, M, i.Out] =
+      (implicit
+       i: Intersection[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, i.Out] =
         new Intersection[H :: T, M] {
           type Out = i.Out
           def apply(l: H :: T): Out = i(l.tail)
@@ -1304,12 +1314,14 @@ object hlist {
   object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
+    // let ∅ ∩ M = ∅
     implicit def hnilIntersection[M <: HList]: Aux[HNil, M, HNil] =
       new Intersection[HNil, M] {
         type Out = HNil
         def apply(l: HNil): Out = HNil
       }
 
+    // let (H :: T) ∩ M  =  H :: (T ∩ (M - H)) when H ∈ M
     implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],

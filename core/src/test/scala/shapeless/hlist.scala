@@ -1904,6 +1904,9 @@ class HListTests {
     val l21 = l2.union(l1)
     assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](2 :: "bar" :: true :: 3L :: HNil, l21)
 
+
+    illTyped { """implicitly[Union.Aux[Int :: HNil, Int :: HNil, Int :: Int :: HNil]]"""}
+
     val ldup1 = (l3).union(l4)
     assertTypedEquals[Int :: Int :: Int :: HNil](1 :: 2 :: 6 :: HNil, ldup1)
 
@@ -1933,6 +1936,8 @@ class HListTests {
 
     val l21 = l2.intersect[L1]
     assertTypedEquals[Int :: String :: HNil](2 :: "bar" :: HNil, l21)
+
+    illTyped { """implicitly[Intersection.Aux[Int :: HNil, Int :: HNil, HNil]]"""}
 
     val ldup1 = (l3).intersect[Int :: HNil]
     assertTypedEquals[Int :: HNil](4 :: HNil, ldup1)
