@@ -1892,7 +1892,7 @@ class HListTests {
     type L4 = Int :: Int :: Int :: HNil
     val l4: L4 = 4 :: 5 :: 6 :: HNil
 
-    val lnil = l1.union(HNil)
+    val lnil = l1.union[HNil](HNil)
     assertTypedEquals[L1](l1, lnil)
 
     val lself = l1.union(l1)
