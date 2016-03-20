@@ -1266,7 +1266,7 @@ object hlist {
   object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
-    // let ∅ ∩ M = M
+    // let ∅ ∪ M = M
     implicit def hlistUnion[M <: HList]: Aux[HNil, M, M] =
       new Union[HNil, M] {
         type Out = M
