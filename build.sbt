@@ -266,4 +266,8 @@ lazy val releaseSettings = Seq(
 credentials ++= (for {
   username <- Option(System.getenv().get("SONATYPE_USERNAME"))
   password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
+  testvar <- Option(System.getenv().get("TEST_VAR"))
+} yield {
+  println(s"TEST_VAR: $testvar")
+  Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
+}).toSeq
