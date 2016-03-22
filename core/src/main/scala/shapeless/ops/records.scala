@@ -29,7 +29,7 @@ import poly._
 package record {
   import shapeless.labelled._
 
-  import scala.annotation.tailrec
+  import scala.annotation.{implicitNotFound, tailrec}
 
   /**
    * Type class supporting record field selection.
@@ -163,7 +163,6 @@ package record {
    *
    * @author Ievgen Garkusha
    */
-
   trait Modifier[L <: HList,K, V, R] extends DepFn2[L, V => R] with Serializable { type Out <: HList }
 
   object Modifier {
@@ -182,8 +181,7 @@ package record {
 
       val List(lTpe, kTpe, vTpe, rTpe) = List(lTag, kTag, vTag, rTag).map(_.tpe.dealias)
 
-      if (!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+      if (!(lTpe <:< hlistTpe)) abort(s"$lTpe is not a record type")
 
       val lTpes = unpackHListTpe(lTpe)
 

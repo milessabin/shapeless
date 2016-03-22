@@ -52,7 +52,7 @@ object ScaldingPoC extends App {
       "author" ->> "Roger Hindley" :: "title"  ->> "Basic Simple Type Theory" :: "price"  ->> 23.14 :: HNil
     )
 
-  val pricierItems = items.map(i => i + ("price" ->> i("price")*1.1))
+  val pricierItems = items.map(i => i.updated("price" , i("price") * 1.1))
   pricierItems foreach println
 
   val books =
