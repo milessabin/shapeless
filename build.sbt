@@ -263,7 +263,7 @@ lazy val releaseSettings = Seq(
   )
 )
 
-credentials ++= (for {
+credentials in ThisBuild ++= (for {
   username <- Option(System.getenv().get("SONATYPE_USERNAME"))
   password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
   testvar <- Option(System.getenv().get("TEST_VAR"))
