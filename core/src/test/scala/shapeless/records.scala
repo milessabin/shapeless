@@ -239,12 +239,12 @@ class RecordTests {
 
     val r6 = HNil
 
-    val r7 = r6.updated(boolField2, false)
+    val r7 = r6.add(boolField2, false)
     val v5 = r7.get(boolField2)
     typed[Boolean](v5)
     assertEquals(false, v5)
 
-    val r8 = r7.updated(doubleField2, 3.0)
+    val r8 = r7.add(doubleField2, 3.0)
     val v6 = r8.get(doubleField2)
     typed[Double](v6)
     assertEquals(3.0, v6, Double.MinPositiveValue)
@@ -281,12 +281,12 @@ class RecordTests {
 
     val r6 = HNil
 
-    val r7 = r6.updated("boolField2", false)
+    val r7 = r6.add("boolField2", false)
     val v5 = r7.get("boolField2")
     typed[Boolean](v5)
     assertEquals(false, v5)
 
-    val r8 = r7.updated("doubleField2", 3.0)
+    val r8 = r7.add("doubleField2", 3.0)
     val v6 = r8.get("doubleField2")
     typed[Double](v6)
     assertEquals(3.0, v6, Double.MinPositiveValue)

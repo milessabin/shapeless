@@ -29,6 +29,8 @@ import poly._
 package record {
   import shapeless.labelled._
 
+  import scala.annotation.tailrec
+
   /**
    * Type class supporting record field selection.
    *
@@ -110,49 +112,6 @@ package record {
       }
   }
 
-  /**
-   * Type class supporting record update and extension.
-   *
-   * @author Miles Sabin
-   */
-  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList }
-
-  object Updater {
-    type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
-
-    def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
-
-    implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
-  }
-
-  class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
-    type Out = HList
-    def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
-  }
-
-  @macrocompat.bundle
-  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val fTpe = fTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
-
-      val lTpes = unpackHListTpe(lTpe)
-      val (uTpes, i) = {
-        val i0 = lTpes.indexWhere(_ =:= fTpe)
-        if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
-        else (lTpes.updated(i0, fTpe), i0)
-      }
-      val uTpe = mkHListTpe(uTpes)
-      q"""
-        new _root_.shapeless.ops.record.UnsafeUpdater($i)
-          .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
-      """
-    }
-  }
 
   /**
    * Type class support record merging.
@@ -183,13 +142,14 @@ package record {
 
     implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
       (implicit
-        rm: Remover.Aux[M, K, (V, MT)],
+        s: Selector.Aux[M, K, V],
+        rm: Modifier.Aux[M, K, Unit, Unit, MT],
         mt: Merger[T, MT]
       ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
       new Merger[FieldType[K, V] :: T, M] {
         type Out = FieldType[K, V] :: mt.Out
         def apply(l: FieldType[K, V] :: T, m: M): Out = {
-          val (mv, mr) = rm(m)
+          val (mv, mr) = s(m) -> rm(m, null)
           val up = field[K](mv)
           up :: mt(l.tail, mr)
         }
@@ -197,63 +157,87 @@ package record {
   }
 
   /**
-   * Type class supporting modification of a record field by given function.
+   * Macro based implementation of type class supporting modification of a Record field by given function.
+   * In order to add a value spawn a modifier of the given shape  Modifier[L, K ,Unit, R]
+   * In order to remove a value spawn a modifier of the given shape  Modifier[L, K ,Unit, Unit]
    *
-   * @author Joni Freeman
+   * @author Ievgen Garkusha
    */
-  @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
-  trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] with Serializable { type Out <: HList }
+
+  trait Modifier[L <: HList,K, V, R] extends DepFn2[L, V => R] with Serializable { type Out <: HList }
 
   object Modifier {
-    def apply[L <: HList, F, A, B](implicit modifier: Modifier[L, F, A, B]): Aux[L, F, A, B, modifier.Out] = modifier
+    def apply[L <: HList, K, V, R](implicit modifier: Modifier[L, K ,V, R]): Modifier[L, K, V, R] = modifier
 
-    type Aux[L <: HList, F, A, B, Out0 <: HList] = Modifier[L, F, A, B] { type Out = Out0 }
+    type Aux[L <: HList, K, V, R, Out0 <: HList] = Modifier[L, K ,V, R] { type Out = Out0 }
 
-    implicit def hlistModify1[F, A, B, T <: HList]: Aux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] =
-      new Modifier[FieldType[F, A] :: T, F, A, B] {
-        type Out = FieldType[F, B] :: T
-        def apply(l: FieldType[F, A] :: T, f: A => B): Out = field[F](f(l.head)) :: l.tail
+    implicit def hlistModify1[L <: HList, K , V, R]: Modifier[L, K, V, R] =  macro ModMacro.applyImpl[L, K, V, R]
+  }
+  @macrocompat.bundle
+  class ModMacro(val c: whitebox.Context) extends CaseClassMacros {
+
+    import c.universe._
+
+    def applyImpl[L <: HList, K, V, R](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], vTag: WeakTypeTag[V], rTag: WeakTypeTag[R]): Tree = {
+
+      val List(lTpe, kTpe, vTpe, rTpe) = List(lTag, kTag, vTag, rTag).map(_.tpe.dealias)
+
+      if (!(lTpe <:< hlistTpe))
+        abort(s"$lTpe is not a record type")
+
+      val lTpes = unpackHListTpe(lTpe)
+
+      import scala.collection.immutable.::
+
+      def rec(l: List[(Type, Int)]): (Int, Boolean) = l match {
+
+        case ((tpe, ind) :: tail) =>
+          val (k, v) = unpackFieldType(tpe)
+          if (k =:= kTpe) (ind, vTpe =:= v) else rec(tail)
+
+        case Nil => -1 -> false
       }
 
-    implicit def hlistModify[H, T <: HList, F, A, B]
-      (implicit mt: Modifier[T, F, A, B]): Aux[H :: T, F, A, B, H :: mt.Out] =
-        new Modifier[H :: T, F, A, B] {
-          type Out = H :: mt.Out
-          def apply(l: H :: T, f: A => B): Out = l.head :: mt(l.tail, f)
-        }
-  }
+      val (modInd, valMatched) = rec(lTpes.zipWithIndex)
+      val keyMatched = modInd != -1
 
-  /**
-   * Type class supporting record field removal.
-   *
-   * @author Miles Sabin
-   */
-  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
-  trait Remover[L <: HList, K] extends DepFn1[L] with Serializable
-
-  trait LowPriorityRemover {
-    type Aux[L <: HList, K, Out0] = Remover[L, K] { type Out = Out0 }
-
-    implicit def hlistRemove[H, T <: HList, K, V, OutT <: HList]
-      (implicit rt: Aux[T, K, (V, OutT)]): Aux[H :: T, K, (V, H :: OutT)] =
-        new Remover[H :: T, K] {
-          type Out = (V, H :: OutT)
-          def apply(l : H :: T): Out = {
-            val (v, tail) = rt(l.tail)
-            (v, l.head :: tail)
-          }
-        }
-  }
-
-  object Remover extends LowPriorityRemover {
-    def apply[L <: HList, K](implicit remover: Remover[L, K]): Aux[L, K, remover.Out] = remover
-
-    implicit def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
-      new Remover[FieldType[K, V] :: T, K] {
-        type Out = (V, T)
-        def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
+      val (oTpe, remove) = {
+        if (keyMatched && valMatched)
+          mkHListTpe(lTpes.updated(modInd, appliedType(fieldTypeTpe, List(kTpe, rTpe.widen)))) -> false
+        else if (keyMatched)
+          if (vTpe =:= typeOf[Unit] && rTpe =:= typeOf[Unit]) mkHListTpe(lTpes.patch(modInd, Nil, 1)) -> true
+          else abort("Ambiguous action: Key matched but vTpe or rTpe is not Unit")
+        else if (vTpe =:= typeOf[Unit])
+          mkHListTpe(lTpes :+ appliedType(fieldTypeTpe, List(kTpe, rTpe.widen))) -> false
+        else abort(s"No field $kTpe in record type $lTpe")
       }
+
+      q"""
+          new _root_.shapeless.ops.record.UnsafeModifier($modInd, $remove)
+          .asInstanceOf[_root_.shapeless.ops.record.Modifier.Aux[$lTpe, $kTpe, $vTpe, $rTpe, $oTpe]]
+       """
+    }
   }
+
+  class UnsafeModifier(i: Int, remove: Boolean) extends Modifier[HList, Any,Any,Any] {
+    type Out = HList
+
+    def unsafeModify(l: HList, i: Int, f: Any => Any): HList = {
+      @tailrec
+      def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList) =
+        l match {
+          case HNil => if(remove)throw new Exception("Index out of bounds.Cannot remove.") else (prefix, f(()) :: HNil)
+          case hd :: (tl: HList) if i == 0 => if(remove)(prefix, tl) else (prefix, f(hd) :: tl)
+          case hd :: (tl: HList) => loop(tl, i - 1, hd :: prefix)
+        }
+
+      val (prefix, suffix) = loop(l, i, Nil)
+      prefix.foldLeft(suffix) { (tl, hd) => hd :: tl }
+    }
+
+    def apply(l: HList, f: Any => Any): HList = unsafeModify(l, i, f)
+  }
+
 
   /**
    * Type class supporting removal and re-insertion of an element (possibly unlabelled).

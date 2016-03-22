@@ -21,7 +21,7 @@ import scala.language.dynamics
 import labelled.{ FieldType, field }
 import ops.coproduct.{ Inject, Selector => CSelector }
 import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
-import ops.record.{ Selector => RSelector, Updater }
+import ops.record.{ Selector => RSelector, Modifier}
 import tag.@@
 
 trait Lens[S, A] extends LPLens[S, A] { outer =>
@@ -456,14 +456,14 @@ trait MkRecordSelectLens[R <: HList, K] extends Serializable {
 object MkRecordSelectLens {
   type Aux[R <: HList, K, Elem0] = MkRecordSelectLens[R, K] { type Elem = Elem0 }
 
-  implicit def mkRecordSelectLens[R <: HList, K, E]
-    (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R]): Aux[R, K, E] =
+  implicit def mkRecordSelectLens[R <: HList, K, E, O<:HList]
+    (implicit selector: RSelector.Aux[R, K, E], updater: Modifier.Aux[R, K, E, E,O], ev: O =:= R): Aux[R, K, E] =
       new MkRecordSelectLens[R, K] {
         type Elem = E
         def apply(): Lens[R, E] =
           new Lens[R, E] {
             def get(r: R) = selector(r)
-            def set(r: R)(e: E) = updater(r, field[K](e))
+            def set(r: R)(e: E) = updater(r, _ => e )
           }
       }
 }

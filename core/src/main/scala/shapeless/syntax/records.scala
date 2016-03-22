@@ -52,9 +52,14 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def fieldAt(k: Witness)(implicit selector : Selector[L, k.T]): FieldType[k.T, selector.Out] = field[k.T](selector(l))
 
   /**
-   * Updates or adds to this record a field with key type F and value type F#valueType.
+   * Updates a field with key type F and value type F#valueType with the value having same type.
    */
-  def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
+  def updated[V](k: Witness, v: V)(implicit updater: Modifier[L, k.T, V, V]) : updater.Out = updater(l, _ => v)
+
+  /**
+    * Adds a field only if record does not contain given key.
+    */
+  def add[V](k: Witness, v: V)(implicit updater: Modifier[L, k.T, Unit, V]) : updater.Out = updater(l, _ => v)
 
   
   /**
@@ -68,18 +73,18 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    * Remove the field associated with the singleton typed key k, returning both the corresponding value and the updated
    * record. Only available if this record has a field with keyType equal to the singleton type k.T.
    */
-  def remove(k : Witness)(implicit remover: Remover[L, k.T]): remover.Out = remover(l)
+  def remove[SO, MO<:HList](k : Witness)(implicit s: Selector.Aux[L, k.T, SO], r: Modifier.Aux[L, k.T, Unit, Unit, MO]): (SO, MO) = (s(l), r(l, null))
   
   /**
    * Updates or adds to this record a field of type F.
    */
-  def +[F](f: F)(implicit updater : Updater[L, F]): updater.Out = updater(l, f)
+   def +[K,V](f: FieldType[K, V])(implicit updater : Modifier[L, K, Unit, V]): updater.Out = updater(l, _ => f.asInstanceOf[V])
   
   /**
    * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this
    * record has a field with keyType equal to the singleton type k.T.
    */
-  def -[V, Out <: HList](k: Witness)(implicit remover : Remover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
+  def -[V, Out <: HList](k: Witness)(implicit remover : Modifier.Aux[L, k.T, Unit, Unit,Out]): Out = remover(l, null)
 
   /**
    * Returns the union of this record and another record.
