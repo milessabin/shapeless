@@ -14,6 +14,4 @@ else
 PUBLISH=publishLocal
 fi
 
-echo ${TEST_VAR}
-
 ${SBT} validate ${PUBLISH}
