@@ -13,8 +13,8 @@ import GitKeys._
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.6", "2.11.7", "2.12.0-M3")
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M3")
 )
 
 addCommandAlias("root", ";project root")
