@@ -525,8 +525,8 @@ class SerializationTests {
     assertSerializable(Merger[R, RM])
     assertSerializable(Merger[RM, R])
 
-    assertSerializable(Modifier[R, KA, Int, Char])
-    assertSerializable(Modifier[R, KB, String, Char])
+    assertSerializable(Crud[R, KA, Int, Char])
+    assertSerializable(Crud[R, KB, String, Char])
 
     assertSerializable(Renamer[R, KA, KB])
     assertSerializable(Renamer[R, KC, KA])

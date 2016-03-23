@@ -33,7 +33,7 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    * Returns the value associated with the singleton typed key k. Only available if this record has a field with
    * with keyType equal to the singleton type k.T.
    */
-  def get(k: Witness)(implicit selector : Selector[L, k.T]): selector.Out = selector(l)
+  def get(k: Witness)(implicit selector : Crud.Read[L, k.T]): selector.V = selector(l, Crud.noOp)._2
   
   /**
    * Returns the value associated with the singleton typed key k. Only available if this record has a field with
@@ -43,48 +43,49 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    * https://issues.scala-lang.org/browse/SI-5142. If this method is accessible the conflict can be worked around by
    * using HListOps#at instead of `HListOps#apply`.
    */
-  def apply(k: Witness)(implicit selector : Selector[L, k.T]): selector.Out = selector(l)
+  def apply(k: Witness)(implicit selector : Crud.Read[L, k.T]): selector.V = selector(l, Crud.noOp)._2
 
   /**
    * Returns the value associated with the singleton typed key k. Only available if this record has a field with
    * with keyType equal to the singleton type k.T.
    */
-  def fieldAt(k: Witness)(implicit selector : Selector[L, k.T]): FieldType[k.T, selector.Out] = field[k.T](selector(l))
+  def fieldAt(k: Witness)(implicit selector : Crud.Read[L, k.T]): FieldType[k.T, selector.V] = field[k.T](selector(l, Crud.noOp)._2)
 
   /**
    * Updates a field with key type F and value type F#valueType with the value having same type.
    */
-  def updated[V](k: Witness, v: V)(implicit updater: Modifier[L, k.T, V, V]) : updater.Out = updater(l, _ => v)
+  def updated[V](k: Witness, v: V)(implicit updater: Crud.Replace[L, k.T, V]) : L = updater(l, _ => v)._1
 
   /**
     * Adds a field only if record does not contain given key.
     */
-  def add[V](k: Witness, v: V)(implicit updater: Modifier[L, k.T, Unit, V]) : updater.Out = updater(l, _ => v)
+  def add[V](k: Witness, v: V)(implicit updater: Crud.Create[L, k.T, V]) : updater.Out = updater(l, _ => v)._1
 
   
   /**
    * Updates a field having a value with type A by given function.
    */
   def updateWith[W](k: WitnessWith[FSL])(f: k.instance.Out => W)
-    (implicit modifier: Modifier[L, k.T, k.instance.Out, W]): modifier.Out = modifier(l, f)
+    (implicit modifier: Crud.Update[L, k.T, k.instance.Out, W]): modifier.Out = modifier(l, f)._1
+  //TODO: Replace with Crud (currently Crud marco is not being expanded when spawned inside WitnessWith)
   type FSL[K] = Selector[L, K]
 
   /**
    * Remove the field associated with the singleton typed key k, returning both the corresponding value and the updated
    * record. Only available if this record has a field with keyType equal to the singleton type k.T.
    */
-  def remove[SO, MO<:HList](k : Witness)(implicit s: Selector.Aux[L, k.T, SO], r: Modifier.Aux[L, k.T, Unit, Unit, MO]): (SO, MO) = (s(l), r(l, null))
+  def remove[V, O<:HList](k : Witness)(implicit  r: Crud.Delete[L, k.T]): (r.V, r.Out) =  r(l, Crud.noOp).swap
   
   /**
    * Updates or adds to this record a field of type F.
    */
-   def +[K,V](f: FieldType[K, V])(implicit updater : Modifier[L, K, Unit, V]): updater.Out = updater(l, _ => f.asInstanceOf[V])
+   def +[K,V](f: FieldType[K, V])(implicit updater : Crud.Create[L, K, V]): updater.Out = updater(l, _ => f.asInstanceOf[V])._1
   
   /**
    * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this
    * record has a field with keyType equal to the singleton type k.T.
    */
-  def -[V, Out <: HList](k: Witness)(implicit remover : Modifier.Aux[L, k.T, Unit, Unit,Out]): Out = remover(l, null)
+  def -[V](k: Witness)(implicit remover : Crud.Delete[L, k.T]): remover.Out = remover(l, Crud.noOp)._1
 
   /**
    * Returns the union of this record and another record.
@@ -135,10 +136,10 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
  * @author Cody Allen
  */
 final case class DynamicRecordOps[L <: HList](l : L) extends Dynamic {
-  import ops.record.Selector
+  import ops.record.Crud
 
   /**
    * Allows dynamic-style access to fields of the record whose keys are Symbols.
    */
-  def selectDynamic(key: String)(implicit selector: Selector[L, Symbol @@ key.type]): selector.Out = selector(l)
+  def selectDynamic(key: String)(implicit selector: Crud.Read[L, Symbol @@ key.type]): selector.V = selector(l, Crud.noOp)._2
 }
