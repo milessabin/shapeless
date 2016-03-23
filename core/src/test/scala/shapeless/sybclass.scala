@@ -152,6 +152,10 @@ class SybClassTests {
     typed[Int](e5)
     assertEquals(11, e5)
 
+    val e6 = everything(gsize)(plus)(Map("foo" -> List(1, 2, 3), "bar" -> Nil))
+    typed[Int](e6)
+    assertEquals(14, e6)
+
     val is = gsizeAll2(23)
     typed[Int](is)
     assertEquals(1, is)
@@ -172,9 +176,9 @@ class SybClassTests {
     typed[Int](lps)
     assertEquals(11, lps)
 
-    val mps = gsizeAll2(Map("foo" -> 23, "bar" -> 24))
+    val mps = gsizeAll2(Map("foo" -> List(1, 2, 3), "bar" -> Nil))
     typed[Int](mps)
-    assertEquals(11, mps)
+    assertEquals(14, mps)
   }
 
   @Test
@@ -238,6 +242,14 @@ class SybClassTests {
     val e11 = everywhere(inc)(Map("foo" -> 23))
     typed[Map[String, Int]](e11)
     assertEquals(Map("foo" -> 24), e11)
+
+    val e12 = everywhere(inc)(Map("foo" -> 1, "bar" -> 2))
+    typed[Map[String, Int]](e12)
+    assertEquals(Map("foo" -> 2, "bar" -> 3), e12)
+
+    val e13 = everywhere(inc)(List(Map("foo" -> Vector(Option(1), None, Option(2)))))
+    typed[List[Map[String, Vector[Option[Int]]]]](e13)
+    assertEquals(List(Map("foo" -> Vector(Option(2), None, Option(3)))), e13)
   }
 
   @Test
