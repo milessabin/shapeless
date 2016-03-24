@@ -21,7 +21,7 @@ import scala.language.dynamics
 import labelled.{ FieldType, field }
 import ops.coproduct.{ Inject, Selector => CSelector }
 import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
-import ops.record.Crud
+import ops.record.{ Selector => RSelector, Updater }
 import tag.@@
 
 trait Lens[S, A] extends LPLens[S, A] { outer =>
@@ -292,7 +292,7 @@ object InferProduct {
   type Aux[C <: Coproduct, K, P] = InferProduct[C, K] { type Prod = P }
 
   implicit def inferProduct1[P, R <: HList, T <: Coproduct, K]
-    (implicit gen: LabelledGeneric.Aux[P, R], sel: Crud.Read[R, K]): Aux[P :+: T, K, P] =
+    (implicit gen: LabelledGeneric.Aux[P, R], sel: RSelector[R, K]): Aux[P :+: T, K, P] =
       new InferProduct[P :+: T, K] {
         type Prod = P
       }
@@ -457,15 +457,15 @@ object MkRecordSelectLens {
   type Aux[R <: HList, K, Elem0] = MkRecordSelectLens[R, K] { type Elem = Elem0 }
 
   implicit def mkRecordSelectLens[R <: HList, K, E]
-  (implicit  eTypeDetector: Crud.Aux[R, K, E, Crud.NA, _], updater: Crud.Replace[R, K, E]): Aux[R, K, E] =
-    new MkRecordSelectLens[R, K] {
-      type Elem = E
-      def apply(): Lens[R, E] =
-        new Lens[R, E] {
-          def get(r: R) = updater(r, e =>e)._2
-          def set(r: R)(e: E) = updater(r, _ => e )._1
-        }
-    }
+    (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R, Updater.Replace]): Aux[R, K, E] =
+      new MkRecordSelectLens[R, K] {
+        type Elem = E
+        def apply(): Lens[R, E] =
+          new Lens[R, E] {
+            def get(r: R) = selector(r)
+            def set(r: R)(e: E) = updater(r, field[K](e))
+          }
+      }
 }
 
 trait MkPathOptic[S, P <: HList] {

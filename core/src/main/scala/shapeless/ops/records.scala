@@ -19,6 +19,7 @@ package ops
 
 import scala.language.experimental.macros
 import scala.reflect.macros.{ blackbox, whitebox }
+import scala.annotation.tailrec
 
 import poly._
 
@@ -29,14 +30,11 @@ import poly._
 package record {
   import shapeless.labelled._
 
-  import scala.annotation.{implicitNotFound, tailrec}
-
   /**
    * Type class supporting record field selection.
    *
    * @author Miles Sabin
    */
-  //TODO: Replace with Crud (currently Crud marco is not being expanded when spawned inside WitnessWith)
   @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
   trait Selector[L <: HList, K] extends DepFn1[L] with Serializable {
     type Out
@@ -48,7 +46,13 @@ package record {
 
     def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
 
-    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+    implicit def crudSelect[L <: HList, K, O](implicit d:Crud.Aux[L,K,O,Crud.NA,_]): Aux[L, K, O] = new Selector[L,K]{
+      override type Out = O
+      override def apply(l: L): O = d(l,Crud.noOp )._2
+    }
+
+    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
+    def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
 
   }
 
@@ -113,7 +117,67 @@ package record {
       }
   }
 
+  /**
+   * Type class supporting record update and extension.
+   *
+   * @author Miles Sabin
+   */
+  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList; type mrk <: Updater.OpMarker }
 
+  object Updater {
+
+    trait OpMarker
+    trait Add extends OpMarker
+    trait Replace extends OpMarker
+
+    type Aux[L <: HList, F, Out0 <: HList, M<:OpMarker] = Updater[L, F] { type Out = Out0 ; type mrk = M}
+    type OpAux[L <: HList, F, M<:OpMarker] = Updater[L, F] { type Out <: HList; type mrk = M}
+
+    def apply[L <: HList, F, M<:OpMarker](implicit updater: Updater.OpAux[L, F,M]): Aux[L, F, updater.Out, M] = updater
+
+    def mkUpdater[L <: HList, F, O]: Aux[L, F, O, _] = macro UpdaterMacros.applyImpl[L, F]
+
+    implicit def crudReplacer[L <: HList, K,V, O<:HList](implicit f:Crud.Aux[L,K,V,V,O]):Aux[L,FieldType[K,V],O,Replace] = new Updater[L,FieldType[K,V]] {
+      override type Out =O
+      override type mrk = Replace
+      override def apply(t: L, u: FieldType[K, V]): O = f(t,_=>u.asInstanceOf[V])._1
+    }
+
+    implicit def crudCreator[L <: HList, K,V, O<:HList](implicit f:Crud.Aux[L,K,Crud.NA,V,O]):Aux[L,FieldType[K,V],O,Add] = new Updater[L,FieldType[K,V]] {
+      override type Out =O
+      override type mrk = Add
+      override def apply(t: L, u: FieldType[K, V]): O = f(t,_ => u.asInstanceOf[V])._1
+    }
+  }
+
+  class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
+    type Out = HList
+    def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
+  }
+
+  @macrocompat.bundle
+  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
+      val lTpe = lTag.tpe.dealias
+      val fTpe = fTag.tpe.dealias
+      if(!(lTpe <:< hlistTpe))
+        abort(s"$lTpe is not a record type")
+
+      val lTpes = unpackHListTpe(lTpe)
+      val (uTpes, i) = {
+        val i0 = lTpes.indexWhere(_ =:= fTpe)
+        if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
+        else (lTpes.updated(i0, fTpe), i0)
+      }
+      val uTpe = mkHListTpe(uTpes)
+      q"""
+        new _root_.shapeless.ops.record.UnsafeUpdater($i)
+          .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
+      """
+    }
+  }
   /**
    * Type class support record merging.
    *
@@ -143,13 +207,13 @@ package record {
 
     implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
       (implicit
-       rm: Crud.Aux[M, K, V, Crud.NA, MT],
-       mt: Merger[T, MT]
+        rm: Remover.Aux[M, K, (V, MT)],
+        mt: Merger[T, MT]
       ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
       new Merger[FieldType[K, V] :: T, M] {
         type Out = FieldType[K, V] :: mt.Out
         def apply(l: FieldType[K, V] :: T, m: M): Out = {
-          val (mr, mv) =  rm(m, Crud.noOp)
+          val (mv, mr) = rm(m)
           val up = field[K](mv)
           up :: mt(l.tail, mr)
         }
@@ -157,16 +221,15 @@ package record {
   }
 
   /**
-   * Macro based implementation of type class supporting modification of a Record field by given function.
-   *
-   * @author Ievgen Garkusha
-   */
+    * Macro based implementation of type class supporting modification of a Record field by given function.
+    * Replacement for Updater, Remover, Selector and Modifier
+    * @author Ievgen Garkusha
+    */
   trait Crud[L <: HList,K, R] extends Serializable {
     type Out <: HList
     type V
     def apply(t: L, u: V=>R): (Out,V)
   }
-
 
   object Crud {
     trait NA
@@ -262,6 +325,81 @@ package record {
     }
   }
 
+  /**
+   * Type class supporting modification of a record field by given function.
+   *
+   * @author Joni Freeman
+   */
+
+  @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
+  trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] with Serializable { type Out <: HList }
+
+  object Modifier {
+    def apply[L <: HList, F, A, B](implicit modifier: Modifier[L, F, A, B]): Aux[L, F, A, B, modifier.Out] = modifier
+
+    type Aux[L <: HList, F, A, B, Out0 <: HList] = Modifier[L, F, A, B] { type Out = Out0 }
+
+    implicit def crudModify[L<:HList,K,V,R,O<:HList](implicit cr:Crud.Aux[L,K,V,R,O]):Aux[L,K,V,R,O] = new Modifier[L,K,V,R]{
+      override type Out = O
+      override def apply(t: L, u: (V) => R): O = cr.apply(t,u)._1
+    }
+
+    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
+    def hlistModify1[F, A, B, T <: HList]: Aux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] =
+      new Modifier[FieldType[F, A] :: T, F, A, B] {
+        type Out = FieldType[F, B] :: T
+        def apply(l: FieldType[F, A] :: T, f: A => B): Out = field[F](f(l.head)) :: l.tail
+      }
+
+    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
+    def hlistModify[H, T <: HList, F, A, B]
+    (implicit mt: Modifier[T, F, A, B]): Aux[H :: T, F, A, B, H :: mt.Out] =
+      new Modifier[H :: T, F, A, B] {
+        type Out = H :: mt.Out
+        def apply(l: H :: T, f: A => B): Out = l.head :: mt(l.tail, f)
+      }
+  }
+
+  /**
+   * Type class supporting record field removal.
+   *
+   * @author Miles Sabin
+   */
+
+  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
+  trait Remover[L <: HList, K] extends DepFn1[L] with Serializable
+
+  trait LowPriorityRemover {
+    type Aux[L <: HList, K, Out0] = Remover[L, K] { type Out = Out0 }
+
+    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
+    def hlistRemove[H, T <: HList, K, V, OutT <: HList]
+    (implicit rt: Aux[T, K, (V, OutT)]): Aux[H :: T, K, (V, H :: OutT)] =
+      new Remover[H :: T, K] {
+        type Out = (V, H :: OutT)
+        def apply(l : H :: T): Out = {
+          val (v, tail) = rt(l.tail)
+          (v, l.head :: tail)
+        }
+      }
+  }
+
+  object Remover extends LowPriorityRemover {
+    def apply[L <: HList, K](implicit remover: Remover[L, K]): Aux[L, K, remover.Out] = remover
+
+
+    implicit def crudRemove[L<:HList,K, V, O <: HList](implicit cr: Crud.Aux[L,K,V,Crud.NA,O]):Aux[L,K,(V,O)] = new Remover[L,K]{
+      override type Out = (V,O)
+      override def apply(t: L): (V,O) = cr(t,Crud.noOp).swap
+    }
+
+    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
+    def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
+      new Remover[FieldType[K, V] :: T, K] {
+        type Out = (V, T)
+        def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
+      }
+  }
 
   /**
    * Type class supporting removal and re-insertion of an element (possibly unlabelled).

@@ -520,13 +520,20 @@ class SerializationTests {
     assertSerializable(SelectAll[R, KA :: HNil])
     assertSerializable(SelectAll[R, KA :: KB :: HNil])
 
+    assertSerializable(Updater[HNil, FA, Updater.Add])
+    assertSerializable(Updater[R, FA, Updater.Replace])
+    assertSerializable(Updater[R, FB, Updater.Replace])
+
     assertSerializable(Merger[HNil, R])
     assertSerializable(Merger[R, HNil])
     assertSerializable(Merger[R, RM])
     assertSerializable(Merger[RM, R])
 
-    assertSerializable(Crud[R, KA, Int, Char])
-    assertSerializable(Crud[R, KB, String, Char])
+    assertSerializable(Modifier[R, KA, Int, Char])
+    assertSerializable(Modifier[R, KB, String, Char])
+
+    assertSerializable(Remover[R, KA])
+    assertSerializable(Remover[R, KB])
 
     assertSerializable(Renamer[R, KA, KB])
     assertSerializable(Renamer[R, KC, KA])

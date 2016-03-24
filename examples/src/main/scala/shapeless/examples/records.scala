@@ -53,7 +53,7 @@ object RecordExamples extends App {
   println
 
   // Update price field, relying on static type of currentPrice
-  val updated = book.updated("price", currentPrice + 2.0)
+  val updated = book.replace("price", (currentPrice+2.0))
   printBook(updated)
 
   // Add a new field
