@@ -54,8 +54,7 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   /**
     * Updates or adds to this record a field with key type F and value type F#valueType.
     */
-  @deprecated("use replace method","2.3.1")
-  def updated[V](k: Witness, v: V)(implicit updater: Updater.OpAux[L, FieldType[k.T, V], Updater.Replace]) : updater.Out = updater(l, field[k.T](v))
+  def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
   /*
   * Replaces the value of a field  with key type F preserving the same value type.
@@ -83,7 +82,7 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   /**
    * Updates or adds to this record a field of type F.
    */
-  def +[F](f: F)(implicit updater : Updater.OpAux[L, F, Updater.Add]): updater.Out = updater(l, f)
+  def +[F](f: F)(implicit updater : Updater[L, F]): updater.Out = updater(l, f)
   
   /**
    * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this

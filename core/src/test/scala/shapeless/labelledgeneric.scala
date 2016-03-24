@@ -257,8 +257,8 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val b1 = b0.replace('title, "Types and Programming Languages (2nd Ed.)")
-    val b2 = b1.replace('price, 46.11)
+    val b1 = b0.updated('title, "Types and Programming Languages (2nd Ed.)")
+    val b2 = b1.updated('price, 46.11)
 
     val updated = gen.from(b2)
     assertEquals(tapl2, updated)

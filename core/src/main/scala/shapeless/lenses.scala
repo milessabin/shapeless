@@ -457,7 +457,7 @@ object MkRecordSelectLens {
   type Aux[R <: HList, K, Elem0] = MkRecordSelectLens[R, K] { type Elem = Elem0 }
 
   implicit def mkRecordSelectLens[R <: HList, K, E]
-    (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R, Updater.Replace]): Aux[R, K, E] =
+    (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R]): Aux[R, K, E] =
       new MkRecordSelectLens[R, K] {
         type Elem = E
         def apply(): Lens[R, E] =

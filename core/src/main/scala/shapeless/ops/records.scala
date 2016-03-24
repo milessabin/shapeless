@@ -122,32 +122,14 @@ package record {
    *
    * @author Miles Sabin
    */
-  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList; type mrk <: Updater.OpMarker }
+  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList }
 
   object Updater {
+    type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
 
-    trait OpMarker
-    trait Add extends OpMarker
-    trait Replace extends OpMarker
+    def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
 
-    type Aux[L <: HList, F, Out0 <: HList, M<:OpMarker] = Updater[L, F] { type Out = Out0 ; type mrk = M}
-    type OpAux[L <: HList, F, M<:OpMarker] = Updater[L, F] { type Out <: HList; type mrk = M}
-
-    def apply[L <: HList, F, M<:OpMarker](implicit updater: Updater.OpAux[L, F,M]): Aux[L, F, updater.Out, M] = updater
-
-    def mkUpdater[L <: HList, F, O]: Aux[L, F, O, _] = macro UpdaterMacros.applyImpl[L, F]
-
-    implicit def crudReplacer[L <: HList, K,V, O<:HList](implicit f:Crud.Aux[L,K,V,V,O]):Aux[L,FieldType[K,V],O,Replace] = new Updater[L,FieldType[K,V]] {
-      override type Out =O
-      override type mrk = Replace
-      override def apply(t: L, u: FieldType[K, V]): O = f(t,_=>u.asInstanceOf[V])._1
-    }
-
-    implicit def crudCreator[L <: HList, K,V, O<:HList](implicit f:Crud.Aux[L,K,Crud.NA,V,O]):Aux[L,FieldType[K,V],O,Add] = new Updater[L,FieldType[K,V]] {
-      override type Out =O
-      override type mrk = Add
-      override def apply(t: L, u: FieldType[K, V]): O = f(t,_ => u.asInstanceOf[V])._1
-    }
+    implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
   }
 
   class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
@@ -241,7 +223,6 @@ package record {
     type Update[L<:HList,K,V,R] = Aux0[L,K,V,R]
     type Replace[L<:HList,K,V] = Aux[L,K,V,V,L]
 
-    def apply[L <: HList, K, V, R](implicit modifier: Crud[L, K, R]): Crud[L, K, R] = modifier
     type Aux0[L <: HList, K, V0, R] = Crud[L,K,R]{type V =V0; type Out<:HList}
     type Aux[L <: HList,K, V0, R, Out0 <: HList] = Crud[L,K,R]{type V =V0; type Out = Out0}
 

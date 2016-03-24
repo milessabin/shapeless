@@ -217,34 +217,34 @@ class RecordTests {
       (doubleField1 ->>   2.0) ::
       HNil
 
-    val r2 = r1.replace(intField1, 7)
+    val r2 = r1.updated(intField1, 7)
     val v1 = r2.get(intField1)
     typed[Int](v1)
     assertEquals(7, v1)
 
-    val r3 = r1.replace(stringField1, "wibble")
+    val r3 = r1.updated(stringField1, "wibble")
     val v2 = r3.get(stringField1)
     typed[String](v2)
     assertEquals("wibble", v2)
 
-    val r4 = r1.replace(boolField1, false)
+    val r4 = r1.updated(boolField1, false)
     val v3 = r4.get(boolField1)
     typed[Boolean](v3)
     assertEquals(false, v3)
 
-    val r5 = r1.replace(doubleField1, 1.0)
+    val r5 = r1.updated(doubleField1, 1.0)
     val v4 = r5.get(doubleField1)
     typed[Double](v4)
     assertEquals(1.0, v4, Double.MinPositiveValue)
 
     val r6 = HNil
 
-    val r7 = r6.add(boolField2, false)
+    val r7 = r6.updated(boolField2, false)
     val v5 = r7.get(boolField2)
     typed[Boolean](v5)
     assertEquals(false, v5)
 
-    val r8 = r7.add(doubleField2, 3.0)
+    val r8 = r7.updated(doubleField2, 3.0)
     val v6 = r8.get(doubleField2)
     typed[Double](v6)
     assertEquals(3.0, v6, Double.MinPositiveValue)
@@ -260,15 +260,11 @@ class RecordTests {
 
     //can add only if key does not exist
     implicitly[Crud.Create[r, c, Boolean]]
-    implicitly[Updater.OpAux[r, FieldType[c, Boolean], Updater.Add]]
     illTyped { """implicitly[Crud.Create[r, a, Boolean]]"""}
-    illTyped { """implicitly[Updater.OpAux[r, FieldType[a, Boolean], Updater.Add]]"""}
 
     //can replace only with the same value type
     implicitly[Crud.Replace[r, a, Int]]
-    implicitly[Updater.OpAux[r, FieldType[a, Int], Updater.Replace]]
     illTyped { """implicitly[Crud.Replace[r, a, Boolean]]"""}
-    illTyped { """implicitly[Updater.OpAux[r, FieldType[a, Boolean], Updater.Replace]]"""}
   }
 
   @Test
@@ -280,34 +276,34 @@ class RecordTests {
       ("doubleField1" ->>   2.0) ::
       HNil
 
-    val r2 = r1.replace("intField1", 7)
+    val r2 = r1.updated("intField1", 7)
     val v1 = r2.get("intField1")
     typed[Int](v1)
     assertEquals(7, v1)
 
-    val r3 = r1.replace("stringField1", "wibble")
+    val r3 = r1.updated("stringField1", "wibble")
     val v2 = r3.get("stringField1")
     typed[String](v2)
     assertEquals("wibble", v2)
 
-    val r4 = r1.replace("boolField1", false)
+    val r4 = r1.updated("boolField1", false)
     val v3 = r4.get("boolField1")
     typed[Boolean](v3)
     assertEquals(false, v3)
 
-    val r5 = r1.replace("doubleField1", 1.0)
+    val r5 = r1.updated("doubleField1", 1.0)
     val v4 = r5.get("doubleField1")
     typed[Double](v4)
     assertEquals(1.0, v4, Double.MinPositiveValue)
 
     val r6 = HNil
 
-    val r7 = r6.add("boolField2", false)
+    val r7 = r6.updated("boolField2", false)
     val v5 = r7.get("boolField2")
     typed[Boolean](v5)
     assertEquals(false, v5)
 
-    val r8 = r7.add("doubleField2", 3.0)
+    val r8 = r7.updated("doubleField2", 3.0)
     val v6 = r8.get("doubleField2")
     typed[Double](v6)
     assertEquals(3.0, v6, Double.MinPositiveValue)
