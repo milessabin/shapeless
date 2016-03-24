@@ -52,8 +52,8 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def fieldAt(k: Witness)(implicit selector : Selector[L, k.T]): FieldType[k.T, selector.Out] = field[k.T](selector(l))
 
   /**
-    * Updates or adds to this record a field with key type F and value type F#valueType.
-    */
+   * Updates or adds to this record a field with key type F and value type F#valueType.
+   */
   def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
   /*

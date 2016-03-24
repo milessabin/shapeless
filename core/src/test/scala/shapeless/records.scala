@@ -252,19 +252,19 @@ class RecordTests {
 
   @Test
   def testCreateReplaceTypeConstraints: Unit ={
-    import shapeless.ops.record.{Crud,Updater}
+    import shapeless.ops.record.Crud
 
-    type r = Record.`'a -> Int, 'b -> String`.T
-    type a = Witness.`'a`.T
-    type c = Witness.`'c`.T
+    type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
+    type I = Witness.`'i`.T
+    type Z = Witness.`'z`.T
 
     //can add only if key does not exist
-    implicitly[Crud.Create[r, c, Boolean]]
-    illTyped { """implicitly[Crud.Create[r, a, Boolean]]"""}
+    implicitly[Crud.Create[R, Z, Boolean]]
+    illTyped { """implicitly[Crud.Create[R, I, Boolean]]"""}
 
     //can replace only with the same value type
-    implicitly[Crud.Replace[r, a, Int]]
-    illTyped { """implicitly[Crud.Replace[r, a, Boolean]]"""}
+    implicitly[Crud.Replace[R, I, Int]]
+    illTyped { """implicitly[Crud.Replace[R, I, Boolean]]"""}
   }
 
   @Test
