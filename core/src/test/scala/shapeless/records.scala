@@ -251,6 +251,27 @@ class RecordTests {
   }
 
   @Test
+  def testCreateReplaceTypeConstraints: Unit ={
+    import shapeless.ops.record.{Crud,Updater}
+
+    type r = Record.`'a -> Int, 'b -> String`.T
+    type a = Witness.`'a`.T
+    type c = Witness.`'c`.T
+
+    //can add only if key does not exist
+    implicitly[Crud.Create[r, c, Boolean]]
+    implicitly[Updater.OpAux[r, FieldType[c, Boolean], Updater.Add]]
+    illTyped { """implicitly[Crud.Create[r, a, Boolean]]"""}
+    illTyped { """implicitly[Updater.OpAux[r, FieldType[a, Boolean], Updater.Add]]"""}
+
+    //can replace only with the same value type
+    implicitly[Crud.Replace[r, a, Int]]
+    implicitly[Updater.OpAux[r, FieldType[a, Int], Updater.Replace]]
+    illTyped { """implicitly[Crud.Replace[r, a, Boolean]]"""}
+    illTyped { """implicitly[Updater.OpAux[r, FieldType[a, Boolean], Updater.Replace]]"""}
+  }
+
+  @Test
   def testUpdateLiteral {
     val r1 =
       ("intField1"    ->>    23) ::
