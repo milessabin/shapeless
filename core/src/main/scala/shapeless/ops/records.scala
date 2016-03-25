@@ -311,7 +311,6 @@ package record {
    *
    * @author Joni Freeman
    */
-
   @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
   trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] with Serializable { type Out <: HList }
 

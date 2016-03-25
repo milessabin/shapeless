@@ -251,23 +251,6 @@ class RecordTests {
   }
 
   @Test
-  def testCreateReplaceTypeConstraints: Unit ={
-    import shapeless.ops.record.Crud
-
-    type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
-    type I = Witness.`'i`.T
-    type Z = Witness.`'z`.T
-
-    //can add only if key does not exist
-    implicitly[Crud.Create[R, Z, Boolean]]
-    illTyped { """implicitly[Crud.Create[R, I, Boolean]]"""}
-
-    //can replace only with the same value type
-    implicitly[Crud.Replace[R, I, Int]]
-    illTyped { """implicitly[Crud.Replace[R, I, Boolean]]"""}
-  }
-
-  @Test
   def testUpdateLiteral {
     val r1 =
       ("intField1"    ->>    23) ::
@@ -493,6 +476,19 @@ class RecordTests {
     val r5 = r1 - "doubleField1"
     typed[FieldType[wIntField1.T, Int] :: FieldType[wStringField1.T, String] :: FieldType[wBoolField1.T, Boolean] :: HNil](r5)
     assertEquals(("intField1" ->> 23) :: ("stringField1" ->> "foo") :: ("boolField1" ->> true) :: HNil, r5)
+  }
+
+  @Test
+  def crudTest {
+    val a = Record(a = 1, b = "2")
+    //covering only  replace and add scenarios because others are covered by existing Selector, Remover, Modifier tests
+    assertEquals(a.replace('a, 2), Record(a = 2, b = "2"))
+    assertEquals(a.add('z, Nil),  Record(a =1, b= "2", z = Nil))
+    illTyped(
+      """
+        a.add('a, Nil)
+        a.replace('a, Nil)
+      """)
   }
 
   @Test
