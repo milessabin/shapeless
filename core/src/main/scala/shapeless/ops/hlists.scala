@@ -2871,4 +2871,32 @@ object hlist {
           def apply(l: H :: T): Out = l.head :: slice(l.tail)
         }
   }
+
+  /**
+    * Type class supporting reifying an `HList` of singleton types.
+    *
+    * @author Jisoo Park
+    */
+  trait Reify[L <: HList] extends DepFn0 with Serializable { type Out <: HList }
+
+  object Reify {
+    def apply[L <: HList](implicit reify: Reify[L]): Aux[L, reify.Out] = reify
+
+    type Aux[L <: HList, Out0 <: HList] = Reify[L] { type Out = Out0 }
+
+    implicit def hnilReify[L <: HNil]: Aux[L, HNil] =
+      new Reify[L] {
+        type Out = HNil
+        def apply(): Out = HNil
+      }
+
+    implicit def hlistReify[H, T <: HList](implicit
+      wh: Witness.Aux[H],
+      rt: Reify[T]
+    ) : Aux[H :: T, H :: rt.Out] =
+      new Reify[H :: T] {
+        type Out = H :: rt.Out
+        def apply(): Out = wh.value :: rt()
+      }
+  }
 }
