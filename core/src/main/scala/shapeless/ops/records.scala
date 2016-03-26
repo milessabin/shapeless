@@ -265,19 +265,12 @@ package record {
 
       val lTpes = unpackHListTpe(lTpe)
 
-      import scala.collection.immutable.::
-
       val na = typeOf[Crud.NA]
-      def rec(l: List[(Type,Int)]):(Int,Type) = l match {
 
-        case((tpe, ind) :: tail ) =>
-          val (k, v) = unpackFieldType(tpe)
-          if(k =:= kTpe) (ind, v) else rec(tail)
-
-        case Nil => -1 -> na
-      }
-
-      val (modInd, vTpe) = rec(lTpes.zipWithIndex)
+      val (modInd, vTpe) = lTpes.iterator.map(tpe =>unpackFieldType(tpe))
+        .zipWithIndex
+        .collectFirst{case((k, v), i) if k =:= kTpe => i -> v}
+        .getOrElse{-1 -> typeOf[Crud.NA]}
 
       val keyFound = modInd != -1
 
