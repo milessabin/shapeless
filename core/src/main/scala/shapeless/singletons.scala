@@ -25,6 +25,10 @@ import scala.reflect.macros.{ blackbox, whitebox }
 import tag.@@
 import scala.util.Try
 
+/** Provides the value corresponding to a singleton type.
+ *
+ * See SIP-23 for a related proposed language change.
+ */
 trait Witness extends Serializable {
   type T
   val value: T {}

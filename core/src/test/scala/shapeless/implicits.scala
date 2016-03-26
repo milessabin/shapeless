@@ -31,6 +31,7 @@ object CachedTestDefns {
 
   object CachedTest {
     implicit val i: CachedTC[Int] = cachedImplicit
+    implicit lazy val il: CachedTC[Boolean] = cachedImplicit
   }
 
   // Cats/Algebra Eq
@@ -88,6 +89,11 @@ class CachedTest {
   @Test
   def testBasics {
     assertTrue(CachedTest.i != null)
+  }
+
+  @Test
+  def testLazy {
+    assertTrue(CachedTest.il != null)
   }
 
   trait Foo[A]

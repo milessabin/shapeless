@@ -1,4 +1,5 @@
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
 import ReleaseTransformations._
 
@@ -13,8 +14,8 @@ import GitKeys._
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.6", "2.11.7", "2.12.0-M3")
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M3")
 )
 
 addCommandAlias("root", ";project root")
@@ -22,7 +23,7 @@ addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;compile;test")
+addCommandAlias("validate", ";root;validateJVM;validateJS")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
 
@@ -66,6 +67,14 @@ def configureJUnit(crossProject: CrossProject) = {
 }
 
 lazy val commonJsSettings = Seq(
+  scalacOptions += {
+    val tagOrHash =
+      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lines_!.head
+      else tagName.value
+    val a = (baseDirectory in LocalRootProject).value.toURI.toString
+    val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
+    s"-P:scalajs:mapSourceURI:$a->$g/"
+  },
   scalaJSUseRhino in Global := false,
   parallelExecution in Test := false
 )
@@ -74,7 +83,7 @@ lazy val commonJvmSettings = Seq(
   parallelExecution in Test := false
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings
+lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++ releaseSettings
 
 lazy val root = project.in(file("."))
   .aggregate(coreJS, coreJVM)
@@ -170,9 +179,6 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   }
 
 lazy val publishSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
@@ -204,7 +210,32 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  previousArtifacts := Set(), // Set(organization.value %% moduleName.value % "2.3.0"),
+  previousArtifacts := {
+    val previousVersion = "2.3.0"
+    val previousSJSVersion = "0.6.7"
+    val previousSJSBinaryVersion =
+      ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
+    val previousBinaryCrossVersion =
+      CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+    val scalaV = scalaVersion.value
+    val scalaBinaryV = scalaBinaryVersion.value
+    val thisProjectID = projectID.value
+    val previousCrossVersion = thisProjectID.crossVersion match {
+      case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
+      case crossVersion               => crossVersion
+    }
+
+    // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
+    // artifact we're looking for has 0.6.6 (for example).
+    val prevExtraAttributes =
+      thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
+    val prevProjectID =
+      (thisProjectID.organization % thisProjectID.name % previousVersion)
+        .cross(previousCrossVersion)
+        .extra(prevExtraAttributes.toSeq: _*)
+
+    Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
+  },
 
   binaryIssueFilters ++= {
     import com.typesafe.tools.mima.core._
@@ -234,7 +265,14 @@ lazy val osgiSettings = defaultOsgiSettings ++ Seq(
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
 
-lazy val sharedReleaseProcess = Seq(
+lazy val tagName = Def.setting{
+  s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
+}
+
+lazy val releaseSettings = Seq(
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseTagName := tagName.value,
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
@@ -251,7 +289,7 @@ lazy val sharedReleaseProcess = Seq(
   )
 )
 
-credentials ++= (for {
-  user <- sys.env.get("SONATYPE_USER")
-  pass <- sys.env.get("SONATYPE_PASS")
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass)).toSeq
+credentials in ThisBuild ++= (for {
+  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
+  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
+} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq

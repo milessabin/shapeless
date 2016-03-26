@@ -292,4 +292,27 @@ class LazyStrictTests {
       ()
     }
   }
+
+  @Test
+  def testNotFound {
+    @scala.annotation.implicitNotFound("No U[${X}]")
+    trait U[X]
+
+    trait V
+
+    @scala.annotation.implicitNotFound("No W[${X}, ${Y}]")
+    trait W[X, Y]
+
+    illTyped(
+      "lazily[U[String]]", "No U\\[String]"
+    )
+
+    illTyped(
+      "lazily[V]", "could not find Lazy implicit value of type V"
+    )
+
+    illTyped(
+      "lazily[W[String, Int]]", "No W\\[String, Int]"
+    )
+  }
 }

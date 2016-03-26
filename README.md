@@ -10,7 +10,7 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
-[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.6.svg)](https://www.scala-js.org)
+[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
 
 ## Projects which use shapeless
 
@@ -96,16 +96,16 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.3.0-RC2
+### shapeless-2.3.0
 
 Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M3. The main line of development for
-shapeless 2.3.0 is Scala 2.11.7 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.3.0 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.0-RC2"
+  "com.chuusai" %% "shapeless" % "2.3.0"
 )
 ```
 
@@ -115,7 +115,7 @@ If you are using Scala 2.10.x, you should also add the macro paradise plugin to 
 scalaVersion := "2.10.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.0-RC2",
+  "com.chuusai" %% "shapeless" % "2.3.0",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
@@ -205,7 +205,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.9 or later, and its master branch is built with Scala 2.11.7 by default but also
+shapeless is built with SBT 0.13.9 or later, and its master branch is built with Scala 2.11.8 by default but also
 cross-builds for 2.10.6 and 2.12.x.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640

@@ -1892,7 +1892,7 @@ class HListTests {
     type L4 = Int :: Int :: Int :: HNil
     val l4: L4 = 4 :: 5 :: 6 :: HNil
 
-    val lnil = l1.union(HNil)
+    val lnil = l1.union[HNil](HNil)
     assertTypedEquals[L1](l1, lnil)
 
     val lself = l1.union(l1)
@@ -1903,6 +1903,9 @@ class HListTests {
 
     val l21 = l2.union(l1)
     assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](2 :: "bar" :: true :: 3L :: HNil, l21)
+
+
+    illTyped { """implicitly[Union.Aux[Int :: HNil, Int :: HNil, Int :: Int :: HNil]]"""}
 
     val ldup1 = (l3).union(l4)
     assertTypedEquals[Int :: Int :: Int :: HNil](1 :: 2 :: 6 :: HNil, ldup1)
@@ -1933,6 +1936,8 @@ class HListTests {
 
     val l21 = l2.intersect[L1]
     assertTypedEquals[Int :: String :: HNil](2 :: "bar" :: HNil, l21)
+
+    illTyped { """implicitly[Intersection.Aux[Int :: HNil, Int :: HNil, HNil]]"""}
 
     val ldup1 = (l3).intersect[Int :: HNil]
     assertTypedEquals[Int :: HNil](4 :: HNil, ldup1)
@@ -3002,6 +3007,31 @@ class HListTests {
     assertEquals((23, true), ib)
   }
 
+  @Test
+  def selectAllTest: Unit ={
+    import shapeless._, record._ , ops.hlist.SelectAll
+
+    //is there any way to do it without runtime overhead?
+    class TypeCaptured[T](val value: T) {
+      type _type = T
+    }
+
+    def getFieldsByTypesOfSuper[Sub <: HList, Super <: HList](l: Sub)(implicit sa: SelectAll[Sub, Super]) = sa(l)
+
+    val hsuper = new TypeCaptured("2":: true :: HNil)
+    val hsub = new TypeCaptured(1 :: "2":: true :: HNil)
+
+    //testing with plain HList
+    assertTypedEquals[hsuper._type](hsuper.value, getFieldsByTypesOfSuper[hsub._type, hsuper._type](hsub.value))
+
+    val rsuper = new TypeCaptured(Record(b = true, c = "blah"))
+    val rsub =  new TypeCaptured(Record(a = 1, b = true, c = "blah"))
+
+    //testing with Record
+    assertTypedEquals[rsuper._type](rsuper.value, getFieldsByTypesOfSuper[rsub._type, rsuper._type](rsub.value))
+
+  }
+
   object FooNat extends NatProductArgs {
     def applyNatProduct[L <: HList](args: L): L = args
   }
@@ -3199,5 +3229,15 @@ class HListTests {
 
     //different type
     assertEquals((3, 1 :: 2 :: 42.0 :: HNil), (1 :: 2 :: 3 :: HNil).updateAtWith(2)(_ => 42.0))
+  }
+
+  @Test
+  def testReify {
+    assertEquals(HNil, Reify[HNil].apply)
+    assertEquals('a :: HNil, Reify[HList.`'a`.T].apply)
+    assertEquals('a :: 1 :: "b" :: true :: HNil, Reify[HList.`'a, 1, "b", true`.T].apply)
+
+    illTyped(""" Reify[String :: Int :: HNil] """)
+    illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
   }
 }

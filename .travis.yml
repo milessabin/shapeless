@@ -2,7 +2,7 @@ language: scala
 
 scala:
 - 2.10.6
-- 2.11.7
+- 2.11.8
 - 2.12.0-M3
 
 jdk:
@@ -18,8 +18,8 @@ script:
 
 env:
   global:
-  - secure: jFz1aWhx2zBWz1jNTeqxxfy2+4v25SiJIlO2HGd0Iu3921Rd7lJp+4fnSZlwxcDpIS5/laqu7jAxOR2o2QecBNQBtBMwSFfTFsAnJNHi6c2qB4Ns2HBJrYjoQ/sZFEqoJw62M5/ECU2qK+TzLdDYdULqlF4inlkIrVEj2av7oyw=
-  - secure: yK4+dMyjKhoNOvDvUsGR/Q9iYeP4pe6ibKX7o4WkHyTYb9ohS4CrrcpSF2N8eSqAQK7I/CW66tLH01HFPp2vQ4L+zlmJi6bLkxEZCvXXbMBbUMHdaiLvTsvJeu+DlwA1BlGPkAGLrD7SvGK38R7A7NQT3AutEz3V6XUMWWd2CDs=
+  - secure: eXcMQIb0hHeaJsJGaJYhLS8aONu5YnhK1NOHJZGTBIb6ukSd48uXm6xNgBMozgkOEUBXyrBU9ZnCOxSS+HmJZDbK0Wkr90C4sZH7dHBZYMN3hNfCp5SjPFY2+TgrYZ24G8s/BPei6725AlbXM0vmdXPsvxaOvT36d2Ej7xto8+c=
+  - secure: c3IO3G34aTFD+fh/5vqc3sCgwMaClPDziYQDCEUqQBOQFdTS7wbBZFVpqTUUlkMLkeyHZ0BGSLUiDZnu8TGGITtgJBaCUchhLYK5WOavyzCl/NPVOBebviazgtBOzPDKyYDcahjmxCGrMspTiRei86VgCdkNIvldJJm7zK1OAOU=
 
 sudo: false
 

@@ -849,20 +849,43 @@ object hlist {
   trait Selector[L <: HList, U] extends DepFn1[L] with Serializable { type Out = U }
 
   object Selector {
-    def apply[L <: HList, U](implicit selector: Selector[L, U]): Aux[L, U] = selector
 
-    type Aux[L <: HList, U] = Selector[L, U]
+    def apply[L <: HList, U](implicit selector: Selector[L, U]): Selector[L, U] = selector
 
-    implicit def select[H, T <: HList]: Aux[H :: T, H] =
+    implicit def select[H, T <: HList]: Selector[H :: T, H] =
       new Selector[H :: T, H] {
         def apply(l : H :: T) = l.head
       }
 
     implicit def recurse[H, T <: HList, U]
-      (implicit st : Selector[T, U]): Aux[H :: T, U] =
+      (implicit st : Selector[T, U]): Selector[H :: T, U] =
         new Selector[H :: T, U] {
           def apply(l : H :: T) = st(l.tail)
         }
+  }
+
+  /**
+    * Type class supporting multiple HList field selection.
+    * Can be used to witness that given HList contains certain set of field types.
+    * Simplified version of shapeless.ops.record.SelectAll
+    *
+    * @author Ievgen Garkusha
+    */
+  @annotation.implicitNotFound(msg = "Field types set of ${S} is not fully contained in type definition of ${L}")
+  trait SelectAll[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out = S }
+
+  object SelectAll {
+
+    implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
+      new SelectAll[L, HNil] {
+        def apply(l: L): Out = HNil
+      }
+
+    implicit def hconsSelectAll[L <: HList, H, S <: HList]
+    (implicit sh: Selector[L, H], st: SelectAll[L, S]): SelectAll[L, H :: S] =
+      new SelectAll[L, H :: S] {
+        def apply(l: L): Out = sh(l) :: st(l)
+      }
   }
 
   /**
@@ -1228,7 +1251,9 @@ object hlist {
   trait LowPriorityUnion {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
-    implicit def hlistUnion1[H, T <: HList, M <: HList]
+    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
+    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
+    def hlistUnion1[H, T <: HList, M <: HList]
       (implicit u: Union[T, M]): Aux[H :: T, M, H :: u.Out] =
         new Union[H :: T, M] {
           type Out = H :: u.Out
@@ -1239,12 +1264,25 @@ object hlist {
   object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
+    // let ∅ ∪ M = M
     implicit def hlistUnion[M <: HList]: Aux[HNil, M, M] =
       new Union[HNil, M] {
         type Out = M
         def apply(l: HNil, m: M): Out = m
       }
 
+    // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
+    implicit def hlistUnion1[H, T <: HList, M <: HList]
+      (implicit
+       u: Union[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, H :: u.Out] =
+        new Union[H :: T, M] {
+          type Out = H :: u.Out
+          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
+        }
+
+    // let (H :: T) ∪ M  =  H :: (T ∪ (M - H)) when H ∈ M
     implicit def hlistUnion2[H, T <: HList, M <: HList, MR <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],
@@ -1270,7 +1308,9 @@ object hlist {
   trait LowPriorityIntersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
-    implicit def hlistIntersection1[H, T <: HList, M <: HList]
+    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
+    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
+    def hlistIntersection1[H, T <: HList, M <: HList]
       (implicit i: Intersection[T, M]): Aux[H :: T, M, i.Out] =
         new Intersection[H :: T, M] {
           type Out = i.Out
@@ -1281,12 +1321,25 @@ object hlist {
   object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
+    // let ∅ ∩ M = ∅
     implicit def hnilIntersection[M <: HList]: Aux[HNil, M, HNil] =
       new Intersection[HNil, M] {
         type Out = HNil
         def apply(l: HNil): Out = HNil
       }
 
+    // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
+    implicit def hlistIntersection1[H, T <: HList, M <: HList]
+      (implicit
+       i: Intersection[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, i.Out] =
+        new Intersection[H :: T, M] {
+          type Out = i.Out
+          def apply(l: H :: T): Out = i(l.tail)
+        }
+
+    // let (H :: T) ∩ M  =  H :: (T ∩ (M - H)) when H ∈ M
     implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],
@@ -2817,5 +2870,33 @@ object hlist {
           type Out = H :: slice.Out
           def apply(l: H :: T): Out = l.head :: slice(l.tail)
         }
+  }
+
+  /**
+    * Type class supporting reifying an `HList` of singleton types.
+    *
+    * @author Jisoo Park
+    */
+  trait Reify[L <: HList] extends DepFn0 with Serializable { type Out <: HList }
+
+  object Reify {
+    def apply[L <: HList](implicit reify: Reify[L]): Aux[L, reify.Out] = reify
+
+    type Aux[L <: HList, Out0 <: HList] = Reify[L] { type Out = Out0 }
+
+    implicit def hnilReify[L <: HNil]: Aux[L, HNil] =
+      new Reify[L] {
+        type Out = HNil
+        def apply(): Out = HNil
+      }
+
+    implicit def hlistReify[H, T <: HList](implicit
+      wh: Witness.Aux[H],
+      rt: Reify[T]
+    ) : Aux[H :: T, H :: rt.Out] =
+      new Reify[H :: T] {
+        type Out = H :: rt.Out
+        def apply(): Out = wh.value :: rt()
+      }
   }
 }

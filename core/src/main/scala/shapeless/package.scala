@@ -122,11 +122,15 @@ package shapeless {
       val analyzer: global.analyzer.type = global.analyzer
       val tCtx = typer.context
       val owner = tCtx.owner
+      if(!owner.isVal && !owner.isLazy)
+        c.abort(c.enclosingPosition, "cachedImplicit should only be used to initialize vals and lazy vals")
       val tTpe = weakTypeOf[T]
       val application = casted.macroApplication
       val tpe = {
-        if (tTpe.typeSymbol.isParameter) owner.tpe
-        else tTpe
+        val tpe0 =
+          if (tTpe.typeSymbol.isParameter) owner.tpe.asInstanceOf[Type]
+          else tTpe
+        tpe0.finalResultType
       }.asInstanceOf[global.Type]
 
       // Run our own custom implicit search that isn't allowed to find
@@ -146,7 +150,7 @@ package shapeless {
           val filteredInput = implicitInfoss.map { infos =>
             infos.filter { info =>
               val sym = info.sym.accessedOrSelf
-              sym.owner != owner.owner || !sym.isVal
+              sym.owner != owner.owner || (!sym.isVal && !sym.isLazy)
             }
           }
           super.searchImplicit(filteredInput, isLocalToCallsite)
