@@ -26,7 +26,9 @@ class RecordTests {
   import syntax.std.maps._
   import test._
   import testutil._
-  import ops.record.RemoveAll
+
+  // making it method local causes weird compile error in Scala 2.10
+  import ops.record.{ RemoveAll, UnzipFields }
 
   object intField1 extends FieldOf[Int]
   object intField2 extends FieldOf[Int]
@@ -480,6 +482,7 @@ class RecordTests {
 
   @Test
   def testRemoveAll {
+
     type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
     type L = Record.`'c -> Char, 'j -> Int`.T
 
@@ -800,6 +803,39 @@ class RecordTests {
     {
       val f = rs.fields
       assertTypedEquals(("first".narrow -> Some(2)) :: ("second".narrow -> Some(true)) :: ("third" -> Option.empty[String]) :: HNil, f)
+    }
+  }
+
+  @Test
+  def testUnzipFields {
+    {
+      val uf = UnzipFields[HNil]
+      assertTypedEquals(HNil, uf.keys)
+      assertTypedEquals(HNil, uf.values(HNil))
+    }
+
+    {
+      val uf = UnzipFields[HNil]
+      assertTypedEquals(HNil: HNil, uf.keys)
+      assertTypedEquals(HNil: HNil, uf.values(HNil: HNil))
+    }
+
+    type R = Record.`'i -> Int, 's -> String, 'b -> Boolean`.T
+    val r: R = Record(i = 23, s = "foo", b = true)
+
+    {
+      val uf = UnzipFields[R]
+      assertTypedEquals('i.narrow :: 's.narrow :: 'b.narrow :: HNil, uf.keys)
+      assertTypedEquals(23 :: "foo" :: true :: HNil, uf.values(r))
+    }
+
+    type RS = Record.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    val rs: RS = ("first" ->> Some(2)) :: ("second" ->> Some(true)) :: ("third" ->> Option.empty[String]) :: HNil
+
+    {
+      val uf = UnzipFields[RS]
+      assertTypedEquals("first".narrow :: "second".narrow :: "third" :: HNil, uf.keys)
+      assertTypedEquals(Some(2) :: Some(true) :: Option.empty[String] :: HNil, uf.values(rs))
     }
   }
 
