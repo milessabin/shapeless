@@ -49,6 +49,8 @@ trait Data1 extends Data0 {
 }
 
 object Data extends Data1 {
+  import scala.collection.{ GenMap, GenTraversable }
+
   def apply[P, T, R](implicit dt: Lazy[Data[P, T, R]]): Data[P, T, R] = dt.value
 
   def gmapQ[F, T, R](f: F)(t: T)(implicit data: Lazy[Data[F, T, R]]) = data.value.gmapQ(t)
@@ -56,10 +58,29 @@ object Data extends Data1 {
   /**
    * Data type class instance for `List`s.
    */
-  implicit def listData[P, T, R](implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, List[T], R] =
+  @deprecated("Superseded by genTraversableData", "2.3.1")
+  def listData[P, T, R](implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, List[T], R] =
     new Data[P, List[T], R] {
       def gmapQ(t: List[T]) = t.map(qt.value(_))
     }
+
+  implicit def genTraversableData[P, C[X] <: GenTraversable[X], T, R]
+    (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
+      new Data[P, C[T], R] {
+        def gmapQ(t: C[T]) =
+          t.foldLeft(List.newBuilder[R]) { (b, el) =>
+            b += qt.value(el)
+          }.result
+      }
+
+  implicit def genMapData[P, M[X, Y], K, V, R]
+    (implicit ev: M[K, V] <:< GenMap[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
+      new Data[P, M[K, V], R] {
+        def gmapQ(t: M[K, V]) =
+          t.foldLeft(List.newBuilder[R]) { case (b, el) =>
+            b += qv.value(el)
+          }.result
+      }
 
   implicit def deriveHNil[P, R]: Data[P, HNil, R] =
     new Data[P, HNil, R] {
@@ -118,6 +139,9 @@ trait DataT1 extends DataT0 {
 }
 
 object DataT extends DataT1 {
+  import scala.collection.{ GenMap, GenTraversable }
+  import scala.collection.generic.CanBuildFrom
+
   def apply[P, T](implicit dtt: Lazy[DataT[P, T]]): DataT[P, T] = dtt.value
 
   def gmapT[F, T](f: F)(t: T)(implicit data: Lazy[DataT[F, T]]) = data.value.gmapT(t)
@@ -125,11 +149,36 @@ object DataT extends DataT1 {
   /**
    * DataT type class instance for `List`s.
    */
-  implicit def listDataT[F <:  Poly, T, U](implicit ft: Lazy[Case1.Aux[F, T, U]]): Aux[F, List[T], List[U]] =
+  @deprecated("Superseded by genTraversableDataT", "2.3.1")
+  def listDataT[F <: Poly, T, U](implicit ft: Lazy[Case1.Aux[F, T, U]]): Aux[F, List[T], List[U]] =
     new DataT[F, List[T]] {
       type Out = List[U]
       def gmapT(t: List[T]) = t.map(ft.value)
     }
+
+  implicit def genTraversableDataT[F <: Poly, CC[X] <: GenTraversable[X], T, U]
+    (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: CanBuildFrom[Nothing, U, CC[U]]): Aux[F, CC[T], CC[U]] =
+      new DataT[F, CC[T]] {
+        type Out = CC[U]
+        def gmapT(t: CC[T]) =
+          t.foldLeft(cbf()) { (b, x) =>
+            b += ft.value(x)
+          }.result
+      }
+
+  implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
+    (implicit
+      ev: M[K, V] <:< GenMap[K, V],
+      fv: Lazy[Case1.Aux[F, V, U]],
+      cbf: CanBuildFrom[Nothing, (K, U), M[K, U]]
+    ): Aux[F, M[K, V], M[K, U]] =
+      new DataT[F, M[K, V]] {
+        type Out = M[K, U]
+        def gmapT(t: M[K, V]) =
+          t.foldLeft(cbf()) { case (b, (k, v)) =>
+            b += k -> fv.value(v)
+          }.result
+      }
 
   implicit def deriveHNil[P]: Aux[P, HNil, HNil] =
     new DataT[P, HNil] {
