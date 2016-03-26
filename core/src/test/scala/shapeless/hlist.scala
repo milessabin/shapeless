@@ -3230,4 +3230,14 @@ class HListTests {
     //different type
     assertEquals((3, 1 :: 2 :: 42.0 :: HNil), (1 :: 2 :: 3 :: HNil).updateAtWith(2)(_ => 42.0))
   }
+
+  @Test
+  def testReify {
+    assertEquals(HNil, Reify[HNil].apply)
+    assertEquals('a :: HNil, Reify[HList.`'a`.T].apply)
+    assertEquals('a :: 1 :: "b" :: true :: HNil, Reify[HList.`'a, 1, "b", true`.T].apply)
+
+    illTyped(""" Reify[String :: Int :: HNil] """)
+    illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
+  }
 }

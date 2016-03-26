@@ -1187,4 +1187,32 @@ object coproduct {
     case Inr(Inl(suffix)) => Right(suffix)
     case _                => sys.error("Impossible")
   }
+
+  /**
+    * Type class supporting reifying a `Coproduct` of singleton types.
+    *
+    * @author Jisoo Park
+    */
+  trait Reify[L <: Coproduct] extends DepFn0 with Serializable { type Out <: HList }
+
+  object Reify {
+    def apply[L <: Coproduct](implicit reify: Reify[L]): Aux[L, reify.Out] = reify
+
+    type Aux[L <: Coproduct, Out0 <: HList] = Reify[L] { type Out = Out0 }
+
+    implicit def cnilReify[L <: CNil]: Aux[L, HNil] =
+      new Reify[L] {
+        type Out = HNil
+        def apply(): Out = HNil
+      }
+
+    implicit def coproductReify[H, T <: Coproduct](implicit
+      wh: Witness.Aux[H],
+      rt: Reify[T]
+    ): Aux[H :+: T, H :: rt.Out] =
+      new Reify[H :+: T] {
+        type Out = H :: rt.Out
+        def apply(): Out = wh.value :: rt()
+      }
+  }
 }

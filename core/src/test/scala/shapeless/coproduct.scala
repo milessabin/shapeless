@@ -1769,6 +1769,16 @@ class CoproductTests {
       typed[C](Inr(Inr(Inl(true.narrow))))
     }
   }
+
+  @Test
+  def testReify {
+    assertEquals(HNil, Reify[CNil].apply)
+    assertEquals('a :: HNil, Reify[Coproduct.`'a`.T].apply)
+    assertEquals('a :: 1 :: "b" :: true :: HNil, Reify[Coproduct.`'a, 1, "b", true`.T].apply)
+
+    illTyped(""" Reify[String :+: Int :+: CNil] """)
+    illTyped(""" Reify[String :+: Coproduct.`'a, 1, "b", true`.T] """)
+  }
 }
 
 package CoproductTestAux {
