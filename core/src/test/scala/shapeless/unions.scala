@@ -25,6 +25,9 @@ import syntax.singleton._
 import test._
 import testutil._
 
+// making it method local causes weird compile error in Scala 2.10
+import ops.union.UnzipFields
+
 class UnionTests {
 
   val wI = Witness('i)
@@ -244,6 +247,41 @@ class UnionTests {
       assertTypedEquals(Coproduct[USF]("first".narrow -> Option(2)), f1)
       assertTypedEquals(Coproduct[USF]("second".narrow -> Option(true)), f2)
       assertTypedEquals(Coproduct[USF]("third".narrow -> Option.empty[String]), f3)
+    }
+  }
+
+  @Test
+  def testUnzipFields {
+
+    val u1 = Union[U](i = 23)
+    val u2 = Union[U](s = "foo")
+    val u3 = Union[U](b = true)
+
+    {
+      val uf = UnzipFields[U]
+
+      type UV = Coproduct.`Int, String, Boolean`.T
+
+      assertTypedEquals('i.narrow :: 's.narrow :: 'b.narrow :: HNil, uf.keys)
+      assertTypedEquals(Coproduct[UV](23), uf.values(u1))
+      assertTypedEquals(Coproduct[UV]("foo"), uf.values(u2))
+      assertTypedEquals(Coproduct[UV](true), uf.values(u3))
+    }
+
+    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    val us1 = Coproduct[US]("first" ->> Option(2))
+    val us2 = Coproduct[US]("second" ->> Option(true))
+    val us3 = Coproduct[US]("third" ->> Option.empty[String])
+
+    {
+      val uf = UnzipFields[US]
+
+      type USV = Coproduct.`Option[Int], Option[Boolean], Option[String]`.T
+
+      assertTypedEquals("first".narrow :: "second".narrow :: "third".narrow :: HNil, uf.keys)
+      assertTypedEquals(Coproduct[USV](Option(2)), uf.values(us1))
+      assertTypedEquals(Coproduct[USV](Option(true)), uf.values(us2))
+      assertTypedEquals(Coproduct[USV](Option.empty[String]), uf.values(us3))
     }
   }
 

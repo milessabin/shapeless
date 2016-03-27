@@ -476,6 +476,46 @@ package record {
   }
 
   /**
+   * Type class combining `Keys` and `Values` for convenience and compilation speed.
+   * It's similar to `Fields`, but produces distinct `HList`s instead of a zipped one.
+   *
+   * @author Jisoo Park
+   */
+  trait UnzipFields[L <: HList] extends Serializable {
+    type Keys <: HList
+    type Values <: HList
+
+    def keys(): Keys
+    def values(l: L): Values
+  }
+
+  object UnzipFields {
+    def apply[L <: HList](implicit uf: UnzipFields[L]): Aux[L, uf.Keys, uf.Values] = uf
+
+    type Aux[L <: HList, K <: HList, V <: HList] = UnzipFields[L] { type Keys = K; type Values = V }
+
+    implicit def hnilUnzipFields[L <: HNil]: Aux[L, HNil, L] =
+      new UnzipFields[L] {
+        type Keys = HNil
+        type Values = L
+        def keys() = HNil
+        def values(l: L): L = l
+      }
+
+    implicit def hconsUnzipFields[K, V, T <: HList](implicit
+      key: Witness.Aux[K],
+      tailUF: UnzipFields[T]
+    ): Aux[FieldType[K, V] :: T, K :: tailUF.Keys, V :: tailUF.Values] =
+      new UnzipFields[FieldType[K, V] :: T] {
+        type Keys = K :: tailUF.Keys
+        type Values = V :: tailUF.Values
+
+        def keys() = key.value :: tailUF.keys()
+        def values(l: FieldType[K, V] :: T) = l.head :: tailUF.values(l.tail)
+      }
+  }
+
+  /**
    * Type class supporting converting this record to a `Map` whose keys and values
    * are typed as the Lub of the keys and values of this record.
    *

@@ -239,6 +239,7 @@ cross-builds for 2.10.6 and 2.12.x.
 + Huw Giddens <hgiddens@gmail.com>
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
++ Jisoo Park <xxxyel@gmail.com> [@guersam](https://twitter.com/guersam)
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Johnny Everson <khronnuz@gmail.com> [@johnny_everson](https://twitter.com/johnny_everson)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
