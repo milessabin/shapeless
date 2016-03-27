@@ -316,7 +316,8 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
-    type S = HList.`'a, "boo", 23, true`.T
+    val s = HList.`'a, "boo", 23, true`
+    type S = s.T
 
     assertSerializable(IsHCons[L])
 
@@ -566,7 +567,8 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
-    type S = Coproduct.`'a, "boo", 23, true`.T
+    val s = Coproduct.`'a, "boo", 23, true`
+    type S = s.T
 
     assertSerializable(Inject[L, Int])
     assertSerializable(Inject[L, String])
