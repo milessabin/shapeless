@@ -1772,9 +1772,14 @@ class CoproductTests {
 
   @Test
   def testReify {
-    assertEquals(HNil, Reify[CNil].apply)
-    assertEquals('a :: HNil, Reify[Coproduct.`'a`.T].apply)
-    assertEquals('a :: 1 :: "b" :: true :: HNil, Reify[Coproduct.`'a, 1, "b", true`.T].apply)
+    import syntax.singleton._
+
+    assertTypedEquals(HNil, Reify[CNil].apply)
+    assertTypedEquals('a.narrow :: HNil, Reify[Coproduct.`'a`.T].apply)
+    assertEquals(
+      'a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil,
+      Reify[Coproduct.`'a, 1, "b", true`.T].apply
+    )
 
     illTyped(""" Reify[String :+: Int :+: CNil] """)
     illTyped(""" Reify[String :+: Coproduct.`'a, 1, "b", true`.T] """)

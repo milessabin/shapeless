@@ -3233,9 +3233,14 @@ class HListTests {
 
   @Test
   def testReify {
-    assertEquals(HNil, Reify[HNil].apply)
-    assertEquals('a :: HNil, Reify[HList.`'a`.T].apply)
-    assertEquals('a :: 1 :: "b" :: true :: HNil, Reify[HList.`'a, 1, "b", true`.T].apply)
+    import syntax.singleton._
+
+    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals('a.narrow :: HNil, Reify[HList.`'a`.T].apply)
+    assertTypedEquals(
+      'a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil,
+      Reify[HList.`'a, 1, "b", true`.T].apply
+    )
 
     illTyped(""" Reify[String :: Int :: HNil] """)
     illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
