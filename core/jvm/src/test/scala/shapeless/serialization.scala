@@ -316,6 +316,7 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
+    type S = HList.`'a, "boo", 23, true`.T
 
     assertSerializable(IsHCons[L])
 
@@ -503,6 +504,9 @@ class SerializationTests {
     assertSerializable(Fill[_3, Int])
 
     assertSerializable(Patcher[_0, _1, L, IS])
+
+    assertSerializable(Reify[HNil])
+    assertSerializable(Reify[S])
   }
 
   @Test
@@ -545,6 +549,9 @@ class SerializationTests {
     assertSerializable(Values[HNil])
     assertSerializable(Values[R])
 
+    assertSerializable(UnzipFields[HNil])
+    assertSerializable(UnzipFields[R])
+
     assertSerializable(ToMap[HNil])
     assertSerializable(ToMap[R])
 
@@ -559,6 +566,7 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
+    type S = Coproduct.`'a, "boo", 23, true`.T
 
     assertSerializable(Inject[L, Int])
     assertSerializable(Inject[L, String])
@@ -660,6 +668,9 @@ class SerializationTests {
 
     assertSerializable(Basis[L, CNil])
     assertSerializable(Basis[L, BS])
+
+    assertSerializable(Reify[CNil])
+    assertSerializable(Reify[S])
   }
 
   @Test
@@ -674,6 +685,9 @@ class SerializationTests {
 
     assertSerializable(Values[CNil])
     assertSerializable(Values[U])
+
+    assertSerializable(UnzipFields[CNil])
+    assertSerializable(UnzipFields[U])
 
     assertSerializable(ToMap[CNil])
     assertSerializable(ToMap[U])
