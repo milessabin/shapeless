@@ -233,6 +233,8 @@ package record {
     type V = Any
     type Out = HList
 
+    //TODO: remove @noinline after switching to ScalaJs 0.69+
+    @noinline
     def unsafeUpdate(l: HList, i: Int, f: Any => Any): (HList,Any) = {
       @tailrec
       def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList, Any) =
