@@ -411,6 +411,9 @@ trait CaseClassMacros extends ReprTypes {
       val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
       val ctors =
         ctorSyms flatMap { sym =>
+          def normalizeTermName(name: Name): TermName =
+            TermName(name.toString.stripSuffix(" "))
+
           def substituteArgs: List[Type] = {
             val subst = c.internal.thisType(sym).baseType(baseSym).typeArgs
             sym.typeParams.map { param =>
@@ -430,15 +433,15 @@ trait CaseClassMacros extends ReprTypes {
                 appliedType(sym.toTypeIn(basePre), substituteArgs)
             } else {
               if(sym.isModuleClass) {
-                val path = suffix.tail.map(_.name.toTermName)
+                val path = suffix.tail.map(sym => normalizeTermName(sym.name))
                 val (modulePre, moduleSym) = mkDependentRef(basePre, path)
                 c.internal.singleType(modulePre, moduleSym)
               } else if(isAnonOrRefinement(sym)) {
-                val path = suffix.tail.init.map(_.name.toTermName)
+                val path = suffix.tail.init.map(sym => normalizeTermName(sym.name))
                 val (valPre, valSym) = mkDependentRef(basePre, path)
                 c.internal.singleType(valPre, valSym)
               } else {
-                val path = suffix.tail.init.map(_.name.toTermName) :+ suffix.last.name.toTypeName
+                val path = suffix.tail.init.map(sym => normalizeTermName(sym.name)) :+ suffix.last.name.toTypeName
                 val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
                 c.internal.typeRef(subTpePre, subTpeSym, substituteArgs)
               }
