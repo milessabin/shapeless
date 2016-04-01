@@ -85,17 +85,26 @@ sealed trait Coproduct extends Product with Serializable
 
 /** Like Either, the :+: type defines a new type that can contain either H or T.
   */
-sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
+sealed trait :+:[+H, +T <: Coproduct] extends Coproduct {
+  /**
+   * Non-recursive fold (like Either#fold)
+   */
+  def eliminate[A](l: H => A, r: T => A): A
+}
 
 /** `H :+: T` can either be `H` or `T`.
   * In this case it is `H`.
   */
-final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T]
+final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T] {
+  override def eliminate[A](l: H => A, r: T => A) = l(head)
+}
 
 /** `H :+: T` can either be `H` or `T`.
   * In this case it is `T`.
   */
-final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T]
+final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
+  override def eliminate[A](l: H => A, r: T => A) = r(tail)
+}
 
 /** The CNil type is used to terminate a 'list' of :+: alternatives.
   *
