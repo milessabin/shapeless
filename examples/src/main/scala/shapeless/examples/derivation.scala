@@ -180,11 +180,18 @@ object TypeClassesDemoAux {
         st: Lazy[Show[T]]
       ): Show[FieldType[K, V] :+: T] =
         new Show[FieldType[K, V] :+: T] {
-          def show(c: FieldType[K, V] :+: T): String =
+          def show(c: FieldType[K, V] :+: T): String = {
+            //Using match/case
             c match {
               case Inl(l) => s"${key.value.name}(${sv.value.show(l)})"
               case Inr(r) => st.value.show(r)
             }
+            //Or using eliminate
+            c.eliminate(
+              l => s"${key.value.name}(${sv.value.show(l)})",
+              r => st.value.show(r)
+            )
+          }
         }
 
     implicit def deriveInstance[F, G](implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]): Show[F] =
