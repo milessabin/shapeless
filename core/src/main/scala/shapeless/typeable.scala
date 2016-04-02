@@ -396,8 +396,14 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         if(!pSym.isCaseClass)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
-        val fields = tpe.decls.toList collect {
-          case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
+        val fields = tpe.decls.sorted collect {
+          case sym: TermSymbol if sym.isVal && sym.isCaseAccessor =>
+            sym.typeSignatureIn(tpe)
+          case sym: TermSymbol if sym.isVal || sym.isVar ||
+              (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor)) =>
+            // not a case accessor but a val, var or param,
+            // so we won't be able to type check it safely:
+            c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         }
         val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }
         if(fieldTypeables.exists(_ == EmptyTree))
