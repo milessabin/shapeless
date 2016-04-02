@@ -524,9 +524,6 @@ class SerializationTests {
     assertSerializable(Updater[R, FA])
     assertSerializable(Updater[R, FB])
 
-    assertSerializable(implicitly[Crud.Read[R, KA]])
-    assertSerializable(implicitly[Crud.Replace[R, KB, String]])
-
     assertSerializable(Merger[HNil, R])
     assertSerializable(Merger[R, HNil])
     assertSerializable(Merger[R, RM])

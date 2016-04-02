@@ -46,46 +46,38 @@ package record {
 
     def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
 
-    implicit def crudSelect[L <: HList, K, O](implicit d:Crud.Aux[L,K,O,Crud.NA,_]): Aux[L, K, O] = new Selector[L,K]{
-      override type Out = O
-      override def apply(l: L): O = d(l,Crud.noOp )._2
-    }
-
-    @deprecated("used for binary compatibility with 2.3.0","2.3.1")
-    def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
 
   }
 
   class UnsafeSelector(i: Int) extends Selector[HList, Any] {
     type Out = Any
-    def apply(l: HList): Any = HList.unsafeGet(l, i)
+    def apply(l: HList): Any = HList.unsafeCrud(l, i, identity, false)._1
   }
 
   @macrocompat.bundle
-  class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
+  class SelectorMacros(val c: whitebox.Context) extends CrudMacros {
     import c.universe._
 
     def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
+
       val lTpe = lTag.tpe.dealias
       val kTpe = kTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
 
-      val lTpes = unpackHListTpe(lTpe).zipWithIndex.flatMap { case (fTpe, i) =>
-        val (k, v) = unpackFieldType(fTpe)
-        if(k =:= kTpe) Some((v, i)) else None
-      }
-      lTpes.headOption match {
-        case Some((vTpe, i)) =>
-          q"""
-            new _root_.shapeless.ops.record.UnsafeSelector($i).
+      if(!(lTpe <:< hlistTpe)) abort(s"$lTpe is not a record type")
+
+      val(ind, vTpe) = getValue(kTpe, unpackHListTpe(lTpe))
+
+      if(ind == -1)  abort(s"No field $kTpe in record type $lTpe")
+      else {
+        q"""
+            new _root_.shapeless.ops.record.UnsafeSelector($ind).
               asInstanceOf[_root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]]
           """
-        case _ =>
-          abort(s"No field $kTpe in record type $lTpe")
       }
     }
   }
+
 
   /**
    * Type class supporting multiple record field selection.
@@ -118,6 +110,97 @@ package record {
   }
 
   /**
+    * Type class supporting record field addition.
+    * Works only if record does not have given key.
+    * @author Ievgen Garkusha
+    */
+  @annotation.implicitNotFound(msg = "Field ${K} is already present in record ${L}")
+  trait Adder[L <: HList, K, V] extends DepFn2[L, V] with Serializable {
+    type Out <: HList
+    def apply(l : L, v: V): Out
+  }
+
+  object Adder {
+    type Aux[L <: HList, K, V, Out0 <: HList] = Adder[L, K, V] { type Out = Out0 }
+
+    def apply[L <: HList, K, V](implicit adder: Adder[L, K, V]): Aux[L, K, V, adder.Out] = adder
+
+    implicit def mkAdder[L <: HList, K, V, O]: Aux[L, K, V, O] = macro AdderMacros.applyImpl[L, K, V]
+  }
+
+  class UnsafeAdder extends Adder[HList, Any, Any] {
+    type Out = HList
+    def apply(l: HList, v:Any): HList = HList.unsafeCrud(l, Int.MaxValue, _ => v, false)._2
+  }
+
+  @macrocompat.bundle
+  class AdderMacros(val c: whitebox.Context) extends CrudMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, K, V](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], vTag : WeakTypeTag[V]): Tree = {
+
+      val lTpe = lTag.tpe.dealias
+      val vTpe = vTag.tpe.dealias
+      val kTpe = kTag.tpe.dealias
+      val lTpes = unpackHListTpe(lTpe)
+
+      if(getValue(kTpe, lTpes)._1 != -1) abort(s"Record $lTpe alredy contains key $kTpe")
+      val aTpe = add(lTpes ,kTpe, vTpe)
+
+      q"""
+          new _root_.shapeless.ops.record.UnsafeAdder().
+            asInstanceOf[_root_.shapeless.ops.record.Adder.Aux[$lTpe, $kTpe, $vTpe, $aTpe]]
+        """
+    }
+  }
+
+  /**
+    * Type class supporting the replacement of a value in given record.
+    * Works only if a field with provided key exists and provided value is of the same type as existing value.
+    *
+    * @author Ievgen Garkusha
+    */
+
+  trait Replacer[L <: HList, K, V] extends DepFn2[L, V] with Serializable { type Out <: HList }
+
+  object Replacer {
+    type Aux[L <: HList, K, V, Out0 <: HList] = Replacer[L, K, V] { type Out = Out0 }
+
+    def apply[L <: HList, K, V](implicit replacer: Replacer[L, K, V]): Aux[L, K, V, replacer.Out] = replacer
+
+    implicit def mkReplacer[L <: HList, K, V, O]: Aux[L, K, V, O] = macro ReplacerMacros.applyImpl[L, K, V]
+  }
+
+  class UnsafeReplacer(i: Int) extends Replacer[HList, Any, Any] {
+    type Out = HList
+    def apply(l: HList, f: Any): HList = HList.unsafeCrud(l, i, _ => f,false)._2
+  }
+
+  @macrocompat.bundle
+  class ReplacerMacros(val c: whitebox.Context) extends CrudMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, K, V](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], vTag: WeakTypeTag[V]): Tree = {
+      val lTpe = lTag.tpe.dealias
+      val kTpe = kTag.tpe.dealias
+      val replaceTpe = vTag.tpe.dealias
+
+      val lTpes = unpackHListTpe(lTpe)
+
+      val(ind, vTpe) = getValue(kTpe, lTpes)
+
+      val rTpe = if (ind == -1) abort(s"No field $kTpe in record type $lTpe")
+                     else if (!(vTpe =:= replaceTpe)) abort(s"provided value type $replaceTpe differs from existing value type $vTpe.")
+                     else lTpe
+
+      q"""
+        new _root_.shapeless.ops.record.UnsafeReplacer($ind)
+          .asInstanceOf[_root_.shapeless.ops.record.Replacer.Aux[$lTpe, $kTpe, $vTpe, $lTpe]]
+      """
+    }
+  }
+
+  /**
    * Type class supporting record update and extension.
    *
    * @author Miles Sabin
@@ -134,32 +217,35 @@ package record {
 
   class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
     type Out = HList
-    def apply(l: HList, f: Any): HList = HList.unsafeUpdate(l, i, f)
+    def apply(l: HList, f: Any): HList = HList.unsafeCrud(l, i, _ => f,false)._2
   }
 
   @macrocompat.bundle
-  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
+  class UpdaterMacros(val c: whitebox.Context) extends CrudMacros {
     import c.universe._
 
     def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
       val lTpe = lTag.tpe.dealias
       val fTpe = fTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+      val (kTpe, vUpdTpe) = unpackFieldType(fTpe)
+
+      //commenting this out because the similar check is made in unpackHListTpe
+      //if(!(lTpe <:< hlistTpe)) abort(s"$lTpe is not a record type")
 
       val lTpes = unpackHListTpe(lTpe)
-      val (uTpes, i) = {
-        val i0 = lTpes.indexWhere(_ =:= fTpe)
-        if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
-        else (lTpes.updated(i0, fTpe), i0)
-      }
-      val uTpe = mkHListTpe(uTpes)
+
+      val(ind, vTpe) = getValue(kTpe, lTpes)
+
+      val (uTpe,i) = if(ind == -1 || ! (vUpdTpe =:= vTpe)) add(lTpes, kTpe, vUpdTpe) -> lTpes.length
+                     else replace(lTpes, kTpe, vTpe, ind) -> ind
+
       q"""
         new _root_.shapeless.ops.record.UnsafeUpdater($i)
           .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
       """
     }
   }
+
   /**
    * Type class support record merging.
    *
@@ -202,103 +288,26 @@ package record {
       }
   }
 
-  /**
-    * Macro based implementation of type class supporting modification of a Record field by given function.
-    * Replacement for Updater, Remover, Selector and Modifier
-    * @author Ievgen Garkusha
-    */
-  trait Crud[L <: HList,K, R] extends Serializable {
-    type Out <: HList
-    type V
-    def apply(t: L, u: V=>R): (Out,V)
-  }
-
-  object Crud {
-    trait NA
-    val na = new NA{}
-    val noOp = (_: Any) => na
-    type Create[L<:HList,K,V] =  Aux0[L,K,NA,V]
-    type Delete [L<:HList, K] =  Crud[L,K,NA]
-    type Read [L<:HList, K] =  Delete[L,K]
-    type Update[L<:HList,K,V,R] = Aux0[L,K,V,R]
-    type Replace[L<:HList,K,V] = Aux[L,K,V,V,L]
-
-    type Aux0[L <: HList, K, V0, R] = Crud[L,K,R]{type V =V0; type Out<:HList}
-    type Aux[L <: HList,K, V0, R, Out0 <: HList] = Crud[L,K,R]{type V =V0; type Out = Out0}
-
-    implicit def hlistCrud1[L <: HList,K , V, R, O <: HList]: Aux[L, K, V, R, O] =  macro CrudMacro.applyImpl[L,K,R]
-  }
-
-  class UnsafeCrud(i: Int, remove:Boolean = false) extends Crud[HList, Any,Any] {
-    type V = Any
-    type Out = HList
-
-    //TODO: remove @noinline after switching to ScalaJs 0.69+
-    @noinline
-    def unsafeUpdate(l: HList, i: Int, f: Any => Any): (HList,Any) = {
-      @tailrec
-      def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList, Any) =
-        l match {
-          //add case
-          case HNil => if(remove)throw new Exception("Index out of bounds.Cannot remove.") else (prefix, f(Crud.na) :: HNil, Crud.na)
-          //remove / modify case
-          case hd :: (tl: HList) if i == 0 => if(remove)(prefix, tl, hd) else (prefix, f(hd) :: tl, hd)
-          //recursion step
-          case hd :: (tl: HList) => loop(tl, i - 1, hd :: prefix)
-        }
-
-      val (prefix, suffix, v) = loop(l, i, Nil)
-      prefix.foldLeft(suffix) { (tl, hd) => hd :: tl } -> v
-    }
-
-    def apply(l: HList, f: V => Any): (HList, Any) = unsafeUpdate(l, i, f)
-  }
 
   @macrocompat.bundle
-  class CrudMacro(val c: whitebox.Context) extends CaseClassMacros {
+  trait CrudMacros extends CaseClassMacros{
 
     import c.universe._
 
-    def applyImpl[L <: HList, K, R](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], rTag: WeakTypeTag[R]): Tree = {
-
-      val List(lTpe, kTpe, rTpe) = List(lTag, kTag, rTag).map(_.tpe.dealias)
-
-      if (!(lTpe <:< hlistTpe)) abort(s"$lTpe is not a record type")
-
-      val lTpes = unpackHListTpe(lTpe)
-
-      val na = typeOf[Crud.NA]
-
-      val (modInd, vTpe) = lTpes.iterator.map(tpe =>unpackFieldType(tpe))
+    def getValue(kTpe: Type, lTpes:List[Type]):(Int, Type) ={
+      lTpes.iterator.map(tpe => unpackFieldType(tpe))
         .zipWithIndex
-        .collectFirst{case((k, v), i) if k =:= kTpe => i -> v}
-        .getOrElse{-1 -> typeOf[Crud.NA]}
-
-      val keyFound = modInd != -1
-
-      def _abort =  abort(s"No field $kTpe in record type $lTpe")
-
-      def newFld = appliedType(fieldTypeTpe, List(kTpe, rTpe.widen))
-
-      def update = mkHListTpe(lTpes.updated(modInd, newFld))
-      def add =  mkHListTpe(lTpes :+ newFld)
-      def remove = mkHListTpe(lTpes.patch(modInd, Nil, 1))
-
-      val (oTpe, isDeleted) = {
-        if (keyFound) {
-          if (vTpe =:= na) _abort
-          else if (rTpe =:= na) remove -> true
-          else update -> false
-        }
-        else if (!(rTpe =:= na)) add  -> false
-        else _abort
-      }
-
-      q"""
-            new _root_.shapeless.ops.record.UnsafeCrud($modInd, $isDeleted)
-            .asInstanceOf[_root_.shapeless.ops.record.Crud.Aux[$lTpe, $kTpe, $vTpe, $rTpe, $oTpe]]
-         """
+        .collectFirst { case ((k, v), i) if k =:= kTpe => i -> v }
+        .getOrElse (-1 -> null)
     }
+
+    private def newFld(kTpe:Type, rTpe:Type) = appliedType(fieldTypeTpe, List(kTpe, rTpe.widen))
+
+    def replace(lTpes:List[Type], kTpe:Type, rTpe:Type, modInd:Int) = mkHListTpe(lTpes.updated(modInd, newFld(kTpe, rTpe)))
+
+    def add(lTpes:List[Type], kTpe:Type, vTpe:Type) =  mkHListTpe(lTpes :+ newFld(kTpe, vTpe))
+
+    def remove(lTpes:List[Type], modInd:Int) = mkHListTpe(lTpes.patch(modInd, Nil, 1))
   }
 
   /**
@@ -314,10 +323,7 @@ package record {
 
     type Aux[L <: HList, F, A, B, Out0 <: HList] = Modifier[L, F, A, B] { type Out = Out0 }
 
-    implicit def crudModify[L<:HList,K,V,R,O<:HList](implicit cr:Crud.Aux[L,K,V,R,O]):Aux[L,K,V,R,O] = new Modifier[L,K,V,R]{
-      override type Out = O
-      override def apply(t: L, u: (V) => R): O = cr.apply(t,u)._1
-    }
+    implicit def macroModify[L<:HList, K, V, R, O<:HList]: Aux[L, K, V, R, O] = macro ModifierMacros.applyImpl[L, K, R]
 
     @deprecated("used for binary compatibility with 2.3.0","2.3.1")
     def hlistModify1[F, A, B, T <: HList]: Aux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] =
@@ -334,6 +340,33 @@ package record {
         def apply(l: H :: T, f: A => B): Out = l.head :: mt(l.tail, f)
       }
   }
+  class UnsafeModifier(i: Int) extends Modifier[HList, Any, Any, Any]  {
+    type Out = HList
+    def apply(l: HList, f: Any => Any): HList = HList.unsafeCrud(l, i, f, false)._2
+  }
+
+  @macrocompat.bundle
+  class ModifierMacros(val c: whitebox.Context) extends CrudMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, K, R](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], vModTag: WeakTypeTag[R]): Tree = {
+
+      val List(lTpe, kTpe, vModTpe) = List(lTag, kTag, vModTag).map(_.tpe.dealias)
+
+      val lTpes = unpackHListTpe(lTpe)
+
+      val(ind, vTpe) = getValue(kTpe, lTpes)
+
+      val mTpe = if(ind == -1)abort(s"$lTpe does not contain key $kTpe")
+      else replace(lTpes, kTpe, vModTpe, ind)
+
+      q"""
+        new _root_.shapeless.ops.record.UnsafeModifier($ind)
+          .asInstanceOf[_root_.shapeless.ops.record.Modifier.Aux[$lTpe, $kTpe, $vTpe, $vModTpe, $mTpe]]
+      """
+    }
+  }
+
 
   /**
    * Type class supporting record field removal.
@@ -362,11 +395,7 @@ package record {
   object Remover extends LowPriorityRemover {
     def apply[L <: HList, K](implicit remover: Remover[L, K]): Aux[L, K, remover.Out] = remover
 
-
-    implicit def crudRemove[L<:HList,K, V, O <: HList](implicit cr: Crud.Aux[L,K,V,Crud.NA,O]):Aux[L,K,(V,O)] = new Remover[L,K]{
-      override type Out = (V,O)
-      override def apply(t: L): (V,O) = cr(t,Crud.noOp).swap
-    }
+    implicit def macroRemove[L<:HList,K, V, O <: HList]:Aux[L,K,(V,O)] = macro RemoverMacros.applyImpl[L,K]
 
     @deprecated("used for binary compatibility with 2.3.0","2.3.1")
     def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
@@ -374,6 +403,31 @@ package record {
         type Out = (V, T)
         def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
       }
+  }
+
+  class UnsafeRemover(i: Int) extends Remover[HList, Any] {
+    type Out = (Any,HList)
+    def apply(l: HList): (Any,HList) = HList.unsafeCrud(l, i, identity, true)
+  }
+  @macrocompat.bundle
+  class RemoverMacros(val c: whitebox.Context) extends CrudMacros {
+    import c.universe._
+
+    def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
+      val lTpe = lTag.tpe.dealias
+      val kTpe = kTag.tpe.dealias
+      val lTpes = unpackHListTpe(lTpe)
+
+      val(ind, vTpe) = getValue(kTpe, lTpes)
+
+      val rTpe = if(ind == -1) abort(s"No field $kTpe in record type $lTpe")
+                 else remove(lTpes, ind)
+
+        q"""
+            new _root_.shapeless.ops.record.UnsafeRemover($ind).
+              asInstanceOf[_root_.shapeless.ops.record.Remover.Aux[$lTpe, $kTpe, Tuple2[$vTpe, $rTpe]]]
+          """
+    }
   }
 
   /**

@@ -479,7 +479,7 @@ class RecordTests {
   }
 
   @Test
-  def crudTest {
+  def addReplaceTest {
     val a = Record(a = 1, b = "2")
     //covering only  replace and add scenarios because others are covered by existing Selector, Remover, Modifier tests
     assertEquals(a.replace('a, 2), Record(a = 2, b = "2"))
