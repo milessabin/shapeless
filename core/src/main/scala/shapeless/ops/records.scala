@@ -50,6 +50,7 @@ package record {
 
   }
 
+  //used for binary compatibility with 2.3.0
   class UnsafeSelector(i: Int) extends Selector[HList, Any] {
     type Out = Any
     def apply(l: HList): Any = HList.unsafeCrud(l, i, identity, false)._1
@@ -64,15 +65,14 @@ package record {
       val lTpe = lTag.tpe.dealias
       val kTpe = kTag.tpe.dealias
 
-      if(!(lTpe <:< hlistTpe)) abort(s"$lTpe is not a record type")
-
       val(ind, vTpe) = getValue(kTpe, unpackHListTpe(lTpe))
-
       if(ind == -1)  abort(s"No field $kTpe in record type $lTpe")
       else {
-        q"""
-            new _root_.shapeless.ops.record.UnsafeSelector($ind).
-              asInstanceOf[_root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]]
+         q"""
+            (new _root_.shapeless.ops.record.Selector[$lTpe, $kTpe]{
+              type Out = Any
+              def apply(l : $lTpe): Out= _root_.shapeless.HList.unsafeCrud(l, $ind, v => v, false)._1
+            }).asInstanceOf[_root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $vTpe]]
           """
       }
     }
@@ -112,6 +112,7 @@ package record {
   /**
     * Type class supporting record field addition.
     * Works only if record does not have given key.
+    *
     * @author Ievgen Garkusha
     */
   @annotation.implicitNotFound(msg = "Field ${K} is already present in record ${L}")
@@ -126,11 +127,6 @@ package record {
     def apply[L <: HList, K, V](implicit adder: Adder[L, K, V]): Aux[L, K, V, adder.Out] = adder
 
     implicit def mkAdder[L <: HList, K, V, O]: Aux[L, K, V, O] = macro AdderMacros.applyImpl[L, K, V]
-  }
-
-  class UnsafeAdder extends Adder[HList, Any, Any] {
-    type Out = HList
-    def apply(l: HList, v:Any): HList = HList.unsafeCrud(l, Int.MaxValue, _ => v, false)._2
   }
 
   @macrocompat.bundle
@@ -148,8 +144,10 @@ package record {
       val aTpe = add(lTpes ,kTpe, vTpe)
 
       q"""
-          new _root_.shapeless.ops.record.UnsafeAdder().
-            asInstanceOf[_root_.shapeless.ops.record.Adder.Aux[$lTpe, $kTpe, $vTpe, $aTpe]]
+          new _root_.shapeless.ops.record.Adder[$lTpe, $kTpe, $vTpe]{
+            type Out = HList
+            def apply(l: $lTpe, v: $vTpe): HList = HList.unsafeCrud(l, Int.MaxValue, _ => v, false)._2
+          }.asInstanceOf[_root_.shapeless.ops.record.Adder.Aux[$lTpe, $kTpe, $vTpe, $aTpe]]
         """
     }
   }
@@ -160,7 +158,7 @@ package record {
     *
     * @author Ievgen Garkusha
     */
-
+  @annotation.implicitNotFound(msg = "no field ${K} or value type differs from ${V} in record ${L}")
   trait Replacer[L <: HList, K, V] extends DepFn2[L, V] with Serializable { type Out <: HList }
 
   object Replacer {
@@ -171,10 +169,6 @@ package record {
     implicit def mkReplacer[L <: HList, K, V, O]: Aux[L, K, V, O] = macro ReplacerMacros.applyImpl[L, K, V]
   }
 
-  class UnsafeReplacer(i: Int) extends Replacer[HList, Any, Any] {
-    type Out = HList
-    def apply(l: HList, f: Any): HList = HList.unsafeCrud(l, i, _ => f,false)._2
-  }
 
   @macrocompat.bundle
   class ReplacerMacros(val c: whitebox.Context) extends CrudMacros {
@@ -194,8 +188,10 @@ package record {
                      else lTpe
 
       q"""
-        new _root_.shapeless.ops.record.UnsafeReplacer($ind)
-          .asInstanceOf[_root_.shapeless.ops.record.Replacer.Aux[$lTpe, $kTpe, $vTpe, $lTpe]]
+        new _root_.shapeless.ops.record.Replacer[$lTpe, $kTpe, $vTpe]{
+          type Out = HList
+          def apply(l: $lTpe, f: $vTpe): HList = HList.unsafeCrud(l, $ind, _ => f, false)._2
+        }.asInstanceOf[_root_.shapeless.ops.record.Replacer.Aux[$lTpe, $kTpe, $vTpe, $lTpe]]
       """
     }
   }
@@ -215,6 +211,7 @@ package record {
     implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
   }
 
+  //used for binary compatibility with 2.3.0
   class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
     type Out = HList
     def apply(l: HList, f: Any): HList = HList.unsafeCrud(l, i, _ => f,false)._2
@@ -237,11 +234,13 @@ package record {
       val(ind, vTpe) = getValue(kTpe, lTpes)
 
       val (uTpe,i) = if(ind == -1 || ! (vUpdTpe =:= vTpe)) add(lTpes, kTpe, vUpdTpe) -> lTpes.length
-                     else replace(lTpes, kTpe, vTpe, ind) -> ind
+                     else lTpe -> ind
 
       q"""
-        new _root_.shapeless.ops.record.UnsafeUpdater($i)
-          .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
+        (new _root_.shapeless.ops.record.Updater[$lTag, $fTpe]{
+          type Out = HList
+          def apply(l: ${lTag.tpe}, f: $fTpe): HList = HList.unsafeCrud(l, $i, _ => f,false)._2
+        }).asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
       """
     }
   }
@@ -287,7 +286,6 @@ package record {
         }
       }
   }
-
 
   @macrocompat.bundle
   trait CrudMacros extends CaseClassMacros{
@@ -340,10 +338,6 @@ package record {
         def apply(l: H :: T, f: A => B): Out = l.head :: mt(l.tail, f)
       }
   }
-  class UnsafeModifier(i: Int) extends Modifier[HList, Any, Any, Any]  {
-    type Out = HList
-    def apply(l: HList, f: Any => Any): HList = HList.unsafeCrud(l, i, f, false)._2
-  }
 
   @macrocompat.bundle
   class ModifierMacros(val c: whitebox.Context) extends CrudMacros {
@@ -356,13 +350,14 @@ package record {
       val lTpes = unpackHListTpe(lTpe)
 
       val(ind, vTpe) = getValue(kTpe, lTpes)
-
       val mTpe = if(ind == -1)abort(s"$lTpe does not contain key $kTpe")
       else replace(lTpes, kTpe, vModTpe, ind)
 
       q"""
-        new _root_.shapeless.ops.record.UnsafeModifier($ind)
-          .asInstanceOf[_root_.shapeless.ops.record.Modifier.Aux[$lTpe, $kTpe, $vTpe, $vModTpe, $mTpe]]
+        new _root_.shapeless.ops.record.Modifier[$lTpe, $kTpe, $vTpe, $vModTpe]{
+          type Out = HList
+          def apply(l: $lTpe, f: $vTpe => $vModTpe): HList = HList.unsafeCrud(l, $ind, f.asInstanceOf[Any => Any], false)._2
+        }.asInstanceOf[_root_.shapeless.ops.record.Modifier.Aux[$lTpe, $kTpe, $vTpe, $vModTpe, $mTpe]]
       """
     }
   }
@@ -405,10 +400,6 @@ package record {
       }
   }
 
-  class UnsafeRemover(i: Int) extends Remover[HList, Any] {
-    type Out = (Any,HList)
-    def apply(l: HList): (Any,HList) = HList.unsafeCrud(l, i, identity, true)
-  }
   @macrocompat.bundle
   class RemoverMacros(val c: whitebox.Context) extends CrudMacros {
     import c.universe._
@@ -424,8 +415,10 @@ package record {
                  else remove(lTpes, ind)
 
         q"""
-            new _root_.shapeless.ops.record.UnsafeRemover($ind).
-              asInstanceOf[_root_.shapeless.ops.record.Remover.Aux[$lTpe, $kTpe, Tuple2[$vTpe, $rTpe]]]
+            new _root_.shapeless.ops.record.Remover[$lTpe, $kTpe]{
+              type Out = Any
+              def apply(l: $lTpe): Any = HList.unsafeCrud(l, $ind, v => v, true)
+            }.asInstanceOf[_root_.shapeless.ops.record.Remover.Aux[$lTpe, $kTpe, ($vTpe, $rTpe)]]
           """
     }
   }
