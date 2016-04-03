@@ -396,14 +396,18 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         if(!pSym.isCaseClass)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+        val nonCaseAccessor = tpe.decls.exists {
+          case sym: TermSymbol if !sym.isCaseAccessor && (sym.isVal || sym.isVar ||
+              (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))) => true
+          case _ => false
+        }
+        if (nonCaseAccessor) {
+          // there is a symbol, which is not a case accessor but a val,
+          // var or param, so we won't be able to type check it safely:
+          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+        }
         val fields = tpe.decls.sorted collect {
-          case sym: TermSymbol if sym.isVal && sym.isCaseAccessor =>
-            sym.typeSignatureIn(tpe)
-          case sym: TermSymbol if sym.isVal || sym.isVar ||
-              (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor)) =>
-            // not a case accessor but a val, var or param,
-            // so we won't be able to type check it safely:
-            c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+          case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
         }
         val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }
         if(fieldTypeables.exists(_ == EmptyTree))

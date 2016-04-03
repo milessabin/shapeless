@@ -226,6 +226,7 @@ cross-builds for 2.10.6 and 2.12.x.
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
++ Daniel Urban <urban.dani@gmail.com>
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
 + Dave Gurnell <d.j.gurnell@gmail.com> [@davegurnell](https://twitter.com/davegurnell)
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
