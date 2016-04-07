@@ -123,10 +123,10 @@ libraryDependencies ++= Seq(
 ### shapeless-2.2.5
 
 Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
-shapeless 2.2.5 is Scala 2.11.7 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.2.5 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.2.5"
