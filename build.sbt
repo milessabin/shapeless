@@ -234,7 +234,10 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
         .cross(previousCrossVersion)
         .extra(prevExtraAttributes.toSeq: _*)
 
-    Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
+    if (scalaV == "2.12.0-M4") // Brand-new version, so no previous artifacts
+      Set.empty
+    else
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
   },
 
   binaryIssueFilters ++= {
