@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Dale Wijnand
+ * Copyright (c) 2011-16 Dale Wijnand
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,21 @@
 
 package shapeless
 package syntax
+
+object nat {
+
+  import ops.nat.BoundedRange
+  import BoundedRange.{Exclusive, Inclusive}
+
+  type *--*[A,B] = BoundedRange[Inclusive[A], Inclusive[B]]
+
+  type :--:[A,B] = BoundedRange[Exclusive[A], Exclusive[B]]
+
+  type :--*[A,B] = BoundedRange[Exclusive[A], Inclusive[B]]
+
+  type *--:[A,B] = BoundedRange[Inclusive[A], Exclusive[B]]
+
+}
 
 /**
  * Carrier for `Nat` operations.
