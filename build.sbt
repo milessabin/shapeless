@@ -1,6 +1,6 @@
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.ScalaJSCrossVersion
-import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
+import org.scalajs.sbtplugin.cross.CrossProject
 import ReleaseTransformations._
 
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
@@ -91,15 +91,7 @@ lazy val root = project.in(file("."))
   .settings(coreSettings:_*)
   .settings(noPublishSettings)
 
-lazy val CrossTypeMixed: CrossType = new CrossType {
-  def projectDir(crossBase: File, projectType: String): File =
-    crossBase / projectType
-
-  def sharedSrcDir(projectBase: File, conf: String): Option[File] =
-    Some(projectBase.getParentFile / "src" / conf / "scala")
-}
-
-lazy val core = crossProject.crossType(CrossTypeMixed)
+lazy val core = crossProject.crossType(CrossType.Pure)
   .configure(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
@@ -111,6 +103,7 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .jvmSettings(unmanagedSourceDirectories in Test += (baseDirectory.value).getParentFile / "test-jvm" / "scala")
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
