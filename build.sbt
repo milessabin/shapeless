@@ -103,6 +103,7 @@ lazy val core = crossProject.crossType(CrossType.Pure)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .jvmSettings(unmanagedSourceDirectories in Test += (baseDirectory.value).getParentFile / "test-jvm" / "scala")
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
