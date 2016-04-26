@@ -79,6 +79,23 @@ class UnwrappedTests {
   }
 
   @Test
+  def testShapelessTagged: Unit = {
+
+    import tag._
+
+    val pass = the[Pass[String @@ TestTag]]
+    the[pass.U =:= String]
+    val tagged = tag[TestTag]("testing")
+    val actual = pass.actual(tagged)
+    val wrapped = pass.wrapped(tagged: String)
+    val unwrapped = pass.unwrapped(tagged)
+    assert((actual: String @@ TestTag) == tagged)
+    assert((wrapped: String @@ TestTag) == tagged)
+    assert((unwrapped: String) == (tagged: String))
+    test.illTyped("unwrapped: String @@ TestTag")
+  }
+
+  @Test
   def testScalazTagged: Unit = {
 
     type Tagged[A, T] = { type Tag = T; type Self = A }

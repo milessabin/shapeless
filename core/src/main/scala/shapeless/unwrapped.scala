@@ -60,6 +60,10 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
     chain: Strict[Unwrapped.Aux[UI, UF]]
   ) = chain.value.asInstanceOf[Unwrapped.Aux[Newtype[UI, Ops], UF]]
 
+  implicit def tagUnwrapped[T[UI, TT] <: tag.@@[UI, TT], UI, TT, UF](implicit
+    chain: Strict[Unwrapped.Aux[UI, UF]]
+  ) = chain.value.asInstanceOf[Unwrapped.Aux[T[UI, TT], UF]]
+
 }
 
 trait LowPriorityUnwrappedInstances {
