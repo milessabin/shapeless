@@ -247,7 +247,8 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       exclude[MissingMethodProblem]("shapeless.:+:.eliminate"),
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$15"),
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$16"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$17")
+      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$17"),
+      exclude[MissingMethodProblem]("shapeless.UnwrappedInstances.tagUnwrapped")
     )
   }
 )
