@@ -110,20 +110,6 @@ class UnwrappedTests {
   }
 
   @Test
-  def testShapelessTagged: Unit = {
-    import shapeless.tag.@@
-    import syntax.unwrapped._
-
-    type Test = String @@ TestTag
-    val tagged = tag[TestTag]("testing")
-
-    val wrapped = "testing".wrap[Test]
-    val unwrapped = wrapped.unwrap
-    assert((wrapped: String @@ TestTag) == tagged)
-    assert((unwrapped: String) == "testing")
-  }
-
-  @Test
   def testAlreadyUnwrapped: Unit = {
 
     val pass = the[Pass[String]]

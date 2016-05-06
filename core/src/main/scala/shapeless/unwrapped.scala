@@ -17,7 +17,6 @@
 package shapeless
 
 import newtype._
-import shapeless.tag._
 
 trait Unwrapped[W] extends Serializable {
   type U
@@ -61,12 +60,6 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
     chain: Strict[Unwrapped.Aux[UI, UF]]
   ) = chain.value.asInstanceOf[Unwrapped.Aux[Newtype[UI, Ops], UF]]
 
-  implicit def taggedUnwrapped[UI, T]: Unwrapped.Aux[UI @@ T, UI] =
-    new Unwrapped[UI @@ T] {
-      type U = UI
-      def unwrap(w: UI @@ T) = w.asInstanceOf[UI]
-      def wrap(u: UI) = tag[T](u)
-    }
 }
 
 trait LowPriorityUnwrappedInstances {
