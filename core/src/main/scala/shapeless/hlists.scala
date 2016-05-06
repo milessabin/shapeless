@@ -18,7 +18,6 @@ package shapeless
 
 import scala.language.dynamics
 import scala.language.experimental.macros
-
 import scala.annotation.tailrec
 import scala.reflect.macros.whitebox
 
@@ -105,12 +104,14 @@ object HList extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
 
   @tailrec
+  @deprecated("used for binary compatibility with 2.3.0", "2.3.1")
   def unsafeGet(l: HList, i: Int): Any = {
     val c = l.asInstanceOf[::[Any, HList]]
     if(i == 0) c.head
     else unsafeGet(c.tail, i-1)
   }
 
+  @deprecated("used for binary compatibility with 2.3.0", "2.3.1")
   def unsafeUpdate(l: HList, i: Int, e: Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList) =
@@ -122,6 +123,24 @@ object HList extends Dynamic {
 
     val (prefix, suffix) = loop(l, i, Nil)
     prefix.foldLeft(suffix) { (tl, hd) => hd :: tl }
+  }
+
+  //TODO: remove @noinline after switching to ScalaJs 0.69+
+  @noinline
+  def unsafeCrud(l: HList, i: Int, f: Any => Any, remove:Boolean): (Any, HList) = {
+    @tailrec
+    def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList, Any) =
+      l match {
+        //add case
+        case HNil => if(remove)throw new Exception("Index out of bounds.Cannot remove.") else (prefix, f(null) :: HNil, null)
+        //remove / modify case
+        case hd :: (tl: HList) if i == 0 => if(remove)(prefix, tl, hd) else (prefix, f(hd) :: tl, hd)
+        //recursion step
+        case hd :: (tl: HList) => loop(tl, i - 1, hd :: prefix)
+      }
+
+    val (prefix, suffix, v) = loop(l, i, Nil)
+    v -> prefix.foldLeft(suffix) { (tl, hd) => hd :: tl }
   }
 }
 

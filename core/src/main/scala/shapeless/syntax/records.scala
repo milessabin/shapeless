@@ -56,6 +56,15 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    */
   def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
+  /*
+  * Replaces the value of a field  with key type F preserving the same value type.
+  */
+  def replace[V](k: Witness, v: V)(implicit replacer: Replacer.Aux[L, k.T, V, L]) : L = replacer(l, v)
+
+  /**
+    * Adds a field only if record does not contain the given key.
+    */
+  def add[V](k: Witness, v: V)(implicit adder: Adder[L, k.T, V]) : adder.Out = adder(l,  v)
   
   /**
    * Updates a field having a value with type A by given function.

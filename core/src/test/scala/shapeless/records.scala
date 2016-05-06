@@ -481,6 +481,19 @@ class RecordTests {
   }
 
   @Test
+  def addReplaceTest {
+    val a = Record(a = 1, b = "2")
+    //covering only  replace and add scenarios because others are covered by existing Selector, Remover, Modifier tests
+    assertEquals(a.replace('a, 2), Record(a = 2, b = "2"))
+    assertEquals(a.add('z, Nil),  Record(a =1, b= "2", z = Nil))
+    illTyped(
+      """
+        a.add('a, Nil)
+        a.replace('a, Nil)
+      """)
+  }
+
+  @Test
   def testRemoveAll {
 
     type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
