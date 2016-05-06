@@ -45,18 +45,20 @@ trait Liftables {
       ttag: WeakTypeTag[T]): GenericLiftable[H :: T] =
     new GenericLiftable[H::T] {
       val liftable: Liftable[H::T] =
-        Liftable[H :: T] { (x: H :: T) =>
-          q"""_root_.shapeless.::[${htag.tpe}, ${ttag.tpe}](
-              ${lh.value.liftable(x.head)},
-              ${lt.value.liftable(x.tail)})
-            """
+        new Liftable[H :: T] {
+          def apply(x: H :: T) =
+            q"""_root_.shapeless.::[${htag.tpe}, ${ttag.tpe}](
+                ${lh.value.liftable(x.head)},
+                ${lt.value.liftable(x.tail)})
+              """
         }
     }
 
     implicit val liftHNil: GenericLiftable[HNil] = new GenericLiftable[HNil] {
       def liftable: Liftable[HNil] =
-        Liftable[HNil] { (x: HNil) =>
-          q"_root_.shapeless.HNil"
+        new Liftable[HNil] {
+          def apply(x: HNil) =
+            q"_root_.shapeless.HNil"
         }
     }
 
@@ -67,18 +69,22 @@ trait Liftables {
       rtag: WeakTypeTag[R]): GenericLiftable[L :+: R] =
       new GenericLiftable[L :+: R] {
         val liftable: Liftable[L :+: R] =
-          Liftable[L :+: R] {
-            case Inl(l) =>
-              q"_root_.shapeless.Inl[${ltag.tpe}, ${rtag.tpe}](${ll.value.liftable(l)})"
-            case Inr(r) =>
-              q"_root_.shapeless.Inr[${ltag.tpe}, ${rtag.tpe}](${lr.value.liftable(r)})"
+          new Liftable[L :+: R] {
+            def apply(x: L :+: R) =
+              x match {
+                case Inl(l) =>
+                  q"_root_.shapeless.Inl[${ltag.tpe}, ${rtag.tpe}](${ll.value.liftable(l)})"
+                case Inr(r) =>
+                  q"_root_.shapeless.Inr[${ltag.tpe}, ${rtag.tpe}](${lr.value.liftable(r)})"
+              }
           }
       }
 
     implicit val liftCNil = new GenericLiftable[CNil] {
       val liftable: Liftable[CNil] =
-        Liftable[CNil] { (x: CNil) =>
-          q"_root_.shapeless.CNil"
+        new Liftable[CNil] {
+          def apply(x: CNil) =
+            q"_root_.shapeless.CNil"
         }
     }
   }
@@ -92,9 +98,10 @@ trait Liftables {
       tag: WeakTypeTag[T]): GenericLiftable[T] =
       new GenericLiftable[T] {
         val liftable: Liftable[T] =
-          Liftable[T] { (x: T) =>
-            q"""_root_.shapeless.Generic[${tag.tpe}].from(
-                  ${lrepr.value.value.liftable(gen.to(x))})"""
+          new Liftable[T] {
+            def apply(x: T) =
+              q"""_root_.shapeless.Generic[${tag.tpe}].from(
+                    ${lrepr.value.value.liftable(gen.to(x))})"""
           }
       }
   }

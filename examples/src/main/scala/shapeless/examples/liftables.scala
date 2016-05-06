@@ -37,8 +37,7 @@ object LiftableExample {
 
   @macrocompat.bundle
   class LiftMacro(val c: whitebox.Context) extends Liftables {
-    val universe: c.universe.type = c.universe
-    import universe._
+    import c.universe._
 
     // Simple lifting
     def materialize: Tree = {
@@ -55,9 +54,12 @@ object LiftableExample {
     // Custom lifting - we will round DoubleConst and change it to an IntConst
     implicit final def liftExp(implicit gen: GenericLiftable[Exp]): GenericLiftable[Exp] =
       new GenericLiftable[Exp] {
-        val liftable = Liftable[Exp] {
-          case DoubleConst(x) => q"_root_.shapeless.examples.LiftableExample.IntConst(${x.round.toInt})"
-          case other => gen.liftable(other)
+        val liftable =
+          new Liftable[Exp] {
+            def apply(x: Exp) = x match {
+              case DoubleConst(x) => q"_root_.shapeless.examples.LiftableExample.IntConst(${x.round.toInt})"
+              case other => gen.liftable(other)
+            }
         }
       }
 
@@ -76,8 +78,12 @@ object LiftableExample {
     // so this will cause a compile time type error
     implicit val liftDoubleConst: GenericLiftable[DoubleConst] =
       new GenericLiftable[DoubleConst] {
-        val liftable = Liftable[DoubleConst] {
-          case DoubleConst(x) => q"_root_.shapeless.examples.LiftableExample.IntConst(${x.round.toInt})"
+        val liftable =
+          new Liftable[DoubleConst] {
+            def apply(x: DoubleConst) =
+              x match {
+                case DoubleConst(x) => q"_root_.shapeless.examples.LiftableExample.IntConst(${x.round.toInt})"
+              }
         }
       }
 
