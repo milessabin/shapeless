@@ -24,8 +24,8 @@ trait Liftables {
 
   /**
     * Generically derived `Liftable` instances to quote data types.
-    * See the [[http://docs.scala-lang.org/overviews/quasiquotes/lifting
-    * documentation on quasi quotes]] for an explanation of lifting.
+    * See the [[http://docs.scala-lang.org/overviews/quasiquotes/lifting documentation on quasi quotes]]
+    * for an explanation of lifting.
     *
     * @author Jan Bessai
     */
