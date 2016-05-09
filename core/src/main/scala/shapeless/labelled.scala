@@ -79,6 +79,8 @@ trait FieldPoly extends Poly1 {
 trait FieldOf[V] {
   import labelled._
 
+  type F = FieldType[this.type, V]
+
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
