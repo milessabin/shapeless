@@ -21,6 +21,7 @@ import org.junit.Assert._
 
 class RecordTests {
   import labelled._
+  import ops.record.LacksKey
   import record._
   import syntax.singleton._
   import syntax.std.maps._
@@ -481,6 +482,38 @@ class RecordTests {
   }
 
   @Test
+  def testReplace {
+    type R = Record.`'a -> Int, 'b -> String`.T
+    val a = Record(a = 1, b = "2")
+    val r = a.replace('a, 2)
+
+    typed[R](r)
+    assertEquals(Record(a = 2, b = "2"), r)
+
+    illTyped(""" a.replace('a, ()) """)
+  }
+
+  @Test
+  def testLacksKey {
+    def without[R <: HList, O <: HList](k: Witness)(r: R)(f: R => O)(implicit ev: LacksKey[R, k.T]): O = f(r)
+
+    type R1 = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
+    type R2 = Record.`'c -> Boolean, 'a -> Int, 'b -> String`.T
+
+    val a = Record(a = 1, b = "2")
+
+    val r1 = without('c)(a)(_ :+ ('c ->> true))
+    typed[R1](r1)
+    assertEquals(Record(a = 1, b = "2", c = true), r1)
+
+    val r2 = without('c)(a)(('c ->> true) +: _)
+    typed[R2](r2)
+    assertEquals(Record(c = true, a = 1, b = "2"), r2)
+
+    illTyped(""" without('a)(a)(identity) """)
+  }
+
+  @Test
   def testRemoveAll {
 
     type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
@@ -721,7 +754,7 @@ class RecordTests {
       val r = Record()
       typed[HNil](r)
     }
-    
+
     {
       val r = Record(i = 23, s = "foo", b = true)
       typed[Record.`'i -> Int, 's -> String, 'b -> Boolean`.T](r)

@@ -503,6 +503,22 @@ trait CaseClassMacros extends ReprTypes {
     unfold(tpe, List()).reverse
   }
 
+  object FieldType {
+    import internal._
+
+    def apply(kTpe: Type, vTpe: Type): Type =
+      refinedType(List(vTpe, typeRef(prefix(keyTagTpe), keyTagTpe.typeSymbol, List(kTpe, vTpe))), NoSymbol)
+
+    def unapply(fTpe: Type): Option[(Type, Type)] = {
+      val KeyTagPre = prefix(keyTagTpe)
+      val KeyTagSym = keyTagTpe.typeSymbol
+      fTpe.dealias match {
+        case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => Some((k, v0))
+        case _ => None
+      }
+    }
+  }
+
   def unpackFieldType(tpe: Type): (Type, Type) = {
     val KeyTagPre = prefix(keyTagTpe)
     val KeyTagSym = keyTagTpe.typeSymbol
@@ -511,6 +527,11 @@ trait CaseClassMacros extends ReprTypes {
       case _ => abort(s"$tpe is not a field type")
     }
   }
+
+  def findField(lTpe: Type, kTpe: Type): Option[(Type, Int)] =
+    unpackHListTpe(lTpe).zipWithIndex.collectFirst {
+      case (FieldType(k, v), i) if k =:= kTpe => (v, i)
+    }
 
   def mkTypTree(tpe: Type): Tree = {
     tpe match {

@@ -105,26 +105,73 @@ object HList extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
 
   @tailrec
-  def unsafeGet(l: HList, i: Int): Any = {
-    val c = l.asInstanceOf[::[Any, HList]]
-    if(i == 0) c.head
-    else unsafeGet(c.tail, i-1)
+  def unsafeGet(l: HList, i: Int): Any =
+    l match {
+      case hd :: tl if i == 0 => hd
+      case hd :: tl => unsafeGet(tl, i-1)
+    }
+
+  def unsafeReversePrepend(l: HList, m: HList): HList = {
+    @tailrec
+    def loop(l: HList, suffix: HList): HList =
+      l match {
+        case HNil => suffix
+        case hd :: tl => loop(tl, hd :: suffix)
+      }
+    loop(l, m)
   }
 
-  def unsafeUpdate(l: HList, i: Int, e: Any): HList = {
-    @tailrec
-    def loop(l: HList, i: Int, prefix: List[Any]): (List[Any], HList) =
-      l match {
-        case HNil => (prefix, e :: HNil)
-        case hd :: (tl : HList) if i == 0 => (prefix, e :: tl)
-        case hd :: (tl : HList) => loop(tl, i-1, hd :: prefix)
-      }
+  def unsafeReverse(l: HList): HList =
+    unsafeReversePrepend(l, HNil)
 
-    val (prefix, suffix) = loop(l, i, Nil)
-    prefix.foldLeft(suffix) { (tl, hd) => hd :: tl }
+  def unsafePrepend(l: HList, m: HList): HList =
+    unsafeReversePrepend(unsafeReverse(l), m)
+
+  def unsafeUpdateAt(l: HList, i: Int, e: Any): HList = {
+    @tailrec
+    def loop(l: HList, i: Int, revPrefix: HList): HList =
+      l match {
+        case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
+        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+      }
+    loop(l, i, HNil)
+  }
+
+  def unsafeUpdateAppend(l: HList, i: Int, e: Any): HList = {
+    @tailrec
+    def loop(l: HList, i: Int, revPrefix: HList): HList =
+      l match {
+        case HNil => unsafeReversePrepend(revPrefix, e :: HNil)
+        case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
+        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+      }
+    loop(l, i, HNil)
+  }
+
+  @deprecated("use unsafeUpdateAppend instead", "2.3.1")
+  def unsafeUpdate(l: HList, i: Int, e: Any): HList =
+    unsafeUpdateAppend(l, i, e)
+
+  def unsafeUpdateWith(l: HList, i: Int, f: Any => Any): HList = {
+    @tailrec
+    def loop(l: HList, i: Int, revPrefix: HList): HList =
+      l match {
+        case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, f(hd) :: tl)
+        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+      }
+    loop(l, i, HNil)
+  }
+
+  def unsafeRemove(l: HList, i: Int): (Any, HList) = {
+    @tailrec
+    def loop(l: HList, i: Int, revPrefix: HList): (Any, HList) =
+      l match {
+        case hd :: tl if i == 0 => (hd, unsafeReversePrepend(revPrefix, tl))
+        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+      }
+    loop(l, i, HNil)
   }
 }
-
 
 /**
  * Trait supporting mapping dynamic argument lists of Ints to HList of Nat arguments.

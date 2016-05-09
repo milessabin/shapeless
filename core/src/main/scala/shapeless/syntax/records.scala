@@ -52,10 +52,17 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def fieldAt(k: Witness)(implicit selector : Selector[L, k.T]): FieldType[k.T, selector.Out] = field[k.T](selector(l))
 
   /**
-   * Updates or adds to this record a field with key type F and value type F#valueType.
+   * Updates or adds to this record a field with key k. The new field has a value of type V. Only available if this
+   * record has a field with keyType equal to the singleton type k.T.
    */
   def updated[V](k: Witness, v: V)(implicit updater: Updater[L, FieldType[k.T, V]]) : updater.Out = updater(l, field[k.T](v))
 
+  /**
+   * Replaces the value of field k with a value of the same type. Only available if this record has a field with
+   * keyType equal to the singleton type k.T and valueType equal to V.
+   */
+  def replace[V](k: Witness, v: V)
+    (implicit ev: Selector.Aux[L, k.T, V], updater: Updater[L, FieldType[k.T, V]]): updater.Out = updater(l, field[k.T](v))
   
   /**
    * Updates a field having a value with type A by given function.
@@ -74,7 +81,7 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    * Updates or adds to this record a field of type F.
    */
   def +[F](f: F)(implicit updater : Updater[L, F]): updater.Out = updater(l, f)
-  
+
   /**
    * Remove the field associated with the singleton typed key k, returning the updated record. Only available if this
    * record has a field with keyType equal to the singleton type k.T.
