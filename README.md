@@ -219,6 +219,7 @@ cross-builds for 2.10.6 and 2.12.x.
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
++ Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
@@ -238,6 +239,7 @@ cross-builds for 2.10.6 and 2.12.x.
 + Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
++ Ievgen Garkusha <ievgen@riskident.com>
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
 + Jeff Wilde <jeff@robo.ai>
@@ -245,8 +247,11 @@ cross-builds for 2.10.6 and 2.12.x.
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Johnny Everson <khronnuz@gmail.com> [@johnny_everson](https://twitter.com/johnny_everson)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
++ Joseph Price <josephprice@iheartmedia.com>
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
++ Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
++ Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
 + Mario Pastorelli <mario.pastorelli@teralytics.ch> [@mapastr](https://twitter.com/mapastr)
@@ -264,6 +269,7 @@ cross-builds for 2.10.6 and 2.12.x.
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
 + Pavel Chlupacek <pavel.chlupacek@spinoco.com> [@pacmanius](https://twitter.com/pacmanius)
++ Peter Neyens <peter.neyens@gmail.com> [@pneyens](https://twitter.com/pneyens)
 + Peter Schmitz <petrischmitz@gmail.com> [@peterschmitz\_](https://twitter.com/peterschmitz_)
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
 + Rob Norris <rob_norris@mac.com> [@tpolecat](https://twitter.com/tpolecat)
@@ -280,5 +286,6 @@ cross-builds for 2.10.6 and 2.12.x.
 + Tomas Mikula <tomas.mikula@gmail.com> [@tomas_mikula](https://twitter.com/tomas_mikula)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
 + Valentin Kasas <valentin.kasas@gmail.com> [@ValentinKasas](https://twitter.com/ValentinKasas)
++ Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
 + Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)
