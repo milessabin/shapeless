@@ -29,6 +29,7 @@ the 2.3.1 github milestone for [issues][231issues] and [PRs][231prs].
 + Fixed bug in HList Intersection and Union type classes (#562, thanks to Arya Irani).
 + Fixed bug with dependent prefixes in Generic (#560).
 + Don't generate unsafe Typeable instances for generic case classes (#574, thanks to Daniel Urban).
++ Worked around spurious missing interpolator warnings for implicitNotFound messages.
 
 + Bumped Scala to 2.10.6/2.11.8/2.12.0-M4.
 + Bumped Scala.js to 0.6.9.
