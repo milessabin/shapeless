@@ -2928,4 +2928,65 @@ object hlist {
         def apply(): Out = wh.value :: rt()
       }
   }
+
+  /**
+   * Type class supporting the calculation of every combination of this 'HList'
+   *
+   * @author ryoppy
+   */
+  trait Combinations[N <: Nat, L <: HList] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object Combinations {
+    import ops.nat.LTEq.<=
+
+    def apply[L <: HList](n: Nat, l: L)(implicit c: Combinations[n.N, L]): c.Out = c(l)
+
+    type Aux[N <: Nat, L <: HList, Out0 <: HList] = Combinations[N, L] { type Out = Out0 }
+
+    implicit def combination1[N <: Nat, L <: HList, LL <: Nat]
+      (implicit
+       c: Combinations0[N, L],
+       len: Length.Aux[L, LL],
+       ev: N <= LL
+      ): Aux[N, L, c.Out] =
+        new Combinations[N, L] {
+          type Out = c.Out
+          def apply(l: L): Out = c(l)
+        }
+
+    trait Combinations0[N <: Nat, L <: HList] extends DepFn1[L] with Serializable {
+      type Out <: HList
+    }
+
+    object Combinations0 extends LowPriorityCombinations0 {
+      type Aux[N <: Nat, L <: HList, Out0 <: HList] = Combinations0[N, L] { type Out = Out0 }
+
+      implicit def combination0[L <: HList]: Aux[_0, L, HNil :: HNil] =
+        new Combinations0[_0, L] {
+          type Out = HNil :: HNil
+          def apply(l: L): Out = HNil :: HNil
+        }
+
+      implicit def combination1[N <: Nat, H, T <: HList, C1 <: HList, C2 <: HList, CM <: HList]
+        (implicit
+         c1: Aux[N, T, C1],
+         c2: Aux[Succ[N], T, C2],
+         cm: MapCons.Aux[H, C1, CM],
+         cp: Prepend[CM, C2]): Aux[Succ[N], H :: T, cp.Out] =
+          new Combinations0[Succ[N], H :: T] {
+            type Out = cp.Out
+            def apply(l: H :: T): Out = cp(cm(l.head, c1(l.tail)), c2(l.tail))
+          }
+    }
+
+    trait LowPriorityCombinations0 {
+      implicit def combinationHNil[N <: Nat] =
+        new Combinations0[N, HNil] {
+          type Out = HNil
+          def apply(l: HNil): Out = HNil
+        }
+    }
+  }
 }
