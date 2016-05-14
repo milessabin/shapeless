@@ -508,4 +508,16 @@ final class TupleOps[T](t: T) extends Serializable {
    * @author Andreas Koestler
    */
   def group[Pad](n: Nat, step: Nat, pad: Pad)(implicit grouper: PaddedGrouper[T, n.N, step.N, Pad]): grouper.Out = grouper(t, pad)
+
+  /**
+   * Permutes this `Tuple` into the same order as another `Tuple`. An explicit type argument must be supplied.
+   * Available only if both `Tuple`s have elements of the same types.
+   */
+  def align[U](implicit align: Align[T, U]): U = align(t)
+
+  /**
+   * Permutes this `Tuple` into the same order as the supplied `Tuple` with the same element types. Available only if
+   * both `HList`s have elements of the same types.
+   */
+  def align[U](u: U)(implicit align: Align[T, U]): U = align(t)
 }

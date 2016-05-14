@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import scala.annotation.implicitNotFound
+
 object tuple {
   import shapeless.ops.{ hlist => hl }
 
@@ -1308,5 +1310,29 @@ object tuple {
 
   }
 
+  /**
+   * Type class supporting permuting this `Tuple` into the same order as another `Tuple` with
+   * the same element types.
+   *
+   * @author Peter Neyens
+   */
+  @implicitNotFound("Implicit not found: shapeless.ops.tuple.Align[${T}, ${U}]. The types ${T} and ${U} cannot be aligned.")
+  trait Align[T, U] extends (T => U) with Serializable {
+    def apply(t: T): U
+  }
 
+  object Align {
+    def apply[T, U](implicit align: Align[T, U]): Align[T, U] = align
+
+    implicit def tupleAlign[T, U, L <: HList, M <: HList]
+      (implicit 
+        gent: Generic.Aux[T, L],
+        genu: Generic.Aux[U, M],
+        align: hl.Align[L, M], 
+        tp: hl.Tupler.Aux[M, U]
+      ): Align[T, U] = 
+        new Align[T, U] {
+          def apply(t: T): U = align(gent.to(t)).tupled
+        }
+  }
 }
