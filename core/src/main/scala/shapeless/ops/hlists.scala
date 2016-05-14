@@ -2232,6 +2232,11 @@ object hlist {
 
     type Aux[C, L <: HList, Out0 <: HList] = ZipConst[C, L] { type Out = Out0 }
 
+    implicit def hnilZipConst[C, L <: HNil] : Aux[C, L, HNil] = new ZipConst[C, L] {
+      type Out = HNil
+      def apply(t: C, u: L) = HNil
+    }
+
     implicit def constZipper[C, L <: HList, M <: HList]
       (implicit
         mapper: ConstMapper.Aux[C, L, M],

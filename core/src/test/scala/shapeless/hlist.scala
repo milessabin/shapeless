@@ -2132,6 +2132,8 @@ class HListTests {
 
     val x = l.zipConst(c)
     assertTypedEquals[WithConst](expected, x)
+
+    HList().zipConst("")
   }
 
   @Test
