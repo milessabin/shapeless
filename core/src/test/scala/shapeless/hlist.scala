@@ -2540,6 +2540,18 @@ class HListTests {
   }
 
   @Test
+  def testPolyFill = {
+    object zero extends Poly0 {
+      implicit val zeroInt = at[Int](0)
+    }
+
+    implicit val zeroDouble = zero.at[String]("")
+
+    val out = HList.polyFill[zero.type, Int :: String :: Int :: HNil]
+    assertEquals(out, 0 :: "" :: 0 :: HNil)
+  }
+
+  @Test
   def testPatch {
     val basehl = 1 :: 2 :: "three" :: HNil
 
