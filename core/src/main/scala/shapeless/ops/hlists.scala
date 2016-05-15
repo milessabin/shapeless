@@ -19,12 +19,12 @@ package ops
 
 import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
-
-import poly._
-
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
+
+import function._
+import poly._
 
 object hlist {
   /**
@@ -231,6 +231,39 @@ object hlist {
 
     implicit def hlistToCoproduct[H, T <: HList](implicit ut: ToCoproduct[T]): Aux[H :: T, H :+: ut.Out] =
       new ToCoproduct[H :: T] {
+        type Out = H :+: ut.Out
+      }
+  }
+
+  /**
+   * Type class computing the sum type corresponding to this `HList`.
+   *
+   */
+  trait lowPriorityToSum {
+    implicit def hlistToSum[H, T <: HList](implicit ut: ToSum[T]): ToSum.Aux[H :: T, H :+: ut.Out] =
+      new ToSum[H :: T] {
+        type Out = H :+: ut.Out
+      }
+  }
+
+  trait ToSum[L <: HList] extends Serializable {
+    type Out <: Coproduct
+  }
+
+  object ToSum extends lowPriorityToSum {
+    def apply[L <: HList](implicit tcp: ToSum[L]): Aux[L, tcp.Out] = tcp
+
+    type Aux[L <: HList, Out0 <: Coproduct] = ToSum[L] {type Out = Out0}
+
+    implicit val hnilToSum: Aux[HNil, CNil] =
+      new ToSum[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToSum[H, T <: HList, OutL <: HList](implicit
+                                                          fn: FilterNot.Aux[T, H, OutL],
+                                                          ut: ToSum[OutL]): Aux[H :: T, H :+: ut.Out] =
+      new ToSum[H :: T] {
         type Out = H :+: ut.Out
       }
   }
@@ -592,6 +625,81 @@ object hlist {
   }
 
   /**
+    * Type class supporting conversion of this `HList` to a `M` with elements typed as
+    * a minimal `Coproduct` Cop such as each type of the elements of L appears once in Cop.
+    *
+    * @author Valentin Kasas
+    */
+  trait ToCoproductTraversable[L <: HList, M[_]] extends DepFn1[L] with Serializable {
+    type Cop <: Coproduct
+    type Out = M[Cop]
+  }
+
+  trait LowPriorityToCoproductTraversable {
+    type Aux[L <: HList, M[_], C <: Coproduct] = ToCoproductTraversable[L, M] {type Cop = C}
+
+    /**
+      * Auxiliary type class witnessing that type `T` is not a member of `Coproduct` `C`
+      */
+    trait NotIn[C <: Coproduct, T]
+
+    object NotIn {
+      implicit def notInCNil[T]: NotIn[CNil, T] = new NotIn[CNil, T] {}
+
+      implicit def notInCCons[CH, CT <: Coproduct, T]
+        (implicit
+         diff: CH =:!= T,
+         notInTail: NotIn[CT, T]): NotIn[CH :+: CT, T] = new NotIn[CH :+: CT, T]{}
+    }
+
+    implicit def hconsToCoproductTraversable1[LH, LT <: HList, M[_], CT <: Coproduct]
+      (implicit
+       coproductOfT  : Aux[LT, M, CT],
+       cbf           : CanBuildFrom[M[CT], CT, M[CT]],
+       asTraversable : M[CT] <:< Traversable[CT],
+       injectOut     : coproduct.Inject[CT, LH]): Aux[LH :: LT, M, CT] =
+        new ToCoproductTraversable[LH :: LT, M] {
+          type Cop = CT
+          def apply(l : LH :: LT): Out = {
+            val builder = cbf()
+            builder += injectOut(l.head)
+            asTraversable(coproductOfT(l.tail)).foreach( builder += _)
+            builder.result()
+          }
+        }
+  }
+
+  object ToCoproductTraversable extends LowPriorityToCoproductTraversable{
+
+    implicit def hnilToCoproductTraversable[L <: HNil, M[_]]
+    (implicit cbf: CanBuildFrom[M[CNil], CNil, M[CNil]]): Aux[L, M, CNil] =
+      new ToCoproductTraversable[L, M] {
+        type Cop = CNil
+        def apply(l: L) = cbf().result()
+      }
+
+
+    implicit def hconsToCoproductTraversable0[LH, LT <: HList, M[_], CT <: Coproduct]
+      (implicit
+       coproductOfT  : Aux[LT, M, CT],
+       cbf           : CanBuildFrom[M[CT], LH :+: CT, M[LH :+: CT]],
+       asTraversable : M[CT] <:< Traversable[CT],
+       notIn         : NotIn[CT, LH],
+       injectOut     : coproduct.Inject[LH :+: CT, LH],
+       basisTail     : coproduct.Basis[LH :+: CT,CT]): Aux[LH :: LT, M, LH :+: CT] =
+        new ToCoproductTraversable[LH :: LT, M] {
+          type Cop = LH :+: CT
+          def apply(l : LH :: LT): Out = {
+            val builder = cbf()
+            builder += injectOut(l.head)
+            val tail = coproductOfT(l.tail)
+            asTraversable(tail).foreach(elem => builder += elem.embed[Cop])
+            builder.result()
+          }
+        }
+  }
+
+  /**
    * Type aliases and constructors provided for backward compatibility
    **/
   type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
@@ -741,21 +849,97 @@ object hlist {
   trait Selector[L <: HList, U] extends DepFn1[L] with Serializable { type Out = U }
 
   object Selector {
-    def apply[L <: HList, U](implicit selector: Selector[L, U]): Aux[L, U] = selector
 
-    type Aux[L <: HList, U] = Selector[L, U]
+    def apply[L <: HList, U](implicit selector: Selector[L, U]): Selector[L, U] = selector
 
-    implicit def select[H, T <: HList]: Aux[H :: T, H] =
+    implicit def select[H, T <: HList]: Selector[H :: T, H] =
       new Selector[H :: T, H] {
         def apply(l : H :: T) = l.head
       }
 
     implicit def recurse[H, T <: HList, U]
-      (implicit st : Selector[T, U]): Aux[H :: T, U] =
+      (implicit st : Selector[T, U]): Selector[H :: T, U] =
         new Selector[H :: T, U] {
           def apply(l : H :: T) = st(l.tail)
         }
   }
+
+  /**
+    * Type class supporting multiple HList field selection.
+    * Can be used to witness that given HList contains certain set of field types.
+    * Simplified version of shapeless.ops.record.SelectAll
+    *
+    * @author Ievgen Garkusha
+    */
+  @annotation.implicitNotFound(msg = "Field types set of ${S} is not fully contained in type definition of ${L}")
+  trait SelectAll[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out = S }
+
+  object SelectAll {
+
+    implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
+      new SelectAll[L, HNil] {
+        def apply(l: L): Out = HNil
+      }
+
+    implicit def hconsSelectAll[L <: HList, H, S <: HList]
+    (implicit sh: Selector[L, H], st: SelectAll[L, S]): SelectAll[L, H :: S] =
+      new SelectAll[L, H :: S] {
+        def apply(l: L): Out = sh(l) :: st(l)
+      }
+  }
+
+  /**
+   * Type class supporting access to the elements of this `HList` specified by `Ids`. Available only if this `HList`
+   * contains all elements specified in `Ids`.
+   *
+   * @author Andreas Koestler
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectMany[${L}, ${Ids}]. You requested the elements in ${Ids}, but HList ${L} does not contain all of them.")
+  trait SelectMany[L <: HList, Ids <: HList] extends DepFn1[L] { type Out <: HList }
+
+  object SelectMany {
+    def apply[L <: HList, Ids <: HList](implicit sel: SelectMany[L, Ids]): Aux[L, Ids, sel.Out] = sel
+
+    type Aux[L <: HList, Ids <: HList, Out0 <: HList] = SelectMany[L, Ids] { type Out = Out0 }
+
+    implicit def SelectManyHNil[L <: HList]: Aux[L, HNil, HNil] =
+      new SelectMany[L, HNil] {
+        type Out = HNil
+        def apply(l : L): Out = HNil
+      }
+
+    implicit def SelectManyHList[L <:HList, H <: Nat, T <: HList]
+    (implicit sel : SelectMany[L, T], at: At[L,H]): Aux[L, H::T, at.Out :: sel.Out] =
+      new SelectMany[L, H::T] {
+        type Out = at.Out :: sel.Out
+        def apply(l: L): Out = at(l) :: sel(l)
+      }
+  }
+
+  /**
+   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
+   * Avaialable only if this `HList` contains all elements in range
+   *
+   * @author Andreas Koestler
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectRange[${L}, ${A}, ${B}]. You requested the elements in range [${A},${B}[, but HList ${L} does not contain all of them.")
+  trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
+
+  object SelectRange {
+    def apply[L <: HList, A <: Nat, B <: Nat](implicit sel: SelectRange[L, A, B]): Aux[L, A, B, sel.Out] = sel
+
+    type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
+
+    implicit def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList]
+    (implicit range: shapeless.ops.nat.Range.Aux[A, B, Ids], sel: SelectMany[L, Ids]): Aux[L, A, B, sel.Out] =
+      new SelectRange[L, A, B] {
+        type Out = sel.Out
+
+        def apply(l: L): Out = sel(l)
+      }
+  }
+
+
 
   /**
    * Type class supporting partitioning this `HList` into those elements of type `U` and the
@@ -812,6 +996,128 @@ object hlist {
     }
   }
 
+
+ /**
+  * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
+  * apart. If `Step` equals `N` then the groups do not overlap.
+  *
+  * @author Andreas Koestler
+  */
+ trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  trait LowPriorityGrouper {
+
+    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat, LL <: Nat, M <: Nat]
+    (implicit
+     len: Length.Aux[L, LL],
+     min: ops.nat.Min.Aux[LL, Step, M],
+     take: ops.hlist.Take.Aux[L, N, OutT],
+     drop: ops.hlist.Drop.Aux[L, M, OutD],
+     tup: ops.hlist.Tupler.Aux[OutT, T],
+     grouper: Grouper[OutD, N, Step]
+      ): Grouper.Aux[L, N, Step, tup.Out :: grouper.Out] = new Grouper[L, N, Step] {
+      type Out = tup.Out :: grouper.Out
+
+      def apply(l: L) = tup(take(l)) :: grouper(drop(l))
+    }
+  }
+
+  object Grouper extends LowPriorityGrouper {
+    def apply[L <: HList, N <: Nat, Step <: Nat](implicit
+                                                 grouper: Grouper[L, N, Step]
+                                                  ): Aux[L, N, Step, grouper.Out] = grouper
+
+    type Aux[L <: HList, N <: Nat, Step <: Nat, Out0] = Grouper[L, N, Step] {
+      type Out = Out0
+    }
+
+    implicit def hnilGrouper[N <: Nat, Step <: Nat]: Aux[HNil, N, Step, HNil] = new Grouper[HNil, N, Step] {
+      type Out = HNil
+
+      def apply(l: HNil): Out = HNil
+    }
+
+    implicit def hlistGrouper1[L <: HList, A <: Nat, N <: Nat, Step <: Nat](implicit
+                                                                            len: ops.hlist.Length.Aux[L, A],
+                                                                            lt: ops.nat.LT[A, N]
+                                                                             ): Aux[L, N, Step, HNil] = new Grouper[L, N, Step] {
+      type Out = HNil
+
+      def apply(l: L): Out = HNil
+    }
+  }
+
+  /**
+   * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   *
+   * @author Andreas Koestler
+   */
+  trait LowPriorityPaddedGrouper {
+
+    implicit def incompletePaddedGrouper[
+    L <: HList,
+    N <: Nat,
+    Step <: Nat,
+    Pad <: HList,
+    PL <: HList,
+    LPL <: Nat,
+    S <: Nat,
+    MI <: Nat,
+    T <: HList,
+    M <: Nat,
+    LL <: Nat]
+    (implicit
+     len1: Length.Aux[L, LL],
+     prep: Prepend.Aux[L, Pad, PL],
+     len2: Length.Aux[PL, LPL],
+     mod: ops.nat.Mod.Aux[LL, Step, M],
+     sum: ops.nat.Sum.Aux[LL, M, S],
+     min: ops.nat.Min.Aux[LPL, S, MI],
+     take: Take.Aux[PL, MI, T],
+     grouper: Grouper[T, N, Step]
+      ): PaddedGrouper.Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+
+      type Out = grouper.Out
+
+      def apply(l: L, pad: Pad): Out = grouper(take(prep(l, pad)))
+    }
+
+  }
+
+  trait PaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList] extends DepFn2[L, Pad] with Serializable {
+    type Out <: HList
+  }
+
+  object PaddedGrouper extends LowPriorityPaddedGrouper {
+    def apply[L <: HList, N <: Nat, Step <: Nat, Pad <: HList](implicit
+                                                               grouper: PaddedGrouper[L, N, Step, Pad]
+                                                                ): Aux[L, N, Step, Pad, grouper.Out] = grouper
+
+    type Aux[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, Out0] = PaddedGrouper[L, N, Step, Pad] {
+      type Out = Out0
+    }
+
+    implicit def defaultPaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, A <: Nat, B <: Nat]
+    (implicit
+     len: Length.Aux[L, A],
+     mod: ops.nat.Mod.Aux[A, Step, B],
+     eq: B =:= _0,
+     grouper: Grouper[L, N, Step]
+      ): Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+
+      type Out = grouper.Out
+
+      def apply(l: L, pad: Pad): Out = grouper(l)
+    }
+
+  }
+
+
   /**
    * Type class supporting access to the all elements of this `HList` of type `U`.
    *
@@ -860,19 +1166,13 @@ object hlist {
    *
    * @author Stacy Curl
    */
-  @implicitNotFound("Implicit not found: shapeless.Ops.Remove[${L}, ${E}]. You requested to remove an element of type ${E}, but there is none in the HList ${L}.")
-  trait Remove[L <: HList, E] extends DepFn1[L] with Serializable
+  @implicitNotFound("Implicit not found: shapeless.Ops.Remove[${L}, ${E}]. You requested to remove an element of type ${E}, but there is no unique candidate in the HList ${L}.")
+  trait Remove[L <: HList, E] extends DepFn1[L] with Serializable {
+    def reinsert(out: Out): L
+  }
 
-  object Remove {
-    def apply[L <: HList, E](implicit remove: Remove[L, E]): Aux[L, E, remove.Out] = remove
-
+  trait LowPriorityRemove {
     type Aux[L <: HList, E, Out0] = Remove[L, E] { type Out = Out0 }
-
-    implicit def remove[H, T <: HList]: Aux[H :: T, H, (H, T)] =
-      new Remove[H :: T, H] {
-        type Out = (H, T)
-        def apply(l : H :: T): Out = (l.head, l.tail)
-      }
 
     implicit def recurse[H, T <: HList, E, OutT <: HList](implicit r : Aux[T, E, (E, OutT)]): Aux[H :: T, E, (E, H :: OutT)] =
       new Remove[H :: T, E] {
@@ -881,6 +1181,20 @@ object hlist {
           val (e, tail) = r(l.tail)
           (e, l.head :: tail)
         }
+
+        def reinsert(out: (E, H :: OutT)): H :: T = out._2.head :: r.reinsert((out._1, out._2.tail))
+      }
+  }
+
+  object Remove extends LowPriorityRemove {
+    def apply[L <: HList, E](implicit remove: Remove[L, E]): Aux[L, E, remove.Out] = remove
+
+    implicit def remove[H, T <: HList]: Aux[H :: T, H, (H, T)] =
+      new Remove[H :: T, H] {
+        type Out = (H, T)
+        def apply(l : H :: T): Out = (l.head, l.tail)
+
+        def reinsert(out: (H, T)): H :: T = out._1 :: out._2
       }
   }
 
@@ -893,7 +1207,9 @@ object hlist {
    * @author Stacy Curl
    */
   @implicitNotFound("Implicit not found: shapeless.Ops.RemoveAll[${L}, ${SL}]. You requested to remove elements of the types ${SL}, but not all were found in HList ${L}.")
-  trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L] with Serializable
+  trait RemoveAll[L <: HList, SL <: HList] extends DepFn1[L] with Serializable {
+    def reinsert(out: Out): L
+  }
 
   object RemoveAll {
     def apply[L <: HList, SL <: HList](implicit remove: RemoveAll[L, SL]): Aux[L, SL, remove.Out] = remove
@@ -904,6 +1220,8 @@ object hlist {
       new RemoveAll[L, HNil] {
         type Out = (HNil, L)
         def apply(l : L): Out = (HNil, l)
+
+        def reinsert(out: (HNil, L)): L = out._2
       }
 
     implicit def hlistRemoveAll[L <: HList, E, RemE <: HList, Rem <: HList, SLT <: HList]
@@ -915,6 +1233,163 @@ object hlist {
             val (sl, left) = st(rem)
             (e :: sl, left)
           }
+
+          def reinsert(out: (E :: SLT, Rem)): L =
+            rt.reinsert((out._1.head, st.reinsert((out._1.tail, out._2))))
+        }
+  }
+
+  /**
+   * Type class supporting `HList` union. In case of duplicate types, this operation is a order-preserving multi-set union.
+   * If type `T` appears n times in this `HList` and m > n times in `M`, the resulting `HList` contains the first n elements
+   * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
+   *
+   * @author Olivier Blanvillain
+   */
+  trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
+
+  trait LowPriorityUnion {
+    type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
+
+    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
+    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
+    def hlistUnion1[H, T <: HList, M <: HList]
+      (implicit u: Union[T, M]): Aux[H :: T, M, H :: u.Out] =
+        new Union[H :: T, M] {
+          type Out = H :: u.Out
+          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
+        }
+  }
+
+  object Union extends LowPriorityUnion {
+    def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
+
+    // let ∅ ∪ M = M
+    implicit def hlistUnion[M <: HList]: Aux[HNil, M, M] =
+      new Union[HNil, M] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
+    implicit def hlistUnion1[H, T <: HList, M <: HList]
+      (implicit
+       u: Union[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, H :: u.Out] =
+        new Union[H :: T, M] {
+          type Out = H :: u.Out
+          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
+        }
+
+    // let (H :: T) ∪ M  =  H :: (T ∪ (M - H)) when H ∈ M
+    implicit def hlistUnion2[H, T <: HList, M <: HList, MR <: HList]
+      (implicit
+        r: Remove.Aux[M, H, (H, MR)],
+        u: Union[T, MR]
+      ): Aux[H :: T, M, H :: u.Out] =
+        new Union[H :: T, M] {
+          type Out = H :: u.Out
+          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, r(m)._2)
+        }
+  }
+
+  /**
+   * Type class supporting `HList` intersection. In case of duplicate types, this operation is a multiset intersection.
+   * If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList` contains the first m
+   * elements of type `T` in this `HList`.
+   *
+   * Also available if `M` contains types absent in this `HList`.
+   *
+   * @author Olivier Blanvillain
+   */
+  trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  trait LowPriorityIntersection {
+    type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
+
+    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
+    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
+    def hlistIntersection1[H, T <: HList, M <: HList]
+      (implicit i: Intersection[T, M]): Aux[H :: T, M, i.Out] =
+        new Intersection[H :: T, M] {
+          type Out = i.Out
+          def apply(l: H :: T): Out = i(l.tail)
+        }
+  }
+
+  object Intersection extends LowPriorityIntersection {
+    def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
+
+    // let ∅ ∩ M = ∅
+    implicit def hnilIntersection[M <: HList]: Aux[HNil, M, HNil] =
+      new Intersection[HNil, M] {
+        type Out = HNil
+        def apply(l: HNil): Out = HNil
+      }
+
+    // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
+    implicit def hlistIntersection1[H, T <: HList, M <: HList]
+      (implicit
+       i: Intersection[T, M],
+       f: FilterNot.Aux[M, H, M]
+      ): Aux[H :: T, M, i.Out] =
+        new Intersection[H :: T, M] {
+          type Out = i.Out
+          def apply(l: H :: T): Out = i(l.tail)
+        }
+
+    // let (H :: T) ∩ M  =  H :: (T ∩ (M - H)) when H ∈ M
+    implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList]
+      (implicit
+        r: Remove.Aux[M, H, (H, MR)],
+        i: Intersection[T, MR]
+      ): Aux[H :: T, M, H :: i.Out] =
+        new Intersection[H :: T, M] {
+          type Out = H :: i.Out
+          def apply(l: H :: T): Out = l.head :: i(l.tail)
+        }
+  }
+
+  /**
+   * Type class supporting `HList` subtraction. In case of duplicate types, this operation is a multiset difference.
+   * If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList` contains the last n - m
+   * elements of type `T` in this `HList`.
+   *
+   * Also available if `M` contains types absent in this `HList`.
+   *
+   * @author Olivier Blanvillain
+   */
+  trait Diff[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  trait LowPriorityDiff {
+    type Aux[L <: HList, M <: HList, Out0] = Diff[L, M] { type Out = Out0 }
+
+    implicit def hconsDiff1[L <: HList, H, T <: HList]
+      (implicit d: Diff[L, T]): Aux[L, H :: T, d.Out] =
+        new Diff[L, H :: T] {
+          type Out = d.Out
+          def apply(l: L): Out = d(l)
+        }
+  }
+
+  object Diff extends LowPriorityDiff {
+    def apply[L <: HList, M <: HList](implicit diff: Diff[L, M]): Aux[L, M, diff.Out] = diff
+
+    implicit def hnilDiff[L <: HList]: Aux[L, HNil, L] =
+      new Diff[L, HNil] {
+        type Out = L
+        def apply(l: L): Out = l
+      }
+
+    implicit def hconsDiff2[L <: HList, LT <: HList, H, T <: HList]
+      (implicit
+        r: Remove.Aux[L, H, (H, LT)],
+        d: Diff[LT, T]
+      ): Aux[L, H :: T, d.Out] =
+        new Diff[L, H :: T] {
+          type Out = d.Out
+          def apply(l: L): Out = d(r(l)._2)
         }
   }
 
@@ -980,6 +1455,37 @@ object hlist {
             (u, l.head :: outT)
           }
         }
+  }
+
+  /**
+   * Type class supporting replacement of the `N`th element of this `HList` with the result of
+   * calling `F` on it.
+   * Available only if this `HList` contains at least `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  trait ModifierAt[L <: HList, N <: Nat, U, V] extends DepFn2[L, U => V]
+
+  object ModifierAt {
+    def apply[L <: HList, N <: Nat, U, V](implicit modifier: ModifierAt[L, N, U, V]): Aux[L, N, U, V, modifier.Out] = modifier
+
+    type Aux[L <: HList, N <: Nat, U, V, Out0] = ModifierAt[L, N, U, V] {type Out = Out0}
+
+    implicit def hlistModifierAt[L <: HList, OutL <: HList, N <: Nat, F, U, V]
+    (implicit
+     at: At.Aux[L, N, U],
+     replacer: ReplaceAt.Aux[L, N, V, (U, OutL)]
+      ): Aux[L, N, U, V, (U, OutL)] =
+      new ModifierAt[L, N, U, V] {
+        type Out = (U, OutL)
+
+        import syntax.std.function._
+
+        def apply(l: L, f: U => V): Out = {
+          val (u, res) = replacer(l, f(at(l)))
+          (u, res)
+        }
+      }
   }
 
   /**
@@ -1726,6 +2232,11 @@ object hlist {
 
     type Aux[C, L <: HList, Out0 <: HList] = ZipConst[C, L] { type Out = Out0 }
 
+    implicit def hnilZipConst[C, L <: HNil] : Aux[C, L, HNil] = new ZipConst[C, L] {
+      type Out = HNil
+      def apply(t: C, u: L) = HNil
+    }
+
     implicit def constZipper[C, L <: HList, M <: HList]
       (implicit
         mapper: ConstMapper.Aux[C, L, M],
@@ -1796,6 +2307,58 @@ object hlist {
             def apply(v: VH :: VT): Out =
               field[wkh.T](v.head) :: zipWithKeys(v.tail)
           }
+  }
+
+  /**
+   * Type class supporting zipping a `HList` with its element indices,  resulting in a 'HList' of  tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   * @author Alexandre Archambault
+   */
+  trait ZipWithIndex[L <: HList] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object ZipWithIndex {
+    def apply[L <: HList](implicit zipWithIndex: ZipWithIndex[L]): Aux[L, zipWithIndex.Out] =
+      zipWithIndex
+
+    type Aux[L <: HList, Out0 <: HList] = ZipWithIndex[L] { type Out = Out0 }
+
+
+    trait Helper[L <: HList, N <: Nat] extends DepFn2[L, N] with Serializable {
+      type Out <: HList
+    }
+
+    object Helper {
+      def apply[L <: HList, N <: Nat](implicit helper: Helper[L, N]): Aux[L, N, helper.Out] = helper
+
+      type Aux[L <: HList, N <: Nat, Out0 <: HList] = Helper[L, N] { type Out = Out0 }
+
+      implicit def hnil[N <: Nat]: Aux[HNil, N, HNil] =
+        new Helper[HNil, N] {
+          type Out = HNil
+          def apply(l: HNil, n: N) = HNil
+        }
+
+      implicit def hcons[H, T <: HList, OutT <: HList, N <: Nat]
+       (implicit
+         tail: Helper.Aux[T, Succ[N], OutT]
+       ): Aux[H :: T, N, (H, N) :: OutT] =
+        new Helper[H :: T, N] {
+          type Out = (H, N) :: OutT
+          def apply(l: H :: T, n: N) = (l.head -> n) :: tail(l.tail, Succ[N]())
+        }
+    }
+
+
+    implicit def default[L <: HList, P <: HList]
+     (implicit helper: Helper.Aux[L, _0, P]): Aux[L, P] =
+      new ZipWithIndex[L] {
+        type Out = P
+        def apply(l: L) = helper(l, Nat._0)
+      }
   }
 
   /**
@@ -2130,7 +2693,7 @@ object hlist {
   trait Fill[N, A] extends DepFn1[A] with Serializable { type Out <: HList }
 
   object Fill {
-    def apply[N, A](implicit fill: Fill[N, A]) = fill
+    def apply[N, A](implicit fill: Fill[N, A]): Aux[N, A, fill.Out] = fill
 
     type Aux[N, A, Out0] = Fill[N, A] { type Out = Out0 }
 
@@ -2140,17 +2703,17 @@ object hlist {
         def apply(elem: A) = HNil
       }
 
-    implicit def fill1Succ[N <: Nat, A]
-      (implicit prev: Fill[N, A]): Aux[Succ[N], A, A :: prev.Out] =
+    implicit def fill1Succ[N <: Nat, A, OutT <: HList]
+      (implicit prev: Aux[N, A, OutT]): Aux[Succ[N], A, A :: OutT] =
         new Fill[Succ[N], A] {
-          type Out = A :: prev.Out
+          type Out = A :: OutT
           def apply(elem: A) = elem :: prev(elem)
         }
 
-    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut]
-      (implicit subFill: Fill.Aux[N2, A, SubOut], fill: Fill[N1, SubOut]): Aux[(N1, N2), A, fill.Out] =
+    implicit def fill2[A, N1 <: Nat, N2 <: Nat, SubOut, OutT <: HList]
+      (implicit subFill: Aux[N2, A, SubOut], fill: Aux[N1, SubOut, OutT]): Aux[(N1, N2), A, OutT] =
         new Fill[(N1, N2), A] {
-          type Out = fill.Out
+          type Out = OutT
           def apply(elem: A) = fill(subFill(elem))
         }
   }
@@ -2210,5 +2773,159 @@ object hlist {
         }
   }
 
+  /**
+   * Type class witnessing that there exists at least one element of an `HList` for which a `Poly` can be
+   * applied.
+   *
+   * @author Owein Reese
+   */
+  trait CollectFirst[L <: HList, P <: Poly] extends DepFn1[L] with Serializable
+
+  object CollectFirst extends LowPriorityCollectFirst{
+    def apply[L <: HList, P <: Poly](implicit cf: CollectFirst[L, P]): Aux[L, P, cf.Out] = cf
+
+    implicit def hlistEval[H, T <: HList, P <: Poly](implicit ev: Case1[P, H]): Aux[H :: T, P, ev.Result] =
+      new CollectFirst[H :: T, P]{
+        type Out = ev.Result
+
+        def apply(l: H :: T) = ev(l.head)
+      }
+  }
+
+  trait LowPriorityCollectFirst{
+    type Aux[L <: HList, P <: Poly, Out0] = CollectFirst[L, P]{ type Out = Out0 }
+
+    implicit def hlistIterate[H, T <: HList, P <: Poly](implicit cf: CollectFirst[T, P]): Aux[H :: T, P, cf.Out] =
+      new CollectFirst[H :: T, P]{
+        type Out = cf.Out
+
+        def apply(l: H :: T) = cf(l.tail)
+      }
+  }
+
   private def toTuple2[Prefix, Suffix](l: Prefix :: Suffix :: HNil): (Prefix, Suffix) = (l.head, l.tail.head)
+
+
+  /**
+   * Typeclass witnessing that all the elements of an HList have instances of the given typeclass.
+   * Courtesy of mpilquist.
+   *
+   * @author Tin Pavlinic
+  */
+  sealed trait LiftAll[F[_], In <: HList] {
+    type Out <: HList
+    def instances: Out
+  }
+
+  object LiftAll {
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
+
+    def apply[F[_]] = new Curried[F]
+    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+
+    implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
+      type Out = HNil
+      def instances = HNil
+    }
+
+    implicit def hcons[F[_], H, T <: HList]
+      (implicit headInstance: F[H], tailInstances: LiftAll[F, T]): Aux[F, H :: T, F[H] :: tailInstances.Out] =
+        new LiftAll[F, H :: T] {
+          type Out = F[H] :: tailInstances.Out
+          def instances = headInstance :: tailInstances.instances
+    }
+  }
+
+  /**
+   * Type class supporting producing a HList of shape `N` padded with elements of type `A`.
+   *
+   * @author ryoppy
+   */
+  trait PadTo[N, A, L <: HList] extends DepFn2[A, L] with Serializable { type Out <: HList }
+
+  object PadTo {
+    def apply[N, A, L <: HList](implicit padTo: PadTo[N, A, L]): Aux[N, A, L, padTo.Out] = padTo
+
+    type Aux[N, A, L <: HList, Out0] = PadTo[N, A, L] { type Out = Out0 }
+
+    implicit def padToHNil0[A]: Aux[_0, A, HNil, HNil] =
+      new PadTo[_0, A, HNil] {
+        type Out = HNil
+        def apply(a: A, l: HNil) = l
+      }
+
+    implicit def padToHNil[N <: Nat, A](implicit padTo: PadTo[N, A, HNil]): Aux[Succ[N], A, HNil, A :: padTo.Out] =
+      new PadTo[Succ[N], A, HNil] {
+        type Out = A :: padTo.Out
+        def apply(a: A, l: HNil) = a :: padTo(a, l)
+      }
+
+    implicit def padTo1[N <: Nat, A, H, T <: HList](implicit padTo: PadTo[N, A, T]): Aux[Succ[N], A, H :: T, H :: padTo.Out] =
+      new PadTo[Succ[N], A, H :: T] {
+        type Out = H :: padTo.Out
+        def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
+      }
+  }
+
+  /**
+   * Type class supporting the slicing of an `HList`
+   *
+   * @author ryoppy
+   */
+  trait Slice[N, U, L <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  object Slice {
+    def apply[N, U, L <: HList](implicit slice: Slice[N, U, L]): Aux[N, U, L, slice.Out] = slice
+
+    type Aux[N, U, L <: HList, Out0] = Slice[N, U, L] { type Out = Out0 }
+
+    implicit def slice0[L <: HList]: Aux[_0, _0, L, HNil] =
+      new Slice[_0, _0, L] {
+        type Out = HNil
+        def apply(l: L) = HNil
+      }
+
+    implicit def slice1[N <: Nat, U <: Nat, H, T <: HList]
+      (implicit slice: Slice[N, U, T]): Aux[Succ[N], Succ[U], H :: T, slice.Out] =
+        new Slice[Succ[N], Succ[U], H :: T] {
+          type Out = slice.Out
+          def apply(l: H :: T): Out = slice(l.tail)
+        }
+
+    implicit def slice2[U <: Nat, H, T <: HList]
+      (implicit slice: Slice[_0, U, T]): Aux[_0, Succ[U], H :: T, H :: slice.Out] =
+        new Slice[_0, Succ[U], H :: T] {
+          type Out = H :: slice.Out
+          def apply(l: H :: T): Out = l.head :: slice(l.tail)
+        }
+  }
+
+  /**
+    * Type class supporting reifying an `HList` of singleton types.
+    *
+    * @author Jisoo Park
+    */
+  trait Reify[L <: HList] extends DepFn0 with Serializable { type Out <: HList }
+
+  object Reify {
+    def apply[L <: HList](implicit reify: Reify[L]): Aux[L, reify.Out] = reify
+
+    type Aux[L <: HList, Out0 <: HList] = Reify[L] { type Out = Out0 }
+
+    implicit def hnilReify[L <: HNil]: Aux[L, HNil] =
+      new Reify[L] {
+        type Out = HNil
+        def apply(): Out = HNil
+      }
+
+    implicit def hlistReify[H, T <: HList](implicit
+      wh: Witness.Aux[H],
+      rt: Reify[T]
+    ) : Aux[H :: T, H :: rt.Out] =
+      new Reify[H :: T] {
+        type Out = H :: rt.Out
+        def apply(): Out = wh.value :: rt()
+      }
+  }
 }

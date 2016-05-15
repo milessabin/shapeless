@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ object Nat extends Nats {
   import ops.nat._
   import syntax.NatOps
 
-  def apply(i: Int): Nat = macro NatMacros.materializeWidened
+  implicit def apply(i: Int): Nat = macro NatMacros.materializeWidened
 
   /** The natural number 0 */
   type _0 = shapeless._0
@@ -67,52 +67,60 @@ object Nat extends Nats {
 
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
-  implicit def materialize(i: Int): Nat = macro NatMacros.materializeSingleton
-
   implicit def natOps[N <: Nat](n : N) : NatOps[N] = new NatOps(n)
 }
 
-object NatMacros {
-  def mkNatTpt(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
+@macrocompat.bundle
+class NatMacros(val c: whitebox.Context) extends NatMacroDefns {
+  import c.universe._
 
-    val n = i.tree match {
-      case Literal(Constant(n: Int)) => n
+  def materializeWidened(i: Tree): Tree =
+    i match {
+      case NatLiteral(n) => mkNatValue(n)
       case _ =>
-        c.abort(c.enclosingPosition, s"Expression ${i.tree} does not evaluate to an Int constant")
+        c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
     }
+}
 
-    if (n < 0)
-      c.abort(c.enclosingPosition, s"A Nat cannot represent $n")
+@macrocompat.bundle
+trait NatMacroDefns {
+  val c: whitebox.Context
+  import c.universe._
 
+  object NatLiteral {
+    def unapply(i: Tree): Option[Int] =
+      i match {
+        case Literal(Constant(n: Int)) if n >= 0 => Some(n)
+        case _ => None
+      }
+  }
+
+  def mkNatTpt(i: Int): Tree = {
     val succSym = typeOf[Succ[_]].typeConstructor.typeSymbol
     val _0Sym = typeOf[_0].typeSymbol
 
     @tailrec
-    def mkNatTpt(n: Int, acc: Tree): Tree = {
-      if(n == 0) acc
-      else mkNatTpt(n-1, AppliedTypeTree(Ident(succSym), List(acc)))
+    def loop(i: Int, acc: Tree): Tree = {
+      if(i == 0) acc
+      else loop(i-1, AppliedTypeTree(Ident(succSym), List(acc)))
     }
 
-    mkNatTpt(n, Ident(_0Sym))
+    loop(i, Ident(_0Sym))
   }
 
-  def materializeSingleton(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
+  def mkNatTpe(i: Int): Type = {
+    val succTpe = typeOf[Succ[_]].typeConstructor
+    val _0Tpe = typeOf[_0]
 
-    val natTpt = mkNatTpt(c)(i)
-    val moduleName = TermName(c.freshName("nat_"))
+    @tailrec
+    def loop(i: Int, acc: Type): Type = {
+      if(i == 0) acc
+      else loop(i-1, appliedType(succTpe, acc))
+    }
 
-    q"""
-      object $moduleName extends $natTpt
-      $moduleName
-    """
+    loop(i, _0Tpe)
   }
 
-  def materializeWidened(c: whitebox.Context)(i: c.Expr[Int]): c.Tree = {
-    import c.universe._
-    val natTpt = mkNatTpt(c)(i)
-
-    q""" new $natTpt """
-  }
+  def mkNatValue(i: Int): Tree =
+    q""" new ${mkNatTpt(i)} """
 }

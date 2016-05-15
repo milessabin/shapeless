@@ -25,7 +25,7 @@ package syntax
  *
  * @author Miles Sabin
  */
-final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
+final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializable {
   import ops.adjoin.Adjoin
   import ops.coproduct._
 
@@ -171,8 +171,12 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
   def fold(f: Poly)(implicit folder: Folder[f.type, C]): folder.Out = folder(c)
 
   /**
-   * Returns an `Coproduct` typed as a repetition of the least upper bound of the types of the elements of
-   * this `Coproduct`.
+   * Computes a left fold over this `Coproduct` using the polymorphic binary combining operator `op`.
+   */
+  def foldLeft[In](z: In)(op: Poly)(implicit folder: LeftFolder[C, In, op.type]): folder.Out = folder(c, z)
+
+  /**
+   * Returns the value of this `Coproduct`, typed as the least upper bound of this `Coproduct` elements' types
    */
   def unify(implicit unifier: Unifier[C]): unifier.Out = unifier(c)
 
@@ -190,6 +194,12 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
    * Converts this `Coproduct` of values into a union with given keys. A type argument must be provided.
    */
   def zipWithKeys[K <: HList](implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)
+  
+  /**
+   * Zips this `Coproduct` with its element indices, resulting in a `Coproduct` of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipWithIndex(implicit zipper: ZipWithIndex[C]): zipper.Out = zipper(c)
 
   /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.
@@ -235,6 +245,8 @@ final class CoproductOps[C <: Coproduct](c: C) extends Serializable {
 
   /**
    * Embeds this `Coproduct` into a "bigger" `Coproduct` if possible.
+   *
+   * For instance, `Int :+: String :+: CNil` can be embedded in `Int :+: Bool :+: String :+: CNil`.
    */
   def embed[Super <: Coproduct](implicit basis: Basis[Super, C]): Super =
     basis.inverse(Right(c))

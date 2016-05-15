@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import scala.annotation.implicitNotFound
+
 object tuple {
   import shapeless.ops.{ hlist => hl }
 
@@ -313,6 +315,35 @@ object tuple {
     }
   }
 
+  /**
+   * Type class supporting replacement of the `N`th element of this `Tuple` with the result of
+   * calling `F` on it.
+   * Available only if this `Tuple` contains at least `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  trait ModifierAt[T, N <: Nat, U, V] extends DepFn2[T, U => V]
+
+  object ModifierAt {
+    def apply[T, N <: Nat, U, V](implicit modifier: ModifierAt[T, N, U, V]): Aux[T, N, U, V, modifier.Out] = modifier
+
+    type Aux[T, N <: Nat, U, V, Out0] = ModifierAt[T, N, U, V] {type Out = Out0}
+
+    implicit def modifyTuple[S, T, U, V, N <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     gen: Generic.Aux[T, L],
+     modifier: hl.ModifierAt.Aux[L, N, U, V, (S, OutL)],
+     tup: hl.Tupler[OutL]
+      ): Aux[T, N, U, V, (S, tup.Out)] = new ModifierAt[T, N, U, V] {
+
+      type Out = (S, tup.Out)
+
+      def apply(t: T, f: U => V) = {
+        val (u, rep) = modifier(gen.to(t), f);
+        (u, tup(rep))
+      }
+    }
+  }
   /**
    * Type class supporting retrieval of the first ''n'' elements of this tuple. Available only if this tuple has at
    * least ''n'' elements.
@@ -796,6 +827,28 @@ object tuple {
   }
 
   /**
+   * Type class supporting zipping a tuple with its element indices, resulting in a tuple of tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  trait ZipWithIndex[T] extends DepFn1[T] with Serializable
+
+  object ZipWithIndex {
+    def apply[T](implicit zip: ZipWithIndex[T]): Aux[T, zip.Out] = zip
+
+    type Aux[T, Out0] = ZipWithIndex[T] { type Out = Out0 }
+
+    implicit def zipConst[T, L1 <: HList, L2 <: HList]
+    (implicit gen: Generic.Aux[T, L1], zipper: hl.ZipWithIndex.Aux[L1, L2], tp: hl.Tupler[L2]): Aux[T, tp.Out] =
+      new ZipWithIndex[T] {
+        type Out = tp.Out
+        def apply(t: T): tp.Out = tp(zipper(gen.to(t)))
+      }
+  }
+
+
+  /**
    * Type class supporting unification of this tuple.
    *
    * @author Miles Sabin
@@ -961,6 +1014,59 @@ object tuple {
           def apply(t: T) = gen.to(t).toSized[M]
         }
   }
+
+  /**
+   * Type class computing the coproduct type corresponding to this tuple.
+   *
+   * @author Andreas Koestler
+   */
+  trait ToCoproduct[T] extends Serializable { type Out <: Coproduct }
+
+  object ToCoproduct {
+    def apply[T](implicit tcp: ToCoproduct[T]): Aux[T, tcp.Out] = tcp
+
+    type Aux[T, Out0 <: Coproduct] = ToCoproduct[T] {type Out = Out0}
+
+    implicit val hnilToCoproduct: Aux[HNil, CNil] =
+      new ToCoproduct[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToCoproduct[T, L <: HList](implicit
+                                                 gen: Generic.Aux[T, L],
+                                                 ut: hl.ToCoproduct[L]
+                                                  ): Aux[T, ut.Out] =
+      new ToCoproduct[T] {
+        type Out = ut.Out
+      }
+  }
+
+  /**
+   * Type class computing the sum type corresponding to this tuple.
+   *
+   * @author Andreas Koestler
+   */
+  trait ToSum[T] extends Serializable { type Out <: Coproduct }
+
+  object ToSum {
+    def apply[T](implicit tcp: ToSum[T]): Aux[T, tcp.Out] = tcp
+
+    type Aux[T, Out0 <: Coproduct] = ToSum[T] {type Out = Out0}
+
+    implicit val hnilToSum: Aux[HNil, CNil] =
+      new ToSum[HNil] {
+        type Out = CNil
+      }
+
+    implicit def hlistToSum[T, L <: HList](implicit
+                                           gen: Generic.Aux[T, L],
+                                           ut: hl.ToSum[L]
+                                            ): Aux[T, ut.Out] =
+      new ToSum[T] {
+        type Out = ut.Out
+      }
+  }
+
 
   /**
    * Type Class witnessing that this tuple can be collected with a 'Poly' to produce a new tuple
@@ -1142,6 +1248,91 @@ object tuple {
           type Out = tp.Out
 
           def apply(t: T, in: InT) = tp(patch(gen.to(t), genIn.to(in)))
+        }
+  }
+
+  /**
+   * Typeclass supporting grouping this `Tuple` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * @author Andreas Koestler
+   */
+  trait Grouper[T, N <: Nat, Step <: Nat] extends DepFn1[T] with Serializable
+
+  object Grouper {
+    def apply[T, N <: Nat, Step <: Nat](implicit grouper: Grouper[T, N, Step]): Aux[T, N, Step, grouper.Out] = grouper
+
+    type Aux[T, N <: Nat, Step <: Nat, Out0] = Grouper[T, N, Step] {type Out = Out0}
+
+    implicit def tupleGrouper[T, N <: Nat, Step <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     gen: Generic.Aux[T, L],
+     grouper: hl.Grouper.Aux[L, N, Step, OutL],
+     tupler: hl.Tupler[OutL]
+      ): Aux[T, N, Step, tupler.Out] = new Grouper[T, N, Step] {
+      type Out = tupler.Out
+
+      def apply(t: T): Out = tupler(grouper(gen.to(t)))
+    }
+
+  }
+
+  /**
+   * Typeclass supporting grouping this `Tuple` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * Use the elements in `Pad` as necessary to complete last partition
+   * up to `n` items. In case there are not enough padding elements, return a partition
+   * with less than `n` items.
+   *
+   * @author Andreas Koestler
+   */
+  trait PaddedGrouper[T, N <: Nat, Step <: Nat, Pad] extends DepFn2[T, Pad] with Serializable
+
+  object PaddedGrouper {
+    def apply[T, N <: Nat, Step <: Nat, Pad](implicit
+                                             grouper: PaddedGrouper[T, N, Step, Pad]
+                                              ): Aux[T, N, Step, Pad, grouper.Out] = grouper
+
+    type Aux[T, N <: Nat, Step <: Nat, Pad, Out0] = PaddedGrouper[T, N, Step, Pad] {type Out = Out0}
+
+    implicit def tuplePaddedGrouper[Pad, PadL <: HList, T, N <: Nat, Step <: Nat, L <: HList, OutL <: HList]
+    (implicit
+     genL: Generic.Aux[T, L],
+     genPad: Generic.Aux[Pad, PadL],
+     grouper: hl.PaddedGrouper.Aux[L, N, Step, PadL, OutL],
+     tupler: hl.Tupler[OutL]
+      ): Aux[T, N, Step, Pad, tupler.Out] = new PaddedGrouper[T, N, Step, Pad] {
+      type Out = tupler.Out
+
+      def apply(t: T, pad: Pad): Out = tupler(grouper(genL.to(t), genPad.to(pad)))
+    }
+
+  }
+
+  /**
+   * Type class supporting permuting this `Tuple` into the same order as another `Tuple` with
+   * the same element types.
+   *
+   * @author Peter Neyens
+   */
+  @implicitNotFound("Implicit not found: shapeless.ops.tuple.Align[${T}, ${U}]. The types ${T} and ${U} cannot be aligned.")
+  trait Align[T, U] extends (T => U) with Serializable {
+    def apply(t: T): U
+  }
+
+  object Align {
+    def apply[T, U](implicit align: Align[T, U]): Align[T, U] = align
+
+    implicit def tupleAlign[T, U, L <: HList, M <: HList]
+      (implicit 
+        gent: Generic.Aux[T, L],
+        genu: Generic.Aux[U, M],
+        align: hl.Align[L, M], 
+        tp: hl.Tupler.Aux[M, U]
+      ): Align[T, U] = 
+        new Align[T, U] {
+          def apply(t: T): U = align(gent.to(t)).tupled
         }
   }
 }

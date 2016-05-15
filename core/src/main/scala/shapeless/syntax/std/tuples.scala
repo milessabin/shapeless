@@ -194,16 +194,26 @@ final class TupleOps[T](t: T) extends Serializable {
    */
   def updateWith[U] = new UpdateWithAux[U]
 
+  /**
+   * Replaces the `N`th element of this `Tuple` with the result of calling the supplied function on it.
+   * Available only if there is evidence that this `Tuple` has `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  def updateAtWith[U](n: NatWith[({ type λ[t <: Nat] = At[T, t] })#λ])(f: n.instance.Out => U)
+    (implicit upd: ModifierAt[T, n.N, n.instance.Out, U]): upd.Out = upd(t, f)
+
   class UpdatedAtAux[N <: Nat] {
     def apply[U, V, R](u: U)(implicit replacer: ReplaceAt.Aux[T, N, U, (V, R)]): R = replacer(t, u)._2
   }
-  
+
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. An explicit type argument
    * must be provided for `N`. Available only if there is evidence that this tuple has at least ''n'' elements.
    */
   def updatedAt[N <: Nat] = new UpdatedAtAux[N]
-  
+
   /**
    * Replaces the ''nth' element of this tuple with the supplied value of type `U`. Available only if there is
    * evidence that this tuple has at least ''n'' elements.
@@ -379,7 +389,13 @@ final class TupleOps[T](t: T) extends Serializable {
    * ({element from original tuple}, {supplied constant})
    */
   def zipConst[C](c: C)(implicit zipper: ZipConst[T, C]): zipper.Out = zipper(t, c)
-  
+
+  /**
+   * Zips this tuple with its element indices, resulting in a tuple of tuples of the form
+   * ({element from input tuple}, {element index})
+   */
+  def zipWithIndex(implicit zipper: ZipWithIndex[T]): zipper.Out = zipper(t)
+
   /**
    * Transposes this tuple.
    */
@@ -478,4 +494,30 @@ final class TupleOps[T](t: T) extends Serializable {
   class PatchAux[N <: Nat, M <: Nat]{
     def apply[In](in: In)(implicit patcher: Patcher[N, M, T, In]): patcher.Out = patcher(t, in)
   }
+
+  /**
+   * Groups the elements of this `Tuple` into tuples of `n` elements, offset by `step`
+   *
+   * @author Andreas Koestler
+   */
+  def group(n: Nat, step: Nat)(implicit grouper: Grouper[T, n.N, step.N]): grouper.Out = grouper(t)
+
+  /**
+   * Groups the elements of this `Tuple` into tuples of `n` elements, offset by `step`
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   * @author Andreas Koestler
+   */
+  def group[Pad](n: Nat, step: Nat, pad: Pad)(implicit grouper: PaddedGrouper[T, n.N, step.N, Pad]): grouper.Out = grouper(t, pad)
+
+  /**
+   * Permutes this `Tuple` into the same order as another `Tuple`. An explicit type argument must be supplied.
+   * Available only if both `Tuple`s have elements of the same types.
+   */
+  def align[U](implicit align: Align[T, U]): U = align(t)
+
+  /**
+   * Permutes this `Tuple` into the same order as the supplied `Tuple` with the same element types. Available only if
+   * both `HList`s have elements of the same types.
+   */
+  def align[U](u: U)(implicit align: Align[T, U]): U = align(t)
 }

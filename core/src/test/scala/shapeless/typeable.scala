@@ -155,11 +155,11 @@ class TypeableTests {
 
   @Test
   def testHList {
-    val lisdb: Any = 23 :: "foo" :: 2.0 :: false :: HNil
-    val clisdb = lisdb.cast[Int :: String :: Double :: Boolean :: HNil]
+    val lisdb: Any = 23 :: "foo" :: false :: HNil
+    val clisdb = lisdb.cast[Int :: String :: Boolean :: HNil]
     assertTrue(clisdb.isDefined)
 
-    val clisdb2 = lisdb.cast[Int :: String :: Float :: Boolean :: HNil]
+    val clisdb2 = lisdb.cast[Int :: String :: Double :: HNil]
     assertTrue(clisdb2.isEmpty)
   }
 
@@ -322,7 +322,7 @@ class TypeableTests {
     val cp = p.cast[(Int, String)]
     assertTrue(cp.isDefined)
 
-    val cp2 = p.cast[(Double, String)]
+    val cp2 = p.cast[(Boolean, String)]
     assertTrue(cp2.isEmpty)
 
     val cp3 = p.cast[(Int, List[String])]
@@ -332,7 +332,7 @@ class TypeableTests {
     val cm = m.cast[Map[Int, String]]
     assertTrue(cm.isDefined)
 
-    val cm2 = m.cast[Map[Double, String]]
+    val cm2 = m.cast[Map[Boolean, String]]
     assertTrue(cm2.isEmpty)
 
     val cm3 = m.cast[Map[Int, List[String]]]
@@ -367,7 +367,7 @@ class TypeableTests {
     val cei3 = ei.cast[Either[Int, _]]
     assertTrue(cei3.isDefined)
 
-    val cei4 = ei.cast[Either[Double, String]]
+    val cei4 = ei.cast[Either[Boolean, String]]
     assertTrue(cei4.isEmpty)
 
     val es: Any = Right[Int, String]("foo")
@@ -386,12 +386,14 @@ class TypeableTests {
 
   case class Foo(i: Int, s: String, b: Boolean)
   case class Bar[T](t: T)
+  case class Baz[A, B](a: A, b: B, i: Int)
 
   @Test
   def testProducts {
     val foo: Any = Foo(23, "foo", true)
     val iBar: Any = Bar(23)
     val sBar: Any = Bar("bar")
+    val baz: Any = Baz("s", 0.5, 9)
 
     val cfoo1 = foo.cast[Foo]
     assertTrue(cfoo1.isDefined)
@@ -410,6 +412,36 @@ class TypeableTests {
 
     val cbar4 = sBar.cast[Bar[Int]]
     assertTrue(cbar4.isEmpty)
+
+    val cbaz1 = baz.cast[Baz[String, Double]]
+    assertTrue(cbaz1.isDefined)
+    assertEquals(cbaz1.get.a, "s")
+
+    val cbaz2 = baz.cast[Baz[Double, String]]
+    assertTrue(cbaz2.isEmpty)
+  }
+
+  // Typeable.caseClassTypeable is unsafe
+  // for these, so we should refuse to
+  // generate an instance for them:
+
+  case class Gen1[A](i: Int)(a: A)
+  trait Tc[A]
+  case class Gen2[A: Tc](i: Int)
+  case class Gen3[A](i: Int) {
+    var a: A = _
+  }
+  abstract class Abs[A](a: A) {
+    val x: A = a
+  }
+  case class Gen4[A](i: Int)(a: A) extends Abs[A](a)
+
+  @Test
+  def testIllegalProducts {
+    illTyped("""Typeable[Gen1[Int]]""")
+    illTyped("""Typeable[Gen2[Int]]""")
+    illTyped("""Typeable[Gen3[Int]]""")
+    illTyped("""Typeable[Gen4[Int]]""")
   }
 
   @Test

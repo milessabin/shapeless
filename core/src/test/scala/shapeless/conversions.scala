@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ConversionTests {
-  import ops.function.FnToProduct
+  import ops.function.{ FnToProduct, FnFromProduct }
   import syntax.std.function._
   import syntax.std.tuple._
   import test._
@@ -64,28 +64,41 @@ class ConversionTests {
   def testFunctions {
     val sum : (Int, Int) => Int = _+_
     val prd : (Int, Int, Int) => Int = _*_*_
-    
+
     val hlsum = sum.toProduct
     typed[(Int :: Int :: HNil) => Int](hlsum)
-    
+
     val hlprd = prd.toProduct
     typed[(Int :: Int :: Int :: HNil) => Int](hlprd)
-    
+
     trait A
     trait B extends A
     trait C extends A
-    
+
     val a = new A {}
     val b = new B {}
-    
+
     val ab : A => B = (a : A) => b
-    
+
     val hlab = ab.toProduct
     typed[(A :: HNil) => B](hlab)
- 
+
     def foo[F, L <: HList, R](f : F, l : L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
     val ab2 = foo(ab, a :: HNil)
+
+    class HListSyntax[A <: HList, F <: AnyRef](a: A) {
+      def applied[U](f: F)(implicit cftp: FnToProduct.Aux[f.type, A => U]): U = cftp(f)(a)
+    }
+
+    implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
+      (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
+      new HListSyntax[A, F](a)
+
+    val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
+
+    assert((res: (String, Double)) == ("aa", 2.6))
+
   }
   
   @Test

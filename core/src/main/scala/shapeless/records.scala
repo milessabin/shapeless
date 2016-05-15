@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ object record {
    * named argument syntax. Values of the type just defined can be created as follows,
    *
    * {{{
-   * val xyz = Union(x = 23, y = "foo", z = true)
-   * xyz.get('y) // == Some("foo")
+   * val xyz = Record(x = 23, y = "foo", z = true)
+   * xyz('y) // == "foo"
    * }}}
    */
   object Record extends Dynamic {
@@ -88,6 +88,7 @@ trait RecordArgs extends Dynamic {
   def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
 }
 
+@macrocompat.bundle
 class RecordMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType
@@ -142,7 +143,7 @@ class RecordMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      case q""" $prefix(${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }

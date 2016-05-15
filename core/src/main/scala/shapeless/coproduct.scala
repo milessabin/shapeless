@@ -19,19 +19,104 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
-sealed trait Coproduct
+import scala.annotation.tailrec
 
-sealed trait :+:[+H, +T <: Coproduct] extends Coproduct
+/** Encodes a coproduct type, such as a sealed family of case classes.
+  *
+  * Each constructor from the family gets an encoding in terms of nested Inr and Inl.
+  *
+  * Which constructor is encoded as Inl() and which as Inr(Inl()) is determined by lexical order
+  * of the subclasses. This example illustrates the encoding:
+  *
+  * {{{
+  * scala> sealed trait Animal
+  * defined trait Animal
+  *
+  * scala> case class Cat(name: String, livesLeft: Int) extends Animal
+  * defined class Cat
+  *
+  * scala> case class Dog(name: String, bonesBuried: Int) extends Animal
+  * defined class Dog
+  *
+  * scala> case class Koala(name: String, leavesEaten: Int) extends Animal
+  * defined class Koala
+  *
+  * scala> case class Sloth(name: String, daysToClimbDownFromCurrentTree: Int) extends Animal
+  * defined class Sloth
+  *
+  * scala> val garfield = Cat("Garfield", 9)
+  * garfield: Cat = Cat(Garfield,9)
+  *
+  * scala> val odie = Dog("Odie", 3)
+  * odie: Dog = Dog(Odie,3)
+  *
+  * scala> val koala = Koala("foo", 10)
+  * koala: Koala = Koala(foo,10)
+  *
+  * scala> val sloth = Sloth("bar", 2)
+  * sloth: Sloth = Sloth(bar,2)
+  *
+  * scala> val genAnimal = Generic[Animal]
+  * genAnimal: shapeless.Generic[Animal]{type Repr = Cat :+: Dog :+: Koala :+: Sloth} = ...
+  *
+  * scala> def showCoproduct(o: Any) : String = o match {
+  *      | case Inl(a) => "Inl(" + showCoproduct(a) + ")"
+  *      | case Inr(a) => "Inr(" + showCoproduct(a) + ")"
+  *      | case a => a.toString
+  *      | }
+  * showCoproduct: (o: Any)String
+  *
+  * scala> showCoproduct(genAnimal.to(garfield))
+  * res5: String = Inl(Cat(Garfield,9))
+  *
+  * scala> showCoproduct(genAnimal.to(odie))
+  * res6: String = Inr(Inl(Dog(Odie,3)))
+  *
+  * scala> showCoproduct(genAnimal.to(koala))
+  * res7: String = Inr(Inr(Inl(Koala(foo,10))))
+  *
+  * scala> showCoproduct(genAnimal.to(sloth))
+  * res8: String = Inr(Inr(Inr(Inl(Sloth(bar,2)))))
+  *
+  * scala>
+  * }}}
+  */
+sealed trait Coproduct extends Product with Serializable
 
+/** Like Either, the :+: type defines a new type that can contain either H or T.
+  */
+sealed trait :+:[+H, +T <: Coproduct] extends Coproduct {
+  /**
+   * Non-recursive fold (like Either#fold)
+   */
+  def eliminate[A](l: H => A, r: T => A): A
+}
+
+/** `H :+: T` can either be `H` or `T`.
+  * In this case it is `H`.
+  */
 final case class Inl[+H, +T <: Coproduct](head : H) extends :+:[H, T] {
-  override def toString = head.toString
+  override def eliminate[A](l: H => A, r: T => A) = l(head)
 }
 
+/** `H :+: T` can either be `H` or `T`.
+  * In this case it is `T`.
+  */
 final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
-  override def toString = tail.toString
+  override def eliminate[A](l: H => A, r: T => A) = r(tail)
 }
 
-sealed trait CNil extends Coproduct
+/** The CNil type is used to terminate a 'list' of :+: alternatives.
+  *
+  * Like the Nil constructor of List, it does not convey real information.
+  * This is achieved by not having any value for CNil.
+  *
+  * This makes the type `Int :+: CNil` equivalent to `Int`, because the right (`Inr`) alternative
+  * of `:+:` can not be constructed properly.
+  */
+sealed trait CNil extends Coproduct {
+  def impossible: Nothing
+}
 
 object Coproduct extends Dynamic {
   import ops.coproduct.Inject
@@ -48,6 +133,7 @@ object Coproduct extends Dynamic {
   def unsafeMkCoproduct(length: Int, value: Any) =
     (0 until length).foldLeft[Coproduct](Inl(value))((accum, _) => Inr(accum))
 
+  @tailrec
   def unsafeGet(c: Coproduct): Any = c match {
     case Inl(h) => h
     case Inr(c) => unsafeGet(c)

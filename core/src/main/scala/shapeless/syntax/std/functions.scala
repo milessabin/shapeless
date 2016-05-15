@@ -29,7 +29,7 @@ package std
 object function {
   import ops.function._
 
-  implicit def fnHListOps[F](t : F)(implicit fnHLister : FnToProduct[F]) = new FnHListOps[fnHLister.Out] {
+  implicit def fnHListOps[F, T <: HList, R](t: F)(implicit fnHLister: FnToProduct.Aux[F, T => R]) = new FnHListOps[T => R] {
     def toProduct = fnHLister(t)
   }
 
@@ -40,7 +40,7 @@ object function {
 }
 
 trait FnHListOps[HLFn] {
-  def toProduct : HLFn
+  def toProduct: HLFn
 }
 
 trait FnUnHListOps[F] {

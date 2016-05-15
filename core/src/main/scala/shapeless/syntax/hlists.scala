@@ -118,6 +118,26 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def select[U](implicit selector : Selector[L, U]) : U = selector(l)
 
   /**
+   * Returns the elements of this `HList` specified by `Ids`. Available only if there is
+   * evidence that this `HList` contains all elements specified in `Ids`.
+   */
+  case class SelectManyAux[L <: HList](l: L) extends NatProductArgs {
+    def applyNatProduct[Ids <: HList](implicit sel: SelectMany[L,Ids]): sel.Out = sel(l)
+  }
+
+  def selectManyType[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
+
+  def selectMany = SelectManyAux(l)
+
+  /**
+   * Returns the elements of this `HList` specified by the range of ids in [A,B[
+   * Available only if there is evidence that this `HList` contains all elements in that range
+   */
+  def selectRange[A <: Nat, B <: Nat](implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
+
+  def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
+
+  /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
   def filter[U](implicit partition : Partition[L, U]) : partition.Prefix  = partition.filter(l)
@@ -147,6 +167,48 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * types in `SL`.
    */
   def removeAll[SL <: HList](implicit removeAll : RemoveAll[L, SL]): removeAll.Out = removeAll(l)
+  
+  /**
+   * Returns the union between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * order-preserving multi-set union. If type `T` appears n times in this `HList` and m > n times in `M`, the
+   * resulting `HList` contains the first n elements of type `T` in this `HList`, followed by the last m - n element
+   * of type `T` in `M`.
+   */
+  def union[M <: HList](s: M)(implicit union: Union[L, M]): union.Out = union(l, s)
+  
+  /**
+   * Returns the intersection between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * multiset intersection. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
+   * contains the first m elements of type `T` in this `HList`.
+   * Also available if `M` contains types absent in this `HList`.
+   */
+  def intersect[M <: HList](implicit intersection: Intersection[L, M]): intersection.Out = intersection(l)
+  
+  /**
+   * Returns the difference between this `HList` and another `HList`. In case of duplicate types, this operation is a
+   * multiset difference. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
+   * contains the last n - m elements of type `T` in this `HList`.
+   * Also available if `M` contains types absent in this `HList`.
+   */
+  def diff[M <: HList](implicit diff: Diff[L, M]): diff.Out = diff(l)
+  
+  /**
+   * Reinserts an element `U` into this `HList` to return another `HList` `O`.
+   */
+  def reinsert[O <: HList] = new ReinsertAux[O]
+
+  class ReinsertAux[O <: HList] {
+    def apply[U](u: U)(implicit remove: Remove.Aux[O, U, (U, L)]): O = remove.reinsert((u, l))
+  }
+
+  /**
+   * Reinserts the elements of `SL` into this `HList` to return another `HList` `O`.
+   */
+  def reinsertAll[O <: HList] = new ReinsertAllAux[O]
+
+  class ReinsertAllAux[O <: HList] {
+    def apply[SL <: HList](sl: SL)(implicit removeAll: RemoveAll.Aux[O, SL, (SL, L)]): O = removeAll.reinsert((sl, l))
+  }
 
   /**
    * Replaces the first element of type `U` of this `HList` with the supplied value, also of type `U` returning both
@@ -182,6 +244,15 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    */
   def updateWith[U, V, Out <: HList](f : U => V)
     (implicit replacer : Modifier.Aux[L, U, V, (U, Out)]) : Out = replacer.apply(l, f)._2
+
+  /**
+   * Replaces the `N`th element of this `HList` with the result of calling the supplied function on it.
+   * Available only if there is evidence that this `HList` has `N` elements.
+   *
+   * @author Andreas Koestler
+   */
+  def updateAtWith[V](n: NatWith[({ type λ[n <: Nat] = At[L, n]})#λ])(f: n.instance.Out => V)
+    (implicit upd: ModifierAt[L, n.N, n.instance.Out, V]): upd.Out = upd(l, f)
 
   class UpdatedTypeAux[U] {
     def apply[V, Out <: HList](v : V)
@@ -437,6 +508,14 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     zipWith(l, r)
 
   /**
+   * Zips this `HList` with its element indices,  resulting in a 'HList' of  tuples of the form
+   * ({element from input tuple}, {element index})
+   *
+   * @author Andreas Koestler
+   */
+  def zipWithIndex(implicit zipWithIndex: ZipWithIndex[L]): zipWithIndex.Out = zipWithIndex(l)
+
+  /**
    * Transposes this `HList`.
    */
   def transpose(implicit transpose : Transposer[L]) : transpose.Out = transpose(l)
@@ -474,7 +553,25 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   }
 
   /**
-   * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
+   * Convert this `HList` to a `List[Any]`.
+   */
+  def runtimeList: List[Any] = {
+    val builder = List.newBuilder[Any]
+
+    @tailrec def loop(l: HList): Unit = l match {
+      case HNil => ()
+      case hd :: tl =>
+        builder += hd
+        loop(tl)
+    }
+
+    loop(l)
+
+    builder.result
+  }
+
+  /**
+   * Converts this `HList` to a `M` of elements typed as the least upper bound of the types of the elements
    * of this `HList`.
    */
   def to[M[_]](implicit ts : ToTraversable[L, M]) : ts.Out = ts(l)
@@ -494,6 +591,20 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * `CC`) which interacts badly with the invariance of `Array`s.
    */
   def toArray[Lub](implicit toTraversableAux : ToTraversable.Aux[L, Array, Lub]) : toTraversableAux.Out = toTraversableAux(l)
+
+  /**
+    * Converts this `HList` to a `M` of elements embedded in a minimal `Coproduct` encompassing the types of every
+    * elements of this `HList`.
+    *
+    * For example :
+    *
+    *   (1 :: "qux" :: 42 :: "bar" :: HNil).toCoproduct[Vector]
+    *
+    * Would return a Vector[Int :+: String :+: CNil]
+    *
+    * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
+    */
+  def toCoproduct[M[_] <: Traversable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
@@ -575,4 +686,33 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Adjoins the elements of this `HList` by flattening any `HList` elements.
    */
   def adjoined(implicit adjoin: Adjoin[L]): adjoin.Out = adjoin(l)
+
+  /**
+   * Finds the first element of the HList for which the given Poly is defined, and applies the Poly to it.
+   */ 
+  def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
+
+  /**
+   * Groups the elements of this `HList` into tuples of `n` elements, offset by `step`
+   *
+   * @author Andreas Koestler
+   */
+  def group(n: Nat, step: Nat)(implicit grouper: Grouper[L, n.N, step.N]): grouper.Out = grouper(l)
+
+  /**
+   * Groups the elements of this `HList` into tuples of `n` elements, offset by `step`
+   * Use elements in `pad` as necessary to complete last group up to `n` items.
+   * @author Andreas Koestler
+   */
+  def group[Pad <: HList](n: Nat, step: Nat, pad: Pad)(implicit grouper: PaddedGrouper[L, n.N, step.N, Pad]): grouper.Out = grouper(l, pad)
+
+  /**
+   * Appends `elem` until a given length `N` is reached.
+   */
+  def padTo[A](n: Nat, elem: A)(implicit padTo: PadTo[n.N, A, L]): padTo.Out = padTo(elem, l)
+
+  /**
+   * Slices beginning at index `from` and afterwards, up until index `until`
+   */
+  def slice(from: Nat, until: Nat)(implicit slice: Slice[from.N, until.N, L]): slice.Out = slice(l)
 }

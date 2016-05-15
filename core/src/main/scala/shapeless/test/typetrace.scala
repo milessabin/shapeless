@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Miles Sabin 
+ * Copyright (c) 2015-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,20 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.blackbox
 
-trait TypeTrace[T]
+class TypeTrace[T]
 
 object TypeTrace {
   implicit def apply[T]: TypeTrace[T] = macro TypeTraceMacros.applyImpl[T]
 }
 
+@macrocompat.bundle
 class TypeTraceMacros(val c: blackbox.Context) {
   import c.universe._
 
   def applyImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
     val tTpe = weakTypeOf[T]
-    println(s"Trace: $tTpe ${tTpe.getClass.getName}")
+    println(s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}")
 
-    q"""new TypeTrace[$tTpe] {}"""
+    q"""new _root_.shapeless.test.TypeTrace[$tTpe]"""
   }
 }

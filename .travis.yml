@@ -1,12 +1,12 @@
 language: scala
 
 scala:
-- 2.11.7
-- 2.12.0-M1
+- 2.10.6
+- 2.11.8
+- 2.12.0-M4
 
 jdk:
-- oraclejdk7
-- openjdk6
+- oraclejdk8
 
 cache:
   directories:
@@ -14,21 +14,13 @@ cache:
     - $HOME/.sbt
 
 script:
-  - if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
-         ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) &&
-         ("${TRAVIS_BRANCH}" == "master" || "${TRAVIS_BRANCH}" == "scala-2.10.x" ||
-          "${TRAVIS_BRANCH}" == "scalajs-2.11.x" || "${TRAVIS_BRANCH}" == "scalajs-2.10.x") &&
-         $(cat version.sbt) =~ "-SNAPSHOT"
-    ]]; then
-      sbt ++${TRAVIS_SCALA_VERSION} validate publish ;
-    else
-      sbt ++${TRAVIS_SCALA_VERSION} validate ;
-    fi
+  - travis_wait 40 scripts/travis-publish.sh
 
 env:
   global:
-  - secure: Tk9OHnvqs1BGHWZSE2kWUeCJntDWG6kkpmD+5pcWJdBa+IDmT1cLMgOd3GGaT8V/x2qV39v9hYvVwLYLiQPSDVKRmZmH2l5kZMBTVbv9PasdZOLv5BPErJqHsU7SsU16RFVAXzGyXL0ALxz30rTDmnyHiTWc6TfNcg+vWZJHQ9A=
-  - secure: kxaZ+a8e1ZP/mO5x2P/2lFRZR9qjxhaXdTHjPPd4O6IsOg2Nb4iyPYp8hZWitGsheVuI0QrGeAhskO9Q3W3xqSMtilb7z8xze3tNfQpEVb4Y4kkZrvd27r740Hj9bv/ey4GVjJFQK9jcQ1W0SRR6pFUygJMOwexqEVAeH8E9VZA=
+  - secure: eXcMQIb0hHeaJsJGaJYhLS8aONu5YnhK1NOHJZGTBIb6ukSd48uXm6xNgBMozgkOEUBXyrBU9ZnCOxSS+HmJZDbK0Wkr90C4sZH7dHBZYMN3hNfCp5SjPFY2+TgrYZ24G8s/BPei6725AlbXM0vmdXPsvxaOvT36d2Ej7xto8+c=
+  - secure: c3IO3G34aTFD+fh/5vqc3sCgwMaClPDziYQDCEUqQBOQFdTS7wbBZFVpqTUUlkMLkeyHZ0BGSLUiDZnu8TGGITtgJBaCUchhLYK5WOavyzCl/NPVOBebviazgtBOzPDKyYDcahjmxCGrMspTiRei86VgCdkNIvldJJm7zK1OAOU=
+
 sudo: false
 
 notifications:

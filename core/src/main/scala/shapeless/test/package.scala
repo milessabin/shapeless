@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin 
+ * Copyright (c) 2014-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,24 @@
 
 package shapeless
 
-import scala.reflect.runtime.universe._
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
 
 package object test {
   def typed[T](t : => T) {}
 
   def sameTyped[T](t1: => T)(t2: => T) {}
 
-  def showType[T: TypeTag]: String = typeOf[T].dealias.toString
+  def showType[T]: String = macro TestMacros.showTypeNoValue[T]
 
-  def showType[T: TypeTag](t: => T): String = typeOf[T].dealias.toString
+  def showType[T](t: => T): String = macro TestMacros.showType[T]
+}
+
+@macrocompat.bundle
+class TestMacros(val c: blackbox.Context) {
+  import c.universe._
+
+  def showTypeNoValue[T: WeakTypeTag]: Tree = q"${weakTypeOf[T].dealias.toString}"
+
+  def showType[T: WeakTypeTag](t: Tree): Tree = showTypeNoValue[T]
 }

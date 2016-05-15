@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import test._
 import testutil._
 
 import ops.coproduct._
+import ops.union._
+import union._
 
 class CoproductTests {
   type ISB = Int :+: String :+: Boolean :+: CNil
@@ -259,6 +261,11 @@ class CoproductTests {
   def testFold {
     import poly.identity
 
+    object addSize extends Poly2 {
+      implicit def default[T](implicit st: size.Case.Aux[T, Int]) =
+        at[Int, T] { (acc, t) => acc + size(t) }
+    }
+
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
@@ -266,6 +273,10 @@ class CoproductTests {
     val foo1b = foo1 fold size
     val foo2b = foo2 fold size
     val foo3b = foo3 fold size
+
+    val foo1c = foo1.foldLeft(42)(addSize)
+    val foo2c = foo2.foldLeft(42)(addSize)
+    val foo3c = foo3.foldLeft(42)(addSize)
 
     typed[Int](foo1b)
     assertEquals(1, foo1b)
@@ -275,6 +286,15 @@ class CoproductTests {
 
     typed[Int](foo3b)
     assertEquals(1, foo3b)
+
+    typed[Int](foo1c)
+    assertEquals(43, foo1c)
+
+    typed[Int](foo2c)
+    assertEquals(45, foo2c)
+
+    typed[Int](foo3c)
+    assertEquals(43, foo3c)
 
     val f1 = Coproduct[APB](Apple())
     val f2 = Coproduct[APB](Pear())
@@ -291,11 +311,22 @@ class CoproductTests {
   }
 
   @Test
-  def testWithKeys {
-    import syntax.singleton._
-    import union._
-    import ops.union._
+  def testZip {
+    import shapeless.Nat._
 
+    val c1 = Coproduct[ISB](42)
+    val zi1 = c1.zipWithIndex
+    val vz1 = zi1.select[(Int,_0)]
+    val vz2 = zi1.select[(String,_1)]
+
+    typed[Option[(Int,_0)]](vz1)
+    typed[Option[(String,_1)]](vz2)
+    assertEquals(Some((42,_0)), vz1)
+    assertEquals(None, vz2)
+
+  }
+  @Test
+  def testWithKeys {
     type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
     val cKeys = Keys[U].apply()
 
@@ -1737,6 +1768,22 @@ class CoproductTests {
       typed[C](Inr(Inl("a")))
       typed[C](Inr(Inr(Inl(true.narrow))))
     }
+  }
+
+  @Test
+  def testReify {
+    import syntax.singleton._
+
+    assertTypedEquals(HNil, Reify[CNil].apply)
+
+    val s1 = Coproduct.`'a`
+    assertTypedEquals('a.narrow :: HNil, Reify[s1.T].apply)
+
+    val s2 = Coproduct.`'a, 1, "b", true`
+    assertEquals('a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+
+    illTyped(""" Reify[String :+: Int :+: CNil] """)
+    illTyped(""" Reify[String :+: Coproduct.`'a, 1, "b", true`.T] """)
   }
 }
 

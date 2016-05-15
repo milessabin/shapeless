@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -513,6 +513,34 @@ class TupleTests {
     // equalType(m2eim2esm2eim2eem2edList, m2e)
     typed[List[M2[_ >: Int with String with Double, _]]](m2e)
     assertEquals(m2eim2esm2eim2eem2edList, m2e)
+  }
+
+  @Test
+  def testToCoproduct {
+    import ops.tuple._
+
+    type PISB = (Int, String, Boolean)
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    val CISBb = ToCoproduct[PISB]
+    implicitly[CISBa =:= CISBb.Out]
+
+    // Note: Slightly different tests in Tuple211Tests
+  }
+
+  @Test
+  def testToSum {
+    import ops.tuple._
+
+    type PISB = (Int, String, Boolean)
+    type CISBa = Int :+: String :+: Boolean :+: CNil
+    val SISBa = ToSum[PISB]
+    implicitly[CISBa =:= SISBa.Out]
+
+    type PIISSB = (Int, Int, String, String, Boolean)
+    val SISBb = ToSum[PIISSB]
+    implicitly[CISBa =:= SISBb.Out]
+
+    // Note: Slightly different tests in Tuple211Tests
   }
 
   @Test
@@ -1399,6 +1427,24 @@ class TupleTests {
   }
 
   @Test
+  def testZipWithIndex {
+
+    // Unit zipWithIndex
+    val l1 = ()
+    val zl1 = ().zipWithIndex
+    typed[Unit](zl1)
+    assertEquals((), zl1)
+
+    // Tuple zipWithIndex
+    val l2 = (1, true, "a")
+    val zl2 = l2.zipWithIndex
+    typed[((Int, _0), (Boolean, _1), (String, _2))](zl2)
+    assertEquals(((1, _0), (true, _1), ("a", _2)), zl2)
+
+  }
+
+
+  @Test
   def testPropagation {
     def useHead[P <: Product](p: P)(implicit ic: ops.tuple.IsComposite[P]) = p.head
 
@@ -1470,7 +1516,7 @@ class TupleTests {
 
   @Test
   def testMkString {
-    assertEquals("<1;foo;2.0>", (1, "foo", 2.0).mkString("<", ";", ">"))
+    assertEquals(s"<1;foo;${2.0}>", (1, "foo", 2.0).mkString("<", ";", ">"))
   }
 
   @Test
@@ -1720,5 +1766,141 @@ class TupleTests {
       assertEquals(sub, out)
       assertTypedEquals[(Int, String, String)](out, out2)
     }
+  }
+
+  @Test
+  def testGrouper {
+    object toInt extends Poly1 {
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+    }
+
+    def range[R <: HList, OutL <: HList](a: Nat, b: Nat)(implicit
+                                                            range: ops.nat.Range.Aux[a.N, b.N, R],
+                                                            mapper: ops.hlist.Mapper.Aux[toInt.type, R, OutL],
+                                                            tupler: ops.hlist.Tupler[OutL]
+      ): tupler.Out = tupler(mapper(range()))
+
+    // Note: Slightly different method signature in Tuple211Tests
+
+    // group Unit
+    assertEquals( (), () group (2,1) )
+
+    // partition a Tuple of 4 items into 2 (4/2) tuples of 2 items
+    assertEquals(
+      ((0, 1), (2, 3)),
+      range(0, 4) group(2, 2)
+    )
+
+    // partition a Tuple of 5 items into 2 (5/2) tuples of 2 items
+    // the last item does not make a complete partition and is dropped.
+    assertEquals(
+      ((0, 1), (2, 3)),
+      range(0, 5) group(2, 2)
+    )
+
+    // uses the step to select the starting point for each partition
+    assertEquals(
+      ((0, 1), (4, 5)),
+      range(0, 6) group(2, 4)
+    )
+
+    // if the step is smaller than the partition size, items will be reused
+    assertEquals(
+      ((0, 1), (1, 2), (2, 3)),
+      range(0, 4) group(2, 1)
+    )
+
+    // when there are not enough items to fill the last partition, a pad can be supplied.
+    assertEquals(
+      ((0, 1), (2, 3), (4, 'a')),
+      range(0, 5) group(2, 2, Tuple1('a'))
+    )
+
+    // but only as many pad elements are used as necessary to fill the final partition.
+    assertEquals(
+      ((0, 1), (2, 3), (4, 'a')),
+      range(0, 5) group(2, 2, ('a', 'b', 'c'))
+    )
+  }
+
+  @Test
+  def testModifierAt = {
+    // first element
+    assertEquals((1, (42, 2, 3)), (1, 2, 3).updateAtWith(0)( _ => 42))
+
+    //last element
+    assertEquals((3, (1, 2, 42)), (1, 2, 3).updateAtWith(2)( _ => 42))
+
+    //different type
+    assertEquals((3, (1, 2, 42.0)), (1, 2, 3).updateAtWith(2)(_ => 42.0))
+  }
+
+  @Test
+  def testAlign = {
+    type U0 = (Int, String, Boolean)
+    type U1 = (Int, Boolean, String)
+    type U2 = (String, Int, Boolean)
+    type U3 = (String, Boolean, Int)
+    type U4 = (Boolean, Int, String)
+    type U5 = (Boolean, String, Int)
+
+    val u0 = (13, "bar", false)
+    val u1 = (13, false, "bar")
+    val u2 = ("bar", 13, false)
+    val u3 = ("bar", false, 13)
+    val u4 = (false, 13, "bar")
+    val u5 = (false, "bar", 13)
+
+    val t = (23, "foo", true)
+
+    val a0 = t.align(u0)
+    assertTypedEquals[U0]((23, "foo", true), a0)
+
+    val a1 = t.align(u1)
+    assertTypedEquals[U1]((23, true, "foo"), a1)
+
+    val a2 = t.align(u2)
+    assertTypedEquals[U2](("foo", 23, true), a2)
+
+    val a3 = t.align(u3)
+    assertTypedEquals[U3](("foo", true, 23), a3)
+
+    val a4 = t.align(u4)
+    assertTypedEquals[U4]((true, 23, "foo"), a4)
+
+    val a5 = t.align(u5)
+    assertTypedEquals[U5]((true, "foo", 23), a5)
+
+    val b0 = t.align[U0]
+    assertTypedEquals[U0]((23, "foo", true), b0)
+
+    val b1 = t.align[U1]
+    assertTypedEquals[U1]((23, true, "foo"), b1)
+
+    val b2 = t.align[U2]
+    assertTypedEquals[U2](("foo", 23, true), b2)
+
+    val b3 = t.align[U3]
+    assertTypedEquals[U3](("foo", true, 23), b3)
+
+    val b4 = t.align[U4]
+    assertTypedEquals[U4]((true, 23, "foo"), b4)
+
+    val b5 = t.align[U5]
+    assertTypedEquals[U5]((true, "foo", 23), b5)
+
+    val c0 = Tuple1(23).align[Tuple1[Int]]
+    typed[Tuple1[Int]](c0)
+
+    val c1 = (23, "foo").align[(String, Int)]
+    typed[(String, Int)](c1)
+
+    illTyped("""
+      (1, "foo").align[(Int, String, Int)]
+    """)
+
+    illTyped("""
+      (23, "foo").align[(String, String)]
+    """)
   }
 }

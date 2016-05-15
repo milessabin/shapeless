@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ object union {
    * named argument syntax. Values of the type just defined can be created as follows,
    *
    * {{{
-   * val y = Union[Xyx](y = "foo")
+   * val y = Union[Xyz](y = "foo")
    * y.get('y) // == Some("foo")
    * }}}
    */
@@ -57,6 +57,7 @@ object union {
   }
 }
 
+@macrocompat.bundle
 class UnionMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType
@@ -77,7 +78,7 @@ class UnionMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" (${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
+      case q""" $prefix(${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
       case _ =>
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }

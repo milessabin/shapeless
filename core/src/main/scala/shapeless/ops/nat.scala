@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin 
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,13 +132,17 @@ object nat {
    */
   trait LT[A <: Nat, B <: Nat] extends Serializable
 
-  object LT {
+  object LT extends LT0 {
     def apply[A <: Nat, B <: Nat](implicit lt: A < B): LT[A, B] = lt
-
-    type <[A <: Nat, B <: Nat] = LT[A, B]
 
     implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
     implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
+  }
+
+  trait LT0 {
+    type <[A <: Nat, B <: Nat] = LT[A, B]
+
+    implicit def lt3[A <: Nat] = new <[A, Succ[A]] {}
   }
 
   /**
@@ -148,14 +152,40 @@ object nat {
    */
   trait LTEq[A <: Nat, B <: Nat] extends Serializable
 
-  object LTEq {
+  object LTEq extends LTEq0 {
     def apply[A <: Nat, B <: Nat](implicit lteq: A <= B): LTEq[A, B] = lteq
 
+    implicit def ltEq1[A <: Nat] = new <=[A, A] {}
+    implicit def ltEq2[A <: Nat] = new <=[A, Succ[A]] {}
+  }
+
+  trait LTEq0 {
     type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 
-    implicit def ltEq1 = new <=[_0, _0] {}
-    implicit def ltEq2[B <: Nat] = new <=[_0, Succ[B]] {}
-    implicit def ltEq3[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
+    implicit def ltEq3[B <: Nat] = new <=[_0, B] {}
+    implicit def ltEq4[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
+  }
+
+  /**
+   * Type class witnessing that `A` is greater than `B`.
+   *
+   * @author ryoppy
+   */
+  type GT[A <: Nat, B <: Nat] = LT[B, A]
+  object GT {
+    def apply[A <: Nat, B <: Nat](implicit gt: GT[A, B]): GT[A, B] = gt
+    type >[A <: Nat, B <: Nat] = GT[A, B]
+  }
+
+  /**
+   * Type class witnessing that `A` is greater than or equal to `B`.
+   *
+   * @author ryoppy
+   */
+  type GTEq[A <: Nat, B <: Nat] = LTEq[B, A]
+  object GTEq {
+    def apply[A <: Nat, B <: Nat](implicit gteq: GTEq[A, B]): GTEq[A, B] = gteq
+    type >=[A <: Nat, B <: Nat] = GTEq[A, B]
   }
 
   /**
@@ -212,6 +242,343 @@ object nat {
     implicit def pow2[A <: Nat]: Aux[_0, Succ[A], _1] = new Pow[_0, Succ[A]] { type Out = _1 }
     implicit def pow3[N <: Nat, X <: Nat, Z <: Nat, Y <: Nat]
       (implicit ev : Pow.Aux[N, X, Z], ev2 : Prod.Aux[Z, X, Y]): Aux[Succ[N], X, Y] = new Pow[Succ[N], X] { type Out = Y }
+  }
+
+  /**
+   * Type class witnessing that `Out` is range `A` to `B`, inclusive of `A` and exclusive of `B`.
+   *
+   * @author Andreas Koestler
+   */
+  trait Range[A <: Nat, B <: Nat] extends DepFn0 with Serializable {
+    type Out <: HList
+  }
+
+  object Range {
+    def apply[A <: Nat, B <: Nat](implicit range: Range[A, B]): Aux[A, B, range.Out] = range
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: HList] = Range[A, B] {type Out = Out0}
+
+
+    import shapeless.ops.hlist._
+
+    implicit def range1[A <: Nat]: Aux[A, A, HNil] = new Range[A, A] {
+      type Out = HNil
+
+      def apply(): Out = HNil
+    }
+
+    implicit def range2[A <: Nat, B <: Nat, L <: HList, LO <: HList](implicit
+                                                                     w: Witness.Aux[B],
+                                                                     r: Range.Aux[A, B, L],
+                                                                     prep: Prepend.Aux[L, B :: HNil, LO]
+                                                                      ): Aux[A, Succ[B], LO] =
+      new Range[A, Succ[B]] {
+        type Out = LO
+
+        def apply(): Out = r() :+ w.value
+      }
+  }
+
+  /**
+   * Type class implementing Euclidean algorithm for calculating the GCD
+   *
+   * @author Andreas Koestler
+   */
+  trait LowPriorityGCD {
+    implicit def defaultCase[A <: Nat, B <: Nat, T <: Nat](implicit
+                                                           mod: Mod.Aux[A, B, T],
+                                                           gcd: GCD[B, T]): GCD.Aux[A, B, gcd.Out] = new GCD[A, B] {
+      type Out = gcd.Out
+    }
+  }
+  trait GCD[A <: Nat, B <: Nat] extends Serializable {
+    type Out <: Nat
+  }
+
+  object GCD extends LowPriorityGCD {
+    def apply[A <: Nat, B <: Nat](implicit gcd: GCD[A, B]): Aux[A, B, gcd.Out] = gcd
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: Nat] = GCD[A, B] {type Out = Out0}
+
+    implicit def terminationCase[A <: Nat]: Aux[A, _0, A] = new GCD[A, _0] {
+      type Out = A
+    }
+  }
+
+  /**
+   * Type class for calculating the Least Common Multiple
+   *
+   * @author Andreas Koestler
+   */
+  trait LCM[A <: Nat, B <: Nat] extends Serializable {
+    type Out <: Nat
+  }
+
+  object LCM {
+    def apply[A <: Nat, B <: Nat](implicit lcm: LCM[A, B]): Aux[A, B, lcm.Out] = lcm
+
+    type Aux[A <: Nat, B <: Nat, Out0 <: Nat] = LCM[A, B] {type Out = Out0}
+
+    implicit def lcm[A <: Nat, B <: Nat, M <: Nat, N <: Nat, Res <: Nat]
+    (implicit
+     prod: Prod.Aux[A, B, M],
+     gcd: GCD.Aux[A, B, N],
+     div: Div[M, N]
+      ): Aux[A, B, div.Out] = new LCM[A, B] {
+      type Out = div.Out
+    }
+  }
+
+  /**
+    * Type class witnessing that `Out` is an HList of `Nat` numbers ranging from
+    * `A` to `B`.
+    *
+    * This differs from the `Range` type class in that it accepts another
+    * type class, `Bound`, at both the start and end of the range (instead of
+    * bare `Nat` types). This allows the flexibility to specify inclusive or
+    * exclusive range boundaries for either end of the range.
+    *
+    * Reversed ranges are also possible (i.e. starting the range with a larger
+    * number than it ends with), and results in an HList that counts from the
+    * beginning of the range _down to_ the end of the range.
+    *
+    * @author Jeff Wilde
+    */
+  trait BoundedRange[A <: BoundedRange.Bound, B <: BoundedRange.Bound] extends DepFn0 with Serializable {
+    type Out <: HList
+  }
+
+  object BoundedRange {
+
+    def apply[A <: BoundedRange.Bound, B <: BoundedRange.Bound](implicit range: BoundedRange[A,B])
+    : AuxF[A, B, range.Out]  = range
+
+    trait Bound extends DepFn0 with Serializable {
+      type Out <: Nat
+    }
+
+    /**
+      * Type class witnessing that the `Nat` `A` is the inclusive bound of
+      * a range, i.e. the beginning or end of a range that includes `A`.
+      *
+      * @author Jeff Wilde
+      */
+    trait Inclusive[A] extends Bound
+
+    trait SoftInclusive[A] extends Bound
+
+    /**
+      * Type class witnessing that the `Nat` `A` is the exclusive bound of
+      * a range, i.e. the beginning or end of a range that does not include `A`.
+      *
+      * @author Jeff Wilde
+      */
+    trait Exclusive[A] extends Bound
+
+
+    import shapeless.ops.hlist._
+
+    type AuxF[A <: BoundedRange.Bound, B <: BoundedRange.Bound, Out0 <: HList] =
+      BoundedRange[A, B] {type Out = Out0}
+
+    //
+    // nil ranges (both nil starting and recursive terminators)
+
+    implicit def nilClosed[A <: Nat]
+    (implicit w: Witness.Aux[A])
+    : AuxF[Inclusive[A], Inclusive[A], A :: HNil] =
+      new BoundedRange[Inclusive[A], Inclusive[A]] {
+        type Out = A :: HNil
+
+        def apply(): Out = w.value :: HNil
+      }
+
+    implicit def nilOpen[A <: Nat]
+    (implicit w: Witness.Aux[A])
+    : AuxF[Exclusive[A], Exclusive[A], HNil] =
+      new BoundedRange[Exclusive[A], Exclusive[A]] {
+        type Out = HNil
+
+        def apply(): Out = HNil
+      }
+
+    implicit def nilLeftOpenRightClosed[A <: Nat]
+    (implicit w: Witness.Aux[A])
+    : AuxF[Exclusive[A], Inclusive[A], A :: HNil] =
+      new BoundedRange[Exclusive[A], Inclusive[A]] {
+        type Out = A :: HNil
+
+        def apply(): Out = w.value :: HNil
+      }
+
+    implicit def nilLeftClosedRightOpen[A <: Nat]
+    (implicit w: Witness.Aux[A])
+    : AuxF[Inclusive[A], Exclusive[A], A :: HNil] =
+      new BoundedRange[Inclusive[A], Exclusive[A]] {
+        type Out = A :: HNil
+
+        def apply(): Out = w.value :: HNil
+      }
+
+    //
+    // nil ranges (recursive terminators only)
+
+    implicit def nilLeftOpenRightSoft[A <: Nat]
+    : AuxF[Exclusive[A], SoftInclusive[A], HNil] =
+      new BoundedRange[Exclusive[A], SoftInclusive[A]] {
+        type Out = HNil
+
+        def apply(): Out = HNil
+      }
+
+    implicit def nilLeftClosedRightSoft[A <: Nat]
+    (implicit w: Witness.Aux[A])
+    : AuxF[Inclusive[A], SoftInclusive[A], A :: HNil] =
+      new BoundedRange[Inclusive[A], SoftInclusive[A]] {
+        type Out = A :: HNil
+
+        def apply(): Out = w.value :: HNil
+      }
+
+    //
+    // intermediate recursive ranges
+
+    implicit def leftOpenRightSoft[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit
+      w: Witness.Aux[Succ[B]],
+      subRange: AuxF[Exclusive[A], SoftInclusive[B], Sub])
+    : AuxF[Exclusive[A], SoftInclusive[Succ[B]], Succ[B] :: Sub] =
+      new BoundedRange[Exclusive[A], SoftInclusive[Succ[B]]] {
+        type Out = Succ[B] :: Sub
+
+        def apply(): Out = w.value :: subRange()
+      }
+
+    implicit def leftClosedRightSoft[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit
+      w: Witness.Aux[Succ[B]],
+      subRange: AuxF[Inclusive[A], SoftInclusive[B], Sub])
+    : AuxF[Inclusive[A], SoftInclusive[Succ[B]], Succ[B] :: Sub] =
+      new BoundedRange[Inclusive[A], SoftInclusive[Succ[B]]] {
+        type Out =  Succ[B] :: Sub
+
+        def apply(): Out = w.value :: subRange()
+      }
+
+    //
+    // public starting ranges
+
+    implicit def closed[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
+    (implicit
+      w: Witness.Aux[Succ[B]],
+      subRange: AuxF[Inclusive[A], SoftInclusive[B], Sub],
+      reverse: ReversePrepend.Aux[Sub, Succ[B] :: HNil, Rev])
+    : AuxF[Inclusive[A], Inclusive[Succ[B]], Rev] =
+      new BoundedRange[Inclusive[A], Inclusive[Succ[B]]] {
+        type Out = Rev
+
+        def apply(): Out = reverse(subRange(), w.value :: HNil)
+      }
+
+    implicit def open[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
+    (implicit
+      subRange: AuxF[Exclusive[A], SoftInclusive[B], Sub],
+      reverse: Reverse.Aux[Sub, Rev])
+    : AuxF[Exclusive[A], Exclusive[Succ[B]], Rev] =
+      new BoundedRange[Exclusive[A], Exclusive[Succ[B]]] {
+        type Out = Rev
+
+        def apply(): Out = reverse(subRange())
+      }
+
+    implicit def leftOpenRightClosed[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
+    (implicit
+      w: Witness.Aux[Succ[B]],
+      subRange: AuxF[Exclusive[A], SoftInclusive[B], Sub],
+      reverse: ReversePrepend.Aux[Sub, Succ[B] :: HNil, Rev])
+    : AuxF[Exclusive[A], Inclusive[Succ[B]], Rev] =
+      new BoundedRange[Exclusive[A], Inclusive[Succ[B]]] {
+        type Out = Rev
+
+        def apply(): Out = reverse(subRange(), w.value :: HNil)
+      }
+
+    implicit def leftClosedRightOpen[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
+    (implicit
+      subRange: AuxF[Inclusive[A], SoftInclusive[B], Sub],
+      reverse: Reverse.Aux[Sub, Rev])
+    : AuxF[Inclusive[A], Exclusive[Succ[B]], Rev] =
+      new BoundedRange[Inclusive[A], Exclusive[Succ[B]]] {
+        type Out =  Rev
+
+        def apply(): Out = reverse(subRange())
+      }
+
+    //
+    // reversed starting ranges
+
+    implicit def openReverse[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit subRange: AuxF[Exclusive[B], SoftInclusive[A], Sub])
+    : AuxF[Exclusive[Succ[A]], Exclusive[B], Sub] =
+      new BoundedRange[Exclusive[Succ[A]], Exclusive[B]] {
+        type Out = Sub
+
+        def apply(): Out = subRange()
+      }
+
+    implicit def leftClosedRightOpenReverse[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit
+      wA: Witness.Aux[Succ[A]],
+      subRange: AuxF[Exclusive[B], SoftInclusive[A], Sub])
+    : AuxF[Inclusive[Succ[A]], Exclusive[B], Succ[A] :: Sub] =
+      new BoundedRange[Inclusive[Succ[A]], Exclusive[B]] {
+        type Out =  Succ[A] :: Sub
+
+        def apply(): Out = wA.value :: subRange()
+      }
+
+    implicit def leftOpenRightClosedReverse[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit subRange: AuxF[Inclusive[B], SoftInclusive[A], Sub])
+    : AuxF[Exclusive[Succ[A]], Inclusive[B], Sub] =
+      new BoundedRange[Exclusive[Succ[A]], Inclusive[B]] {
+        type Out =  Sub
+
+        def apply(): Out = subRange()
+      }
+
+    implicit def closedReverse[A <: Nat, B <: Nat, Sub <: HList]
+    (implicit
+      wA: Witness.Aux[Succ[A]],
+      subRange: AuxF[Inclusive[B], SoftInclusive[A], Sub])
+    : AuxF[Inclusive[Succ[A]], Inclusive[B], Succ[A] :: Sub] =
+      new BoundedRange[Inclusive[Succ[A]], Inclusive[B]] {
+        type Out =  Succ[A] :: Sub
+
+        def apply(): Out = wA.value :: subRange()
+      }
+
+    object Bound {
+
+      implicit def inclusive[A <: Nat]
+      (implicit w: Witness.Aux[A])
+      : Inclusive[A] =
+        new Inclusive[A] {
+          type Out = A
+
+          def apply(): Out = w.value
+        }
+
+      implicit def exclusive[A <: Nat]
+      (implicit w: Witness.Aux[A])
+      : Exclusive[A] =
+        new Exclusive[A] {
+          type Out = A
+
+          def apply(): Out = w.value
+        }
+
+    }
+
   }
 
   /**

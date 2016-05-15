@@ -51,4 +51,50 @@ object traversable {
           else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
     }
   }
+
+  /**
+   * Type class supporting type safe conversion of `Traversables` to `HLists` of a specific length.
+   * 
+   * @author Rob Norris
+   */
+  trait ToSizedHList[CC[T] <: GenTraversable[T], A, N <: Nat] extends Serializable {
+    type Out
+    def apply(cc: CC[A]): Out
+  }
+
+  /**
+   * `ToSizedHList` type class instances.
+   * 
+   * @author Rob Norris
+   */
+  object ToSizedHList {
+
+    def apply[CC[T] <: GenTraversable[T], A, N <: Nat](
+      implicit ev: ToSizedHList[CC, A, N]
+    ): ToSizedHList.Aux[CC, A, N, ev.Out] = 
+      ev
+
+    import syntax.sized._
+    import ops.nat._
+    import ops.sized._
+
+    type Aux[CC[T] <: GenTraversable[T], A, N <: Nat, Out0] =
+      ToSizedHList[CC, A, N] {
+        type Out = Out0
+      }
+
+    implicit def instance[CC[T] <: GenTraversable[T], A, N <: Nat](
+      implicit gt: CC[A] => GenTraversableLike[A, CC[A]], 
+               ac: AdditiveCollection[CC[A]],
+               ti: ToInt[N], 
+               th: ToHList[CC[A], N]
+    ): Aux[CC, A, N, Option[th.Out]] =
+      new ToSizedHList[CC, A, N] {
+        type Out = Option[th.Out]
+        def apply(as: CC[A]): Out =
+          as.sized[N].map(_.toHList)
+      }
+
+  }
+
 }

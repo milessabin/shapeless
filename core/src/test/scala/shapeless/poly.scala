@@ -290,175 +290,6 @@ class PolyTests {
   }
 
   @Test
-  def testInlinePoly {
-    val l = 23 :: "foo" :: true :: HNil
-    val ll = List(23) :: List("foo") :: List(true) :: HNil
-    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
-    val li = 23 :: 13 :: 7 :: HNil
-    
-    val l1 = ll.map(Poly { def apply[T](t: List[T]) = t.headOption })
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
-
-    val l1b = ll.map(Poly { def apply[T](t: List[T]) = t.toSet })
-    typed[Set[Int] :: Set[String] :: Set[Boolean] :: HNil](l1b)
-
-    val l2 = l.map(Poly { def apply[T](t: T) = Option(t) })
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
-
-    val l2b = l.map(Poly { def apply[T](t: T) = Option[T](t) })
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2b)
-
-    val l3 = lo.map(Poly { def apply[T](t: Option[T]) = t.get })
-    typed[Int :: String :: Boolean :: HNil](l3)
-
-    val l4 = l.map(Poly { def apply[T](t: T) = t })
-    typed[Int :: String :: Boolean :: HNil](l4)
-
-    val l5 = ll.map(Poly { def apply[T](t: List[T]) = t.length })
-    typed[Int :: Int :: Int :: HNil](l5)
-
-    val l6 = l.map(Poly { def apply[T](t: T) = t.toString })
-    typed[String :: String :: String :: HNil](l6)
-
-    val l7 = li.map(Poly { def apply(t: Int) = t+1 })
-    typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  @Test
-  def testLiftImported {
-    import LiftMethods._
-
-    val l = 23 :: "foo" :: true :: HNil
-    val ll = List(23) :: List("foo") :: List(true) :: HNil
-    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
-    val li = 23 :: 13 :: 7 :: HNil
-
-    val l1 = ll.map(mTcTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
-
-    val l2 = l.map(mIdTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
-
-    val l3 = lo.map(mTcId _)
-    typed[Int :: String :: Boolean :: HNil](l3)
-
-    val l4 = l.map(mIdId _)
-    typed[Int :: String :: Boolean :: HNil](l4)
-
-    val l5 = ll.map(mTcCn _)
-    typed[Int :: Int :: Int :: HNil](l5)
-
-    val l6 = l.map(mIdCn _)
-    typed[String :: String :: String :: HNil](l6)
-
-    val l7 = li.map(mCnCn _)
-    typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  @Test
-  def testLiftPath {
-    val l = 23 :: "foo" :: true :: HNil
-    val ll = List(23) :: List("foo") :: List(true) :: HNil
-    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
-    val li = 23 :: 13 :: 7 :: HNil
-
-    val l1 = ll.map(LiftMethods.mTcTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
-
-    val l2 = l.map(LiftMethods.mIdTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
-
-    val l3 = lo.map(LiftMethods.mTcId _)
-    typed[Int :: String :: Boolean :: HNil](l3)
-
-    val l4 = l.map(LiftMethods.mIdId _)
-    typed[Int :: String :: Boolean :: HNil](l4)
-
-    val l5 = ll.map(LiftMethods.mTcCn _)
-    typed[Int :: Int :: Int :: HNil](l5)
-
-    val l6 = l.map(LiftMethods.mIdCn _)
-    typed[String :: String :: String :: HNil](l6)
-
-    val l7 = li.map(LiftMethods.mCnCn _)
-    typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  @Test
-  def testLiftLocal {
-    def mTcTc[T](t : List[T]) = t.headOption
-    def mIdTc[T](t : T) = Option(t)
-    def mTcId[T](t : Option[T]) = t.get
-    def mIdId[T](t : T) = t
-    def mTcCn[T](t : List[T]) = t.length
-    def mIdCn[T](t : T) = t.toString
-    def mCnCn(t : Int) = t+1
-
-    val l = 23 :: "foo" :: true :: HNil
-    val ll = List(23) :: List("foo") :: List(true) :: HNil
-    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
-    val li = 23 :: 13 :: 7 :: HNil
-
-    val l1 = ll.map(mTcTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
-
-    val l2 = l.map(mIdTc _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
-
-    val l3 = lo.map(mTcId _)
-    typed[Int :: String :: Boolean :: HNil](l3)
-
-    val l4 = l.map(mIdId _)
-    typed[Int :: String :: Boolean :: HNil](l4)
-
-    val l5 = ll.map(mTcCn _)
-    typed[Int :: Int :: Int :: HNil](l5)
-
-    val l6 = l.map(mIdCn _)
-    typed[String :: String :: String :: HNil](l6)
-
-    val l7 = li.map(mCnCn _)
-    typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  def mTcTc2[T](t : List[T]) = t.headOption
-  def mIdTc2[T](t : T) = Option(t)
-  def mTcId2[T](t : Option[T]) = t.get
-  def mIdId2[T](t : T) = t
-  def mTcCn2[T](t : List[T]) = t.length
-  def mIdCn2[T](t : T) = t.toString
-  def mCnCn2(t : Int) = t+1
-
-  @Test
-  def testLiftEnclosing {
-    val l = 23 :: "foo" :: true :: HNil
-    val ll = List(23) :: List("foo") :: List(true) :: HNil
-    val lo = Option(23) :: Option("foo") :: Option(true) :: HNil
-    val li = 23 :: 13 :: 7 :: HNil
-
-    val l1 = ll.map(mTcTc2 _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l1)
-
-    val l2 = l.map(mIdTc2 _)
-    typed[Option[Int] :: Option[String] :: Option[Boolean] :: HNil](l2)
-
-    val l3 = lo.map(mTcId2 _)
-    typed[Int :: String :: Boolean :: HNil](l3)
-
-    val l4 = l.map(mIdId2 _)
-    typed[Int :: String :: Boolean :: HNil](l4)
-
-    val l5 = ll.map(mTcCn2 _)
-    typed[Int :: Int :: Int :: HNil](l5)
-
-    val l6 = l.map(mIdCn2 _)
-    typed[String :: String :: String :: HNil](l6)
-
-    val l7 = li.map(mCnCn2 _)
-    typed[Int :: Int :: Int :: HNil](l7)
-  }
-
-  @Test
   def testRotateLeft {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
@@ -467,17 +298,17 @@ class PolyTests {
     }
 
     val r1 = isd(1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r1)
 
     val sdi = isd.rotateLeft[Nat._1]
 
     val r2 = sdi("foo", 2.0, 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r2)
 
     val dis  = isd.rotateLeft[Nat._2]
 
     val r3 = dis(2.0, 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r3)
 
     object isdc extends Poly4 {
       implicit val default = at[Int, String, Double, Char] {
@@ -486,17 +317,17 @@ class PolyTests {
     }
 
     val r4 = isdc(1, "foo", 2.0, 'a')
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r4)
 
     val sdci = isdc.rotateLeft[Nat._1]
 
     val r5 = sdci("foo", 2.0, 'a', 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r5)
 
     val dcis = isdc.rotateLeft[Nat._2]
 
     val r6 = dcis(2.0, 'a', 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r6)
   }
 
   @Test
@@ -508,17 +339,17 @@ class PolyTests {
     }
 
     val r1 = isd(1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r1)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r1)
 
     val dis = isd.rotateRight[Nat._1]
 
     val r2 = dis(2.0, 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r2)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r2)
 
     val sdi  = isd.rotateRight[Nat._2]
 
     val r3 = sdi("foo", 2.0, 1)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0", r3)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r3)
 
     object isdc extends Poly4 {
       implicit val default = at[Int, String, Double, Char] {
@@ -527,26 +358,16 @@ class PolyTests {
     }
 
     val r4 = isdc(1, "foo", 2.0, 'a')
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r4)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r4)
 
     val cisd = isdc.rotateRight[Nat._1]
 
     val r5 = cisd('a', 1, "foo", 2.0)
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r5)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r5)
 
     val dcis = isdc.rotateRight[Nat._2]
 
     val r6 = dcis(2.0, 'a', 1, "foo")
-    assertTypedEquals[String]("i: 1, s: foo, d: 2.0, c: a", r6)
+    assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r6)
   }
-}
-
-object LiftMethods {
-  def mTcTc[T](t : List[T]) = t.headOption
-  def mIdTc[T](t : T) = Option(t)
-  def mTcId[T](t : Option[T]) = t.get
-  def mIdId[T](t : T) = t
-  def mTcCn[T](t : List[T]) = t.length
-  def mIdCn[T](t : T) = t.toString
-  def mCnCn(t : Int) = t+1
 }

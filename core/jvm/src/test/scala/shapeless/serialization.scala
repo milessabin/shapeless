@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Miles Sabin
+ * Copyright (c) 2015-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,12 @@ object SerializationTestDefns {
   }
 
   def assertSerializable[T](t: T): Unit = assertTrue(serializable(t))
+
+  def assertSerializableBeforeAfter[T, U](t: T)(op: T => U): Unit = {
+    assertSerializable(t)
+    op(t)
+    assertSerializable(t)
+  }
 
   object isDefined extends (Option ~>> Boolean) {
     def apply[T](o : Option[T]) = o.isDefined
@@ -124,6 +130,14 @@ object SerializationTestDefns {
   case class Wibble(i: Int, s: String)
 
   case class Box[T](t: T)
+
+  type K = HList.`'a, 'b, 'c`.T
+  type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
+  type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
+  type RM = Record.`'c -> Boolean, 'd -> Double`.T
+  type KA = Witness.`'a`.T
+  type KB = Witness.`'b`.T
+  type KC = Witness.`'c`.T
 
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
@@ -302,7 +316,8 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
-    type K = HList.`'a, 'b, 'c`.T
+    val s = HList.`'a, "boo", 23, true`
+    type S = s.T
 
     assertSerializable(IsHCons[L])
 
@@ -381,6 +396,12 @@ class SerializationTests {
     assertSerializable(Remove[L, Int])
 
     assertSerializable(RemoveAll[L, IS])
+
+    assertSerializable(Union[L, IS])
+
+    assertSerializable(Intersection[L, IS])
+
+    assertSerializable(Diff[L, IS])
 
     assertSerializable(Replacer[L, Int, String])
 
@@ -484,17 +505,15 @@ class SerializationTests {
     assertSerializable(Fill[_3, Int])
 
     assertSerializable(Patcher[_0, _1, L, IS])
+
+    assertSerializable(Reify[HNil])
+    assertSerializable(Reify[S])
   }
 
   @Test
   def testRecords {
     import ops.record._
 
-    type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type RM = Record.`'c -> Boolean, 'd -> Double`.T
-    type KA = Witness.`'a`.T
-    type KB = Witness.`'b`.T
-    type KC = Witness.`'c`.T
     type FA = FieldType[KA, Int]
     type FB = FieldType[KB, String]
     type FC = FieldType[KC, Boolean]
@@ -531,6 +550,9 @@ class SerializationTests {
     assertSerializable(Values[HNil])
     assertSerializable(Values[R])
 
+    assertSerializable(UnzipFields[HNil])
+    assertSerializable(UnzipFields[R])
+
     assertSerializable(ToMap[HNil])
     assertSerializable(ToMap[R])
 
@@ -545,7 +567,8 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
-    type K = HList.`'a, 'b, 'c`.T
+    val s = Coproduct.`'a, "boo", 23, true`
+    type S = s.T
 
     assertSerializable(Inject[L, Int])
     assertSerializable(Inject[L, String])
@@ -647,15 +670,14 @@ class SerializationTests {
 
     assertSerializable(Basis[L, CNil])
     assertSerializable(Basis[L, BS])
+
+    assertSerializable(Reify[CNil])
+    assertSerializable(Reify[S])
   }
 
   @Test
   def testUnions {
     import ops.union._
-
-    type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type KA = Witness.`'a`.T
-    type KB = Witness.`'b`.T
 
     assertSerializable(Selector[U, KA])
     assertSerializable(Selector[U, KB])
@@ -665,6 +687,9 @@ class SerializationTests {
 
     assertSerializable(Values[CNil])
     assertSerializable(Values[U])
+
+    assertSerializable(UnzipFields[CNil])
+    assertSerializable(UnzipFields[U])
 
     assertSerializable(ToMap[CNil])
     assertSerializable(ToMap[U])
@@ -689,7 +714,6 @@ class SerializationTests {
     type LT = ((Int, String), (Boolean, Double), (Char, Float))
     type AL = ((Int => Double), (String => Char), (Boolean => Float))
     type I3 = (Int, Int, Int)
-    type K = HList.`'a, 'b, 'c`.T
 
     assertSerializable(IsComposite[L])
 
@@ -892,6 +916,12 @@ class SerializationTests {
   def testTraversable {
     type L = Int :: String :: Boolean :: HNil
     assertSerializable(FromTraversable[L])
+
+    // To satisfy serialization of `ToSizedHList` we must provide a serializable `IsTraversableLike`
+    import scala.collection.generic.IsTraversableLike
+    implicit val hack: IsTraversableLike[List[Int]] { type A = Int } = null
+    assertSerializable(ToSizedHList[List, Int, _4])
+
   }
 
   @Test
@@ -937,18 +967,11 @@ class SerializationTests {
   def testLazy {
     assertSerializable(Lazy(23))
 
-    // The following two fail serialization with a ClassNotFoundException due to
-    // what appears to be incorrect name mangling. Their expansion involves method local
-    // classes with lazy val member which the Scala issue tracker suggests are
-    // problematic. The success of other tests here, esp. testSyb, testFunctor and testShow,
-    // suggest that this won't be a problem in practice, however this needs to have an eye
-    // kept on it.
+    assertSerializableBeforeAfter(implicitly[Lazy[Generic[Wibble]]])(_.value)
+    assertSerializableBeforeAfter(implicitly[Lazy[Generic1[Box, TC1]]])(_.value)
 
-    //assertSerializable(implicitly[Lazy[Generic[Wibble]]])
-    //assertSerializable(implicitly[Lazy[Generic1[Box, TC1]]])
-
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])
-    assertSerializable(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])
+    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])(_.value)
+    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])(_.value)
   }
 
   @Test
@@ -1066,22 +1089,28 @@ class SerializationTests {
     assertSerializable(DataT[poly.identity.type, List[CNil]])
     assertSerializable(DataT[poly.identity.type, List[C]])
 
-    assertSerializable(implicitly[Everything[gsize.type, plus.type, Wibble]])
-    assertSerializable(implicitly[Everywhere[poly.identity.type, Wibble]])
+    assertSerializableBeforeAfter(implicitly[Everything[gsize.type, plus.type, Wibble]])(_(Wibble(2, "a")))
+    assertSerializableBeforeAfter(implicitly[Everywhere[poly.identity.type, Wibble]])(_(Wibble(2, "a")))
   }
 
   @Test
   def testFunctor {
-    assertSerializable(Functor[Some])
-    assertSerializable(Functor[Option])
-    assertSerializable(Functor[Tree])
-    assertSerializable(Functor[List])
+    assertSerializableBeforeAfter(Functor[Some])(_.map(Some(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[Option])(_.map(Option(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[Tree])(_.map(Leaf(2))(_.toString))
+    assertSerializableBeforeAfter(Functor[List])(_.map(List(2))(_.toString))
   }
 
   @Test
   def testShow {
-    assertSerializable(Show[Some[Int]])
-    assertSerializable(Show[Option[Int]])
+    // I had to disable the first two during https://github.com/milessabin/shapeless/pull/435, with scala 2.12.0-M2.
+    // Don't know why they keep capturing their outer class, and the next two don't.
+
+    assertSerializableBeforeAfter(Show[Some[Int]])(_.show(Some(2)))
+    assertSerializableBeforeAfter(Show[Option[Int]]) { show =>
+      show.show(Some(2))
+      show.show(None)
+    }
     assertSerializable(Show[Tree[Int]])
     assertSerializable(Show[List[Int]])
   }
@@ -1117,5 +1146,16 @@ class SerializationTests {
     assertSerializable(l12)
     assertSerializable(l13)
     assertSerializable(l14)
+  }
+
+  @Test
+  def testDefault {
+    val d1 = Default[DefaultTestDefinitions.CC]
+    val d2 = Default.AsRecord[DefaultTestDefinitions.CC]
+    val d3 = Default.AsOptions[DefaultTestDefinitions.CC]
+
+    assertSerializable(d1)
+    assertSerializable(d2)
+    assertSerializable(d3)
   }
 }

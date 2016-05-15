@@ -22,23 +22,30 @@ import org.junit.Assert._
 import test._
 
 class SybClassTests {
-  object gsizeAll extends Poly1 {
-    implicit def caseString = at[String](_.length)
+
+  trait gsizeAll0 extends Poly1 {
     implicit def default[T](implicit data: Lazy[Data[this.type, T, Int]]) = at[T](1+data.value.gmapQ(_).sum)
   }
+  object gsizeAll extends gsizeAll0 {
+    implicit def caseString = at[String](_.length)
+  }
 
-  object gsize extends Poly1 {
+  trait gsize0 extends Poly1 {
+    implicit def default[T] = at[T](_ => 1)
+  }
+  object gsize extends gsize0 {
     implicit def caseInt = at[Int](_ => 1)
     implicit def caseString = at[String](_.length)
-    implicit def default[T] = at[T](_ => 1)
   }
 
   def gsizeAll2[T](t: T)(implicit everything: Everything[gsize.type, plus.type, T]) = everything(t)
 
-  object incAll extends Poly1 {
+  trait incAll0 extends Poly1 {
+    implicit def default[T](implicit data: Lazy[DataT[this.type, T]]) = at[T](data.value.gmapT(_))
+  }
+  object incAll extends incAll0 {
     implicit def caseInt = at[Int](_+1)
     implicit def caseString = at[String](_+"*")
-    implicit def default[T](implicit data: Lazy[DataT[this.type, T]]) = at[T](data.value.gmapT(_))
   }
 
   object inc extends Poly1 {
@@ -141,6 +148,14 @@ class SybClassTests {
     typed[Int](e4)
     assertEquals(5, e4)
 
+    val e5 = everything(gsize)(plus)(Map("foo" -> 23, "bar" -> 24))
+    typed[Int](e5)
+    assertEquals(11, e5)
+
+    val e6 = everything(gsize)(plus)(Map("foo" -> List(1, 2, 3), "bar" -> Nil))
+    typed[Int](e6)
+    assertEquals(14, e6)
+
     val is = gsizeAll2(23)
     typed[Int](is)
     assertEquals(1, is)
@@ -160,6 +175,10 @@ class SybClassTests {
     val lps = gsizeAll2(List(("foo", 23), ("bar", 24)))
     typed[Int](lps)
     assertEquals(11, lps)
+
+    val mps = gsizeAll2(Map("foo" -> List(1, 2, 3), "bar" -> Nil))
+    typed[Int](mps)
+    assertEquals(14, mps)
   }
 
   @Test
@@ -211,6 +230,26 @@ class SybClassTests {
     val e8 = everywhere(inc)(List(Option(List(Option(List(Option(23)))))))
     typed[List[Option[List[Option[List[Option[Int]]]]]]](e8)
     assertEquals(List(Option(List(Option(List(Option(24)))))), e8)
+
+    val e9 = everywhere(inc)(Vector(23))
+    typed[Vector[Int]](e9)
+    assertEquals(Vector(24), e9)
+
+    val e10 = everywhere(inc)(Vector(Option(23)))
+    typed[Vector[Option[Int]]](e10)
+    assertEquals(Vector(Option(24)), e10)
+
+    val e11 = everywhere(inc)(Map("foo" -> 23))
+    typed[Map[String, Int]](e11)
+    assertEquals(Map("foo" -> 24), e11)
+
+    val e12 = everywhere(inc)(Map("foo" -> 1, "bar" -> 2))
+    typed[Map[String, Int]](e12)
+    assertEquals(Map("foo" -> 2, "bar" -> 3), e12)
+
+    val e13 = everywhere(inc)(List(Map("foo" -> Vector(Option(1), None, Option(2)))))
+    typed[List[Map[String, Vector[Option[Int]]]]](e13)
+    assertEquals(List(Map("foo" -> Vector(Option(2), None, Option(3)))), e13)
   }
 
   @Test

@@ -36,6 +36,12 @@ package Generic1TestsAux {
     implicit def tc2[L[_]]: TC2[L] = new TC2[L] {}
   }
 
+  trait TC3[F[_], G[_]]
+
+  object TC3 {
+    implicit def tc3[F[_], G[_]]: TC3[F, G] = new TC3[F, G] {}
+  }
+
   trait Box[T]
 
   case class Foo[T](t: T)
@@ -128,8 +134,6 @@ package Generic1TestsAux {
   object Pointed extends Pointed0 {
     def apply[F[_]](implicit f: Lazy[Pointed[F]]): Pointed[F] = f.value
 
-    import scala.language.experimental.macros
-
     implicit val idPointed: Pointed[Id] =
       new Pointed[Id] {
         def point[A](a: A): Id[A] = a
@@ -187,7 +191,7 @@ package Generic1TestsAux {
       new Pointed[({type λ[A] = A :+: Const[CNil]#λ[A] })#λ] {
         def point[A](a: A): A :+: Const[CNil]#λ[A] = Inl(a)
       }
-      
+
 
     implicit val constHNilPointed: Pointed[Const[HNil]#λ] =
       new Pointed[Const[HNil]#λ] {
@@ -203,6 +207,30 @@ package Generic1TestsAux {
     class PointedOps[A](a: A) {
       def point[F[_]](implicit F: Pointed[F]): F[A] = F.point(a)
     }
+  }
+
+  trait Trivial1[F[_]]
+
+  object Trivial1 {
+    implicit def trivially[F[_]]: Trivial1[F] = new Trivial1[F] {}
+  }
+
+  trait Trivial10[F[_], T]
+
+  object Trivial10 {
+    implicit def trivially[F[_], T]: Trivial10[F, T] = new Trivial10[F, T] {}
+  }
+
+  trait Trivial01[T, F[_]]
+
+  object Trivial01 {
+    implicit def trivially[T, F[_]]: Trivial01[T, F] = new Trivial01[T, F] {}
+  }
+
+  trait Trivial11[F[_], T[_]]
+
+  object Trivial11 {
+    implicit def trivially[F[_], T[_]]: Trivial11[F, T] = new Trivial11[F, T] {}
   }
 }
 
@@ -278,6 +306,20 @@ class Generic1Tests {
 
     type T[t] = (t, t) :: Option[t] :: HNil
     val ihcT = implicitly[IsHCons1[T, TC1, TC2]]
+  }
+
+  trait Singleton1[T[_]]
+  object Singleton1 {
+    implicit val hnilInstance: Singleton1[Const[HNil]#λ] = new Singleton1[Const[HNil]#λ] {}
+  }
+
+  @Test
+  def testSingletons {
+    type Unit1[t] = Unit
+    type None1[t] = None.type
+
+    implicitly[Generic1[Unit1, Singleton1]]
+    implicitly[Generic1[None1, Singleton1]]
   }
 
   @Test
@@ -378,6 +420,167 @@ class Generic1Tests {
 
     Pointed[Option]
   }
+
+  @Test
+  def testPartiallyApplied {
+    implicitly[Trivial10[List, Int]]
+    type FI[f[_]] = Trivial10[f, Int]
+    implicitly[FI[List]]
+    val g0 = Generic1[Foo, FI]
+    typed[Trivial10[g0.R, Int]](g0.mkFrr)
+
+    implicitly[Trivial01[Int, List]]
+    type IF[f[_]] = Trivial01[Int, f]
+    implicitly[IF[List]]
+    val g1 = Generic1[Foo, IF]
+    typed[Trivial01[Int, g0.R]](g1.mkFrr)
+
+    implicitly[Trivial11[Set, List]]
+    type FL[f[_]] = Trivial11[f, List]
+    implicitly[FL[Set]]
+    val g2 = Generic1[Foo, FL]
+    typed[Trivial11[g2.R, List]](g2.mkFrr)
+
+    implicitly[Trivial11[List, Set]]
+    type LF[f[_]] = Trivial11[List, f]
+    implicitly[LF[Set]]
+    val g3 = Generic1[Foo, LF]
+    typed[Trivial11[List, g3.R]](g3.mkFrr)
+
+    type HC[t] = t :: HNil
+    val ih0 = IsHCons1[HC, FI, Trivial1]
+    typed[Trivial10[ih0.H, Int]](ih0.mkFhh)
+    typed[Trivial1[ih0.T]](ih0.mkFtt)
+
+    val ih1 = IsHCons1[HC, Trivial1, FI]
+    typed[Trivial1[ih1.H]](ih1.mkFhh)
+    typed[Trivial10[ih1.T, Int]](ih1.mkFtt)
+
+    type CC[t] = t :+: CNil
+    val ic0 = IsCCons1[CC, FI, Trivial1]
+    typed[Trivial10[ic0.H, Int]](ic0.mkFhh)
+    typed[Trivial1[ic0.T]](ic0.mkFtt)
+
+    val ic1 = IsCCons1[CC, Trivial1, FI]
+    typed[Trivial1[ic1.H]](ic1.mkFhh)
+    typed[Trivial10[ic1.T, Int]](ic1.mkFtt)
+
+    type LO[t] = List[Option[t]]
+    val s0 = Split1[LO, FI, Trivial1]
+    typed[Trivial10[s0.O, Int]](s0.mkFoo)
+    typed[Trivial1[s0.I]](s0.mkFii)
+
+    val s1 = Split1[LO, Trivial1, FI]
+    typed[Trivial1[s1.O]](s1.mkFoo)
+    typed[Trivial10[s1.I, Int]](s1.mkFii)
+  }
+
+  @Test
+  def testPartiallyApplied2 {
+    type CRepr[t] = t :: List[t] :: HNil
+    type LRepr[t] = scala.collection.immutable.::[t] :+: Nil.type :+: CNil
+    type LS[t] = List[Set[t]]
+
+    val g0 = Generic1[List, ({ type λ[t[_]] = TC3[t, Option] })#λ]
+    implicitly[g0.R[Int] =:= LRepr[Int]]
+    typed[TC3[LRepr, Option]](g0.fr)
+
+    val g1 = Generic1[List, ({ type λ[t[_]] = TC3[Option, t] })#λ]
+    implicitly[g1.R[Int] =:= LRepr[Int]]
+    typed[TC3[Option, LRepr]](g1.fr)
+
+    val h0 = IsHCons1[CRepr, ({ type λ[t[_]] = TC3[t, Option] })#λ, Trivial1]
+    typed[TC3[h0.H, Option]](h0.fh)
+    typed[Trivial1[h0.T]](h0.ft)
+
+    val h1 = IsHCons1[CRepr, ({ type λ[t[_]] = TC3[Option, t] })#λ, Trivial1]
+    typed[TC3[Option, h1.H]](h1.fh)
+    typed[Trivial1[h1.T]](h1.ft)
+
+    val h2 = IsHCons1[CRepr, Trivial1, ({ type λ[t[_]] = TC3[t, Option] })#λ]
+    typed[Trivial1[h2.H]](h2.fh)
+    typed[TC3[h2.T, Option]](h2.ft)
+
+    val h3 = IsHCons1[CRepr, Trivial1, ({ type λ[t[_]] = TC3[Option, t] })#λ]
+    typed[Trivial1[h3.H]](h3.fh)
+    typed[TC3[Option, h3.T]](h3.ft)
+
+    val c0 = IsCCons1[LRepr, ({ type λ[t[_]] = TC3[t, Option] })#λ, Trivial1]
+    typed[TC3[c0.H, Option]](c0.fh)
+    typed[Trivial1[c0.T]](c0.ft)
+
+    val c1 = IsCCons1[LRepr, ({ type λ[t[_]] = TC3[Option, t] })#λ, Trivial1]
+    typed[TC3[Option, c1.H]](c1.fh)
+    typed[Trivial1[c1.T]](c1.ft)
+
+    val c2 = IsCCons1[LRepr, Trivial1, ({ type λ[t[_]] = TC3[t, Option] })#λ]
+    typed[Trivial1[c2.H]](c2.fh)
+    typed[TC3[c2.T, Option]](c2.ft)
+
+    val c3 = IsCCons1[LRepr, Trivial1, ({ type λ[t[_]] = TC3[Option, t] })#λ]
+    typed[Trivial1[c3.H]](c3.fh)
+    typed[TC3[Option, c3.T]](c3.ft)
+
+    val s0 = Split1[LS, ({ type λ[t[_]] = TC3[t, Option] })#λ, Trivial1]
+    typed[TC3[s0.O, Option]](s0.fo)
+    typed[Trivial1[s0.I]](s0.fi)
+
+    val s1 = Split1[LS, ({ type λ[t[_]] = TC3[Option, t] })#λ, Trivial1]
+    typed[TC3[Option, s1.O]](s1.fo)
+    typed[Trivial1[s1.I]](s1.fi)
+
+    val s2 = Split1[LS, Trivial1, ({ type λ[t[_]] = TC3[t, Option] })#λ]
+    typed[Trivial1[s2.O]](s2.fo)
+    typed[TC3[s2.I, Option]](s2.fi)
+
+    val s3 = Split1[LS, Trivial1, ({ type λ[t[_]] = TC3[Option, t] })#λ]
+    typed[Trivial1[s3.O]](s3.fo)
+    typed[TC3[Option, s3.I]](s3.fi)
+  }
+
+  def testPartiallyApplied3 {
+    def materialize1[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
+    def materialize2[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
+
+    materialize1[List]
+    materialize2[List]
+
+    def materialize3[F[_]](implicit ihc: IsHCons1[F, Trivial1, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
+    def materialize4[F[_]](implicit ihc: IsHCons1[F, Trivial1, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
+    def materialize5[F[_]](implicit ihc: IsHCons1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ, Trivial1]): Unit = ()
+    def materialize6[F[_]](implicit ihc: IsHCons1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ, Trivial1]): Unit = ()
+
+    type H[t] = t :: scala.collection.immutable.List[t] :: HNil
+
+    materialize3[H]
+    materialize4[H]
+    materialize5[H]
+    materialize6[H]
+
+    def materialize7[F[_]](implicit ihc: IsCCons1[F, Trivial1, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
+    def materialize8[F[_]](implicit ihc: IsCCons1[F, Trivial1, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
+    def materialize9[F[_]](implicit ihc: IsCCons1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ, Trivial1]): Unit = ()
+    def materialize10[F[_]](implicit ihc: IsCCons1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ, Trivial1]): Unit = ()
+
+    type C[t] = scala.collection.immutable.::[t] :+: Nil.type :+: CNil
+
+    materialize7[C]
+    materialize8[C]
+    materialize9[C]
+    materialize10[C]
+
+    def materialize11[F[_]](implicit ihc: Split1[F, Trivial1, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
+    def materialize12[F[_]](implicit ihc: Split1[F, Trivial1, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
+    def materialize13[F[_]](implicit ihc: Split1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ, Trivial1]): Unit = ()
+    def materialize14[F[_]](implicit ihc: Split1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ, Trivial1]): Unit = ()
+
+    type S[t] = List[Option[t]]
+
+    materialize11[S]
+    materialize12[S]
+    materialize13[S]
+    materialize14[S]
+  }
 }
 
 object SplitTestDefns {
@@ -442,5 +645,26 @@ class SplitTests {
     Split1[({ type λ[t] = Int => List[t] })#λ, Dummy1, Dummy1]
 
     Split1[({ type λ[t] = List[t] => Int })#λ, Dummy1, Dummy1]
+
+    type HNil1[t] = HNil
+    type HCons1[t] = t :: HNil
+    type CNil1[t] = CNil
+    type CCons[t] = t :+: CNil
+
+    illTyped("""
+    Split1[HNil1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[HCons1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[CNil1, Dummy1, Dummy1]
+    """)
+
+    illTyped("""
+    Split1[CCons1, Dummy1, Dummy1]
+    """)
   }
 }

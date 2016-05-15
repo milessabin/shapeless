@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-15 Miles Sabin
+ * Copyright (c) 2014-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,9 +79,12 @@ trait FieldPoly extends Poly1 {
 trait FieldOf[V] {
   import labelled._
 
+  type F = FieldType[this.type, V]
+
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
+@macrocompat.bundle
 class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
   import labelled._
   import c.universe._
@@ -106,24 +109,24 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
       new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
         type Out = $labelsTpe
         def apply(): $labelsTpe = $labelsValue
-      }
+      } : _root_.shapeless.DefaultSymbolicLabelling.Aux[$tTpe, $labelsTpe]
     """
   }
 
-  def recordTypeImpl(tpeSelector: c.Tree): c.Tree =
+  def recordTypeImpl(tpeSelector: Tree): Tree =
     labelledTypeImpl(tpeSelector, "record", hnilTpe, hconsTpe)
 
-  def unionTypeImpl(tpeSelector: c.Tree): c.Tree =
+  def unionTypeImpl(tpeSelector: Tree): Tree =
     labelledTypeImpl(tpeSelector, "union", cnilTpe, cconsTpe)
 
-  def labelledTypeImpl(tpeSelector: c.Tree, variety: String, nilTpe: Type, consTpe: Type): c.Tree = {
+  def labelledTypeImpl(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
 
     val q"${tpeString: String}" = tpeSelector
     val fields =
       if (tpeString.trim.isEmpty)
-        Array.empty[(c.Type, c.Type)]
+        Array.empty[(Type, Type)]
       else
         tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
           case Array(key, value) =>
@@ -150,17 +153,17 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
     typeCarrier(labelledTpe)
   }
 
-  def hlistTypeImpl(tpeSelector: c.Tree): c.Tree =
+  def hlistTypeImpl(tpeSelector: Tree): Tree =
     nonLabelledTypeImpl(tpeSelector, "hlist", hnilTpe, hconsTpe)
 
-  def coproductTypeImpl(tpeSelector: c.Tree): c.Tree =
+  def coproductTypeImpl(tpeSelector: Tree): Tree =
     nonLabelledTypeImpl(tpeSelector, "coproduct", cnilTpe, cconsTpe)
 
-  def nonLabelledTypeImpl(tpeSelector: c.Tree, variety: String, nilTpe: Type, consTpe: Type): c.Tree = {
+  def nonLabelledTypeImpl(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
     val q"${tpeString: String}" = tpeSelector
     val elemTypes =
       if (tpeString.trim.isEmpty)
-        Array.empty[c.Type]
+        Array.empty[Type]
       else
         tpeString.split(",").map(_.trim).map { elemTypeStr =>
           parseType(elemTypeStr)

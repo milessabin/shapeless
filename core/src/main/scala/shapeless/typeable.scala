@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
     def cast(t: Any): Option[T] = {
-      if(t != null && (cB isAssignableFrom t.getClass)) Some(t.asInstanceOf[T]) else None
+      if(t != null && cB.isInstance(t)) Some(t.asInstanceOf[T]) else None
     }
   }
 
@@ -198,7 +198,9 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   /** Typeable instance for `GenTraversable`.
    *  Note that the contents be will tested for conformance to the element type. */
   implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T]] =
+    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with GenTraversable[T]] =
+    // Nb. the apparently redundant `with GenTraversable[T]` is a workaround for a
+    // Scala 2.10.x bug which causes conflicts between this instance and `anyTypeable`.
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =
         if(t == null) None
@@ -333,29 +335,27 @@ object TypeCase {
   }
 }
 
+@macrocompat.bundle
 class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import internal._
+  import definitions.NothingClass
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
 
     val typeableTpe = typeOf[Typeable[_]].typeConstructor
     val genericTpe = typeOf[Generic[_]].typeConstructor
-    val AC = definitions.AnyClass
-    val NC = definitions.NothingClass
 
     val dealiased = tpe.dealias
+
     dealiased match {
-      case TypeRef(_, NC, _) =>
+      case t: TypeRef if t.sym == NothingClass =>
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
-      case ExistentialType(quantified, underlying) =>
+      case ExistentialType(_, underlying) =>
         val tArgs = dealiased.typeArgs
         val normalized = appliedType(dealiased.typeConstructor, tArgs)
-
-        if(normalized =:= dealiased)
-          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
 
         val normalizedTypeable = c.inferImplicitValue(appliedType(typeableTpe, List(normalized)))
         if(normalizedTypeable == EmptyTree)
@@ -396,7 +396,17 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         if(!pSym.isCaseClass)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
-        val fields = tpe.decls.toList collect {
+        val nonCaseAccessor = tpe.decls.exists {
+          case sym: TermSymbol if !sym.isCaseAccessor && (sym.isVal || sym.isVar ||
+              (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))) => true
+          case _ => false
+        }
+        if (nonCaseAccessor) {
+          // there is a symbol, which is not a case accessor but a val,
+          // var or param, so we won't be able to type check it safely:
+          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+        }
+        val fields = tpe.decls.sorted collect {
           case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
         }
         val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-14 Miles Sabin
+ * Copyright (c) 2013-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import org.junit.Test
 import org.junit.Assert._
 
 import shapeless.test._
+import shapeless.test.illTyped
+import shapeless.testutil.assertTypedEquals
 
 package SingletonTypeTestsDefns {
   class ValueTest(val x: Int) extends AnyVal
@@ -271,8 +273,7 @@ class SingletonTypesTests {
     val wFoo = Witness(Foo)
     val wBar = Witness(bar)
 
-    typed[Foo.type](wFoo.value)
-    typed[bar.type](wBar.value)
+    // Note: Further tests in SingletonTypes211Tests
 
     val cFoo = convert(Foo)
     val cBar = convert(bar)
@@ -285,34 +286,6 @@ class SingletonTypesTests {
 
     sameTyped(bcFoo)(Witness(Foo))
     sameTyped(bcBar)(Witness(bar))
-  }
-
-  class PathDependentSingleton1 {
-    val o: AnyRef = new Object {}
-    val wO = Witness(o)
-    type OT = wO.T
-    implicitly[OT =:= o.type]
-
-    val x0: OT = wO.value
-    val x1: o.type = wO.value
-
-    val x2 = wO.value
-    typed[o.type](x2)
-    typed[OT](x2)
-  }
-
-  object PathDependentSingleton2 {
-    val o: AnyRef = new Object {}
-    val wO = Witness(o)
-    type OT = wO.T
-    implicitly[OT =:= o.type]
-
-    val x0: OT = wO.value
-    val x1: o.type = wO.value
-
-    val x2 = wO.value
-    typed[o.type](x2)
-    typed[OT](x2)
   }
 
   @Test
@@ -525,6 +498,76 @@ class SingletonTypesTests {
     val wX = Witness(x)
     """)
   }
+
+  @Test
+  def primitiveWiden {
+    {
+      val w = Widen[Witness.`2`.T]
+      illTyped(" w(3) ", "type mismatch;.*")
+      val n = w(2)
+      val n0: Int = n
+      illTyped(" val n1: Witness.`2`.T = n ", "type mismatch;.*")
+
+      assertTypedEquals[Int](2, n)
+    }
+
+    {
+      val w = Widen[Witness.`true`.T]
+      illTyped(" w(false) ", "type mismatch;.*")
+      val b = w(true)
+      val b0: Boolean = b
+      illTyped(" val b1: Witness.`true`.T = b ", "type mismatch;.*")
+
+      assertTypedEquals[Boolean](true, b)
+    }
+
+    {
+      val w = Widen[Witness.`"ab"`.T]
+      illTyped(""" w("s") """, "type mismatch;.*")
+      val s = w("ab")
+      val s0: String = s
+      illTyped(""" val s1: Witness.`"ab"`.T = s """, "type mismatch;.*")
+
+      assertTypedEquals[String]("ab", s)
+    }
+  }
+
+  @Test
+  def symbolWiden {
+    // Masks shapeless.syntax.singleton.narrowSymbol.
+    // Having it in scope makes the illTyped tests fail in an unexpected way.
+    def narrowSymbol = ???
+
+    val w = Widen[Witness.`'ab`.T]
+    illTyped(" w('s.narrow) ", "type mismatch;.*")
+    val s = w('ab.narrow)
+    val s0: Symbol = s
+    illTyped(" val s1: Witness.`'ab`.T = s ", "type mismatch;.*")
+
+    assertTypedEquals[Symbol]('ab, s)
+  }
+
+  @Test
+  def aliasWiden {
+    type T = Witness.`2`.T
+    val w = Widen[T]
+    illTyped(" w(3) ", "type mismatch;.*")
+    val n = w(2)
+    val n0: Int = n
+    illTyped(" val n1: Witness.`2`.T = n ", "type mismatch;.*")
+
+    assertTypedEquals[Int](2, n)
+  }
+
+
+  trait B
+  case object A extends B
+
+  @Test
+  def singletonWiden {
+    illTyped(" Widen[A.type] ", "could not find implicit value for parameter widen:.*")
+  }
+
 }
 
 package SingletonTypeTestsAux {

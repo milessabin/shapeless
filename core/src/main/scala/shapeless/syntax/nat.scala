@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Dale Wijnand
+ * Copyright (c) 2011-16 Dale Wijnand
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,27 @@
 package shapeless
 package syntax
 
+object nat {
+
+  import ops.nat.BoundedRange
+  import BoundedRange.{Exclusive, Inclusive}
+
+  type *--*[A,B] = BoundedRange[Inclusive[A], Inclusive[B]]
+
+  type :--:[A,B] = BoundedRange[Exclusive[A], Exclusive[B]]
+
+  type :--*[A,B] = BoundedRange[Exclusive[A], Inclusive[B]]
+
+  type *--:[A,B] = BoundedRange[Inclusive[A], Exclusive[B]]
+
+}
+
 /**
  * Carrier for `Nat` operations.
  *
  * @author Dale Wijnand
  */
-final class NatOps[N <: Nat](n : Nat) extends Serializable {
+final class NatOps[N <: Nat](val n: N) extends AnyVal with Serializable {
   import ops.nat._
 
   /**

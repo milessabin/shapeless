@@ -1,3 +1,7 @@
+# Ignore local configuration
+.sbtrc
+scripts/travis-config.sh
+
 scratch/
 target/
 

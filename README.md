@@ -10,12 +10,22 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
+[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
+
+## Projects which use shapeless
+
+There is a wide variety of projects which use shapeless in one way or another ... see the
+[incomplete list of projects][built-with-shapeless] for ideas and inspiration. If you are using shapeless and your
+project isn't listed yet, please add it.
+
+[built-with-shapeless]: https://github.com/milessabin/shapeless/wiki/Built-with-shapeless
 
 ## Finding out more about the project
 
-A full feature overview of shapeless-2.2.0+ is in preparation. In the meantime, please refer to the
-[release notes][relnotes220] and the feature overview for shapeless-2.0.0 which can be found [here][features200]. If you
-are upgrading from shapeless-2.0.0 you will find the [migration guide][migration210] useful.
+The [feature overview for shapeless-2.0.0][features200] provides a very incomplete introduction to shapeless.
+Additional information can be found in subsequent [release notes][relnotes220]. If you are upgrading from
+shapeless-2.0.0 you will find the [migration guide][migration210] useful. We're not satisfied with the current state
+of the documentation and would love help in improving it.
 
 shapeless is part of the [Typelevel][typelevel] family of projects. It is an Open Source project under the Apache
 License v2, hosted on [github][source]. Binary artefacts are published to the
@@ -64,8 +74,8 @@ being [good candidates to take on][lowhangingfruit]. No contribution is too smal
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
-Central. Snapshots of the master and scala-2.10.x branches are built using [Travis CI][ci] and automatically published
-to the Sonatype OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
+Central. Snapshots of the master branch are built using [Travis CI][ci] and automatically published to the Sonatype
+OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
 
 ```scala
 resolvers ++= Seq(
@@ -86,37 +96,105 @@ to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.2.4
+### shapeless-2.3.1
 
-Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
-shapeless 2.2.4 is Scala 2.11.7 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M3. The main line of development for
+shapeless 2.3.1 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.4"
+  "com.chuusai" %% "shapeless" % "2.3.1"
 )
+```
+
+If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
+
+```scala
+scalaVersion := "2.10.6"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.3.1",
+  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+)
+```
+
+### shapeless-2.2.5
+
+Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
+shapeless 2.2.5 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
+
+```scala
+scalaVersion := "2.11.8"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.2.5"
+)
+```
+
+shapeless is also available for projects using the Maven build tool via the following dependency,
+
+```xml
+<dependency>
+  <groupId>com.chuusai</groupId>
+  <artifactId>shapeless_2.11</artifactId>
+  <version>2.2.5</version>
+</dependency>
 ```
 
 If you are using Scala 2.10.x, note that unlike earlier versions, it is no longer necessary to provide an explicit
 Scala version suffix for your shapeless dependency. You must however ensure that you are using Scala version 2.10.2
-or greater, with Scala 2.10.5 (or switching to 2.11.x) strongly recommended. You should also add the macro paradise
+or greater, with Scala 2.10.6 (or switching to 2.11.x) strongly recommended. You should also add the macro paradise
 plugin to your build,
 
 ```scala
-scalaVersion := "2.10.5"
+scalaVersion := "2.10.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.4",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+  "com.chuusai" %% "shapeless" % "2.2.5",
+  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
+```
+
+For Maven builds the dependency is,
+
+```xml
+<dependency>
+  <groupId>com.chuusai</groupId>
+  <artifactId>shapeless_2.10</artifactId>
+  <version>2.2.5</version>
+</dependency>
+```
+
+With macro paradise added as a compiler plugin to the build configuration,
+
+```xml
+<plugins>
+  ...
+  <plugin>
+    ...
+    <configuration>
+      ...
+      <compilerPlugins>
+        <compilerPlugin>
+          <groupId>org.scala-lang.plugins</groupId>
+          <artifactId>macro-paradise_2.10</artifactId>
+          <version>2.1.0</version>
+        </compilerPlugin>
+      </compilerPlugins>
+      ...
+    </configuration>
+    ...
+  </plugin>
+  ...
+</plugins>
 ```
 
 ### shapeless-2.2.1
 
 The shapeless-2.2.1 release accidentally broke binary compatability with shapeless-2.2.0 and has been deprecated.
-Please use shapeless-2.2.4 instead.
+Please use shapeless-2.2.5 instead.
 
 ### Older releases
 
@@ -127,62 +205,87 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.8 or later, and its master branch is built with Scala 2.11.7 by default. To build
-with Scala 2.10.x you should check out the scala-2.10.x branch. As a general rule all new features and bugfixes are
-made against master and Scala 2.11.7 and merged into the scala-2.10.x branch with only the minimal changes needed for
-forwards compatibility.
+shapeless is built with SBT 0.13.9 or later, and its master branch is built with Scala 2.11.8 by default but also
+cross-builds for 2.10.6 and 2.12.x.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
 ## Contributors
 
++ Alessandro Lacava <alessandrolacava@gmail.com> [@lambdista](https://twitter.com/lambdista)
 + Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
-+ Alistair Johnson <alistair.johnson@johnsonusm.com>
++ Alistair Johnson <alistair.johnson@johnsonusm.com> [@AlistairUSM](https://twitter.com/AlistairUSM)
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
++ Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
++ Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
++ Bryn Keller <xoltar@xoltar.org> [@brynkeller](https://twitter.com/brynkeller)
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
++ Daniel Urban <urban.dani@gmail.com>
 + Dario Rexin <dario.rexin@r3-tech.de> [@evonox](https://twitter.com/evonox)
++ Dave Gurnell <d.j.gurnell@gmail.com> [@davegurnell](https://twitter.com/davegurnell)
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Filipe Nepomuceno <filinep@gmail.com>
 + Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
++ Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
++ Ievgen Garkusha <ievgen@riskident.com>
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
++ Jeff Wilde <jeff@robo.ai>
++ Jisoo Park <xxxyel@gmail.com> [@guersam](https://twitter.com/guersam)
 + Johannes Rudolph <johannes.rudolph@gmail.com> [@virtualvoid](https://twitter.com/virtualvoid)
 + Johnny Everson <khronnuz@gmail.com> [@johnny_everson](https://twitter.com/johnny_everson)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
++ Joseph Price <josephprice@iheartmedia.com>
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
++ Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
++ Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
 + Mario Pastorelli <mario.pastorelli@teralytics.ch> [@mapastr](https://twitter.com/mapastr)
++ Matthew Taylor <matthew.t@tbfe.net>
 + Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
 + Michael Donaghy <md401@srcf.ucam.org>
 + Michael Pilquist <mpilquist@gmail.com> [@mpilquist](https://twitter.com/mpilquist)
 + Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ Neville Li <neville@spotify.com> [@sinisa_lyh](https://twitter.com/sinisa_lyh)
 + Nikolas Evangelopoulos <nikolas@jkl.gr>
 + Oleg Aleshko <olegych@tut.by> [@OlegYch](https://twitter.com/OlegYch)
++ Olivier Blanvillain <olivier.blanvillain@gmail.com>
++ Olli Helenius <liff@iki.fi> [@ollijh](https://twitter.com/ollijh)
 + Owein Reese <owreese@gmail.com> [@OweinReese](https://twitter.com/OweinReese)
 + Paolo G. Giarrusso <p.giarrusso@gmail.com> [@blaisorblade](https://twitter.com/blaisorblade)
 + Pascal Voitot <pascal.voitot.dev@gmail.com> [@mandubian](https://twitter.com/mandubian)
++ Pavel Chlupacek <pavel.chlupacek@spinoco.com> [@pacmanius](https://twitter.com/pacmanius)
++ Peter Neyens <peter.neyens@gmail.com> [@pneyens](https://twitter.com/pneyens)
 + Peter Schmitz <petrischmitz@gmail.com> [@peterschmitz\_](https://twitter.com/peterschmitz_)
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
++ Rob Norris <rob_norris@mac.com> [@tpolecat](https://twitter.com/tpolecat)
++ Robert Hensing <spam@roberthensing.nl>
++ Ryo Hongo <ryoppy0516@gmail.com> [@ryoppy516](https://twitter.com/ryoppy516)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
 + Sébastien Doeraene <sjrdoeraene@gmail.com> [@sjrdoeraene](https://twitter.com/sjrdoeraene)
 + Simon Hafner <hafnersimon@gmail.com> [@reactormonk](https://twitter.com/reactormonk)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
++ Tin Pavlinic <tin.pavlinic@gmail.com> [@triggerNZ](https://twitter.com/triggerNZ)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
++ Tomas Mikula <tomas.mikula@gmail.com> [@tomas_mikula](https://twitter.com/tomas_mikula)
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
++ Valentin Kasas <valentin.kasas@gmail.com> [@ValentinKasas](https://twitter.com/ValentinKasas)
++ Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
++ Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)

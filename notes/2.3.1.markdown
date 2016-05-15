@@ -1,0 +1,67 @@
+This is the final release of [shapeless-2.3.1][shapeless]. These release notes provide a summary of changes since
+shapeless 2.3.0.
+
+21 pull requests have been merged and 9 issues have been closed and since 2.3.0 ... the complete list can be found in
+the 2.3.1 github milestone for [issues][231issues] and [PRs][231prs].
+
+### Prominent changes
+
++ Added IsDistinct and NotContains HList constraints (thanks to Valerian Barbot).
++ Added SwapRecord type class (thanks to Kailuo Wang).
++ Added SelectAll type class (thanks to Ievgen Garkusha).
++ Added support for Scala.js source maps (thanks to Kenji Yoshida).
++ Added Data and DataT instances for collections (thanks to Jisoo Park).
++ Added UnzipFields type class for Records and Unions (thanks to Jisoo Park).
++ Added Reify type classes supporting materialization of an HList of singletons from HList/Coproduct types indexed by
+  singletons (thanks to Jisoo Park).
++ Added eliminate method to :+: (thanks to Michael Donaghy).
++ Added BoundedRange type class (thanks to Jeff Wilde).
++ Added an Unwrapped instance for shapeless tagged types (thanks to Chris Hodapp).
++ The Remover and Modifier type classes for records are now implemented using a macro, yielding much improved compile
+  times (thanks to Ievgen Garkusha for assistance and encouragement).
++ Added LacksKey type class proving that record lacks a field with a given key.
++ illTyped now distinguishes between parse errors and type errors and reports the error correctly (thanks to Lars
+  Hupel).
++ Add a field type member to the FieldOf trait allowing simpler reference to the non singleton type of fields in tests
+  (thanks to Peter Neyens).
+
++ Fixed an interaction between cachedImplicit and lazy vals (#553).
++ Fixed bug in HList Intersection and Union type classes (#562, thanks to Arya Irani).
++ Fixed bug with dependent prefixes in Generic (#560).
++ Don't generate unsafe Typeable instances for generic case classes (#574, thanks to Daniel Urban).
++ Worked around spurious missing interpolator warnings for implicitNotFound messages.
+
++ Bumped Scala to 2.10.6/2.11.8/2.12.0-M4.
++ Bumped Scala.js to 0.6.9.
++ Bumped SBT to 0.13.11.
+
+### Source and binary compatibility
+
+shapless 2.3.1 is source and binary compatible with 2.3.0.
+
+### Contributors
+
+Contributors for shapeless 2.3.1 are,
+
++ Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
++ Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
++ Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
++ Daniel Urban <urban.dani@gmail.com>
++ Ievgen Garkusha <ievgen@riskident.com>
++ Jeff Wilde <jeff@robo.ai>
++ Jisoo Park <xxxyel@gmail.com> [@guersam](https://twitter.com/guersam)
++ Joseph Price <josephprice@iheartmedia.com>
++ Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
++ Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
++ Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
++ Michael Donaghy <md401@srcf.ucam.org>
++ Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ Peter Neyens <peter.neyens@gmail.com> [@pneyens](https://twitter.com/pneyens)
++ Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
++ Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)
+
+Many thanks to all of you and everyone else who has contributed ideas, enthusiasm and encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[231issues]: https://github.com/milessabin/shapeless/issues?q=is%3Aissue+milestone%3Ashapeless-2.3.1+is%3Aclosed
+[231prs]: https://github.com/milessabin/shapeless/pulls?q=is%3Apr+milestone%3Ashapeless-2.3.1+is%3Aclosed

@@ -9,7 +9,7 @@ object sized {
    *
    * @author Alexandre Archambault
    */
-  trait ToHList[-Repr, L <: Nat] {
+  trait ToHList[-Repr, L <: Nat] extends Serializable {
     type Out <: HList
     def apply(s: Sized[Repr, L]): Out
   }

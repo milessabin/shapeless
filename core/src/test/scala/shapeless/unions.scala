@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Miles Sabin
+ * Copyright (c) 2014-16 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import org.junit.Test
 import org.junit.Assert._
 
 import labelled.FieldType
+import union._
+import syntax.singleton._
+import test._
+import testutil._
+
+// making it method local causes weird compile error in Scala 2.10
+import ops.union.UnzipFields
 
 class UnionTests {
-  import union._
-  import syntax.singleton._
-  import test._
-  import testutil._
 
   val wI = Witness('i)
   type i = wI.T
@@ -248,6 +251,41 @@ class UnionTests {
   }
 
   @Test
+  def testUnzipFields {
+
+    val u1 = Union[U](i = 23)
+    val u2 = Union[U](s = "foo")
+    val u3 = Union[U](b = true)
+
+    {
+      val uf = UnzipFields[U]
+
+      type UV = Coproduct.`Int, String, Boolean`.T
+
+      assertTypedEquals('i.narrow :: 's.narrow :: 'b.narrow :: HNil, uf.keys)
+      assertTypedEquals(Coproduct[UV](23), uf.values(u1))
+      assertTypedEquals(Coproduct[UV]("foo"), uf.values(u2))
+      assertTypedEquals(Coproduct[UV](true), uf.values(u3))
+    }
+
+    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    val us1 = Coproduct[US]("first" ->> Option(2))
+    val us2 = Coproduct[US]("second" ->> Option(true))
+    val us3 = Coproduct[US]("third" ->> Option.empty[String])
+
+    {
+      val uf = UnzipFields[US]
+
+      type USV = Coproduct.`Option[Int], Option[Boolean], Option[String]`.T
+
+      assertTypedEquals("first".narrow :: "second".narrow :: "third".narrow :: HNil, uf.keys)
+      assertTypedEquals(Coproduct[USV](Option(2)), uf.values(us1))
+      assertTypedEquals(Coproduct[USV](Option(true)), uf.values(us2))
+      assertTypedEquals(Coproduct[USV](Option.empty[String]), uf.values(us3))
+    }
+  }
+
+  @Test
   def testToMap {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
@@ -342,5 +380,19 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
+  }
+
+  @Test
+  def testAltSyntax: Unit = {
+    type U0 =
+    Witness.`"foo"`.->>[String] :+:
+      Witness.`"bar"`.->>[Boolean] :+:
+      Witness.`"baz"`.->>[Double] :+:
+      CNil
+
+    type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
+
+    implicitly[U =:= U0]
+
   }
 }
