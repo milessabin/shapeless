@@ -74,6 +74,11 @@ object HList extends Dynamic {
    * Produces a `N1`-length HList made of `N2`-length HLists filled with `elem`.
    */
   def fill[A](n1: Nat, n2: Nat)(elem: A)(implicit fill: Fill[(n1.N, n2.N), A]) : fill.Out = fill(elem)
+
+  /**
+    * Produces a [[HList]] filled from a [[Poly0]].
+    */
+  def polyFill[F <: Poly, L <: HList](implicit polyFill: PolyFill[F, L]) : L = polyFill()
   
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
 
