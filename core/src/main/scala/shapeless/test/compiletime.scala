@@ -23,6 +23,15 @@ import scala.reflect.macros.blackbox
 
 /**
  * Utility that measures the compilation time of a code fragment.
+ *
+ * `compileTime` takes a code fragment as `String`, measures the time
+ * it takes to parse and typecheck it and returns that time as a
+ * `FiniteDuration`.
+ *
+ * Example: {{{
+ * scala> compileTime(""" Generic[(Int, Option[String])] """)
+ * res0: FiniteDuration = 43153718 nanoseconds
+ * }}}
  */
 object compileTime {
   def apply(code: String): FiniteDuration = macro CompileTimeMacros.applyImpl
