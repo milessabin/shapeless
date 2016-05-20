@@ -84,6 +84,8 @@ object HList extends Dynamic {
 
   /**
     * Produces a [[HList]] filled from a [[Poly0]].
+    * 
+    * @usecase def fillWith[L <: HList](f: Poly): L
     */
   def fillWith[L <: HList] = new FillWithOps[L]
 
