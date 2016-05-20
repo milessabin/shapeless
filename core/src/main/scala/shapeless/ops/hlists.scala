@@ -2723,21 +2723,21 @@ object hlist {
     *
     * @author 杨博 (Yang Bo) &lt;pop.atry@gmail.com&gt;
     */
-  trait PolyFill[F, L <: HList] extends DepFn0 with Serializable {
+  trait FillWith[F, L <: HList] extends DepFn0 with Serializable {
     type Out = L
   }
 
-  object PolyFill {
-    def apply[F, L <: HList](implicit fill: PolyFill[F, L]): PolyFill[F, L] = fill
+  object FillWith {
+    def apply[F, L <: HList](implicit fill: FillWith[F, L]): FillWith[F, L] = fill
 
-    implicit def hnilFill[F]: PolyFill[F, HNil] =
-      new PolyFill[F, HNil] {
+    implicit def hnilFill[F]: FillWith[F, HNil] =
+      new FillWith[F, HNil] {
         def apply(): Out = HNil
       }
 
     implicit def hconsFill[F <: Poly, Head, Tail <: HList]
-    (implicit hc: Case0.Aux[F, Head], mt: PolyFill[F, Tail]): PolyFill[F, Head :: Tail] =
-      new PolyFill[F, Head :: Tail] {
+    (implicit hc: Case0.Aux[F, Head], mt: FillWith[F, Tail]): FillWith[F, Head :: Tail] =
+      new FillWith[F, Head :: Tail] {
         def apply(): Out = hc() :: mt()
       }
   }

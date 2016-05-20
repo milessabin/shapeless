@@ -2823,7 +2823,7 @@ class HListTests {
 
     implicit val zeroDouble = zero.at[String]("")
 
-    val out = HList.polyFill[zero.type, Int :: String :: Int :: HNil]
+    val out = HList.fillWith[Int :: String :: Int :: HNil](zero)
     assertEquals(out, 0 :: "" :: 0 :: HNil)
   }
 

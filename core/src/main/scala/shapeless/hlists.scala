@@ -78,12 +78,16 @@ object HList extends Dynamic {
    */
   def fill[A](n1: Nat, n2: Nat)(elem: A)(implicit fill: Fill[(n1.N, n2.N), A]) : fill.Out = fill(elem)
 
+  final class FillWithOps[L <: HList] {
+    def apply[F <: Poly](f: F)(implicit fillWith: FillWith[F, L]): L = fillWith()
+  }
+
   /**
     * Produces a [[HList]] filled from a [[Poly0]].
     */
-  def polyFill[F <: Poly, L <: HList](implicit polyFill: PolyFill[F, L]) : L = polyFill()
-  
-  implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
+  def fillWith[L <: HList] = new FillWithOps[L]
+
+  implicit def hlistOps[L <: HList](l: L): HListOps[L] = new HListOps(l)
 
   /**
    * Convenience aliases for HList :: and List :: allowing them to be used together within match expressions.  
