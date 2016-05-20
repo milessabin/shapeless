@@ -23,39 +23,39 @@ import scala.annotation.tailrec
 import scala.reflect.macros.whitebox
 
 /**
- * `HList` ADT base trait.
- * 
- * @author Miles Sabin
- */
+  * `HList` ADT base trait.
+  *
+  * @author Miles Sabin
+  */
 sealed trait HList extends Product with Serializable
 
 /**
- * Non-empty `HList` element type.
- * 
- * @author Miles Sabin
- */
-final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
+  * Non-empty `HList` element type.
+  *
+  * @author Miles Sabin
+  */
+final case class ::[+H, +T <: HList](head: H, tail: T) extends HList {
   override def toString = head match {
-    case _: ::[_, _] => "("+head+") :: "+tail.toString
-    case _ => head+" :: "+tail.toString
+    case _: ::[_, _] => "(" + head + ") :: " + tail.toString
+    case _ => head + " :: " + tail.toString
   }
 }
 
 /**
- * Empty `HList` element type.
- * 
- * @author Miles Sabin
- */
+  * Empty `HList` element type.
+  *
+  * @author Miles Sabin
+  */
 sealed trait HNil extends HList {
-  def ::[H](h : H) = shapeless.::(h, this)
+  def ::[H](h: H) = shapeless.::(h, this)
   override def toString = "HNil"
 }
 
 /**
- * Empty `HList` value.
- * 
- * @author Miles Sabin
- */
+  * Empty `HList` value.
+  *
+  * @author Miles Sabin
+  */
 case object HNil extends HNil
 
 object HList extends Dynamic {
@@ -66,54 +66,58 @@ object HList extends Dynamic {
 
   def apply[T](t: T) = t :: HNil
 
-  def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
+  def apply[P <: Product, L <: HList](p: P)(implicit gen: Generic.Aux[P, L]): L = gen.to(p)
 
   /**
-   * Produces a HList of length `N` filled with `elem`.
-   */
-  def fill[A](n: Nat)(elem: A)(implicit fill: Fill[n.N, A]) : fill.Out = fill(elem)
+    * Produces a HList of length `N` filled with `elem`.
+    */
+  def fill[A](n: Nat)(elem: A)(implicit fill: Fill[n.N, A]): fill.Out = fill(elem)
 
   /**
-   * Produces a `N1`-length HList made of `N2`-length HLists filled with `elem`.
-   */
-  def fill[A](n1: Nat, n2: Nat)(elem: A)(implicit fill: Fill[(n1.N, n2.N), A]) : fill.Out = fill(elem)
+    * Produces a `N1`-length HList made of `N2`-length HLists filled with `elem`.
+    */
+  def fill[A](n1: Nat, n2: Nat)(elem: A)(implicit fill: Fill[(n1.N, n2.N), A]): fill.Out = fill(elem)
+
+  final class FillWithOps[L <: HList] {
+    def apply[F <: Poly](f: F)(implicit fillWith: FillWith[F, L]): L = fillWith()
+  }
 
   /**
     * Produces a [[HList]] filled from a [[Poly0]].
     */
-  def polyFill[F <: Poly, L <: HList](implicit polyFill: PolyFill[F, L]) : L = polyFill()
-  
-  implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
+  def fillWith[L <: HList] = new FillWithOps[L]
+
+  implicit def hlistOps[L <: HList](l: L): HListOps[L] = new HListOps(l)
 
   /**
-   * Convenience aliases for HList :: and List :: allowing them to be used together within match expressions.  
-   */
+    * Convenience aliases for HList :: and List :: allowing them to be used together within match expressions.
+    */
   object ListCompat {
     val :: = scala.collection.immutable.::
     val #: = shapeless.::
   }
 
   /**
-   * Allows to specify an `HList` type with a syntax similar to `Record` and `Union`, as follows,
-   *
-   * {{{
-   * type ISB = HList.`Int, String, Boolean`.T
-   * }}}
-   *
-   * Literal types are allowed, so that the following is valid,
-   *
-   * {{{
-   * type ABC = HList.`'a, 'b, 'c`.T
-   * type TwoTrueStr = HList.`2, true, "str"`.T
-   * }}}
-   */
+    * Allows to specify an `HList` type with a syntax similar to `Record` and `Union`, as follows,
+    *
+    * {{{
+    * type ISB = HList.`Int, String, Boolean`.T
+    * }}}
+    *
+    * Literal types are allowed, so that the following is valid,
+    *
+    * {{{
+    * type ABC = HList.`'a, 'b, 'c`.T
+    * type TwoTrueStr = HList.`2, true, "str"`.T
+    * }}}
+    */
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
 
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =
     l match {
       case hd :: tl if i == 0 => hd
-      case hd :: tl => unsafeGet(tl, i-1)
+      case hd :: tl => unsafeGet(tl, i - 1)
     }
 
   def unsafeReversePrepend(l: HList, m: HList): HList = {
@@ -137,7 +141,7 @@ object HList extends Dynamic {
     def loop(l: HList, i: Int, revPrefix: HList): HList =
       l match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
-        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+        case hd :: tl => loop(tl, i - 1, hd :: revPrefix)
       }
     loop(l, i, HNil)
   }
@@ -148,7 +152,7 @@ object HList extends Dynamic {
       l match {
         case HNil => unsafeReversePrepend(revPrefix, e :: HNil)
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
-        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+        case hd :: tl => loop(tl, i - 1, hd :: revPrefix)
       }
     loop(l, i, HNil)
   }
@@ -162,7 +166,7 @@ object HList extends Dynamic {
     def loop(l: HList, i: Int, revPrefix: HList): HList =
       l match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, f(hd) :: tl)
-        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+        case hd :: tl => loop(tl, i - 1, hd :: revPrefix)
       }
     loop(l, i, HNil)
   }
@@ -172,80 +176,80 @@ object HList extends Dynamic {
     def loop(l: HList, i: Int, revPrefix: HList): (Any, HList) =
       l match {
         case hd :: tl if i == 0 => (hd, unsafeReversePrepend(revPrefix, tl))
-        case hd :: tl => loop(tl, i-1, hd :: revPrefix)
+        case hd :: tl => loop(tl, i - 1, hd :: revPrefix)
       }
     loop(l, i, HNil)
   }
 }
 
 /**
- * Trait supporting mapping dynamic argument lists of Ints to HList of Nat arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(1, 2, 3)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(_1 :: _2 :: _3)
- * }}}
- *
- * ie. the arguments are rewritten as HList elements of Nat and the application is
- * rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList of Int argument.
- *
- * @author Andreas Koestler
- */
+  * Trait supporting mapping dynamic argument lists of Ints to HList of Nat arguments.
+  *
+  * Mixing in this trait enables method applications of the form,
+  *
+  * {{{
+  * lhs.method(1, 2, 3)
+  * }}}
+  *
+  * to be rewritten as,
+  *
+  * {{{
+  * lhs.methodProduct(_1 :: _2 :: _3)
+  * }}}
+  *
+  * ie. the arguments are rewritten as HList elements of Nat and the application is
+  * rewritten to an application of an implementing method (identified by the
+  * "Product" suffix) which accepts a single HList of Int argument.
+  *
+  * @author Andreas Koestler
+  */
 
 trait NatProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Int*): Any = macro ProductMacros.forwardNatImpl
 }
 /**
- * Trait supporting mapping dynamic argument lists to HList arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(23, "foo", true)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(23 :: "foo" :: true)
- * }}}
- *
- * ie. the arguments are rewritten as HList elements and the application is
- * rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList argument.
- *
- */
+  * Trait supporting mapping dynamic argument lists to HList arguments.
+  *
+  * Mixing in this trait enables method applications of the form,
+  *
+  * {{{
+  * lhs.method(23, "foo", true)
+  * }}}
+  *
+  * to be rewritten as,
+  *
+  * {{{
+  * lhs.methodProduct(23 :: "foo" :: true)
+  * }}}
+  *
+  * ie. the arguments are rewritten as HList elements and the application is
+  * rewritten to an application of an implementing method (identified by the
+  * "Product" suffix) which accepts a single HList argument.
+  *
+  */
 trait ProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardImpl
 }
 
 /**
- * Trait supporting mapping dynamic argument lists to singleton-typed HList arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(23, "foo", true)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(23.narrow :: "foo".narrow :: true.narrow)
- * }}}
- *
- * ie. the arguments are rewritten as singleton-typed HList elements and the
- * application is rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList argument.
- */
+  * Trait supporting mapping dynamic argument lists to singleton-typed HList arguments.
+  *
+  * Mixing in this trait enables method applications of the form,
+  *
+  * {{{
+  * lhs.method(23, "foo", true)
+  * }}}
+  *
+  * to be rewritten as,
+  *
+  * {{{
+  * lhs.methodProduct(23.narrow :: "foo".narrow :: true.narrow)
+  * }}}
+  *
+  * ie. the arguments are rewritten as singleton-typed HList elements and the
+  * application is rewritten to an application of an implementing method (identified by the
+  * "Product" suffix) which accepts a single HList argument.
+  */
 trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
@@ -266,9 +270,9 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhsTpe = lhs.tpe
 
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"NatProduct")
+    val methodName = TermName(methodString + "NatProduct")
 
-    if(lhsTpe.member(methodName) == NoSymbol)
+    if (lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val meth = lhsTpe.member(methodName).asMethod
@@ -283,13 +287,13 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
   }
 
   def forward(method: Tree, args: Seq[Tree], narrow: Boolean): Tree = {
-    val lhs = c.prefix.tree 
+    val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"Product")
+    val methodName = TermName(methodString + "Product")
 
-    if(lhsTpe.member(methodName) == NoSymbol)
+    if (lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val argsTree = mkProductImpl(args, narrow)
@@ -299,15 +303,15 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
     args.foldRight((hnilTpe, q"_root_.shapeless.HNil: $hnilTpe": Tree)) {
-      case(elem, (accTpe, accTree)) =>
-        val (neTpe, neTree) = if(narrow) narrowValue(elem) else (elem.tpe, elem)
+      case (elem, (accTpe, accTree)) =>
+        val (neTpe, neTree) = if (narrow) narrowValue(elem) else (elem.tpe, elem)
         (appliedType(hconsTpe, List(neTpe, accTpe)), q"""_root_.shapeless.::[$neTpe, $accTpe]($neTree, $accTree)""")
     }._2
   }
 
   def mkProductNatImpl(args: Seq[Tree]): Tree = {
     args.foldRight((tq"_root_.shapeless.HNil", q"_root_.shapeless.HNil: $hnilTpe"): (Tree, Tree)) {
-      case(NatLiteral(n), (accTpt, accTree)) =>
+      case (NatLiteral(n), (accTpt, accTree)) =>
         val neTpt = mkNatTpt(n)
         val neTree = mkNatValue(n)
         (tq"""_root_.shapeless.::[$neTpt, $accTpt]""", q"""_root_.shapeless.::[$neTpt, $accTpt]($neTree, $accTree)""")
@@ -321,7 +325,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
       case (NatLiteral(n), (accTpt, _)) =>
         val neTpt = mkNatTpt(n)
         (tq"""_root_.shapeless.::[$neTpt, $accTpt]""", tq"""_root_.shapeless.::[$neTpt, $accTpt]""")
-       case (elem, _) =>
+      case (elem, _) =>
         c.abort(c.enclosingPosition, s"Expression $elem does not evaluate to a non-negative Int literal")
     }._2
   }
