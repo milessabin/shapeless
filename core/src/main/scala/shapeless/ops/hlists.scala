@@ -2721,7 +2721,7 @@ object hlist {
   /**
     * Type class supporting producing a [[HList]] filled from a [[Poly0]].
     *
-    * @author 杨博 (Yang Bo) &lt;pop.atry@gmail.com&gt;
+    * @author 杨博 (Yang Bo)
     */
   trait FillWith[F, L <: HList] extends DepFn0 with Serializable {
     type Out = L
