@@ -2719,6 +2719,30 @@ object hlist {
   }
 
   /**
+    * Type class supporting producing a [[HList]] filled from a [[Poly0]].
+    *
+    * @author 杨博 (Yang Bo)
+    */
+  trait FillWith[F, L <: HList] extends DepFn0 with Serializable {
+    type Out = L
+  }
+
+  object FillWith {
+    def apply[F, L <: HList](implicit fill: FillWith[F, L]): FillWith[F, L] = fill
+
+    implicit def hnilFill[F]: FillWith[F, HNil] =
+      new FillWith[F, HNil] {
+        def apply(): Out = HNil
+      }
+
+    implicit def hconsFill[F <: Poly, Head, Tail <: HList]
+    (implicit hc: Case0.Aux[F, Head], mt: FillWith[F, Tail]): FillWith[F, Head :: Tail] =
+      new FillWith[F, Head :: Tail] {
+        def apply(): Out = hc() :: mt()
+      }
+  }
+
+  /**
    * Type class supporting the patching of an `HList`
    *
    * @author Owein Reese
