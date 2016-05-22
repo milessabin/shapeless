@@ -717,7 +717,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def slice(from: Nat, until: Nat)(implicit slice: Slice[from.N, until.N, L]): slice.Out = slice(l)
 
   /**
-   * Returns all combinations of this 'HList'
+   * Returns all combinations of exactly length `N` of elements from this `Hlist`
    */
   def combinations(n: Nat)(implicit combinations: Combinations[n.N, L]): combinations.Out = combinations(l)
 }
