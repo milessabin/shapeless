@@ -3299,9 +3299,10 @@ class HListTests {
     ](
       (1 :: "2" :: 3 :: 4 :: HNil) :: HNil, r3)
 
-    illTyped( """ (1 :: "2" :: 3 :: 4 :: HNil).combinations(5) """)
+    val r4 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(5)
+    assertTypedEquals[HNil](HNil, r4)
 
-    val r4 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(0)
-    assertTypedEquals[HNil :: HNil](HNil :: HNil, r4)
+    val r5 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(0)
+    assertTypedEquals[HNil :: HNil](HNil :: HNil, r5)
   }
 }
