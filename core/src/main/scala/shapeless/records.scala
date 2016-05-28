@@ -196,7 +196,7 @@ class RecordMacros(val c: whitebox.Context) {
 
   def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[Tree] = {
     def mkElem(keyTpe: Type, value: Tree): Tree =
-      q"implicitly[shapeless.ops.hlist.Selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}]].apply($rec)"
+      q"_root_.scala.Predef.implicitly[_root_.shapeless.ops.hlist.Selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}]].apply($rec)"
 
     if (method.paramLists.length != 1)
       c.abort(c.enclosingPosition, s"${method} must have exactly one parameter list for record application")
