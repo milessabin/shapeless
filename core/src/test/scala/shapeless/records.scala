@@ -812,6 +812,23 @@ class RecordTests {
     """)
   }
 
+  object Bar extends RecordArg {
+    def sum(i1: Int, i2: Int) = i1 + i2
+  }
+
+  @Test
+  def testRecordArg {
+    val r = ('i1 ->> 1) :: ('i2 ->> 3) :: HNil
+
+    val v1 = Bar.sumRecord(r)
+    typed[Int](v1)
+    assertEquals(4, v1)
+
+    illTyped("""
+      Bar.sumRecord(('i1 ->> 1) :: ('i3 ->> 3) :: HNil)
+    """)
+  }
+
   @Test
   def testFields {
     {

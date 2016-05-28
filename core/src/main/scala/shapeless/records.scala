@@ -88,22 +88,47 @@ trait RecordArgs extends Dynamic {
   def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
 }
 
+/**
+ * Trait supporting mapping record arguments to named argument lists, inverse of RecordArgs.
+ *
+ * Mixing in this trait enables method applications of the form,
+ *
+ * {{{
+ * lhs.methodRecord('x ->> 23 :: 'y ->> "foo" :: 'z ->> true :: HNil)
+ * }}}
+ *
+ * to be rewritten as,
+ *
+ * {{{
+ * lhs.method(x = 23, y = "foo", z = true)
+ * }}}
+ *
+ * ie. the record argument is used to look up arguments for a target method
+ * (the called method named minus the "Record" suffix) by name and type and the application
+ * is rewritten to an application of the target method
+ */
+trait RecordArg extends Dynamic {
+  def applyDynamic[L <: HList](method: String)(rec: L): Any = macro RecordMacros.forwardFromRecordImpl[L]
+}
+
 @macrocompat.bundle
 class RecordMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType
   import labelled.FieldType
+  import ops.hlist.Selector
 
   val hconsValueTree = reify {  ::  }.tree
   val hnilValueTree  = reify { HNil: HNil }.tree
   val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
   val SymTpe = typeOf[scala.Symbol]
   val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
+  val selectorTpe = typeOf[Selector[_, _]].typeConstructor
 
   def mkRecordEmptyImpl(method: Tree)(rec: Tree*): Tree = {
     if(rec.nonEmpty)
       c.abort(c.enclosingPosition, "this method must be called with named arguments")
-    
+
     q"_root_.shapeless.HNil"
   }
 
@@ -132,13 +157,31 @@ class RecordMacros(val c: whitebox.Context) {
     q""" $lhs.$methodName($recTree) """
   }
 
+  def forwardFromRecordImpl[L <: HList](method: Tree)(rec: Expr[L]): Tree = {
+    val lhs = c.prefix.tree
+    val lhsTpe = lhs.tpe
+
+    val q"${methodString: String}" = method
+
+    if (!methodString.matches(".*Record$"))
+      c.abort(c.enclosingPosition, s"missing method '$methodString'")
+
+    val methodName = TermName(methodString.replaceAll("Record$", ""))
+
+    if(!lhsTpe.member(methodName).isMethod)
+      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+
+    val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, rec)
+    q""" $lhs.$methodName(..$params) """
+  }
+
+  def mkSingletonSymbolType(c: Constant): Type =
+    appliedType(atatTpe, List(SymTpe, constantType(c)))
+
+  def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
+    appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
+
   def mkRecordImpl(rec: Tree*): Tree = {
-    def mkSingletonSymbolType(c: Constant): Type =
-      appliedType(atatTpe, List(SymTpe, constantType(c)))
-
-    def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
-      appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
-
     def mkElem(keyTpe: Type, value: Tree): Tree =
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
@@ -151,5 +194,18 @@ class RecordMacros(val c: whitebox.Context) {
     rec.foldRight(hnilValueTree) {
       case(elem, acc) => q""" $hconsValueTree(${promoteElem(elem)}, $acc) """
     }
+  }
+
+  def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[Tree] = {
+    def mkElem(keyTpe: Type, value: Tree): Tree =
+      q"implicitly[shapeless.ops.hlist.Selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}]].apply($rec)"
+
+    if (method.paramLists.length != 1)
+      c.abort(c.enclosingPosition, s"${method} must have exactly one parameter list for record application")
+
+    method.paramLists.headOption.toList.flatMap(_.map { x =>
+      mkElem(mkSingletonSymbolType(Constant(x.name.decodedName.toString)), q"${x.typeSignature}")
+    })
+
   }
 }
