@@ -26,7 +26,7 @@ import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
  * 
  * @author Miles Sabin
  */
-final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
+final case class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
   // Cannot extend AnyVal in 2.10, see https://issues.scala-lang.org/browse/SI-6260
   override def toString = unsized.toString
 }
