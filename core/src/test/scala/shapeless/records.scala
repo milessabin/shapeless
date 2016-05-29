@@ -826,7 +826,8 @@ class RecordTests {
     typed[Int](v1)
     assertEquals(4, v1)
 
-    val v2 = Bar.sumMultipleParamListRecord(r.merge(('i2 ->> 2) :: HNil))
+    val r2 = r.merge(('i2 ->> 2) :: HNil)
+    val v2 = Bar.sumMultipleParamListRecord(r2)
     typed[Int](v2)
     assertEquals(3, v2)
 
