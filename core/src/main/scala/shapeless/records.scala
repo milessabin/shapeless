@@ -107,7 +107,7 @@ trait RecordArgs extends Dynamic {
  * (the called method named minus the "Record" suffix) by name and type and the application
  * is rewritten to an application of the target method
  */
-trait RecordArg extends Dynamic {
+trait FromRecordArgs extends Dynamic {
   def applyDynamic[L <: HList](method: String)(rec: L): Any = macro RecordMacros.forwardFromRecordImpl[L]
 }
 
@@ -170,7 +170,7 @@ class RecordMacros(val c: whitebox.Context) {
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, rec)
-    q""" $lhs.$methodName(..$params) """
+    q""" $lhs.$methodName(...$params) """
   }
 
   def mkSingletonSymbolType(c: Constant): Type =
@@ -194,14 +194,11 @@ class RecordMacros(val c: whitebox.Context) {
     }
   }
 
-  def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[Tree] = {
+  def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[List[Tree]] = {
     def mkElem(keyTpe: Type, value: Tree): Tree =
       q"_root_.scala.Predef.implicitly[_root_.shapeless.ops.hlist.Selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}]].apply($rec)"
 
-    if (method.paramLists.length != 1)
-      c.abort(c.enclosingPosition, s"${method} must have exactly one parameter list for record application")
-
-    method.paramLists.headOption.toList.flatMap(_.map { x =>
+    method.paramLists.filterNot(_.forall(x => x.isImplicit)).map(_.map { x =>
       mkElem(mkSingletonSymbolType(Constant(x.name.decodedName.toString)), q"${x.typeSignature}")
     })
 
