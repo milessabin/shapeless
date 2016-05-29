@@ -3021,6 +3021,43 @@ class HListTests {
     assertEquals((23, true), ib)
   }
 
+  object Bar extends FromProductArgs {
+    def sumLabel(k: String, i1: Int, i2: Int) = (k, i1 + i2)
+    def sumImplicitLabel(k: String, i1: Int)(implicit i2: Int) = (k, i1 + i2)
+    def sumMultipleParamListLabel(k: String, i1: Int)(i2: Int) = (k, i1 + i2)
+  }
+
+  @Test
+  def testFromProductArgs {
+    val p = "foo" :: 1 :: 3 :: HNil
+
+    val v1 = Bar.sumLabelProduct(p)
+    typed[(String, Int)](v1)
+    assertEquals(("foo", 4), v1)
+
+    val p2 = "bar" :: 1 :: 2 :: HNil
+    val v2 = Bar.sumMultipleParamListLabelProduct(p2)
+    typed[(String, Int)](v2)
+    assertEquals(("bar", 3), v2)
+
+    illTyped("""
+      Bar.sumImplicitLabelProduct("foo" :: 1 :: 3 :: HNil)
+    """)
+
+    implicit val i2 = 7
+    val v3 = Bar.sumImplicitLabelProduct("foo" :: 1 :: HNil)
+    typed[(String, Int)](v3)
+    assertEquals(("foo", 8), v3)
+
+    illTyped("""
+      Bar.sumLabelProduct("foo" :: "bar" :: 1 :: 2 :: HNil)
+    """)
+
+    illTyped("""
+      Bar.sumMultipleParamListLabelProduct("foo" :: "1" :: 2 :: 3 :: HNil)
+    """)
+  }
+
   @Test
   def selectAllTest: Unit ={
     import shapeless._, record._ , ops.hlist.SelectAll
