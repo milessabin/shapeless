@@ -812,6 +812,43 @@ class RecordTests {
     """)
   }
 
+  object Bar extends FromRecordArgs {
+    def sum(i1: Int, i2: Int) = i1 + i2
+    def sumImplicit(i1: Int)(implicit i2: Int) = i1 + i2
+    def sumMultipleParamList(i1: Int)(i2: Int) = i1 + i2
+  }
+
+  @Test
+  def testFromRecordArgs {
+    val r = ('i1 ->> 1) :: ('i2 ->> 3) :: HNil
+
+    val v1 = Bar.sumRecord(r)
+    typed[Int](v1)
+    assertEquals(4, v1)
+
+    val r2 = r.merge(('i2 ->> 2) :: HNil)
+    val v2 = Bar.sumMultipleParamListRecord(r2)
+    typed[Int](v2)
+    assertEquals(3, v2)
+
+    illTyped("""
+      Bar.sumImplicitRecord(('i1 ->> 1) :: ('i2 ->> 3) :: HNil)
+    """)
+
+    implicit val i2 = 7
+    val v3 = Bar.sumImplicitRecord(r)
+    typed[Int](v2)
+    assertEquals(8, v3)
+
+    illTyped("""
+      Bar.sumRecord(('i1 ->> 1) :: ('i3 ->> 3) :: HNil)
+    """)
+
+    illTyped("""
+      Bar.sumMultipleParamListRecord(('i1 ->> 1) :: ('i3 ->> 3) :: HNil)
+    """)
+  }
+
   @Test
   def testFields {
     {
