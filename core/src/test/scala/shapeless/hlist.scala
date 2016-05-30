@@ -1734,6 +1734,9 @@ class HListTests {
 
     val r11 = (HNil :: HNil :: HNil : HNil :: HNil :: HNil).transpose
     assertTypedEquals[HNil](HNil, r11)
+
+    val r12 = (1 :: HNil) zipOne ((2 :: HNil) :: HNil)
+    assertTypedEquals[(Int :: Int :: HNil) :: HNil]((1 :: 2 :: HNil) :: HNil, r12)
   }
 
   @Test
