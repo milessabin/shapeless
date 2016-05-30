@@ -15,7 +15,7 @@ import GitKeys._
 lazy val scoverageSettings = Seq(
   coverageMinimum := 60,
   coverageFailOnMinimum := false,
-  coverageExcludedFiles := ".*/src/test/.*"
+  coverageExcludedFiles := ".*src_managed.*"
 )
 
 lazy val buildSettings = Seq(
