@@ -4,13 +4,14 @@
 several talks by Miles Sabin ([@milessabin][milessabin]), given over the course of 2011, on implementing [scrap your
 boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since then it has evolved from being a resolutely
 experimental project into library which, while still testing the limits of what's possible in Scala, is being used
-widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped. 
+widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped.
 
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
+[![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
 ## Projects which use shapeless
 
@@ -40,8 +41,8 @@ Classes as Object and Implicits][tcoi] is useful background material.
 [features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
 [relnotes220]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.2.0
-[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0 
-[migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0 
+[migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0
+[migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
 [milessabin]: https://twitter.com/milessabin
 [syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
 [higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
