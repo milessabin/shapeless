@@ -76,7 +76,32 @@ being [good candidates to take on][lowhangingfruit]. No contribution is too smal
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
 Central. Snapshots of the master branch are built using [Travis CI][ci] and automatically published to the Sonatype
-OSS Snapshot repository. To include the Sonatype repositories in your SBT build you should add,
+OSS Snapshot repository.
+
+### Try shapeless with an Ammonite instant REPL
+
+The quickest way to get to a REPL prompt with the latest version of shapeless on the class path is to run the
+provided ["try shapeless"][try-shapeless] script. This downloads and installs [coursier][coursier] and uses it to
+fetch the [Ammonite][ammonite] REPL and the latest version of shapeless and drops you immediately into a REPL session
+to play around with,
+
+```text
+miles@frege:shapeless (master)$ scripts/try-shapeless.sh
+Loading...
+Welcome to the Ammonite Repl 0.5.8
+(Scala 2.11.8 Java 1.8.0_51)
+@ 1 :: "foo" :: true :: HNil
+res0: Int :: String :: Boolean :: HNil = 1 :: foo :: true :: HNil
+@
+```
+
+[try-shapeless]: https://github.com/milessabin/shapeless/blob/master/scripts/try-shapeless.sh
+[coursier]: https://github.com/alexarchambault/coursier
+[ammonite]: https://github.com/lihaoyi/Ammonite
+
+### shapeless-2.3.1 with SBT
+
+To include the Sonatype repositories in your SBT build you should add,
 
 ```scala
 resolvers ++= Seq(
@@ -85,21 +110,11 @@ resolvers ++= Seq(
 )
 ```
 
-Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its new name hashing feature which when
-compiling with shapeless might cause SBT to loop indefinitely consuming all heap. Workarounds are to move to an
-earlier (0.13.5) or later (0.13.7, 0.13.8) SBT version or disable name hashing by adding,
-
-```scala
-incOptions := incOptions.value.withNameHashing(false)
-```
-
-to your settings.
 
 [ci]: https://travis-ci.org/milessabin/shapeless
 
-### shapeless-2.3.1
 
-Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M3. The main line of development for
+Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M4. The main line of development for
 shapeless 2.3.1 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
@@ -121,18 +136,7 @@ libraryDependencies ++= Seq(
 )
 ```
 
-### shapeless-2.2.5
-
-Builds are available for Scala 2.11.x and for Scala 2.10.x. The main line of development for
-shapeless 2.2.5 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
-
-```scala
-scalaVersion := "2.11.8"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.5"
-)
-```
+### shapeless-2.3.1 with Maven
 
 shapeless is also available for projects using the Maven build tool via the following dependency,
 
@@ -140,25 +144,11 @@ shapeless is also available for projects using the Maven build tool via the foll
 <dependency>
   <groupId>com.chuusai</groupId>
   <artifactId>shapeless_2.11</artifactId>
-  <version>2.2.5</version>
+  <version>2.3.1</version>
 </dependency>
 ```
 
-If you are using Scala 2.10.x, note that unlike earlier versions, it is no longer necessary to provide an explicit
-Scala version suffix for your shapeless dependency. You must however ensure that you are using Scala version 2.10.2
-or greater, with Scala 2.10.6 (or switching to 2.11.x) strongly recommended. You should also add the macro paradise
-plugin to your build,
-
-```scala
-scalaVersion := "2.10.6"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.2.5",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-)
-```
-
-For Maven builds the dependency is,
+If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
 
 ```xml
 <dependency>
@@ -166,11 +156,7 @@ For Maven builds the dependency is,
   <artifactId>shapeless_2.10</artifactId>
   <version>2.2.5</version>
 </dependency>
-```
 
-With macro paradise added as a compiler plugin to the build configuration,
-
-```xml
 <plugins>
   ...
   <plugin>
@@ -192,10 +178,17 @@ With macro paradise added as a compiler plugin to the build configuration,
 </plugins>
 ```
 
-### shapeless-2.2.1
+### Avoid SBT 0.13.6
 
-The shapeless-2.2.1 release accidentally broke binary compatability with shapeless-2.2.0 and has been deprecated.
-Please use shapeless-2.2.5 instead.
+Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its name hashing feature which when compiling
+with shapeless might cause SBT to loop indefinitely consuming all heap. If possible move to a more recent version of
+SBT. If you must use SBT 0.13.6 a workaround is to disable name hashing by adding,
+
+```scala
+incOptions := incOptions.value.withNameHashing(false)
+```
+
+to your settings.
 
 ### Older releases
 
@@ -206,7 +199,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.9 or later, and its master branch is built with Scala 2.11.8 by default but also
+shapeless is built with SBT 0.13.11 or later, and its master branch is built with Scala 2.11.8 by default but also
 cross-builds for 2.10.6 and 2.12.x.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
