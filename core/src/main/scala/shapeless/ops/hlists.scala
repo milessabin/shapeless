@@ -2089,7 +2089,21 @@ object hlist {
    */
   trait ZipOne[H <: HList, T <: HList] extends DepFn2[H, T] with Serializable { type Out <: HList }
 
-  object ZipOne {
+  object ZipOne extends LowPriorityZipOne {
+    implicit def zipOne0: Aux[HNil, HNil, HNil] =
+      new ZipOne[HNil, HNil] {
+        type Out = HNil
+        def apply(h : HNil, t : HNil): Out = HNil
+      }
+
+    implicit def zipOne3[H, T <: HList]: Aux[H :: HNil, T :: HNil, (H :: T) :: HNil] =
+      new ZipOne[H :: HNil, T :: HNil] {
+        type Out = (H :: T) :: HNil
+        def apply(h : H :: HNil, t : T :: HNil): Out = (h.head :: t.head) :: HNil
+      }
+  }
+
+  trait LowPriorityZipOne {
     def apply[H <: HList, T <: HList](implicit zip: ZipOne[H, T]): Aux[H, T, zip.Out] = zip
 
     type Aux[H <: HList, T <: HList, Out0 <: HList] = ZipOne[H, T] { type Out = Out0 }
@@ -2104,12 +2118,6 @@ object hlist {
       new ZipOne[HNil, T] {
         type Out = HNil
         def apply(h : HNil, t : T): Out = HNil
-      }
-
-    implicit def zipOne3[H, T <: HList]: Aux[H :: HNil, T :: HNil, (H :: T) :: HNil] =
-      new ZipOne[H :: HNil, T :: HNil] {
-        type Out = (H :: T) :: HNil
-        def apply(h : H :: HNil, t : T :: HNil): Out = (h.head :: t.head) :: HNil
       }
 
     implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, ZotOut <: HList]
