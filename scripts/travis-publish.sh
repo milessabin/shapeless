@@ -4,7 +4,7 @@
 # export TRAVIS_SCALA_VERSION=2.10.5;export TRAVIS_PULL_REQUEST="false";export TRAVIS_BRANCH="master"
 
 SBT="sbt ++${TRAVIS_SCALA_VERSION}"
-COVERAGE="$SBT clean coverage coreJVM/test coverageReport"
+COVERAGE="$SBT clean coverage coreJVM/test coverageReport coveralls"
 
 if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
       "${TRAVIS_BRANCH}" == "master" &&
