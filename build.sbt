@@ -2,6 +2,7 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
 import ReleaseTransformations._
+import ScoverageSbtPlugin._
 
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys
@@ -13,9 +14,10 @@ import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
 lazy val scoverageSettings = Seq(
-  coverageMinimum := 60,
-  coverageFailOnMinimum := false,
-  coverageExcludedFiles := ".*src_managed.*"
+  ScoverageKeys.coverageMinimum := 60,
+  ScoverageKeys.coverageFailOnMinimum := false,
+  ScoverageKeys.coverageHighlighting := scalaBinaryVersion.value != "2.10",
+  ScoverageKeys.coverageExcludedFiles := ".*src_managed.*"
 )
 
 lazy val buildSettings = Seq(
@@ -99,12 +101,12 @@ lazy val commonJsSettings = Seq(
   },
   scalaJSUseRhino in Global := false,
   parallelExecution in Test := false,
-  coverageExcludedPackages := ".*"
+  ScoverageKeys.coverageExcludedPackages := ".*"
 )
 
 lazy val commonJvmSettings = Seq(
   parallelExecution in Test := false,
-  coverageExcludedPackages := "shapeless.examples.*"
+  ScoverageKeys.coverageExcludedPackages := "shapeless.examples.*"
 )
 
 lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
