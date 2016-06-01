@@ -141,7 +141,7 @@ trait SingletonTypeUtils extends ReprTypes {
 
   object LiteralSymbol {
     def unapply(t: Tree): Option[String] = t match {
-      case q""" scala.Symbol.apply(${Literal(Constant(s: String))}) """ => Some(s)
+      case q""" _root_.scala.Symbol.apply(${Literal(Constant(s: String))}) """ => Some(s)
       case _ => None
     }
   }
