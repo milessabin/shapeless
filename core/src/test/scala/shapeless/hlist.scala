@@ -3297,4 +3297,49 @@ class HListTests {
     illTyped(""" Reify[String :: Int :: HNil] """)
     illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
   }
+
+  @Test
+  def testCombinations {
+    type I = Int; type S = String
+
+    val r1 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(2)
+    assertTypedEquals[
+      (I :: S :: HNil) ::
+      (I :: I :: HNil) ::
+      (I :: I :: HNil) ::
+      (S :: I :: HNil) ::
+      (S :: I :: HNil) ::
+      (I :: I :: HNil) :: HNil
+    ](
+      (1 :: "2" :: HNil) ::
+      (1 :: 3 :: HNil) ::
+      (1 :: 4 :: HNil) ::
+      ("2" :: 3 :: HNil) ::
+      ("2" :: 4 :: HNil) ::
+      (3 :: 4 :: HNil) :: HNil, r1)
+
+    val r2 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(3)
+    assertTypedEquals[
+      (I :: S :: I :: HNil) ::
+      (I :: S :: I :: HNil) ::
+      (I :: I :: I :: HNil) ::
+      (S :: I :: I :: HNil) :: HNil
+    ](
+      (1 :: "2" :: 3 :: HNil) ::
+      (1 :: "2" :: 4 :: HNil) ::
+      (1 :: 3 :: 4 :: HNil) ::
+      ("2" :: 3 :: 4 :: HNil) :: HNil, r2)
+
+    val r3 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(4)
+    assertTypedEquals[
+      (I :: S :: I :: I :: HNil) :: HNil
+    ](
+      (1 :: "2" :: 3 :: 4 :: HNil) :: HNil, r3)
+
+    val r4 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(5)
+    assertTypedEquals[HNil](HNil, r4)
+
+    val r5 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(0)
+    assertTypedEquals[HNil :: HNil](HNil :: HNil, r5)
+  }
 }
