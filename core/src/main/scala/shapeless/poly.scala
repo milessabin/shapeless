@@ -136,7 +136,7 @@ object PolyDefns extends Cases {
   trait LowPriorityLiftU extends Poly {
     implicit def default[L <: HList] = new ProductCase[L] {
       type Result = HNil
-      val value = (l : L) => HNil
+      val value = (l : L) => HNil : HNil
     }
   }
 
