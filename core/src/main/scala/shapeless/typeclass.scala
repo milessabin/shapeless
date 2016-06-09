@@ -45,14 +45,21 @@ trait ProductTypeClass[C[_]] extends Serializable {
 trait ProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
-  val typeClass: ProductTypeClass[C]
+  implicit val typeClass: ProductTypeClass[C]
 
-  implicit def deriveHNil: C[HNil] = typeClass.emptyProduct
+  final implicit def deriveInstance0[F](implicit der: Lazy[Derived[C[F]]]): C[F] =
+    der.value.value
 
-  implicit def deriveHCons[H, T <: HList] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :: T] =
+
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveHNil: C[HNil] = typeClass.emptyProduct
+
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveHCons[H, T <: HList] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :: T] =
     typeClass.product(ch.value, ct.value)
 
-  implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[C[G]]): C[F] =
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[C[G]]): C[F] =
     typeClass.project(cg.value, gen.to _, gen.from _)
 }
 
@@ -85,8 +92,9 @@ trait LabelledProductTypeClass[C[_]] extends Serializable {
 trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
-  val typeClass: LabelledProductTypeClass[C]
+  implicit val typeClass: LabelledProductTypeClass[C]
 
+  @deprecated("Retained for binary compatibility", "2.3.2")
   trait Wrap[KV] extends Serializable {
     type V
     val unwrap: C[V]
@@ -94,11 +102,13 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
     def unlabel(rec: KV): V
   }
 
+  @deprecated("Retained for binary compatibility", "2.3.2")
   object Wrap {
     type Aux[KV, V0] = Wrap[KV] { type V = V0 }
   }
 
-  implicit def deriveHNil: Wrap.Aux[HNil, HNil] =
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveHNil: Wrap.Aux[HNil, HNil] =
     new Wrap[HNil] {
       type V = HNil
       val unwrap = typeClass.emptyProduct
@@ -106,7 +116,8 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
       def unlabel(rec: HNil): HNil = HNil
     }
 
-  implicit def deriveHCons[HK <: Symbol, HV, TKV <: HList]
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveHCons[HK <: Symbol, HV, TKV <: HList]
     (implicit
       ch: Lazy[C[HV]],
       key: Witness.Aux[HK],
@@ -119,7 +130,8 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
         def unlabel(rec: FieldType[HK, HV] :: TKV): HV :: ct.value.V = rec.head :: ct.value.unlabel(rec.tail)
       }
 
-  implicit def deriveInstance[T, LKV]
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveInstance[T, LKV]
     (implicit
       lgen: LabelledGeneric.Aux[T, LKV],
       lwclkv: Lazy[Wrap[LKV]]
@@ -129,6 +141,9 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
       val from: V => T = (v: V) => lgen.from(label(v))
       typeClass.project(unwrap, to, from)
     }
+
+  final implicit def deriveInstance0[F](implicit der: Lazy[Derived[C[F]]]): C[F] =
+    der.value.value
 }
 
 /**
@@ -149,11 +164,13 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
 }
 
 trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] {
-  val typeClass: TypeClass[C]
+  implicit val typeClass: TypeClass[C]
 
-  implicit def deriveCNil: C[CNil] = typeClass.emptyCoproduct
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveCNil: C[CNil] = typeClass.emptyCoproduct
 
-  implicit def deriveCCons[H, T <: Coproduct] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :+: T] =
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveCCons[H, T <: Coproduct] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :+: T] =
     typeClass.coproduct(ch.value, ct.value)
 }
 
@@ -177,9 +194,10 @@ trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
 }
 
 trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion[C] {
-  val typeClass: LabelledTypeClass[C]
+  implicit val typeClass: LabelledTypeClass[C]
 
-  implicit def deriveCNil: Wrap.Aux[CNil, CNil] =
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveCNil: Wrap.Aux[CNil, CNil] =
     new Wrap[CNil] {
       type V = CNil
       val unwrap = typeClass.emptyCoproduct
@@ -187,7 +205,8 @@ trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion
       def unlabel(rec: CNil): CNil = ???
     }
 
-  implicit def deriveCCons[HK <: Symbol, HV, TKV <: Coproduct]
+  @deprecated("Retained for binary compatibility", "2.3.2")
+  def deriveCCons[HK <: Symbol, HV, TKV <: Coproduct]
     (implicit
       ch: Lazy[C[HV]],
       key: Witness.Aux[HK],
