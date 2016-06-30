@@ -4,7 +4,7 @@
 # export TRAVIS_SCALA_VERSION=2.10.5;export TRAVIS_PULL_REQUEST="false";export TRAVIS_BRANCH="master"
 
 SBT="sbt ++${TRAVIS_SCALA_VERSION}"
-COVERAGE="$SBT clean coverage test coverageReport"
+COVERAGE="$SBT clean coverage test coverageReport && $SBT coverageAggregate && $SBT coveralls && codecov"
 
 if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
       "${TRAVIS_BRANCH}" == "master" &&
@@ -18,5 +18,5 @@ fi
 if [[ "$TRAVIS_SCALA_VERSION" == 2.12.* ]]; then
     ${SBT} -Dsbt.profile="2.12.x" clean validate ${PUBLISH}
 else
-    eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
+    eval $COVERAGE && ${SBT} clean validate ${PUBLISH}
 fi
