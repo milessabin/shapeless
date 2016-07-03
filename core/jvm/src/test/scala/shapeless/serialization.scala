@@ -38,6 +38,7 @@ import test._
 import union._
 
 object SerializationTestDefns {
+
   def serializable[M](m: M): Boolean = {
     val baos = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(baos)
@@ -60,12 +61,49 @@ object SerializationTestDefns {
     }
   }
 
+  def notSerializable[M](m: M): Boolean = {
+    val baos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(baos)
+    try {
+      oos.writeObject(m)
+      oos.close()
+      false
+    } catch {
+      case _: java.io.NotSerializableException =>
+        true
+      case thr: Throwable =>
+        thr.printStackTrace
+        false
+    } finally {
+      oos.close()
+    }
+  }
+
   def assertSerializable[T](t: T): Unit = assertTrue(serializable(t))
+
+  def assertNotSerializable[T](t: T): Unit = assertTrue(notSerializable(t))
 
   def assertSerializableBeforeAfter[T, U](t: T)(op: T => U): Unit = {
     assertSerializable(t)
     op(t)
     assertSerializable(t)
+  }
+
+  def roundtrip[M](m: M): M = {
+    val baos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(baos)
+    try {
+      oos.writeObject(m)
+    } finally {
+      oos.close()
+    }
+    val bais = new ByteArrayInputStream(baos.toByteArray())
+    val ois = new ObjectInputStream(bais)
+    try {
+      ois.readObject().asInstanceOf[M]
+    } finally {
+      ois.close()
+    }
   }
 
   object isDefined extends (Option ~>> Boolean) {
@@ -126,6 +164,8 @@ object SerializationTestDefns {
   }
 
   object Sing extends Serializable
+
+  case object CaseObj
 
   case class Wibble(i: Int, s: String)
 
@@ -936,8 +976,29 @@ class SerializationTests {
     assertSerializable(Typeable[Foo])
     assertSerializable(Typeable[Witness.`3`.T])
     assertSerializable(Typeable[Witness.`"foo"`.T])
+
+    // in general, referenceSingletonTypeables
+    // shouldn't be serializable, since they
+    // wouldn't work after deserialization:
+    val v = new AnyRef with Serializable
+    assertNotSerializable(Typeable[v.type])
+
+    // special cases of referenceSingletonTypeable,
+    // because symbols and objects preserve their
+    // identity during serialization/deserialization:
     assertSerializable(Typeable[Witness.`'foo`.T])
     assertSerializable(Typeable[Sing.type])
+    assertSerializable(Typeable[CaseObj.type])
+
+    // check that they indeed work
+    // correctly after deserialization:
+    val symInst = roundtrip(Typeable[Witness.`'foo`.T])
+    assertTrue(symInst.cast('foo : Any).isDefined)
+    val objInst = roundtrip(Typeable[Sing.type])
+    assertTrue(objInst.cast(Sing : Any).isDefined)
+    val caseObjInst = roundtrip(Typeable[CaseObj.type])
+    assertTrue(caseObjInst.cast(CaseObj).isDefined)
+
     assertSerializable(Typeable[Foo with Bar])
     assertSerializable(Typeable[Option[Int]])
     assertSerializable(Typeable[Either[Int, String]])

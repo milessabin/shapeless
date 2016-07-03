@@ -128,13 +128,38 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def describe = s"$name($value)"
     }
 
-  /** Typeable instance for singleton reference types */
+  /** Typeable instance for singleton reference types (not serializable by default) */
   def referenceSingletonTypeable[T <: AnyRef](value: T, name: String): Typeable[T] =
+    referenceSingletonTypeable(value, name, serializable = false)
+
+  /**
+   * Typeable instance for singleton reference types
+   *
+   * @param value The singleton value
+   *
+   * @param name The name of the singleton
+   *
+   * @param serializable Whether the instance should be
+   * serializable. For singleton types of object definitions
+   * and symbols, this should be true, since they preserve
+   * their identity after serialization/deserialization.
+   * For other cases, it should be false, since the deserialized
+   * instance wouldn't work correctly.
+   */
+  def referenceSingletonTypeable[T <: AnyRef](value: T, name: String, serializable: Boolean): Typeable[T] =
     new Typeable[T] {
+
       def cast(t: Any): Option[T] =
         if(t.asInstanceOf[AnyRef] eq value) Some(value) else None
+
       def describe = s"$name.type"
-   }
+
+      @throws(classOf[java.io.IOException])
+      private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+        if (serializable) out.defaultWriteObject()
+        else throw new java.io.NotSerializableException("referenceSingletonTypeable")
+      }
+    }
 
   /** Typeable instance for intersection types with typeable parents */
   def intersectionTypeable[T](parents: Array[Typeable[_]]): Typeable[T] =
@@ -365,7 +390,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
       case SingletonSymbolType(c) =>
         val sym = mkSingletonSymbol(c)
         val name = sym.symbol.name.toString
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym, $name)"""
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym, $name, serializable = true)"""
 
       case RefinedType(parents, decls) =>
         if(decls.nonEmpty)
@@ -421,7 +446,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
       case SingleType(_, v) if !v.isParameter =>
         val name = v.name.toString
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe], $name)"""
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe], $name, serializable = ${v.isModule})"""
 
       case ConstantType(c) =>
         val name = c.tpe.typeSymbol.name.toString
