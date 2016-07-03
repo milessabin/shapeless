@@ -89,6 +89,23 @@ object SerializationTestDefns {
     assertSerializable(t)
   }
 
+  def roundtrip[M](m: M): M = {
+    val baos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(baos)
+    try {
+      oos.writeObject(m)
+    } finally {
+      oos.close()
+    }
+    val bais = new ByteArrayInputStream(baos.toByteArray())
+    val ois = new ObjectInputStream(bais)
+    try {
+      ois.readObject().asInstanceOf[M]
+    } finally {
+      ois.close()
+    }
+  }
+
   object isDefined extends (Option ~>> Boolean) {
     def apply[T](o : Option[T]) = o.isDefined
   }
@@ -972,6 +989,15 @@ class SerializationTests {
     assertSerializable(Typeable[Witness.`'foo`.T])
     assertSerializable(Typeable[Sing.type])
     assertSerializable(Typeable[CaseObj.type])
+
+    // check that they indeed work
+    // correctly after deserialization:
+    val symInst = roundtrip(Typeable[Witness.`'foo`.T])
+    assertTrue(symInst.cast('foo : Any).isDefined)
+    val objInst = roundtrip(Typeable[Sing.type])
+    assertTrue(objInst.cast(Sing : Any).isDefined)
+    val caseObjInst = roundtrip(Typeable[CaseObj.type])
+    assertTrue(caseObjInst.cast(CaseObj).isDefined)
 
     assertSerializable(Typeable[Foo with Bar])
     assertSerializable(Typeable[Option[Int]])
