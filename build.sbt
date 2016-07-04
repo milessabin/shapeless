@@ -265,30 +265,33 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   previousArtifacts := {
-    val previousVersion = "2.3.0"
-    val previousSJSVersion = "0.6.7"
-    val previousSJSBinaryVersion =
-      ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
-    val previousBinaryCrossVersion =
-      CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
-    val scalaV = scalaVersion.value
-    val scalaBinaryV = scalaBinaryVersion.value
-    val thisProjectID = projectID.value
-    val previousCrossVersion = thisProjectID.crossVersion match {
-      case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
-      case crossVersion               => crossVersion
+    if(scalaVersion.value == "2.12.0-M5") Set()
+    else {
+      val previousVersion = "2.3.0"
+      val previousSJSVersion = "0.6.7"
+      val previousSJSBinaryVersion =
+        ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
+      val previousBinaryCrossVersion =
+        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+      val scalaV = scalaVersion.value
+      val scalaBinaryV = scalaBinaryVersion.value
+      val thisProjectID = projectID.value
+      val previousCrossVersion = thisProjectID.crossVersion match {
+        case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
+        case crossVersion               => crossVersion
+      }
+
+      // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
+      // artifact we're looking for has 0.6.6 (for example).
+      val prevExtraAttributes =
+        thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
+      val prevProjectID =
+        (thisProjectID.organization % thisProjectID.name % previousVersion)
+          .cross(previousCrossVersion)
+          .extra(prevExtraAttributes.toSeq: _*)
+
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
     }
-
-    // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
-    // artifact we're looking for has 0.6.6 (for example).
-    val prevExtraAttributes =
-      thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
-    val prevProjectID =
-      (thisProjectID.organization % thisProjectID.name % previousVersion)
-        .cross(previousCrossVersion)
-        .extra(prevExtraAttributes.toSeq: _*)
-
-    Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
   },
 
   binaryIssueFilters ++= {
