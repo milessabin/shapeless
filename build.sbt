@@ -21,7 +21,7 @@ lazy val scoverageSettings = Seq(
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M4")
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M5")
 )
 
 addCommandAlias("root", ";project root")
@@ -69,6 +69,31 @@ def configureJUnit(crossProject: CrossProject) = {
   .jvmSettings(
     libraryDependencies +=
       "com.novocode" % "junit-interface" % "0.9" % "test"
+  )
+  .settings(
+    /* The `test-plugin` configuration adds a plugin only to the `test`
+     * configuration. It is a refinement of the `plugin` configuration which adds
+     * it to both `compile` and `test`.
+     */
+    ivyConfigurations += config("test-plugin").hide,
+    libraryDependencies ++= {
+      if (scalaVersion.value.startsWith("2.12."))
+        Seq("org.scala-js" % "scala-junit-mixin-plugin" % "0.1.0" % "test-plugin" cross CrossVersion.full)
+      else
+        Seq.empty
+    },
+    scalacOptions in Test ++= {
+      val report = update.value
+      val jars = report.select(configurationFilter("test-plugin"))
+      for {
+        jar <- jars
+        jarPath = jar.getPath
+        // This is a hack to filter out the dependencies of the plugins
+        if jarPath.contains("plugin")
+      } yield {
+        s"-Xplugin:$jarPath"
+      }
+    }
   )
 }
 
@@ -126,11 +151,11 @@ lazy val CrossTypeMixed: CrossType = new CrossType {
 }
 
 lazy val core = crossProject.crossType(CrossTypeMixed)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
   .configure(profile)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
-  .configure(buildInfoSetup)
+  .configureCross(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
     sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen)
@@ -143,7 +168,7 @@ lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 
 lazy val scratch = crossProject.crossType(CrossType.Pure)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
   .configure(profile)
   .dependsOn(core)
   .settings(moduleName := "scratch")
@@ -164,7 +189,7 @@ def runAllIn(config: Configuration) = {
 }
 
 lazy val examples = crossProject.crossType(CrossType.Pure)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
   .configure(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
