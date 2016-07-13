@@ -317,6 +317,24 @@ object hlist {
         }
   }
 
+  trait Builder[HF, H <: HList] extends Serializable {
+    def apply():H
+  }
+
+  object Builder {
+
+    implicit def hnilBuilder1[HF]: Builder[HF, HNil] = new Builder[HF, HNil] {
+      def apply() = HNil
+    }
+
+    implicit def hlistBuilder1[HF <: Poly, H, T <: HList]
+      (implicit hc : Case.Aux[HF, HNil, H], bt : Builder[HF, T]): Builder[HF, H :: T] =
+      new Builder[HF, H ::T] {
+        def apply() = hc(HNil) :: bt()
+      }
+
+  }
+
   /**
    * Type class supporting flatmapping a higher ranked function over this `HList`.
    *
