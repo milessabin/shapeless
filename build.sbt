@@ -37,6 +37,8 @@ addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("releaseAll", ";root;release skip-tests")
 
 lazy val commonSettings = Seq(
+  incOptions := incOptions.value.withLogRecompileOnMacro(false),
+
   scalacOptions := Seq(
     "-feature",
     "-language:higherKinds",
@@ -152,7 +154,7 @@ lazy val CrossTypeMixed: CrossType = new CrossType {
 
 lazy val core = crossProject.crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
-  .configure(profile)
+  .configureCross(profile)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
   .configureCross(buildInfoSetup)
@@ -169,7 +171,7 @@ lazy val coreJS = core.js
 
 lazy val scratch = crossProject.crossType(CrossType.Pure)
   .configureCross(configureJUnit)
-  .configure(profile)
+  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "scratch")
   .settings(coreSettings:_*)
@@ -190,7 +192,7 @@ def runAllIn(config: Configuration) = {
 
 lazy val examples = crossProject.crossType(CrossType.Pure)
   .configureCross(configureJUnit)
-  .configure(profile)
+  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
   .settings(runAllIn(Compile))
