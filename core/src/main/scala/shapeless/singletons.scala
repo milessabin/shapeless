@@ -141,6 +141,7 @@ trait SingletonTypeUtils extends ReprTypes {
 
   object LiteralSymbol {
     def unapply(t: Tree): Option[String] = t match {
+      case Literal(Constant(s: scala.Symbol)) => Some(s.name)
       case q""" scala.Symbol.apply(${Literal(Constant(s: String))}) """ => Some(s)
       case _ => None
     }
@@ -166,8 +167,8 @@ trait SingletonTypeUtils extends ReprTypes {
 
   object SingletonType {
     def unapply(t: Tree): Option[Type] = (t, t.tpe) match {
-      case (Literal(k: Constant), _) => Some(c.internal.constantType(k))
       case (LiteralSymbol(s), _) => Some(SingletonSymbolType(s))
+      case (Literal(k: Constant), _) => Some(c.internal.constantType(k))
       case (_, keyType @ SingleType(p, v)) if !v.isParameter && !isValueClass(v) => Some(keyType)
       case (q""" $sops.narrow """, _) if sops.tpe <:< singletonOpsTpe =>
         Some(sops.tpe.member(TypeName("T")).typeSignature)
@@ -177,13 +178,18 @@ trait SingletonTypeUtils extends ReprTypes {
 
   def narrowValue(t: Tree): (Type, Tree) = {
     t match {
+      case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
       case Literal(k: Constant) =>
         val tpe = c.internal.constantType(k)
         (tpe, q"$t.asInstanceOf[$tpe]")
-      case LiteralSymbol(s) => (SingletonSymbolType(s), mkSingletonSymbol(s))
       case _ => (t.tpe, t)
     }
   }
+
+  def parseSingletonSymbolType(typeStr: String): Option[Type] =
+    for {
+      LiteralSymbol(name) <- Try(c.parse(typeStr)).toOption
+    } yield SingletonSymbolType(name)
 
   def parseLiteralType(typeStr: String): Option[Type] =
     for {
@@ -201,7 +207,7 @@ trait SingletonTypeUtils extends ReprTypes {
     } yield checked.tpe
 
   def parseType(typeStr: String): Option[Type] =
-    parseStandardType(typeStr) orElse parseLiteralType(typeStr)
+    parseSingletonSymbolType(typeStr) orElse parseStandardType(typeStr) orElse parseLiteralType(typeStr)
 
   def typeCarrier(tpe: Type) =
     mkTypeCarrier(tq"{ type T = $tpe }")
@@ -289,6 +295,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
   def extractSingletonValue(tpe: Type): Tree =
     tpe match {
+      case ConstantType(Constant(s: scala.Symbol)) => mkSingletonSymbol(s.name)
+
       case ConstantType(c: Constant) => Literal(c)
 
       case SingleType(p, v) if !v.isParameter && !isValueClass(v) => mkAttributedRef(p, v)
@@ -306,6 +314,9 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
   def extractResult(t: Tree)(mkResult: (Type, Tree) => Tree): Tree =
     (t.tpe, t) match {
+      case (ConstantType(Constant(s: scala.Symbol)), _) =>
+        mkResult(SingletonSymbolType(s.name), mkSingletonSymbol(s.name))
+
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
