@@ -38,13 +38,13 @@ package object shapeless {
   }
 
   // Type inequalities
-  trait =:!=[A, B]
+  trait =:!=[A, B] extends Serializable
 
   implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
   implicit def neqAmbig1[A] : A =:!= A = unexpected
   implicit def neqAmbig2[A] : A =:!= A = unexpected
 
-  trait <:!<[A, B]
+  trait <:!<[A, B] extends Serializable
 
   implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
   implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
