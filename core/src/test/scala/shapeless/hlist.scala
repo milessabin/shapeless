@@ -1779,19 +1779,6 @@ class HListTests {
 
     val z5 = l3 zipApply l1
     assertTypedEquals[Int :: String :: Int :: HNil](2 :: "a*" :: 2 :: HNil, z5)
-
-    val uzf = implicitly[
-      UnzipFunctions.ArgsReturns[
-        (Int => String) :: (Boolean => Double) :: (Long => Unit) :: HNil,
-        Int :: Boolean :: Long :: HNil,
-        String :: Double :: Unit :: HNil]]
-
-    illTyped("""
-      implicitly[UnzipFunctions.ArgsReturns[
-        (Int => String) :: (Boolean => Double) :: (Long => Unit) :: HNil,
-        Int :: Int :: Long :: HNil,
-        String :: String :: Unit :: HNil]] """)
-
   }
 
   @Test

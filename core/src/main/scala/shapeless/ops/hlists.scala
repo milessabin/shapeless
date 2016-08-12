@@ -2191,48 +2191,6 @@ object hlist {
   }
 
   /**
-    * Typeclass witnessing that the `HList` type `FL` is composed of elements of the form `A => B`, where A is an
-    * element in `Args` and `B` is the corresponding element in `Returns`.
-    *
-    * @author Jeremy Smith
-    */
-  trait UnzipFunctions[FL <: HList] {
-    type Returns <: HList
-    type Args    <: HList
-  }
-
-  object UnzipFunctions {
-
-    def apply[L <: HList : UnzipFunctions] = implicitly[UnzipFunctions[L]]
-
-    type Returns[FL <: HList, Returns0 <: HList] = UnzipFunctions[FL] {
-      type Returns = Returns0
-    }
-
-    type Args[FL <: HList, Args0 <: HList] = UnzipFunctions[FL] {
-      type Args = Args0
-    }
-
-    type ArgsReturns[FL <: HList, Args0 <: HList, Returns0 <: HList] = UnzipFunctions[FL] {
-      type Args = Args0
-      type Returns = Returns0
-    }
-
-    implicit val hnil: ArgsReturns[HNil, HNil, HNil] = new UnzipFunctions[HNil] {
-      type Returns = HNil
-      type Args = HNil
-    }
-
-    implicit def cons[HArgs, HReturn, T <: HList, TArgs <: HList, TReturns <: HList](implicit
-      tail: ArgsReturns[T, TArgs, TReturns]
-    ): ArgsReturns[(HArgs => HReturn) :: T, HArgs :: TArgs, HReturn :: TReturns] =
-      new UnzipFunctions[(HArgs => HReturn) :: T] {
-        type Args = HArgs :: TArgs
-        type Returns = HReturn :: TReturns
-      }
-  }
-
-  /**
    * Type class supporting zipping this `HList` of monomorphic function values with its argument `HList` of
    * correspondingly typed function arguments returning the result of each application as an `HList`. Available only if
    * there is evidence that the corresponding function and argument elements have compatible types.
