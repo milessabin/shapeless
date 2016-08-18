@@ -286,3 +286,4 @@ cross-builds for 2.10.6 and 2.12.x.
 + Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
 + Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)
++ Yang Bo (杨博) <pop.atry@gmail.com> [@Atry](https://twitter.com/Atry)
