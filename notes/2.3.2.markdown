@@ -1,0 +1,56 @@
+This is the final release of [shapeless-2.3.2][shapeless]. These release notes provide a summary of changes since
+shapeless 2.3.1.
+
+12 pull requests have been merged and 3 issues have been closed and since 2.3.1 ... the complete list can be found in
+the 2.3.2 github milestone for [issues][232issues] and [PRs][232prs].
+
+### Prominent changes
+
++ Added Align operation and syntax for tuples (thanks to Peter Neyens).
++ Added PolyFill type class and fillWith syntax which generates an HList value from a Poly0 (thanks to Yang Bo).
++ Added Combinations operation and syntax for HLists (thanks to Ryo Hongo).
++ Added FromProductArgs and FromRecordArgs traits supporting mapping HList/record arguments to positional/named
+  argument lists, dually to ProductArgs and Recordargs (thanks to Brian Zeligson).
++ Added an example of type level backtracking search (thanks to Olivier Blanvillain).
++ Added compileTime macro to measure compilation times (thanks to Frank S. Thomas).
++ Added support for Scoverage (thanks to Johnny Everson).
++ Added try-shapeless.sh script for immediate access to shapeless on an Ammonite REPL.
++ Added preliminary support for SIP-23.
+
++ ZipConst now has an instance for HNil (thanks to Jolse Maginnis).
++ Refined typing of LiftAll result type (thanks to Jeremy R. Smith).
++ Typeable instances for reference singletons are now serializable (thanks to Daniel Urban).
++ Type inequality witnesses are now serializable (thanks to Andreas Koestler).
++ Optic builders are now serializable.
++ Fixed links to external Scaladoc (thanks to Yang Bo).
+
++ Added support for Scala 2.12.0-M5.
++ Bumped SBT to 0.13.12.
+
+### Source and binary compatibility
+
+shapless 2.3.2 is source and binary compatible with 2.3.0 and 2.3.1.
+
+### Contributors
+
+Contributors for shapeless 2.3.2 are,
+
++ Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
++ Brian Zeligson <brian.zeligson@gmail.com> [@beezee](https://twitter.com/bzeg)
++ Daniel Urban <urban.dani@gmail.com>
++ Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
++ Jeremy R. Smith <jeremyrsmith@gmail.com> [@jeremyrsmith](https://twitter.com/jeremyrsmith)
++ Johnny Everson <khronnuz@gmail.com> [@johnny_everson](https://twitter.com/johnny_everson)
++ Jolse Maginnis jolse.maginnis@pearson.com [@doolse2](https://twitter.com/doolse2)
++ Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ Olivier Blanvillain <olivier.blanvillain@gmail.com>
++ Peter Neyens <peter.neyens@gmail.com> [@pneyens](https://twitter.com/pneyens)
++ Ryo Hongo <ryoppy0516@gmail.com> [@ryoppy516](https://twitter.com/ryoppy516)
++ Yang Bo (杨博) <pop.atry@gmail.com> [@Atry](https://twitter.com/Atry)
+
+Many thanks to all of you and everyone else who has contributed ideas, enthusiasm and encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[232issues]: https://github.com/milessabin/shapeless/issues?q=is%3Aissue+milestone%3Ashapeless-2.3.2+is%3Aclosed
+[232prs]: https://github.com/milessabin/shapeless/pulls?q=is%3Apr+milestone%3Ashapeless-2.3.2+is%3Aclosed
+
