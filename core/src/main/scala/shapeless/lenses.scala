@@ -110,7 +110,7 @@ trait LPPrism[S, A] extends Dynamic with Serializable { self: Prism[S, A] =>
     (implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, Symbol @@ k.type, B], dummy: DummyImplicit): mkPrism.Out = mkPrism(this)
 }
 
-trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
+trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] with Serializable {
   outer =>
   def ~[T, L <: HList, LT <: HList, Q <: Product, QL <: HList](other: Lens[C, T])
     (implicit
@@ -130,7 +130,7 @@ trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] {
       }
 }
 
-trait ProductPrismBuilder[C, P <: Product] extends Prism[C, P] {
+trait ProductPrismBuilder[C, P <: Product] extends Prism[C, P] with Serializable {
   outer =>
   def ~[T, L <: HList, LT <: HList, Q <: Product, QL <: HList](other: Prism[C, T])
     (implicit
@@ -201,7 +201,7 @@ object OpticDefns {
   def recordLens[R <: HList](k: Witness)(implicit mkLens: MkRecordSelectLens[R, k.T]) = mkLens()
 }
 
-trait OpticComposer[L, R] {
+trait OpticComposer[L, R] extends Serializable {
   type Out
   def apply(l: L, r: R): Out
 }
@@ -234,7 +234,7 @@ object OpticComposer {
     }
 }
 
-trait MkFieldLens[A, K] {
+trait MkFieldLens[A, K] extends Serializable {
   type Elem
   def apply(): Lens[A, Elem]
 }
@@ -252,7 +252,7 @@ object MkFieldLens {
         }
 }
 
-trait MkNthFieldLens[A, N <: Nat] {
+trait MkNthFieldLens[A, N <: Nat] extends Serializable {
   type Elem
   def apply(): Lens[A, Elem]
 }
@@ -270,7 +270,7 @@ object MkNthFieldLens {
         }
 }
 
-trait MkCtorPrism[A, B] {
+trait MkCtorPrism[A, B] extends Serializable {
   def apply(): Prism[A, B]
 }
 
@@ -284,7 +284,7 @@ object MkCtorPrism {
       }
 }
 
-trait InferProduct[C <: Coproduct, K] {
+trait InferProduct[C <: Coproduct, K] extends Serializable {
   type Prod
 }
 
@@ -303,7 +303,7 @@ object InferProduct {
     }
 }
 
-trait MkSelectDynamicOptic[R, A, K, B] {
+trait MkSelectDynamicOptic[R, A, K, B] extends Serializable {
   type Out
   def apply(r: R): Out
 }
@@ -468,7 +468,7 @@ object MkRecordSelectLens {
       }
 }
 
-trait MkPathOptic[S, P <: HList] {
+trait MkPathOptic[S, P <: HList] extends Serializable {
   type Out
   type Elem
   def apply(): Out
