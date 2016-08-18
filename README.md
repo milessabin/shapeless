@@ -88,8 +88,8 @@ to play around with,
 ```text
 miles@frege:shapeless (master)$ scripts/try-shapeless.sh
 Loading...
-Welcome to the Ammonite Repl 0.5.8
-(Scala 2.11.8 Java 1.8.0_51)
+Welcome to the Ammonite Repl 0.6.2
+(Scala 2.11.8 Java 1.8.0_102)
 @ 1 :: "foo" :: true :: HNil
 res0: Int :: String :: Boolean :: HNil = 1 :: foo :: true :: HNil
 @
@@ -99,7 +99,7 @@ res0: Int :: String :: Boolean :: HNil = 1 :: foo :: true :: HNil
 [coursier]: https://github.com/alexarchambault/coursier
 [ammonite]: https://github.com/lihaoyi/Ammonite
 
-### shapeless-2.3.1 with SBT
+### shapeless-2.3.2 with SBT
 
 To include the Sonatype repositories in your SBT build you should add,
 
@@ -115,13 +115,13 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M4. The main line of development for
-shapeless 2.3.1 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
+shapeless 2.3.2 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.1"
+  "com.chuusai" %% "shapeless" % "2.3.2"
 )
 ```
 
@@ -131,12 +131,12 @@ If you are using Scala 2.10.x, you should also add the macro paradise plugin to 
 scalaVersion := "2.10.6"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.1",
+  "com.chuusai" %% "shapeless" % "2.3.2",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
 
-### shapeless-2.3.1 with Maven
+### shapeless-2.3.2 with Maven
 
 shapeless is also available for projects using the Maven build tool via the following dependency,
 
@@ -144,7 +144,7 @@ shapeless is also available for projects using the Maven build tool via the foll
 <dependency>
   <groupId>com.chuusai</groupId>
   <artifactId>shapeless_2.11</artifactId>
-  <version>2.3.1</version>
+  <version>2.3.2</version>
 </dependency>
 ```
 
