@@ -311,6 +311,48 @@ class CoproductTests {
   }
 
   @Test
+  def testZipWithHList {
+    type H = Float :: Double :: String :: HNil
+    val h: H = 1000.0f :: 42.0d :: "Hello" :: HNil
+
+    /*
+     * Type `C` arises from zipping an `ISB` coproduct with an HList of the above type `H1`.
+     */
+    type C = (Float, Int) :+: (Double, String) :+: (String, Boolean) :+: CNil
+
+    val foo1 = Coproduct[ISB](23)
+    val foo2 = Coproduct[ISB]("foo")
+    val foo3 = Coproduct[ISB](true)
+
+    val foo1Zipped = foo1.zipWithHList(h)
+    typed[C](foo1Zipped)
+    val foo1ZippedSel1 = foo1Zipped.select[(Float, Int)]
+    assertTypedEquals[Option[(Float, Int)]](Some((1000.0f, 23)), foo1ZippedSel1)
+    val foo1ZippedSel2 = foo1Zipped.select[(Double, String)]
+    assertTypedEquals[Option[(Double, String)]](None, foo1ZippedSel2)
+    val foo1ZippedSel3 = foo1Zipped.select[(String, Boolean)]
+    assertTypedEquals[Option[(String, Boolean)]](None, foo1ZippedSel3)
+
+    val foo2Zipped = foo2.zipWithHList(h)
+    typed[C](foo2Zipped)
+    val foo2ZippedSel1 = foo2Zipped.select[(Float, Int)]
+    assertTypedEquals[Option[(Float, Int)]](None, foo2ZippedSel1)
+    val foo2ZippedSel2 = foo2Zipped.select[(Double, String)]
+    assertTypedEquals[Option[(Double, String)]](Some(42.0d, "foo"), foo2ZippedSel2)
+    val foo2ZippedSel3 = foo2Zipped.select[(String, Boolean)]
+    assertTypedEquals[Option[(String, Boolean)]](None, foo2ZippedSel3)
+
+    val foo3Zipped = foo3.zipWithHList(h)
+    typed[C](foo3Zipped)
+    val foo3ZippedSel1 = foo3Zipped.select[(Float, Int)]
+    assertTypedEquals[Option[(Float, Int)]](None, foo3ZippedSel1)
+    val foo3ZippedSel2 = foo3Zipped.select[(Double, String)]
+    assertTypedEquals[Option[(Double, String)]](None, foo3ZippedSel2)
+    val foo3ZippedSel3 = foo3Zipped.select[(String, Boolean)]
+    assertTypedEquals[Option[(String, Boolean)]](Some("Hello", true), foo3ZippedSel3)
+  }
+
+  @Test
   def testZip {
     import shapeless.Nat._
 
