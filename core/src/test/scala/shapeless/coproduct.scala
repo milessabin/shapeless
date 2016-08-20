@@ -325,6 +325,28 @@ class CoproductTests {
     assertEquals(None, vz2)
 
   }
+
+  @Test
+  def testZipConst {
+    /*
+     * Type `R` represents the result of zipping the `ISB` coproduct with a constant of type `Double`.
+     */
+    type R = (Double, Int) :+: (Double, String) :+: (Double, Boolean) :+: CNil
+
+    val foo1 = Coproduct[ISB](23)
+    val foo2 = Coproduct[ISB]("foo")
+    val foo3 = Coproduct[ISB](true)
+
+    val foo1Zipped = foo1.zipConst(3.14d)
+    typed[R](foo1Zipped)
+    val foo1ZippedSel1 = foo1Zipped.select[(Double, Int)]
+    assertTypedEquals[Option[(Double, Int)]](Some((3.14d, 23)), foo1ZippedSel1)
+    val foo1ZippedSel2 = foo1Zipped.select[(Double, String)]
+    assertTypedEquals[Option[(Double, String)]](None, foo1ZippedSel2)
+    val foo1ZippedSel3 = foo1Zipped.select[(Double, Boolean)]
+    assertTypedEquals[Option[(Double, Boolean)]](None, foo1ZippedSel3)
+  }
+
   @Test
   def testWithKeys {
     type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
