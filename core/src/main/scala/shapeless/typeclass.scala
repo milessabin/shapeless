@@ -56,7 +56,6 @@ trait ProductTypeClassCompanion[C[_]] extends Serializable {
     typeClass.project(cg.value, gen.to _, gen.from _)
 }
 
-
 /**
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
@@ -82,11 +81,7 @@ trait LabelledProductTypeClass[C[_]] extends Serializable {
   def project[F, G](instance: => C[G], to: F => G, from: G => F): C[F]
 }
 
-trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
-  def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
-
-  val typeClass: LabelledProductTypeClass[C]
-
+trait LabelledTypeClassWrapper[C[_]] {
   trait Wrap[KV] extends Serializable {
     type V
     val unwrap: C[V]
@@ -97,6 +92,12 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
   object Wrap {
     type Aux[KV, V0] = Wrap[KV] { type V = V0 }
   }
+}
+
+trait LabelledProductTypeClassCompanion[C[_]] extends Serializable with LabelledTypeClassWrapper[C] {
+  def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
+
+  val typeClass: LabelledProductTypeClass[C]
 
   implicit def deriveHNil: Wrap.Aux[HNil, HNil] =
     new Wrap[HNil] {
@@ -132,10 +133,10 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
 }
 
 /**
- * A type class additionally abstracting over the `coproduct` operation of type
- * classes over types of kind `*`.
+ * A type class that abstracts over the `coproduct` operation of type classes over
+ * types of kind `*`
  */
-trait TypeClass[C[_]] extends ProductTypeClass[C] {
+trait CoproductTypeClass[C[_]] {
   /**
    * Given two type class instances for `L` and `R`, produce a type class
    * instance for the coproduct `L :+: R`.
@@ -148,8 +149,8 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
   def emptyCoproduct: C[CNil]
 }
 
-trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] {
-  val typeClass: TypeClass[C]
+trait CoproductTypeClassCompanion[C[_]] {
+  val typeClass: CoproductTypeClass[C]
 
   implicit def deriveCNil: C[CNil] = typeClass.emptyCoproduct
 
@@ -158,12 +159,22 @@ trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] {
 }
 
 /**
- * A type class additionally abstracting over the `coproduct` operation of type
- * classes over types of kind `*`.
- *
- * Name hints can be safely ignored.
+ * A type class that abstracts over both the `product` and `coproduct` operations
+ * of type classes over kind `*`
  */
-trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
+trait TypeClass[C[_]] extends Serializable with ProductTypeClass[C] with CoproductTypeClass[C]
+
+trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] with CoproductTypeClassCompanion[C] {
+  val typeClass: TypeClass[C]
+}
+
+/**
+  * A type class abstracting over the `coproduct` operation of type
+  * classes over types of kind `*`.
+  *
+  * Name hints can be safely ignored.
+  */
+trait LabelledCoproductTypeClass[C[_]] extends Serializable {
   /**
    * Given two type class instances for `L` and `R`, produce a type class
    * instance for the coproduct `L :+: R`.
@@ -176,8 +187,8 @@ trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
   def emptyCoproduct: C[CNil]
 }
 
-trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion[C] {
-  val typeClass: LabelledTypeClass[C]
+trait LabelledCoproductTypeClassCompanion[C[_]] extends Serializable with LabelledTypeClassWrapper[C] {
+  val typeClass: LabelledCoproductTypeClass[C]
 
   implicit def deriveCNil: Wrap.Aux[CNil, CNil] =
     new Wrap[CNil] {
@@ -188,23 +199,33 @@ trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion
     }
 
   implicit def deriveCCons[HK <: Symbol, HV, TKV <: Coproduct]
-    (implicit
-      ch: Lazy[C[HV]],
-      key: Witness.Aux[HK],
-      ct: Lazy[Wrap[TKV] { type V <: Coproduct }]
-    ): Wrap.Aux[FieldType[HK, HV] :+: TKV, HV :+: ct.value.V] =
-      new Wrap[FieldType[HK, HV] :+: TKV] {
-        type V = HV :+: ct.value.V
-        val unwrap = typeClass.coproduct(key.value.name, ch.value, ct.value.unwrap)
-        def label(v: HV :+: ct.value.V): FieldType[HK, HV] :+: TKV =
-          v match {
-            case Inl(hv) => Inl(field[HK](hv))
-            case Inr(tv) => Inr(ct.value.label(tv))
-          }
-        def unlabel(rec: FieldType[HK, HV] :+: TKV): HV :+: ct.value.V =
-          rec match {
-            case Inl(hkv) => Inl(hkv)
-            case Inr(tkv) => Inr(ct.value.unlabel(tkv))
-          }
-      }
+  (implicit
+    ch: Lazy[C[HV]],
+    key: Witness.Aux[HK],
+    ct: Lazy[Wrap[TKV] { type V <: Coproduct }]
+  ): Wrap.Aux[FieldType[HK, HV] :+: TKV, HV :+: ct.value.V] =
+    new Wrap[FieldType[HK, HV] :+: TKV] {
+      type V = HV :+: ct.value.V
+      val unwrap = typeClass.coproduct(key.value.name, ch.value, ct.value.unwrap)
+      def label(v: HV :+: ct.value.V): FieldType[HK, HV] :+: TKV =
+        v match {
+          case Inl(hv) => Inl(field[HK](hv))
+          case Inr(tv) => Inr(ct.value.label(tv))
+        }
+      def unlabel(rec: FieldType[HK, HV] :+: TKV): HV :+: ct.value.V =
+        rec match {
+          case Inl(hkv) => Inl(hkv)
+          case Inr(tkv) => Inr(ct.value.unlabel(tkv))
+        }
+    }
+}
+
+/**
+ * A type class abstracting over the `coproduct` and `product` operations of type
+ * classes over types of kind `*`.
+ */
+trait LabelledTypeClass[C[_]] extends Serializable with LabelledProductTypeClass[C] with LabelledCoproductTypeClass[C]
+
+trait LabelledTypeClassCompanion[C[_]] extends Serializable with LabelledProductTypeClassCompanion[C] with LabelledCoproductTypeClassCompanion[C] {
+  val typeClass: LabelledTypeClass[C]
 }
