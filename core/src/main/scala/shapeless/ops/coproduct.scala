@@ -538,7 +538,33 @@ object coproduct {
 
   }
 
+  /**
+   * Type class supporting zipping a `Coproduct` with an `HList`, resulting in a `Coproduct` of tuples of the form
+   * ({element from input `Coproduct`}, {element from input `HList`})
+   * 
+   * @author William Harvey
+   */
+  trait ZipWith[H <: HList, V <: Coproduct] extends DepFn2[H, V] with Serializable { type Out <: Coproduct }
 
+  object ZipWith {
+    def apply[H <: HList, V <: Coproduct](implicit zipWith: ZipWith[H, V]): Aux[H, V, zipWith.Out] = zipWith
+
+    type Aux[H <: HList, V <: Coproduct, Out0 <: Coproduct] = ZipWith[H, V] { type Out = Out0 }
+
+    implicit def cnilZipWith: Aux[HNil, CNil, CNil] = new ZipWith[HNil, CNil] {
+      type Out = CNil
+      def apply(h: HNil, v: CNil) = v
+    }
+
+    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]): 
+        Aux[HH :: HT, VH :+: VT, (VH, HH) :+: zipWith.Out] = new ZipWith[HH :: HT, VH :+: VT] {
+      type Out = (VH, HH) :+: zipWith.Out
+      def apply(h: HH :: HT, v: VH :+: VT): Out = v match {
+        case Inl(vh) => Inl((vh, h.head))
+        case Inr(vt) => Inr(zipWith(h.tail, vt))
+      }
+    }
+  }
 
   /**
    * Type class supporting computing the type-level Nat corresponding to the length of this `Coproduct'.
