@@ -186,6 +186,12 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
   def length(implicit length: Length[C]): length.Out = length()
 
   /**
+   * Zips this `Coproduct` with the given constant, resulting in a `Coproduct` of tuples of the form
+   * ({element from this `Coproduct`}, {supplied constant})
+   */
+  def zipConst[Z](z: Z)(implicit zipConst: ZipConst[Z, C]): zipConst.Out = zipConst(z, c)
+
+  /**
    * Converts this `Coproduct` of values into a union with the provided keys.
    */
   def zipWithKeys[K <: HList](keys: K)(implicit zipWithKeys: ZipWithKeys[K, C]): zipWithKeys.Out = zipWithKeys(c)

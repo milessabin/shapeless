@@ -397,6 +397,33 @@ object coproduct {
     }
   }
 
+  /**
+   * Type class supporting zipping this `Coproduct` with a constant of type `Z` returning a `Coproduct` of tuples of the form
+   * ({element from input `Coproduct`}, {supplied constant})
+   *
+   * @author William Harvey
+   */
+  trait ZipConst[Z, V <: Coproduct] extends DepFn2[Z, V] with Serializable { type Out <: Coproduct }
+
+  object ZipConst {
+    def apply[Z, V <: Coproduct](implicit zipConst: ZipConst[Z, V]): Aux[Z, V, zipConst.Out] = zipConst
+
+    type Aux[Z, V <: Coproduct, Out0 <: Coproduct] = ZipConst[Z, V] { type Out = Out0 }
+
+    implicit def cnilZipConst[Z]: Aux[Z, CNil, CNil] = new ZipConst[Z, CNil] {
+      type Out = CNil
+      def apply(z: Z, v: CNil) = v
+    }
+
+    implicit def cpZipConst[Z, VH, VT <: Coproduct](implicit zipConst: ZipConst[Z, VT]): Aux[Z, VH :+: VT, (VH, Z) :+: zipConst.Out] =
+      new ZipConst[Z, VH :+: VT] {
+        type Out = (VH, Z) :+: zipConst.Out
+        def apply(z: Z, v: VH :+: VT): Out = v match {
+          case Inl(vh) => Inl((vh, z))
+          case Inr(vt) => Inr(zipConst(z, vt))
+        }
+      }
+  }
 
   trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] with Serializable { type Out <: Coproduct }
 
