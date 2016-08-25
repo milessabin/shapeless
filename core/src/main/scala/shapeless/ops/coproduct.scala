@@ -399,7 +399,7 @@ object coproduct {
 
   /**
    * Type class supporting zipping this `Coproduct` with a constant of type `Z` returning a `Coproduct` of tuples of the form
-   * ({constant}, {element from input tuple})
+   * ({element from input `Coproduct`}, {supplied constant})
    *
    * @author William Harvey
    */
@@ -415,11 +415,11 @@ object coproduct {
       def apply(z: Z, v: CNil) = v
     }
 
-    implicit def cpZipConst[Z, VH, VT <: Coproduct](implicit zipConst: ZipConst[Z, VT]): Aux[Z, VH :+: VT, (Z, VH) :+: zipConst.Out] =
+    implicit def cpZipConst[Z, VH, VT <: Coproduct](implicit zipConst: ZipConst[Z, VT]): Aux[Z, VH :+: VT, (VH, Z) :+: zipConst.Out] =
       new ZipConst[Z, VH :+: VT] {
-        type Out = (Z, VH) :+: zipConst.Out
+        type Out = (VH, Z) :+: zipConst.Out
         def apply(z: Z, v: VH :+: VT): Out = v match {
-          case Inl(vh) => Inl((z, vh))
+          case Inl(vh) => Inl((vh, z))
           case Inr(vt) => Inr(zipConst(z, vt))
         }
       }

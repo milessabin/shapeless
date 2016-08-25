@@ -331,7 +331,7 @@ class CoproductTests {
     /*
      * Type `R` represents the result of zipping the `ISB` coproduct with a constant of type `Double`.
      */
-    type R = (Double, Int) :+: (Double, String) :+: (Double, Boolean) :+: CNil
+    type R = (Int, Double) :+: (String, Double) :+: (Boolean, Double) :+: CNil
 
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
@@ -339,12 +339,30 @@ class CoproductTests {
 
     val foo1Zipped = foo1.zipConst(3.14d)
     typed[R](foo1Zipped)
-    val foo1ZippedSel1 = foo1Zipped.select[(Double, Int)]
-    assertTypedEquals[Option[(Double, Int)]](Some((3.14d, 23)), foo1ZippedSel1)
-    val foo1ZippedSel2 = foo1Zipped.select[(Double, String)]
-    assertTypedEquals[Option[(Double, String)]](None, foo1ZippedSel2)
-    val foo1ZippedSel3 = foo1Zipped.select[(Double, Boolean)]
-    assertTypedEquals[Option[(Double, Boolean)]](None, foo1ZippedSel3)
+    val foo1ZippedSel1 = foo1Zipped.select[(Int, Double)]
+    assertTypedEquals[Option[(Int, Double)]](Some((23, 3.14d)), foo1ZippedSel1)
+    val foo1ZippedSel2 = foo1Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](None, foo1ZippedSel2)
+    val foo1ZippedSel3 = foo1Zipped.select[(Boolean, Double)]
+    assertTypedEquals[Option[(Boolean, Double)]](None, foo1ZippedSel3)
+
+    val foo2Zipped = foo2.zipConst(3.14d)
+    typed[R](foo2Zipped)
+    val foo2ZippedSel1 = foo2Zipped.select[(Int, Double)]
+    assertTypedEquals[Option[(Int, Double)]](None, foo2ZippedSel1)
+    val foo2ZippedSel2 = foo2Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](Some(("foo", 3.14d)), foo2ZippedSel2)
+    val foo2ZippedSel3 = foo2Zipped.select[(Boolean, Double)]
+    assertTypedEquals[Option[(Boolean, Double)]](None, foo2ZippedSel3)
+
+    val foo3Zipped = foo3.zipConst(3.14d)
+    typed[R](foo3Zipped)
+    val foo3ZippedSel1 = foo3Zipped.select[(Int, Double)]
+    assertTypedEquals[Option[(Int, Double)]](None, foo3ZippedSel1)
+    val foo3ZippedSel2 = foo3Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](None, foo3ZippedSel2)
+    val foo3ZippedSel3 = foo3Zipped.select[(Boolean, Double)]
+    assertTypedEquals[Option[(Boolean, Double)]](Some((true, 3.14d)), foo3ZippedSel3)   
   }
 
   @Test

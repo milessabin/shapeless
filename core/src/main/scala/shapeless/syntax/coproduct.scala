@@ -187,7 +187,7 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
 
   /**
    * Zips this `Coproduct` with the given constant, resulting in a `Coproduct` of tuples of the form
-   * ({constant}, {element from input tuple})
+   * ({element from this `Coproduct`}, {supplied constant})
    */
   def zipConst[Z](z: Z)(implicit zipConst: ZipConst[Z, C]): zipConst.Out = zipConst(z, c)
 
