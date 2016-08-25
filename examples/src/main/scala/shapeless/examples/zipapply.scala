@@ -33,7 +33,7 @@ object compose extends Poly1 {
   *
   * @author Jeremy Smith
   */
-object ZipApplyExamples {
+object ZipApplyExamples extends App {
 
   // Some functions over various types
   def intFunction(i: Int): String = (i * i).toString
