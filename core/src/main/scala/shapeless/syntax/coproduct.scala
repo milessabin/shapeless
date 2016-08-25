@@ -202,10 +202,10 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
   def zipWithIndex(implicit zipper: ZipWithIndex[C]): zipper.Out = zipper(c)
 
   /**
-   * Zips this `Coproduct` with the provided HList, resulting in a `Coproduct` of tuples of the form
-   * ({element from input `HList`}, {element from this `Coproduct`}). 
+   * Zips this `Coproduct` with the provided `HList`, resulting in a `Coproduct` of tuples of the form
+   * ({element from this `Coproduct`}, {element from input `HList`}). 
    */
-  def zipWithHList[H <: HList](h: H)(implicit zipWithHList: ZipWithHList[H, C]): zipWithHList.Out = zipWithHList(h, c)
+  def zipWith[H <: HList](h: H)(implicit zipWith: ZipWith[H, C]): zipWith.Out = zipWith(h, c)
 
   /**
    * Rotate this 'Coproduct' left by N. An explicit type argument must be provided.

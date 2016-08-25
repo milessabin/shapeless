@@ -311,45 +311,45 @@ class CoproductTests {
   }
 
   @Test
-  def testZipWithHList {
+  def testZipWith {
     type H = Float :: Double :: String :: HNil
     val h: H = 1000.0f :: 42.0d :: "Hello" :: HNil
 
     /*
      * Type `C` arises from zipping an `ISB` coproduct with an HList of the above type `H1`.
      */
-    type C = (Float, Int) :+: (Double, String) :+: (String, Boolean) :+: CNil
+    type C = (Int, Float) :+: (String, Double) :+: (Boolean, String) :+: CNil
 
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
     val foo3 = Coproduct[ISB](true)
 
-    val foo1Zipped = foo1.zipWithHList(h)
+    val foo1Zipped = foo1.zipWith(h)
     typed[C](foo1Zipped)
-    val foo1ZippedSel1 = foo1Zipped.select[(Float, Int)]
-    assertTypedEquals[Option[(Float, Int)]](Some((1000.0f, 23)), foo1ZippedSel1)
-    val foo1ZippedSel2 = foo1Zipped.select[(Double, String)]
-    assertTypedEquals[Option[(Double, String)]](None, foo1ZippedSel2)
-    val foo1ZippedSel3 = foo1Zipped.select[(String, Boolean)]
-    assertTypedEquals[Option[(String, Boolean)]](None, foo1ZippedSel3)
+    val foo1ZippedSel1 = foo1Zipped.select[(Int, Float)]
+    assertTypedEquals[Option[(Int, Float)]](Some((23, 1000.0f)), foo1ZippedSel1)
+    val foo1ZippedSel2 = foo1Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](None, foo1ZippedSel2)
+    val foo1ZippedSel3 = foo1Zipped.select[(Boolean, String)]
+    assertTypedEquals[Option[(Boolean, String)]](None, foo1ZippedSel3)
 
-    val foo2Zipped = foo2.zipWithHList(h)
+    val foo2Zipped = foo2.zipWith(h)
     typed[C](foo2Zipped)
-    val foo2ZippedSel1 = foo2Zipped.select[(Float, Int)]
-    assertTypedEquals[Option[(Float, Int)]](None, foo2ZippedSel1)
-    val foo2ZippedSel2 = foo2Zipped.select[(Double, String)]
-    assertTypedEquals[Option[(Double, String)]](Some(42.0d, "foo"), foo2ZippedSel2)
-    val foo2ZippedSel3 = foo2Zipped.select[(String, Boolean)]
-    assertTypedEquals[Option[(String, Boolean)]](None, foo2ZippedSel3)
+    val foo2ZippedSel1 = foo2Zipped.select[(Int, Float)]
+    assertTypedEquals[Option[(Int, Float)]](None, foo2ZippedSel1)
+    val foo2ZippedSel2 = foo2Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](Some("foo", 42.0d), foo2ZippedSel2)
+    val foo2ZippedSel3 = foo2Zipped.select[(Boolean, String)]
+    assertTypedEquals[Option[(Boolean, String)]](None, foo2ZippedSel3)
 
-    val foo3Zipped = foo3.zipWithHList(h)
+    val foo3Zipped = foo3.zipWith(h)
     typed[C](foo3Zipped)
-    val foo3ZippedSel1 = foo3Zipped.select[(Float, Int)]
-    assertTypedEquals[Option[(Float, Int)]](None, foo3ZippedSel1)
-    val foo3ZippedSel2 = foo3Zipped.select[(Double, String)]
-    assertTypedEquals[Option[(Double, String)]](None, foo3ZippedSel2)
-    val foo3ZippedSel3 = foo3Zipped.select[(String, Boolean)]
-    assertTypedEquals[Option[(String, Boolean)]](Some("Hello", true), foo3ZippedSel3)
+    val foo3ZippedSel1 = foo3Zipped.select[(Int, Float)]
+    assertTypedEquals[Option[(Int, Float)]](None, foo3ZippedSel1)
+    val foo3ZippedSel2 = foo3Zipped.select[(String, Double)]
+    assertTypedEquals[Option[(String, Double)]](None, foo3ZippedSel2)
+    val foo3ZippedSel3 = foo3Zipped.select[(Boolean, String)]
+    assertTypedEquals[Option[(Boolean, String)]](Some(true, "Hello"), foo3ZippedSel3)
   }
 
   @Test
