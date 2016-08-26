@@ -106,8 +106,7 @@ package object shapeless {
     val b = Some(evb)
   }
 
-  implicit def abXorAmbigTpe0[A, B](implicit eva: A, evb: B): A ^^ B = unexpected
-  implicit def abXorAmbigTpe1[A, B](implicit eva: A, evb: B): A ^^ B = unexpected
+  implicit def abXorAmbigTpe[A, B](implicit eva: A, evb: B): A ^^ B = unexpected
 
   trait !![A] extends Serializable
 
