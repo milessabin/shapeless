@@ -165,6 +165,18 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
   def flatMap(op: Poly)(implicit flatMap: FlatMap[C, op.type]): flatMap.Out = flatMap(c)
 
   /**
+   * Allows folding over this `Coproduct` by handling each type of the `Coproduct` in the order
+   * that they occur in the type signature.  For instance, a `Coproduct` `c` of type 
+   * `Int :+: String :+: Boolean :+: CNil` could be folded into a `Double` as follows:
+   * 
+   *   val result = c.foldCases[Double] 
+   *                   .atCase(i => math.sqrt(i))
+   *                   .atCase(s => s.length.toDouble)
+   *                   .atCase(b => if (b) 100.0 else -1.0)
+   */
+  def foldCases[R](implicit foldCases: FoldCasesInit[C, R]): foldCases.Out = foldCases(c, HNil)
+
+  /**
    * Computes a fold over this `Coproduct` using the higher ranked function `f`. Available only if
    * there is evidence `f` can be applied all the elements of this `Coproduct`.
    */

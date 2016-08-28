@@ -258,6 +258,65 @@ class CoproductTests {
   }
 
   @Test
+  def testFoldCases {
+    val foo1 = Coproduct[ISB](23)
+    val foo2 = Coproduct[ISB]("foo")
+    val foo3 = Coproduct[ISB](true)
+
+    val foo1a = foo1.foldCases[Int]
+      .atCase((i: Int) => 1)
+      .atCase((s: String) => s.length)
+      .atCase((b: Boolean) => 1)
+
+    val foo2a = foo2.foldCases[Int]
+      .atCase(_ => 1)
+      .atCase(_.length)
+      .atCase(_ => 1)
+
+    val foo3a = foo3.foldCases[Int]
+      .atCase(Function.const(1))
+      .atCase(_.length)
+      .atCase(Function.const(1))
+
+    assertTypedEquals[Int](1, foo1a)
+    assertTypedEquals[Int](3, foo2a)
+    assertTypedEquals[Int](1, foo3a)
+
+    import FoldCases.CaseBuilder
+    val foldCases1 = foo1.foldCases[Double]
+    typed[
+      CaseBuilder[Int, Double,
+        CaseBuilder[String, Double,
+          CaseBuilder[Boolean, Double, Double]
+        ]
+      ]
+    ](foldCases1)
+
+    val foldCases2 = foldCases1
+      .atCase(x => x * x)
+    typed[
+      CaseBuilder[String, Double,
+        CaseBuilder[Boolean, Double, Double]
+      ]
+    ](foldCases2)
+
+    val foldCases3 = foldCases2
+      .atCase(s => s.length.toDouble)
+    typed[
+      CaseBuilder[Boolean, Double, Double]
+    ](foldCases3)
+
+    val foldCases4 = foldCases3
+      .atCase(b => if (b) 3.14 else 6.28)
+    assertTypedEquals[Double]((23 * 23).toDouble, foldCases4)
+
+    val foldSingle = Coproduct[Int :+: CNil](42)
+      .foldCases[Int]
+      .atCase(x => x + 1)
+    assertTypedEquals[Int](43, foldSingle)
+  }
+
+  @Test
   def testFold {
     import poly.identity
 
