@@ -7,7 +7,7 @@ the 2.3.2 github milestone for [issues][232issues] and [PRs][232prs].
 ### Prominent changes
 
 + Added Align operation and syntax for tuples (thanks to Peter Neyens).
-+ Added PolyFill type class and fillWith syntax which generates an HList value from a Poly0 (thanks to Yang Bo).
++ Added FillWith type class and fillWith syntax which generates an HList value from a Poly0 (thanks to Yang Bo).
 + Added Combinations operation and syntax for HLists (thanks to Ryo Hongo).
 + Added FromProductArgs and FromRecordArgs traits supporting mapping HList/record arguments to positional/named
   argument lists, dually to ProductArgs and Recordargs (thanks to Brian Zeligson).
