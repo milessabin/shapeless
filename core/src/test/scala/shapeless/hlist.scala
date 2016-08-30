@@ -2821,7 +2821,7 @@ class HListTests {
       implicit val zeroInt = at[Int](0)
     }
 
-    implicit val zeroDouble = zero.at[String]("")
+    implicit val emptyString = zero.at[String]("")
 
     val out = HList.fillWith[Int :: String :: Int :: HNil](zero)
     assertEquals(out, 0 :: "" :: 0 :: HNil)
