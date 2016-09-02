@@ -1268,4 +1268,30 @@ object coproduct {
         def apply(): Out = wh.value :: rt()
       }
   }
+
+  sealed trait LiftAll[F[_], In <: Coproduct] {
+    type Out <: HList
+    def instances: Out
+  }
+
+  object LiftAll {
+    type Aux[F[_], In0 <: Coproduct, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
+
+    class Curried[F[_]] {def apply[In <: Coproduct](in: In)(implicit ev: LiftAll[F, In]) = ev}
+
+    def apply[F[_]] = new Curried[F]
+    def apply[F[_], In <: Coproduct](implicit ev: LiftAll[F, In]) = ev
+
+    implicit def liftAllCnil[F[_]]: LiftAll.Aux[F, CNil, HNil] = new LiftAll[F, CNil] {
+      type Out = HNil
+      def instances = HNil
+    }
+
+    implicit def liftAllCcons[F[_], H, T <: Coproduct, TI <: HList]
+    (implicit headInstance: F[H], tailInstances: Aux[F, T, TI]): Aux[F, H :+: T, F[H] :: TI] =
+      new LiftAll[F, H :+: T] {
+        type Out = F[H] :: TI
+        def instances = headInstance :: tailInstances.instances
+      }
+  }
 }
