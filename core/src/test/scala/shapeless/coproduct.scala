@@ -1867,6 +1867,21 @@ class CoproductTests {
     illTyped(""" Reify[String :+: Int :+: CNil] """)
     illTyped(""" Reify[String :+: Coproduct.`'a, 1, "b", true`.T] """)
   }
+
+  @Test
+   def testLiftAll {
+     trait F[A]
+     implicit object FInt extends F[Int]
+     implicit object FString extends F[String]
+
+     assertEquals(HNil, implicitly[LiftAll[F, CNil]].instances)
+     assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :+: CNil]].instances)
+     assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :+: Int :+: CNil]].instances)
+     illTyped("implicitly[LiftAll[F, Long :+: String :+: Int :+: CNil]]")
+
+     assertEquals(FInt :: HNil, LiftAll[F](Coproduct[Int :+: CNil](1)).instances)
+   }
+
 }
 
 package CoproductTestAux {
