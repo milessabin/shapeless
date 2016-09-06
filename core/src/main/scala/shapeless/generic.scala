@@ -134,7 +134,7 @@ object Generic {
    * it this way:
    *
    * {{{
-   *   def myMethod[T]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr) = ???
+   *   def myMethod[T]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr]) = ???
    * }}}
    *
    * The reason is that we are not allowed to have dependencies between arguments in the same parameter group. So
