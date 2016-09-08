@@ -2,7 +2,6 @@
 .sbtrc
 scripts/travis-config.sh
 
-scratch/
 target/
 
 # Ignore project files for Eclipse

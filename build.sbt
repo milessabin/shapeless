@@ -20,8 +20,11 @@ lazy val scoverageSettings = Seq(
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M5")
+  //scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-RC1"),
+  resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/",
+  scalaVersion := "2.12.0-4d67c39-SNAPSHOT",
+  scalaBinaryVersion := "2.12.0-RC1"
 )
 
 addCommandAlias("root", ";project root")
@@ -43,7 +46,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-language:higherKinds",
     "-language:implicitConversions",
-    "-Xfatal-warnings",
+    //"-Xfatal-warnings", // Temporarily disabled to avoid failures due to 2.12.x deprecations.
     "-deprecation",
     "-unchecked"
   ),
@@ -71,31 +74,6 @@ def configureJUnit(crossProject: CrossProject) = {
   .jvmSettings(
     libraryDependencies +=
       "com.novocode" % "junit-interface" % "0.9" % "test"
-  )
-  .settings(
-    /* The `test-plugin` configuration adds a plugin only to the `test`
-     * configuration. It is a refinement of the `plugin` configuration which adds
-     * it to both `compile` and `test`.
-     */
-    ivyConfigurations += config("test-plugin").hide,
-    libraryDependencies ++= {
-      if (scalaVersion.value.startsWith("2.12."))
-        Seq("org.scala-js" % "scala-junit-mixin-plugin" % "0.1.0" % "test-plugin" cross CrossVersion.full)
-      else
-        Seq.empty
-    },
-    scalacOptions in Test ++= {
-      val report = update.value
-      val jars = report.select(configurationFilter("test-plugin"))
-      for {
-        jar <- jars
-        jarPath = jar.getPath
-        // This is a hack to filter out the dependencies of the plugins
-        if jarPath.contains("plugin")
-      } yield {
-        s"-Xplugin:$jarPath"
-      }
-    }
   )
 }
 
@@ -209,7 +187,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
     "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    compilerPlugin("org.scalamacros" % "paradise_2.12.0-RC1" % "2.1.0")
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -217,7 +195,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
       case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
       // in Scala 2.10, quasiquotes are provided by macro paradise
       case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.0" cross CrossVersion.binary)
+        Seq("org.scalamacros" %% "quasiquotes_2.12.0-RC1" % "2.1.0")
     }
   }
 )
@@ -267,7 +245,7 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   previousArtifacts := {
-    if(scalaVersion.value == "2.12.0-M5") Set()
+    if(scalaVersion.value == "2.12.0-RC1") Set()
     else {
       val previousVersion = "2.3.0"
       val previousSJSVersion = "0.6.7"
