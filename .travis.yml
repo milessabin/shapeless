@@ -1,9 +1,11 @@
 language: scala
+install:
+  - pip install --user codecov
 
 scala:
 - 2.10.6
 - 2.11.8
-- 2.12.0-M4
+- 2.12.0-RC1
 
 jdk:
 - oraclejdk8
@@ -14,7 +16,7 @@ cache:
     - $HOME/.sbt
 
 script:
-  - travis_wait 45 scripts/travis-publish.sh
+  - travis_wait 60 scripts/travis-publish.sh
 
 env:
   global:

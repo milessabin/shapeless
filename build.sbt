@@ -12,10 +12,19 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ osgiSettings => defaultOsgiSettings, _ }
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
+lazy val scoverageSettings = Seq(
+  coverageMinimum := 60,
+  coverageFailOnMinimum := false,
+  coverageExcludedFiles := ".*/src/test/.*"
+)
+
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M4")
+  //scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-RC1"),
+  resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/",
+  scalaVersion := "2.12.0-4d67c39-SNAPSHOT",
+  scalaBinaryVersion := "2.12.0-RC1"
 )
 
 addCommandAlias("root", ";project root")
@@ -31,11 +40,13 @@ addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("releaseAll", ";root;release skip-tests")
 
 lazy val commonSettings = Seq(
+  incOptions := incOptions.value.withLogRecompileOnMacro(false),
+
   scalacOptions := Seq(
     "-feature",
     "-language:higherKinds",
     "-language:implicitConversions",
-    "-Xfatal-warnings",
+    //"-Xfatal-warnings", // Temporarily disabled to avoid failures due to 2.12.x deprecations.
     "-deprecation",
     "-unchecked"
   ),
@@ -66,6 +77,22 @@ def configureJUnit(crossProject: CrossProject) = {
   )
 }
 
+val cmdlineProfile = sys.props.getOrElse("sbt.profile", default = "")
+
+def profile(crossProject: CrossProject) = cmdlineProfile match {
+  case "2.12.x" =>
+    crossProject
+      .jsConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
+      .jvmConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
+
+  case _ => crossProject
+}
+
+def profile: Project ⇒ Project = p => cmdlineProfile match {
+  case "2.12.x" => p.disablePlugins(scoverage.ScoverageSbtPlugin)
+  case _ => p
+}
+
 lazy val commonJsSettings = Seq(
   scalacOptions += {
     val tagOrHash =
@@ -76,16 +103,20 @@ lazy val commonJsSettings = Seq(
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
   scalaJSUseRhino in Global := false,
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  coverageExcludedPackages := ".*"
 )
 
 lazy val commonJvmSettings = Seq(
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  coverageExcludedPackages := "shapeless.examples.*"
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++ releaseSettings
+lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
+  releaseSettings ++ scoverageSettings
 
 lazy val root = project.in(file("."))
+  .configure(profile)
   .aggregate(coreJS, coreJVM)
   .dependsOn(coreJS, coreJVM)
   .settings(coreSettings:_*)
@@ -100,10 +131,11 @@ lazy val CrossTypeMixed: CrossType = new CrossType {
 }
 
 lazy val core = crossProject.crossType(CrossTypeMixed)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
+  .configureCross(profile)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
-  .configure(buildInfoSetup)
+  .configureCross(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
     sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen)
@@ -116,7 +148,8 @@ lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 
 lazy val scratch = crossProject.crossType(CrossType.Pure)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
+  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "scratch")
   .settings(coreSettings:_*)
@@ -136,7 +169,8 @@ def runAllIn(config: Configuration) = {
 }
 
 lazy val examples = crossProject.crossType(CrossType.Pure)
-  .configure(configureJUnit)
+  .configureCross(configureJUnit)
+  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
   .settings(runAllIn(Compile))
@@ -153,7 +187,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
     "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    compilerPlugin("org.scalamacros" % "paradise_2.12.0-RC1" % "2.1.0")
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -161,7 +195,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
       case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
       // in Scala 2.10, quasiquotes are provided by macro paradise
       case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.0" cross CrossVersion.binary)
+        Seq("org.scalamacros" %% "quasiquotes_2.12.0-RC1" % "2.1.0")
     }
   }
 )
@@ -211,30 +245,33 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   previousArtifacts := {
-    val previousVersion = "2.3.0"
-    val previousSJSVersion = "0.6.7"
-    val previousSJSBinaryVersion =
-      ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
-    val previousBinaryCrossVersion =
-      CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
-    val scalaV = scalaVersion.value
-    val scalaBinaryV = scalaBinaryVersion.value
-    val thisProjectID = projectID.value
-    val previousCrossVersion = thisProjectID.crossVersion match {
-      case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
-      case crossVersion               => crossVersion
+    if(scalaVersion.value == "2.12.0-RC1") Set()
+    else {
+      val previousVersion = "2.3.0"
+      val previousSJSVersion = "0.6.7"
+      val previousSJSBinaryVersion =
+        ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
+      val previousBinaryCrossVersion =
+        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+      val scalaV = scalaVersion.value
+      val scalaBinaryV = scalaBinaryVersion.value
+      val thisProjectID = projectID.value
+      val previousCrossVersion = thisProjectID.crossVersion match {
+        case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
+        case crossVersion               => crossVersion
+      }
+
+      // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
+      // artifact we're looking for has 0.6.6 (for example).
+      val prevExtraAttributes =
+        thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
+      val prevProjectID =
+        (thisProjectID.organization % thisProjectID.name % previousVersion)
+          .cross(previousCrossVersion)
+          .extra(prevExtraAttributes.toSeq: _*)
+
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
     }
-
-    // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
-    // artifact we're looking for has 0.6.6 (for example).
-    val prevExtraAttributes =
-      thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
-    val prevProjectID =
-      (thisProjectID.organization % thisProjectID.name % previousVersion)
-        .cross(previousCrossVersion)
-        .extra(prevExtraAttributes.toSeq: _*)
-
-    Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
   },
 
   binaryIssueFilters ++= {
@@ -250,7 +287,8 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$17"),
       exclude[MissingMethodProblem]("shapeless.UnwrappedInstances.tagUnwrapped"),
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.findField"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType")
+      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType"),
+      exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.parseSingletonSymbolType")
     )
   }
 )
