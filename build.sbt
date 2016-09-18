@@ -43,7 +43,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-language:higherKinds",
     "-language:implicitConversions",
-    "-Xfatal-warnings",
+    //"-Xfatal-warnings",
     "-deprecation",
     "-unchecked"
   ),
@@ -71,31 +71,6 @@ def configureJUnit(crossProject: CrossProject) = {
   .jvmSettings(
     libraryDependencies +=
       "com.novocode" % "junit-interface" % "0.9" % "test"
-  )
-  .settings(
-    /* The `test-plugin` configuration adds a plugin only to the `test`
-     * configuration. It is a refinement of the `plugin` configuration which adds
-     * it to both `compile` and `test`.
-     */
-    ivyConfigurations += config("test-plugin").hide,
-    libraryDependencies ++= {
-      if (scalaVersion.value.startsWith("2.12."))
-        Seq("org.scala-js" % "scala-junit-mixin-plugin" % "0.1.0" % "test-plugin" cross CrossVersion.full)
-      else
-        Seq.empty
-    },
-    scalacOptions in Test ++= {
-      val report = update.value
-      val jars = report.select(configurationFilter("test-plugin"))
-      for {
-        jar <- jars
-        jarPath = jar.getPath
-        // This is a hack to filter out the dependencies of the plugins
-        if jarPath.contains("plugin")
-      } yield {
-        s"-Xplugin:$jarPath"
-      }
-    }
   )
 }
 
