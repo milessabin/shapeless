@@ -21,7 +21,7 @@ package shapeless.examples
  * 
  * @author Miles Sabin
  */
-object LenseExamples extends App {
+object LensExamples extends App {
   import shapeless._
   import test._
 
