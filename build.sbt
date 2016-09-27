@@ -20,7 +20,8 @@ lazy val scoverageSettings = Seq(
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.8",
+  scalaOrganization := "org.typelevel",
+  scalaVersion := "2.11.8-bin-typelevel-update-1",
   crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M5")
 )
 
@@ -179,12 +180,20 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 
+def fullBaseScalaVersion(fullVersion: String): String = {
+  val BinCompatV = """(\d+)\.(\d+)\.(\d+)-bin(-.*)?""".r
+  fullVersion match {
+    case BinCompatV(x, y, z, _) => s"$x.$y.$z"
+    case other => other
+  }
+}
+
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    "org.scala-lang" % "scala-reflect" % fullBaseScalaVersion(scalaVersion.value) % "provided",
+    "org.scala-lang" % "scala-compiler" % fullBaseScalaVersion(scalaVersion.value) % "provided",
+    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(fullBaseScalaVersion))
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
