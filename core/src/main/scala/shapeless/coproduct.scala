@@ -121,6 +121,7 @@ sealed trait CNil extends Coproduct {
 
 object Coproduct extends Dynamic {
   import ops.coproduct.Inject
+  import ops.coproduct.RuntimeInject
   import syntax.CoproductOps
 
   class MkCoproduct[C <: Coproduct] {
@@ -156,4 +157,7 @@ object Coproduct extends Dynamic {
    * }}}
    */
   def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductTypeImpl
+
+  /** Allows to inject a runtime value of type `Any` in a `Coproduct` */
+  def runtimeInject[C <: Coproduct](x: Any)(implicit rinj: RuntimeInject[C]): Option[C] = rinj(x)
 }
