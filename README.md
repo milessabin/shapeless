@@ -81,7 +81,7 @@ OSS Snapshot repository.
 ### Try shapeless with an Ammonite instant REPL
 
 The quickest way to get to a REPL prompt with the latest version of shapeless on the class path is to run the
-provided ["try shapeless"][try-shapeless] scripti, which has no dependencies other than an installed JDK. This script
+provided ["try shapeless"][try-shapeless] script, which has no dependencies other than an installed JDK. This script
 downloads and installs [coursier][coursier] and uses it to fetch the [Ammonite][ammonite] REPL and the latest version
 of shapeless. It then drops you immediately into a REPL session,
 
