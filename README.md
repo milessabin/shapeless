@@ -81,18 +81,19 @@ OSS Snapshot repository.
 ### Try shapeless with an Ammonite instant REPL
 
 The quickest way to get to a REPL prompt with the latest version of shapeless on the class path is to run the
-provided ["try shapeless"][try-shapeless] script. This downloads and installs [coursier][coursier] and uses it to
-fetch the [Ammonite][ammonite] REPL and the latest version of shapeless and drops you immediately into a REPL session
-to play around with,
+provided ["try shapeless"][try-shapeless] scripti, which has no dependencies other than an installed JDK. This script
+downloads and installs [coursier][coursier] and uses it to fetch the [Ammonite][ammonite] REPL and the latest version
+of shapeless. It then drops you immediately into a REPL session,
 
 ```text
-miles@frege:shapeless (master)$ scripts/try-shapeless.sh
+miles@tarski:test% curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 0.6.2
+Welcome to the Ammonite Repl 0.7.8
 (Scala 2.11.8 Java 1.8.0_102)
-@ 1 :: "foo" :: true :: HNil
-res0: Int :: String :: Boolean :: HNil = 1 :: foo :: true :: HNil
-@
+@ 23 :: "foo" :: true :: HNil 
+res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
+@ Bye!
+miles@tarski:test%
 ```
 
 [try-shapeless]: https://github.com/milessabin/shapeless/blob/master/scripts/try-shapeless.sh
