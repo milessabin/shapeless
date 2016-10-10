@@ -1,9 +1,8 @@
 #!/bin/sh
-COURSIER_URL=https://raw.githubusercontent.com/alexarchambault/coursier/v1.0.0-M12/coursier
-test -e ~/.coursier/cr || (mkdir -p ~/.coursier && curl -s --output ~/.coursier/cr $COURSIER_URL && chmod +x ~/.coursier/cr)
-CLASSPATH="$(~/.coursier/cr fetch -q -p \
-  \
+COURSIER_URL=https://raw.githubusercontent.com/alexarchambault/coursier/v1.0.0-M14-2/coursier
+test -e ~/.coursier/coursier || \
+  (mkdir -p ~/.coursier && curl -s --output ~/.coursier/coursier $COURSIER_URL && chmod +x ~/.coursier/coursier)
+~/.coursier/coursier launch -q -P \
+  com.lihaoyi:ammonite_2.11.8:0.7.8 \
   com.chuusai:shapeless_2.11:2.3.2 \
-  com.lihaoyi:ammonite-repl_2.11.8:0.6.2 \
-  \
-)" java ammonite.repl.Main --predef 'import shapeless._'
+  -- --predef 'import shapeless._' < /dev/tty
