@@ -86,14 +86,14 @@ downloads and installs [coursier][coursier] and uses it to fetch the [Ammonite][
 of shapeless. It then drops you immediately into a REPL session,
 
 ```text
-miles@tarski:test% curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
+% curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
 Welcome to the Ammonite Repl 0.7.8
 (Scala 2.11.8 Java 1.8.0_102)
 @ 23 :: "foo" :: true :: HNil 
 res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
 @ Bye!
-miles@tarski:test%
+%
 ```
 
 [try-shapeless]: https://github.com/milessabin/shapeless/blob/master/scripts/try-shapeless.sh
