@@ -151,10 +151,16 @@ trait SingletonTypeUtils extends ReprTypes {
     val atatTpe = typeOf[@@[_,_]].typeConstructor
     val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
 
+    def unrefine(t: Type): Type =
+      t.dealias match {
+        case RefinedType(List(t), scope) if scope.isEmpty => unrefine(t)
+        case t => t
+      }
+
     def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, c.internal.constantType(Constant(s))))
 
     def unapply(t: Type): Option[String] =
-      t match {
+      unrefine(t).dealias match {
         case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(Constant(s: String))))), _) => Some(s)
         case _ => None
       }
