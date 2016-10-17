@@ -81,6 +81,28 @@ object PolyDefns extends Cases {
   }
 
   /**
+    * Represents the composition of two polymorphic function values by falling back
+    * to the second function where the first is not defined.
+    *
+    * @author Denis Rosca
+    */
+  class OrElse[F,G](f: F, g: G) extends Poly
+
+  object OrElse {
+    implicit def caseF[C, F <: Poly, G <: Poly, T, U]
+      (implicit unpack: Unpack2[C, OrElse, F, G], cF : Case1.Aux[F, T, U]) = new Case[C, T :: HNil] {
+      type Result = U
+      val value = (t : T :: HNil) => cF(t)
+    }
+
+    implicit def caseG[C, F <: Poly, G <: Poly, T, V]
+      (implicit unpack: Unpack2[C, OrElse, F, G], cG : Case1.Aux[G, T, V]) = new Case[C, T :: HNil] {
+      type Result = V
+      val value = (t : T :: HNil) => cG(t)
+    }
+  }
+
+  /**
    * Represents rotating a polymorphic function by N places to the left
    *
    * @author Stacy Curl
@@ -191,6 +213,8 @@ trait Poly extends PolyApply with Serializable {
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
 
   def andThen(f: Poly) = new Compose[f.type, this.type](f, this)
+
+  def orElse(f: Poly) = new OrElse[this.type, f.type](this, f)
 
   def rotateLeft[N <: Nat] = new RotateLeft[this.type, N](this)
 

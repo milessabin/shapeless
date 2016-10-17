@@ -240,6 +240,26 @@ class PolyTests {
   }
 
   @Test
+  def testOrElse {
+    object intPlusOne extends Poly1 {
+      implicit def caseInt = at[Int](_ + 1)
+    }
+    object stringPlusOne extends Poly1 {
+      implicit def caseString = at[String](_ + 1)
+    }
+
+    val orElse = intPlusOne orElse stringPlusOne
+
+    val two = orElse(1)
+    typed[Int](two)
+    assertEquals(2, two)
+
+    val one1 = orElse("one")
+    typed[String](one1)
+    assertEquals("one1", one1)
+  }
+
+  @Test
   def testPolyVal {
     val i1 = zero[Int]
     typed[Int](i1)
