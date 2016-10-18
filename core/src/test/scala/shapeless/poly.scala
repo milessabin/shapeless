@@ -247,16 +247,24 @@ class PolyTests {
     object stringPlusOne extends Poly1 {
       implicit def caseString = at[String](_ + 1)
     }
+    object doublePlusOne extends Poly1 {
+      implicit def caseDouble = at[Double](_ + 1)
+    }
 
-    val orElse = intPlusOne orElse stringPlusOne
+    val partialFp = intPlusOne orElse stringPlusOne
+    val fp = partialFp orElse doublePlusOne
 
-    val two = orElse(1)
+    val two = fp(1)
     typed[Int](two)
     assertEquals(2, two)
 
-    val one1 = orElse("one")
+    val one1 = fp("one")
     typed[String](one1)
     assertEquals("one1", one1)
+
+    val tmp = fp(3.45)
+    typed[Double](tmp)
+    assertEquals(4.45, tmp, 0.0001)
   }
 
   @Test
