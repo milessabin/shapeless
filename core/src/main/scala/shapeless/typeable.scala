@@ -201,7 +201,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         if(t == null) None
         else if(t.isInstanceOf[Left[_, _]]) {
           val l = t.asInstanceOf[Left[_, _]]
-          for(a <- l.a.cast[A]) yield t.asInstanceOf[Left[A, B]]
+          for(a <- l.left.get.cast[A]) yield t.asInstanceOf[Left[A, B]]
         } else None
       }
       def describe = s"Left[${castA.describe}]"
@@ -214,7 +214,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         if(t == null) None
         else if(t.isInstanceOf[Right[_, _]]) {
           val r = t.asInstanceOf[Right[_, _]]
-          for(b <- r.b.cast[B]) yield t.asInstanceOf[Right[A, B]]
+          for(b <- r.right.get.cast[B]) yield t.asInstanceOf[Right[A, B]]
         } else None
       }
       def describe = s"Right[${castB.describe}]"

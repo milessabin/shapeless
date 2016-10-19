@@ -33,6 +33,10 @@ package opticDemoDatatypes {
 
   case class Foo(i: Int, s: String)
   case class Bar(i: Int, b: Boolean)
+
+  sealed trait Either[+A, +B]
+  case class Left[A, B](left: A) extends Either[A, B]
+  case class Right[A, B](right: B) extends Either[A, B]
 }
 
 object OpticExamples extends App {
@@ -57,8 +61,8 @@ object OpticExamples extends App {
   val l: Either[Int, Boolean] = Left(23)
   val r: Either[Int, Boolean] = Right(false)
 
-  val lExplicit = prism[Either[Int, Boolean]][Left[Int, Boolean]].a
-  val rExplicit = prism[Either[Int, Boolean]][Right[Int, Boolean]].b
+  val lExplicit = prism[Either[Int, Boolean]][Left[Int, Boolean]].left
+  val rExplicit = prism[Either[Int, Boolean]][Right[Int, Boolean]].right
 
   val ol = lExplicit.get(l)
   assert(ol == Some(23))
@@ -68,8 +72,8 @@ object OpticExamples extends App {
 
   // 3. Sealed family with coproduct branch inferred from product selectors
 
-  val lInferred = prism[Either[Int, Boolean]].a
-  val rInferred = prism[Either[Int, Boolean]].b
+  val lInferred = prism[Either[Int, Boolean]].left
+  val rInferred = prism[Either[Int, Boolean]].right
 
   val ol2 = lInferred.get(l)
   assert(ol2 == Some(23))

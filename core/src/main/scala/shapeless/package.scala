@@ -149,7 +149,7 @@ package shapeless {
         ): analyzer.SearchResult = {
           val filteredInput = implicitInfoss.map { infos =>
             infos.filter { info =>
-              val sym = info.sym.accessedOrSelf
+              val sym = if(info.sym.isLazy) info.sym else info.sym.accessedOrSelf
               sym.owner != owner.owner || (!sym.isVal && !sym.isLazy)
             }
           }
