@@ -21,7 +21,7 @@ lazy val scoverageSettings = Seq(
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M5")
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-RC2")
 )
 
 addCommandAlias("root", ";project root")
@@ -43,7 +43,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-language:higherKinds",
     "-language:implicitConversions",
-    //"-Xfatal-warnings",
+    "-Xfatal-warnings",
     "-deprecation",
     "-unchecked"
   ),
@@ -99,7 +99,6 @@ lazy val commonJsSettings = Seq(
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
-  scalaJSUseRhino in Global := false,
   parallelExecution in Test := false,
   coverageExcludedPackages := ".*"
 )
@@ -135,7 +134,7 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .configureCross(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
-    sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen)
+    sourceGenerators in Compile += Def.task(Boilerplate.gen((sourceManaged in Compile).value)).taskValue
   )
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
@@ -159,9 +158,13 @@ lazy val scratchJS = scratch.js
 
 lazy val runAll = TaskKey[Unit]("runAll")
 
-def runAllIn(config: Configuration) = {
-  runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map {
-    (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
+def runAllIn(config: Configuration): Setting[Task[Unit]] = {
+  runAll in config := {
+    val classes = (discoveredMainClasses in config).value
+    val runner0 = (runner in run).value
+    val cp = (fullClasspath in config).value
+    val s = streams.value
+    classes.foreach(c => runner0.run(c, Attributed.data(cp), Seq(), s.log))
   }
 }
 
@@ -170,6 +173,15 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
   .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
+  .settings(
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
+        case _ => Seq()
+      }
+    }
+  )
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
@@ -213,9 +225,9 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  publishTo <<= version { (v: String) =>
+  publishTo := {
     val nexus = "https://oss.sonatype.org/"
-    if (v.trim.endsWith("SNAPSHOT"))
+    if (scalaVersion.value.trim.endsWith("SNAPSHOT"))
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
@@ -241,8 +253,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  previousArtifacts := {
-    if(scalaVersion.value == "2.12.0-M5") Set()
+  mimaPreviousArtifacts := {
+    if(scalaVersion.value == "2.12.0-RC2") Set()
     else {
       val previousVersion = "2.3.0"
       val previousSJSVersion = "0.6.7"
@@ -271,7 +283,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     }
   },
 
-  binaryIssueFilters ++= {
+  mimaBinaryIssueFilters ++= {
     import com.typesafe.tools.mima.core._
     import com.typesafe.tools.mima.core.ProblemFilters._
 

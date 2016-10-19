@@ -101,7 +101,7 @@ object Default {
        ): Aux[Some[H] :: T, K :: LabT, FieldType[K, H] :: OutT] =
         new Helper[Some[H] :: T, K :: LabT] {
           type Out = FieldType[K, H] :: OutT
-          def apply(l: Some[H] :: T) = field[K](l.head.x) :: tailHelper(l.tail)
+          def apply(l: Some[H] :: T) = field[K](l.head.get) :: tailHelper(l.tail)
         }
 
       implicit def hconsNoneHelper[K <: Symbol, T <: HList, LabT <: HList, OutT <: HList]
