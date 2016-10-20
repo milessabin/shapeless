@@ -134,7 +134,7 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .configureCross(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
-    sourceGenerators in Compile += Def.task(Boilerplate.gen((sourceManaged in Compile).value)).taskValue
+    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
   )
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
