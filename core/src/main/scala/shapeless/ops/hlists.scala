@@ -94,8 +94,10 @@ object hlist {
 
     implicit def hnilComapped[F[_]]: Aux[HNil, F, HNil] = new Comapped[HNil, F] { type Out = HNil }
 
-    implicit def hlistComapped[H, T <: HList, F[_]](implicit mt : Comapped[T, F]): Aux[F[H] :: T, F, H :: mt.Out] =
-      new Comapped[F[H] :: T, F] { type Out = H :: mt.Out }
+    implicit def hlistComapped[H, T <: HList, F[_], TCM <: HList](
+      implicit mt : Comapped.Aux[T, F, TCM]
+    ): Aux[F[H] :: T, F, H :: TCM] =
+      new Comapped[F[H] :: T, F] { type Out = H :: TCM }
   }
 
   /**
@@ -309,10 +311,10 @@ object hlist {
         def apply(l : HNil): Out = HNil
       }
 
-    implicit def hlistMapper1[HF <: Poly, InH, InT <: HList]
-      (implicit hc : Case1[HF, InH], mt : Mapper[HF, InT]): Aux[HF, InH :: InT, hc.Result :: mt.Out] =
+    implicit def hlistMapper1[HF <: Poly, InH, InT <: HList, OutT <: HList]
+      (implicit hc : Case1[HF, InH], mt : Mapper.Aux[HF, InT, OutT]): Aux[HF, InH :: InT, hc.Result :: OutT] =
         new Mapper[HF, InH :: InT] {
-          type Out = hc.Result :: mt.Out
+          type Out = hc.Result :: OutT
           def apply(l : InH :: InT): Out = hc(l.head) :: mt(l.tail)
         }
   }
@@ -365,10 +367,10 @@ object hlist {
         def apply(c : C, l : HNil): Out = l
       }
 
-    implicit def hlistConstMapper[H, T <: HList, C]
-    (implicit mct : ConstMapper[C, T]): Aux[C, H :: T, C :: mct.Out] =
+    implicit def hlistConstMapper[H, T <: HList, C, OutT <: HList]
+    (implicit mct : ConstMapper.Aux[C, T, OutT]): Aux[C, H :: T, C :: OutT] =
         new ConstMapper[C, H :: T] {
-          type Out = C :: mct.Out
+          type Out = C :: OutT
           def apply(c : C, l : H :: T): Out = c :: mct(c, l.tail)
         }
   }
@@ -803,10 +805,10 @@ object hlist {
         def apply(l : H :: HNil): Out = l.head
       }
 
-    implicit def hlistLast[H, T <: HList]
-      (implicit lt : Last[T]): Aux[H :: T, lt.Out] =
+    implicit def hlistLast[H, T <: HList, OutT]
+      (implicit lt : Last.Aux[T, OutT]): Aux[H :: T, OutT] =
         new Last[H :: T] {
-          type Out = lt.Out
+          type Out = OutT
           def apply(l : H :: T): Out = lt(l.tail)
         }
   }
@@ -832,9 +834,9 @@ object hlist {
       }
 
     implicit def hlistInit[H, T <: HList, OutH, OutT <: HList]
-      (implicit it : Init[T]): Aux[H :: T, H :: it.Out] =
+      (implicit it : Init.Aux[T, OutT]): Aux[H :: T, H :: OutT] =
         new Init[H :: T] {
-          type Out = H :: it.Out
+          type Out = H :: OutT
           def apply(l : H :: T): Out = l.head :: it(l.tail)
         }
   }
