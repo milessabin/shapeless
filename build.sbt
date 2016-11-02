@@ -21,7 +21,7 @@ lazy val scoverageSettings = Seq(
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-M5")
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0")
 )
 
 addCommandAlias("root", ";project root")
@@ -72,31 +72,6 @@ def configureJUnit(crossProject: CrossProject) = {
     libraryDependencies +=
       "com.novocode" % "junit-interface" % "0.9" % "test"
   )
-  .settings(
-    /* The `test-plugin` configuration adds a plugin only to the `test`
-     * configuration. It is a refinement of the `plugin` configuration which adds
-     * it to both `compile` and `test`.
-     */
-    ivyConfigurations += config("test-plugin").hide,
-    libraryDependencies ++= {
-      if (scalaVersion.value.startsWith("2.12."))
-        Seq("org.scala-js" % "scala-junit-mixin-plugin" % "0.1.0" % "test-plugin" cross CrossVersion.full)
-      else
-        Seq.empty
-    },
-    scalacOptions in Test ++= {
-      val report = update.value
-      val jars = report.select(configurationFilter("test-plugin"))
-      for {
-        jar <- jars
-        jarPath = jar.getPath
-        // This is a hack to filter out the dependencies of the plugins
-        if jarPath.contains("plugin")
-      } yield {
-        s"-Xplugin:$jarPath"
-      }
-    }
-  )
 }
 
 val cmdlineProfile = sys.props.getOrElse("sbt.profile", default = "")
@@ -124,7 +99,6 @@ lazy val commonJsSettings = Seq(
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
-  scalaJSUseRhino in Global := false,
   parallelExecution in Test := false,
   coverageExcludedPackages := ".*"
 )
@@ -160,7 +134,7 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .configureCross(buildInfoSetup)
   .settings(osgiSettings:_*)
   .settings(
-    sourceGenerators in Compile <+= (sourceManaged in Compile).map(Boilerplate.gen)
+    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
   )
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
@@ -184,9 +158,13 @@ lazy val scratchJS = scratch.js
 
 lazy val runAll = TaskKey[Unit]("runAll")
 
-def runAllIn(config: Configuration) = {
-  runAll in config <<= (discoveredMainClasses in config, runner in run, fullClasspath in config, streams) map {
-    (classes, runner, cp, s) => classes.foreach(c => runner.run(c, Attributed.data(cp), Seq(), s.log))
+def runAllIn(config: Configuration): Setting[Task[Unit]] = {
+  runAll in config := {
+    val classes = (discoveredMainClasses in config).value
+    val runner0 = (runner in run).value
+    val cp = (fullClasspath in config).value
+    val s = streams.value
+    classes.foreach(c => runner0.run(c, Attributed.data(cp), Seq(), s.log))
   }
 }
 
@@ -195,6 +173,15 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
   .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
+  .settings(
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
+        case _ => Seq()
+      }
+    }
+  )
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
@@ -207,9 +194,9 @@ lazy val examplesJS = examples.js
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
+    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -238,9 +225,9 @@ lazy val publishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  publishTo <<= version { (v: String) =>
+  publishTo := {
     val nexus = "https://oss.sonatype.org/"
-    if (v.trim.endsWith("SNAPSHOT"))
+    if (version.value.trim.endsWith("SNAPSHOT"))
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
@@ -266,8 +253,8 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  previousArtifacts := {
-    if(scalaVersion.value == "2.12.0-M5") Set()
+  mimaPreviousArtifacts := {
+    if(scalaVersion.value == "2.12.0") Set()
     else {
       val previousVersion = "2.3.0"
       val previousSJSVersion = "0.6.7"
@@ -296,7 +283,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     }
   },
 
-  binaryIssueFilters ++= {
+  mimaBinaryIssueFilters ++= {
     import com.typesafe.tools.mima.core._
     import com.typesafe.tools.mima.core.ProblemFilters._
 
