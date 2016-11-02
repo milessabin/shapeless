@@ -115,7 +115,7 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-RC2. The main line of development for
+Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0. The main line of development for
 shapeless 2.3.2 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
 
 ```scala
@@ -146,10 +146,10 @@ see if it resolves the issue.
 
 To use Typelevel Scala you should,
 
-+ Update your `project/build.properties` to require SBT 0.13.13-M1 or later,
++ Update your `project/build.properties` to require SBT 0.13.13 or later,
 
   ```
-  sbt.version=0.13.13-M1
+  sbt.version=0.13.13
   ```
 
 + Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
@@ -206,18 +206,6 @@ If you are using Scala 2.10.x, you should also add the macro paradise plugin to 
 </plugins>
 ```
 
-### Avoid SBT 0.13.6
-
-Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its name hashing feature which when compiling
-with shapeless might cause SBT to loop indefinitely consuming all heap. If possible move to a more recent version of
-SBT. If you must use SBT 0.13.6 a workaround is to disable name hashing by adding,
-
-```scala
-incOptions := incOptions.value.withNameHashing(false)
-```
-
-to your settings.
-
 ### Older releases
 
 Please use a current release if possible. If unavoidable, you can find [usage information for older
@@ -227,7 +215,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.11 or later, and its master branch is built with Scala 2.11.8 by default but also
+shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.11.8 by default but also
 cross-builds for 2.10.6 and 2.12.x.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640

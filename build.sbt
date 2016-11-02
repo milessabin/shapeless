@@ -21,7 +21,7 @@ lazy val scoverageSettings = Seq(
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
   scalaVersion := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0-RC2")
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0")
 )
 
 addCommandAlias("root", ";project root")
@@ -194,9 +194,9 @@ lazy val examplesJS = examples.js
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
+    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -254,7 +254,7 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.12.0-RC2") Set()
+    if(scalaVersion.value == "2.12.0") Set()
     else {
       val previousVersion = "2.3.0"
       val previousSJSVersion = "0.6.7"
