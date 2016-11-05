@@ -26,7 +26,8 @@ project isn't listed yet, please add it.
 The [feature overview for shapeless-2.0.0][features200] provides a very incomplete introduction to shapeless.
 Additional information can be found in subsequent [release notes][relnotes220]. If you are upgrading from
 shapeless-2.0.0 you will find the [migration guide][migration210] useful. We're not satisfied with the current state
-of the documentation and would love help in improving it.
+of the documentation and would love help in improving it. You can find an excellent guide to Shapeless here:
+[The Type Astronaut's Guide to Shapeless](https://github.com/underscoreio/shapeless-guide).
 
 shapeless is part of the [Typelevel][typelevel] family of projects. It is an Open Source project under the Apache
 License v2, hosted on [github][source]. Binary artefacts are published to the
