@@ -20,7 +20,7 @@ lazy val scoverageSettings = Seq(
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.0",
   crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.0")
 )
 
@@ -74,22 +74,6 @@ def configureJUnit(crossProject: CrossProject) = {
   )
 }
 
-val cmdlineProfile = sys.props.getOrElse("sbt.profile", default = "")
-
-def profile(crossProject: CrossProject) = cmdlineProfile match {
-  case "2.12.x" =>
-    crossProject
-      .jsConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
-      .jvmConfigure(_.disablePlugins(scoverage.ScoverageSbtPlugin))
-
-  case _ => crossProject
-}
-
-def profile: Project ⇒ Project = p => cmdlineProfile match {
-  case "2.12.x" => p.disablePlugins(scoverage.ScoverageSbtPlugin)
-  case _ => p
-}
-
 lazy val commonJsSettings = Seq(
   scalacOptions += {
     val tagOrHash =
@@ -112,7 +96,6 @@ lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
   releaseSettings ++ scoverageSettings
 
 lazy val root = project.in(file("."))
-  .configure(profile)
   .aggregate(coreJS, coreJVM)
   .dependsOn(coreJS, coreJVM)
   .settings(coreSettings:_*)
@@ -128,7 +111,6 @@ lazy val CrossTypeMixed: CrossType = new CrossType {
 
 lazy val core = crossProject.crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
-  .configureCross(profile)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
   .configureCross(buildInfoSetup)
@@ -145,7 +127,6 @@ lazy val coreJS = core.js
 
 lazy val scratch = crossProject.crossType(CrossType.Pure)
   .configureCross(configureJUnit)
-  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "scratch")
   .settings(coreSettings:_*)
@@ -170,7 +151,6 @@ def runAllIn(config: Configuration): Setting[Task[Unit]] = {
 
 lazy val examples = crossProject.crossType(CrossType.Pure)
   .configureCross(configureJUnit)
-  .configureCross(profile)
   .dependsOn(core)
   .settings(moduleName := "examples")
   .settings(
