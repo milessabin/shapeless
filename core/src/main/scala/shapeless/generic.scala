@@ -353,7 +353,7 @@ trait CaseClassMacros extends ReprTypes {
     val tSym = tpe.typeSymbol
     if(tSym.isClass && isAnonOrRefinement(tSym)) Nil
     else
-      tpe.decls.toList collect {
+      tpe.decls.sorted collect {
         case sym: TermSymbol if isCaseAccessorLike(sym) =>
           (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultType)
       }
