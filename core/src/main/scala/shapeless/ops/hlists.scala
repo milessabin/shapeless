@@ -38,6 +38,7 @@ object hlist {
 
     def head(l : L) : H
     def tail(l : L) : T
+    def cons(h : H, t : T) : L
   }
 
   object IsHCons {
@@ -51,6 +52,7 @@ object hlist {
 
         def head(l : H0 :: T0) : H = l.head
         def tail(l : H0 :: T0) : T = l.tail
+        def cons(h : H0, t : T0) : H0 :: T0 = h :: t
       }
   }
 

@@ -1882,6 +1882,12 @@ class CoproductTests {
      assertEquals(FInt :: HNil, LiftAll[F](Coproduct[Int :+: CNil](1)).instances)
    }
 
+  @Test
+  def testIsCCons = {
+    val isCCons = IsCCons[Int :+: String :+: CNil]
+    assertEquals(Inl(23), isCCons.cons(Left(23)))
+    assertEquals(Inr(Inl("bar")), isCCons.cons(Right(Inl("bar"))))
+  }
 }
 
 package CoproductTestAux {

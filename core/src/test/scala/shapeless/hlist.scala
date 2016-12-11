@@ -3342,4 +3342,7 @@ class HListTests {
     val r5 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(0)
     assertTypedEquals[HNil :: HNil](HNil :: HNil, r5)
   }
+
+  @Test
+  def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
 }
