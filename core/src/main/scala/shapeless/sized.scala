@@ -16,7 +16,7 @@
 
 package shapeless
 
-import scala.collection.{ GenTraversable, GenTraversableLike }
+import scala.collection.GenTraversableLike
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 
 /**
@@ -29,6 +29,14 @@ import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
   // Cannot extend AnyVal in 2.10, see https://issues.scala-lang.org/browse/SI-6260
   override def toString = unsized.toString
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case o: Sized[_, _] => unsized.equals(o.unsized)
+      case _ => false
+    }
+
+  override def hashCode: Int = unsized.hashCode
 }
 
 /**

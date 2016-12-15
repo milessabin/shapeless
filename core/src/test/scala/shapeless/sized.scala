@@ -410,4 +410,13 @@ class SizedTests {
     assertTypedEquals[Int](1, y)
     assertTypedEquals[Int](2, z)
   }
+
+  @Test
+  def testEquals {
+    val s1 = Sized[List](1, 2, 3)
+    val s2 = Sized[List](1, 2, 3)
+    val s3 = Sized[List](1, 2, 4)
+    assert(s1 == s2)
+    assertFalse(s1 == s3)
+  }
 }
