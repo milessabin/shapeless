@@ -16,6 +16,8 @@
 
 package shapeless.ops
 
+import scala.annotation.implicitNotFound
+
 import shapeless._
 import labelled._
 
@@ -23,6 +25,7 @@ object maps {
   /**
    * Type class supporting type safe conversion of Map to Records.
    */
+  @implicitNotFound("Implicit not found: shapeless.Ops.FromMap[${R}]. Maps can only be converted to appropriate Record types.")
   trait FromMap[R <: HList] extends Serializable {
     def apply[K, V](m: Map[K, V]): Option[R]
   }
