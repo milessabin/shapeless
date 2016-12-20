@@ -602,4 +602,53 @@ class TypeableTests {
 
   }
 
+  @Test
+  def testNested: Unit = {
+
+    trait A1[T] { class C(val t: T) }
+    illTyped("Typeable[A1[Int]#C]")
+
+    trait A2[T] { case class C(t: T) }
+    val ttA2   = Typeable[A2[Int]#C]
+    val a2Int  = { val tmp = new A2[Int] {}; tmp.C(1) }
+    val a2Str  = { val tmp = new A2[String] {}; tmp.C("hi") }
+    assertEquals(Some(a2Int), ttA2.cast(a2Int))
+    assertEquals(None, ttA2.cast(a2Str))
+
+    trait B1T { type T; class C(val t: T) }
+    class B1C[U] extends B1T { override final type T = U }
+    illTyped("Typeable[B1C[Int]#C]")
+
+    trait B2T { type T; case class C(t: T) }
+    class B2C[U] extends B2T { override final type T = U }
+    val ttB2C  = Typeable[B2C[Int]#C]
+    val b2CInt = { val tmp = new B2C[Int]; tmp.C(5) }
+    val b2CSym = { val tmp = new B2C[Symbol]; tmp.C('foo) }
+    assertEquals(Some(b2CInt), ttB2C.cast(b2CInt))
+    assertEquals(None, ttB2C.cast(b2CSym))
+
+    trait C1T { type T; class C(t: (Int, T)) }
+    class C1C[U] extends C1T { override final type T = U }
+    illTyped("Typeable[C1C[Int]#C]")
+
+    trait C2T { type T; case class C(t: (Int, T)) }
+    class C2C[U] extends C2T { override final type T = U }
+    val ttC2C  = Typeable[C2C[String]#C]
+    val c2CStr = { val tmp = new C2C[String]; tmp.C((1, "zwei")) }
+    val c2CDbl = { val tmp = new C2C[Double]; tmp.C((1, 2.3d)) }
+    assertEquals(Some(c2CStr), ttC2C.cast(c2CStr))
+    assertEquals(None, ttC2C.cast(c2CDbl))
+
+    class D1[T] { class D1I[U](t: T, u: U) }
+    illTyped("Typeable[D1[Long]#D1I[String]]")
+
+    class D2[T] { case class D2I[U](t: T, u: U) }
+    val ttD2I = Typeable[D2[Long]#D2I[String]]
+    val d2LS  = { val d = new D2[Long]; d.D2I[String](1L, "hello") }
+    val d2SF  = { val d = new D2[Symbol]; d.D2I[Float]('bippy, 4.2f) }
+    assertEquals(Some(d2LS), ttD2I.cast(d2LS))
+    assertEquals(None, ttD2I.cast(d2SF))
+
+  }
+
 }

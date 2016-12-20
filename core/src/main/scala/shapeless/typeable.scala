@@ -366,11 +366,11 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import internal._
   import definitions.NothingClass
 
+  val typeableTpe = typeOf[Typeable[_]].typeConstructor
+  val genericTpe = typeOf[Generic[_]].typeConstructor
+
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
-
-    val typeableTpe = typeOf[Typeable[_]].typeConstructor
-    val genericTpe = typeOf[Generic[_]].typeConstructor
 
     val dealiased = tpe.dealias
 
@@ -421,28 +421,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
         if(!pSym.isCaseClass)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
-        val nonCaseAccessor = tpe.decls.exists {
-          case sym: TermSymbol if !sym.isCaseAccessor && (sym.isVal || sym.isVar ||
-              (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))) => true
-          case _ => false
-        }
-        if (nonCaseAccessor) {
-          // there is a symbol, which is not a case accessor but a val,
-          // var or param, so we won't be able to type check it safely:
-          c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
-        }
-        val fields = tpe.decls.sorted collect {
-          case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
-        }
-        val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }
-        if(fieldTypeables.exists(_ == EmptyTree))
-          c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
-
-        q"""
-          _root_.shapeless.Typeable.caseClassTypeable(
-            classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables)
-          )
-         """
+        else
+          mkCaseClassTypeable(tpe)
 
       case SingleType(_, v) if !v.isParameter =>
         val name = v.name.toString
@@ -453,7 +433,54 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
         q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], $name)"""
 
       case other =>
-        q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
+        /* There is potential unsoundness if we allow a simple cast between two
+         * unparameterized types, if they contain values of an abstract type variable
+         * from outside of their definition. Therefore, check to see if any values
+         * have types that look different from the inside and outside of the type. */
+        val closesOverType = other.decls.exists {
+          case sym: TermSymbol if sym.isVal || sym.isVar || sym.isParamAccessor =>
+            val rtpe = sym.typeSignature
+            rtpe.asSeenFrom(tpe, tpe.typeSymbol) != rtpe.asSeenFrom(tpe, tpe.typeSymbol.owner)
+          case _ => false
+        }
+
+        if (closesOverType) {
+          val tsym = tpe.typeSymbol
+          if (tsym.isClass && tsym.asClass.isCaseClass) {
+            /* it appears to be sound to treat captured type variables as if they were
+             * simply case class parameters, as they'll be checked by their own Typeables later. */
+            mkCaseClassTypeable(tpe)
+          } else {
+            c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
+          }
+        } else {
+          q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
+        }
     }
+  }
+
+  private def mkCaseClassTypeable(tpe: Type): Tree = {
+    val nonCaseAccessor = tpe.decls.exists {
+      case sym: TermSymbol if !sym.isCaseAccessor && (sym.isVal || sym.isVar ||
+        (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))) => true
+      case _ => false
+    }
+    if (nonCaseAccessor) {
+      // there is a symbol, which is not a case accessor but a val,
+      // var or param, so we won't be able to type check it safely:
+      c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
+    }
+    val fields = tpe.decls.sorted collect {
+      case sym: TermSymbol if sym.isVal && sym.isCaseAccessor => sym.typeSignatureIn(tpe)
+    }
+    val fieldTypeables = fields.map { field => c.inferImplicitValue(appliedType(typeableTpe, List(field))) }
+    if(fieldTypeables.contains(EmptyTree))
+      c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
+
+    q"""
+        _root_.shapeless.Typeable.caseClassTypeable(
+          classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables)
+        )
+       """
   }
 }
