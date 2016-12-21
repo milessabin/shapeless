@@ -3342,4 +3342,18 @@ class HListTests {
     val r5 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(0)
     assertTypedEquals[HNil :: HNil](HNil :: HNil, r5)
   }
+
+  @Test
+  def testBuild {
+    type H = Int :: String :: HNil
+
+    object builder extends Poly0 {
+      implicit val atInt = at[Int](42)
+      implicit val atString = at[String]("foo")
+    }
+
+    val r = HList.build[H](builder)
+
+    assertTypedEquals[Int :: String :: HNil](42 :: "foo" :: HNil, r)
+  }
 }

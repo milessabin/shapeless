@@ -89,6 +89,8 @@ object HList extends Dynamic {
     */
   def fillWith[L <: HList] = new FillWithOps[L]
 
+  def build[H <: HList](f: Poly)(implicit builder: Builder[f.type, H]): H = builder()
+
   implicit def hlistOps[L <: HList](l: L): HListOps[L] = new HListOps(l)
 
   /**
