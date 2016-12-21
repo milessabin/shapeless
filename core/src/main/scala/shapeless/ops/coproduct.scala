@@ -859,6 +859,7 @@ object coproduct {
 
     def head(c: C): Option[H]
     def tail(c: C): Option[T]
+    def cons(e: Either[H, T]): C
   }
 
   object IsCCons {
@@ -878,6 +879,11 @@ object coproduct {
       def tail(c: H0 :+: T0): Option[T0] = c match {
         case Inr(t) => Some(t)
         case _      => None
+      }
+
+      def cons(e: Either[H0, T0]): H0 :+: T0 = e match {
+        case Left(h) => Inl(h)
+        case Right(t) => Inr(t)
       }
     }
   }
