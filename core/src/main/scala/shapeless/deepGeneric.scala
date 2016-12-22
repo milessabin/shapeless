@@ -7,7 +7,7 @@ trait DeepGeneric[T] {
   def from(t: Repr): T
 }
 
-object DeepGeneric {
+object DeepGeneric extends DeepGenericLowPriorityImplicits {
   type Aux[T, Repr0] = DeepGeneric[T] { type Repr = Repr0 }
 
   implicit val hnilDeepGeneric: DeepGeneric.Aux[HNil, HNil] = new DeepGeneric[HNil] {
@@ -18,7 +18,7 @@ object DeepGeneric {
 
   implicit def hlistDeepGeneric[H, T <: HList, TR <: HList, HR <: HList](
     implicit hgen: Lazy[DeepGeneric.Aux[H, HR]],
-      tgen: DeepGeneric.Aux[T, TR]
+    tgen: DeepGeneric.Aux[T, TR]
   ): DeepGeneric.Aux[H :: T, HR :: TR] = new DeepGeneric[H :: T] {
     type Repr = HR :: TR
     def to(hlist: H :: T): Repr = hlist match {
@@ -35,15 +35,18 @@ object DeepGeneric {
     def to(a: A): Repr = dg.to(g.to(a))
     def from(r: Repr): A = g.from(dg.from(r))
   }
+}
 
-  def baseDeepGeneric[A]: DeepGeneric.Aux[A, A :: HNil] = new DeepGeneric[A] {
-    type Repr = A :: HNil
-    def to(a: A): Repr = a :: HNil
-    def from(r: Repr): A = r match { case a :: HNil => a }
+sealed trait DeepGenericLowPriorityImplicits {
+  implicit def hlistDeepGeneric1[H, T <: HList, TR <: HList](
+    implicit tgen: DeepGeneric.Aux[T, TR]
+  ): DeepGeneric.Aux[H :: T, H :: TR] = new DeepGeneric[H :: T] {
+    type Repr = H :: TR
+    def to(hlist: H :: T): Repr = hlist match {
+      case h :: t => h :: tgen.to(t)
+    }
+    def from(r: Repr): H :: T = r match {
+      case h :: t => h :: tgen.from(t)
+    }
   }
-
-  implicit val intDeepGeneric: DeepGeneric.Aux[Int, Int :: HNil] = baseDeepGeneric[Int]
-  implicit val longDeepGeneric: DeepGeneric.Aux[Long, Long :: HNil] = baseDeepGeneric[Long]
-  implicit val booleanDeepGeneric: DeepGeneric.Aux[Boolean, Boolean :: HNil] = baseDeepGeneric[Boolean]
-  implicit val stringDeepGeneric: DeepGeneric.Aux[String, String :: HNil] = baseDeepGeneric[String]
 }
