@@ -51,7 +51,7 @@ import scala.reflect.macros.whitebox
  *     ): TC[H :: T] = ???
  *   }
  *
- *   implicitly[TC[CC]] // fails with: diverging implicit expansion for type TC[CC]
+ *   implicitly[TC[ListCC]] // fails with: diverging implicit expansion for type TC[ListCC]
  * }}}
  *
  * This wrongly reported implicit divergence can be circumvented by wrapping some of the implicit values in
@@ -63,6 +63,8 @@ import scala.reflect.macros.whitebox
  *   trait TC[T]
  *
  *   object TC {
+ *     implicit def intTC: TC[Int] = ???
+ *     implicit def stringTC: TC[String] = ???
  *     implicit def listTC[T](implicit underlying: TC[T]): TC[List[T]] = ???
  *
  *     implicit def genericTC[F, G](implicit
@@ -78,7 +80,7 @@ import scala.reflect.macros.whitebox
  *     ): TC[H :: T] = ???
  *   }
  *
- *   implicitly[TC[CC]]
+ *   implicitly[TC[ListCC]]
  * }}}
  *
  * When looking for an implicit `Lazy[TC[T]]`, the `Lazy.mkLazy` macro will itself trigger the implicit search
@@ -86,11 +88,11 @@ import scala.reflect.macros.whitebox
  * only once, their result put in a `lazy val`, and a reference to this `lazy val` will be returned as the corresponding
  * value. It will then wrap all the resulting values together, and return a reference to the first one.
  *
- * E.g. with the above example definitions, when looking up for an implicit `TC[CC]`, the returned tree roughly looks
+ * E.g. with the above example definitions, when looking up for an implicit `TC[ListCC]`, the returned tree roughly looks
  * like
  * {{{
  *   TC.genericTC(
- *     Generic[CC], // actually, the tree returned by Generic.materialize, not written here for the sake of brevity
+ *     Generic[ListCC], // actually, the tree returned by Generic.materialize, not written here for the sake of brevity
  *     Lazy {
  *       lazy val impl1: TC[List[CC] :: HNil] = TC.hconsTC(
  *         Lazy(impl2),
