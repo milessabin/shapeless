@@ -138,7 +138,7 @@ class TheMacros(val c: whitebox.Context) {
     if(tpe.typeSymbol.asClass.isPrimitive)
       c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
 
-    val inferred = c.inferImplicitValue(tpe, silent = true)
+    val inferred = c.inferImplicitValue(tpe, silent = false)
     if(inferred.isEmpty)
       c.abort(c.enclosingPosition, s"Could not infer implicit value for $tpe")
 
