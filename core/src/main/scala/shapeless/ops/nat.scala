@@ -604,7 +604,7 @@ object nat {
 
     implicit val toInt0: ToInt[_0] = new Inst[_0](0)
 
-    @deprecated("this method is used for backwards compatibility", "2.3.3")
+    //this method is used for backwards compatibility
     def toIntSucc[N <: Nat](toIntN : ToInt[N]) = new ToInt[Succ[N]] {
       def apply() = toIntN() + 1
     }
