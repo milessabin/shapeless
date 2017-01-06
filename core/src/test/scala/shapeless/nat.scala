@@ -187,7 +187,9 @@ class NatTests {
     implicitly[LCM.Aux[_1, _0, _0]]
     implicitly[LCM.Aux[_2, _3, _6]]
     implicitly[LCM.Aux[_4, _6, _12]]
-    
+
+    assertEquals(1, ToInt.toIntSucc(new ToInt.Inst[_0](0))())
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
@@ -263,4 +265,5 @@ class NatTests {
     assertEquals(21, _21.toInt)
     assertEquals(22, _22.toInt)
   }
+
 }
