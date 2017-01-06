@@ -17,7 +17,12 @@
 package shapeless
 package ops
 
+import scala.annotation.tailrec
+import scala.reflect.macros.whitebox
+import scala.language.experimental.macros
+
 object nat {
+
   /**
    * Type class witnessing that `B` is the predecessor of `A`.
    * 
@@ -593,11 +598,47 @@ object nat {
   object ToInt {
     def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
 
-    implicit val toInt0 = new ToInt[_0] {
-      def apply() = 0 
+    class Inst[N <: Nat] (i: Int) extends ToInt[N]{
+      def apply(): Int = i
     }
-    implicit def toIntSucc[N <: Nat](implicit toIntN : ToInt[N]) = new ToInt[Succ[N]] {
-      def apply() = toIntN()+1
+
+    implicit val toInt0 = new Inst[_0](0)
+
+    @deprecated("this method is used for backwards compatibility", "2.3.3")
+    def toIntSucc[N <: Nat](toIntN : ToInt[N]) = new ToInt[Succ[N]] {
+      def apply() = toIntN() + 1
+    }
+
+    implicit  def tim[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
+  }
+
+  @macrocompat.bundle
+  class ToIntMacros(val c: whitebox.Context) extends CaseClassMacros {
+    import c.universe._
+
+    val _0Tpe = typeOf[_0]
+    val succTpe = typeOf[Succ[_]].typeConstructor
+    val succSym = succTpe.typeSymbol
+    val succPre = prefix(succTpe)
+
+
+    def applyImpl[N <: Nat](implicit nTag: WeakTypeTag[N]): Tree = {
+      val tpe = nTag.tpe.dealias
+
+      @tailrec
+      def count(u: Type, acc: Int): Int = {
+        if(u <:< _0Tpe) acc
+        else (u baseType succSym) match {
+          case TypeRef(pre, _, List(n)) if pre =:= succPre => count(n, acc + 1)
+          case _ => abort(s"$tpe is not a Nat type")
+        }
+      }
+
+      q"""
+            new _root_.shapeless.ops.nat.ToInt.Inst(${count(tpe, 0)}).
+              asInstanceOf[ _root_.shapeless.ops.nat.ToInt[$tpe]]
+          """
     }
   }
+
 }
