@@ -609,7 +609,7 @@ object nat {
       def apply() = toIntN() + 1
     }
 
-    implicit  def tim[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
+    implicit def toIntSuccM[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
   }
 
   @macrocompat.bundle
