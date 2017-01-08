@@ -153,7 +153,7 @@ final class TupleOps[T](t: T) extends Serializable {
   def replace[U](u: U)(implicit replacer: Replacer[T, U, U]): replacer.Out = replacer(t, u)
   
   class ReplaceTypeAux[U] {
-    def apply[V](v: V)(implicit replacer: Replacer[T, V, U]): replacer.Out = replacer(t, v)
+    def apply[V](v: V)(implicit replacer: Replacer[T, U, V]): replacer.Out = replacer(t, v)
   }
   
   /**
@@ -174,7 +174,7 @@ final class TupleOps[T](t: T) extends Serializable {
     (implicit replacer: Replacer.Aux[T, U, U, (U, R)]): R = replacer(t, u)._2
   
   class UpdatedTypeAux[U] {
-    def apply[V, R](v: V)(implicit replacer: Replacer.Aux[T, V, U, (U, R)]): R = replacer(t, v)._2
+    def apply[V, R](v: V)(implicit replacer: Replacer.Aux[T, U, V, (U, R)]): R = replacer(t, v)._2
   }
 
   /**
