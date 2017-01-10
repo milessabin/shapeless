@@ -115,6 +115,40 @@ object PolyDefns extends Cases {
   }
 
   /**
+   * Provides elegant syntax for creating polys from functions
+   *
+   * @author Aristotelis Dossas
+   */
+  trait PolyBuilder[L <: HList] extends Poly1 { self =>
+    val functions: L
+    class CaseOfAux[In] {
+      def apply[Out0](λ0: In => Out0) = {
+        val aux: Func[In] = new Func[In] {
+          type Out = Out0
+          val λ = λ0
+        }
+
+        new PolyBuilder[(Func[In] :: L)] {
+          val functions: (Func[In]:: L) = aux :: self.functions
+        }
+      }
+    }
+
+    def caseOf[In] = new CaseOfAux[In]
+
+    implicit def allCases[In,Out]: Case.Aux[In,Out] = macro PolyMacros.allCasesImpl[In]
+  }
+
+  object newPoly extends PolyBuilder[HNil] {
+    val functions: HNil = HNil
+  }
+
+  trait Func[In] {
+    type Out
+    val λ: In => Out
+  }
+
+  /**
    * Base class for lifting a `Function1` to a `Poly1`
    */
   class ->[T, R](f : T => R) extends Poly1 {
@@ -281,5 +315,14 @@ class PolyMacros(val c: whitebox.Context) {
     }
 
     q""" $value.caseUniv[$tTpe] """
+  }
+
+  def allCasesImpl[In : c.WeakTypeTag]: Tree = {
+    val q"$prefix.${_}[..${_}]" = c.macroApplication
+    val temp = c.freshName(TermName("temp"))
+    q"""
+        val $temp = $prefix
+        $temp.at($temp.functions.select[Func[${weakTypeOf[In]}]].λ)
+    """
   }
 }
