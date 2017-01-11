@@ -119,33 +119,46 @@ object PolyDefns extends Cases {
    *
    * @author Aristotelis Dossas
    */
-  trait PolyBuilder[L <: HList] extends Poly1 { self =>
-    val functions: L
-    class CaseOfAux[In] {
-      def apply[Out0](λ0: In => Out0) = {
-        val aux: Func[In] = new Func[In] {
-          type Out = Out0
-          val λ = λ0
-        }
+  trait Poly1Builder[L <: HList] extends Poly1 { self =>
 
-        new PolyBuilder[(Func[In] :: L)] {
-          val functions: (Func[In]:: L) = aux :: self.functions
-        }
-      }
-    }
+   val functions: L
 
-    def caseOf[In] = new CaseOfAux[In]
+   class CaseOfAux[In] {
+     def apply[Out](λ: In => Out) = {
+       new Poly1Builder[(In => Out) :: L] {
+         val functions = λ :: self.functions
+       }
+     }
+   }
 
-    implicit def allCases[In](implicit selector: hl.Selector[L,Func[In]]): Case.Aux[In,Func[In]#Out] = at(functions.select[Func[In]].λ)
+   def caseOf[In] = new CaseOfAux[In]
+
+   implicit def allCases[In, Out](implicit tL: FunctionTypeAt[In, Out, L]) = {
+     val func: In => Out = tL(functions)
+     at(func)
+   }
   }
 
-  object newPoly extends PolyBuilder[HNil] {
-    val functions: HNil = HNil
+  object newPoly extends Poly1Builder[HNil] {
+   val functions = HNil
+  }
+  /* For internal use of Poly1Builder */
+  trait FunctionTypeAt[U, V, L <: HList] {
+   def apply(l: L): U => V
   }
 
-  trait Func[In] {
-    type Out
-    val λ: In => Out
+  object FunctionTypeAt {
+   implicit def at0[U,V,T <: HList] = new FunctionTypeAt[U, V, (U => V)::T] {
+     def apply(l: (U => V)::T): U => V = {
+       l.head
+     }
+   }
+
+   implicit def atOther[U, V, T<: HList, H](implicit tprev: FunctionTypeAt[U, V, T]) = new FunctionTypeAt[U, V, H::T] {
+     def apply(l: H::T): U => V = {
+       tprev(l.tail)
+     }
+   }
   }
 
   /**

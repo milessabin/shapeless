@@ -370,4 +370,19 @@ class PolyTests {
     val r6 = dcis(2.0, 'a', 1, "foo")
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r6)
   }
+
+  @Test
+  def testPolyBuilder {
+    val myPoly = newPoly.caseOf[Int]( x => x).caseOf[String](_.length).caseOf[Boolean](if(_) 1 else 0)
+    import myPoly._
+
+    val r1 = myPoly(10)
+    assertTypedEquals[Int](10, r1)
+
+    val r2 = myPoly("hello")
+    assertTypedEquals[Int](5, r2)
+
+    val r3 = myPoly(true)
+    assertTypedEquals[Int](1, r3)
+  }
 }
