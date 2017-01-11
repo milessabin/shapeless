@@ -115,6 +115,7 @@ final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
   * of `:+:` can not be constructed properly.
   */
 sealed trait CNil extends Coproduct {
+  /** Call this when you hit the CNil case in pattern matching to make the match exhaustive and safe. */
   def impossible: Nothing
 }
 
