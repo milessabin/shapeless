@@ -136,7 +136,7 @@ object PolyDefns extends Cases {
 
     def caseOf[In] = new CaseOfAux[In]
 
-    implicit def allCases[In,Out]: Case.Aux[In,Out] = macro PolyMacros.allCasesImpl[In]
+    implicit def allCases[In](implicit selector: hl.Selector[L,Func[In]]): Case.Aux[In,Func[In]#Out] = at(functions.select[Func[In]].λ)
   }
 
   object newPoly extends PolyBuilder[HNil] {
@@ -315,14 +315,5 @@ class PolyMacros(val c: whitebox.Context) {
     }
 
     q""" $value.caseUniv[$tTpe] """
-  }
-
-  def allCasesImpl[In : c.WeakTypeTag]: Tree = {
-    val q"$prefix.${_}[..${_}]" = c.macroApplication
-    val temp = c.freshName(TermName("temp"))
-    q"""
-        val $temp = $prefix
-        $temp.at($temp.functions.select[Func[${weakTypeOf[In]}]].λ)
-    """
   }
 }
