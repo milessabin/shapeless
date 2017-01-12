@@ -139,7 +139,6 @@ class TheMacros(val c: whitebox.Context) {
       c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
 
     val inferred = c.inferImplicitValue(tpe, silent = false)
-    assert(!inferred.isEmpty)
 
     // We can't yield a useful value here, so return Unit instead which is at least guaranteed
     // to result in a runtime exception if the value is used in term position.
