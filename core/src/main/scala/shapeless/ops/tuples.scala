@@ -255,8 +255,8 @@ object tuple {
   }
 
   /**
-   * Type class supporting replacement of the first element of type U from this tuple with an element of type V.
-   * Available only if this tuple contains an element of type `U`.
+   * Type class supporting replacement of the first element of type V from this tuple with an element of type U.
+   * Available only if this tuple contains an element of type `V`.
    *
    * @author Miles Sabin
    */
