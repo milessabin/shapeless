@@ -119,11 +119,11 @@ object PolyDefns extends Cases {
    *
    * @author Aristotelis Dossas
    */
-  trait Poly1Builder[L <: HList] extends Poly1 { self =>
+  trait Poly1Builder[L <: HList] { self =>
 
    val functions: L
 
-   class CaseOfAux[In] {
+   class AtAux[In] {
      def apply[Out](λ: In => Out) = {
        new Poly1Builder[(In => Out) :: L] {
          val functions = λ :: self.functions
@@ -131,17 +131,18 @@ object PolyDefns extends Cases {
      }
    }
 
-   def caseOf[In] = new CaseOfAux[In]
+   def at[In] = new AtAux[In]
 
-   implicit def allCases[In, Out](implicit tL: FunctionTypeAt[In, Out, L]) = {
-     val func: In => Out = tL(functions)
-     at(func)
+   def build = new Poly1 {
+     val functions = self.functions
+
+     implicit def allCases[In, Out](implicit tL: FunctionTypeAt[In, Out, L]) = {
+       val func: In => Out = tL(functions)
+       at(func)
+     }
    }
   }
 
-  object newPoly extends Poly1Builder[HNil] {
-   val functions = HNil
-  }
   /* For internal use of Poly1Builder */
   trait FunctionTypeAt[U, V, L <: HList] {
    def apply(l: L): U => V
@@ -291,7 +292,9 @@ trait Poly extends PolyApply with Serializable {
  *
  * @author Miles Sabin
  */
-object Poly extends PolyInst {
+object Poly extends PolyInst with PolyDefns.Poly1Builder[HNil] {
+  val functions = HNil
+
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
 }
 

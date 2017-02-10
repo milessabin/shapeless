@@ -372,8 +372,8 @@ class PolyTests {
   }
 
   @Test
-  def testPolyBuilder {
-    val myPoly = newPoly.caseOf[Int]( x => x).caseOf[String](_.length).caseOf[Boolean](if(_) 1 else 0)
+  def testPoly1Builder {
+    val myPoly = Poly.at[Int]( x => x).at[String](_.length).at[Boolean](if(_) 1 else 0).build
     import myPoly._
 
     val r1 = myPoly(10)
