@@ -373,7 +373,7 @@ class PolyTests {
 
   @Test
   def testPoly1Builder {
-    val myPoly = Poly.at[Int]( x => x).at[String](_.length).at[Boolean](if(_) 1 else 0).build
+    val myPoly = Poly1.at[Int]( x => x).at[String](_.length).at[Boolean](if(_) 1 else 0).build
     import myPoly._
 
     val r1 = myPoly(10)
@@ -384,5 +384,23 @@ class PolyTests {
 
     val r3 = myPoly(true)
     assertTypedEquals[Int](1, r3)
+  }
+
+  @Test
+  def testPoly2Builder {
+    val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x).
+                       at[Int, String]((acc, s) => acc + s.length).
+                       at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0)).
+                       build
+    import myPoly._
+
+    val r1 = myPoly(5, 10)
+    assertTypedEquals[Int](15, r1)
+
+    val r2 = myPoly(5, "hello")
+    assertTypedEquals[Int](10, r2)
+
+    val r3 = myPoly(5, true)
+    assertTypedEquals[Int](6, r3)
   }
 }

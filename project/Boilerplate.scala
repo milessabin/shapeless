@@ -46,6 +46,7 @@ object Boilerplate {
     GenPolyInst,
     GenCases,
     GenPolyNTraits,
+    GenPolyNBuilders,
     GenNats,
     GenTupleTypeableInstances,
     GenSizedBuilder,
@@ -361,7 +362,72 @@ object Boilerplate {
         -  def at[${`A..N`}]
         -    = new CaseBuilder[${`A..N`}]
         -}
+        -
+        -object Poly${arity} extends PolyNBuilders.Poly${arity}Builder[HNil] {
+        - val functions = HNil
+        -}
         |
+      """
+    }
+  }
+
+  object GenPolyNBuilders extends Template {
+    val filename = "polynbuilders.scala"
+
+    def content(tv: TemplateVals) = {
+      import tv._
+
+      block"""
+        |
+        |
+        |/**
+        |  * Provides elegant syntax for creating polys from functions
+        |  *
+        |  * @author Aristotelis Dossas
+        |  */
+        |object PolyNBuilders {
+        -
+        - trait Poly${arity}Builder[HL <: HList] { self =>
+        -
+        -   val functions: HL
+        -   class AtAux[${`A..N`}] {
+        -     def apply[Out](λ: (${`A..N`}) => Out) = {
+        -       new Poly${arity}Builder[((${`A..N`}) => Out) :: HL] {
+        -         val functions = λ :: self.functions
+        -       }
+        -     }
+        -   }
+        -   def at[${`A..N`}] = new AtAux[${`A..N`}]
+        -
+        -   def build = new Poly${arity} {
+        -     val functions = self.functions
+        -
+        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]) = {
+        -       val func: (${`A..N`}) => Out = tL(functions)
+        -       at(func)
+        -     }
+        -   }
+        - }
+        -
+        - /* For internal use of Poly${arity}Builder */
+        - trait Function${arity}TypeAt[${`A..N`}, Out, HL <: HList] {
+        -   def apply(l: HL): (${`A..N`}) => Out
+        - }
+        -
+        - object Function${arity}TypeAt {
+        -   implicit def at0[${`A..N`}, Out, Tail <: HList] = new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
+        -     def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = {
+        -       l.head
+        -     }
+        -   }
+        -
+        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]) = new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
+        -     def apply(l: Head::Tail): (${`A..N`}) => Out = {
+        -       tprev(l.tail)
+        -     }
+        -   }
+        - }
+        |}
       """
     }    
   }

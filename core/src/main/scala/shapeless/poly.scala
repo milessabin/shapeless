@@ -115,54 +115,6 @@ object PolyDefns extends Cases {
   }
 
   /**
-   * Provides elegant syntax for creating polys from functions
-   *
-   * @author Aristotelis Dossas
-   */
-  trait Poly1Builder[L <: HList] { self =>
-
-   val functions: L
-
-   class AtAux[In] {
-     def apply[Out](λ: In => Out) = {
-       new Poly1Builder[(In => Out) :: L] {
-         val functions = λ :: self.functions
-       }
-     }
-   }
-
-   def at[In] = new AtAux[In]
-
-   def build = new Poly1 {
-     val functions = self.functions
-
-     implicit def allCases[In, Out](implicit tL: FunctionTypeAt[In, Out, L]) = {
-       val func: In => Out = tL(functions)
-       at(func)
-     }
-   }
-  }
-
-  /* For internal use of Poly1Builder */
-  trait FunctionTypeAt[U, V, L <: HList] {
-   def apply(l: L): U => V
-  }
-
-  object FunctionTypeAt {
-   implicit def at0[U,V,T <: HList] = new FunctionTypeAt[U, V, (U => V)::T] {
-     def apply(l: (U => V)::T): U => V = {
-       l.head
-     }
-   }
-
-   implicit def atOther[U, V, T<: HList, H](implicit tprev: FunctionTypeAt[U, V, T]) = new FunctionTypeAt[U, V, H::T] {
-     def apply(l: H::T): U => V = {
-       tprev(l.tail)
-     }
-   }
-  }
-
-  /**
    * Base class for lifting a `Function1` to a `Poly1`
    */
   class ->[T, R](f : T => R) extends Poly1 {
@@ -292,9 +244,7 @@ trait Poly extends PolyApply with Serializable {
  *
  * @author Miles Sabin
  */
-object Poly extends PolyInst with PolyDefns.Poly1Builder[HNil] {
-  val functions = HNil
-
+object Poly extends PolyInst {
   implicit def inst0(p: Poly)(implicit cse : p.ProductCase[HNil]) : cse.Result = cse()
 }
 
