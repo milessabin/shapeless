@@ -1123,3 +1123,19 @@ object Thrift {
 
   Generic[TProduct.Immutable]
 }
+
+object HigherKinded {
+  // https://github.com/milessabin/shapeless/issues/683
+  type Id[A] = A
+
+  sealed trait Foo[A[_]]
+  case class Bar[A[_]]() extends Foo[A]
+
+  Generic[Bar[Id]]
+  Generic[Foo[Id]]
+
+  sealed trait Pipo[A[_]]
+  case class Lino() extends Pipo[Id]
+
+  Generic[Pipo[Id]]
+}

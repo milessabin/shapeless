@@ -418,7 +418,7 @@ trait CaseClassMacros extends ReprTypes {
             val subst = c.internal.thisType(sym).baseType(baseSym).typeArgs
             sym.typeParams.map { param =>
               val paramTpe = param.asType.toType
-              baseArgs(subst.indexWhere(_ =:= paramTpe))
+              baseArgs(subst.indexWhere(_.typeSymbol == paramTpe.typeSymbol))
             }
           }
 
