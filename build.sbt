@@ -5,8 +5,6 @@ import ReleaseTransformations._
 
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
-import com.typesafe.sbt.osgi.SbtOsgi.{ osgiSettings => defaultOsgiSettings, _ }
-
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
@@ -68,7 +66,7 @@ def configureJUnit(crossProject: CrossProject) = {
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
   .jvmSettings(
     libraryDependencies +=
-      "com.novocode" % "junit-interface" % "0.9" % "test"
+      "com.novocode" % "junit-interface" % "0.11" % "test"
   )
 }
 
@@ -112,7 +110,8 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
   .configureCross(buildInfoSetup)
-  .settings(osgiSettings:_*)
+  .enablePlugins(SbtOsgi)
+  .settings(coreOsgiSettings:_*)
   .settings(
     sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
   )
@@ -292,7 +291,7 @@ def buildInfoSetup(crossProject: CrossProject): CrossProject = {
   crossProject jvmConfigure transform jsConfigure transform
 }
 
-lazy val osgiSettings = defaultOsgiSettings ++ Seq(
+lazy val coreOsgiSettings = osgiSettings ++ Seq(
   OsgiKeys.bundleSymbolicName := "shapeless",
   OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
   OsgiKeys.importPackage := Seq("""!scala.quasiquotes,scala.*;version="$<range;[==,=+);$<@>>""""),
