@@ -51,8 +51,8 @@ object nat {
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Sum[A, B] { type Out = C }
 
     implicit def sum1[B <: Nat]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
-    implicit def sum2[A <: Nat, B <: Nat]
-      (implicit sum : Sum[A, Succ[B]]): Aux[Succ[A], B, sum.Out] = new Sum[Succ[A], B] { type Out = sum.Out }
+    implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
+      (implicit sum : Sum.Aux[A, Succ[B], C]): Aux[Succ[A], B, C] = new Sum[Succ[A], B] { type Out = C }
   }
 
   /**
@@ -68,8 +68,8 @@ object nat {
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Diff[A, B] { type Out = C }
 
     implicit def diff1[A <: Nat]: Aux[A, _0, A] = new Diff[A, _0] { type Out = A }
-    implicit def diff2[A <: Nat, B <: Nat]
-      (implicit diff : Diff[A, B]): Aux[Succ[A], Succ[B], diff.Out] = new Diff[Succ[A], Succ[B]] { type Out = diff.Out }
+    implicit def diff2[A <: Nat, B <: Nat, C <: Nat]
+      (implicit diff : Diff.Aux[A, B, C]): Aux[Succ[A], Succ[B], C] = new Diff[Succ[A], Succ[B]] { type Out = C }
   }
 
   /**
@@ -85,8 +85,8 @@ object nat {
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Prod[A, B] { type Out = C }
 
     implicit def prod1[B <: Nat]: Aux[_0, B, _0] = new Prod[_0, B] { type Out = _0 }
-    implicit def prod2[A <: Nat, B <: Nat, C <: Nat]
-      (implicit prod: Prod.Aux[A, B, C], sum: Sum[B, C]): Aux[Succ[A], B, sum.Out] = new Prod[Succ[A], B] { type Out = sum.Out }
+    implicit def prod2[A <: Nat, B <: Nat, C <: Nat, D <: Nat]
+      (implicit prod: Prod.Aux[A, B, C], sum: Sum.Aux[B, C, D]): Aux[Succ[A], B, D] = new Prod[Succ[A], B] { type Out = D }
   }
 
   /**
