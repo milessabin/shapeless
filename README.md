@@ -89,7 +89,7 @@ of shapeless. It then drops you immediately into a REPL session,
 ```text
 % curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 0.7.8
+Welcome to the Ammonite Repl 0.8.2
 (Scala 2.11.8 Java 1.8.0_102)
 @ 23 :: "foo" :: true :: HNil 
 res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
