@@ -117,7 +117,7 @@ object HList extends Dynamic {
 
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =
-    l match {
+    (l: @unchecked) match {
       case hd :: tl if i == 0 => hd
       case hd :: tl => unsafeGet(tl, i-1)
     }
@@ -141,7 +141,7 @@ object HList extends Dynamic {
   def unsafeUpdateAt(l: HList, i: Int, e: Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
@@ -166,7 +166,7 @@ object HList extends Dynamic {
   def unsafeUpdateWith(l: HList, i: Int, f: Any => Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, f(hd) :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
@@ -176,7 +176,7 @@ object HList extends Dynamic {
   def unsafeRemove(l: HList, i: Int): (Any, HList) = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): (Any, HList) =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => (hd, unsafeReversePrepend(revPrefix, tl))
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
