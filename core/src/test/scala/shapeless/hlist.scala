@@ -1723,6 +1723,20 @@ class HListTests {
 
     val r8 = t3.transpose
     assertTypedEquals[ISD :: ISD :: ISD :: HNil](z2, r8)
+
+    val nil: HNil = HNil
+
+    val r9 = nil zipOne nil
+    assertTypedEquals[HNil](HNil, r9)
+
+    val r10 = nil.transpose
+    assertTypedEquals[HNil](HNil, r10)
+
+    val r11 = (HNil :: HNil :: HNil : HNil :: HNil :: HNil).transpose
+    assertTypedEquals[HNil](HNil, r11)
+
+    val r12 = (1 :: HNil) zipOne ((2 :: HNil) :: HNil)
+    assertTypedEquals[(Int :: Int :: HNil) :: HNil]((1 :: 2 :: HNil) :: HNil, r12)
   }
 
   @Test
@@ -1747,6 +1761,10 @@ class HListTests {
     val z3 = (l1 :: l2 :: HNil).zip
     assertTypedEquals[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](
       (1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z3)
+
+    val nil : HNil = HNil
+    val z4 = (nil :: nil :: HNil).zip
+    assertTypedEquals[HNil](nil, z4)
 
     val t2 = z1.map(productElements).transpose
     val u1 = t2.tupled
