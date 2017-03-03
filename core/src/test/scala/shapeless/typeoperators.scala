@@ -100,6 +100,8 @@ class TypeOperatorTests {
     implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
   }
 
+  case class Baz(i: Int, s: String)
+
   @Test
   def testTheValues {
     val foo = the[Foo]
@@ -170,6 +172,9 @@ class TypeOperatorTests {
     }
     typed[(String, _0) :: (Boolean, Succ[_0]) :: HNil](indexedHList)
 
+    implicit val genBaz: TypeOf.`Generic[Baz]`.type = cachedImplicit
+    val reprBaz = genBaz.to(Baz(23, "foo"))
+    typed[Int :: String :: HNil](reprBaz)
   }
 
   @Test
