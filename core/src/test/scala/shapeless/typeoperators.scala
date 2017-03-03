@@ -100,6 +100,8 @@ class TypeOperatorTests {
     implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
   }
 
+  case class Baz(i: Int, s: String)
+
   @Test
   def testTheValues {
     val foo = the[Foo]
@@ -145,6 +147,34 @@ class TypeOperatorTests {
 
     val b1 = bar1[Boolean, Int]
     typed[Option[Int]](b1)
+  }
+
+  @Test
+  def testTypeOf: Unit = {
+
+    val t1: TypeOf.`Foo.mkFoo`.T = 23
+    typed[Int](t1)
+
+    val t2: TypeOf.`Foo.mkFoo: Foo`.T = 23
+    typed[Int](t2)
+
+    val tu1: Either[Boolean, TypeOf.`Bar.mkBar1: Bar[Boolean]`.U] = Right(23)
+    typed[Either[Boolean, Int]](tu1)
+
+    val tu2: Either[String, TypeOf.`the.apply: Bar[String]`.U] = Right(23)
+    typed[Either[String, Double]](tu2)
+
+    val tu3: Either[String, TypeOf.`the[Bar[String]]`.U] = Right(23)
+    typed[Either[String, Double]](tu3)
+
+    val indexedHList: TypeOf.`Generic[(String, Boolean)].to(("foo", true)).zipWithIndex`.type = {
+      Generic[(String, Boolean)].to(("foo", true)).zipWithIndex
+    }
+    typed[(String, _0) :: (Boolean, Succ[_0]) :: HNil](indexedHList)
+
+    implicit val genBaz: TypeOf.`Generic[Baz]`.type = cachedImplicit
+    val reprBaz = genBaz.to(Baz(23, "foo"))
+    typed[Int :: String :: HNil](reprBaz)
   }
 
   @Test

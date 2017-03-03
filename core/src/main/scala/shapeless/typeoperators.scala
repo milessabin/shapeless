@@ -148,6 +148,41 @@ class TheMacros(val c: whitebox.Context) {
   }
 }
 
+
+object TypeOf extends Dynamic {
+
+  def selectDynamic(code: String): Any = macro Macros.selectDynamic
+
+  @macrocompat.bundle
+  private[TypeOf] final class Macros(val c: whitebox.Context) {
+    import c.universe.{Try => _, _}
+    import internal._, decorators._
+
+    def selectDynamic(code: Tree): Tree = {
+
+      val q"${codeString: String}" = code
+      val tpe = c.parse(codeString) match {
+        case Typed(expr, tpt) =>
+          val baseType = c.typecheck(tpt, mode = c.TYPEmode)
+          c.typecheck(expr, pt = baseType.tpe).tpe
+        case expr =>
+          c.typecheck(expr).tpe
+      }
+
+      // Bail for primitives because the resulting trees with type set to Unit
+      // will crash the compiler
+      val symbol = tpe.typeSymbol
+      if (symbol.isClass && symbol.asClass.isPrimitive)
+        c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
+
+      // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+      // to result in a runtime exception if the value is used in term position.
+      Literal(Constant(())).setType(tpe)
+    }
+  }
+
+}
+
 /**
  * Type class witnessing the least upper bound of a pair of types and providing conversions from each to their common
  * supertype.
