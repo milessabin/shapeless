@@ -148,6 +148,23 @@ class TypeOperatorTests {
   }
 
   @Test
+  def testTypeOf: Unit = {
+
+    val t1: TypeOf.`Foo.mkFoo`.T = 23
+    typed[Int](t1)
+
+    val t2: TypeOf.`Foo.mkFoo: Foo`.T = 23
+    typed[Int](t2)
+
+    val tu1: Either[Boolean, TypeOf.`Bar.mkBar1: Bar[Boolean]`.U] = Right(23)
+    typed[Either[Boolean, Int]](tu1)
+
+    val tu2: Either[String, TypeOf.`the.apply: Bar[String]`.U] = Right(23)
+    typed[Either[String, Double]](tu2)
+
+  }
+
+  @Test
   def testRejectBogus {
     try {
       the.Foo
