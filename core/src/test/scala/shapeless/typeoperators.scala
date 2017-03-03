@@ -165,6 +165,9 @@ class TypeOperatorTests {
     val tu3: Either[String, TypeOf.`the[Bar[String]]`.U] = Right(23)
     typed[Either[String, Double]](tu3)
 
+    val indexedHList: TypeOf.`("foo"::true::HNil).zipWithIndex`.type = ("foo"::true::HNil).zipWithIndex
+    typed[(String, _0) :: (Boolean, Succ[_0]) :: HNil](indexedHList)
+
   }
 
   @Test
