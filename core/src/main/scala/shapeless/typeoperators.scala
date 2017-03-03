@@ -171,7 +171,8 @@ object TypeOf extends Dynamic {
 
       // Bail for primitives because the resulting trees with type set to Unit
       // will crash the compiler
-      if (tpe.typeSymbol.asClass.isPrimitive)
+      val symbol = tpe.typeSymbol
+      if (symbol.isClass && symbol.asClass.isPrimitive)
         c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
 
       // We can't yield a useful value here, so return Unit instead which is at least guaranteed
