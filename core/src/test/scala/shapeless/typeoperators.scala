@@ -162,6 +162,9 @@ class TypeOperatorTests {
     val tu2: Either[String, TypeOf.`the.apply: Bar[String]`.U] = Right(23)
     typed[Either[String, Double]](tu2)
 
+    val tu3: Either[String, TypeOf.`the[Bar[String]]`.U] = Right(23)
+    typed[Either[String, Double]](tu3)
+
   }
 
   @Test
