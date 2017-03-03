@@ -154,7 +154,7 @@ object TypeOf extends Dynamic {
   def selectDynamic(code: String): Any = macro Macros.selectDynamic
 
   @macrocompat.bundle
-  private[TypeOf] class Macros(val c: whitebox.Context) {
+  private[TypeOf] final class Macros(val c: whitebox.Context) {
     import c.universe.{Try => _, _}
     import internal._, decorators._
 
