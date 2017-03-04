@@ -208,6 +208,18 @@ class HListTests {
     assertTypedEquals[String :: String :: String :: String :: HNil]("Apple()" :: "Pear()" :: "Banana()" :: "Pear()" :: HNil, l11)
   }
 
+  @Test
+  def testMapped {
+    implicitly[Mapped.Aux[HNil, Option, HNil]]
+    implicitly[Mapped.Aux[Int :: String :: HNil, Option, Option[Int] :: Option[String] :: HNil]]
+
+    implicitly[Mapped.Aux[HNil, Id, HNil]]
+    implicitly[Mapped.Aux[Int :: String :: HNil, Id, Int :: String :: HNil]]
+
+    implicitly[Mapped.Aux[HNil, Const[Int]#λ, HNil]]
+    implicitly[Mapped.Aux[Double :: String :: HNil, Const[Int]#λ, Int :: Int :: HNil]]
+  }
+
   object dup extends Poly1 {
     implicit def default[T] = at[T](t => t :: t :: HNil)
   }
