@@ -70,7 +70,9 @@ object hlist {
 
     implicit def hnilMapped[F[_]]: Aux[HNil, F, HNil] = new Mapped[HNil, F] { type Out = HNil }
 
-    implicit def hlistIdMapped[L <: HList]: Aux[L, Id, L] = new Mapped[L, Id] { type Out = L }
+    implicit def hnilConstMapped[F]: Aux[HNil, Const[F]#λ, HNil] = new Mapped[HNil, Const[F]#λ] { type Out = HNil }
+
+    implicit def hlistIdMapped[H, T <: HList]: Aux[H :: T, Id, H :: T] = new Mapped[H :: T, Id] { type Out = H :: T }
 
     implicit def hlistMapped1[H, T <: HList, F[_], OutM <: HList](implicit mt : Mapped.Aux[T, F, OutM]): Aux[H :: T, F, F[H] :: OutM] =
       new Mapped[H :: T, F] { type Out = F[H] :: OutM }
