@@ -2860,6 +2860,37 @@ object hlist {
   }
 
   /**
+    * Typeclass witnessing that all the elements of an HList have instances of the given typeclass.
+    * Courtesy of mpilquist.
+    *
+    * @author Tin Pavlinic
+    * @author Yang Bo
+    */
+  sealed trait DependentLiftAll[F[_], In <: HList] extends DepFn0 {
+    type Out <: HList
+  }
+
+  object DependentLiftAll {
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = DependentLiftAll[F, In0] {type Out = Out0}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: DependentLiftAll[F, In]) = ev}
+
+    def apply[F[_]] = new Curried[F]
+    def apply[F[_], In <: HList](implicit ev: DependentLiftAll[F, In]) = ev
+
+    implicit def hnil[F[_]]: DependentLiftAll.Aux[F, HNil, HNil] = new DependentLiftAll[F, HNil] {
+      type Out = HNil
+      def apply() = HNil
+    }
+
+    implicit def hcons[F[_], H, FH, T <: HList, TI <: HList]
+    (implicit witnessThe: WitnessThe.Aux[F[H], FH], tailInstances: Aux[F, T, TI]): Aux[F, H :: T, FH :: TI] =
+      new DependentLiftAll[F, H :: T] {
+        type Out = FH :: TI
+        def apply() = witnessThe() :: tailInstances()
+      }
+  }
+
+  /**
    * Type class supporting producing a HList of shape `N` padded with elements of type `A`.
    *
    * @author ryoppy

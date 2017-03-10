@@ -3259,6 +3259,21 @@ class HListTests {
   }
 
   @Test
+  def testDependentLiftAll {
+    trait F[A]
+    implicit object FInt extends F[Int]
+    implicit object FString extends F[String]
+
+    assertTypedEquals[HNil](HNil, the[DependentLiftAll[F, HNil]].apply())
+    assertTypedEquals[FInt.type :: HNil](FInt :: HNil, the[DependentLiftAll[F, Int :: HNil]].apply())
+    assertTypedEquals[FString.type :: FInt.type :: HNil](FString :: FInt :: HNil, the[DependentLiftAll[F, String :: Int :: HNil]].apply())
+
+    illTyped("implicitly[DependentLiftAll[F, Long :: String :: Int :: HNil]]")
+
+    assertTypedEquals[FInt.type :: HNil](FInt :: HNil, DependentLiftAll[F](1 :: HNil).apply())
+  }
+
+  @Test
   def testPadTo {
     val p1 = (1 :: "a" :: HNil).padTo(3, 0)
     assertTypedEquals[Int :: String :: Int :: HNil](1 :: "a" :: 0 :: HNil, p1)
