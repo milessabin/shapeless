@@ -2875,7 +2875,7 @@ object hlist {
     class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: DependentLiftAll[F, In]) = ev}
 
     def apply[F[_]] = new Curried[F]
-    def apply[F[_], In <: HList](implicit ev: DependentLiftAll[F, In]) = ev
+    def apply[F[_], In <: HList](implicit ev: DependentLiftAll[F, In]): DependentLiftAll.Aux[F, In, ev.Out] = ev
 
     implicit def hnil[F[_]]: DependentLiftAll.Aux[F, HNil, HNil] = new DependentLiftAll[F, HNil] {
       type Out = HNil
