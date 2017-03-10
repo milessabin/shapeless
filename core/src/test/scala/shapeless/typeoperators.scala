@@ -208,6 +208,14 @@ class TypeOperatorTests {
     val x = the[AValueClass]
     typed[AValueClass](x)
   }
+
+  @Test
+  def testDependentTypeClass: Unit = {
+    val genericAux = WitnessThe[Generic[Baz]]
+    typed[Generic.Aux[Baz, Int :: String :: HNil]](genericAux())
+
+  }
+
 }
 
 object TypeOperatorTests {
