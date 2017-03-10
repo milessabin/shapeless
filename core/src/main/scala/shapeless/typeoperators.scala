@@ -201,3 +201,34 @@ object Lub {
   }
 }
 
+trait WitnessThe[TypeClassConstraint] extends DepFn0 {
+
+  type Out <: TypeClassConstraint
+
+}
+
+object WitnessThe {
+
+  type Aux[TypeClassConstraint, Out0] =
+    WitnessThe[TypeClassConstraint] {
+      type Out = Out0
+    }
+
+  final class WitnessTheAux[TypeClassConstraint, Out0 <: TypeClassConstraint](override val apply: Out0)
+      extends WitnessThe[TypeClassConstraint] {
+    type Out = Out0
+  }
+
+  @macrocompat.bundle
+  private[WitnessThe] final class Macros(val c: whitebox.Context) {
+    import c.universe._
+    def apply[TypeClassConstraint: WeakTypeTag](typeClass: Tree): Tree = {
+      q"new _root_.shapeless.WitnessThe.WitnessTheAux[${weakTypeOf[TypeClassConstraint]}, ${typeClass.tpe}]($typeClass): _root_.shapeless.WitnessThe.Aux[${weakTypeOf[TypeClassConstraint]}, ${typeClass.tpe}]"
+    }
+  }
+
+  implicit def apply[TypeClassConstraint](implicit typeClass: TypeClassConstraint)
+    : WitnessThe.Aux[TypeClassConstraint, /* typeClass.type */ _ <: TypeClassConstraint] =
+  macro Macros.apply[TypeClassConstraint]
+
+}
