@@ -2852,10 +2852,10 @@ object hlist {
     }
 
     implicit def hcons[F[_], H, FH <: F[H], T <: HList, TI <: HList]
-      (implicit headInstance: FH, tailInstances: Aux[F, T, TI]): Aux[F, H :: T, FH :: TI] =
+      (implicit witnessThe: WitnessThe.Aux[F[H], FH], tailInstances: Aux[F, T, TI]): Aux[F, H :: T, FH :: TI] =
         new LiftAll[F, H :: T] {
           type Out = FH :: TI
-          def instances = headInstance :: tailInstances.instances
+          def instances = witnessThe() :: tailInstances.instances
     }
   }
 
