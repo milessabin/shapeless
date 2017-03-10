@@ -1888,6 +1888,22 @@ class CoproductTests {
     assertEquals(Inl(23), isCCons.cons(Left(23)))
     assertEquals(Inr(Inl("bar")), isCCons.cons(Right(Inl("bar"))))
   }
+
+  @Test
+  def testHListOption = {
+    type ISB = Int :+: String :+: Boolean :+: CNil
+    val isb1 = Coproduct[ISB](12)
+    val isb2 = Coproduct[ISB]("abc")
+    val isb3 = Coproduct[ISB](true)
+
+    val ho1 = HListOption[ISB].apply(isb1)
+    val ho2 = HListOption[ISB].apply(isb2)
+    val ho3 = HListOption[ISB].apply(isb3)
+
+    assertEquals(ho1, Some(12) :: None :: None :: HNil)
+    assertEquals(ho2, None :: Some("abc") :: None :: HNil)
+    assertEquals(ho3, None :: None :: Some(true) :: HNil)
+  }
 }
 
 package CoproductTestAux {

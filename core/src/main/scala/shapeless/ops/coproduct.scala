@@ -1300,4 +1300,45 @@ object coproduct {
         def instances = headInstance :: tailInstances.instances
       }
   }
+
+  /**
+    * Type class that transforms a `Coproduct` to a `HList` of options with all
+    * values being `None` except for the value in the Coproduct which is wrapped in `Some`
+    *
+    * @author Michael Zuber
+    */
+  trait HListOption[In <: Coproduct] extends DepFn1[In] { type Out <: HList }
+
+  object HListOption {
+    def apply[In <: Coproduct](implicit ev: HListOption[In]): HListOption[In] = ev
+    type Aux[In <: Coproduct, Out0 <: HList] = HListOption[In] { type Out = Out0 }
+
+    trait HListNone[In <: Coproduct] extends DepFn0 { type Out <: HList }
+
+    object HListNone {
+      def apply[In <: Coproduct](implicit ev: HListNone[In]) = ev
+
+      type Aux[In <: Coproduct, Out0 <: HList] = HListNone[In] { type Out = Out0 }
+      implicit val cnilNone: Aux[CNil, HNil] = new HListNone[CNil] {
+        type Out = HNil
+        def apply(): HNil = HNil
+      }
+      implicit def cconsNone[L, R <: Coproduct, T <: HList](implicit ev: HListNone.Aux[R, T]): Aux[L :+: R, Option[L] :: T] = new HListNone[L :+: R] {
+        type Out = Option[L] :: T
+        def apply(): Option[L] :: T = None :: ev()
+      }
+    }
+
+    implicit val cnilHListOption: Aux[CNil, HNil] = new HListOption[CNil] {
+      type Out = HNil
+      def apply(in: CNil): HNil = HNil
+    }
+    implicit def cconsHListOption[L, R <: Coproduct, T <: HList](implicit evOption: Aux[R, T], evNone: HListNone.Aux[R, T]): Aux[L :+: R, Option[L] :: T] = new HListOption[L :+: R] {
+      type Out = Option[L] :: T
+      def apply(in: L :+: R): Option[L] :: T = in match {
+        case Inl(l) => Some(l) :: evNone()
+        case Inr(r) => None :: evOption(r)
+      }
+    }
+  }
 }
