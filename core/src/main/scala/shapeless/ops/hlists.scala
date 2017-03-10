@@ -2841,10 +2841,10 @@ object hlist {
 
   object LiftAll {
     type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
-    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]): LiftAll.Aux[F, In, ev.Out] = ev}
 
     def apply[F[_]] = new Curried[F]
-    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]): LiftAll.Aux[F, In, ev.Out] = ev
 
     implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
       type Out = HNil
