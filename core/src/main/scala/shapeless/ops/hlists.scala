@@ -2872,7 +2872,7 @@ object hlist {
 
   object DependentLiftAll {
     type Aux[F[_], In0 <: HList, Out0 <: HList] = DependentLiftAll[F, In0] {type Out = Out0}
-    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: DependentLiftAll[F, In]) = ev}
+    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: DependentLiftAll[F, In]): DependentLiftAll.Aux[F, In, ev.Out] = ev}
 
     def apply[F[_]] = new Curried[F]
     def apply[F[_], In <: HList](implicit ev: DependentLiftAll[F, In]): DependentLiftAll.Aux[F, In, ev.Out] = ev
