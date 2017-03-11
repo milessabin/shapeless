@@ -3375,4 +3375,28 @@ class HListTests {
 
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
+
+  @Test
+  def testHashCode = {
+    val h1 = "foo" :: 1 :: HNil
+    val h2 = "foo" :: 1 :: HNil
+    val h3 = "foo" :: 2 :: HNil
+    val h4 = "bar" :: 1 :: HNil
+
+    assertTrue(h1 == h1)
+    assertTrue(h1.hashCode == h1.hashCode)
+
+    assertTrue(h1 == h2)
+    assertTrue(h1.hashCode == h2.hashCode)
+
+    assertFalse(h1 == h3)
+    assertFalse(h1.hashCode == h3.hashCode)
+
+    assertFalse(h1 == h4)
+    assertFalse(h1.hashCode == h4.hashCode)
+
+    assertFalse(h3 == h4)
+    assertFalse(h3.hashCode == h4.hashCode)
+  }
+
 }
