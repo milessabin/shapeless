@@ -3399,4 +3399,10 @@ class HListTests {
     assertFalse(h3.hashCode == h4.hashCode)
   }
 
+  @Test
+  def testToString = {
+    assertTrue(("foo" :: 1 :: HNil).toString == "foo :: 1 :: HNil")
+    assertTrue(("foo" :: (1 :: HNil) :: HNil).toString == "foo :: (1 :: HNil) :: HNil")
+  }
+
 }
