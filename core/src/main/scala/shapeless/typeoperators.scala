@@ -201,6 +201,13 @@ object Lub {
   }
 }
 
+/**
+ * Type class witnessing the implicit refinement type that extends `TypeClassConstraint`.
+ *
+ * @note `WitnessThe` is similar to [[the]], except `WitnessThe` can be used in another implicit type class resolution process, e.g. [[shapeless.ops.hlists.DependentLiftAll]].
+ *
+ * @author Yang Bo
+ */
 trait WitnessThe[TypeClassConstraint] extends DepFn0 {
 
   type Out <: TypeClassConstraint
