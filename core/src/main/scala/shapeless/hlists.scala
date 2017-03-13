@@ -42,7 +42,7 @@ final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
 
   // the default case class equals / hashCode is very inefficient
   override def equals(other: Any): Boolean = other match {
-    case that: ::[_, _] => head == that.head && tail == that.tail
+    case that: ::[_, _] => (this eq that) || (head == that.head && tail == that.tail)
     case _              => false
   }
   override def hashCode: Int = head.hashCode + 13 * tail.hashCode
