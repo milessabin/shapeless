@@ -204,6 +204,8 @@ object Lub {
 /**
  * Type class witnessing the implicit refinement type that extends `TypeClassConstraint`.
  *
+ * This type class can be used in `DependentLiftAll` or auto-derivation for dependent type classes.
+ *
  * @note `WitnessThe` is similar to [[the]], except `WitnessThe` can be used in another implicit type class resolution process, e.g. `DependentLiftAll`.
  *
  * @author Yang Bo
