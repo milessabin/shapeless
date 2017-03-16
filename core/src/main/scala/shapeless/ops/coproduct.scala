@@ -1301,6 +1301,11 @@ object coproduct {
       }
   }
 
+  /**
+    * Typeclass converting a `Coproduct` to an `Either`
+    *
+    * @author Michael Zuber
+    */
   sealed trait CoproductToEither[C <: Coproduct] extends DepFn1[C] with Serializable
 
   object CoproductToEither {
@@ -1322,6 +1327,37 @@ object coproduct {
       def apply(t: L :+: R): Either[L, Out0] = t match {
         case Inl(l) => Left(l)
         case Inr(r) => Right(evR(r))
+      }
+    }
+  }
+
+  /**
+    * Typeclass converting an `Either` to a `Coproduct`
+    *
+    * @author Michael Zuber
+    */
+  sealed trait EitherToCoproduct[L, R] extends DepFn1[Either[L, R]] with Serializable { type Out <: Coproduct }
+
+  object EitherToCoproduct extends EitherToCoproductLowPrio {
+    type Aux[L, R, Out0 <: Coproduct] = EitherToCoproduct[L, R] { type Out = Out0 }
+
+    implicit def econsEitherToCoproduct[L, RL, RR, Out0 <: Coproduct](implicit
+      evR: EitherToCoproduct.Aux[RL, RR, Out0]
+    ): EitherToCoproduct.Aux[L, Either[RL, RR], L :+: Out0] = new EitherToCoproduct[L, Either[RL, RR]] {
+      type Out = L :+: Out0
+      def apply(t: Either[L, Either[RL, RR]]): L :+: Out0 = t match {
+        case Left(l) => Inl(l)
+        case Right(r) => Inr(evR(r))
+      }
+    }
+  }
+
+  trait EitherToCoproductLowPrio {
+    implicit def baseEitherToCoproduct[L, R]: EitherToCoproduct.Aux[L, R, L :+: R :+: CNil] = new EitherToCoproduct[L, R] {
+      type Out = L :+: R :+: CNil
+      def apply(t: Either[L, R]): L :+: R :+: CNil = t match {
+        case Left(l) => Inl(l)
+        case Right(r) => Coproduct[L :+: R :+: CNil](r)
       }
     }
   }
