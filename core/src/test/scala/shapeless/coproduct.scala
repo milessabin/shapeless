@@ -1888,6 +1888,42 @@ class CoproductTests {
     assertEquals(Inl(23), isCCons.cons(Left(23)))
     assertEquals(Inr(Inl("bar")), isCCons.cons(Right(Inl("bar"))))
   }
+
+  @Test
+  def testToEither = {
+    type ISBD = Int :+: String :+: Boolean :+: Double :+: CNil
+    val i = Coproduct[ISBD](2)
+    val s = Coproduct[ISBD]("abc")
+    val b = Coproduct[ISBD](true)
+    val d = Coproduct[ISBD](3.0)
+
+    type E = Either[Int, Either[String, Either[Boolean, Double]]]
+    val ei: E = Left(2)
+    val es: E = Right(Left("abc"))
+    val eb: E = Right(Right(Left(true)))
+    val ed: E = Right(Right(Right(3.0)))
+
+    assertEquals(i.toEither, ei)
+    assertEquals(s.toEither, es)
+    assertEquals(b.toEither, eb)
+    assertEquals(d.toEither, ed)
+
+    import syntax.std.either._
+    assertEquals(ei.toCoproduct, i)
+    assertEquals(es.toCoproduct, s)
+    assertEquals(eb.toCoproduct, b)
+    assertEquals(ed.toCoproduct, d)
+
+    assertEquals(i.toEither.toCoproduct, i)
+    assertEquals(s.toEither.toCoproduct, s)
+    assertEquals(b.toEither.toCoproduct, b)
+    assertEquals(d.toEither.toCoproduct, d)
+
+    assertEquals(ei.toCoproduct.toEither, ei)
+    assertEquals(es.toCoproduct.toEither, es)
+    assertEquals(eb.toCoproduct.toEither, eb)
+    assertEquals(ed.toCoproduct.toEither, ed)
+  }
 }
 
 package CoproductTestAux {
