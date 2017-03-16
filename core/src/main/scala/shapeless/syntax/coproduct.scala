@@ -273,4 +273,9 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
    * Adjoins the elements of this `Coproduct` by flattening any `Coproduct` elements.
    */
   def adjoined(implicit adjoin: Adjoin[C]): adjoin.Out = adjoin(c)
+
+  /**
+   *  Embeds this `Coproduct` into an `Either`
+   */
+  def toEither(implicit coproductToEither: CoproductToEither[C]): coproductToEither.Out = coproductToEither(c)
 }

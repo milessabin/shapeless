@@ -1300,4 +1300,29 @@ object coproduct {
         def instances = headInstance :: tailInstances.instances
       }
   }
+
+  sealed trait CoproductToEither[C <: Coproduct] extends DepFn1[C] with Serializable
+
+  object CoproductToEither {
+    type Aux[In <: Coproduct, Out0] = CoproductToEither[In] { type Out = Out0 }
+
+    implicit def baseToEither[L, R]: CoproductToEither.Aux[L :+: R :+: CNil, Either[L, R]] = new CoproductToEither[L :+: R :+: CNil] {
+      type Out = Either[L, R]
+      def apply(t: L :+: R :+: CNil): Either[L, R] = t match {
+        case Inl(l) => Left(l)
+        case Inr(Inl(r)) => Right(r)
+        case _ => ???
+      }
+    }
+
+    implicit def cconsToEither[L, R <: Coproduct, Out0](implicit
+      evR: CoproductToEither.Aux[R, Out0]
+    ): CoproductToEither.Aux[L :+: R, Either[L, Out0]] = new CoproductToEither[L :+: R] {
+      type Out = Either[L, Out0]
+      def apply(t: L :+: R): Either[L, Out0] = t match {
+        case Inl(l) => Left(l)
+        case Inr(r) => Right(evR(r))
+      }
+    }
+  }
 }
