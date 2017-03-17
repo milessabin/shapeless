@@ -3295,12 +3295,12 @@ class HListTests {
 
   @Test
   def testIndexOf: Unit = {
-    import shapeless.Nat._
+    import shapeless.nat._
     type IDSB = Int :: Double :: String :: Boolean :: HNil
     implicitly[IndexOf.Aux[Int, IDSB, _0]]
-    implicitly[IndexOf.Aux[Double, IDSB, Succ[_0]]]
-    implicitly[IndexOf.Aux[String, IDSB, Succ[Succ[_0]]]]
-    implicitly[IndexOf.Aux[Boolean, IDSB, Succ[Succ[Succ[_0]]]]]
+    implicitly[IndexOf.Aux[Double, IDSB, _1]]
+    implicitly[IndexOf.Aux[String, IDSB, _2]]
+    implicitly[IndexOf.Aux[Boolean, IDSB, _3]]
   }
 
   @Test
