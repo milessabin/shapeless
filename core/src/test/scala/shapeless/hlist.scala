@@ -3297,10 +3297,10 @@ class HListTests {
   def testIndexOf: Unit = {
     import shapeless.nat._
     type IDSB = Int :: Double :: String :: Boolean :: HNil
-    implicitly[IndexOf.Aux[Int, IDSB, _0]]
-    implicitly[IndexOf.Aux[Double, IDSB, _1]]
-    implicitly[IndexOf.Aux[String, IDSB, _2]]
-    implicitly[IndexOf.Aux[Boolean, IDSB, _3]]
+    assertEquals(toInt(implicitly[IndexOf.Aux[Int, IDSB, _0]].apply()), 0)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Double, IDSB, _1]].apply()), 1)
+    assertEquals(toInt(implicitly[IndexOf.Aux[String, IDSB, _2]].apply()), 2)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Boolean, IDSB, _3]].apply()), 3)
   }
 
   @Test
