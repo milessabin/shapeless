@@ -1248,6 +1248,32 @@ object coproduct {
   }
 
   /**
+   * Typeclass witnessing a specific type is the ''i''th element of an [[Coproduct]].
+   * @author ctongfei (Tongfei Chen)
+   */
+  trait IndexOf[X, C <: Coproduct] extends DepFn0 with Serializable { type Out <: Nat }
+
+  object IndexOf {
+
+    def apply[X, C <: Coproduct](implicit indexOf: IndexOf[X, C]): Aux[X, C, indexOf.Out] = indexOf
+
+    type Aux[X, C <: Coproduct, Out0] = IndexOf[X, C] { type Out = Out0 }
+
+    implicit def indexOfHead[X, T <: Coproduct]: Aux[X, X :+: T, _0] =
+      new IndexOf[X, X :+: T] {
+        type Out = _0
+        def apply() = Nat._0
+      }
+
+    implicit def indexOfOthers[X, H, T <: Coproduct, I <: Nat]
+    (implicit indexOf: IndexOf.Aux[X, T, I]): Aux[X, H :+: T, Succ[I]] =
+      new IndexOf[X, H :+: T] {
+        type Out = Succ[I]
+        def apply() = Succ[I]
+      }
+  }
+
+  /**
     * Type class supporting reifying a `Coproduct` of singleton types.
     *
     * @author Jisoo Park
