@@ -3037,4 +3037,57 @@ object hlist {
         def apply(l: HNil): Out = HNil
       }
   }
+
+  /**
+   * Type class supporting mappings from type `T` to an `HList`. Currently only supports mapping nested pairs to an `HList`
+   *
+   * @author Michael Zuber
+   */
+  sealed trait ToHList[-T] {
+    type Out <: HList
+    def apply(t: T): Out
+  }
+
+  object ToHList {
+    def apply[P](implicit ev: ToHList[P]): ToHList[P] = ev
+
+    type Aux[P, HL <: HList] = ToHList[P] { type Out = HL }
+
+    implicit def hconsToHList[H, TH, TT, HL <: HList](implicit
+      ev: ToHList.Aux[Product2[TH, TT], HL]
+    ): ToHList.Aux[Product2[H, Product2[TH, TT]], H :: HL] = new ToHList[Product2[H, Product2[TH, TT]]] {
+      type Out = H :: HL
+      def apply(p: Product2[H, Product2[TH, TT]]): Out = p._1 :: ev(p._2)
+    }
+
+    implicit def hnilToHList[H]: ToHList.Aux[Product2[H, Unit], H :: HNil] = new ToHList[Product2[H, Unit]] {
+      type Out = H :: HNil
+      def apply(p: Product2[H, Unit]): Out = p._1 :: HNil
+    }
+  }
+
+  /**
+   * Type class supporting mappings from an `HList` to a nested pair
+   *
+   * @author Michael Zuber
+   */
+  sealed trait HListToProduct[HL <: HList] extends DepFn1[HL] { type Out <: Product }
+
+  object HListToProduct {
+    def apply[HL <: HList](implicit ev: HListToProduct[HL]): HListToProduct[HL] = ev
+
+    type Aux[HL <: HList, P <: Product] = HListToProduct[HL] { type Out = P }
+
+    implicit def hnilToProduct[H]: HListToProduct.Aux[H :: HNil, Product2[H, Unit]] = new HListToProduct[H :: HNil] {
+      type Out = Product2[H, Unit]
+      def apply(hl: H :: HNil): Out = (hl.head, ())
+    }
+
+    implicit def hconsHListToProduct[H, T <: HList, TP <: Product](implicit
+      ev: HListToProduct.Aux[T, TP]
+    ): HListToProduct.Aux[H :: T, Product2[H, TP]] = new HListToProduct[H :: T] {
+      type Out = Product2[H, TP]
+      def apply(hl: H :: T) = (hl.head, ev(hl.tail))
+    }
+  }
 }
