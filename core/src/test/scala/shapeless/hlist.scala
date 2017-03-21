@@ -3402,4 +3402,15 @@ class HListTests {
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
 
+  @Test
+  def testToProduct = {
+    val isbd = 2 :: "abc" :: true :: 3.0 :: HNil
+    val p = (2, ("abc", (true, (3.0, ()))))
+
+    import syntax.std.tuple._
+    assertEquals(isbd.nestedProduct, p)
+    assertEquals(p.toHList, isbd)
+    assertEquals(isbd.nestedProduct.toHList, isbd)
+    assertEquals(p.toHList.nestedProduct, p)
+  }
 }

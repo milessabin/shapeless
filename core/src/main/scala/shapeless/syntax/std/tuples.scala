@@ -520,4 +520,9 @@ final class TupleOps[T](t: T) extends Serializable {
    * both `HList`s have elements of the same types.
    */
   def align[U](u: U)(implicit align: Align[T, U]): U = align(t)
+
+  /**
+   * Converts this nested `Product` into an `HList`
+   */
+  def toHList(implicit toHList: ops.hlist.ToHList[T]): toHList.Out = toHList(t)
 }
