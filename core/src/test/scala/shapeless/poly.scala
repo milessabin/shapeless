@@ -403,4 +403,29 @@ class PolyTests {
     val r3 = myPoly(5, true)
     assertTypedEquals[Int](6, r3)
   }
+
+  @Test
+  def testPoly1BuilderMap {
+    val myPoly = Poly1.at[Int]( x => x.toString).at[String](_.length > 2).at[Boolean](if(_) 1 else 0).build
+
+    import myPoly._
+
+    val r = (10 :: "hello" :: true :: HNil).map(myPoly)
+
+    assertTypedEquals[String::Boolean::Int::HNil](("10"::true::1::HNil), r)
+  }
+
+  @Test
+  def testPoly2BuilderFoldLeft {
+    val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x).
+                                at[Int, String]((acc, s) => acc + s.length).
+                                at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0)).
+                                build
+
+    import myPoly._
+
+    val r = (10 :: "hello" :: true :: HNil).foldLeft(0)(myPoly)
+
+    assertTypedEquals[Int](16, r)
+  }
 }
