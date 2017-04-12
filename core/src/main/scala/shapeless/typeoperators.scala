@@ -23,14 +23,15 @@ import scala.reflect.macros.whitebox
 import scala.util.Try
 
 object tag {
-  def apply[U] = new Tagger[U]
+  def apply[U] = Tagger.asInstanceOf[Tagger[U]]
 
   trait Tagged[U]
   type @@[+T, U] = T with Tagged[U]
 
-  class Tagger[U] {
+  trait Tagger[U] {
     def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
   }
+  private object Tagger extends Tagger[Nothing]
 }
 
 object newtype {
