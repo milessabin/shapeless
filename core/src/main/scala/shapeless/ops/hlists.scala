@@ -884,6 +884,7 @@ object hlist {
   trait SelectAll[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out = S }
 
   object SelectAll {
+    type Aux[L <: HList, K <: HList, Out0 <: HList] = SelectAll[L, K] { type Out = Out0 }
 
     implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
       new SelectAll[L, HNil] {
