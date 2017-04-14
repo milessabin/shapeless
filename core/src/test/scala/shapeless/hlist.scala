@@ -18,7 +18,6 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
-
 import test._
 import testutil._
 
@@ -3110,6 +3109,25 @@ class HListTests {
 
     //testing with Record
     assertTypedEquals[rsuper._type](rsuper.value, getFieldsByTypesOfSuper[rsub._type, rsuper._type](rsub.value))
+
+    //testing Aux
+    class StructuralUpcast[P] {
+      def apply[C, PR <: HList, CR <: HList, SOut <: HList](c: C)(implicit
+        pGen: LabelledGeneric.Aux[P, PR],
+        cGen: LabelledGeneric.Aux[C, CR],
+        selectAll: SelectAll.Aux[CR, PR, SOut],
+        align: Align[SOut, PR]): P = {
+        pGen.from(align(selectAll(cGen.to(c))))
+      }
+    }
+    def structuralUpcast[P] = new StructuralUpcast[P]
+
+    final case class Parent[T](value: T)
+    final case class Child[T](value: T, extra: Int)
+    val c = Child("hello", 3)
+    val p = structuralUpcast[Parent[String]](c)
+
+    assert(p.value == c.value)
 
   }
 
