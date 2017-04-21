@@ -91,7 +91,7 @@ of shapeless. It then drops you immediately into a REPL session,
 Loading...
 Welcome to the Ammonite Repl 0.8.2
 (Scala 2.11.8 Java 1.8.0_102)
-@ 23 :: "foo" :: true :: HNil 
+@ 23 :: "foo" :: true :: HNil
 res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
 @ Bye!
 %
@@ -248,6 +248,7 @@ cross-builds for 2.10.6 and 2.11.8.
 + Filipe Nepomuceno <filinep@gmail.com>
 + Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
++ Georgi Krastev <joro.kr.21@gmail.com> [@Joro_Kr](https://twitter.com/joro_kr)
 + Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
