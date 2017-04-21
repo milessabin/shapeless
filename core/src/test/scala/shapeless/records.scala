@@ -310,7 +310,7 @@ class RecordTests {
   def testMergeWith {
     object mergeField extends Poly2 {
       implicit def xor = at[Boolean, Boolean] { _ ^ _ }
-      implicit def makePair = at[Int, String] { _.toDouble + _.toDouble }
+      implicit def toDouble = at[Int, String] { _.toDouble + _.toDouble }
     }
 
     {
