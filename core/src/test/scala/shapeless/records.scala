@@ -307,6 +307,34 @@ class RecordTests {
   }
 
   @Test
+  def testMergeWith {
+    object mergeField extends Poly2 {
+      implicit def xor = at[Boolean, Boolean] { _ ^ _ }
+      implicit def makePair = at[Int, String] { _.toDouble + _.toDouble }
+    }
+
+    {
+      val r1 = 'c ->> true :: HNil
+      val r2 = 'c ->> false :: HNil
+      val rExp = 'c ->> true :: HNil
+
+      val rm = r1.mergeWith(r2)(mergeField)
+      typed[Record.`'c -> Boolean`.T](rm)
+      assertEquals(rExp, rm)
+    }
+
+    {
+      val r1 = 'a ->> 23 :: 'b ->> "foo" :: 'c ->> true :: HNil
+      val r2 = 'c ->> false :: 'a ->> "13" :: HNil
+      val rExp = 'a ->> 36.0 :: 'b ->> "foo" :: 'c ->> true :: HNil
+
+      val rm = r1.mergeWith(r2)(mergeField)
+      typed[Record.`'a -> Double, 'b -> String, 'c -> Boolean`.T](rm)
+      assertEquals(rExp, rm)
+    }
+  }
+
+  @Test
   def testConcatenate {
     val r1 =
       (intField1    ->>    23) ::
