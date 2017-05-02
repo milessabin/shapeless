@@ -16,8 +16,8 @@ lazy val scoverageSettings = Seq(
 
 lazy val buildSettings = Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.1",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
+  scalaVersion := "2.12.2",
+  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.2", "2.13.0-M1")
 )
 
 addCommandAlias("root", ";project root")
@@ -154,7 +154,7 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6")
         case _ => Seq()
       }
     }
@@ -231,30 +231,33 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
-    val previousVersion = if(scalaVersion.value == "2.12.1") "2.3.2" else "2.3.0"
-    val previousSJSVersion = "0.6.7"
-    val previousSJSBinaryVersion =
-      ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
-    val previousBinaryCrossVersion =
-      CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
-    val scalaV = scalaVersion.value
-    val scalaBinaryV = scalaBinaryVersion.value
-    val thisProjectID = projectID.value
-    val previousCrossVersion = thisProjectID.crossVersion match {
-      case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
-      case crossVersion               => crossVersion
+    if(scalaVersion.value == "2.13.0-M1") Set()
+    else {
+      val previousVersion = if(scalaVersion.value == "2.12.2") "2.3.2" else "2.3.0"
+      val previousSJSVersion = "0.6.7"
+      val previousSJSBinaryVersion =
+        ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
+      val previousBinaryCrossVersion =
+        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+      val scalaV = scalaVersion.value
+      val scalaBinaryV = scalaBinaryVersion.value
+      val thisProjectID = projectID.value
+      val previousCrossVersion = thisProjectID.crossVersion match {
+        case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
+        case crossVersion               => crossVersion
+      }
+
+      // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
+      // artifact we're looking for has 0.6.6 (for example).
+      val prevExtraAttributes =
+        thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
+      val prevProjectID =
+        (thisProjectID.organization % thisProjectID.name % previousVersion)
+          .cross(previousCrossVersion)
+          .extra(prevExtraAttributes.toSeq: _*)
+
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
     }
-
-    // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
-    // artifact we're looking for has 0.6.6 (for example).
-    val prevExtraAttributes =
-      thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
-    val prevProjectID =
-      (thisProjectID.organization % thisProjectID.name % previousVersion)
-        .cross(previousCrossVersion)
-        .extra(prevExtraAttributes.toSeq: _*)
-
-    Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
   },
 
   mimaBinaryIssueFilters ++= {
