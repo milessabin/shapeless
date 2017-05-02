@@ -26,7 +26,8 @@ project isn't listed yet, please add it.
 The [feature overview for shapeless-2.0.0][features200] provides a very incomplete introduction to shapeless.
 Additional information can be found in subsequent [release notes][relnotes220]. If you are upgrading from
 shapeless-2.0.0 you will find the [migration guide][migration210] useful. We're not satisfied with the current state
-of the documentation and would love help in improving it.
+of the documentation and would love help in improving it. You can find an excellent guide to Shapeless here:
+[The Type Astronaut's Guide to Shapeless](https://github.com/underscoreio/shapeless-guide).
 
 shapeless is part of the [Typelevel][typelevel] family of projects. It is an Open Source project under the Apache
 License v2, hosted on [github][source]. Binary artefacts are published to the
@@ -81,18 +82,19 @@ OSS Snapshot repository.
 ### Try shapeless with an Ammonite instant REPL
 
 The quickest way to get to a REPL prompt with the latest version of shapeless on the class path is to run the
-provided ["try shapeless"][try-shapeless] script. This downloads and installs [coursier][coursier] and uses it to
-fetch the [Ammonite][ammonite] REPL and the latest version of shapeless and drops you immediately into a REPL session
-to play around with,
+provided ["try shapeless"][try-shapeless] script, which has no dependencies other than an installed JDK. This script
+downloads and installs [coursier][coursier] and uses it to fetch the [Ammonite][ammonite] REPL and the latest version
+of shapeless. It then drops you immediately into a REPL session,
 
 ```text
-miles@frege:shapeless (master)$ scripts/try-shapeless.sh
+% curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 0.6.2
+Welcome to the Ammonite Repl 0.8.2
 (Scala 2.11.8 Java 1.8.0_102)
-@ 1 :: "foo" :: true :: HNil
-res0: Int :: String :: Boolean :: HNil = 1 :: foo :: true :: HNil
-@
+@ 23 :: "foo" :: true :: HNil 
+res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
+@ Bye!
+%
 ```
 
 [try-shapeless]: https://github.com/milessabin/shapeless/blob/master/scripts/try-shapeless.sh
@@ -114,11 +116,11 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x and for 2.12.0-M4. The main line of development for
-shapeless 2.3.2 is Scala 2.11.8 with Scala 2.10.x supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
+shapeless 2.3.2 is Scala 2.12.1. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.1"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.2"
@@ -135,6 +137,33 @@ libraryDependencies ++= Seq(
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
+
+### shapeless and Typelevel Scala
+
+[Typelevel Scala][tls] provides a [partial fix for SI-7046][si-7046-pr] which can present obstacles to using
+shapeless's `Generic` and `LabelledGeneric` for the sealed trait at the root of an ADT. If it appears that these two
+type classes are unable to find (all of) the subclasses of the root trait then please try using Typelevel Scala and
+see if it resolves the issue.
+
+To use Typelevel Scala you should,
+
++ Update your `project/build.properties` to require SBT 0.13.13 or later,
+
+  ```
+  sbt.version=0.13.13
+  ```
+
++ Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
+
+  ```
+  scalaOrganization := "org.typelevel"
+  ```
+
+If this does resolve the problem, please lend your support to the [pull request][si-7046-pr] being merged in Lightbend
+Scala.
+
+[tls]: https://github.com/typelevel/scala
+[si-7046-pr]: https://github.com/scala/scala/pull/5284
 
 ### shapeless-2.3.2 with Maven
 
@@ -178,18 +207,6 @@ If you are using Scala 2.10.x, you should also add the macro paradise plugin to 
 </plugins>
 ```
 
-### Avoid SBT 0.13.6
-
-Please be aware that SBT 0.13.6 has an [issue][namehashing] related to its name hashing feature which when compiling
-with shapeless might cause SBT to loop indefinitely consuming all heap. If possible move to a more recent version of
-SBT. If you must use SBT 0.13.6 a workaround is to disable name hashing by adding,
-
-```scala
-incOptions := incOptions.value.withNameHashing(false)
-```
-
-to your settings.
-
 ### Older releases
 
 Please use a current release if possible. If unavoidable, you can find [usage information for older
@@ -199,8 +216,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.11 or later, and its master branch is built with Scala 2.11.8 by default but also
-cross-builds for 2.10.6 and 2.12.x.
+shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.1 by default but also
+cross-builds for 2.10.6 and 2.11.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
