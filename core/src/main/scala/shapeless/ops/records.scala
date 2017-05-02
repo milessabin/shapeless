@@ -192,6 +192,53 @@ package record {
   }
 
   /**
+    * Type class support record merging with a callback function.
+    *
+    * @author Yang Bo
+    */
+  trait MergeWith[L <: HList, M <: HList, F] extends DepFn2[L, M] with Serializable { type Out <: HList }
+
+  trait LowPriorityMergeWith {
+    type Aux[L <: HList, M <: HList, F, Out0 <: HList] = MergeWith[L, M, F] { type Out = Out0 }
+
+    implicit def hlistMergeWith1[K, V, T <: HList, M <: HList, F]
+    (implicit
+      mt : MergeWith[T, M, F],
+      lacksKey: LacksKey[M, K]
+    ): Aux[FieldType[K, V] :: T, M, F, FieldType[K, V] :: mt.Out] =
+      new MergeWith[FieldType[K, V] :: T, M, F] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = l.head :: mt(l.tail, m)
+      }
+  }
+
+  object MergeWith extends LowPriorityMergeWith {
+    def apply[L <: HList, M <: HList, F](implicit mergeWith: MergeWith[L, M, F]): Aux[L, M, F, mergeWith.Out] = mergeWith
+
+    implicit def hnilMergeWith[M <: HList, F]: Aux[HNil, M, F, M] =
+      new MergeWith[HNil, M, F] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    implicit def hlistMergeWith2[K, V0, V1, V, T <: HList, M <: HList, MT <: HList, F, Out0 <: HList]
+    (implicit
+      rm: Remover.Aux[M, K, (V1, MT)],
+      mt: MergeWith.Aux[T, MT, F, Out0],
+      callback: PolyDefns.Case2.Aux[F, V0, V1, V]
+    ): Aux[FieldType[K, V0] :: T, M, F, FieldType[K, V] :: Out0] = {
+      new MergeWith[FieldType[K, V0] :: T, M, F] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V0] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](callback(l.head: V0, mv))
+          up :: mt(l.tail, mr)
+        }
+      }
+    }
+  }
+
+  /**
    * Type class supporting modification of a record field by given function.
    *
    * @author Joni Freeman
