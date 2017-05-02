@@ -1355,10 +1355,56 @@ object coproduct {
   trait EitherToCoproductLowPrio {
     implicit def baseEitherToCoproduct[L, R]: EitherToCoproduct.Aux[L, R, L :+: R :+: CNil] = new EitherToCoproduct[L, R] {
       type Out = L :+: R :+: CNil
+
       def apply(t: Either[L, R]): L :+: R :+: CNil = t match {
         case Left(l) => Inl(l)
         case Right(r) => Coproduct[L :+: R :+: CNil](r)
       }
     }
+  }
+
+  /**
+    * Type class supporting the injection of runtime values of type `Any` in `Coproduct`.
+    *
+    * @author Juan José Vázquez Delgado
+    */
+  trait RuntimeInject[C <: Coproduct] extends Serializable {
+    def apply(x: Any): Option[C]
+  }
+
+  object RuntimeInject {
+    def apply[C <: Coproduct](implicit rInject: RuntimeInject[C]): RuntimeInject[C] = rInject
+
+    implicit def coproductRuntimeInject[H, T <: Coproduct](
+        implicit rinjectH: RuntimeInject[Inl[H, T]],
+        rinjectT: RuntimeInject[Inr[H, T]]): RuntimeInject[H :+: T] =
+      new RuntimeInject[H :+: T] {
+        def apply(x: Any): Option[H :+: T] = {
+          rinjectH(x) orElse rinjectT(x)
+        }
+      }
+
+    implicit val cnilRuntimeInject: RuntimeInject[CNil] =
+      new RuntimeInject[CNil] {
+        def apply(x: Any): Option[CNil] = None
+      }
+
+    implicit def inlRuntimeInject[H, T <: Coproduct](
+        implicit castH: Typeable[H]): RuntimeInject[Inl[H, T]] =
+      new RuntimeInject[Inl[H, T]] {
+        def apply(x: Any): Option[Inl[H, T]] = {
+          if (x == null) None
+          else castH.cast(x).map(Inl(_))
+        }
+      }
+
+    implicit def inrRuntimeInject[H, T <: Coproduct](
+        implicit rinjectT: RuntimeInject[T]): RuntimeInject[Inr[H, T]] =
+      new RuntimeInject[Inr[H, T]] {
+        def apply(x: Any): Option[Inr[H, T]] = {
+          if (x == null) None
+          else rinjectT(x).map(Inr(_))
+        }
+      }
   }
 }

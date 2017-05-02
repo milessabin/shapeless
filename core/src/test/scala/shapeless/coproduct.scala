@@ -404,7 +404,7 @@ class CoproductTests {
     val foo3ZippedSel2 = foo3Zipped.select[(String, Double)]
     assertTypedEquals[Option[(String, Double)]](None, foo3ZippedSel2)
     val foo3ZippedSel3 = foo3Zipped.select[(Boolean, Double)]
-    assertTypedEquals[Option[(Boolean, Double)]](Some((true, 3.14d)), foo3ZippedSel3)   
+    assertTypedEquals[Option[(Boolean, Double)]](Some((true, 3.14d)), foo3ZippedSel3)
   }
 
   @Test
@@ -1923,6 +1923,19 @@ class CoproductTests {
     assertEquals(es.toCoproduct.toEither, es)
     assertEquals(eb.toCoproduct.toEither, eb)
     assertEquals(ed.toCoproduct.toEither, ed)
+  }
+
+  @Test
+  def runtimeInject = {
+    val foo1 = Coproduct.runtimeInject[ISB](23: Any)
+    val foo2 = Coproduct.runtimeInject[ISB]("foo": Any)
+    val foo3 = Coproduct.runtimeInject[ISB](true: Any)
+    val foo4 = Coproduct.runtimeInject[ISB](1.345: Any)
+
+    assertTypedEquals[Option[ISB]](Option(Inl(23)), foo1)
+    assertTypedEquals[Option[ISB]](Option(Inr(Inl("foo"))), foo2)
+    assertTypedEquals[Option[ISB]](Option(Inr(Inr(Inl(true)))), foo3)
+    assertTypedEquals[Option[ISB]](Option.empty[ISB], foo4)
   }
 }
 

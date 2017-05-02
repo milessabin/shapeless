@@ -262,6 +262,7 @@ cross-builds for 2.10.6 and 2.11.8.
 + Jolse Maginnis jolse.maginnis@pearson.com [@doolse2](https://twitter.com/doolse2)
 + Joni Freeman <joni.freeman@ri.fi> [@jonifreeman](https://twitter.com/jonifreeman)
 + Joseph Price <josephprice@iheartmedia.com>
++ Juan José Vázquez Delgado <juanjo.vazquez.delgado@tecsisa.com> [@juanjovazquez](https://twitter.com/juanjovazquez)
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
 + Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
