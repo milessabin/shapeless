@@ -44,6 +44,7 @@ package object shapeless {
   implicit def neqAmbig1[A] : A =:!= A = unexpected
   implicit def neqAmbig2[A] : A =:!= A = unexpected
 
+  @scala.annotation.implicitNotFound("${A} must not be a subtype of ${B}")
   trait <:!<[A, B] extends Serializable
 
   implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
