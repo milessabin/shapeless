@@ -11,3 +11,5 @@ addSbtPlugin("com.jsuereth"                      % "sbt-pgp"               % "1.
 addSbtPlugin("org.xerial.sbt"                    % "sbt-sonatype"          % "1.1")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings"      % "0.2.2")
 addSbtPlugin("org.scoverage"                     % "sbt-scoverage"         % "1.5.0")
+addSbtPlugin("org.scala-native"                  % "sbt-scala-native"      % "0.2.1")
+addSbtPlugin("org.scala-native"                  % "sbt-scalajs-crossproject" % "0.1.0")
