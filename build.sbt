@@ -8,17 +8,11 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
-lazy val scoverageSettings = Seq(
-  coverageMinimum := 60,
-  coverageFailOnMinimum := false,
-  coverageExcludedFiles := ".*/src/test/.*"
-)
-
-lazy val buildSettings = Seq(
+inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.12.2",
   crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.2", "2.13.0-M1")
-)
+))
 
 addCommandAlias("root", ";project root")
 addCommandAlias("core", ";project coreJVM")
@@ -31,6 +25,12 @@ addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;cor
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("releaseAll", ";root;release skip-tests")
+
+lazy val scoverageSettings = Seq(
+  coverageMinimum := 60,
+  coverageFailOnMinimum := false,
+  coverageExcludedFiles := ".*/src/test/.*"
+)
 
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
@@ -88,7 +88,7 @@ lazy val commonJvmSettings = Seq(
   coverageExcludedPackages := "shapeless.examples.*"
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
+lazy val coreSettings = commonSettings ++ publishSettings ++
   releaseSettings ++ scoverageSettings
 
 lazy val root = project.in(file("."))
