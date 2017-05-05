@@ -552,17 +552,11 @@ trait CaseClassMacros extends ReprTypes {
         Ident(arg)
       case PolyType(params, body) if params.head.asType.toType =:= param =>
         appliedTypTree1(body, param, arg)
-      case t @ TypeRef(pre, sym, List()) if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
-        AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
       case TypeRef(pre, sym, List()) =>
         mkAttributedRef(pre, sym)
       case TypeRef(pre, sym, args) =>
         val argTrees = args.map(appliedTypTree1(_, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
-      case t if t.takesTypeArgs =>
-        val argTrees = t.typeParams.map(sym => appliedTypTree1(sym.asType.toType, param, arg))
-        AppliedTypeTree(mkAttributedRef(tpe.typeConstructor), argTrees)
       case t =>
         tq"$tpe"
     }

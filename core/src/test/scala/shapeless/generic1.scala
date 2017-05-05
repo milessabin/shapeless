@@ -588,6 +588,8 @@ object SplitTestDefns {
   object Dummy1 {
     implicit def mkDummy1[F[_]]: Dummy1[F] = new Dummy1[F] {}
   }
+
+  trait Kleisli[F[_], A, B] extends (A => F[B])
 }
 
 class SplitTests {
@@ -666,5 +668,7 @@ class SplitTests {
     illTyped("""
     Split1[CCons1, Dummy1, Dummy1]
     """)
+
+    Split1[({ type λ[t] = Kleisli[Id, String, Option[t]] })#λ, Dummy1, Dummy1]
   }
 }
