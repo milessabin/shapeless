@@ -109,6 +109,13 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def deepExtract[E <: HList](implicit extractor: Extractor[L, E, Deep]): E = extractor(l)
 
   /**
+    * Returns the union of this record and another record using the provided `f` to combine the values of fields which are present in both.
+    *
+    * The duplicated fields will be merged with `f`.
+    */
+  def mergeWith[M <: HList](m: M)(f: Poly)(implicit merger: MergeWith[L, M, f.type]): merger.Out = merger(l, m)
+
+  /**
    * Rename the field associated with the singleton typed key oldKey. Only available if this
    * record has a field with keyType equal to the singleton type oldKey.T.
    */

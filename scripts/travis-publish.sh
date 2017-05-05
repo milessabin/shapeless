@@ -16,7 +16,7 @@ PUBLISH=publishLocal
 fi
 
 if [[ "$TRAVIS_SCALA_VERSION" == 2.12.* ]]; then
-    ${SBT} -Dsbt.profile="2.12.x" clean validate ${PUBLISH}
-else
     eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
+else
+    ${SBT} clean validate ${PUBLISH}
 fi
