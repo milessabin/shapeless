@@ -149,39 +149,35 @@ package record {
     }
   }
 
+  sealed trait TraversalMode
+  trait Deep extends TraversalMode
+  trait Shallow extends TraversalMode
+
   /**
    * Type class support record merging.
    *
    * @author Miles Sabin
    */
-  trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
+  trait Merger[L <: HList, M <: HList, TM <: TraversalMode] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
   trait LowPriorityMerger {
-    type Aux[L <: HList, M <: HList, Out0 <: HList] = Merger[L, M] { type Out = Out0 }
+    type Aux[L <: HList, M <: HList, T <: TraversalMode, Out0 <: HList] = Merger[L, M, T] { type Out = Out0 }
 
-    implicit def hlistMerger1[H, T <: HList, M <: HList]
-      (implicit mt : Merger[T, M]): Aux[H :: T, M, H :: mt.Out] =
-        new Merger[H :: T, M] {
+    implicit def hlistMerger1[H, T <: HList, M <: HList,  TM <: TraversalMode]
+      (implicit mt : Merger[T, M, TM]): Aux[H :: T, M, TM, H :: mt.Out] =
+        new Merger[H :: T, M, TM] {
           type Out = H :: mt.Out
           def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
         }
   }
 
-  object Merger extends LowPriorityMerger {
-    def apply[L <: HList, M <: HList](implicit merger: Merger[L, M]): Aux[L, M, merger.Out] = merger
-
-    implicit def hnilMerger[M <: HList]: Aux[HNil, M, M] =
-      new Merger[HNil, M] {
-        type Out = M
-        def apply(l: HNil, m: M): Out = m
-      }
-
-    implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
-      (implicit
-        rm: Remover.Aux[M, K, (V, MT)],
-        mt: Merger[T, MT]
-      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
-      new Merger[FieldType[K, V] :: T, M] {
+  trait LowPriorityMerger0 extends LowPriorityMerger{
+    implicit def hlistMerger2[K, V, T <: HList, M <: HList, MR <: HList, TM <: TraversalMode]
+    (implicit
+      rm: Remover.Aux[M, K, (V, MR)],
+      mt: Merger[T, MR, TM]
+    ): Aux[FieldType[K, V] :: T, M, TM, FieldType[K, V] :: mt.Out] =
+      new Merger[FieldType[K, V] :: T, M, TM] {
         type Out = FieldType[K, V] :: mt.Out
         def apply(l: FieldType[K, V] :: T, m: M): Out = {
           val (mv, mr) = rm(m)
@@ -189,6 +185,76 @@ package record {
           up :: mt(l.tail, mr)
         }
       }
+  }
+
+  object Merger extends LowPriorityMerger0 {
+
+    import shapeless.ops.record
+
+    def apply[L <: HList, M <: HList, TM <: TraversalMode](implicit merger: Merger[L, M, TM]): Aux[L, M, TM, merger.Out] = merger
+
+    implicit def hnilMerger[M <: HList, TM <: TraversalMode]: Aux[HNil, M, TM, M] =
+      new Merger[HNil, M, TM] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    implicit def deep[K, V <: HList, T <: HList, M <: HList, V1 <: HList, MT <: HList,  MO1 <: HList, MO2 <: HList](
+      implicit
+      rm: Remover.Aux[M, K, (V1, MT)],
+      m1: Merger.Aux[V, V1, record.Deep, MO1],
+      m2: Merger.Aux[T, MT, record.Deep, MO2]
+    ): Aux[FieldType[K, V] :: T, M, record.Deep, MO1 :: MO2] = new Merger[FieldType[K, V] :: T, M, record.Deep] {
+      type Out = MO1 :: MO2
+      def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
+        val (rh, rt) = rm(r2)
+        m1(r1.head, rh) :: m2(r1.tail, rt)
+      }
+    }
+  }
+
+  /**
+    * Type class supporting extraction of super-record from sub-record (witnesses depth/width subtype relation).
+    *
+    * @author Ievgen Garkusha
+    */
+  trait Extractor[L <: HList, E <: HList, T] extends Function1[L, E] with Serializable
+
+  trait LowExtractor {
+    implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList, TM <: TraversalMode](
+      implicit
+      r: Remover.Aux[L, K, (V1, LR)],
+      ev: V1 <:< V,
+      ds: Extractor[LR, ET, TM]
+    ): Extractor[L, FieldType[K, V] :: ET, TM] = new Extractor[L, FieldType[K, V] :: ET, TM] {
+      def apply(c: L): FieldType[K, V] :: ET = {
+        val (h, t) = r(c)
+        field[K](ev(h)) :: ds(t)
+      }
+    }
+  }
+
+  object Extractor extends LowExtractor {
+
+    import shapeless.ops.record
+
+    def apply[L <: HList, E <: HList, TM <: TraversalMode](implicit extractor: Extractor[L, E, TM]): Extractor[L, E, TM] = extractor
+
+    implicit def hnil[L <: HList, E <: HList, T <: TraversalMode](implicit ev: HNil =:= E): Extractor[L, E, T] = new Extractor[L, E, T] {
+      def apply(c: L): E = HNil
+    }
+
+    implicit def deep[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList](
+      implicit
+      r: Remover.Aux[L, K, (V1, LR)],
+      ds1: Extractor[V1, V, record.Deep],
+      ds2: Extractor[LR, ET, record.Deep]
+    ): Extractor[L, FieldType[K, V] :: ET, record.Deep] = new Extractor[L, FieldType[K, V] :: ET, record.Deep] {
+      def apply(c: L): FieldType[K, V] :: ET = {
+        val (h, t) = r(c)
+        field[K](ds1(h)) :: ds2(t)
+      }
+    }
   }
 
   /**

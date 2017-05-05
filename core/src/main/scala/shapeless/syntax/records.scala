@@ -89,9 +89,24 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def -[V, Out <: HList](k: Witness)(implicit remover : Remover.Aux[L, k.T, (V, Out)]): Out = remover(l)._2
 
   /**
-   * Returns the union of this record and another record.
+   * Returns the shallow union of this record and another record.
    */
-  def merge[M <: HList](m: M)(implicit merger: Merger[L, M]): merger.Out = merger(l, m)
+  def merge[M <: HList](m: M)(implicit merger: Merger[L, M, Shallow]): merger.Out = merger(l, m)
+
+  /**
+    * Returns the deep union of this record and another record.
+    */
+  def deepMerge[M <: HList](m: M)(implicit merger: Merger[L, M, Deep]): merger.Out = merger(l, m)
+
+  /**
+    * Extracts super-record from sub-record according to width subtype relation
+    */
+  def extract[E <: HList](implicit extractor: Extractor[L, E, Shallow]): E = extractor(l)
+
+  /**
+    * Extracts super-record from sub-record according to depth subtype relation
+    */
+  def deepExtract[E <: HList](implicit extractor: Extractor[L, E, Deep]): E = extractor(l)
 
   /**
    * Rename the field associated with the singleton typed key oldKey. Only available if this
