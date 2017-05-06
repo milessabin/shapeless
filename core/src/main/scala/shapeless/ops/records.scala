@@ -189,8 +189,6 @@ package record {
 
   object Merger extends LowPriorityMerger0 {
 
-    import shapeless.ops.record
-
     def apply[L <: HList, M <: HList, TM <: TraversalMode](implicit merger: Merger[L, M, TM]): Aux[L, M, TM, merger.Out] = merger
 
     implicit def hnilMerger[M <: HList, TM <: TraversalMode]: Aux[HNil, M, TM, M] =
@@ -202,9 +200,9 @@ package record {
     implicit def deep[K, V <: HList, T <: HList, M <: HList, V1 <: HList, MT <: HList,  MO1 <: HList, MO2 <: HList](
       implicit
       rm: Remover.Aux[M, K, (V1, MT)],
-      m1: Merger.Aux[V, V1, record.Deep, MO1],
-      m2: Merger.Aux[T, MT, record.Deep, MO2]
-    ): Aux[FieldType[K, V] :: T, M, record.Deep, FieldType[K, MO1] :: MO2] = new Merger[FieldType[K, V] :: T, M, record.Deep] {
+      m1: Merger.Aux[V, V1, Deep, MO1],
+      m2: Merger.Aux[T, MT, Deep, MO2]
+    ): Aux[FieldType[K, V] :: T, M, Deep, FieldType[K, MO1] :: MO2] = new Merger[FieldType[K, V] :: T, M, Deep] {
       type Out = FieldType[K, MO1] :: MO2
       def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
         val (rh, rt) = rm(r2)
@@ -236,8 +234,6 @@ package record {
 
   object Extractor extends LowExtractor {
 
-    import shapeless.ops.record
-
     def apply[L <: HList, E <: HList, TM <: TraversalMode](implicit extractor: Extractor[L, E, TM]): Extractor[L, E, TM] = extractor
 
     implicit def hnil[L <: HList, E <: HList, T <: TraversalMode](implicit ev: HNil =:= E): Extractor[L, E, T] = new Extractor[L, E, T] {
@@ -247,9 +243,9 @@ package record {
     implicit def deep[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList](
       implicit
       r: Remover.Aux[L, K, (V1, LR)],
-      ds1: Extractor[V1, V, record.Deep],
-      ds2: Extractor[LR, ET, record.Deep]
-    ): Extractor[L, FieldType[K, V] :: ET, record.Deep] = new Extractor[L, FieldType[K, V] :: ET, record.Deep] {
+      ds1: Extractor[V1, V, Deep],
+      ds2: Extractor[LR, ET, Deep]
+    ): Extractor[L, FieldType[K, V] :: ET, Deep] = new Extractor[L, FieldType[K, V] :: ET, Deep] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
         field[K](ds1(h)) :: ds2(t)
