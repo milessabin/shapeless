@@ -98,7 +98,7 @@ object hlist {
 
     implicit def hnilComapped[F[_]]: Aux[HNil, F, HNil] = new Comapped[HNil, F] { type Out = HNil }
     
-    implicit def hlistComapped[FH, FT <: HList, F[_], H, TCM](
+    implicit def hlistComapped[FH, FT <: HList, F[_], H, TCM <: HList](
         implicit mt: Comapped.Aux[FT, F, TCM],
         constraint: FH <:< F[H]): Aux[FH :: FT, F, H :: TCM] =
       new Comapped[FH :: FT, F] { type Out = H :: TCM }
