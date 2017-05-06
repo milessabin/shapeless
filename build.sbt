@@ -1,12 +1,14 @@
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.ScalaJSCrossVersion
-import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
 import ReleaseTransformations._
 
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
+
+import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
+import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
@@ -97,15 +99,24 @@ lazy val root = project.in(file("."))
   .settings(coreSettings:_*)
   .settings(noPublishSettings)
 
-lazy val CrossTypeMixed: CrossType = new CrossType {
+lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
     crossBase / projectType
+
+  override def projectDir(crossBase: File, projectType: sbtcrossproject.Platform) = {
+    val dir = projectType match {
+      case JVMPlatform => "jvm"
+      case JSPlatform => "js"
+      case NativePlatform => "native"
+    }
+    crossBase / dir
+  }
 
   def sharedSrcDir(projectBase: File, conf: String): Option[File] =
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
 
-lazy val core = crossProject.crossType(CrossTypeMixed)
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
@@ -121,8 +132,9 @@ lazy val core = crossProject.crossType(CrossTypeMixed)
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
+lazy val coreNative = core.native
 
-lazy val scratch = crossProject.crossType(CrossType.Pure)
+lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "scratch")
@@ -133,6 +145,7 @@ lazy val scratch = crossProject.crossType(CrossType.Pure)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
+lazy val scratchNative = scratch.native
 
 lazy val runAll = TaskKey[Unit]("runAll")
 
@@ -146,7 +159,7 @@ def runAllIn(config: Configuration): Setting[Task[Unit]] = {
   }
 }
 
-lazy val examples = crossProject.crossType(CrossType.Pure)
+lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
@@ -164,9 +177,44 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .nativeSettings(
+    sources in Compile ~= {
+      _.filterNot(_.getName == "sexp.scala")
+    }
+  )
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
+lazy val examplesNative = examples.native
+
+lazy val nativeTest = project
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    noPublishSettings,
+    sourceGenerators in Compile += Def.task {
+      val exclude = List(
+        "StagedTypeClassExample", // scala-reflect
+        "CombinatorTesting", // scala-parser-combinators
+        "ALaCacheDemo" // java.util.WeakHashMap, java.util.logging.Logger
+      )
+      val classNames = (discoveredMainClasses in Compile in examplesNative).value.filterNot{
+        c => exclude.exists(c.contains)
+      }.sorted
+      val src = s"""package shapeless
+      |
+      |object NativeMain {
+      |  def main(args: Array[String]): Unit = {
+      |${classNames.map("    " + _ + ".main(args)").mkString("\n")}
+      |  }
+      |}
+      |""".stripMargin
+      val f = (sourceManaged in Compile).value / "shapeless" / "NativeMain.scala"
+      IO.write(f, src)
+      f :: Nil
+    }.taskValue
+  ).dependsOn(
+    examplesNative
+  )
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
@@ -288,7 +336,7 @@ def buildInfoSetup(crossProject: CrossProject): CrossProject = {
     buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
     buildInfoOptions += BuildInfoOption.BuildTime
   )
-  crossProject jvmConfigure transform jsConfigure transform
+  crossProject jvmConfigure transform jsConfigure transform nativeConfigure transform
 }
 
 lazy val coreOsgiSettings = osgiSettings ++ Seq(
@@ -302,6 +350,8 @@ lazy val tagName = Def.setting{
   s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 }
 
+val Scala211 = "2.11.11"
+
 lazy val releaseSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
@@ -311,10 +361,14 @@ lazy val releaseSettings = Seq(
     inquireVersions,
     runClean,
     runTest,
+    releaseStepCommand(s"++${Scala211}"),
+    releaseStepCommand("nativeTest/run"),
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
     publishArtifacts,
+    releaseStepCommand(s"++${Scala211}"),
+    releaseStepCommand("coreNative/publishSigned"),
     setNextVersion,
     commitNextVersion,
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
