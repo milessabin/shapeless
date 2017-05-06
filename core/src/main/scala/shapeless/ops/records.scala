@@ -204,11 +204,11 @@ package record {
       rm: Remover.Aux[M, K, (V1, MT)],
       m1: Merger.Aux[V, V1, record.Deep, MO1],
       m2: Merger.Aux[T, MT, record.Deep, MO2]
-    ): Aux[FieldType[K, V] :: T, M, record.Deep, MO1 :: MO2] = new Merger[FieldType[K, V] :: T, M, record.Deep] {
-      type Out = MO1 :: MO2
+    ): Aux[FieldType[K, V] :: T, M, record.Deep, FieldType[K, MO1] :: MO2] = new Merger[FieldType[K, V] :: T, M, record.Deep] {
+      type Out = FieldType[K, MO1] :: MO2
       def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
         val (rh, rt) = rm(r2)
-        m1(r1.head, rh) :: m2(r1.tail, rt)
+        field[K](m1(r1.head, rh)) :: m2(r1.tail, rt)
       }
     }
   }

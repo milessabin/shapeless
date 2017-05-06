@@ -306,41 +306,59 @@ class RecordTests {
     assertEquals(rExp, rm)
   }
 
-//  @Test
-//  def testDeepMerge {
-//
-//    type I =  Record.`'x -> String, 'm -> String`.T
-//    type R3 = Record.`'d -> I, 'e -> Boolean, 'x -> String`.T
-//    type R4 = Record.`'d -> String, 'e -> Boolean, 'x -> Int, 'm -> Int`.T
-//    type R5 = Record.`'d -> String, 'd -> String, 'd -> String,`.T
-//
-//    val r3: R3 = Record(d = Record(x = "X1", m = "M"), e = true, x = "X")
-//    val r4: R4 = Record(d = "D", e = false, x = 2, m = 6)
-//    val r5: R5 = Record(d = "A", d = "B", d  = "C")
+  @Test
+  def testDeepMerge {
 
-//    assertTypedEquals[Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T](r4.merge(r3), r4.deepMerge(r3))
-//    assertEquals[Record.`'x -> String, 'm -> String`.T](r3.merge(r4), r3.deepMerge(r4))
-//    assertEquals(r3.merge(r5), r3.deepMerge(r5))
-//    assertEquals(r5.merge(r3), r5.deepMerge(r3))
+    val r3 = Record(d = Record(x = "X1", m = "M"), e = true, x = "X")
+    val r4 = Record(d = "D", e = false, x = 2, m = 6)
+    val r5 = Record(d = "A", d = "B", d  = "C")
 
-//    //nested
-//    val inner1 = Record(d = "D", e = false)
-//    val inner2 = Record(d = 3, m = 2D)
-//    val outer1 = Record(d = 10, e = inner1, x = "boo")
-//    val outer2 = Record(x = "foo", d = -1, e = inner2)
-//
-//    val innerMerged12 = inner1.merge(inner2)
-//    val innerMerged21 = inner2.merge(inner1)
-//    outer1.deepMerge(outer2) shouldBe Record(d = -1, e = innerMerged12,  x = "foo")
-//    outer2.deepMerge(outer1) shouldBe Record(x = "boo", d = 10, e = innerMerged21)
-//
-//    //complete intersection
-//    val inner11 = Record(d = "D2", e = true)
-//    val outer11 = Record(d = 11, e = inner11, x = "bar")
-//    outer1.deepMerge(outer11) shouldBe outer11
-//    outer11.deepMerge(outer1) shouldBe outer1
 
-//  }
+    assertTypedEquals(r4.merge(r3))(r4.deepMerge(r3))
+    assertTypedEquals(r3.merge(r4))(r3.deepMerge(r4))
+    assertTypedEquals(r3.merge(r5))(r3.deepMerge(r5))
+    assertTypedEquals(r5.merge(r3))(r5.deepMerge(r3))
+
+    //nested
+    val inner1 = Record(d = "D", e = false)
+    val inner2 = Record(d = 3, m = 2D)
+    val outer1 = Record(d = 10, e = inner1, x = "boo")
+    val outer2 = Record(x = "foo", d = -1, e = inner2)
+
+    val innerMerged12 = inner1.merge(inner2)
+    val innerMerged21 = inner2.merge(inner1)
+
+    assertTypedEquals(outer1.deepMerge(outer2))(Record(d = -1, e = innerMerged12,  x = "foo"))
+    assertTypedEquals(outer2.deepMerge(outer1))(Record(x = "boo", d = 10, e = innerMerged21))
+
+    //complete intersection
+    val inner11 = Record(d = "D2", e = true)
+    val outer11 = Record(d = 11, e = inner11, x = "bar")
+    assertTypedEquals(outer1.deepMerge(outer11), outer11)
+    assertTypedEquals(outer11.deepMerge(outer1), outer1)
+  }
+
+  @Test
+  def testExtract {
+
+    val inner1 = Record(d = 3, m = 2D, x= "X")
+    val outer1 = Record(x = "foo", d = -1, e = inner1)
+
+    assertTypedEquals(outer1.extract[Record.`'x -> String, 'd -> Int`.T])(Record(x = "foo", d = -1))
+
+    type i = Record.`'x -> String, 'd -> Int`.T
+    assertTypedEquals(outer1.deepExtract[Record.`'e -> i, 'd -> Int`.T])(Record(e = Record(x = "X", d = 3), d = -1))
+
+    type ill1 = Record.`'d -> Int, 'z -> Int`.T
+    type ill2 = Record.`'x -> i`.T
+    type illIner = Record.`'m -> String, 'd -> Int`.T
+    type ill3 = Record.`'e -> illIner, 'd -> Int`.T
+
+
+    illTyped("outer1.extract[ill1]")
+    illTyped("outer1.deepExtract[ill2]")
+    illTyped("outer1.deepExtract[ill3]")
+  }
 
   @Test
   def testMergeWith {
