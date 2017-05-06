@@ -3375,4 +3375,13 @@ class HListTests {
 
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
+  
+  @Test
+  def testComapped = {
+    val g0 = Generic[(Int, String)]
+    val g1 = Generic[(Double, Boolean, Float)]
+    type HasRepr[A] = { type Repr = A }
+    val comapped = Comapped[g0.type :: g1.type :: HNil, HasRepr]
+    implicitly[((Int :: String :: HNil) :: (Double :: Boolean :: Float :: HNil) :: HNil) =:= comapped.Out]
+  }
 }
