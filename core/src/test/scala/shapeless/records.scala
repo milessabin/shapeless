@@ -328,14 +328,14 @@ class RecordTests {
     val innerMerged12 = inner1.merge(inner2)
     val innerMerged21 = inner2.merge(inner1)
 
-    assertTypedEquals(outer1.deepMerge(outer2))(Record(d = -1, e = innerMerged12,  x = "foo"))
-    assertTypedEquals(outer2.deepMerge(outer1))(Record(x = "boo", d = 10, e = innerMerged21))
+    assertTypedEquals(Record(d = -1, e = innerMerged12,  x = "foo"))(outer1.deepMerge(outer2))
+    assertTypedEquals(Record(x = "boo", d = 10, e = innerMerged21))(outer2.deepMerge(outer1))
 
     //complete intersection
     val inner11 = Record(d = "D2", e = true)
     val outer11 = Record(d = 11, e = inner11, x = "bar")
-    assertTypedEquals(outer1.deepMerge(outer11), outer11)
-    assertTypedEquals(outer11.deepMerge(outer1), outer1)
+    assertTypedEquals(outer11)(outer1.deepMerge(outer11))
+    assertTypedEquals(outer1)(outer11.deepMerge(outer1))
   }
 
   @Test
@@ -344,10 +344,14 @@ class RecordTests {
     val inner1 = Record(d = 3, m = 2D, x= "X")
     val outer1 = Record(x = "foo", d = -1, e = inner1)
 
-    assertTypedEquals(outer1.extract[Record.`'x -> String, 'd -> Int`.T])(Record(x = "foo", d = -1))
+    assertTypedEquals(Record(x = "foo", d = -1))(outer1.extract[Record.`'x -> String, 'd -> Int`.T])
 
     type i = Record.`'x -> String, 'd -> Int`.T
-    assertTypedEquals(outer1.deepExtract[Record.`'e -> i, 'd -> Int`.T])(Record(e = Record(x = "X", d = 3), d = -1))
+    type i1 = Record.`'x -> Any, 'd -> Any`.T
+    val extRes = Record(e = Record(x = "X", d = 3), d = -1)
+    assertTypedEquals(extRes)(outer1.deepExtract[Record.`'e -> i, 'd -> Int`.T])
+    //covariance
+    assertEquals(extRes, outer1.deepExtract[Record.`'e -> i1, 'd -> Any`.T])
 
     type ill1 = Record.`'d -> Int, 'z -> Int`.T
     type ill2 = Record.`'x -> i`.T

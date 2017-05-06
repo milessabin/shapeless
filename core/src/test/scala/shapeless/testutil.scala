@@ -10,7 +10,7 @@ object testutil {
     */
   def assertTypedEquals[A](expected: A, actual: A): Unit = assertEquals(expected, actual)
 
-  def assertTypedEquals[T, T1](r1: T)(r2: T1)(implicit ev: T =:= T1) = assertEquals(r1, r1)
+  def assertTypedEquals[T, T1](expected: T)(actual: T1)(implicit ev: T =:= T1) = assertEquals(expected, actual)
 
   def assertTypedSame[A <: AnyRef](expected: A, actual: A): Unit = assertSame(expected, actual)
 }
