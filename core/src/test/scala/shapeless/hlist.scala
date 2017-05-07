@@ -3375,4 +3375,17 @@ class HListTests {
 
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
+
+  @Test
+  def testPartialComapped: Unit = {
+    val g0 = Generic[(Int, String)]
+    val g1 = Generic[(Double, Boolean, Float)]
+    type HasRepr[A] = { type Repr = A }
+    trait NoRepr // Should be filtered out
+    val partialComapped = PartialComapped[g0.type :: NoRepr :: g1.type :: HNil, HasRepr]
+    implicitly[((Int :: String :: HNil) :: (Double :: Boolean :: Float :: HNil) :: HNil) =:= partialComapped.Out]
+
+    val partialComappedId = PartialComapped[String :: Int :: Double :: HNil, Id]
+    implicitly[(String :: Int :: Double :: HNil) =:= partialComappedId.Out]
+  }
 }

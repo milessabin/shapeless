@@ -2990,4 +2990,36 @@ object hlist {
         def apply(l: HNil): Out = HNil
       }
   }
+  
+  /**
+   * Type class witnessing that the result of stripping type constructor `F` off each element of `HList` `L` is `Out`.
+   *
+   * The elements that do not conform `F` will be filtered out.
+   */
+  trait PartialComapped[L <: HList, F[_]] extends Serializable {
+    type Out <: HList
+  }
+
+  trait LowPriorityPartialComapped1 {
+    type Aux[L <: HList, F[_], Out0 <: HList] = PartialComapped[L, F] { type Out = Out0 }
+
+    implicit def fallbackHlistPartialComapped[FH, FT <: HList, F[_], TCM <: HList](
+        implicit mt: PartialComapped.Aux[FT, F, TCM]): Aux[FH :: FT, F, TCM] =
+      new PartialComapped[FH :: FT, F] { type Out = TCM }
+  }
+
+  trait LowPriorityPartialComapped0 extends LowPriorityPartialComapped1 {
+    implicit def hlistIdPartialComapped[L <: HList]: Aux[L, Id, L] = new PartialComapped[L, Id] { type Out = L }
+  }
+
+  object PartialComapped extends LowPriorityPartialComapped0 {
+    def apply[L <: HList, F[_]](implicit comapped: PartialComapped[L, F]): Aux[L, F, comapped.Out] = comapped
+
+    implicit def hnilPartialComapped[F[_]]: Aux[HNil, F, HNil] = new PartialComapped[HNil, F] { type Out = HNil }
+    
+    implicit def hlistPartialComapped[FH, FT <: HList, F[_], H, TCM <: HList](
+        implicit mt: PartialComapped.Aux[FT, F, TCM],
+        constraint: FH <:< F[H]): Aux[FH :: FT, F, H :: TCM] =
+      new PartialComapped[FH :: FT, F] { type Out = H :: TCM }
+  }
 }
