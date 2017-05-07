@@ -995,7 +995,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit p: Aux[L, U, LPrefix, LSuffix], e: H <:!< U
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
