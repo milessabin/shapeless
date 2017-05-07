@@ -967,7 +967,19 @@ object hlist {
     def filterNot(l: L): Suffix
   }
 
-  object Partition {
+  trait LowPriorityPartition { this: Partition.type =>
+    implicit def hlistPartition1[H, L <: HList, LPrefix <: HList, LSuffix <: HList](
+      implicit p: Aux[L, H, LPrefix, LSuffix]
+    ): Aux[H :: L, H, H :: LPrefix, LSuffix] = new Partition[H :: L, H] {
+      type Prefix = H :: LPrefix
+      type Suffix = LSuffix
+
+      def filter(l: H :: L): Prefix    = l.head :: p.filter(l.tail)
+      def filterNot(l: H :: L): Suffix = p.filterNot(l.tail)
+    }
+  }
+  
+  object Partition extends LowPriorityPartition {
     def apply[L <: HList, U]
       (implicit partition: Partition[L, U]): Aux[L, U, partition.Prefix, partition.Suffix] = partition
 
@@ -983,17 +995,7 @@ object hlist {
       def filter(l: HNil): HNil = HNil
       def filterNot(l: HNil): HNil = HNil
     }
-
-    implicit def hlistPartition1[H, L <: HList, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, H, LPrefix, LSuffix]
-    ): Aux[H :: L, H, H :: LPrefix, LSuffix] = new Partition[H :: L, H] {
-      type Prefix = H :: LPrefix
-      type Suffix = LSuffix
-
-      def filter(l: H :: L): Prefix    = l.head :: p.filter(l.tail)
-      def filterNot(l: H :: L): Suffix = p.filterNot(l.tail)
-    }
-
+    
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
       implicit p: Aux[L, U, LPrefix, LSuffix], e: H <:!< U
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
