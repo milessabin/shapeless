@@ -3000,16 +3000,12 @@ object hlist {
     type Out <: HList
   }
 
-  trait LowPriorityPartialComapped1 {
+  trait LowPriorityPartialComapped0 {
     type Aux[L <: HList, F[_], Out0 <: HList] = PartialComapped[L, F] { type Out = Out0 }
 
     implicit def fallbackHlistPartialComapped[FH, FT <: HList, F[_], TCM <: HList](
         implicit mt: PartialComapped.Aux[FT, F, TCM]): Aux[FH :: FT, F, TCM] =
       new PartialComapped[FH :: FT, F] { type Out = TCM }
-  }
-
-  trait LowPriorityPartialComapped0 extends LowPriorityPartialComapped1 {
-    implicit def hlistIdPartialComapped[L <: HList]: Aux[L, Id, L] = new PartialComapped[L, Id] { type Out = L }
   }
 
   object PartialComapped extends LowPriorityPartialComapped0 {
