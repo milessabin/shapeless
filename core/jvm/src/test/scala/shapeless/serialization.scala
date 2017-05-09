@@ -570,21 +570,21 @@ class SerializationTests {
     assertSerializable(Updater[R, FA])
     assertSerializable(Updater[R, FB])
 
-    assertSerializable(Merger[HNil, R, Shallow])
-    assertSerializable(Merger[R, HNil, Shallow])
-    assertSerializable(Merger[R, RM, Shallow])
-    assertSerializable(Merger[RM, R, Shallow])
+    assertSerializable(Merger[HNil, R])
+    assertSerializable(Merger[R, HNil])
+    assertSerializable(Merger[R, RM])
+    assertSerializable(Merger[RM, R])
 
-    assertSerializable(Merger[HNil, R, Deep])
-    assertSerializable(Merger[R, HNil, Deep])
-    assertSerializable(Merger[R, RM, Deep])
-    assertSerializable(Merger[RM, R, Deep])
+    assertSerializable(DeepMerger[HNil, R])
+    assertSerializable(DeepMerger[R, HNil])
+    assertSerializable(DeepMerger[R, RM])
+    assertSerializable(DeepMerger[RM, R])
 
-    assertSerializable(Extractor[R, HNil, Shallow])
-    assertSerializable(Extractor[R, RM1, Shallow])
+    assertSerializable(Extractor[R, HNil])
+    assertSerializable(Extractor[R, RM1])
 
-    assertSerializable(Extractor[R, HNil, Deep])
-    assertSerializable(Extractor[R, RM1, Deep])
+    assertSerializable(DeepExtractor[R, HNil])
+    assertSerializable(DeepExtractor[R, RM1])
 
     assertSerializable(Modifier[R, KA, Int, Char])
     assertSerializable(Modifier[R, KB, String, Char])

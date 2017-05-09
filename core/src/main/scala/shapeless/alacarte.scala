@@ -22,7 +22,6 @@ import record._
 import ops.hlist.{ Length, Tupler }
 import ops.nat.ToInt
 import ops.record.Merger
-import shapeless.ops.record.Shallow
 
 trait CaseClassFacet {
   type C
@@ -108,7 +107,7 @@ trait PolymorphicEqualityFacet extends ProductISOFacet {
 trait CopyFacet extends CaseClassFacet {
   trait CopyOps {
     type LRepr <: HList
-    type CopyMerger[R <: HList] = Merger.Aux[LRepr, R, Shallow, LRepr]
+    type CopyMerger[R <: HList] = Merger.Aux[LRepr, R, LRepr]
 
     val lgen: LabelledGeneric.Aux[C, LRepr]
 
