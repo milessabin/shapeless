@@ -240,7 +240,8 @@ package record {
         rm: Remover.Aux[M, K, (V1, MT)],
         m1: DeepMerger.Aux[V, V1, MO1],
         m2: DeepMerger.Aux[T, MT, MO2]
-      ): Aux[FieldType[K, V] :: T, M, FieldType[K, MO1] :: MO2] = new DeepMerger[FieldType[K, V] :: T, M] {
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, MO1] :: MO2] =
+      new DeepMerger[FieldType[K, V] :: T, M] {
         type Out = FieldType[K, MO1] :: MO2
         def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
           val (rh, rt) = rm(r2)
@@ -269,7 +270,8 @@ package record {
        r: Remover.Aux[L, K, (V1, LR)],
        ev: V1 <:< V,
        ds: Extractor[LR, ET]
-    ): Extractor[L, FieldType[K, V] :: ET] = new Extractor[L, FieldType[K, V] :: ET] {
+    ): Extractor[L, FieldType[K, V] :: ET] =
+    new Extractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
         field[K](ev(h)) :: ds(t)
@@ -291,7 +293,8 @@ package record {
       r: Remover.Aux[L, K, (V1, LR)],
       ev: V1 <:< V,
       ds: DeepExtractor[LR, ET]
-    ): DeepExtractor[L, FieldType[K, V] :: ET] = new DeepExtractor[L, FieldType[K, V] :: ET] {
+    ): DeepExtractor[L, FieldType[K, V] :: ET] =
+    new DeepExtractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
         field[K](ev(h)) :: ds(t)
@@ -312,7 +315,8 @@ package record {
       r: Remover.Aux[L, K, (V1, LR)],
       ds1: DeepExtractor[V1, V],
       ds2: DeepExtractor[LR, ET]
-    ): DeepExtractor[L, FieldType[K, V] :: ET] = new DeepExtractor[L, FieldType[K, V] :: ET] {
+    ): DeepExtractor[L, FieldType[K, V] :: ET] =
+    new DeepExtractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
         field[K](ds1(h)) :: ds2(t)
