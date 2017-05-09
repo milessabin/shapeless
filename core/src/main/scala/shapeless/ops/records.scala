@@ -181,14 +181,14 @@ package record {
         rm: Remover.Aux[M, K, (V, MT)],
         mt: Merger[T, MT]
       ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
-        new Merger[FieldType[K, V] :: T, M] {
-          type Out = FieldType[K, V] :: mt.Out
-          def apply(l: FieldType[K, V] :: T, m: M): Out = {
-            val (mv, mr) = rm(m)
-            val up = field[K](mv)
-            up :: mt(l.tail, mr)
-          }
+      new Merger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](mv)
+          up :: mt(l.tail, mr)
         }
+      }
   }
 
   /**
@@ -215,14 +215,14 @@ package record {
         rm: Remover.Aux[M, K, (V, MR)],
         mt: DeepMerger[T, MR]
       ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
-        new DeepMerger[FieldType[K, V] :: T, M] {
-          type Out = FieldType[K, V] :: mt.Out
-          def apply(l: FieldType[K, V] :: T, m: M): Out = {
-            val (mv, mr) = rm(m)
-            val up = field[K](mv)
-            up :: mt(l.tail, mr)
-          }
+      new DeepMerger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](mv)
+          up :: mt(l.tail, mr)
         }
+      }
   }
 
   object DeepMerger extends LowPriorityDeepMerger0 {

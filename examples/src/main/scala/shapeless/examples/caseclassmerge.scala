@@ -17,7 +17,6 @@
 package shapeless.examples
 
 import shapeless._
-import shapeless.ops.record.Shallow
 
 object CaseClassMergeDemo extends App {
   import mergeSyntax._
@@ -52,7 +51,7 @@ object CaseClassMerge {
     (implicit
       tgen: LabelledGeneric.Aux[T, RT],
       ugen: LabelledGeneric.Aux[U, RU],
-      merger: Merger.Aux[RT, RU, Shallow, RT]
+      merger: Merger.Aux[RT, RU, RT]
     ): CaseClassMerge[T, U] =
     new CaseClassMerge[T, U] {
       def apply(t: T, u: U): T =
