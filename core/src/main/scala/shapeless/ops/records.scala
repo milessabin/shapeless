@@ -150,21 +150,21 @@ package record {
   }
 
   /**
-    * Type class support record merging.
-    *
-    * @author Miles Sabin
-    */
+   * Type class support record merging.
+   *
+   * @author Miles Sabin
+   */
   trait Merger[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
   trait LowPriorityMerger {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Merger[L, M] { type Out = Out0 }
 
     implicit def hlistMerger1[H, T <: HList, M <: HList]
-    (implicit mt : Merger[T, M]): Aux[H :: T, M, H :: mt.Out] =
-      new Merger[H :: T, M] {
-        type Out = H :: mt.Out
-        def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
-      }
+      (implicit mt : Merger[T, M]): Aux[H :: T, M, H :: mt.Out] =
+        new Merger[H :: T, M] {
+          type Out = H :: mt.Out
+          def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
+        }
   }
 
   object Merger extends LowPriorityMerger {
@@ -177,18 +177,18 @@ package record {
       }
 
     implicit def hlistMerger2[K, V, T <: HList, M <: HList, MT <: HList]
-    (implicit
-      rm: Remover.Aux[M, K, (V, MT)],
-      mt: Merger[T, MT]
-    ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
-      new Merger[FieldType[K, V] :: T, M] {
-        type Out = FieldType[K, V] :: mt.Out
-        def apply(l: FieldType[K, V] :: T, m: M): Out = {
-          val (mv, mr) = rm(m)
-          val up = field[K](mv)
-          up :: mt(l.tail, mr)
+      (implicit
+        rm: Remover.Aux[M, K, (V, MT)],
+        mt: Merger[T, MT]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
+        new Merger[FieldType[K, V] :: T, M] {
+          type Out = FieldType[K, V] :: mt.Out
+          def apply(l: FieldType[K, V] :: T, m: M): Out = {
+            val (mv, mr) = rm(m)
+            val up = field[K](mv)
+            up :: mt(l.tail, mr)
+          }
         }
-      }
   }
 
   /**
@@ -211,18 +211,18 @@ package record {
 
   trait LowPriorityDeepMerger0 extends LowPriorityDeepMerger{
     implicit def hlistMerger2[K, V, T <: HList, M <: HList, MR <: HList]
-    (implicit
-      rm: Remover.Aux[M, K, (V, MR)],
-      mt: DeepMerger[T, MR]
-    ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
-      new DeepMerger[FieldType[K, V] :: T, M] {
-        type Out = FieldType[K, V] :: mt.Out
-        def apply(l: FieldType[K, V] :: T, m: M): Out = {
-          val (mv, mr) = rm(m)
-          val up = field[K](mv)
-          up :: mt(l.tail, mr)
+      (implicit
+        rm: Remover.Aux[M, K, (V, MR)],
+        mt: DeepMerger[T, MR]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
+        new DeepMerger[FieldType[K, V] :: T, M] {
+          type Out = FieldType[K, V] :: mt.Out
+          def apply(l: FieldType[K, V] :: T, m: M): Out = {
+            val (mv, mr) = rm(m)
+            val up = field[K](mv)
+            up :: mt(l.tail, mr)
+          }
         }
-      }
   }
 
   object DeepMerger extends LowPriorityDeepMerger0 {
@@ -235,18 +235,18 @@ package record {
         def apply(l: HNil, m: M): Out = m
       }
 
-    implicit def hlistMerger3[K, V <: HList, T <: HList, M <: HList, V1 <: HList, MT <: HList,  MO1 <: HList, MO2 <: HList](
-      implicit
-      rm: Remover.Aux[M, K, (V1, MT)],
-      m1: DeepMerger.Aux[V, V1, MO1],
-      m2: DeepMerger.Aux[T, MT, MO2]
-    ): Aux[FieldType[K, V] :: T, M, FieldType[K, MO1] :: MO2] = new DeepMerger[FieldType[K, V] :: T, M] {
-      type Out = FieldType[K, MO1] :: MO2
-      def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
-        val (rh, rt) = rm(r2)
-        field[K](m1(r1.head, rh)) :: m2(r1.tail, rt)
+    implicit def hlistMerger3[K, V <: HList, T <: HList, M <: HList, V1 <: HList, MT <: HList,  MO1 <: HList, MO2 <: HList]
+      (implicit
+        rm: Remover.Aux[M, K, (V1, MT)],
+        m1: DeepMerger.Aux[V, V1, MO1],
+        m2: DeepMerger.Aux[T, MT, MO2]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, MO1] :: MO2] = new DeepMerger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, MO1] :: MO2
+        def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
+          val (rh, rt) = rm(r2)
+          field[K](m1(r1.head, rh)) :: m2(r1.tail, rt)
+        }
       }
-    }
   }
 
   /**
@@ -266,9 +266,9 @@ package record {
 
     implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList](
       implicit
-      r: Remover.Aux[L, K, (V1, LR)],
-      ev: V1 <:< V,
-      ds: Extractor[LR, ET]
+       r: Remover.Aux[L, K, (V1, LR)],
+       ev: V1 <:< V,
+       ds: Extractor[LR, ET]
     ): Extractor[L, FieldType[K, V] :: ET] = new Extractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
@@ -286,8 +286,8 @@ package record {
   trait DeepExtractor[L <: HList, E <: HList] extends Function1[L, E] with Serializable
 
   trait LowPriorityDeepExtractor {
-    implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList](
-      implicit
+    implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList]
+    (implicit
       r: Remover.Aux[L, K, (V1, LR)],
       ev: V1 <:< V,
       ds: DeepExtractor[LR, ET]
@@ -307,8 +307,8 @@ package record {
       def apply(c: L): E = HNil
     }
 
-    implicit def deep[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList](
-      implicit
+    implicit def deep[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList]
+    (implicit
       r: Remover.Aux[L, K, (V1, LR)],
       ds1: DeepExtractor[V1, V],
       ds2: DeepExtractor[LR, ET]
