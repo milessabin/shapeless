@@ -47,6 +47,9 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   def apply[T](implicit castT: Typeable[T]) = castT
 
+  // This is supported by type arguments on patterns, available in Typelevel Scala 4+
+  def unapply[T: Typeable](t: Any): Option[T] = t.cast[T]
+
   case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
     def cast(t: Any): Option[T] = {
       if(t != null && cB.isInstance(t)) Some(t.asInstanceOf[T]) else None
