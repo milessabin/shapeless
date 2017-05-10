@@ -251,25 +251,19 @@ package record {
   }
 
   /**
-    * Type class supporting extraction of super-record from sub-record (witnesses width subtype relation).
+    * Type class supporting extraction of super-record from sub-record (witnesses depth subtype relation).
     *
     * @author Ievgen Garkusha
     */
   trait Extractor[L <: HList, E <: HList] extends Function1[L, E] with Serializable
 
-  object Extractor {
-
-    def apply[L <: HList, E <: HList](implicit extractor: Extractor[L, E]): Extractor[L, E] = extractor
-
-    implicit def hnil[L <: HList, E <: HList](implicit ev: HNil =:= E): Extractor[L, E] = new Extractor[L, E] {
-      def apply(c: L): E = HNil
-    }
-
-    implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList](
-      implicit
-       r: Remover.Aux[L, K, (V1, LR)],
-       ev: V1 <:< V,
-       ds: Extractor[LR, ET]
+  trait LowPriorityExtractor {
+    implicit def extract[L <: HList, K, V, ET <: HList, V1, LR <: HList]
+    (implicit
+      ev0: L =:!= (FieldType[K, V] :: ET),
+      r: Remover.Aux[L, K, (V1, LR)],
+      ev: V1 <:< V,
+      ds: Extractor[LR, ET]
     ): Extractor[L, FieldType[K, V] :: ET] =
     new Extractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
@@ -277,46 +271,30 @@ package record {
         field[K](ev(h)) :: ds(t)
       }
     }
-
   }
 
-  /**
-    * Type class supporting extraction of super-record from sub-record (witnesses depth subtype relation).
-    *
-    * @author Ievgen Garkusha
-    */
-  trait DeepExtractor[L <: HList, E <: HList] extends Function1[L, E] with Serializable
+  object Extractor extends LowPriorityExtractor {
 
-  trait LowPriorityDeepExtractor {
-    implicit def shallow[L <: HList, K, V, ET <: HList, V1, LR <: HList]
-    (implicit
-      r: Remover.Aux[L, K, (V1, LR)],
-      ev: V1 <:< V,
-      ds: DeepExtractor[LR, ET]
-    ): DeepExtractor[L, FieldType[K, V] :: ET] =
-    new DeepExtractor[L, FieldType[K, V] :: ET] {
-      def apply(c: L): FieldType[K, V] :: ET = {
-        val (h, t) = r(c)
-        field[K](ev(h)) :: ds(t)
-      }
-    }
-  }
+    def apply[L <: HList, E <: HList](implicit extractor: Extractor[L, E]): Extractor[L, E] = extractor
 
-  object DeepExtractor extends LowPriorityDeepExtractor {
-
-    def apply[L <: HList, E <: HList](implicit extractor: DeepExtractor[L, E]): DeepExtractor[L, E] = extractor
-
-    implicit def hnil[L <: HList, E <: HList](implicit ev: HNil =:= E): DeepExtractor[L, E] = new DeepExtractor[L, E] {
+    implicit def hnil[L <: HList, E <: HList](implicit ev: HNil =:= E): Extractor[L, E] = new Extractor[L, E] {
       def apply(c: L): E = HNil
     }
 
-    implicit def deep[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList]
+    private val identicalInst = new Extractor[HList, HList] {
+      def apply(c: HList): HList = c
+    }
+
+    implicit def identical[L <: HList]: Extractor[L, L] = identicalInst.asInstanceOf[Extractor[L, L ]]
+
+    implicit def descend[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList]
     (implicit
+      ev0: L =:!= (FieldType[K, V] :: ET),
       r: Remover.Aux[L, K, (V1, LR)],
-      ds1: DeepExtractor[V1, V],
-      ds2: DeepExtractor[LR, ET]
-    ): DeepExtractor[L, FieldType[K, V] :: ET] =
-    new DeepExtractor[L, FieldType[K, V] :: ET] {
+      ds1: Extractor[V1, V],
+      ds2: Extractor[LR, ET]
+    ): Extractor[L, FieldType[K, V] :: ET] =
+    new Extractor[L, FieldType[K, V] :: ET] {
       def apply(c: L): FieldType[K, V] :: ET = {
         val (h, t) = r(c)
         field[K](ds1(h)) :: ds2(t)

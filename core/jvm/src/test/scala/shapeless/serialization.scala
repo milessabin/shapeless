@@ -583,9 +583,6 @@ class SerializationTests {
     assertSerializable(Extractor[R, HNil])
     assertSerializable(Extractor[R, RM1])
 
-    assertSerializable(DeepExtractor[R, HNil])
-    assertSerializable(DeepExtractor[R, RM1])
-
     assertSerializable(Modifier[R, KA, Int, Char])
     assertSerializable(Modifier[R, KB, String, Char])
 

@@ -99,14 +99,9 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def deepMerge[M <: HList](m: M)(implicit merger: DeepMerger[L, M]): merger.Out = merger(l, m)
 
   /**
-    * Extracts super-record from sub-record according to width subtype relation
-    */
-  def extract[E <: HList](implicit extractor: Extractor[L, E]): E = extractor(l)
-
-  /**
     * Extracts super-record from sub-record according to depth subtype relation
     */
-  def deepExtract[E <: HList](implicit extractor: DeepExtractor[L, E]): E = extractor(l)
+  def extract[E <: HList](implicit extractor: Extractor[L, E]): E = extractor(l)
 
   /**
     * Returns the union of this record and another record using the provided `f` to combine the values of fields which are present in both.
