@@ -175,6 +175,7 @@ object SerializationTestDefns {
   type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
   type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
   type RM = Record.`'c -> Boolean, 'd -> Double`.T
+  type RM1 = Record.`'c -> Boolean, 'b -> String`.T
   type KA = Witness.`'a`.T
   type KB = Witness.`'b`.T
   type KC = Witness.`'c`.T
@@ -573,6 +574,14 @@ class SerializationTests {
     assertSerializable(Merger[R, HNil])
     assertSerializable(Merger[R, RM])
     assertSerializable(Merger[RM, R])
+
+    assertSerializable(DeepMerger[HNil, R])
+    assertSerializable(DeepMerger[R, HNil])
+    assertSerializable(DeepMerger[R, RM])
+    assertSerializable(DeepMerger[RM, R])
+
+    assertSerializable(Extractor[R, HNil])
+    assertSerializable(Extractor[R, RM1])
 
     assertSerializable(Modifier[R, KA, Int, Char])
     assertSerializable(Modifier[R, KB, String, Char])

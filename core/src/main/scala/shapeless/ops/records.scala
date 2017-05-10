@@ -192,6 +192,117 @@ package record {
   }
 
   /**
+   * Type class support record deep merging.
+   *
+   * @author Ievgen Garkusha
+   */
+  trait DeepMerger[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
+
+  trait LowPriorityDeepMerger {
+    type Aux[L <: HList, M <: HList, Out0 <: HList] = DeepMerger[L, M] { type Out = Out0 }
+
+    implicit def hlistMerger1[H, T <: HList, M <: HList]
+      (implicit mt : DeepMerger[T, M]): Aux[H :: T, M, H :: mt.Out] =
+        new DeepMerger[H :: T, M] {
+          type Out = H :: mt.Out
+          def apply(l: H :: T, m: M): Out = l.head :: mt(l.tail, m)
+        }
+  }
+
+  trait LowPriorityDeepMerger0 extends LowPriorityDeepMerger{
+    implicit def hlistMerger2[K, V, T <: HList, M <: HList, MR <: HList]
+      (implicit
+        rm: Remover.Aux[M, K, (V, MR)],
+        mt: DeepMerger[T, MR]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, V] :: mt.Out] =
+      new DeepMerger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, V] :: mt.Out
+        def apply(l: FieldType[K, V] :: T, m: M): Out = {
+          val (mv, mr) = rm(m)
+          val up = field[K](mv)
+          up :: mt(l.tail, mr)
+        }
+      }
+  }
+
+  object DeepMerger extends LowPriorityDeepMerger0 {
+
+    def apply[L <: HList, M <: HList](implicit dm: DeepMerger[L, M]): Aux[L, M, dm.Out] = dm
+
+    implicit def hnilMerger[M <: HList]: Aux[HNil, M, M] =
+      new DeepMerger[HNil, M] {
+        type Out = M
+        def apply(l: HNil, m: M): Out = m
+      }
+
+    implicit def hlistMerger3[K, V <: HList, T <: HList, M <: HList, V1 <: HList, MT <: HList,  MO1 <: HList, MO2 <: HList]
+      (implicit
+        rm: Remover.Aux[M, K, (V1, MT)],
+        m1: DeepMerger.Aux[V, V1, MO1],
+        m2: DeepMerger.Aux[T, MT, MO2]
+      ): Aux[FieldType[K, V] :: T, M, FieldType[K, MO1] :: MO2] =
+      new DeepMerger[FieldType[K, V] :: T, M] {
+        type Out = FieldType[K, MO1] :: MO2
+        def apply(r1: FieldType[K, V] :: T, r2: M ): Out = {
+          val (rh, rt) = rm(r2)
+          field[K](m1(r1.head, rh)) :: m2(r1.tail, rt)
+        }
+      }
+  }
+
+  /**
+    * Type class supporting extraction of super-record from sub-record (witnesses depth subtype relation).
+    *
+    * @author Ievgen Garkusha
+    */
+  trait Extractor[L <: HList, E <: HList] extends Function1[L, E] with Serializable
+
+  trait LowPriorityExtractor {
+    implicit def extract[L <: HList, K, V, ET <: HList, V1, LR <: HList]
+    (implicit
+      ev0: L =:!= (FieldType[K, V] :: ET),
+      r: Remover.Aux[L, K, (V1, LR)],
+      ev: V1 <:< V,
+      ds: Extractor[LR, ET]
+    ): Extractor[L, FieldType[K, V] :: ET] =
+    new Extractor[L, FieldType[K, V] :: ET] {
+      def apply(c: L): FieldType[K, V] :: ET = {
+        val (h, t) = r(c)
+        field[K](ev(h)) :: ds(t)
+      }
+    }
+  }
+
+  object Extractor extends LowPriorityExtractor {
+
+    def apply[L <: HList, E <: HList](implicit extractor: Extractor[L, E]): Extractor[L, E] = extractor
+
+    implicit def hnil[L <: HList, E <: HList](implicit ev: HNil =:= E): Extractor[L, E] = new Extractor[L, E] {
+      def apply(c: L): E = HNil
+    }
+
+    private val identicalInst = new Extractor[HList, HList] {
+      def apply(c: HList): HList = c
+    }
+
+    implicit def identical[L <: HList]: Extractor[L, L] = identicalInst.asInstanceOf[Extractor[L, L ]]
+
+    implicit def descend[L <: HList, K, V <: HList, V1 <: HList, LR <: HList, ET <: HList]
+    (implicit
+      ev0: L =:!= (FieldType[K, V] :: ET),
+      r: Remover.Aux[L, K, (V1, LR)],
+      ds1: Extractor[V1, V],
+      ds2: Extractor[LR, ET]
+    ): Extractor[L, FieldType[K, V] :: ET] =
+    new Extractor[L, FieldType[K, V] :: ET] {
+      def apply(c: L): FieldType[K, V] :: ET = {
+        val (h, t) = r(c)
+        field[K](ds1(h)) :: ds2(t)
+      }
+    }
+  }
+
+  /**
     * Type class support record merging with a callback function.
     *
     * @author Yang Bo

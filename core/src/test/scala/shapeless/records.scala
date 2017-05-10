@@ -307,6 +307,67 @@ class RecordTests {
   }
 
   @Test
+  def testDeepMerge {
+
+    val r3 = Record(d = Record(x = "X1", m = "M"), e = true, x = "X")
+    val r4 = Record(d = "D", e = false, x = 2, m = 6)
+    val r5 = Record(d = "A", d = "B", d  = "C")
+
+
+    assertTypedEquals(r4.merge(r3))(r4.deepMerge(r3))
+    assertTypedEquals(r3.merge(r4))(r3.deepMerge(r4))
+    assertTypedEquals(r3.merge(r5))(r3.deepMerge(r5))
+    assertTypedEquals(r5.merge(r3))(r5.deepMerge(r3))
+
+    //nested
+    val inner1 = Record(d = "D", e = false)
+    val inner2 = Record(d = 3, m = 2D)
+    val outer1 = Record(d = 10, e = inner1, x = "boo")
+    val outer2 = Record(x = "foo", d = -1, e = inner2)
+
+    val innerMerged12 = inner1.merge(inner2)
+    val innerMerged21 = inner2.merge(inner1)
+
+    assertTypedEquals(Record(d = -1, e = innerMerged12,  x = "foo"))(outer1.deepMerge(outer2))
+    assertTypedEquals(Record(x = "boo", d = 10, e = innerMerged21))(outer2.deepMerge(outer1))
+
+    //complete intersection
+    val inner11 = Record(d = "D2", e = true)
+    val outer11 = Record(d = 11, e = inner11, x = "bar")
+    assertTypedEquals(outer11)(outer1.deepMerge(outer11))
+    assertTypedEquals(outer1)(outer11.deepMerge(outer1))
+
+    //retain type of subrecord if it appears as first parameter
+    val inner12 = Record(e = true, d = "D12",  x = 5)
+    test.sameTyped(inner12)(inner12.deepMerge(inner1))
+
+  }
+
+  @Test
+  def testExtract {
+
+    val inner1 = Record(d = 3, m = 2D, x= "X")
+    val outer1 = Record(x = "foo", d = -1, e = inner1)
+
+    type i = Record.`'x -> String, 'd -> Int`.T
+    type i1 = Record.`'x -> Any, 'd -> Any`.T
+    val extRes = Record(e = Record(x = "X", d = 3), d = -1)
+    assertTypedEquals(extRes)(outer1.extract[Record.`'e -> i, 'd -> Int`.T])
+    //covariance
+    assertEquals(extRes, outer1.extract[Record.`'e -> i1, 'd -> Any`.T])
+
+    type ill1 = Record.`'d -> Int, 'z -> Int`.T
+    type ill2 = Record.`'x -> i`.T
+    type illIner = Record.`'m -> String, 'd -> Int`.T
+    type ill3 = Record.`'e -> illIner, 'd -> Int`.T
+
+
+    illTyped("outer1.extract[ill1]")
+    illTyped("outer1.deepExtract[ill2]")
+    illTyped("outer1.deepExtract[ill3]")
+  }
+
+  @Test
   def testMergeWith {
     object mergeField extends Poly2 {
       implicit def xor = at[Boolean, Boolean] { _ ^ _ }
