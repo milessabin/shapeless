@@ -60,6 +60,60 @@ package object shapeless {
   type ∃[P[_]] = P[T] forSome { type T }
   type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
+  //Type logic-gates
+  trait ||[A, B] extends Serializable {
+    def a: Option[A]
+    def b: Option[B]
+  }
+
+  object || {
+    implicit def aOrTpe[A, B](implicit eva: A): A || B = new ||[A, B] {
+      val a = Some(eva)
+      val b = None
+    }
+    implicit def bOrTpe[A, B](implicit evb: B): A || B = new ||[A, B] {
+      val a = None
+      val b = Some(evb)
+    }
+  }
+
+  implicit def abOrTpe[A, B](implicit eva: A, evb: B): A || B = new ||[A, B] {
+    val a = Some(eva)
+    val b = Some(evb)
+  }
+
+  trait &&[A, B] extends Serializable {
+    def a: A
+    def b: B
+  }
+
+  implicit def abAndTpe[A, B](implicit eva: A, evb: B): A && B = new &&[A, B] {
+    val a = eva
+    val b = evb
+  }
+
+  trait ^^[A, B] extends Serializable {
+    def a: Option[A]
+    def b: Option[B]
+  }
+
+  implicit def aXorTpe[A, B](implicit eva: A): A ^^ B = new ^^[A, B] {
+    val a = Some(eva)
+    val b = None
+  }
+
+  implicit def bXorTpe[A, B](implicit evb: B): A ^^ B = new ^^[A, B] {
+    val a = None
+    val b = Some(evb)
+  }
+
+  implicit def abXorAmbigTpe[A, B](implicit eva: A, evb: B): A ^^ B = unexpected
+
+  trait !![A] extends Serializable
+
+  implicit def nNotTpe[A](implicit eva: A): !![A] = unexpected
+  implicit def notTpe[A]: !![A] = new !![A] {}
+
   /** `Optic` definitions */
   val optic = OpticDefns
   val lens = OpticDefns
