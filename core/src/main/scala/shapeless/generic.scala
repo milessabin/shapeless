@@ -264,6 +264,12 @@ object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]
 }
 
+class HasNoGeneric[T] extends Serializable
+
+object HasNoGeneric {
+  implicit def apply[T]: HasNoGeneric[T] = macro GenericMacros.mkHasNoGeneric[T]
+}
+
 @macrocompat.bundle
 trait ReprTypes {
   val c: blackbox.Context
@@ -1072,5 +1078,13 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
     q"""new _root_.shapeless.HasCoproductGeneric[$tTpe]: _root_.shapeless.HasCoproductGeneric[$tTpe]"""
+  }
+
+  def mkHasNoGeneric[T: WeakTypeTag]: Tree = {
+    val tTpe = weakTypeOf[T]
+    if (isProduct(tTpe) || isCoproduct(tTpe))
+      abort(s"Unable to materialize HasNoGeneric for $tTpe")
+
+    q"""new _root_.shapeless.HasNoGeneric[$tTpe]: _root_.shapeless.HasNoGeneric[$tTpe]"""
   }
 }
