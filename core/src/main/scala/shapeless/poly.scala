@@ -81,6 +81,55 @@ object PolyDefns extends Cases {
   }
 
   /**
+   * Represents the merge of two polymorphic function values.
+   *
+   * @author Pascal Voitot (@mandubian)
+   */
+  class Merge[+F, G](f: F, g: G) extends Poly
+
+  object Merge extends Merge2
+
+  trait Merge1 {
+    implicit def mergeCase1A[MG, A <: Poly, B <: Poly, ML <: HList, MR](
+      implicit unpack: Unpack2[MG, Merge, A, B],
+               c : Case.Aux[A, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+
+    implicit def mergeCase1B[MG, A <: Poly, B <: Poly, ML <: HList, MR](
+      implicit unpack: Unpack2[MG, Merge, A, B],
+               c : Case.Aux[B, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+  }
+
+
+  trait Merge2 extends Merge1 {
+    implicit def mergeCase2A[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[A, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+
+    implicit def mergeCase2B[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[B, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+
+    implicit def mergeCase2C[MG, MG2, A <: Poly, B <: Poly, C <: Poly, ML <: HList, MR](
+      implicit unpack1: Unpack2[MG, Merge, MG2, C], unpack2: Unpack2[MG2, Merge, A, B],
+               c : Case.Aux[C, ML, MR]) = new Case[MG, ML] {
+      type Result = MR
+      val value = (t : ML) => c(t)
+    }
+  }
+
+  /**
    * Represents rotating a polymorphic function by N places to the left
    *
    * @author Stacy Curl
@@ -195,6 +244,9 @@ trait Poly extends PolyApply with Serializable {
   def rotateLeft[N <: Nat] = new RotateLeft[this.type, N](this)
 
   def rotateRight[N <: Nat] = new RotateRight[this.type, N](this)
+
+  def merge(f: Poly) = new Merge[this.type, f.type](this, f)
+  def |+|(f: Poly) = merge(f)
 
   /** The type of the case representing this polymorphic function at argument types `L`. */
   type ProductCase[L <: HList] = Case[this.type, L]

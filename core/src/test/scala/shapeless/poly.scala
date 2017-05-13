@@ -240,6 +240,35 @@ class PolyTests {
   }
 
   @Test
+  def testMerge {
+    object sz extends Poly1 {
+      implicit def caseInt = at[Int] { i => 1 }
+      implicit def caseString = at[String] { s => s.size }
+    }
+
+    // sz2 depends on sz and is poly1
+    object sz2 extends Poly1 {
+      implicit def caseTuple[T, U]
+        (implicit st : sz.Case.Aux[T, Int], su : sz.Case.Aux[U, Int]) =
+          at[(T, U)](t => sz(t._1) + sz(t._2))
+    }
+
+    // sz3 depends on sz and is poly2
+    object sz3 extends Poly2 {
+      implicit def default[T, U](implicit st: sz.Case.Aux[T, Int], su: sz.Case.Aux[U, Int]) =
+        at[T, U]{ (t, u) => sz(t) + sz(u) }
+    }
+
+    val m = sz |+| sz2 |+| sz3
+
+    assertEquals(m(5), 1)
+    assertEquals(m("toto"), 4)
+    assertEquals(m(5 -> "toto"), 5)
+    assertEquals(m(5, "toto"), 5)
+
+  }
+
+  @Test
   def testPolyVal {
     val i1 = zero[Int]
     typed[Int](i1)
