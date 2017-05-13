@@ -694,6 +694,11 @@ class HListTests {
       implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[_]]]
     }
 
+    {
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[Int]]]
+      implicitly[ToTraversable.Aux[M[Int] :: HNil, List, M[_]]]
+    }
+
     val r2 = apap.to[List]
     assertTypedEquals[List[Fruit]](List(a, p, a, p), r2)
 
@@ -951,6 +956,16 @@ class HListTests {
 
     ToArray[HNil, Nothing]
     ToArray[HNil, Int]
+
+    {
+      val a1 = (mi :: HNil).toArray[M[Int]]
+      val a2 = (mi :: HNil).toArray[M[_]]
+
+      typed[Array[M[Int]]](a1)
+      typed[Array[M[_]]](a2)
+      assertArrayEquals2(Array[M[Int]](mi), a1)
+      assertArrayEquals2(Array[M[_]](mi), a2)
+    }
 
     {
       val a1 = (mi :: HNil).toArray[M[Int]]
