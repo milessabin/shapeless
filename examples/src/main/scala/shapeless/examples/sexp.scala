@@ -284,75 +284,58 @@ object SexpUserConvert {
   }
 }
 
-object SexpConvert {
-  def apply[T](implicit st: Lazy[SexpConvert[T]]): SexpConvert[T] = st.value
+object SexpConvert extends LabelledTypeClassCompanion[SexpConvert] {
 
-  implicit def deriveHNil: SexpConvert[HNil] =
-    new SexpConvert[HNil] {
+  val typeClass = new LabelledTypeClass[SexpConvert] {
+    def emptyProduct = new SexpConvert[HNil] {
       def deser(s: Sexp) = if (s == SexpNil) Some(HNil) else None
       def ser(n: HNil) = SexpNil
     }
 
-  implicit def deriveHCons[K <: Symbol, V, T <: HList]
-    (implicit
-      key: Witness.Aux[K],
-      scv: Lazy[SexpConvert[V]],
-      sct: Lazy[SexpConvert[T]]
-    ): SexpConvert[FieldType[K, V] :: T] =
-      new SexpConvert[FieldType[K, V] :: T] {
-        def deser(s: Sexp): Option[FieldType[K, V] :: T] = s match {
-          case SexpProp((label, car), cdr) if label == key.value.name =>
-            for {
-              front <- scv.value.deser(car)
-              back <- sct.value.deser(cdr)
-            } yield field[K](front) :: back
-
-          case _ =>
-            println("PRODUCT MISS = " + s)
-            None
-        }
-
-        def ser(ft: FieldType[K, V] :: T): Sexp = {
-          val car = SexpProp(key.value.name, scv.value.ser(ft.head))
-          sct.value.ser(ft.tail) match {
-            case SexpNil => car
-            case cdr => SexpCons(car, cdr)
-          }
+    def product[H, T <: HList](name: String, ch: SexpConvert[H], ct: SexpConvert[T]) = new SexpConvert[H :: T] {
+      def deser(s: Sexp): Option[H :: T] = s match {
+        case SexpProp((label, car), cdr) if label == name =>
+          for {
+            front <- ch.deser(car)
+            back <- ct.deser(cdr)
+          } yield front :: back
+        case _ =>
+          println("PRODUCT MISS = " + s)
+          None
+      }
+      def ser(t: H :: T): Sexp = {
+        val car = SexpProp(name, ch.ser(t.head))
+        ct.ser(t.tail) match {
+          case SexpNil => car
+          case cdr => SexpCons(car, cdr)
         }
       }
+    }
 
-  implicit def deriveCNil: SexpConvert[CNil] = new SexpConvert[CNil] {
-    def deser(s: Sexp): Option[CNil] = None
-    def ser(t: CNil) = SexpNil
+    def coproduct[L, R <: Coproduct](name: String, cl: => SexpConvert[L], cr: => SexpConvert[R]) = new SexpConvert[L :+: R] {
+      def deser(s: Sexp): Option[L :+: R] = s match {
+        case SexpCons(SexpAtom(impl),cdr) if impl == name =>
+          cl.deser(cdr).map(Inl(_))
+        case SexpCons(SexpAtom(impl), cdr) =>
+          cr.deser(s).map(Inr(_))
+        case _ =>
+          println("COPRODUCT MISS " + s)
+          None
+      }
+      def ser(lr: L :+: R): Sexp = lr match {
+        case Inl(l) => SexpCons(SexpAtom(name), cl.ser(l))
+        case Inr(r) => cr.ser(r)
+      }
+    }
+
+    def emptyCoproduct = new SexpConvert[CNil] {
+      def deser(s: Sexp): Option[CNil] = None
+      def ser(t: CNil) = SexpNil
+    }
+
+    def project[F, G](instance: => SexpConvert[G], to: F => G, from: G => F) = new SexpConvert[F] {
+      def deser(s: Sexp): Option[F] = instance.deser(s).map(from)
+      def ser(t: F): Sexp = instance.ser(to(t))
+    }
   }
-
-  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct]
-    (implicit
-      key: Witness.Aux[K],
-      scv: Lazy[SexpConvert[V]],
-      sct: Lazy[SexpConvert[T]]
-    ): SexpConvert[FieldType[K, V] :+: T] =
-      new SexpConvert[FieldType[K, V] :+: T] {
-        def deser(s: Sexp): Option[FieldType[K, V] :+: T] = s match {
-          case SexpCons(SexpAtom(impl), cdr) if impl == key.value.name =>
-            scv.value.deser(cdr).map(v => Inl(field[K](v)))
-          case SexpCons(SexpAtom(impl), cdr) =>
-            sct.value.deser(s).map(Inr(_))
-          case _ =>
-            println("COPRODUCT MISS " + s)
-            None
-        }
-
-        def ser(lr: FieldType[K, V] :+: T): Sexp = lr match {
-          case Inl(l) => SexpCons(SexpAtom(key.value.name), scv.value.ser(l))
-          case Inr(r) => sct.value.ser(r)
-        }
-      }
-
-  implicit def deriveInstance[F, G]
-    (implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[SexpConvert[G]]): SexpConvert[F] =
-      new SexpConvert[F] {
-        def deser(s: Sexp): Option[F] = sg.value.deser(s).map(gen.from)
-        def ser(t: F): Sexp = sg.value.ser(gen.to(t))
-      }
 }
