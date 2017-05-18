@@ -16,6 +16,7 @@
 
 package shapeless
 
+import scala.language.existentials
 import scala.util.Try
 
 import org.junit.Test
