@@ -564,6 +564,7 @@ class TypeableTests {
     val i1: A with B = new C
     assertEquals("Typeable[A with B]", typeableString(i1))
     assertEquals("Typeable[A]", typeableString(new A{}))
+    assertEquals("Typeable[A]", Typeable.simpleTypeable(classOf[A]).toString)
 
     val o: Option[Long] = Some(4l)
     assertEquals("Typeable[Option[Long]]", typeableString(o))

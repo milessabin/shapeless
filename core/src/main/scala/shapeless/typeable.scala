@@ -107,20 +107,17 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     }
 
   /** Typeable instance for simple monomorphic types */
-  def simpleTypeable[T](erased: Class[T]): Typeable[T] =
+  def simpleTypeable[T](erased: Class[T]): Typeable[T] = {
+    namedSimpleTypeable(erased, safeSimpleName(erased))
+  }
+
+  /** Typeable instance for simple monomorphic types, specifying the name explicitly */
+  def namedSimpleTypeable[T](erased: Class[T], name: => String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] = {
         if(t != null && erased.isAssignableFrom(t.getClass)) Some(t.asInstanceOf[T]) else None
       }
-      def describe = {
-        // Workaround for https://issues.scala-lang.org/browse/SI-5425
-        try {
-          erased.getSimpleName
-        } catch {
-          case _: InternalError =>
-            erased.getName
-        }
-      }
+      def describe = name
     }
 
   /** Typeable instance for singleton value types */
@@ -256,6 +253,10 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for polymorphic case classes with typeable elements */
   def caseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]]): Typeable[T] =
+    namedCaseClassTypeable(erased, fields, safeSimpleName(erased))
+
+  /** Typeable instance for polymorphic case classes with typeable elements, specifying the name explicitly. */
+  def namedCaseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]], name: => String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] =
         if(classOf[Product].isAssignableFrom(erased) && erased.isAssignableFrom(t.getClass)) {
@@ -266,13 +267,6 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         } else None
       def describe = {
         val typeParams = fields map(_.describe) mkString(",")
-        // Workaround for https://issues.scala-lang.org/browse/SI-5425
-        val name = try {
-          erased.getSimpleName
-        } catch {
-          case _: InternalError =>
-            erased.getName
-        }
         s"$name[$typeParams]"
       }
     }
@@ -341,6 +335,15 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         } else None
       }
       def describe = s"Inr[${castT.describe}}]"
+    }
+
+  // Workaround for https://issues.scala-lang.org/browse/SI-5425
+  private def safeSimpleName(erased: Class[_]): String =
+    try {
+      erased.getSimpleName
+    } catch {
+      case _: InternalError =>
+        erased.getName
     }
 }
 
@@ -447,8 +450,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
           case _ => false
         }
 
+        val tsym = tpe.typeSymbol
         if (closesOverType) {
-          val tsym = tpe.typeSymbol
           if (tsym.isClass && tsym.asClass.isCaseClass) {
             /* it appears to be sound to treat captured type variables as if they were
              * simply case class parameters, as they'll be checked by their own Typeables later. */
@@ -457,7 +460,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
             c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
           }
         } else {
-          q"""_root_.shapeless.Typeable.simpleTypeable(classOf[$tpe])"""
+          q"""_root_.shapeless.Typeable.namedSimpleTypeable(classOf[$tpe], ${tsym.name.toString})"""
         }
     }
   }
@@ -480,9 +483,11 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
     if(fieldTypeables.contains(EmptyTree))
       c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
 
+    val name = tpe.typeSymbol.name.toString
+
     q"""
-        _root_.shapeless.Typeable.caseClassTypeable(
-          classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables)
+        _root_.shapeless.Typeable.namedCaseClassTypeable(
+          classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), $name
         )
        """
   }
