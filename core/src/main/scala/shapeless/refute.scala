@@ -1,12 +1,9 @@
 package shapeless
 
-import scala.annotation.implicitNotFound
-
 /** Evidence that no implicit instance of type `T` is available
   *
   *  @author Zainab Ali
   */
-@implicitNotFound("Evidence $T was found")
 trait Refute[T]
 
 object Refute {
