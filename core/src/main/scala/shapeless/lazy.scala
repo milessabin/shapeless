@@ -125,6 +125,7 @@ object Lazy {
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
+  @implicitNotFound("could not find Lazy implicit values of type ${T}")
   class Values[T <: HList](val values: T) extends Serializable
   object Values {
     implicit val hnilValues: Values[HNil] = new Values(HNil)
