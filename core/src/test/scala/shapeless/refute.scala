@@ -33,4 +33,9 @@ class RefuteTests {
     the[InductiveEvidence]
   }
 
+
+  // Increases the code coverage, as the above tests cannot
+  Refute.ambiguousIfPresent(presentEvidence)
+  Refute.refute(presentEvidence)
+
 }
