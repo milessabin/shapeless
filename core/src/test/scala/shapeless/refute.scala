@@ -33,9 +33,11 @@ class RefuteTests {
     the[InductiveEvidence]
   }
 
-
-  // Increases the code coverage, as the above tests cannot
-  Refute.ambiguousIfPresent[PresentEvidence](presentEvidence)
-  Refute.refute[PresentEvidence]
+  @Test
+  def increaseCodeCoverage {
+    // Increases the code coverage, as the above tests cannot
+    Refute.ambiguousIfPresent[PresentEvidence](presentEvidence)
+    Refute.refute[PresentEvidence]
+  }
 
 }
