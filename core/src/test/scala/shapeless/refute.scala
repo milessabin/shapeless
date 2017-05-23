@@ -35,7 +35,7 @@ class RefuteTests {
 
 
   // Increases the code coverage, as the above tests cannot
-  Refute.ambiguousIfPresent(presentEvidence)
-  Refute.refute(presentEvidence)
+  Refute.ambiguousIfPresent[PresentEvidence](presentEvidence)
+  Refute.refute[PresentEvidence]
 
 }
