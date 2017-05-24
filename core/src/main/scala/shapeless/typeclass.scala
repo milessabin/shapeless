@@ -16,9 +16,6 @@
 
 package shapeless
 
-import labelled.{ field, FieldType }
-import ops.record.{ Keys, Values }
-
 /**
  * A type class abstracting over the `product` operation of type classes over
  * types of kind `*`, as well as deriving instances using an isomorphism.
@@ -45,15 +42,10 @@ trait ProductTypeClass[C[_]] extends Serializable {
 trait ProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
-  val typeClass: ProductTypeClass[C]
+  implicit val typeClass: ProductTypeClass[C]
 
-  implicit def deriveHNil: C[HNil] = typeClass.emptyProduct
-
-  implicit def deriveHCons[H, T <: HList] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :: T] =
-    typeClass.product(ch.value, ct.value)
-
-  implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[C[G]]): C[F] =
-    typeClass.project(cg.value, gen.to _, gen.from _)
+  implicit def deriveInstance[F](implicit der: Lazy[Derived[C[F]]]): C[F] =
+    der.value.value
 }
 
 
@@ -85,50 +77,10 @@ trait LabelledProductTypeClass[C[_]] extends Serializable {
 trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
   def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
 
-  val typeClass: LabelledProductTypeClass[C]
+  implicit val typeClass: LabelledProductTypeClass[C]
 
-  trait Wrap[KV] extends Serializable {
-    type V
-    val unwrap: C[V]
-    def label(v: V): KV
-    def unlabel(rec: KV): V
-  }
-
-  object Wrap {
-    type Aux[KV, V0] = Wrap[KV] { type V = V0 }
-  }
-
-  implicit def deriveHNil: Wrap.Aux[HNil, HNil] =
-    new Wrap[HNil] {
-      type V = HNil
-      val unwrap = typeClass.emptyProduct
-      def label(v: HNil): HNil = HNil
-      def unlabel(rec: HNil): HNil = HNil
-    }
-
-  implicit def deriveHCons[HK <: Symbol, HV, TKV <: HList]
-    (implicit
-      ch: Lazy[C[HV]],
-      key: Witness.Aux[HK],
-      ct: Lazy[Wrap[TKV] { type V <: HList }]
-    ): Wrap.Aux[FieldType[HK, HV] :: TKV, HV :: ct.value.V] =
-      new Wrap[FieldType[HK, HV] :: TKV] {
-        type V = HV :: ct.value.V
-        val unwrap = typeClass.product(key.value.name, ch.value, ct.value.unwrap)
-        def label(v: HV :: ct.value.V): FieldType[HK, HV] :: TKV = field[HK](v.head) :: ct.value.label(v.tail)
-        def unlabel(rec: FieldType[HK, HV] :: TKV): HV :: ct.value.V = rec.head :: ct.value.unlabel(rec.tail)
-      }
-
-  implicit def deriveInstance[T, LKV]
-    (implicit
-      lgen: LabelledGeneric.Aux[T, LKV],
-      lwclkv: Lazy[Wrap[LKV]]
-    ): C[T] = {
-      import lwclkv.value._
-      val to: T => V = (t: T) => unlabel(lgen.to(t))
-      val from: V => T = (v: V) => lgen.from(label(v))
-      typeClass.project(unwrap, to, from)
-    }
+  implicit def deriveInstance[F](implicit der: Lazy[Derived[C[F]]]): C[F] =
+    der.value.value
 }
 
 /**
@@ -149,12 +101,7 @@ trait TypeClass[C[_]] extends ProductTypeClass[C] {
 }
 
 trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] {
-  val typeClass: TypeClass[C]
-
-  implicit def deriveCNil: C[CNil] = typeClass.emptyCoproduct
-
-  implicit def deriveCCons[H, T <: Coproduct] (implicit ch: Lazy[C[H]], ct: Lazy[C[T]]): C[H :+: T] =
-    typeClass.coproduct(ch.value, ct.value)
+  implicit val typeClass: TypeClass[C]
 }
 
 /**
@@ -177,34 +124,5 @@ trait LabelledTypeClass[C[_]] extends LabelledProductTypeClass[C] {
 }
 
 trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion[C] {
-  val typeClass: LabelledTypeClass[C]
-
-  implicit def deriveCNil: Wrap.Aux[CNil, CNil] =
-    new Wrap[CNil] {
-      type V = CNil
-      val unwrap = typeClass.emptyCoproduct
-      def label(v: CNil): CNil = ???
-      def unlabel(rec: CNil): CNil = ???
-    }
-
-  implicit def deriveCCons[HK <: Symbol, HV, TKV <: Coproduct]
-    (implicit
-      ch: Lazy[C[HV]],
-      key: Witness.Aux[HK],
-      ct: Lazy[Wrap[TKV] { type V <: Coproduct }]
-    ): Wrap.Aux[FieldType[HK, HV] :+: TKV, HV :+: ct.value.V] =
-      new Wrap[FieldType[HK, HV] :+: TKV] {
-        type V = HV :+: ct.value.V
-        val unwrap = typeClass.coproduct(key.value.name, ch.value, ct.value.unwrap)
-        def label(v: HV :+: ct.value.V): FieldType[HK, HV] :+: TKV =
-          v match {
-            case Inl(hv) => Inl(field[HK](hv))
-            case Inr(tv) => Inr(ct.value.label(tv))
-          }
-        def unlabel(rec: FieldType[HK, HV] :+: TKV): HV :+: ct.value.V =
-          rec match {
-            case Inl(hkv) => Inl(hkv)
-            case Inr(tkv) => Inr(ct.value.unlabel(tkv))
-          }
-      }
+  implicit val typeClass: LabelledTypeClass[C]
 }
