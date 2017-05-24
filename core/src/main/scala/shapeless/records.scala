@@ -89,6 +89,17 @@ trait RecordArgs extends Dynamic {
 }
 
 /**
+  * Similar to [[RecordArgs]], but allows the specification of the return type of the
+  * methods.
+  *
+  * @tparam T The return type for all record-accepting methods
+  */
+trait TypedRecordArgs[T] extends Dynamic {
+  def applyDynamic(method: String)(): T = macro RecordMacros.forwardImpl
+  def applyDynamicNamed(method: String)(rec: Any*): T = macro RecordMacros.forwardNamedImpl
+}
+
+/**
  * Trait supporting mapping record arguments to named argument lists, inverse of RecordArgs.
  *
  * Mixing in this trait enables method applications of the form,

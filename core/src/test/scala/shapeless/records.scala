@@ -18,6 +18,7 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
+import shapeless.ops.hlist.Selector
 
 class RecordTests {
   import labelled._
@@ -898,6 +899,28 @@ class RecordTests {
 
     illTyped("""
       r.get('foo)
+    """)
+  }
+
+  object FooT extends TypedRecordArgs[String] {
+    def applyRecord[R <: HList](rec: R)(implicit selector: Selector[R, FieldType[Witness.`'foo`.T, String]]): String =
+      selector(rec)
+  }
+
+  @Test
+  def testTypedRecordArgs = {
+    val s = FooT(a = 22, foo = "foo", bar = true)
+    assertEquals(s, "foo")
+
+    val s2 = FooT(z = "foo", bar = "foo", foo = "foo2")
+    assertEquals(s2, "foo2")
+
+    illTyped("""
+      fooT(z = "foo")
+    """)
+
+    illTyped("""
+      fooT(z = "foo", foo = 22)
     """)
   }
 
