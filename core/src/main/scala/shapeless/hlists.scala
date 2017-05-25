@@ -36,9 +36,16 @@ sealed trait HList extends Product with Serializable
  */
 final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
   override def toString = head match {
-    case _: ::[_, _] => "("+head+") :: "+tail.toString
-    case _ => head+" :: "+tail.toString
+    case _: ::[_, _] => s"(${head}) :: ${tail}"
+    case _           => s"${head} :: ${tail}"
   }
+
+  // the default case class equals / hashCode is very inefficient
+  override def equals(other: Any): Boolean = other match {
+    case that: ::[_, _] => (this eq that) || (head == that.head && tail == that.tail)
+    case _              => false
+  }
+  override def hashCode: Int = head.hashCode + 13 * tail.hashCode
 }
 
 /**
@@ -56,7 +63,14 @@ sealed trait HNil extends HList {
  * 
  * @author Miles Sabin
  */
-case object HNil extends HNil
+case object HNil extends HNil {
+  // the default case object equals / hashCode is very inefficient
+  override def equals(other: Any): Boolean = other match {
+    case that: HNil => true
+    case _          => false
+  }
+  override def hashCode: Int = 0
+}
 
 object HList extends Dynamic {
   import ops.hlist._
