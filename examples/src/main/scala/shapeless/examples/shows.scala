@@ -71,44 +71,16 @@ trait Show[T] {
   def show(t: T): String
 }
 
-object Show extends LabelledTypeClassCompanion[Show] {
-  implicit def stringShow: Show[String] = new Show[String] {
-    def show(t: String) = t
+object Show extends LabelledTypeClassCompanion1[Show, String] {
+  def point[T](f: (T) => String): Show[T] = new Show[T] {
+    def show(t: T): String = f(t)
   }
+  def applyInstance[T](instance: => Show[T], t: T): String = instance.show(t)
+  def applyInstanceProduct[T](name: String, instance: => Show[T], t: T): String = s"$name = ${instance.show(t)}"
+  def applyInstanceCoproduct[T](name: String, instance: => Show[T], t: T): String = s"$name(${instance.show(t)})"
+  def zero: String = ""
+  def append(left: String, right: String): String = if(right.isEmpty) left else s"$left, $right"
 
-  implicit def intShow: Show[Int] = new Show[Int] {
-    def show(n: Int) = n.toString
-  }
-
-  object typeClass extends LabelledTypeClass[Show] {
-    def emptyProduct = new Show[HNil] {
-      def show(t: HNil) = ""
-    }
-
-    def product[F, T <: HList](name: String, sh: Show[F], st: Show[T]) = new Show[F :: T] {
-      def show(ft: F :: T) = {
-        val head = sh.show(ft.head)
-        val tail = st.show(ft.tail)
-        if (tail.isEmpty)
-          s"$name = $head"
-        else
-          s"$name = $head, $tail"
-      }
-    }
-
-    def emptyCoproduct = new Show[CNil] {
-      def show(t: CNil) = ""
-    }
-
-    def coproduct[L, R <: Coproduct](name: String, sl: => Show[L], sr: => Show[R]) = new Show[L :+: R] {
-      def show(lr: L :+: R) = lr match {
-        case Inl(l) => s"$name(${sl.show(l)})"
-        case Inr(r) => s"${sr.show(r)}"
-      }
-    }
-
-    def project[F, G](instance: => Show[G], to: F => G, from: G => F) = new Show[F] {
-      def show(f: F) = instance.show(to(f))
-    }
-  }
+  implicit def stringShow: Show[String] = point(identity)
+  implicit def intShow: Show[Int] = point(_.toString)
 }
