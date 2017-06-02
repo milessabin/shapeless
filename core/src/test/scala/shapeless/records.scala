@@ -1096,4 +1096,18 @@ class RecordTests {
 
     assertEquals(fields.toList, List('x, 'y, 'z))
   }
+
+  @Test
+  def testSelectorTagged {
+    import shapeless.syntax._
+    import shapeless.tag
+    import shapeless.tag._
+
+    trait TestTag
+    case class FooT(bar: String @@ TestTag)
+    val lgt = LabelledGeneric[FooT]
+    val fooT = FooT(tag[TestTag]("test"))
+
+    assertEquals(tag[TestTag]("test"), lgt.to(fooT).get('bar))
+  }
 }
