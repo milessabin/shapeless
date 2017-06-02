@@ -513,8 +513,12 @@ trait CaseClassMacros extends ReprTypes {
       val KeyTagPre = prefix(keyTagTpe)
       val KeyTagSym = keyTagTpe.typeSymbol
       fTpe.dealias match {
-        case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => Some((k, v0))
-        case _ => None
+        case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 =>
+          Some((k, v0))
+        case RefinedType(List(v00, v01, TypeRef(pre, KeyTagSym, List(k, v1@RefinedType(List(v10, v11), _)))), _) if pre =:= KeyTagPre && v00 =:= v10 && v01 =:= v11 =>
+          Some((k, v1))
+        case _ =>
+          None
       }
     }
   }
