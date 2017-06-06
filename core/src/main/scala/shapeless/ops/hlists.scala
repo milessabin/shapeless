@@ -2084,6 +2084,37 @@ object hlist {
   }
 
   /**
+    * Typeclass supporting repeating [[L]]-typed HLists [[N]] times.
+    *
+    * Repeat[Int :: String :: HNil, Nat._2] => Int :: String :: Int :: String :: HNil
+    *
+    * @author Jeremy Smith
+    */
+  trait Repeat[L <: HList, N <: Nat] {
+    type Out <: HList
+    def apply(l: L): Out
+  }
+
+  object Repeat {
+
+    type Aux[L <: HList, N <: Nat, Out0 <: HList] = Repeat[L, N] { type Out = Out0 }
+
+    implicit def base[L <: HList]: Aux[L, Nat._1, L] = new Repeat[L, Nat._1] {
+      type Out = L
+      def apply(l: L): L = l
+    }
+
+    implicit def succ[L <: HList, Prev <: Nat, PrevOut <: HList, P <: HList](implicit
+      prev: Aux[L, Prev, PrevOut],
+      prepend: Prepend.Aux[L, PrevOut, P]
+    ): Aux[L, Succ[Prev], P] = new Repeat[L, Succ[Prev]] {
+      type Out = P
+      def apply(l: L): P = prepend(l, prev(l))
+    }
+
+  }
+
+  /**
    * Type class supporting zipping this `HList` with an `HList` of `HList`s returning an `HList` of `HList`s with each
    * element of this `HList` prepended to the corresponding `HList` element of the argument `HList`.
    *

@@ -463,6 +463,32 @@ class HListTests {
   }
 
   @Test
+  def testRepeat {
+    val ap2 = ap.repeat[Nat._2]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: HNil](ap2, a :: p :: a :: p :: HNil)
+
+    val ap4 = ap.repeat[Nat._4]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: HNil](
+      ap4, a :: p :: a :: p :: a :: p :: a :: p :: HNil
+    )
+
+    val ap2_2 = ap2.repeat[Nat._2]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: HNil](ap2_2, ap4)
+
+    {
+      // repeating 1 times is identity
+      val ap1 = ap.repeat[Nat._1]
+      assertTypedEquals[AP](ap, ap1)
+    }
+
+    {
+      // can not repeat zero times
+      illTyped("""ap.repeat[Nat._0]""")
+    }
+
+  }
+
+  @Test
   def testToSizedList {
     def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
 

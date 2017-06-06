@@ -450,6 +450,11 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def reduceRight(op : Poly)(implicit reducer : RightReducer[L, op.type]) : reducer.Out = reducer(l)
 
   /**
+    * Repeats this `HList` N times.
+    */
+  def repeat[N <: Nat](implicit repeat: Repeat[L, N]): repeat.Out = repeat(l)
+
+  /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.
    */
   def zip[R <: HList](r : R)(implicit zipper : Zip[L :: R :: HNil]) : zipper.Out = zipper(l :: r :: HNil)
