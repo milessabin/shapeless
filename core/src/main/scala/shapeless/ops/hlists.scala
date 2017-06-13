@@ -2084,7 +2084,7 @@ object hlist {
   }
 
   /**
-    * Typeclass supporting repeating [[L]]-typed HLists [[N]] times.
+    * Typeclass supporting repeating L-typed HLists N times.
     *
     * Repeat[Int :: String :: HNil, Nat._2] => Int :: String :: Int :: String :: HNil
     *
