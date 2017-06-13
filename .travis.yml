@@ -35,6 +35,7 @@ notifications:
 matrix:
   include:
   - scala: 2.11.11
+    env: NATIVE=true
     jdk: oraclejdk8
     sudo: required
     before_install:
@@ -55,5 +56,3 @@ matrix:
     - make testinstall prefix=/usr
     - popd
     - wget https://raw.githubusercontent.com/paulp/sbt-extras/3ba0e52f32d32c0454ec3a926caae2db0caaca12/sbt && chmod +x ./sbt
-    script:
-    - ./sbt ++$TRAVIS_SCALA_VERSION nativeTest/run
