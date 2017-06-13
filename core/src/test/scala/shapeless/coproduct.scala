@@ -1937,6 +1937,23 @@ class CoproductTests {
     assertTypedEquals[Option[ISB]](Option(Inr(Inr(Inl(true)))), foo3)
     assertTypedEquals[Option[ISB]](Option.empty[ISB], foo4)
   }
+
+  @Test
+  def testInjectSyntax {
+    type ISBD = Int :+: String :+: Boolean :+: Double :+: CNil
+
+    import syntax.inject._
+
+    val i = 1.inject[ISBD]
+    assertEquals(Inl(1), i)
+
+    val b = true.inject[ISBD]
+    assertEquals(Inr(Inr(Inl(true))), b)
+
+    illTyped("1.inject[String :+: CNil]")
+    typed[ISBD](1.inject[ISBD])
+  }
+
 }
 
 package CoproductTestAux {
