@@ -15,7 +15,9 @@ else
 PUBLISH=publishLocal
 fi
 
-if [[ "$TRAVIS_SCALA_VERSION" == 2.12.* ]]; then
+if [[ "$NATIVE" == "true" ]]; then
+    ${SBT} clean validateNative coreNative/${PUBLISH}
+elif [[ "$TRAVIS_SCALA_VERSION" == 2.12.* ]]; then
     eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
 else
     ${SBT} clean validate ${PUBLISH}
