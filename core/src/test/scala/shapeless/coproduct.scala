@@ -1931,11 +1931,14 @@ class CoproductTests {
     val foo2 = Coproduct.runtimeInject[ISB]("foo": Any)
     val foo3 = Coproduct.runtimeInject[ISB](true: Any)
     val foo4 = Coproduct.runtimeInject[ISB](1.345: Any)
+    val foo5 = Coproduct.runtimeInject[ISB](null: Any)
 
     assertTypedEquals[Option[ISB]](Option(Inl(23)), foo1)
     assertTypedEquals[Option[ISB]](Option(Inr(Inl("foo"))), foo2)
     assertTypedEquals[Option[ISB]](Option(Inr(Inr(Inl(true)))), foo3)
     assertTypedEquals[Option[ISB]](Option.empty[ISB], foo4)
+    assertTypedEquals[Option[ISB]](Option.empty[ISB], foo5)
+    illTyped("Coproduct.runtimeInject[CNil](23: Any)")
   }
 
   @Test
