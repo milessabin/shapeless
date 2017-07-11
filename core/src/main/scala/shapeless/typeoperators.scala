@@ -201,3 +201,32 @@ object Lub {
   }
 }
 
+/**
+ * Type class witnessing the implicit refinement type that extends `TypeClassConstraint`.
+ *
+ * This type class can be used in `DependentLiftAll` or auto-derivation for dependent type classes.
+ *
+ * @note `WitnessThe` is similar to [[the]], except `WitnessThe` can be used in another implicit type class resolution process, e.g. `DependentLiftAll`.
+ *
+ * @author Yang Bo
+ */
+trait WitnessThe[TypeClassConstraint] extends DepFn0 {
+
+  type Out <: TypeClassConstraint
+
+}
+
+object WitnessThe {
+
+  type Aux[TypeClassConstraint, Out0] =
+    WitnessThe[TypeClassConstraint] {
+      type Out = Out0
+    }
+
+  implicit def apply[TypeClassConstraint <: AnyRef](implicit typeClass: TypeClassConstraint)
+    : WitnessThe.Aux[TypeClassConstraint, typeClass.type] = new WitnessThe[TypeClassConstraint] {
+    type Out = typeClass.type
+    override def apply(): Out = typeClass
+  }
+
+}
