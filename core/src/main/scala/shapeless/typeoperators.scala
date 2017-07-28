@@ -20,7 +20,7 @@ import scala.language.dynamics
 import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
-import scala.util.Try
+import scala.util.{ Try, Success, Failure }
 
 object tag {
   def apply[U] = new Tagger[U]
@@ -138,13 +138,14 @@ class TheMacros(val c: whitebox.Context) {
     if(tpe.typeSymbol.asClass.isPrimitive)
       c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
 
-    val inferred = c.inferImplicitValue(tpe, silent = true)
-    if(inferred.isEmpty)
-      c.abort(c.enclosingPosition, s"Could not infer implicit value for $tpe")
 
-    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
-    // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(inferred.tpe)
+    Try(c.typecheck(q"_root_.shapeless.the.apply[$tpe]")) match {
+      case Success(x) =>
+        // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+        // to result in a runtime exception if the value is used in term position.
+        Literal(Constant(())).setType(x.tpe)
+      case Failure(e) => c.abort(c.enclosingPosition, e.getMessage)
+    }
   }
 }
 
@@ -200,4 +201,3 @@ object Lub {
     def right(b : T): T = b
   }
 }
-
