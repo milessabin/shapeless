@@ -117,10 +117,10 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
-shapeless 2.3.2 is Scala 2.12.1. Scala 2.10.x is supported via the macro paradise compiler plugin.
+shapeless 2.3.2 is Scala 2.12.3. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.3"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.2"
@@ -216,7 +216,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.1 by default but also
+shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.3 by default but also
 cross-builds for 2.10.6 and 2.11.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
