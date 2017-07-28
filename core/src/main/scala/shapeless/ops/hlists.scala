@@ -103,6 +103,8 @@ object hlist {
         constraint: FH <:< F[H]): Aux[FH :: FT, F, H :: TCM] =
       new Comapped[FH :: FT, F] { type Out = H :: TCM }
     
+    /** This method is not used. It is kept here in order to suppress the MiMa error */
+    @deprecated("`hlistComapped` does not support type covariant. Use `hlistComappedCovariant` instead.", "2.3.3")
     def hlistComapped[H, T <: HList, F[_], TCM <: HList](		
       implicit mt : Comapped.Aux[T, F, TCM]		
     ): Aux[F[H] :: T, F, H :: TCM] =		
