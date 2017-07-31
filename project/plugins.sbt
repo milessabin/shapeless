@@ -5,7 +5,7 @@ addSbtPlugin("com.typesafe"                      % "sbt-mima-plugin"       % "0.
 addSbtPlugin("com.typesafe.sbt"                  % "sbt-osgi"              % "0.9.1")
 addSbtPlugin("com.eed3si9n"                      % "sbt-buildinfo"         % "0.7.0")
 addSbtPlugin("com.typesafe.sbt"                  % "sbt-git"               % "0.9.2")
-addSbtPlugin("org.scala-js"                      % "sbt-scalajs"           % "0.6.18")
+addSbtPlugin("org.scala-js"                      % "sbt-scalajs"           % "0.6.19")
 addSbtPlugin("com.github.gseitz"                 % "sbt-release"           % "1.0.4")
 addSbtPlugin("com.jsuereth"                      % "sbt-pgp"               % "1.0.1")
 addSbtPlugin("org.xerial.sbt"                    % "sbt-sonatype"          % "1.1")
