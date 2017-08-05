@@ -19,6 +19,8 @@ package ops
 
 import poly._
 
+import annotation.implicitNotFound
+
 object coproduct {
   trait Inject[C <: Coproduct, I] extends Serializable {
     def apply(i: I): C
@@ -1367,43 +1369,30 @@ object coproduct {
     * Type class supporting the injection of runtime values of type `Any` in `Coproduct`.
     *
     * @author Juan José Vázquez Delgado
+    * @author Fabio Labella
     */
+  @annotation.implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
   trait RuntimeInject[C <: Coproduct] extends Serializable {
     def apply(x: Any): Option[C]
   }
 
-  object RuntimeInject {
-    def apply[C <: Coproduct](implicit rInject: RuntimeInject[C]): RuntimeInject[C] = rInject
+  object RuntimeInject extends RuntimeInjectLowPrio {
+    implicit def baseCaseRuntimeInject[H](
+        implicit castH: Typeable[H]): RuntimeInject[H :+: CNil] =
+      new RuntimeInject[H :+: CNil] {
+        def apply(x: Any): Option[H :+: CNil] =
+          castH.cast(x).map(v => Inl(v))
+      }
+  }
 
-    implicit def coproductRuntimeInject[H, T <: Coproduct](
-        implicit rinjectH: RuntimeInject[Inl[H, T]],
-        rinjectT: RuntimeInject[Inr[H, T]]): RuntimeInject[H :+: T] =
+  trait RuntimeInjectLowPrio {
+    implicit def inductiveCaseRuntimeInject[H, T <: Coproduct](
+        implicit next: RuntimeInject[T],
+        castH: Typeable[H]): RuntimeInject[H :+: T] =
       new RuntimeInject[H :+: T] {
-        def apply(x: Any): Option[H :+: T] = {
-          rinjectH(x) orElse rinjectT(x)
-        }
-      }
-
-    implicit val cnilRuntimeInject: RuntimeInject[CNil] =
-      new RuntimeInject[CNil] {
-        def apply(x: Any): Option[CNil] = None
-      }
-
-    implicit def inlRuntimeInject[H, T <: Coproduct](
-        implicit castH: Typeable[H]): RuntimeInject[Inl[H, T]] =
-      new RuntimeInject[Inl[H, T]] {
-        def apply(x: Any): Option[Inl[H, T]] = {
-          if (x == null) None
-          else castH.cast(x).map(Inl(_))
-        }
-      }
-
-    implicit def inrRuntimeInject[H, T <: Coproduct](
-        implicit rinjectT: RuntimeInject[T]): RuntimeInject[Inr[H, T]] =
-      new RuntimeInject[Inr[H, T]] {
-        def apply(x: Any): Option[Inr[H, T]] = {
-          if (x == null) None
-          else rinjectT(x).map(Inr(_))
+        def apply(x: Any): Option[H :+: T] = castH.cast(x) match {
+          case Some(value) => Option(Inl(value))
+          case None => next(x).map(v => Inr(v))
         }
       }
   }

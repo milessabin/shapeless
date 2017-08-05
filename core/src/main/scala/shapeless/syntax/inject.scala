@@ -18,7 +18,7 @@ package shapeless
 package syntax
 
 object inject {
-  import ops.coproduct.Inject
+  import ops.coproduct.{Inject, RuntimeInject}
 
   /**
    * @author Fabio Labella
@@ -29,5 +29,13 @@ object inject {
      * Only available if the coproduct contains the type `T`.
      */
     def inject[C <: Coproduct](implicit inj: Inject[C, T]): C = inj(t)
+
+    /**
+     * Inject the receiver into a coproduct `C`, by trying to convert
+     * it to each element of C.
+     * Only available if the coproduct is not CNil.
+     */
+    def runtimeInject[C <: Coproduct](implicit rInj: RuntimeInject[C]): Option[C] =
+      rInj(t)
   }
 }

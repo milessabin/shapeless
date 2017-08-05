@@ -35,8 +35,12 @@ object CoproductRuntimeInject extends App {
   val baz  = Coproduct.runtimeInject[FooIS]("baz": Any)
   val ouch = Coproduct.runtimeInject[FooIS](true: Any)
 
+  import syntax.inject._
+  val infix = 23.runtimeInject[FooIS]
+
   assert(foo  == Option(Inl(Foo("msg"))))
   assert(bar  == Option(Inr(Inl(23))))
   assert(baz  == Option(Inr(Inr(Inl("baz")))))
   assert(ouch == Option.empty[FooIS])
+  assert(infix == bar)
 }

@@ -1,8 +1,8 @@
 #!/bin/sh
-COURSIER_URL=https://raw.githubusercontent.com/alexarchambault/coursier/v1.0.0-M15/coursier
+COURSIER_URL=https://git.io/vgvpD
 test -e ~/.coursier/coursier || \
-  (mkdir -p ~/.coursier && curl -s --output ~/.coursier/coursier $COURSIER_URL && chmod +x ~/.coursier/coursier)
+  (mkdir -p ~/.coursier && curl -L -s --output ~/.coursier/coursier $COURSIER_URL && chmod +x ~/.coursier/coursier)
 ~/.coursier/coursier launch -q -P \
-  com.lihaoyi:ammonite_2.11.8:0.8.2 \
-  com.chuusai:shapeless_2.11:2.3.2 \
-  -- --predef 'import shapeless._' < /dev/tty
+  com.lihaoyi:ammonite_2.12.3:1.0.1 \
+  com.chuusai:shapeless_2.12:2.3.2 \
+  -- --predef-code 'import shapeless._' < /dev/tty
