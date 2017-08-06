@@ -18,6 +18,7 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
+import shapeless.ops.record.AlignByKeys
 
 class RecordTests {
   import labelled._
@@ -1097,6 +1098,23 @@ class RecordTests {
     val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply
 
     assertEquals(fields.toList, List('x, 'y, 'z))
+  }
+
+  @Test
+  def alignByKeys: Unit = {
+    type TestRecord = Record.`'a -> String, 'b -> Int, 'c -> Double`.T
+
+    type Keys1 = HList.`'a, 'b, 'c`.T
+    type Keys2 = HList.`'b, 'c, 'a`.T
+    type Keys3 = HList.`'b, 'a, 'c`.T
+    type Keys4 = HList.`'c, 'a, 'b`.T
+
+    val v = Record(a  = "foo", b  = 42, c = 33.3)
+
+    assertTypedEquals[TestRecord](v, AlignByKeys[TestRecord, Keys1].apply(v))
+    assertTypedEquals[Record.`'b -> Int, 'c -> Double, 'a -> String`.T](Record(b = 42, c = 33.3, a = "foo"), AlignByKeys[TestRecord, Keys2].apply(v))
+    assertTypedEquals[Record.`'b -> Int, 'a -> String, 'c -> Double`.T](Record(b = 42, a = "foo", c = 33.3), AlignByKeys[TestRecord, Keys3].apply(v))
+    assertTypedEquals[Record.`'c -> Double, 'a -> String, 'b -> Int`.T](Record(c = 33.3, a = "foo", b = 42), AlignByKeys[TestRecord, Keys4].apply(v))
   }
 
   @Test

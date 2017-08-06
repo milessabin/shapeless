@@ -841,4 +841,36 @@ package record {
         def apply(l: FieldType[K, V] :: T) = field[K](hc(l.head: V)) :: mapValuesTail(l.tail)
       }
   }
+
+  /**
+    * Type class reordering record T by the HList of Keys K
+    *
+    * @author Mike Limansky
+    */
+  trait AlignByKeys[T <: HList, K <: HList] extends DepFn1[T] with Serializable {
+    override type Out <: HList
+  }
+
+  object AlignByKeys {
+    type Aux[T <: HList, K <: HList, O] = AlignByKeys[T, K] { type Out = O}
+
+    def apply[T <: HList, K <: HList](implicit ev: AlignByKeys[T, K]): Aux[T, K, ev.Out] = ev
+
+    implicit val hnilAlign: Aux[HNil, HNil, HNil] = new AlignByKeys[HNil, HNil] {
+      override type Out = HNil
+      override def apply(t: HNil): HNil = HNil
+    }
+
+    implicit def hlistAlign[T <: HList, KH, KT <: HList, V, R <: HList, TA <: HList](implicit
+      remover: Remover.Aux[T, KH, (V, R)],
+      tailAlign: AlignByKeys.Aux[R, KT, TA]
+    ): Aux[T, KH :: KT, FieldType[KH, V] :: TA] = new AlignByKeys[T, KH :: KT] {
+      override type Out = FieldType[KH, V] :: TA
+
+      override def apply(t: T): FieldType[KH, V] :: TA = {
+        val (v, r) = remover(t)
+        field[KH](v) :: tailAlign(r)
+      }
+    }
+  }
 }
