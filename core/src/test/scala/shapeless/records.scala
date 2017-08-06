@@ -1113,8 +1113,9 @@ class RecordTests {
 
     assertTypedEquals[TestRecord](v, AlignByKeys[TestRecord, Keys1].apply(v))
     assertTypedEquals[Record.`'b -> Int, 'c -> Double, 'a -> String`.T](Record(b = 42, c = 33.3, a = "foo"), AlignByKeys[TestRecord, Keys2].apply(v))
-    assertTypedEquals[Record.`'b -> Int, 'a -> String, 'c -> Double`.T](Record(b = 42, a = "foo", c = 33.3), AlignByKeys[TestRecord, Keys3].apply(v))
-    assertTypedEquals[Record.`'c -> Double, 'a -> String, 'b -> Int`.T](Record(c = 33.3, a = "foo", b = 42), AlignByKeys[TestRecord, Keys4].apply(v))
+
+    assertTypedEquals[Record.`'b -> Int, 'a -> String, 'c -> Double`.T](Record(b = 42, a = "foo", c = 33.3), v.alignByKeys[Keys3])
+    assertTypedEquals[Record.`'c -> Double, 'a -> String, 'b -> Int`.T](Record(c = 33.3, a = "foo", b = 42), v.alignByKeys[Keys4])
   }
 
   @Test
