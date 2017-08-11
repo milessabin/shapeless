@@ -9,7 +9,7 @@ addSbtPlugin("org.scala-js"                      % "sbt-scalajs"           % "0.
 addSbtPlugin("com.github.gseitz"                 % "sbt-release"           % "1.0.6")
 addSbtPlugin("com.jsuereth"                      % "sbt-pgp"               % "1.1.0-M1")
 addSbtPlugin("org.xerial.sbt"                    % "sbt-sonatype"          % "2.0")
-addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings"      % "0.2.2") //https://github.com/ThoughtWorksInc/sbt-api-mappings/pull/7
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings"      % "2.0.0")
 addSbtPlugin("org.scoverage"                     % "sbt-scoverage"         % "1.5.0") // not updated
 addSbtPlugin("org.scala-native"                  % "sbt-scala-native"      % "0.3.0") //https://github.com/scala-native/scala-native/issues/915
 addSbtPlugin("org.scala-native"                  % "sbt-scalajs-crossproject" % "0.2.0") // https://github.com/scala-native/sbt-crossproject/pull/49
