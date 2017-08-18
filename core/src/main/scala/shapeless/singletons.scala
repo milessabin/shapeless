@@ -305,7 +305,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case ConstantType(c: Constant) => Literal(c)
 
-      case SingleType(p, v) if !v.isParameter && !isValueClass(v) => mkAttributedRef(p, v)
+      case SingleType(p, v) if !isValueClass(v) => mkAttributedRef(p, v)
 
       case SingletonSymbolType(c) => mkSingletonSymbol(c)
 
