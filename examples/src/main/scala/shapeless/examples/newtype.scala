@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-object NewtypeExampes extends App {
+object NewtypeExamples extends App {
   import shapeless._
   import newtype._
   
