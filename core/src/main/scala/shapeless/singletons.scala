@@ -47,14 +47,13 @@ object Witness extends Dynamic {
       val value: value0.type = value0
     }
 
-  implicit val witness0: Witness.Aux[Nat._0.type] =
+  implicit val witness0: Witness.Lt[_0] =
     new Witness {
       val value = Nat._0
     }
 
-  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
+  implicit def witnessN[P <: Nat]: Witness.Lt[Succ[P]] =
     new Witness {
-      type T = Succ[P]
       val value = new Succ[P]()
     }
 
