@@ -47,7 +47,7 @@ object Witness extends Dynamic {
       val value: value0.type = value0
     }
 
-  implicit val witness0: Witness.Aux[_0] =
+  implicit val witness0: Witness.Aux[Nat._0.type] =
     new Witness {
       val value = Nat._0
     }
