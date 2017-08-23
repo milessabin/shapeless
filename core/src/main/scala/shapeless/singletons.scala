@@ -42,9 +42,9 @@ object Witness extends Dynamic {
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl
 
-  def mkWitness[T0](value0: T0): Aux[T0] =
+  def mkWitness[T0](value0: T0): Aux[value0.type] =
     new Witness {
-      val value = value0
+      val value: value0.type = value0
     }
 
   implicit val witness0: Witness.Aux[_0] =
