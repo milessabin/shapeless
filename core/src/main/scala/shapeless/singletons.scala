@@ -44,13 +44,11 @@ object Witness extends Dynamic {
 
   def mkWitness[T0](value0: T0): Aux[T0] =
     new Witness {
-      type T = T0
       val value = value0
     }
 
   implicit val witness0: Witness.Aux[_0] =
     new Witness {
-      type T = _0
       val value = Nat._0
     }
 
