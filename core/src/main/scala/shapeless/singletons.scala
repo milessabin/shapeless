@@ -35,14 +35,14 @@ trait Witness extends Serializable {
 }
 
 object Witness extends Dynamic {
-  type Aux[T0] = Witness.Lt[T0] { type T = T0; val value: T0 }
+  type Aux[T0] = Witness { type T = T0; val value: T0 }
   type Lt[Lub] = Witness { type T <: Lub; val value: Lub }
 
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl
 
-  def mkWitness[T0](value0: T0): Aux[value0.type] =
+  def mkWitness[T0 <: AnyRef](value0: T0): Aux[value0.type] =
     new Witness {
       val value: value0.type = value0
     }
