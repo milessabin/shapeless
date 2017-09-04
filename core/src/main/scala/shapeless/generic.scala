@@ -427,7 +427,7 @@ trait CaseClassMacros extends ReprTypes {
             if(suffix.isEmpty) {
               if(sym.isModuleClass) {
                 val moduleSym = sym.asClass.module
-                val modulePre = prefix(moduleSym.typeSignature)
+                val modulePre = prefix(moduleSym.typeSignatureIn(basePre))
                 c.internal.singleType(modulePre, moduleSym)
               } else
                 appliedType(sym.toTypeIn(basePre), substituteArgs)

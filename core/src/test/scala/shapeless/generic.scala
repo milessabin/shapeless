@@ -494,10 +494,17 @@ class GenericTests {
 
   trait Parent {
     case class Nested(i: Int, s: String)
+
+    sealed abstract class Foo extends Product with Serializable
+
+    case object A extends Foo
+    case object B extends Foo
+    case class C() extends Foo
   }
 
   trait Child extends Parent {
     val gen = Generic[Nested]
+    val adtGen = Generic[Foo]
   }
 
   object O extends Child
@@ -510,6 +517,18 @@ class GenericTests {
     val n1 = O.gen.from(repr)
     typed[O.Nested](n1)
     assertEquals(n0, n1)
+
+    {
+      val foo0 = O.B
+      val repr = O.adtGen.to(foo0)
+      typed[O.A.type :+: O.B.type :+: O.C :+: CNil](repr)
+    }
+
+    {
+      val foo0 = O.C()
+      val repr = O.adtGen.to(foo0)
+      typed[O.A.type :+: O.B.type :+: O.C :+: CNil](repr)
+    }
   }
 
   @Test
