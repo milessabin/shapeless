@@ -645,7 +645,7 @@ trait CaseClassMacros extends ReprTypes {
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
 
   def isCaseAccessorLike(sym: TermSymbol): Boolean =
-    !isNonGeneric(sym) && sym.isPublic && (if(sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isAccessor)
+    sym.isPublic && (if(sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isAccessor) && !isNonGeneric(sym)
 
   def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
     def helper(classSym: ClassSymbol): Boolean = {
