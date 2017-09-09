@@ -309,6 +309,8 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case SingletonSymbolType(c) => mkSingletonSymbol(c)
 
+      case ThisType(sym) => This(sym)
+
       case _ =>
         c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
     }
@@ -331,6 +333,9 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case (SymTpe, LiteralSymbol(s)) =>
         mkResult(SingletonSymbolType(s), mkSingletonSymbol(s))
+
+      case (_, tree @ This(_)) =>
+        mkResult(internal.thisType(tree.symbol), tree)
 
       case (tpe, tree) if tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
         val sym = tree.symbol.asTerm

@@ -568,6 +568,22 @@ class SingletonTypesTests {
     illTyped(" Widen[A.type] ", "could not find implicit value for parameter widen:.*")
   }
 
+  @Test
+  def testWitnessThisType {
+    class ClassThis {
+      val w1 = Witness(this)
+      val w2 = Witness[this.type]
+    }
+
+    object ObjectThis {
+      val w1 = Witness(this)
+      val w2 = Witness[this.type]
+    }
+
+    val c = new ClassThis
+    assertTypedEquals[c.type](c.w1.value, c.w2.value)
+    assertTypedEquals[ObjectThis.type](ObjectThis.w1.value, ObjectThis.w2.value)
+  }
 }
 
 package SingletonTypeTestsAux {
