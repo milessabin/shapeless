@@ -16,6 +16,8 @@
 
 package shapeless
 
+import scala.Predef.{tuple2ToZippedOps => _, tuple3ToZippedOps => _, _}
+
 import org.junit.Test
 import org.junit.Assert._
 
