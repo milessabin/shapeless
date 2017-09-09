@@ -513,20 +513,16 @@ trait CaseClassMacros extends ReprTypes {
       val KeyTagPre = prefix(keyTagTpe)
       val KeyTagSym = keyTagTpe.typeSymbol
       fTpe.dealias match {
-        case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => Some((k, v0))
+        case RefinedType(v0 :+ TypeRef(pre, KeyTagSym, List(k, v1)), scope)
+          if pre =:= KeyTagPre && refinedType(v0, NoSymbol, scope, NoPosition) =:= v1 =>
+            Some((k, v1))
         case _ => None
       }
     }
   }
 
-  def unpackFieldType(tpe: Type): (Type, Type) = {
-    val KeyTagPre = prefix(keyTagTpe)
-    val KeyTagSym = keyTagTpe.typeSymbol
-    tpe.dealias match {
-      case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => (k, v0)
-      case _ => abort(s"$tpe is not a field type")
-    }
-  }
+  def unpackFieldType(tpe: Type): (Type, Type) =
+    FieldType.unapply(tpe).getOrElse(abort(s"$tpe is not a field type"))
 
   def findField(lTpe: Type, kTpe: Type): Option[(Type, Int)] =
     unpackHListTpe(lTpe).zipWithIndex.collectFirst {
