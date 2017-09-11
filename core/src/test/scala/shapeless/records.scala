@@ -40,6 +40,8 @@ class RecordTests {
   object doubleField1 extends FieldOf[Double]
   object doubleField2 extends FieldOf[Double]
 
+  case class Bar(a: Int, b: String)
+
   @Test
   def testGet {
     val r1 =
@@ -1096,4 +1098,41 @@ class RecordTests {
 
     assertEquals(fields.toList, List('x, 'y, 'z))
   }
+
+  @Test
+  def testSelectorWithTaggedType {
+    import tag.@@
+
+    val tagged = tag[Int]("42")
+    val head1 = 'k ->> tagged
+    val head2 = field[Witness.`'k`.T](tagged)
+    val rec1 = head1 :: HNil
+    val rec2 = head2 :: HNil
+
+    assertTypedEquals[String @@ Int](rec1('k), rec2('k))
+  }
+
+  @Test
+  def testSelectorWithTaggedType2 {
+    import tag.@@
+
+    trait TestTag
+    case class FooT(bar: String @@ TestTag)
+    val lgt = LabelledGeneric[FooT]
+    val fooT = FooT(tag[TestTag]("test"))
+
+    assertEquals(tag[TestTag]("test"), lgt.to(fooT).get('bar))
+  }
+
+  @Test
+  def testSelectorForSwappedRecord {
+    import ops.record.{ Selector, SwapRecord }
+
+    val gen = LabelledGeneric[Bar]
+    val swap = SwapRecord[gen.Repr]
+    val select = Selector[swap.Out, Int]
+    val swapped = swap()
+
+    assertTypedEquals[Witness.`'a`.T](swapped.head, select(swapped))
+ }
 }
