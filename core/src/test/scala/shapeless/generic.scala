@@ -122,6 +122,10 @@ package GenericTestsAux {
   sealed trait OB extends Overlapping
   case class OBC(s: String) extends OB
   case class OAB(i: Int) extends OA with OB
+
+  case object COSemiAuto {
+    implicit val gen = Generic[COSemiAuto.type]
+  }
 }
 
 class GenericTests {
@@ -653,6 +657,14 @@ class GenericTests {
   @Test
   def testCaseObjectsAndLazy {
     TC[Base1]
+  }
+
+  @Test
+  def testCaseObjectSemiAuto {
+    val gen = Generic[COSemiAuto.type]
+    assertSame(gen, COSemiAuto.gen)
+    assertTypedEquals[HNil](HNil, gen.to(COSemiAuto))
+    assertTypedEquals[COSemiAuto.type](COSemiAuto, gen.from(HNil))
   }
 }
 
