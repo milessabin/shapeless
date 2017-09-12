@@ -3,6 +3,7 @@ package shapeless
 import shapeless.record.Record
 
 import org.junit.Test
+import org.junit.Assert._
 import shapeless.test.illTyped
 import shapeless.testutil.assertTypedEquals
 
@@ -40,6 +41,24 @@ object DefaultTestDefinitions {
     }
   }
 
+  object SemiAuto {
+    case class CCl1(i: Int = 0)
+    object CCl1 {
+      implicit val default = Default[CCl1]
+    }
+
+    case class CCl2(i: Int)
+    trait CCl2Companion {
+      def default: Default[CCl2]
+    }
+    object CCl2 extends CCl2Companion {
+      implicit val default = Default[CCl2]
+    }
+
+    case object CObj {
+      implicit val default = Default[CObj.type]
+    }
+  }
 }
 
 class DefaultTests {
@@ -189,4 +208,20 @@ class DefaultTests {
     )
   }
 
+  @Test
+  def testSemiAuto {
+    import SemiAuto._
+
+    val default1 = Default[CCl1]
+    val default2 = Default[CCl2]
+    val default3 = Default[CObj.type]
+
+    assertSame(CCl1.default, default1)
+    assertSame(CCl2.default, default2)
+    assertSame(CObj.default, default3)
+
+    assertTypedEquals[Some[Int] :: HNil](Some(0) :: HNil, default1())
+    assertTypedEquals[None.type :: HNil](None :: HNil, default2())
+    assertTypedEquals[HNil](HNil, default3())
+  }
 }
