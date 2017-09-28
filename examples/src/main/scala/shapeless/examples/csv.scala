@@ -45,7 +45,7 @@ Markus,Persson,32"""
 // Implementation
 
 /** Exception to throw if something goes wrong during CSV parsing */
-class CSVException(s: String) extends RuntimeException
+class CSVException(s: String) extends RuntimeException(s)
 
 /** Trait for types that can be serialized to/deserialized from CSV */
 trait CSVConverter[T] {
