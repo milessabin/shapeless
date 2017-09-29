@@ -306,7 +306,10 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     else tpe
 
   def isProductAux(tpe: Type): Boolean =
-    tpe.typeSymbol.isClass && (isCaseClassLike(classSym(tpe)) || HasApplyUnapply(tpe) || HasCtorUnapply(tpe))
+    tpe.typeSymbol.isClass && {
+      val cls = classSym(tpe)
+      isCaseObjectLike(cls) || isCaseClassLike(cls) || HasApplyUnapply(tpe) || HasCtorUnapply(tpe)
+    }
 
   def isProduct(tpe: Type): Boolean =
     tpe =:= typeOf[Unit] || (!(tpe =:= typeOf[AnyRef]) && isProductAux(tpe))
@@ -351,7 +354,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
     val clazz = tpe.typeSymbol.asClass
     val isCaseClass = clazz.isCaseClass
-    if (isAnonOrRefinement(clazz)) Nil
+    if (isCaseObjectLike(clazz) || isAnonOrRefinement(clazz)) Nil
     else tpe.decls.sorted.collect {
       case sym: TermSymbol if isCaseAccessorLike(sym, isCaseClass) =>
         (sym.name, sym.typeSignatureIn(tpe).finalResultType)
@@ -367,8 +370,8 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     } yield ctor
   }
 
-  def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, false)
-  def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, true)
+  def ctorsOf(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, hk = false)
+  def ctorsOf1(tpe: Type): List[Type] = distinctCtorsOfAux(tpe, hk = true)
 
   def distinctCtorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
     def distinct[A](list: List[A])(eq: (A, A) => Boolean): List[A] = list.foldLeft(List.empty[A]) { (acc, x) =>
@@ -423,41 +426,44 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       val ctorSyms = collectCtors(baseSym).sortWith(orderSyms)
       val ctors =
         ctorSyms flatMap { sym =>
-          def normalizeTermName(name: Name): TermName =
-            TermName(name.toString.stripSuffix(" "))
+          import c.internal._
 
           def substituteArgs: List[Type] = {
-            val subst = c.internal.thisType(sym).baseType(baseSym).typeArgs
+            val subst = thisType(sym).baseType(baseSym).typeArgs
             sym.typeParams.map { param =>
-              val paramTpe = param.asType.toType
-              baseArgs(subst.indexWhere(_.typeSymbol == paramTpe.typeSymbol))
+              baseArgs(subst.indexWhere(_.typeSymbol == param))
             }
           }
 
-          val suffix = ownerChain(sym).dropWhile(_ != basePre.typeSymbol)
-          val ctor =
-            if(suffix.isEmpty) {
-              if(sym.isModuleClass) {
-                val moduleSym = sym.asClass.module
-                val modulePre = prefix(moduleSym.typeSignatureIn(basePre))
-                c.internal.singleType(modulePre, moduleSym)
-              } else
-                appliedType(sym.toTypeIn(basePre), substituteArgs)
-            } else {
-              if(sym.isModuleClass) {
-                val path = suffix.tail.map(sym => normalizeTermName(sym.name))
-                val (modulePre, moduleSym) = mkDependentRef(basePre, path)
-                c.internal.singleType(modulePre, moduleSym)
-              } else if(isAnonOrRefinement(sym)) {
-                val path = suffix.tail.init.map(sym => normalizeTermName(sym.name))
-                val (valPre, valSym) = mkDependentRef(basePre, path)
-                c.internal.singleType(valPre, valSym)
-              } else {
-                val path = suffix.tail.init.map(sym => normalizeTermName(sym.name)) :+ suffix.last.name.toTypeName
-                val (subTpePre, subTpeSym) = mkDependentRef(basePre, path)
-                c.internal.typeRef(subTpePre, subTpeSym, substituteArgs)
-              }
-            }
+          // Look for a path from the macro call site to the subtype.
+          val owner = sym.owner
+          val isNamed = !isAnonOrRefinement(sym)
+          val owners = ownerChain(if (isNamed) owner else owner.owner)
+          val prePaths = for (pre <- Iterator.iterate(basePre)(prefix).takeWhile(_ != NoPrefix))
+            yield (pre, owners.iterator.dropWhile(pre.baseType(_) == NoType))
+
+          // Find a path from a (sub-)prefix or the enclosing owner.
+          val (pre0, path) = prePaths.find(_._2.nonEmpty).getOrElse {
+            val enclosing = ownerChain(enclosingOwner)
+            val common = owners zip enclosing indexWhere { case (o1, o2) => o1 != o2 }
+            (NoPrefix, if (common < 0) Iterator.empty else owners.iterator drop common - 1)
+          }
+
+          // Construct a stable prefix from the path.
+          val pre = path.drop(1).foldLeft(pre0) { (pre1, part) =>
+            if (part.isType) part.asType.toTypeIn(pre1)
+            else abort(s"$tpe has a subtype $sym with unstable prefix")
+          }
+
+          val ctor = if (isNamed) {
+            if (sym.isModuleClass) sym.toTypeIn(pre)
+            else typeRef(pre, sym, substituteArgs)
+          } else {
+            def ownerIsSubType = owner.typeSignatureIn(pre) <:< baseTpe
+            if (owner.isTerm && owner.asTerm.isVal && ownerIsSubType) singleType(pre, owner)
+            else abort(s"$tpe has a subtype $sym with unstable prefix")
+          }
+
           if(!isAccessible(ctor))
             abort(s"$tpe has an inaccessible subtype $ctor")
           if(ctor <:< baseTpe) Some(ctor) else None
@@ -617,7 +623,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def param1(tpe: Type): Type =
     tpe match {
-      case t if(tpe.takesTypeArgs) => t.typeParams.head.asType.toType
+      case t if tpe.takesTypeArgs => t.typeParams.head.asType.toType
       case TypeRef(_, _, List(arg)) => arg
       case _ => NoType
     }
@@ -998,21 +1004,25 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     val to = cq""" $p => ${mkHListValue(ts)} """
     val (rp, rts) = ctorDtor.reprBinding
     val from = cq""" $rp => ${ctorDtor.construct(rts)} """
+    val repr = mkHListTypTree(fieldsOf(tpe).map(_._2))
 
     val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
+        type Repr = $repr
         def to(p: $tpe): Repr = (p match { case $to }).asInstanceOf[Repr]
         def from(p: Repr): $tpe = p match { case $from }
       }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
+      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, $repr]
     """
   }
 
   def mkCoproductGeneric(tpe: Type): Tree = {
     def mkCoproductCases(tpe0: Type, index: Int): CaseDef = {
       tpe0 match {
+        case TypeRef(pre, sym, Nil) if sym.isModuleClass =>
+          val singleton = mkAttributedRef(pre, sym.asClass.module)
+          cq"p if p eq $singleton => $index"
         case SingleType(pre, sym) =>
           val singleton = mkAttributedRef(pre, sym)
           cq"p if p eq $singleton => $index"
@@ -1021,19 +1031,21 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
       }
     }
 
+    val ctors = ctorsOf(tpe)
+    val repr = mkCoproductTypTree(ctors)
     val to = {
-      val toCases = ctorsOf(tpe).zipWithIndex map (mkCoproductCases _).tupled
+      val toCases = ctors.zipWithIndex map (mkCoproductCases _).tupled
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
     val clsName = TypeName(c.freshName("anon$"))
     q"""
       final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
+        type Repr = $repr
         def to(p: $tpe): Repr = $to
         def from(p: Repr): $tpe = _root_.shapeless.Coproduct.unsafeGet(p).asInstanceOf[$tpe]
       }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
+      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, $repr]
     """
   }
 

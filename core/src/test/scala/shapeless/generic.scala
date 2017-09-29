@@ -127,8 +127,14 @@ package GenericTestsAux {
   case class OBC(s: String) extends OB
   case class OAB(i: Int) extends OA with OB
 
-  case object COSemiAuto {
-    implicit val gen = Generic[COSemiAuto.type]
+  object SemiAuto {
+    case object CObj {
+      implicit val gen = Generic[CObj.type]
+    }
+
+    object NonCObj {
+      implicit val gen = Generic[NonCObj.type]
+    }
   }
 
   case class CCOrdered[A: Ordering](value: A)
@@ -693,11 +699,96 @@ class GenericTests {
   }
 
   @Test
-  def testCaseObjectSemiAuto: Unit = {
-    val gen = Generic[COSemiAuto.type]
-    assertSame(gen, COSemiAuto.gen)
-    assertTypedEquals[HNil](HNil, gen.to(COSemiAuto))
-    assertTypedEquals[COSemiAuto.type](COSemiAuto, gen.from(HNil))
+  def testObjectSemiAuto: Unit = {
+    import SemiAuto._
+    val gen1 = Generic[CObj.type]
+    val gen2 = Generic[NonCObj.type]
+
+    assertSame(gen1, CObj.gen)
+    assertSame(gen2, NonCObj.gen)
+
+    assertTypedEquals[HNil](HNil, gen1.to(CObj))
+    assertTypedEquals[CObj.type](CObj, gen1.from(HNil))
+    assertTypedEquals[HNil](HNil, gen2.to(NonCObj))
+    assertTypedEquals[NonCObj.type](NonCObj, gen2.from(HNil))
+  }
+
+  @Test
+  def testPathViaObject: Unit = {
+    sealed trait T
+    object T {
+      case class C(i: Int) extends T
+      case object O extends T
+    }
+
+    type Repr = T.C :+: T.O.type :+: CNil
+    val gen = Generic[T]
+    val c = T.C(42)
+    val injC: Repr = Inl(c)
+    val injO: Repr = Inr(Inl(T.O))
+
+    assertTypedEquals[Repr](injC, gen.to(c))
+    assertTypedEquals[T](c, gen.from(injC))
+    assertTypedEquals[Repr](injO, gen.to(T.O))
+    assertTypedEquals[T](T.O, gen.from(injO))
+  }
+
+  @Test
+  def testNoPathViaDef: Unit = {
+    sealed trait T
+    def t: T = {
+      case class C(i: Int) extends T
+      case object O extends T
+      O
+    }
+
+    illTyped("Generic[T]")
+  }
+
+  @Test
+  def testNoPathViaVal: Unit = {
+    sealed trait T
+    val t: T = {
+      case class C(i: Int) extends T
+      case object O extends T
+      O
+    }
+
+    illTyped("Generic[T]")
+  }
+
+  @Test
+  def testNoPathToAnonViaDef: Unit = {
+    sealed trait T
+    case object O extends T
+    def t: T = new T { }
+
+    illTyped("Generic[T]")
+  }
+
+  @Test
+  def testPathViaSubPrefix: Unit = {
+    class Outer {
+      class Inner {
+        sealed trait T
+      }
+
+      val inner = new Inner
+      case class C(i: Int) extends inner.T
+      case object O extends inner.T
+    }
+
+    val outer = new Outer
+    type Repr = outer.C :+: outer.O.type :+: CNil
+    val gen = Generic[outer.inner.T]
+    val c = outer.C(42)
+    val injC: Repr = Inl(c)
+    val injO: Repr = Inr(Inl(outer.O))
+
+    assertTypedEquals[Repr](injC, gen.to(c))
+    assertTypedEquals[outer.inner.T](c, gen.from(injC))
+    assertTypedEquals[Repr](injO, gen.to(outer.O))
+    assertTypedEquals[outer.inner.T](outer.O, gen.from(injO))
   }
 
   @Test
