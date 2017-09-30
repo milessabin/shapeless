@@ -97,6 +97,7 @@ package GenericTestsAux {
   sealed trait AbstractNonCC
   class NonCCA(val i: Int, val s: String) extends AbstractNonCC
   class NonCCB(val b: Boolean, val d: Double) extends AbstractNonCC
+  class NonCCWithVars(var c: Char, var l: Long) extends AbstractNonCC
 
   class NonCCWithCompanion private (val i: Int, val s: String)
   object NonCCWithCompanion {
@@ -433,10 +434,12 @@ class GenericTests {
   def testAbstractNonCC {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
+    val nccc = new NonCCWithVars('c', 42)
     val ancc: AbstractNonCC = ncca
 
     val genA = Generic[NonCCA]
     val genB = Generic[NonCCB]
+    val genC = Generic[NonCCWithVars]
     val genAbs = Generic[AbstractNonCC]
 
     val rA = genA.to(ncca)
@@ -445,8 +448,11 @@ class GenericTests {
     val rB = genB.to(nccb)
     assertTypedEquals[Boolean :: Double :: HNil](true :: 2.0 :: HNil, rB)
 
+    val rC = genC.to(nccc)
+    assertTypedEquals[Char :: Long :: HNil]('c' :: 42l :: HNil, rC)
+
     val rAbs = genAbs.to(ancc)
-    assertTypedEquals[NonCCA :+: NonCCB :+: CNil](Inl(ncca), rAbs)
+    assertTypedEquals[NonCCA :+: NonCCB :+: NonCCWithVars :+: CNil](Inl(ncca), rAbs)
 
     val fA = genA.from(13 :: "bar" :: HNil)
     typed[NonCCA](fA)
@@ -457,6 +463,11 @@ class GenericTests {
     typed[NonCCB](fB)
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
+
+    val fC = genC.from('k' :: 313l :: HNil)
+    typed[NonCCWithVars](fC)
+    assertEquals('k', fC.c)
+    assertEquals(313l, fC.l)
 
     val fAbs = genAbs.from(Inr(Inl(nccb)))
     typed[AbstractNonCC](fAbs)
