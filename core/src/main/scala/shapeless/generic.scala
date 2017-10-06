@@ -126,7 +126,7 @@ object Generic {
    * More importantly, Aux allows us to write code like this:
    *
    * {{{
-   *   def myMethod[T]()(implicit eqGen: Generic.Aux[T,R], repEq: Eq[R]) = ???
+   *   def myMethod[T, R]()(implicit eqGen: Generic.Aux[T,R], repEq: Eq[R]) = ???
    * }}}
    *
    * Here, we specify T, and we find a Generic.Aux[T,R] by implicit search. We then use R in the second argument.
@@ -134,7 +134,7 @@ object Generic {
    * it this way:
    *
    * {{{
-   *   def myMethod[T]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr]) = ???
+   *   def myMethod[T, R]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr]) = ???
    * }}}
    *
    * The reason is that we are not allowed to have dependencies between arguments in the same parameter group. So
