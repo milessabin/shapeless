@@ -3401,4 +3401,5 @@ class HListTests {
 
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
+
 }
