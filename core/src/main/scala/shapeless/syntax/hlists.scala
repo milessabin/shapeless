@@ -620,7 +620,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   /**
    * Displays all elements of this hlist in a string using start, end, and separator strings.
    */
-  def mkString(start: String, sep: String, end: String): String = {
+  def mkString(start: String, sep: String, end: String)(implicit toTraversable: ToTraversable[L, List] = null): String = {
     import shapeless.{HList, HNil, :: => HCons}
 
     @annotation.tailrec
