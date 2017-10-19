@@ -1,2 +1,4 @@
--Xms2048m
--Xmx2048m
+-Xms2g
+-Xmx3g
+-Xss2m
+-XX:+UseG1GC
