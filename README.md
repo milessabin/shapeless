@@ -45,7 +45,7 @@ Classes as Object and Implicits][tcoi] is useful background material.
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
 [milessabin]: https://twitter.com/milessabin
-[syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
+[syb]: https://www.microsoft.com/en-us/research/publication/scrap-your-boilerplate-with-class/
 [higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
 [typelevel]: http://typelevel.org/
 [scalaz]: https://github.com/scalaz/scalaz
