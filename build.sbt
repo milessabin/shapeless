@@ -139,7 +139,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     sources in (Compile,doc) := Seq.empty
   )
 
-val macroCompatUri = uri("https://github.com/clhodapp/macro-compat.git#2f774fc")
+val macroCompatUri = uri("https://github.com/milessabin/macro-compat.git#5b4fccdbfaf6bd730725f1cde0cbbd50bf4c3e78")
 lazy val coreJVM = core.jvm.dependsOn(
   ProjectRef(
     macroCompatUri,
@@ -154,7 +154,12 @@ lazy val coreJS = core.js.dependsOn(
   )
 )
 
-lazy val coreNative = core.native
+lazy val coreNative = core.native.dependsOn(
+  ProjectRef(
+    macroCompatUri,
+    "coreJVM"
+  )
+)
 
 lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
   .configureCross(configureJUnit)
