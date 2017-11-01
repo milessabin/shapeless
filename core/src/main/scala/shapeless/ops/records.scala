@@ -530,7 +530,7 @@ package record {
    * @author Travis Brown
    */
   @annotation.implicitNotFound(msg = "Not all of the field or element types ${A} are in record ${L}")
-  trait RemoveAll[L <: HList, A <: HList] extends DepFn1[L] {
+  trait RemoveAll[L <: HList, A <: HList] extends DepFn1[L] with Serializable {
     def reinsert(out: Out): L
   }
 
