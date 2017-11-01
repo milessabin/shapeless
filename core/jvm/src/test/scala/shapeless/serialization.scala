@@ -176,6 +176,7 @@ object SerializationTestDefns {
   type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
   type RM = Record.`'c -> Boolean, 'd -> Double`.T
   type RM1 = Record.`'c -> Boolean, 'b -> String`.T
+  type RM2 = Record.`'b -> String, 'c -> Boolean`.T
   type KA = Witness.`'a`.T
   type KB = Witness.`'b`.T
   type KC = Witness.`'c`.T
@@ -588,6 +589,8 @@ class SerializationTests {
 
     assertSerializable(Remover[R, KA])
     assertSerializable(Remover[R, KB])
+
+    assertSerializable(RemoveAll[R, RM2])
 
     assertSerializable(Renamer[R, KA, KB])
     assertSerializable(Renamer[R, KC, KA])
