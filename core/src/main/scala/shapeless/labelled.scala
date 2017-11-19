@@ -100,10 +100,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
     val labelValues = labels.map(mkSingletonSymbol)
 
     val labelsTpe = mkHListTpe(labelTpes)
-    val labelsValue =
-      labelValues.foldRight(q"_root_.shapeless.HNil": Tree) {
-        case (elem, acc) => q"_root_.shapeless.::($elem, $acc)"
-      }
+    val labelsValue = mkHListValue(labelValues)
 
     q"""
       new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
