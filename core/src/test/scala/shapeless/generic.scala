@@ -146,6 +146,12 @@ package GenericTestsAux {
   class Squared(x: Long) {
     val x2 = x * x
   }
+
+  sealed trait Tap[A]
+  final case class ConstTap[A](a: A) extends Tap[A]
+  final case class InTap[A, -B](in: B => A) extends Tap[A]
+  final case class OutTap[A, +B](out: A => B) extends Tap[A]
+  final case class PipeTap[A, B](in: B => A, out: A => B) extends Tap[A]
 }
 
 class GenericTests {
@@ -818,6 +824,28 @@ class GenericTests {
   @Test
   def testCtorFieldsMismatch: Unit = {
     illTyped("Generic[Squared]")
+  }
+
+  def testCoproductWithFreeTypeParams: Unit = {
+    type Repr[A] = ConstTap[A] :+: InTap[A, _] :+: OutTap[A, _] :+: PipeTap[A, _] :+: CNil
+    val gen = Generic[Tap[String]]
+
+    val const = ConstTap("simple")
+    val in = InTap[String, Int](_.toString)
+    val out = OutTap[String, Option[Char]](_.headOption)
+    val pipe = PipeTap[String, Array[Byte]](new String(_), _.getBytes)
+
+    val testData = List[(Tap[String], Repr[String])](
+      const -> Inl(const),
+      in -> Inr(Inl(in)),
+      out -> Inr(Inr(Inl(out))),
+      pipe -> Inr(Inr(Inr(Inl(pipe))))
+    )
+
+    for ((expected, actual) <- testData) {
+      assertEquals(expected, gen.from(actual))
+      assertEquals(gen.to(expected), actual)
+    }
   }
 }
 
