@@ -439,13 +439,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         ctorSyms flatMap { sym =>
           import c.internal._
 
-          def substituteArgs: List[Type] = {
-            val subst = thisType(sym).baseType(baseSym).typeArgs
-            sym.typeParams.map { param =>
-              baseArgs(subst.indexWhere(_.typeSymbol == param))
-            }
-          }
-
           // Look for a path from the macro call site to the subtype.
           val owner = sym.owner
           val isNamed = !isAnonOrRefinement(sym)
@@ -467,8 +460,21 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           }
 
           val ctor = if (isNamed) {
-            if (sym.isModuleClass) sym.toTypeIn(pre)
-            else typeRef(pre, sym, substituteArgs)
+            if (sym.isModuleClass) {
+              sym.toTypeIn(pre)
+            } else {
+              val subst = thisType(sym).baseType(baseSym).typeArgs
+              val params = sym.typeParams
+              val (args, free) = params.foldRight((List.empty[Type], false)) {
+                case (param, (args, free)) =>
+                  val i = subst.indexWhere(_.typeSymbol == param)
+                  val arg = if (i >= 0) baseArgs(i) else param.asType.toType
+                  (arg :: args, free || i < 0)
+              }
+
+              val ref = typeRef(pre, sym, args)
+              if (free) existentialAbstraction(params, ref) else ref
+            }
           } else {
             def ownerIsSubType = owner.typeSignatureIn(pre) <:< baseTpe
             if (owner.isTerm && owner.asTerm.isVal && ownerIsSubType) singleType(pre, owner)
