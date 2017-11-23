@@ -333,7 +333,9 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType"),
       exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.parseSingletonSymbolType"),
       exclude[MissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
-      exclude[MissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons")
+      exclude[MissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons"),
+      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
+      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne")
     )
   }
 )
