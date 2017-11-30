@@ -68,11 +68,22 @@ object CachedMacros {
 class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) with OpenImplicitMacros {
   import c.universe._
 
+  def deepCopyTree(t: Tree): Tree = {
+    val treeDuplicator = new Transformer {
+      // by default Transformers don’t copy trees which haven’t been modified,
+      // so we need to use use strictTreeCopier
+      override val treeCopy =
+        c.asInstanceOf[reflect.macros.runtime.Context].global.newStrictTreeCopier.asInstanceOf[TreeCopier]
+    }
+
+    treeDuplicator.transform(t)
+  }
+
   def materializeCached[T: WeakTypeTag]: Tree = {
     // Getting the actual type parameter T, using the same trick as Lazy/Strict
     val tpe = openImplicitTpeParam.getOrElse(weakTypeOf[T])
 
-    val concurrentLazy = !CachedMacros.deriving && LazyMacros.dcRef.nonEmpty
+    val concurrentLazy = !CachedMacros.deriving && LazyMacros.dcRef(this).nonEmpty
 
     // Ensuring we are not caching parts of trees derived during a Lazy/Strict lookup
     // (but caching the full tree of a Lazy/Strict is fine), as these can reference values
@@ -99,18 +110,19 @@ class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) with 
           case (eTpe, eTree) if eTpe =:= tpe => eTree
         }
 
-        treeOpt.getOrElse {
+        deepCopyTree(treeOpt.getOrElse {
           // Cached instances are derived like Lazy or Strict instances.
           // Trying to derive them in a standalone way raised
           // https://github.com/fommil/spray-json-shapeless/issues/14.
-          val tree = mkImpl[T](
+          val tree0 = mkImpl[T](
             (tree, actualType) => q"_root_.shapeless.Cached[$actualType]($tree)",
             q"null.asInstanceOf[_root_.shapeless.Cached[_root_.scala.Nothing]]"
           )
+          val tree = c.untypecheck(tree0)
 
           CachedMacros.cache = (tpe -> tree) :: CachedMacros.cache
           tree
-        }
+        })
       } finally {
         CachedMacros.deriving = false
       }

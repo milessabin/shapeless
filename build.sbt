@@ -321,9 +321,9 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     import com.typesafe.tools.mima.core._
     import com.typesafe.tools.mima.core.ProblemFilters._
 
-    // Filtering the methods that were added since the checked version
-    // (these only break forward compatibility, not the backward one)
     Seq(
+      // Filtering the methods that were added since the checked version
+      // (these only break forward compatibility, not the backward one)
       exclude[MissingMethodProblem]("shapeless.:+:.eliminate"),
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$15"),
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$16"),
@@ -333,9 +333,13 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType"),
       exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.parseSingletonSymbolType"),
       exclude[MissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
+
+      // Filtering removals
       exclude[MissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons"),
       exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
-      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne")
+      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne"),
+      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef"),
+      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_=")
     )
   }
 )
