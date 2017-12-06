@@ -161,3 +161,52 @@ object Coproduct extends Dynamic {
   /** Allows to inject a runtime value of type `Any` in a `Coproduct` */
   def runtimeInject[C <: Coproduct](x: Any)(implicit rinj: RuntimeInject[C]): Option[C] = rinj(x)
 }
+
+/**
+  * More general sub-type evidence, compatible with coproducts.
+  *
+  * Evidence that `From` can be converted to `To`. Works if `From` is a sub-type of `To`, like
+  * with `<:<` from the standard library. `From` can also possibly be a coproduct, whose elements
+  * can all be converted to `To`.
+  *
+  * This can recurse on the elements of coproducts, so that if `From` is a coproduct, this will also
+  * work if some or all its elements are coproducts that can be converted to `To`.
+  *
+  * E.g.
+  *
+  * {{{
+  *   <::<[String, AnyRef]
+  *   <::<[String :+: Seq[Int] :+: Option[Double] :+: CNil, AnyRef]
+  *   <::<[List[Double] :+: Vector[Double] :+: IndexedSeq[Double] :+: CNil, Seq[Double]]
+  * }}}
+  *
+  * @author Alexandre Archambault
+  */
+sealed abstract class <::<[From, To] extends (From => To) with Serializable
+
+object <::< {
+  def apply[From, To](implicit ev: From <::< To): From <::< To = ev
+
+  implicit def default[From, To](implicit ev: From <:< To): From <::< To =
+    new <::<[From, To] {
+      def apply(from: From) = ev(from)
+    }
+
+  implicit def cnil[A]: CNil <::< A =
+    new <::<[CNil, A] {
+      def apply(c: CNil) = c.impossible
+    }
+
+  implicit def ccons[A, H, T <: Coproduct](implicit
+    // These might possibly need to be wrapped in Lazy or Strict.
+    // The current tests seem to pass without that though.
+    headEv: H <::< A,
+    tailEv: T <::< A
+  ): (H :+: T) <::< A =
+    new <::<[H :+: T, A] {
+      def apply(c: H :+: T) = c match {
+        case Inl(h) => headEv(h)
+        case Inr(t) => tailEv(t)
+      }
+    }
+}
