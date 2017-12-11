@@ -52,8 +52,8 @@ package MonoidAux {
 
     object typeClass extends ProductTypeClass[Monoid] {
       def emptyProduct = new Monoid[HNil] {
-        def zero = HNil
-        def append(a: HNil, b: HNil) = HNil
+        def zero = HNil : HNil
+        def append(a: HNil, b: HNil) = HNil : HNil
       }
 
       def product[F, T <: HList](mh: Monoid[F], mt: Monoid[T]) = new Monoid[F :: T] {

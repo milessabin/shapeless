@@ -56,13 +56,13 @@ sealed trait HNil extends HList {
  * 
  * @author Miles Sabin
  */
-case object HNil extends HNil
+private case object HNil extends HNil
 
 object HList extends Dynamic {
   import ops.hlist._
   import syntax.HListOps
 
-  def apply() = HNil
+  def apply() = HNil : HNil
 
   def apply[T](t: T) = t :: HNil
 
