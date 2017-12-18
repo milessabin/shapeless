@@ -139,9 +139,27 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     sources in (Compile,doc) := Seq.empty
   )
 
-lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
-lazy val coreNative = core.native
+val macroCompatUri = uri("https://github.com/milessabin/macro-compat.git#5b4fccdbfaf6bd730725f1cde0cbbd50bf4c3e78")
+lazy val coreJVM = core.jvm.dependsOn(
+  ProjectRef(
+    macroCompatUri,
+    "coreJVM"
+  )
+)
+
+lazy val coreJS = core.js.dependsOn(
+  ProjectRef(
+    macroCompatUri,
+    "coreJS"
+  )
+)
+
+lazy val coreNative = core.native.dependsOn(
+  ProjectRef(
+    macroCompatUri,
+    "coreJVM"
+  )
+)
 
 lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
   .configureCross(configureJUnit)
@@ -227,7 +245,7 @@ lazy val nativeTest = project
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "macro-compat" % "1.1.1",
+    // "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
     scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
     compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
