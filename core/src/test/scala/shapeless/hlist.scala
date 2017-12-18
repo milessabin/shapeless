@@ -3320,6 +3320,16 @@ class HListTests {
   }
 
   @Test
+  def testIndexOf: Unit = {
+    import shapeless.nat._
+    type IDSB = Int :: Double :: String :: Boolean :: HNil
+    assertEquals(toInt(implicitly[IndexOf.Aux[Int, IDSB, _0]].apply()), 0)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Double, IDSB, _1]].apply()), 1)
+    assertEquals(toInt(implicitly[IndexOf.Aux[String, IDSB, _2]].apply()), 2)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Boolean, IDSB, _3]].apply()), 3)
+  }
+
+  @Test
   def testToSizedHList {
     val ns = List(1,2,3,4)
     assertTypedEquals[Option[III]](None, ns.toSizedHList(3))

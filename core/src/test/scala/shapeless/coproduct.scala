@@ -1853,6 +1853,17 @@ class CoproductTests {
   }
 
   @Test
+  def testIndexOf {
+    import ops.coproduct._
+    import nat._
+    type IDSB = Int :+: Double :+: String :+: Boolean :+: CNil
+    assertEquals(toInt(implicitly[IndexOf.Aux[Int, IDSB, _0]].apply()), 0)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Double, IDSB, _1]].apply()), 1)
+    assertEquals(toInt(implicitly[IndexOf.Aux[String, IDSB, _2]].apply()), 2)
+    assertEquals(toInt(implicitly[IndexOf.Aux[Boolean, IDSB, _3]].apply()), 3)
+  }
+
+  @Test
   def testReify {
     import syntax.singleton._
 
