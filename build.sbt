@@ -238,7 +238,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
       case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
       // in Scala 2.10, quasiquotes are provided by macro paradise
       case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary)
+        Seq("org.scalamacros" %% "quasiquotes" % "2.1.0" cross CrossVersion.binary)
     }
   }
 )
