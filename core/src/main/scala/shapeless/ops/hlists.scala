@@ -17,13 +17,11 @@
 package shapeless
 package ops
 
-import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 
-import function._
 import poly._
 
 object hlist {
@@ -1304,61 +1302,206 @@ object hlist {
         }
   }
 
-  /**
-   * Type class supporting `HList` intersection. In case of duplicate types, this operation is a multiset intersection.
-   * If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList` contains the first m
-   * elements of type `T` in this `HList`.
-   *
-   * Also available if `M` contains types absent in this `HList`.
-   *
-   * @author Olivier Blanvillain
-   */
-  trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
-
-  trait LowPriorityIntersection {
-    type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
-
-    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
-    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
-    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
-      (implicit i: Intersection.Aux[T, M, I]): Aux[H :: T, M, I] =
-        new Intersection[H :: T, M] {
-          type Out = I
-          def apply(l: H :: T): Out = i(l.tail)
-        }
+  /** Type class supporting `HList` intersection.
+    *
+    * In case of duplicate types, this operation is a multiset intersection. If type `T` appears n
+    * times in this `L` and m < n times in `M`, the resulting `HList` contains the first m elements
+    * of type `T` in `L`.
+    *
+    * Also available if `M` contains types absent in `L`.
+    *
+    * Requires `O(|L| + |M|)` implicit searches.
+    *
+    * @example {{{
+    *   type L = Int :: Boolean :: Int :: String :: HNil
+    *   type M = String :: Int :: HNil
+    *   val intersection = Intersection[L, M]
+    *   intersection(1 :: true :: 2 :: "scala" :: HNil) => 1 :: "scala" :: HNil
+    * }}}
+    */
+  @implicitNotFound(
+    "Could not compute the intersection of {L} with {M}.\n" +
+    "Note that typelevel operations do not work on abstract types.")
+  trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable {
+    type Out <: HList
   }
 
   object Intersection extends LowPriorityIntersection {
-    def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
+
+    /** Church encoded natural numbers with cheap comparison:
+      *   {{{ M <= N <=> M <:< N }}}
+      */
+    sealed trait Inc[+N]
+    type Zero = Inc[Nothing]
+
+    /** Occurrence count for the key `K` with cheap "at least N" check:
+      *   {{{ AtLeast[K, M] <:< AtLeast[K, N] }}}
+      * means `K` has occurred on the left at least as much as on the right.
+      */
+    sealed trait AtLeast[K, -N]
+
+    /** Marker for a set of counts with cheap "at least N" check:
+      *   {{{ (F <:< AtLeast[K, N]) forSome { type F <: Freq } }}}
+      * means `F` contains at least `N` occurrences of `K`.
+      */
+    sealed trait Freq
+
+    @implicitNotFound(
+      "Could not prove that {L} intersected with {M} is equivalent to {O}.\n" +
+      "Try running Intersection[{L}, {M}] in the REPL to see the result type `Out`.")
+    type Aux[L <: HList, M <: HList, O <: HList] =
+      Intersection[L, M] { type Out = O }
+
+    def apply[L <: HList, M <: HList](
+      implicit isec: Intersection[L, M]
+    ): Aux[L, M, isec.Out] = isec
+
+    /** [[Intersection.Reversed]] compiles efficiently (in `O(|L| + |M|)` implicit searches),
+      * but in reverse order. Therefore we must first reverse `L` before intersecting it with `M`
+      * and then reverse the final result back.
+      */
+    implicit def reversed[
+      L <: HList, M <: HList, LRev <: HList, ISec <: HList
+    ](implicit
+      rev: hlist.Reverse.Aux[L, LRev],
+      isec: Reversed.Aux[LRev, M, _, _, ISec],
+      revBack: hlist.Reverse[ISec]
+    ): Aux[L, M, revBack.Out] = new Intersection[L, M] {
+      type Out = revBack.Out
+      def apply(list: L) = revBack(isec(rev(list)))
+    }
+
+    /** Helper that retrieves the count `N + 1` for the key `K` from `F`.
+      * When `K` is not present in `F` returns `1` by default.
+      */
+    sealed trait Count[F <: Freq, K] {
+      type Out
+    }
+
+    object Count extends Count1 {
+      type Aux[F <: Freq, K, N] = Count[F, K] { type Out = N }
+
+      implicit def count[F <: Freq, K, N](
+        implicit atLeast: F <:< AtLeast[K, N]
+      ): Aux[F, K, AtLeast[K, Inc[N]]] = new Count[F, K] {
+        type Out = AtLeast[K, Inc[N]]
+      }
+    }
+
+    private[shapeless] abstract class Count1 { this: Count.type =>
+
+      // `N` needs to be a type parameter for specificity rules.
+      implicit def default[F <: Freq, K, N](
+        implicit one: N =:= Inc[Zero]
+      ): Aux[F, K, AtLeast[K, N]] = new Count[F, K] {
+        type Out = AtLeast[K, N]
+      }
+    }
+
+    trait Reversed[L <: HList, M <: HList] extends DepFn1[L] with Serializable {
+      type FreqL <: Freq
+      type FreqM <: Freq
+      type Out <: HList
+    }
+
+    object Reversed extends Reversed1 {
+      type Aux[L <: HList, M <: HList, FL <: Freq, FM <: Freq, O <: HList] = Reversed[L, M] {
+        type FreqL = FL
+        type FreqM = FM
+        type Out = O
+      }
+
+      /** Base case. */
+      implicit val hNil: Aux[HNil, HNil, Freq, Freq, HNil] =
+        new Reversed[HNil, HNil] {
+          type FreqL = Freq
+          type FreqM = Freq
+          type Out = HNil
+          def apply(nil: HNil) = nil
+        }
+
+      /** Build frequency table for `M`. */
+      implicit def hConsM[H, T <: HList, FM <: Freq](
+        implicit tail: Aux[HNil, T, Freq, FM, HNil], count: Count[FM, H]
+      ): Aux[HNil, H :: T, Freq, FM with count.Out, HNil] =
+        new Reversed[HNil, H :: T] {
+          type FreqL = Freq
+          type FreqM = FM with count.Out
+          type Out = HNil
+          def apply(nil: HNil) = nil
+        }
+
+      /** When we have encountered `H` in `L` less often than in `M`, add it to the result. */
+      implicit def hConsLKeep[
+        H, T <: HList, M <: HList, FL <: Freq, FM <: Freq, O <: HList, N
+      ](implicit
+        tail: Aux[T, M, FL, FM, O],
+        count: Count.Aux[FL, H, N],
+        atLeast: FM <:< N
+      ): Aux[H :: T, M, FL with N, FM, H :: O] =
+        new Reversed[H :: T, M] {
+          type FreqL = FL with N
+          type FreqM = FM
+          type Out = H :: O
+          def apply(list: H :: T) = list.head :: tail(list.tail)
+        }
+    }
+
+    private[shapeless] abstract class Reversed1 { this: Reversed.type =>
+
+      /** When we have encountered `H` in `L` at least as often as in `M`, drop it. */
+      implicit def hConsLDrop[
+        H, T <: HList, M <: HList, FL <: Freq, FM <: Freq, O <: HList, N
+      ](implicit
+        tail: Aux[T, M, FL, FM, O],
+        count: Count.Aux[FL, H, N],
+        atMost: FM <:!< N
+      ): Aux[H :: T, M, FL, FM, O] =
+        new Reversed[H :: T, M] {
+          type FreqL = FL
+          type FreqM = FM
+          type Out = O
+          def apply(list: H :: T) = tail(list.tail)
+        }
+    }
 
     // let ∅ ∩ M = ∅
-    implicit def hnilIntersection[M <: HList]: Aux[HNil, M, HNil] =
+    @deprecated("Requires a quadratic number of implicit searches", "2.4.0")
+    def hnilIntersection[M <: HList]: Aux[HNil, M, HNil] =
       new Intersection[HNil, M] {
         type Out = HNil
         def apply(l: HNil): Out = HNil
       }
 
     // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
-    implicit def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
-      (implicit
-       i: Intersection.Aux[T, M, I],
-       f: FilterNot.Aux[M, H, M]
-      ): Aux[H :: T, M, I] =
-        new Intersection[H :: T, M] {
-          type Out = I
-          def apply(l: H :: T): Out = i(l.tail)
-        }
+    @deprecated("Requires a quadratic number of implicit searches", "2.4.0")
+    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList](
+      implicit i: Intersection.Aux[T, M, I], f: FilterNot.Aux[M, H, M]
+    ): Aux[H :: T, M, I] = new Intersection[H :: T, M] {
+      type Out = I
+      def apply(l: H :: T): Out = i(l.tail)
+    }
 
     // let (H :: T) ∩ M  =  H :: (T ∩ (M - H)) when H ∈ M
-    implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList, I <: HList]
-      (implicit
-        r: Remove.Aux[M, H, (H, MR)],
-        i: Intersection.Aux[T, MR, I]
-      ): Aux[H :: T, M, H :: I] =
-        new Intersection[H :: T, M] {
-          type Out = H :: I
-          def apply(l: H :: T): Out = l.head :: i(l.tail)
-        }
+    @deprecated("Requires a quadratic number of implicit searches", "2.4.0")
+    def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList, I <: HList](
+      implicit r: Remove.Aux[M, H, (H, MR)], i: Intersection.Aux[T, MR, I]
+    ): Aux[H :: T, M, H :: I] = new Intersection[H :: T, M] {
+      type Out = H :: I
+      def apply(l: H :: T): Out = l.head :: i(l.tail)
+    }
+  }
+
+  trait LowPriorityIntersection { this: Intersection.type =>
+
+    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
+    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
+    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList](
+      implicit i: Intersection.Aux[T, M, I]
+    ): Aux[H :: T, M, I] = new Intersection[H :: T, M] {
+      type Out = I
+      def apply(l: H :: T): Out = i(l.tail)
+    }
   }
 
   /**
