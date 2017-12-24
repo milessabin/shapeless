@@ -305,7 +305,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case ConstantType(c: Constant) => Literal(c)
 
-      case SingleType(p, v) if !v.isParameter && !isValueClass(v) => mkAttributedRef(p, v)
+      case SingleType(p, v) => mkAttributedRef(p, v)
 
       case SingletonSymbolType(c) => mkSingletonSymbol(c)
 
@@ -328,7 +328,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
       case (tpe @ ConstantType(c: Constant), _) =>
         mkResult(tpe, Literal(c))
 
-      case (tpe @ SingleType(p, v), tree) if !v.isParameter && !isValueClass(v) =>
+      case (tpe @ SingleType(p, v), tree) =>
         mkResult(tpe, tree)
 
       case (SymTpe, LiteralSymbol(s)) =>
@@ -337,7 +337,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
       case (_, tree @ This(_)) =>
         mkResult(internal.thisType(tree.symbol), tree)
 
-      case (tpe, tree) if (tree.symbol ne null) && tree.symbol.isTerm && tree.symbol.asTerm.isStable && !isValueClass(tree.symbol) =>
+      case (tpe, tree) if (tree.symbol ne null) && tree.symbol.isTerm && tree.symbol.asTerm.isStable =>
         val sym = tree.symbol.asTerm
         val pre = if(sym.owner.isClass) c.internal.thisType(sym.owner) else NoPrefix
         val symTpe = c.internal.singleType(pre, sym)

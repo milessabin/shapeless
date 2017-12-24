@@ -494,9 +494,12 @@ class SingletonTypesTests {
   @Test
   def testValueClass {
     val x = new ValueTest(5)
-    illTyped("""
+    val y = new ValueTest(5)
     val wX = Witness(x)
-    """)
+    val wY = Witness(y)
+    illTyped("""
+    implicitly[wX.T =:= wY.T]
+    """, "Cannot prove that wX.T =:= wY.T.")
   }
 
   @Test
