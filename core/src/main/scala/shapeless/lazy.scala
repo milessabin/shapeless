@@ -179,7 +179,7 @@ trait OpenImplicitMacros {
   def openImplicitTpeParam: Option[Type] =
     openImplicitTpe.map {
       case TypeRef(_, _, List(tpe)) =>
-        tpe.map(_.dealias)
+        tpe.dealias
       case other =>
         c.abort(c.enclosingPosition, s"Bad materialization: $other")
     }
