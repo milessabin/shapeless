@@ -30,33 +30,30 @@ import scala.util.Try
  * See SIP-23 for a related proposed language change.
  */
 trait Witness extends Serializable {
-  type T
-  val value: T {}
+  type T = value.type
+  val value: {}
 }
 
 object Witness extends Dynamic {
-  type Aux[T0] = Witness { type T = T0 }
-  type Lt[Lub] = Witness { type T <: Lub }
+  type Aux[T0] = Witness { type T = T0; val value: T0 }
+  type Lt[Lub] = Witness { type T <: Lub; val value: Lub }
 
   implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
 
   implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl
 
-  def mkWitness[T0](value0: T0): Aux[T0] =
+  def mkWitness[T0 <: AnyRef](value0: T0): Aux[value0.type] =
     new Witness {
-      type T = T0
-      val value = value0
+      val value: value0.type = value0
     }
 
-  implicit val witness0: Witness.Aux[_0] =
+  implicit val witness0: Witness.Lt[_0] =
     new Witness {
-      type T = _0
       val value = Nat._0
     }
 
-  implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
+  implicit def witnessN[P <: Nat]: Witness.Lt[Succ[P]] =
     new Witness {
-      type T = Succ[P]
       val value = new Succ[P]()
     }
 
