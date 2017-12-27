@@ -25,6 +25,11 @@ class TypeableTests {
   import syntax.typeable._
   import test._
 
+  class Outer {
+    class Inner
+    val inner = new Inner
+  }
+
   @Test
   def testPrimitives: Unit = {
     val b: Any = 23.toByte
@@ -690,5 +695,13 @@ class TypeableTests {
     assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
     assertEquals("|+|.type", Typeable[|+|.type].describe)
     assertEquals("String(witness)", Typeable[witness.T].describe)
+  }
+
+  @Test
+  def testInnerClasses(): Unit = {
+    val outer1 = new Outer
+    val outer2 = new Outer
+    assertEquals(None, outer1.inner.cast[outer2.Inner])
+    assertEquals(Some(outer1.inner), outer1.inner.cast[outer1.Inner])
   }
 }
