@@ -284,7 +284,6 @@ trait SingletonProductArgs extends Dynamic {
 @macrocompat.bundle
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
-  import internal.constantType
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
 

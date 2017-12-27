@@ -234,7 +234,6 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
     class SubstMessage extends Transformer {
       val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-      import global.nme
 
       override def transform(tree: Tree): Tree = {
         super.transform {

@@ -16,7 +16,6 @@
 
 package shapeless
 
-import language.existentials
 import language.experimental.macros
 
 import reflect.macros.whitebox
