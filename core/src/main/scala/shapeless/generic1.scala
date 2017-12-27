@@ -16,14 +16,9 @@
 
 package shapeless
 
-import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.annotation.{ StaticAnnotation, tailrec }
-import scala.reflect.api.Universe
-import scala.reflect.macros.{ blackbox, whitebox }
-
-import ops.{ hlist, coproduct }
+import scala.reflect.macros.whitebox
 
 trait Generic1[F[_], FR[_[_]]] extends Serializable {
   type R[t]
@@ -156,8 +151,6 @@ trait Split10 {
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._
-  import internal.constantType
-  import Flag._
 
   def mkGeneric1Impl[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
     val tpe = tTag.tpe

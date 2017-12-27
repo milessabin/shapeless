@@ -17,13 +17,11 @@
 package shapeless
 package ops
 
-import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
 import scala.collection.GenTraversableLike
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 
-import function._
 import poly._
 
 object hlist {
@@ -1488,8 +1486,6 @@ object hlist {
       ): Aux[L, N, U, V, (U, OutL)] =
       new ModifierAt[L, N, U, V] {
         type Out = (U, OutL)
-
-        import syntax.std.function._
 
         def apply(l: L, f: U => V): Out = {
           val (u, res) = replacer(l, f(at(l)))

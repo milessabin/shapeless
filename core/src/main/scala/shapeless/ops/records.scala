@@ -18,7 +18,7 @@ package shapeless
 package ops
 
 import scala.language.experimental.macros
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
 import poly._
 
