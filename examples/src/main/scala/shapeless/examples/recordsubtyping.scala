@@ -2,7 +2,6 @@ package shapeless.examples
 
 import shapeless._
 import shapeless.poly._
-import syntax.singleton._
 import record._
 import shapeless.ops.record.DeepMerger
 import shapeless.ops.record.Extractor
