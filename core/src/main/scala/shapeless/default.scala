@@ -283,7 +283,7 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
     mkDefault {
       val fields = fieldsOf(tpe)
       if (hasUniqueDefaults) defaultsFor(fields)
-      else List.fill(fields.size)(noneTpe, none)
+      else List.fill(fields.size)((noneTpe, none))
     }
   }
 }
