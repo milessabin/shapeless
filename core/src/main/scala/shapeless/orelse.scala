@@ -27,17 +27,17 @@ sealed trait OrElse[+A, +B] {
   def unify[C >: A](implicit ev: B <:< C): C = fold(identity, ev)
 }
 
-class Primary[A](value: => A) extends OrElse[A, Nothing] {
+final class Primary[+A](value: A) extends OrElse[A, Nothing] {
   def fold[C](prim: A => C, sec: Nothing => C) = prim(value)
 }
 
-class Secondary[B](value: => B) extends OrElse[Nothing, B] {
+final class Secondary[+B](value: => B) extends OrElse[Nothing, B] {
   def fold[C](prim: Nothing => C, sec: B => C) = sec(value)
 }
 
 object OrElse extends OrElse0 {
-  implicit def primary[A, B](implicit a: Lazy[A]): A OrElse B =
-    new Primary(a.value)
+  implicit def primary[A, B](implicit a: A): A OrElse B =
+    new Primary(a)
 }
 
 private[shapeless] abstract class OrElse0 {
