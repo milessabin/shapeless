@@ -223,13 +223,16 @@ cross-builds for 2.10.6 and 2.11.8.
 
 ## Contributors
 
++ Alex Zorab <alec.zorab@gmail.com> [@aleczorab](https://twitter.com/aleczorab)
 + Alessandro Lacava <alessandrolacava@gmail.com> [@lambdista](https://twitter.com/lambdista)
 + Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alistair Johnson <alistair.johnson@johnsonusm.com> [@AlistairUSM](https://twitter.com/AlistairUSM)
++ Allison H. <allisonhb@gmx.com>
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
++ Aristotelis Dossas <teldosas@gmail.com> [@teldosas](https://twitter.com/teldosas)
 + Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
@@ -250,11 +253,16 @@ cross-builds for 2.10.6 and 2.11.8.
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Georgi Krastev <joro.kr.21@gmail.com> [@Joro_Kr](https://twitter.com/joro_kr)
 + Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
++ Harrison Houghton <hhoughton@learningobjects.com>
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
++ Hywel Andrews <hywel.andrews@agoda.com>
 + Ievgen Garkusha <ievgen@riskident.com>
++ Jacob Barber <jacoby6000@gmail.com> [@jacoby6000](https://twitter.com/jacoby6000)
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
++ Jean-Baptiste Giraudeau <jb@giraudeau.info> [@jb9i](https://twitter.com/jb9i)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
++ Jeff Martin <jmartin@homeaway.com>
 + Jeff Wilde <jeff@robo.ai>
 + Jeremy R. Smith <jeremyrsmith@gmail.com> [@jeremyrsmith](https://twitter.com/jeremyrsmith)
 + Jisoo Park <xxxyel@gmail.com> [@guersam](https://twitter.com/guersam)
@@ -270,12 +278,16 @@ cross-builds for 2.10.6 and 2.11.8.
 + Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
++ Lukasz Golebiewski <lukasz.golebiewski@gmail.com> [@LukaszGobiewsk1](https://twitter.com/LukaszGobiewsk1)
 + Mario Pastorelli <mario.pastorelli@teralytics.ch> [@mapastr](https://twitter.com/mapastr)
 + Matthew Taylor <matthew.t@tbfe.net>
 + Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
 + Michael Donaghy <md401@srcf.ucam.org>
 + Michael Pilquist <mpilquist@gmail.com> [@mpilquist](https://twitter.com/mpilquist)
++ Michael Zuber <michaelg.zuber@gmail.com> [@mgzuber91](https://twitter.com/mgzuber91)
++ Mike Limansky <mike.limansky@gmail.com> [@mike_limansky](https://twitter.com/mike_limansky)
 + Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ n4to4 <n4to4k@gmail.com> [@n4to4](https://twitter.com/n4to4)
 + Neville Li <neville@spotify.com> [@sinisa_lyh](https://twitter.com/sinisa_lyh)
 + Nikolas Evangelopoulos <nikolas@jkl.gr>
 + Oleg Aleshko <olegych@tut.by> [@OlegYch](https://twitter.com/OlegYch)
@@ -290,12 +302,14 @@ cross-builds for 2.10.6 and 2.11.8.
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
 + Rob Norris <rob_norris@mac.com> [@tpolecat](https://twitter.com/tpolecat)
 + Robert Hensing <spam@roberthensing.nl>
++ Ronan Michaux <ronan_michaux@yahoo.com> [@ronan_michaux](https://twitter.com/ronan_michaux)
 + Ryo Hongo <ryoppy0516@gmail.com> [@ryoppy516](https://twitter.com/ryoppy516)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
 + Sébastien Doeraene <sjrdoeraene@gmail.com> [@sjrdoeraene](https://twitter.com/sjrdoeraene)
 + Simon Hafner <hafnersimon@gmail.com> [@reactormonk](https://twitter.com/reactormonk)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
++ Stanislav Savulchik <s.savulchik@gmail.com> [@savulchik](https://twitter.com/savulchik)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tin Pavlinic <tin.pavlinic@gmail.com> [@triggerNZ](https://twitter.com/triggerNZ)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
@@ -303,6 +317,9 @@ cross-builds for 2.10.6 and 2.11.8.
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
 + Valentin Kasas <valentin.kasas@gmail.com> [@ValentinKasas](https://twitter.com/ValentinKasas)
 + Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
++ Valy Diarrassouba <v.diarrassouba@gmail.com>
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
 + Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)
++ William Harvey <harveywi@cse.ohio-state.edu>
 + Yang Bo (杨博) <pop.atry@gmail.com> [@Atry](https://twitter.com/Atry)
++ Zainab Ali <zainab.ali.london@gmail.com> [@_zainabali_](https://twitter.com/_zainabali_)
