@@ -365,7 +365,7 @@ lazy val tagName = Def.setting{
   s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 }
 
-val Scala211 = "2.11.11"
+val Scala211 = "2.11.12"
 
 lazy val releaseSettings = Seq(
   releaseCrossBuild := true,
