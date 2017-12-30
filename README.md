@@ -248,6 +248,7 @@ cross-builds for 2.10.6 and 2.11.8.
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
++ Fabio Labella <fabio.labella2@gmail.com> [@SystemFw](https://twitter.com/SystemFw)
 + Filipe Nepomuceno <filinep@gmail.com>
 + Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
@@ -303,6 +304,7 @@ cross-builds for 2.10.6 and 2.11.8.
 + Rob Norris <rob_norris@mac.com> [@tpolecat](https://twitter.com/tpolecat)
 + Robert Hensing <spam@roberthensing.nl>
 + Ronan Michaux <ronan_michaux@yahoo.com> [@ronan_michaux](https://twitter.com/ronan_michaux)
++ Ryadh Khsib <ryadh.khsib@gmail.com>
 + Ryo Hongo <ryoppy0516@gmail.com> [@ryoppy516](https://twitter.com/ryoppy516)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
