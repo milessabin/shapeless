@@ -357,7 +357,10 @@ def buildInfoSetup(crossProject: CrossProject): CrossProject = {
 lazy val coreOsgiSettings = osgiSettings ++ Seq(
   OsgiKeys.bundleSymbolicName := "shapeless",
   OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
-  OsgiKeys.importPackage := Seq("""!scala.quasiquotes,scala.*;version="$<range;[==,=+);$<@>>""""),
+  OsgiKeys.importPackage := {
+    val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+    Seq(s"""!scala.quasiquotes,scala.*;version="[$major.$minor,$major.${minor+1})"""")
+  },
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
 
