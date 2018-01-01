@@ -141,17 +141,15 @@ libraryDependencies ++= Seq(
 
 ### shapeless and Typelevel Scala
 
-[Typelevel Scala][tls] provides a [partial fix for SI-7046][si-7046-pr] which can present obstacles to using
-shapeless's `Generic` and `LabelledGeneric` for the sealed trait at the root of an ADT. If it appears that these two
-type classes are unable to find (all of) the subclasses of the root trait then please try using Typelevel Scala and
-see if it resolves the issue.
+[Typelevel Scala][tls] provides a number of enhancements to the Scala programming language which are relevant to
+programming in the Typelevel ecosystem in general and with shapeless in particular.
 
 To use Typelevel Scala you should,
 
-+ Update your `project/build.properties` to require SBT 0.13.13 or later,
++ Update your `project/build.properties` to require SBT 0.13.16 or later,
 
   ```
-  sbt.version=0.13.13
+  sbt.version=0.13.16
   ```
 
 + Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
@@ -160,11 +158,7 @@ To use Typelevel Scala you should,
   scalaOrganization := "org.typelevel"
   ```
 
-If this does resolve the problem, please lend your support to the [pull request][si-7046-pr] being merged in Lightbend
-Scala.
-
 [tls]: https://github.com/typelevel/scala
-[si-7046-pr]: https://github.com/scala/scala/pull/5284
 
 ### shapeless-2.3.3 with Maven
 
@@ -217,7 +211,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.4 by default but also
+shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.4 by default but also
 cross-builds for 2.10.7 and 2.11.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
