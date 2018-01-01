@@ -155,7 +155,10 @@ To use Typelevel Scala you should,
 + Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
 
   ```
-  scalaOrganization := "org.typelevel"
+  inThisBuild(Seq(
+    scalaOrganization := "org.typelevel",
+    scalaVersion := "2.12.4-bin-typelevel-4"
+  ))
   ```
 
 [tls]: https://github.com/typelevel/scala
