@@ -9,7 +9,7 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
-[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.12)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
 [![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
@@ -89,10 +89,11 @@ of shapeless. It then drops you immediately into a REPL session,
 ```text
 % curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 0.8.2
-(Scala 2.11.8 Java 1.8.0_102)
+Welcome to the Ammonite Repl 1.0.3
+(Scala 2.12.4 Java 1.8.0_152)
+If you like Ammonite, please support our development at www.patreon.com/lihaoyi
 @ 23 :: "foo" :: true :: HNil
-res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
+res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNilLoading...
 @ Bye!
 %
 ```
@@ -101,7 +102,7 @@ res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
 [coursier]: https://github.com/alexarchambault/coursier
 [ammonite]: https://github.com/lihaoyi/Ammonite
 
-### shapeless-2.3.2 with SBT
+### shapeless-2.3.3 with SBT
 
 To include the Sonatype repositories in your SBT build you should add,
 
@@ -117,23 +118,23 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
-shapeless 2.3.2 is Scala 2.12.3. Scala 2.10.x is supported via the macro paradise compiler plugin.
+shapeless 2.3.3 is Scala 2.12.4. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.2"
+  "com.chuusai" %% "shapeless" % "2.3.3"
 )
 ```
 
 If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
 
 ```scala
-scalaVersion := "2.10.6"
+scalaVersion := "2.10.7"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.2",
+  "com.chuusai" %% "shapeless" % "2.3.3",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
@@ -165,15 +166,15 @@ Scala.
 [tls]: https://github.com/typelevel/scala
 [si-7046-pr]: https://github.com/scala/scala/pull/5284
 
-### shapeless-2.3.2 with Maven
+### shapeless-2.3.3 with Maven
 
 shapeless is also available for projects using the Maven build tool via the following dependency,
 
 ```xml
 <dependency>
   <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.11</artifactId>
-  <version>2.3.2</version>
+  <artifactId>shapeless_2.12</artifactId>
+  <version>2.3.3</version>
 </dependency>
 ```
 
@@ -216,8 +217,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.3 by default but also
-cross-builds for 2.10.6 and 2.11.8.
+shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.4 by default but also
+cross-builds for 2.10.7 and 2.11.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
