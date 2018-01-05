@@ -697,4 +697,41 @@ class TypeableTests {
     assertEquals(None, outer1.inner.cast[outer2.Inner])
     assertEquals(Some(outer1.inner), outer1.inner.cast[outer1.Inner])
   }
+
+  def testThisType(): Unit = {
+    trait Node { val children: List[this.type] }
+    val nodeTyp = Typeable[Node]
+    object nil extends Node { val children = Nil }
+    assertEquals(Some(nil), nodeTyp.cast(nil))
+    assertEquals(None, nodeTyp.cast(Nil))
+    assertEquals("Node", nodeTyp.describe)
+  }
+
+  @Test
+  def testTypeProjections(): Unit = {
+    class Outer {
+      class Inner
+      case class CC(i: Int)
+    }
+
+    final class OuterFin {
+      class Inner
+      case class CC(i: Int)
+    }
+
+    illTyped("Typeable[Outer#Inner]")
+    val typCC = Typeable[Outer#CC]
+    val typFinIn = Typeable[OuterFin#Inner]
+    val typFinCC = Typeable[OuterFin#CC]
+
+    val outer = new Outer
+    val cc = outer.CC(1)
+    assertEquals(Some(cc), typCC.cast(cc))
+
+    val outerFin = new OuterFin
+    val innerFin = new outerFin.Inner
+    val ccFin = outerFin.CC(2)
+    assertEquals(Some(innerFin), typFinIn.cast(innerFin))
+    assertEquals(Some(ccFin), typFinCC.cast(ccFin))
+  }
 }
