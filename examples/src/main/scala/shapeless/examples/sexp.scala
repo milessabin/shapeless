@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless._, labelled.{ field, FieldType }, syntax.singleton._
+import shapeless._, labelled.{ field, FieldType }
 
 /*
  * This example shows how to write a simple serialiser/deserialiser

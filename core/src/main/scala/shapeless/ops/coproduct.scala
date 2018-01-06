@@ -1340,7 +1340,7 @@ object coproduct {
     * @author Juan José Vázquez Delgado
     * @author Fabio Labella
     */
-  @annotation.implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
+  @implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
   trait RuntimeInject[C <: Coproduct] extends Serializable {
     def apply(x: Any): Option[C]
   }

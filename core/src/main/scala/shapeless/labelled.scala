@@ -86,7 +86,6 @@ trait FieldOf[V] {
 
 @macrocompat.bundle
 class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
-  import labelled._
   import c.universe._
 
   def mkDefaultSymbolicLabellingImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {

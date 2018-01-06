@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless._, syntax.singleton._
+import shapeless._
 
 import scala.collection.immutable.{:: => Cons}
 import scala.util.{Try,Success,Failure}

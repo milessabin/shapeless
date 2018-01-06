@@ -288,7 +288,6 @@ trait CaseClassMacros extends ReprTypes {
 
   import c.universe._
   import internal.constantType
-  import Flag._
 
   def abort(msg: String) =
     c.abort(c.enclosingPosition, msg)
@@ -989,8 +988,6 @@ trait CaseClassMacros extends ReprTypes {
 @macrocompat.bundle
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
-  import internal.constantType
-  import Flag._
 
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]

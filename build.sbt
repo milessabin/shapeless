@@ -40,12 +40,17 @@ lazy val commonSettings = Seq(
 
   scalacOptions := Seq(
     "-feature",
-    "-language:higherKinds",
-    "-language:implicitConversions",
+    "-language:higherKinds,implicitConversions",
     "-Xfatal-warnings",
     "-deprecation",
     "-unchecked"
   ),
+  scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) =>
+      "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_" ::
+      "-Ywarn-unused:-implicits" :: Nil
+    case _ => Nil
+  }),
 
   resolvers ++= Seq(
     Resolver.sonatypeRepo("releases"),

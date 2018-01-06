@@ -17,10 +17,9 @@
 package shapeless
 
 import scala.language.dynamics
-import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
 import tag.@@
 import scala.util.Try

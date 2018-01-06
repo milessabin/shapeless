@@ -18,7 +18,6 @@ package shapeless
 package examples
 
 import java.lang.ref.WeakReference
-import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 import scala.reflect.ClassTag
 

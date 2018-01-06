@@ -16,8 +16,6 @@
 
 package shapeless.examples
 
-import scala.language.existentials
-
 object StagedTypeClassExample extends App {
   import scala.reflect.runtime.universe._
   import ReflectionUtils._

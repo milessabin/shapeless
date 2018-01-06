@@ -369,7 +369,6 @@ object TypeCase {
 @macrocompat.bundle
 class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
-  import internal._
   import definitions.NothingClass
 
   val typeableTpe = typeOf[Typeable[_]].typeConstructor

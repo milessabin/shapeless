@@ -17,7 +17,7 @@
 package shapeless
 package examples
 
-import labelled.FieldType, syntax.singleton._, test._
+import labelled.FieldType
 
 /*
  * Demo of type class derivation using Lazy for recursive and mutually
