@@ -11,5 +11,5 @@ addSbtPlugin("com.jsuereth"                      % "sbt-pgp"               % "1.
 addSbtPlugin("org.xerial.sbt"                    % "sbt-sonatype"          % "2.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings"      % "2.0.0")
 addSbtPlugin("org.scoverage"                     % "sbt-scoverage"         % "1.5.1")
-addSbtPlugin("org.scala-native"                  % "sbt-scala-native"      % "0.3.0") //https://github.com/scala-native/scala-native/issues/915
+addSbtPlugin("org.scala-native"                  % "sbt-scala-native"      % "0.3.6")
 addSbtPlugin("org.scala-native"                  % "sbt-scalajs-crossproject" % "0.2.2")
