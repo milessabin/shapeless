@@ -299,7 +299,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       val previousSJSBinaryVersion =
         ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
       val previousBinaryCrossVersion =
-        CrossVersion.binaryWith("sjs${previousSJSBinaryVersion}_", "")
+        CrossVersion.binaryWith(s"sjs${previousSJSBinaryVersion}_", "")
       val scalaV = scalaVersion.value
       val scalaBinaryV = scalaBinaryVersion.value
       val thisProjectID = projectID.value
