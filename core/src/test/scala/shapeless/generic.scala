@@ -97,6 +97,7 @@ package GenericTestsAux {
   sealed trait AbstractNonCC
   class NonCCA(val i: Int, val s: String) extends AbstractNonCC
   class NonCCB(val b: Boolean, val d: Double) extends AbstractNonCC
+  class NonCCWithVars(var c: Char, var l: Long) extends AbstractNonCC
 
   class NonCCWithCompanion private (val i: Int, val s: String)
   object NonCCWithCompanion {
@@ -122,6 +123,10 @@ package GenericTestsAux {
   sealed trait OB extends Overlapping
   case class OBC(s: String) extends OB
   case class OAB(i: Int) extends OA with OB
+
+  case object COSemiAuto {
+    implicit val gen = Generic[COSemiAuto.type]
+  }
 }
 
 class GenericTests {
@@ -429,10 +434,12 @@ class GenericTests {
   def testAbstractNonCC {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
+    val nccc = new NonCCWithVars('c', 42)
     val ancc: AbstractNonCC = ncca
 
     val genA = Generic[NonCCA]
     val genB = Generic[NonCCB]
+    val genC = Generic[NonCCWithVars]
     val genAbs = Generic[AbstractNonCC]
 
     val rA = genA.to(ncca)
@@ -441,8 +448,11 @@ class GenericTests {
     val rB = genB.to(nccb)
     assertTypedEquals[Boolean :: Double :: HNil](true :: 2.0 :: HNil, rB)
 
+    val rC = genC.to(nccc)
+    assertTypedEquals[Char :: Long :: HNil]('c' :: 42l :: HNil, rC)
+
     val rAbs = genAbs.to(ancc)
-    assertTypedEquals[NonCCA :+: NonCCB :+: CNil](Inl(ncca), rAbs)
+    assertTypedEquals[NonCCA :+: NonCCB :+: NonCCWithVars :+: CNil](Inl(ncca), rAbs)
 
     val fA = genA.from(13 :: "bar" :: HNil)
     typed[NonCCA](fA)
@@ -453,6 +463,11 @@ class GenericTests {
     typed[NonCCB](fB)
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
+
+    val fC = genC.from('k' :: 313l :: HNil)
+    typed[NonCCWithVars](fC)
+    assertEquals('k', fC.c)
+    assertEquals(313l, fC.l)
 
     val fAbs = genAbs.from(Inr(Inl(nccb)))
     typed[AbstractNonCC](fAbs)
@@ -494,10 +509,17 @@ class GenericTests {
 
   trait Parent {
     case class Nested(i: Int, s: String)
+
+    sealed abstract class Foo extends Product with Serializable
+
+    case object A extends Foo
+    case object B extends Foo
+    case class C() extends Foo
   }
 
   trait Child extends Parent {
     val gen = Generic[Nested]
+    val adtGen = Generic[Foo]
   }
 
   object O extends Child
@@ -510,6 +532,18 @@ class GenericTests {
     val n1 = O.gen.from(repr)
     typed[O.Nested](n1)
     assertEquals(n0, n1)
+
+    {
+      val foo0 = O.B
+      val repr = O.adtGen.to(foo0)
+      typed[O.A.type :+: O.B.type :+: O.C :+: CNil](repr)
+    }
+
+    {
+      val foo0 = O.C()
+      val repr = O.adtGen.to(foo0)
+      typed[O.A.type :+: O.B.type :+: O.C :+: CNil](repr)
+    }
   }
 
   @Test
@@ -634,6 +668,14 @@ class GenericTests {
   @Test
   def testCaseObjectsAndLazy {
     TC[Base1]
+  }
+
+  @Test
+  def testCaseObjectSemiAuto {
+    val gen = Generic[COSemiAuto.type]
+    assertSame(gen, COSemiAuto.gen)
+    assertTypedEquals[HNil](HNil, gen.to(COSemiAuto))
+    assertTypedEquals[COSemiAuto.type](COSemiAuto, gen.from(HNil))
   }
 }
 

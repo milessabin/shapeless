@@ -16,8 +16,6 @@
 
 package shapeless
 
-import ops.hlist.{ IsHCons, ReversePrepend, Split, SplitLeft }
-
 /**
  * Generic Zipper for any type with a representation via `Generic`.
  *

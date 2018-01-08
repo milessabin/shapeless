@@ -125,6 +125,7 @@ object Lazy {
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
+  @implicitNotFound("could not find Lazy implicit values for all of the types enumerated in ${T}")
   class Values[T <: HList](val values: T) extends Serializable
   object Values {
     implicit val hnilValues: Values[HNil] = new Values(HNil)
@@ -233,7 +234,6 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
     class SubstMessage extends Transformer {
       val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-      import global.nme
 
       override def transform(tree: Tree): Tree = {
         super.transform {
@@ -578,31 +578,4 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
   }
 }
 
-object LazyMacros {
-  var dcRef: Option[LazyMacros#DerivationContext] = None
-
-  def deriveInstance(lm: LazyMacros)(tpe: lm.c.Type, mkInst: (lm.c.Tree, lm.c.Type) => lm.c.Tree): lm.c.Tree = {
-    val (dc, root) =
-      dcRef match {
-        case None =>
-          lm.resetAnnotation
-          val dc = new lm.DerivationContext
-          dcRef = Some(dc)
-          (dc, true)
-        case Some(dc) =>
-          (dc.asInstanceOf[lm.DerivationContext], false)
-      }
-
-    if (root)
-      // Sometimes corrupted, and slows things too
-      lm.c.universe.asInstanceOf[scala.tools.nsc.Global].analyzer.resetImplicits()
-
-    try {
-      dc.State.deriveInstance(tpe, root, mkInst)
-    } finally {
-      if(root) {
-        dcRef = None
-      }
-    }
-  }
-}
+object LazyMacros extends LazyMacrosCompat

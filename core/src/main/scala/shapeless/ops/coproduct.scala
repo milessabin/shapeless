@@ -33,8 +33,8 @@ object coproduct {
       def apply(i: I): H :+: T = Inr(tlInj(i))
     }
 
-    implicit def hdInject[H, T <: Coproduct]: Inject[H :+: T, H] = new Inject[H :+: T, H] {
-      def apply(i: H): H :+: T = Inl(i)
+    implicit def hdInject[H, HH <: H, T <: Coproduct]: Inject[H :+: T, HH] = new Inject[H :+: T, HH] {
+      def apply(i: HH): H :+: T = Inl(i)
     }
   }
 
@@ -454,37 +454,6 @@ object coproduct {
   }
 
   /**
-   * Type class supporting zipping this `Coproduct` with a `Coproduct` returning a `Coproduct` of tuples of the form
-   * ({element from input tuple}, {element index})
-   *
-   * @author Andreas Koestler
-   */
-  trait ZipOne[C1 <: Coproduct, C2 <: Coproduct] extends DepFn2[C1, C2] with Serializable { type Out <: Coproduct }
-
-  object ZipOne {
-    def apply[C1 <: Coproduct, C2 <: Coproduct](implicit zip: ZipOne[C1, C2]): Aux[C1, C2, zip.Out] = zip
-
-    type Aux[C1 <: Coproduct, C2 <: Coproduct, Out0 <: Coproduct] = ZipOne[C1, C2] {type Out = Out0}
-
-    implicit def singleZipOne[C1H, C2H]: Aux[C1H :+: CNil, C2H :+: CNil, (C1H, C2H) :+: CNil] =
-      new ZipOne[C1H :+: CNil, C2H :+: CNil] {
-        type Out = (C1H, C2H) :+: CNil
-
-        def apply(c: C1H :+: CNil, c2: C2H :+: CNil): Out = Coproduct[Out]((c.head.get, c2.head.get))
-      }
-
-    implicit def cpZipOne[C1H, C1T <: Coproduct, C2H, C2T <: Coproduct, OutC <: Coproduct]
-    (implicit
-     zot: ZipOne.Aux[C1T, C2T, OutC],
-     extend: ExtendRightBy[(C1H, C2H) :+: CNil, OutC]
-      ): Aux[C1H :+: C1T, C2H :+: C2T, extend.Out] = new ZipOne[C1H :+: C1T, C2H :+: C2T] {
-      type Out = extend.Out
-
-      def apply(c: C1H :+: C1T, c2: C2H :+: C2T): Out = extend(Coproduct[(C1H, C2H) :+: CNil](c.head.get, c2.head.get))
-    }
-  }
-
-  /**
    * Type class supporting zipping a `Coproduct` with its element indices, resulting in a `Coproduct` of tuples of the form
    * ({element from input tuple}, {element index})
    *
@@ -543,7 +512,7 @@ object coproduct {
   /**
    * Type class supporting zipping a `Coproduct` with an `HList`, resulting in a `Coproduct` of tuples of the form
    * ({element from input `Coproduct`}, {element from input `HList`})
-   * 
+   *
    * @author William Harvey
    */
   trait ZipWith[H <: HList, V <: Coproduct] extends DepFn2[H, V] with Serializable { type Out <: Coproduct }
@@ -558,7 +527,7 @@ object coproduct {
       def apply(h: HNil, v: CNil) = v
     }
 
-    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]): 
+    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]):
         Aux[HH :: HT, VH :+: VT, (VH, HH) :+: zipWith.Out] = new ZipWith[HH :: HT, VH :+: VT] {
       type Out = (VH, HH) :+: zipWith.Out
       def apply(h: HH :: HT, v: VH :+: VT): Out = v match {
@@ -1371,7 +1340,7 @@ object coproduct {
     * @author Juan José Vázquez Delgado
     * @author Fabio Labella
     */
-  @annotation.implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
+  @implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
   trait RuntimeInject[C <: Coproduct] extends Serializable {
     def apply(x: Any): Option[C]
   }

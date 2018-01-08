@@ -18,6 +18,7 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
+import shapeless.ops.record.AlignByKeys
 
 class RecordTests {
   import labelled._
@@ -39,6 +40,8 @@ class RecordTests {
   object boolField2 extends FieldOf[Boolean]
   object doubleField1 extends FieldOf[Double]
   object doubleField2 extends FieldOf[Double]
+
+  case class Bar(a: Int, b: String)
 
   @Test
   def testGet {
@@ -1096,4 +1099,59 @@ class RecordTests {
 
     assertEquals(fields.toList, List('x, 'y, 'z))
   }
+
+  @Test
+  def alignByKeys: Unit = {
+    type TestRecord = Record.`'a -> String, 'b -> Int, 'c -> Double`.T
+
+    type Keys1 = HList.`'a, 'b, 'c`.T
+    type Keys2 = HList.`'b, 'c, 'a`.T
+    type Keys3 = HList.`'b, 'a, 'c`.T
+    type Keys4 = HList.`'c, 'a, 'b`.T
+
+    val v = Record(a  = "foo", b  = 42, c = 33.3)
+
+    assertTypedEquals[TestRecord](v, AlignByKeys[TestRecord, Keys1].apply(v))
+    assertTypedEquals[Record.`'b -> Int, 'c -> Double, 'a -> String`.T](Record(b = 42, c = 33.3, a = "foo"), AlignByKeys[TestRecord, Keys2].apply(v))
+
+    assertTypedEquals[Record.`'b -> Int, 'a -> String, 'c -> Double`.T](Record(b = 42, a = "foo", c = 33.3), v.alignByKeys[Keys3])
+    assertTypedEquals[Record.`'c -> Double, 'a -> String, 'b -> Int`.T](Record(c = 33.3, a = "foo", b = 42), v.alignByKeys[Keys4])
+  }
+
+  @Test
+  def testSelectorWithTaggedType {
+    import tag.@@
+
+    val tagged = tag[Int]("42")
+    val head1 = 'k ->> tagged
+    val head2 = field[Witness.`'k`.T](tagged)
+    val rec1 = head1 :: HNil
+    val rec2 = head2 :: HNil
+
+    assertTypedEquals[String @@ Int](rec1('k), rec2('k))
+  }
+
+  @Test
+  def testSelectorWithTaggedType2 {
+    import tag.@@
+
+    trait TestTag
+    case class FooT(bar: String @@ TestTag)
+    val lgt = LabelledGeneric[FooT]
+    val fooT = FooT(tag[TestTag]("test"))
+
+    assertEquals(tag[TestTag]("test"), lgt.to(fooT).get('bar))
+  }
+
+  @Test
+  def testSelectorForSwappedRecord {
+    import ops.record.{ Selector, SwapRecord }
+
+    val gen = LabelledGeneric[Bar]
+    val swap = SwapRecord[gen.Repr]
+    val select = Selector[swap.Out, Int]
+    val swapped = swap()
+
+    assertTypedEquals[Witness.`'a`.T](swapped.head, select(swapped))
+ }
 }

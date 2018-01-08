@@ -143,6 +143,11 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def mapValues(f: Poly)(implicit mapValues: MapValues[f.type, L]): mapValues.Out = mapValues(l)
 
   /**
+    * Align the keys on the order of HList of keys K
+    */
+  def alignByKeys[K <: HList](implicit alignByKeys: AlignByKeys[L, K]): alignByKeys.Out = alignByKeys(l)
+
+  /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
   def record: DynamicRecordOps[L] = DynamicRecordOps(l)

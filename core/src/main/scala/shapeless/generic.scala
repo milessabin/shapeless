@@ -126,7 +126,7 @@ object Generic {
    * More importantly, Aux allows us to write code like this:
    *
    * {{{
-   *   def myMethod[T]()(implicit eqGen: Generic.Aux[T,R], repEq: Eq[R]) = ???
+   *   def myMethod[T, R]()(implicit eqGen: Generic.Aux[T,R], repEq: Eq[R]) = ???
    * }}}
    *
    * Here, we specify T, and we find a Generic.Aux[T,R] by implicit search. We then use R in the second argument.
@@ -134,7 +134,7 @@ object Generic {
    * it this way:
    *
    * {{{
-   *   def myMethod[T]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr]) = ???
+   *   def myMethod[T, R]()(eqGen: Generic[T] { Repr = R }, reqEq: Eq[egGen.Repr]) = ???
    * }}}
    *
    * The reason is that we are not allowed to have dependencies between arguments in the same parameter group. So
@@ -288,7 +288,6 @@ trait CaseClassMacros extends ReprTypes {
 
   import c.universe._
   import internal.constantType
-  import Flag._
 
   def abort(msg: String) =
     c.abort(c.enclosingPosition, msg)
@@ -427,7 +426,7 @@ trait CaseClassMacros extends ReprTypes {
             if(suffix.isEmpty) {
               if(sym.isModuleClass) {
                 val moduleSym = sym.asClass.module
-                val modulePre = prefix(moduleSym.typeSignature)
+                val modulePre = prefix(moduleSym.typeSignatureIn(basePre))
                 c.internal.singleType(modulePre, moduleSym)
               } else
                 appliedType(sym.toTypeIn(basePre), substituteArgs)
@@ -513,20 +512,16 @@ trait CaseClassMacros extends ReprTypes {
       val KeyTagPre = prefix(keyTagTpe)
       val KeyTagSym = keyTagTpe.typeSymbol
       fTpe.dealias match {
-        case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => Some((k, v0))
+        case RefinedType(v0 :+ TypeRef(pre, KeyTagSym, List(k, v1)), scope)
+          if pre =:= KeyTagPre && refinedType(v0, NoSymbol, scope, NoPosition) =:= v1 =>
+            Some((k, v1))
         case _ => None
       }
     }
   }
 
-  def unpackFieldType(tpe: Type): (Type, Type) = {
-    val KeyTagPre = prefix(keyTagTpe)
-    val KeyTagSym = keyTagTpe.typeSymbol
-    tpe.dealias match {
-      case RefinedType(List(v0, TypeRef(pre, KeyTagSym, List(k, v1))), _) if pre =:= KeyTagPre && v0 =:= v1 => (k, v0)
-      case _ => abort(s"$tpe is not a field type")
-    }
-  }
+  def unpackFieldType(tpe: Type): (Type, Type) =
+    FieldType.unapply(tpe).getOrElse(abort(s"$tpe is not a field type"))
 
   def findField(lTpe: Type, kTpe: Type): Option[(Type, Int)] =
     unpackHListTpe(lTpe).zipWithIndex.collectFirst {
@@ -644,8 +639,10 @@ trait CaseClassMacros extends ReprTypes {
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
 
-  def isCaseAccessorLike(sym: TermSymbol): Boolean =
-    !isNonGeneric(sym) && sym.isPublic && (if(sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isAccessor)
+  def isCaseAccessorLike(sym: TermSymbol): Boolean = {
+    def isGetter = if (sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isGetter
+    sym.isPublic && isGetter && !isNonGeneric(sym)
+  }
 
   def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
     def helper(classSym: ClassSymbol): Boolean = {
@@ -991,8 +988,6 @@ trait CaseClassMacros extends ReprTypes {
 @macrocompat.bundle
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
-  import internal.constantType
-  import Flag._
 
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]

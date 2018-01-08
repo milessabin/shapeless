@@ -9,7 +9,7 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
-[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.11.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.11)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.12)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
 [![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
@@ -45,7 +45,7 @@ Classes as Object and Implicits][tcoi] is useful background material.
 [migration]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-1.2.4-to-2.0.0
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
 [milessabin]: https://twitter.com/milessabin
-[syb]: http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/
+[syb]: https://www.microsoft.com/en-us/research/publication/scrap-your-boilerplate-with-class/
 [higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
 [typelevel]: http://typelevel.org/
 [scalaz]: https://github.com/scalaz/scalaz
@@ -89,10 +89,11 @@ of shapeless. It then drops you immediately into a REPL session,
 ```text
 % curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 0.8.2
-(Scala 2.11.8 Java 1.8.0_102)
+Welcome to the Ammonite Repl 1.0.3
+(Scala 2.12.4 Java 1.8.0_152)
+If you like Ammonite, please support our development at www.patreon.com/lihaoyi
 @ 23 :: "foo" :: true :: HNil
-res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
+res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNilLoading...
 @ Bye!
 %
 ```
@@ -101,7 +102,7 @@ res0: Int :: String :: Boolean :: HNil = 23 :: foo :: true :: HNil
 [coursier]: https://github.com/alexarchambault/coursier
 [ammonite]: https://github.com/lihaoyi/Ammonite
 
-### shapeless-2.3.2 with SBT
+### shapeless-2.3.3 with SBT
 
 To include the Sonatype repositories in your SBT build you should add,
 
@@ -117,63 +118,60 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
-shapeless 2.3.2 is Scala 2.12.3. Scala 2.10.x is supported via the macro paradise compiler plugin.
+shapeless 2.3.3 is Scala 2.12.4. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.2"
+  "com.chuusai" %% "shapeless" % "2.3.3"
 )
 ```
 
 If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
 
 ```scala
-scalaVersion := "2.10.6"
+scalaVersion := "2.10.7"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.2",
+  "com.chuusai" %% "shapeless" % "2.3.3",
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
 
 ### shapeless and Typelevel Scala
 
-[Typelevel Scala][tls] provides a [partial fix for SI-7046][si-7046-pr] which can present obstacles to using
-shapeless's `Generic` and `LabelledGeneric` for the sealed trait at the root of an ADT. If it appears that these two
-type classes are unable to find (all of) the subclasses of the root trait then please try using Typelevel Scala and
-see if it resolves the issue.
+[Typelevel Scala][tls] provides a number of enhancements to the Scala programming language which are relevant to
+programming in the Typelevel ecosystem in general and with shapeless in particular.
 
 To use Typelevel Scala you should,
 
-+ Update your `project/build.properties` to require SBT 0.13.13 or later,
++ Update your `project/build.properties` to require SBT 0.13.16 or later,
 
   ```
-  sbt.version=0.13.13
+  sbt.version=0.13.16
   ```
 
 + Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
 
   ```
-  scalaOrganization := "org.typelevel"
+  inThisBuild(Seq(
+    scalaOrganization := "org.typelevel",
+    scalaVersion := "2.12.4-bin-typelevel-4"
+  ))
   ```
 
-If this does resolve the problem, please lend your support to the [pull request][si-7046-pr] being merged in Lightbend
-Scala.
-
 [tls]: https://github.com/typelevel/scala
-[si-7046-pr]: https://github.com/scala/scala/pull/5284
 
-### shapeless-2.3.2 with Maven
+### shapeless-2.3.3 with Maven
 
 shapeless is also available for projects using the Maven build tool via the following dependency,
 
 ```xml
 <dependency>
   <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.11</artifactId>
-  <version>2.3.2</version>
+  <artifactId>shapeless_2.12</artifactId>
+  <version>2.3.3</version>
 </dependency>
 ```
 
@@ -216,20 +214,23 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.13 or later, and its master branch is built with Scala 2.12.3 by default but also
-cross-builds for 2.10.6 and 2.11.8.
+shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.4 by default but also
+cross-builds for 2.10.7 and 2.11.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
 ## Contributors
 
++ Alex Zorab <alec.zorab@gmail.com> [@aleczorab](https://twitter.com/aleczorab)
 + Alessandro Lacava <alessandrolacava@gmail.com> [@lambdista](https://twitter.com/lambdista)
 + Alexander Konovalov <alex.knvl@gmail.com> [@alexknvl](https://twitter.com/alexknvl)
 + Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
 + Alistair Johnson <alistair.johnson@johnsonusm.com> [@AlistairUSM](https://twitter.com/AlistairUSM)
++ Allison H. <allisonhb@gmx.com>
 + Alois Cochard <alois.cochard@gmail.com> [@aloiscochard](https://twitter.com/aloiscochard)
 + Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
 + Andrew Brett <github@bretts.org> [@Ephemerix](https://twitter.com/Ephemerix)
++ Aristotelis Dossas <teldosas@gmail.com> [@teldosas](https://twitter.com/teldosas)
 + Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
 + Ben Hutchison <brhutchison@gmail.com> [@ben_hutchison](https://twitter.com/ben_hutchison)
 + Ben James <ben.james@guardian.co.uk> [@bmjames](https://twitter.com/bmjames)
@@ -245,16 +246,22 @@ cross-builds for 2.10.6 and 2.11.8.
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
++ Fabio Labella <fabio.labella2@gmail.com> [@SystemFw](https://twitter.com/SystemFw)
 + Filipe Nepomuceno <filinep@gmail.com>
 + Frank S. Thomas <frank@timepit.eu> [@fst9000](https://twitter.com/fst9000)
 + George Leontiev <folone@gmail.com> [@folone](https://twitter.com/folone)
 + Georgi Krastev <joro.kr.21@gmail.com> [@Joro_Kr](https://twitter.com/joro_kr)
 + Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
++ Harrison Houghton <hhoughton@learningobjects.com>
 + Howard Branch <purestgreen@gmail.com> [@purestgreen](https://twitter.com/purestgreen)
 + Huw Giddens <hgiddens@gmail.com>
++ Hywel Andrews <hywel.andrews@agoda.com>
 + Ievgen Garkusha <ievgen@riskident.com>
++ Jacob Barber <jacoby6000@gmail.com> [@jacoby6000](https://twitter.com/jacoby6000)
 + Jason Zaugg <jzaugg@gmail.com> [@retronym](https://twitter.com/retronym)
++ Jean-Baptiste Giraudeau <jb@giraudeau.info> [@jb9i](https://twitter.com/jb9i)
 + Jean-Remi Desjardins <jeanremi.desjardins@gmail.com> [@jrdesjardins](https://twitter.com/jrdesjardins)
++ Jeff Martin <jmartin@homeaway.com>
 + Jeff Wilde <jeff@robo.ai>
 + Jeremy R. Smith <jeremyrsmith@gmail.com> [@jeremyrsmith](https://twitter.com/jeremyrsmith)
 + Jisoo Park <xxxyel@gmail.com> [@guersam](https://twitter.com/guersam)
@@ -270,12 +277,16 @@ cross-builds for 2.10.6 and 2.11.8.
 + Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
++ Lukasz Golebiewski <lukasz.golebiewski@gmail.com> [@LukaszGobiewsk1](https://twitter.com/LukaszGobiewsk1)
 + Mario Pastorelli <mario.pastorelli@teralytics.ch> [@mapastr](https://twitter.com/mapastr)
 + Matthew Taylor <matthew.t@tbfe.net>
 + Mathias Doenitz <mathias@spray.io> [@sirthias](https://twitter.com/sirthias)
 + Michael Donaghy <md401@srcf.ucam.org>
 + Michael Pilquist <mpilquist@gmail.com> [@mpilquist](https://twitter.com/mpilquist)
++ Michael Zuber <michaelg.zuber@gmail.com> [@mgzuber91](https://twitter.com/mgzuber91)
++ Mike Limansky <mike.limansky@gmail.com> [@mike_limansky](https://twitter.com/mike_limansky)
 + Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ n4to4 <n4to4k@gmail.com> [@n4to4](https://twitter.com/n4to4)
 + Neville Li <neville@spotify.com> [@sinisa_lyh](https://twitter.com/sinisa_lyh)
 + Nikolas Evangelopoulos <nikolas@jkl.gr>
 + Oleg Aleshko <olegych@tut.by> [@OlegYch](https://twitter.com/OlegYch)
@@ -290,12 +301,15 @@ cross-builds for 2.10.6 and 2.11.8.
 + Renato Cavalcanti <renato@strongtyped.io> [@renatocaval](https://twitter.com/renatocaval)
 + Rob Norris <rob_norris@mac.com> [@tpolecat](https://twitter.com/tpolecat)
 + Robert Hensing <spam@roberthensing.nl>
++ Ronan Michaux <ronan_michaux@yahoo.com> [@ronan_michaux](https://twitter.com/ronan_michaux)
++ Ryadh Khsib <ryadh.khsib@gmail.com>
 + Ryo Hongo <ryoppy0516@gmail.com> [@ryoppy516](https://twitter.com/ryoppy516)
 + Sam Halliday <sam.halliday@gmail.com> [@fommil](https://twitter.com/fommil)
 + Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
 + Sébastien Doeraene <sjrdoeraene@gmail.com> [@sjrdoeraene](https://twitter.com/sjrdoeraene)
 + Simon Hafner <hafnersimon@gmail.com> [@reactormonk](https://twitter.com/reactormonk)
 + Stacy Curl <stacy.curl@gmail.com> [@stacycurl](https://twitter.com/stacycurl)
++ Stanislav Savulchik <s.savulchik@gmail.com> [@savulchik](https://twitter.com/savulchik)
 + Stephen Compall <scompall@nocandysw.com> [@S11001001](https://twitter.com/S11001001)
 + Tin Pavlinic <tin.pavlinic@gmail.com> [@triggerNZ](https://twitter.com/triggerNZ)
 + Tom Switzer <thomas.switzer@gmail.com> [@tixxit](https://twitter.com/tixxit)
@@ -303,6 +317,9 @@ cross-builds for 2.10.6 and 2.11.8.
 + Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
 + Valentin Kasas <valentin.kasas@gmail.com> [@ValentinKasas](https://twitter.com/ValentinKasas)
 + Valerian Barbot <valerian.barbot@onzo.com> [@etaty](https://twitter.com/etaty)
++ Valy Diarrassouba <v.diarrassouba@gmail.com>
 + Vladimir Matveev <vladimir.matweev@gmail.com> [@netvlm](https://twitter.com/netvlm)
 + Vladimir Pavkin <vpavkin@gmail.com> [@vlpavkin](https://twitter.com/vlpavkin)
++ William Harvey <harveywi@cse.ohio-state.edu>
 + Yang Bo (杨博) <pop.atry@gmail.com> [@Atry](https://twitter.com/Atry)
++ Zainab Ali <zainab.ali.london@gmail.com> [@_zainabali_](https://twitter.com/_zainabali_)

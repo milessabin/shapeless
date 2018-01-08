@@ -34,7 +34,7 @@ object StackOverflow2 {
 
   val a : A = A0()
   
-  val a0 = ApplyA(A0.apply _, HNil)
+  val a0 = ApplyA(() => A0.apply, HNil)
   val a1 = ApplyA(A1.apply _, a :: HNil)
   val a2 = ApplyA(A2.apply _, a :: a :: HNil)
 }

@@ -15,5 +15,5 @@ object Refute {
     *
     * This instance will only be found when there is no evidence of `T`
     * */
-  implicit def refute[T]: Refute[T] = new Refute[T] {}
+  implicit def refute[T](implicit dummy: DummyImplicit): Refute[T] = new Refute[T] {}
 }

@@ -3,9 +3,9 @@ install:
   - pip install --user codecov
 
 scala:
-- 2.10.6
-- 2.11.11
-- 2.12.3
+- 2.10.7
+- 2.11.12
+- 2.12.4
 - 2.13.0-M2
 
 jdk:
@@ -34,9 +34,9 @@ notifications:
 
 matrix:
   include:
-  - scala: 2.11.11
+  - scala: 2.11.12
     env: NATIVE=true
     jdk: oraclejdk8
     sudo: required
     before_install:
-    - curl https://raw.githubusercontent.com/scala-native/scala-native/v0.3.1/bin/travis_setup.sh | travis_wait 15 bash -x
+    - curl https://raw.githubusercontent.com/scala-native/scala-native/v0.3.6/bin/travis_setup.sh | travis_wait 15 bash -x
