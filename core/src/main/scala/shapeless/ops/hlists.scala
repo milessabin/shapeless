@@ -883,6 +883,8 @@ object hlist {
 
   object SelectAll {
 
+    def apply[L <: HList, S <: HList](implicit select: SelectAll[L, S]): SelectAll[L, S] = select
+
     implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
       new SelectAll[L, HNil] {
         def apply(l: L): Out = HNil
@@ -2086,14 +2088,15 @@ object hlist {
     *
     * @author Jeremy Smith
     */
-  trait Repeat[L <: HList, N <: Nat] {
+  trait Repeat[L <: HList, N <: Nat] extends DepFn1[L] with Serializable {
     type Out <: HList
-    def apply(l: L): Out
   }
 
   object Repeat {
 
     type Aux[L <: HList, N <: Nat, Out0 <: HList] = Repeat[L, N] { type Out = Out0 }
+
+    def apply[L <: HList, N <: Nat](implicit repeat: Repeat[L, N]): Aux[L, N, repeat.Out] = repeat
 
     implicit def base[L <: HList]: Aux[L, Nat._1, L] = new Repeat[L, Nat._1] {
       type Out = L
@@ -2698,8 +2701,11 @@ object hlist {
     type Out <: HList
   }
 
-  object RightScanner{
-    def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]) = scanR
+  object RightScanner {
+
+    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = RightScanner[L, In, P] { type Out = Out0 }
+
+    def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]): Aux[L, In, P, scanR.Out] = scanR
 
     trait RightScanner0[L <: HList, V, P <: Poly] extends DepFn2[L, V] with Serializable {
       type Out <: HList
@@ -2722,8 +2728,6 @@ object hlist {
 
         def apply(l: HNil, in: In): Out = in :: HNil
       }
-
-    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = RightScanner[L, In, P]{ type Out = Out0 }
 
     implicit def hlistRightScanner[H, T <: HList, In, P <: Poly, R <: HList, Scan0Out <: HList]
       (implicit scanR: Aux[T, In, P, R], scan0: RightScanner0.Aux[R, H, P, Scan0Out]): RightScanner.Aux[H :: T, In, P, Scan0Out] =
@@ -2801,7 +2805,9 @@ object hlist {
   }
 
   object Patcher {
-    def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](implicit patch: Patcher[N, M, L, In]) = patch
+    def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](
+      implicit patch: Patcher[N, M, L, In]
+    ): Aux[N, M, L, In, patch.Out] = patch
 
     type Aux[N <: Nat, M <: Nat, L <: HList, In <: HList, Out0 <: HList] = Patcher[N, M, L, In]{ type Out = Out0 }
 
@@ -2867,11 +2873,15 @@ object hlist {
   }
 
   object LiftAll {
-    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
-    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
 
-    def apply[F[_]] = new Curried[F]
-    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] { type Out = Out0 }
+
+    class Curried[F[_]] {
+      def apply[In <: HList](in: In)(implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
+    }
+
+    def apply[F[_]]: Curried[F] = new Curried[F]
+    def apply[F[_], In <: HList](implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
 
     implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
       type Out = HNil
@@ -2988,9 +2998,12 @@ object hlist {
   }
 
   object Combinations extends LowPriorityCombinations {
-    def apply[L <: HList](n: Nat, l: L)(implicit c: Combinations[n.N, L]): c.Out = c(l)
 
     type Aux[N <: Nat, L <: HList, Out0 <: HList] = Combinations[N, L] { type Out = Out0 }
+
+    def apply[N <: Nat, L <: HList](implicit c: Combinations[N, L]): Aux[N, L, c.Out] = c
+
+    def apply[L <: HList](n: Nat, l: L)(implicit c: Combinations[n.N, L]): c.Out = c(l)
 
     implicit def combination0[L <: HList]: Aux[_0, L, HNil :: HNil] =
       new Combinations[_0, L] {
