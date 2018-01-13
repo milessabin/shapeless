@@ -29,7 +29,7 @@ class TypeOperatorTests {
   trait ATag
 
   object ATag {
-    implicit def taggedToString[T](value: T with Tagged[ATag]): String = message
+    implicit def taggedToString[T](value: T @@ ATag): String = message
 
     val message = "This object has ATag tag type"
   }
@@ -212,6 +212,37 @@ class TypeOperatorTests {
 
     val x = the[AValueClass]
     typed[AValueClass](x)
+  }
+
+  @Test
+  def testAliasingTaggedType(): Unit = {
+    type Name = String @@ ATag
+    val name1 = tag[ATag]("ben")
+    val name2: Name = tag[ATag]("ben")
+    val name3: Name = tag.apply("ben")
+    assertTypedEquals[Name](name1, name2)
+    assertTypedEquals[Name](name1, name3)
+  }
+
+  @Test
+  def testTaggedAny(): Unit = {
+    val one = tag[ATag](1: Any)
+    typed[Any @@ ATag](one)
+    assertEquals(1, one)
+  }
+
+  @Test
+  def testTaggedBoxing(): Unit = {
+    val one = tag[ATag](1)
+    typed[Int @@ ATag](one)
+    assertEquals(1, one)
+    assert(!one.getClass.isPrimitive)
+  }
+
+  @Test
+  def testTaggedValueClass(): Unit = {
+    val x = tag[ATag](AValueClass(1L))
+    assertEquals(x, Array(x).head)
   }
 }
 

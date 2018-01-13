@@ -278,7 +278,7 @@ trait ReprTypes {
 
   def atatTpe = typeOf[tag.@@[_,_]].typeConstructor
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
-  def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_, _]].typeConstructor
+  def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_]].typeConstructor
   def symbolTpe = typeOf[Symbol]
 }
 
@@ -516,20 +516,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   object FieldType {
-    import internal._
+    val FieldTypeSym = fieldTypeTpe.typeSymbol
 
     def apply(kTpe: Type, vTpe: Type): Type =
-      refinedType(List(vTpe, typeRef(prefix(keyTagTpe), keyTagTpe.typeSymbol, List(kTpe, vTpe))), NoSymbol)
+      appliedType(fieldTypeTpe, List(kTpe, vTpe))
 
-    def unapply(fTpe: Type): Option[(Type, Type)] = {
-      val KeyTagPre = prefix(keyTagTpe)
-      val KeyTagSym = keyTagTpe.typeSymbol
-      fTpe.dealias match {
-        case RefinedType(v0 :+ TypeRef(pre, KeyTagSym, List(k, v1)), scope)
-          if pre =:= KeyTagPre && refinedType(v0, NoSymbol, scope, NoPosition) =:= v1 =>
-            Some((k, v1))
-        case _ => None
-      }
+    def unapply(fTpe: Type): Option[(Type, Type)] = fTpe.dealias match {
+      case TypeRef(_, FieldTypeSym, List(k, v)) => Some((k, v))
+      case _ => None
     }
   }
 

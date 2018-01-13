@@ -17,23 +17,31 @@
 package shapeless
 
 import scala.language.experimental.macros
+import scala.reflect._
 
 import scala.reflect.macros.whitebox
 
-object labelled {
+private[shapeless] trait LabelledTypes {
+
   /**
    * The type of fields with keys of singleton type `K` and value type `V`.
    */
-  type FieldType[K, +V] = V with KeyTag[K, V]
-  trait KeyTag[K, +V]
+  type FieldType[K, +V] <: V with KeyTag[K]
+  trait KeyTag[K]
+}
+
+object labelled extends LabelledTypes {
+
+  implicit def fieldTypeClassTag[K, V](implicit tag: ClassTag[V]): ClassTag[FieldType[K, V]] =
+    ClassTag(tag.runtimeClass)
 
   /**
    * Yields a result encoding the supplied value with the singleton type `K' of its key.
    */
-  def field[K] = new FieldBuilder[K]
+  def field[K]: FieldBuilder[K] = new FieldBuilder
 
   class FieldBuilder[K] {
-    def apply[V](v : V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
+    def apply[V](v: V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
   }
 }
 

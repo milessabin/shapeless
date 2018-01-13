@@ -18,10 +18,7 @@ package shapeless
 
 import scala.language.dynamics
 import scala.language.experimental.macros
-
 import scala.reflect.macros.whitebox
-
-import tag.@@
 import scala.util.Try
 
 /** Provides the value corresponding to a singleton type.
@@ -147,22 +144,21 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 
   object SingletonSymbolType {
-    val atatTpe = typeOf[@@[_,_]].typeConstructor
-    val TaggedSym = typeOf[tag.Tagged[_]].typeConstructor.typeSymbol
+    val AtatSym = atatTpe.typeSymbol
+    val SymbolTpe = symbolTpe
 
-    def unrefine(t: Type): Type =
-      t.dealias match {
-        case RefinedType(List(t), scope) if scope.isEmpty => unrefine(t)
-        case t => t
-      }
+    def unrefine(t: Type): Type = t.dealias match {
+      case RefinedType(List(t), scope) if scope.isEmpty => unrefine(t)
+      case t => t
+    }
 
-    def apply(s: String): Type = appliedType(atatTpe, List(SymTpe, c.internal.constantType(Constant(s))))
+    def apply(s: String): Type =
+      appliedType(atatTpe, List(SymbolTpe, c.internal.constantType(Constant(s))))
 
-    def unapply(t: Type): Option[String] =
-      unrefine(t).dealias match {
-        case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(Constant(s: String))))), _) => Some(s)
-        case _ => None
-      }
+    def unapply(t: Type): Option[String] = unrefine(t).dealias match {
+      case TypeRef(_, AtatSym, List(SymbolTpe, ConstantType(Constant(s: String)))) => Some(s)
+      case _ => None
+    }
   }
 
   def mkSingletonSymbol(s: String): Tree = {

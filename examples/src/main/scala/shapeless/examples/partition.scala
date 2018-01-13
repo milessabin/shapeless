@@ -115,8 +115,8 @@ object ADTPartitionExample extends App {
   typed[List[Apple]](apples)
   typed[List[Pear]](pears)
 
-  assert(apples == expectedApples)
-  assert(pears == expectedPears)
+  assert((apples: List[Apple]) == expectedApples)
+  assert((pears: List[Pear]) == expectedPears)
 
   // Partition the list into a record of lists.
   val basket = partitionRecord(fruits)

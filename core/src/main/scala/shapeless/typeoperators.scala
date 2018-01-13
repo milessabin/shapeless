@@ -19,17 +19,24 @@ package shapeless
 import scala.language.dynamics
 import scala.language.experimental.macros
 
+import scala.reflect.ClassTag
 import scala.reflect.macros.whitebox
 import scala.util.{ Try, Success, Failure }
 
-object tag {
-  def apply[U] = new Tagger[U]
-
+private[shapeless] trait TagTypes {
+  type @@[+T, U] <: T with Tagged[U]
   trait Tagged[U]
-  type @@[+T, U] = T with Tagged[U]
+}
+
+object tag extends TagTypes {
+
+  implicit def atatClassTag[T, U](implicit tag: ClassTag[T]): ClassTag[T @@ U] =
+    ClassTag(tag.runtimeClass)
+
+  def apply[U]: Tagger[U] = new Tagger
 
   class Tagger[U] {
-    def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
+    def apply[T](t: T): T @@ U = t.asInstanceOf[T @@ U]
   }
 }
 

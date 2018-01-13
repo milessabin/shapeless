@@ -1181,4 +1181,17 @@ class RecordTests {
 
     assertTypedEquals[Witness.`'a`.T](swapped.head, select(swapped))
  }
+
+  @Test
+  def testFieldTypeAny(): Unit = {
+    val field = "foo" ->> (1: Any)
+    typed[FieldType[Witness.`"foo"`.T, Any]](field)
+    assertEquals(1, field)
+  }
+
+  @Test
+  def testFieldTypeArray(): Unit = {
+    val fields = Array("shapeless" ->> 42)
+    assertEquals(42, fields.head)
+  }
 }

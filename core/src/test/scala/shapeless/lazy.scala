@@ -318,7 +318,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testInteractionWithTaggedTypes: Unit = {
+  def testInteractionWithTaggedTypes(): Unit = {
     import tag._
 
     class Readable[A]

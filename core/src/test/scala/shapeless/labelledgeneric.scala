@@ -93,7 +93,7 @@ object ScalazTaggedAux {
     def apply(): String
   }
 
-  object TC extends TCLowPriority {
+  object TC {
     implicit val intTC: TC[Int] =
       new TC[Int] {
         def apply() = "Int"
@@ -129,18 +129,6 @@ object ScalazTaggedAux {
     ): TC[F] =
       new TC[F] {
         def apply() = s"Proj(${tc.value()})"
-      }
-  }
-
-  abstract class TCLowPriority {
-    // FIXME: Workaround #309
-    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
-      key: Witness.Aux[K],
-      headTC: Lazy[TC[H @@ HT]],
-      tailTC: TC[T]
-    ): TC[FieldType[K, H @@ HT] :: T] =
-      new TC[FieldType[K, H @@ HT] :: T] {
-        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC()}"
       }
   }
 }
