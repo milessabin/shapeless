@@ -127,6 +127,12 @@ package GenericTestsAux {
   case object COSemiAuto {
     implicit val gen = Generic[COSemiAuto.type]
   }
+
+  case class CCOrdered[A: Ordering](value: A)
+  class CCLikeOrdered[A: Ordering](val value: A)
+
+  case class CCDegen(i: Int)()
+  class CCLikeDegen(val i: Int)()
 }
 
 class GenericTests {
@@ -676,6 +682,30 @@ class GenericTests {
     assertSame(gen, COSemiAuto.gen)
     assertTypedEquals[HNil](HNil, gen.to(COSemiAuto))
     assertTypedEquals[COSemiAuto.type](COSemiAuto, gen.from(HNil))
+  }
+
+  @Test
+  def testGenericImplicitParams {
+    type Repr = Int :: HNil
+    val gen = Generic[CCOrdered[Int]]
+    val cc = CCOrdered(42)
+    val rep = 42 :: HNil
+
+    assertTypedEquals[CCOrdered[Int]](gen.from(rep), cc)
+    assertTypedEquals[Repr](gen.to(cc), rep)
+    illTyped("Generic[CCLikeOrdered[Int]]")
+  }
+
+  @Test
+  def testGenericDegenerate {
+    type Repr = Int :: HNil
+    val gen = Generic[CCDegen]
+    val cc = CCDegen(313)
+    val rep = 313 :: HNil
+
+    assertTypedEquals[CCDegen](gen.from(rep), cc)
+    assertTypedEquals[Repr](gen.to(cc), rep)
+    illTyped("Generic[CCLikeDegen]")
   }
 }
 
