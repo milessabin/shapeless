@@ -133,6 +133,10 @@ package GenericTestsAux {
 
   case class CCDegen(i: Int)()
   class CCLikeDegen(val i: Int)()
+
+  class Squared(x: Long) {
+    val x2 = x * x
+  }
 }
 
 class GenericTests {
@@ -706,6 +710,11 @@ class GenericTests {
     assertTypedEquals[CCDegen](gen.from(rep), cc)
     assertTypedEquals[Repr](gen.to(cc), rep)
     illTyped("Generic[CCLikeDegen]")
+  }
+
+  @Test
+  def testCtorFieldsMismatch {
+    illTyped("Generic[Squared]")
   }
 }
 
