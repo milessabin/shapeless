@@ -621,20 +621,14 @@ trait CaseClassMacros extends ReprTypes {
   }
 
   def isCaseClassLike(sym: ClassSymbol): Boolean = {
-    def checkCtor: Boolean = {
-      def unique[T](s: Seq[T]): Option[T] =
-        s.headOption.find(_ => s.tail.isEmpty)
-
-      val tpe = sym.typeSignature
-      (for {
-        ctor <- accessiblePrimaryCtorOf(tpe)
-        params <- unique(ctor.asMethod.paramLists)
-      } yield params.size == fieldsOf(tpe).size).getOrElse(false)
-    }
-
-    sym.isCaseClass ||
-    (!sym.isAbstract && !sym.isTrait && !(sym == symbolOf[Object]) &&
-     sym.knownDirectSubclasses.isEmpty && checkCtor)
+    def isConcrete = !(sym.isAbstract || sym.isTrait || sym == symbolOf[Object])
+    def isFinalLike = sym.isFinal || sym.knownDirectSubclasses.isEmpty
+    def ctor = for {
+      ctor <- accessiblePrimaryCtorOf(sym.typeSignature)
+      Seq(params) <- Option(ctor.typeSignature.paramLists)
+      if params.size == fieldsOf(sym.typeSignature).size
+    } yield ctor
+    sym.isCaseClass || (isConcrete && isFinalLike && ctor.isDefined)
   }
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
@@ -819,44 +813,36 @@ trait CaseClassMacros extends ReprTypes {
   }
 
   object HasApply {
-    def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
-      val sym = tpe.typeSymbol
-      val companionTpe = sym.companion.info
-      val applySym = companionTpe.member(TermName("apply"))
-      if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
-        val applyParamss = applySym.asMethod.paramLists
-        if(applyParamss.length == 1)
-          alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.infoIn(companionTpe))))
-        else None
-      } else None
-    }
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
+      companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
+      apply = companion.member(TermName("apply"))
+      if apply.isTerm && !apply.asTerm.isOverloaded
+      if apply.isMethod && !isNonGeneric(apply)
+      if isAccessible(companion, apply)
+      Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
+      aligned <- alignFields(tpe, for (param <- params) yield unByName(param.typeSignature))
+    } yield aligned
   }
 
   object HasUnapply {
-    def unapply(tpe: Type): Option[List[Type]] = {
-      val sym = tpe.typeSymbol
-      val companionTpe = sym.companion.info
-      val unapplySym = companionTpe.member(TermName("unapply"))
-      if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
-        unapplySym.asMethod.infoIn(companionTpe).finalResultType.baseType(symbolOf[Option[_]]) match {
-          case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
-          case TypeRef(_, _, args @ List(arg)) => Some(args)
-          case _ => None
-        }
-      else None
-    }
+    def unapply(tpe: Type): Option[List[Type]] = for {
+      companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
+      unapply = companion.member(TermName("unapply"))
+      if unapply.isTerm && !unapply.asTerm.isOverloaded
+      if unapply.isMethod && !isNonGeneric(unapply)
+      if isAccessible(companion, unapply)
+      returnTpe <- unapply.asMethod.typeSignatureIn(companion).finalResultType
+        .baseType(symbolOf[Option[_]]).typeArgs.headOption
+    } yield if (returnTpe <:< typeOf[Product]) returnTpe.typeArgs else List(returnTpe)
   }
 
   object HasUniqueCtor {
-    def unapply(tpe: Type): Option[List[(TermName, Type)]] =
-      tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) } match {
-        case Some(ctorSym) if !isNonGeneric(ctorSym) =>
-          val ctorParamss = ctorSym.asMethod.infoIn(tpe).paramLists
-          if(ctorParamss.length == 1)
-            alignFields(tpe, ctorParamss.head.map(param => unByName(param.info)))
-          else None
-        case _ => None
-      }
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
+      ctor <- accessiblePrimaryCtorOf(tpe)
+      if !isNonGeneric(ctor)
+      Seq(params) <- Option(ctor.typeSignatureIn(tpe).paramLists)
+      aligned <- alignFields(tpe, for (param <- params) yield unByName(param.typeSignature))
+    } yield aligned
   }
 
   object HasApplyUnapply {
