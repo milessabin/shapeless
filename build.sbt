@@ -80,9 +80,11 @@ def configureJUnit(crossProject: CrossProject) = {
 
 lazy val commonJsSettings = Seq(
   scalacOptions += {
-    val tagOrHash =
-      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lines_!.head
-      else tagName.value
+    val tagOrHash = {
+      val tag = tagName.value
+      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lineStream_!.head
+      else tag
+    }
     val a = (baseDirectory in LocalRootProject).value.toURI.toString
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
@@ -285,11 +287,8 @@ lazy val publishSettings = Seq(
   )
 )
 
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
+lazy val noPublishSettings =
+ skip in publish := true
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
@@ -300,7 +299,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       val previousSJSBinaryVersion =
         ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
       val previousBinaryCrossVersion =
-        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+        CrossVersion.binaryWith(s"sjs${previousSJSBinaryVersion}_", "")
       val scalaV = scalaVersion.value
       val scalaBinaryV = scalaBinaryVersion.value
       val thisProjectID = projectID.value
@@ -318,7 +317,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
           .cross(previousCrossVersion)
           .extra(prevExtraAttributes.toSeq: _*)
 
-      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled()))
     }
   },
 
@@ -394,7 +393,7 @@ lazy val releaseSettings = Seq(
     releaseStepCommand("coreNative/publishSigned"),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+    releaseStepCommand("sonatypeReleaseAll"),
     pushChanges
   )
 )
