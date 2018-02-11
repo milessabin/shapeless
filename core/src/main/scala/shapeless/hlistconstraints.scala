@@ -31,7 +31,7 @@ trait LowPriorityUnaryTCConstraint0 {
 
 trait LowPriorityUnaryTCConstraint extends LowPriorityUnaryTCConstraint0 {
 
-  implicit def hnilConstUnaryTC[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
+  implicit def hnilUnaryTC[TC[_]] = new UnaryTCConstraint[HNil, TC] {}
 
   implicit def hlistConstUnaryTC[H, T <: HList](implicit utct : UnaryTCConstraint[T, Const[H]#λ]) =
     new UnaryTCConstraint[H :: T, Const[H]#λ] {}
@@ -43,8 +43,9 @@ object UnaryTCConstraint extends LowPriorityUnaryTCConstraint {
   type *->*[TC[_]] = {
     type λ[L <: HList] = UnaryTCConstraint[L, TC] 
   } 
+
+  implicit def hnilConstUnaryTC[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
   
-  implicit def hnilUnaryTC[TC[_]] = new UnaryTCConstraint[HNil, TC] {}
   implicit def hlistUnaryTC[H, T <: HList, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
     new UnaryTCConstraint[TC[H] :: T, TC] {}
 }
