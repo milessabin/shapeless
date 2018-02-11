@@ -13,7 +13,7 @@ import sbtcrossproject.CrossProject
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M2")
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M3")
 ))
 
 addCommandAlias("root", ";project root")
@@ -181,7 +181,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0")
         case _ => Seq()
       }
     }
@@ -293,7 +293,7 @@ lazy val noPublishSettings = Seq(
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.13.0-M2") Set()
+    if(scalaVersion.value == "2.13.0-M3") Set()
     else {
       val previousVersion = if(scalaVersion.value == "2.12.4") "2.3.2" else "2.3.0"
       val previousSJSVersion = "0.6.7"
@@ -344,7 +344,11 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
       exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
       exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne"),
       exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef"),
-      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_=")
+      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_="),
+
+      // Implicit reorderings
+      exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
+      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC")
     )
   }
 )
