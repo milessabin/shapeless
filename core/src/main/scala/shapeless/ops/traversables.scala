@@ -57,7 +57,7 @@ object traversable {
    * 
    * @author Rob Norris
    */
-  trait ToSizedHList[CC[T] <: GenTraversable[T], A, N <: Nat] extends Serializable {
+  trait ToSizedHList[CC[_], A, N <: Nat] extends Serializable {
     type Out
     def apply(cc: CC[A]): Out
   }
@@ -69,7 +69,7 @@ object traversable {
    */
   object ToSizedHList {
 
-    def apply[CC[T] <: GenTraversable[T], A, N <: Nat](
+    def apply[CC[_], A, N <: Nat](
       implicit ev: ToSizedHList[CC, A, N]
     ): ToSizedHList.Aux[CC, A, N, ev.Out] = 
       ev
@@ -78,7 +78,7 @@ object traversable {
     import ops.nat._
     import ops.sized._
 
-    type Aux[CC[T] <: GenTraversable[T], A, N <: Nat, Out0] =
+    type Aux[CC[_], A, N <: Nat, Out0] =
       ToSizedHList[CC, A, N] {
         type Out = Out0
       }
