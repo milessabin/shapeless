@@ -793,24 +793,13 @@ trait CaseClassMacros extends ReprTypes {
   def equalTypes(as: List[Type], bs: List[Type]): Boolean =
     as.length == bs.length && (as zip bs).foldLeft(true) { case (acc, (a, b)) => acc && unByName(a) =:= unByName(b) }
 
-  def alignFields(tpe: Type, ts: List[Type]): Option[List[(TermName, Type)]] = {
-    val fields = fieldsOf(tpe)
-    if(fields.length != ts.length) None
-    else {
-      @tailrec
-      def loop(fields: Seq[(TermName, Type)], ts: Seq[Type], acc: List[(TermName, Type)]): Option[List[(TermName, Type)]] =
-        ts match {
-          case Nil => Some(acc.reverse)
-          case Seq(hd, tl @ _*) =>
-            fields.span { case (_, tpe) => !(tpe =:= hd) } match {
-              case (fpre, List(f, fsuff @ _*)) => loop(fpre ++ fsuff, tl, f :: acc)
-              case _ => None
-            }
-        }
-
-      loop(fields, ts, Nil)
+  def alignFields(tpe: Type, args: List[(TermName, Type)]): Option[List[(TermName, Type)]] = for {
+    fields <- Option(fieldsOf(tpe))
+    if fields.size == args.size
+    if (fields, args).zipped.forall { case ((fn, ft), (an, at)) =>
+      (fn == an || at.typeSymbol == definitions.ByNameParamClass) && ft =:= unByName(at)
     }
-  }
+  } yield fields
 
   object HasApply {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
@@ -820,7 +809,8 @@ trait CaseClassMacros extends ReprTypes {
       if apply.isMethod && !isNonGeneric(apply)
       if isAccessible(companion, apply)
       Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
-      aligned <- alignFields(tpe, for (param <- params) yield unByName(param.typeSignature))
+      aligned <- alignFields(tpe, for (param <- params)
+        yield param.name.toTermName -> param.typeSignature)
     } yield aligned
   }
 
@@ -841,7 +831,8 @@ trait CaseClassMacros extends ReprTypes {
       ctor <- accessiblePrimaryCtorOf(tpe)
       if !isNonGeneric(ctor)
       Seq(params) <- Option(ctor.typeSignatureIn(tpe).paramLists)
-      aligned <- alignFields(tpe, for (param <- params) yield unByName(param.typeSignature))
+      aligned <- alignFields(tpe, for (param <- params)
+        yield param.name.toTermName -> param.typeSignature)
     } yield aligned
   }
 
