@@ -347,7 +347,11 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
 
       // Implicit reorderings
       exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
-      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC")
+      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
+
+      // Relaxed constraints
+      exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.apply"),
+      exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#ToSizedHList.apply")
     )
   }
 )
