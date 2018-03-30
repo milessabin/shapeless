@@ -8,6 +8,7 @@ COVERAGE="$SBT clean coverage test coverageReport"
 
 if [[ "${TRAVIS_PULL_REQUEST}" == "false" &&
       "${TRAVIS_BRANCH}" == "master" &&
+      "${TRAVIS_REPO_SLUG}" == "milessabin/shapeless" &&
       $(cat version.sbt) =~ "-SNAPSHOT"
 ]]; then
 PUBLISH=publish
