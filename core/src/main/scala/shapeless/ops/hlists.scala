@@ -61,22 +61,29 @@ object hlist {
     type Out <: HList
   }
 
-  object Mapped {
-    def apply[L <: HList, F[_]](implicit mapped: Mapped[L, F]): Aux[L, F, mapped.Out] = mapped
+  trait LowPriorityMapped {
+    type Aux[L <: HList, F[_], Out0 <: HList] =
+      Mapped[L, F] { type Out = Out0 }
 
-    type Aux[L <: HList, F[_], Out0 <: HList] = Mapped[L, F] { type Out = Out0 }
+    implicit def hlistIdMapped[H, T <: HList]: Aux[H :: T, Id, H :: T] =
+      new Mapped[H :: T, Id] { type Out = H :: T }
+
+    implicit def hlistMapped2[H, T <: HList, F, OutM <: HList](
+      implicit mt: Mapped.Aux[T, Const[F]#λ, OutM]
+    ): Aux[H :: T, Const[F]#λ, F :: OutM] =
+      new Mapped[H :: T, Const[F]#λ] { type Out = F :: OutM }
+  }
+
+  object Mapped extends LowPriorityMapped {
+    def apply[L <: HList, F[_]](implicit mapped: Mapped[L, F]): Aux[L, F, mapped.Out] = mapped
 
     implicit def hnilMapped[F[_]]: Aux[HNil, F, HNil] = new Mapped[HNil, F] { type Out = HNil }
 
-    implicit def hnilConstMapped[F]: Aux[HNil, Const[F]#λ, HNil] = new Mapped[HNil, Const[F]#λ] { type Out = HNil }
-
-    implicit def hlistIdMapped[H, T <: HList]: Aux[H :: T, Id, H :: T] = new Mapped[H :: T, Id] { type Out = H :: T }
+    implicit def hnilConstMapped[F]: Aux[HNil, Const[F]#λ, HNil] =
+      new Mapped[HNil, Const[F]#λ] { type Out = HNil }
 
     implicit def hlistMapped1[H, T <: HList, F[_], OutM <: HList](implicit mt : Mapped.Aux[T, F, OutM]): Aux[H :: T, F, F[H] :: OutM] =
       new Mapped[H :: T, F] { type Out = F[H] :: OutM }
-
-    implicit def hlistMapped2[H, T <: HList, F, OutM <: HList](implicit mt : Mapped.Aux[T, Const[F]#λ, OutM]): Aux[H :: T, Const[F]#λ, F :: OutM] =
-      new Mapped[H :: T, Const[F]#λ] { type Out = F :: OutM }
   }
 
   /**
