@@ -31,7 +31,7 @@ object ShapelessTaggedAux {
 class LabelledGeneric211Tests {
 
   @Test
-  def testShapelessTagged {
+  def testShapelessTagged: Unit = {
     import ShapelessTaggedAux._
 
     val lgen = LabelledGeneric[Dummy]
@@ -40,7 +40,7 @@ class LabelledGeneric211Tests {
   }
 
   @Test
-  def testScalazTagged {
+  def testScalazTagged: Unit = {
     import ScalazTaggedAux._
 
     type R = Record.`'i -> Int @@ CustomTag`.T

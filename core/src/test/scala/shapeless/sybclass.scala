@@ -80,7 +80,7 @@ class SybClassTests {
   case class Node[T](left: Tree[T], right: Tree[T]) extends Tree[T]
 
   @Test
-  def testGMapQ {
+  def testGMapQ: Unit = {
     val p = (23, "foo")
     val ps = gsizeAll(p)
     assertEquals(5, ps)
@@ -104,7 +104,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGMapT {
+  def testGMapT: Unit = {
     val p = (23, "foo")
     val pi = incAll(p)
     assertEquals((24, "foo*"), pi)
@@ -131,7 +131,7 @@ class SybClassTests {
   }
 
   @Test
-  def testEverything {
+  def testEverything: Unit = {
     val e1 = everything(gsize)(plus)(23)
     typed[Int](e1)
     assertEquals(1, e1)
@@ -182,7 +182,7 @@ class SybClassTests {
   }
 
   @Test
-  def testEverywhere {
+  def testEverywhere: Unit = {
     val pi = incAll2((23, "foo"))
     typed[(Int, String)](pi)
     assertEquals((24, "foo*"), pi)
@@ -253,7 +253,7 @@ class SybClassTests {
   }
 
   @Test
-  def testAtoms {
+  def testAtoms: Unit = {
     val result1 = everywhere(inc)(23)
     typed[Int](result1)
     assertEquals(24, result1)
@@ -284,7 +284,7 @@ class SybClassTests {
   }
 
   @Test
-  def testHList {
+  def testHList: Unit = {
     val l = 23 :: "foo" :: true :: 2.0 :: HNil
 
     val li = everywhere(inc)(l)
@@ -317,7 +317,7 @@ class SybClassTests {
   }
 
   @Test
-  def testCoproduct {
+  def testCoproduct: Unit = {
     type ISBT = Int :+: String :+: Boolean :+: (String, String):+: CNil
 
     val ci = Coproduct[ISBT](23)
@@ -366,7 +366,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGeneric1 {
+  def testGeneric1: Unit = {
     val input = A(1, true,  2)
     val expected = A(1, false, 2)
 
@@ -376,7 +376,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGeneric2 {
+  def testGeneric2: Unit = {
     val input = List(A(1, true,  2))
     val expected = List(A(1, false, 2))
 
@@ -386,7 +386,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGeneric3 {
+  def testGeneric3: Unit = {
     val input =    1 :: A(1, true,  2) :: HNil
     val expected = 1 :: A(1, false, 2) :: HNil
 
@@ -396,7 +396,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGeneric4 {
+  def testGeneric4: Unit = {
     val input =    (1, A(1, true,  2))
     val expected = (1, A(1, false, 2))
 
@@ -409,7 +409,7 @@ class SybClassTests {
   case class Person(name: String, age: Int, address: Address)
 
   @Test
-  def testGeneric5 {
+  def testGeneric5: Unit = {
     val input = Address("Southover Street", "Brighton", "BN2 9UA")
     val expected = Address("Southover Street*", "Brighton*", "BN2 9UA*")
 
@@ -421,7 +421,7 @@ class SybClassTests {
   }
 
   @Test
-  def testGeneric6 {
+  def testGeneric6: Unit = {
     val input = Person("Joe Grey", 37, Address("Southover Street", "Brighton", "BN2 9UA"))
     val expected = Person("Joe Grey*", 38, Address("Southover Street*", "Brighton*", "BN2 9UA*"))
 
@@ -433,7 +433,7 @@ class SybClassTests {
   }
 
   @Test
-  def testHList2 {
+  def testHList2: Unit = {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
     val expected = Pear(1) :: Banana(2) :: Orange(3) :: Apple(4) :: HNil
 
@@ -443,7 +443,7 @@ class SybClassTests {
   }
 
   @Test
-  def testHList3 {
+  def testHList3: Unit = {
     val input = Apple(1) :: Pear(2) :: Banana(3) :: Orange(4) :: HNil
     val expected = "Pomme" :: "Poire" :: "Banane" :: "Orange" :: HNil
 
@@ -453,7 +453,7 @@ class SybClassTests {
   }
 
   @Test
-  def testCoproduct2 {
+  def testCoproduct2: Unit = {
     type APBO = Apple :+: Pear :+: Banana :+: Orange :+: CNil
     type PBOA = Pear :+: Banana :+: Orange :+: Apple :+: CNil
 
@@ -487,7 +487,7 @@ class SybClassTests {
   }
 
   @Test
-  def testRecursion {
+  def testRecursion: Unit = {
     val tree1: Tree[Int] = Leaf(1)
     val expected1: Tree[Int] = Leaf(2)
 

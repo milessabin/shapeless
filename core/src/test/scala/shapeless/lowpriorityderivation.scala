@@ -403,7 +403,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simple {
+  def simple: Unit = {
     import SimpleTCDeriver._
 
     // All orphans
@@ -442,7 +442,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def composed {
+  def composed: Unit = {
     import ComposedTCDeriver._
 
     // All orphans
@@ -483,7 +483,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def refinement {
+  def refinement: Unit = {
     import TCRDeriver._
 
     // Orphans
@@ -512,7 +512,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simpleWithIgnoring {
+  def simpleWithIgnoring: Unit = {
     import SimpleTC0Deriver._
 
     // More or less cut-n-pasted from 'simple above, I don't really see they could be factored

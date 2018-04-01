@@ -24,35 +24,35 @@ import ops.adjoin._
 
 class AdjoinTests {
   @Test
-  def testHNil {
+  def testHNil: Unit = {
     val adjoin = Adjoin[HNil]
 
     typed[HNil](adjoin(HNil))
   }
 
   @Test
-  def testIL {
+  def testIL: Unit = {
     val adjoin = Adjoin[Int :: HNil]
 
     typed[Int :: HNil](adjoin(1 :: HNil))
   }
 
   @Test
-  def testIC {
+  def testIC: Unit = {
     val adjoin = Adjoin[Int :+: CNil]
 
     typed[Int :+: CNil](adjoin(Inl(1)))
   }
 
   @Test
-  def testIandI {
+  def testIandI: Unit = {
     val adjoin = Adjoin[Int :: String :: HNil]
 
     typed[Int :: String :: HNil](adjoin(1 :: "foo" :: HNil))
   }
 
   @Test
-  def testIandL {
+  def testIandL: Unit = {
     type I = Int
     type L = String :: Symbol :: HNil
     type R = Int :: String :: Symbol :: HNil
@@ -63,7 +63,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testLandI {
+  def testLandI: Unit = {
     type L = Int :: String :: HNil
     type I = Symbol
     type R = Int :: String :: Symbol :: HNil
@@ -74,7 +74,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testLandL {
+  def testLandL: Unit = {
     type L1 = Int :: String :: HNil
     type L2 = Symbol :: Char :: HNil
     type R = Int :: String :: Symbol :: Char :: HNil
@@ -85,7 +85,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testIorI {
+  def testIorI: Unit = {
     val adjoin = Adjoin[Int :+: String :+: CNil]
 
     typed[Int :+: String :+: CNil](adjoin(Inl(1)))
@@ -93,7 +93,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testIorC {
+  def testIorC: Unit = {
     type I = Int
     type C = String :+: Symbol :+: CNil
     type R = Int :+: String :+: Symbol :+: CNil
@@ -105,7 +105,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testCorI {
+  def testCorI: Unit = {
     type C = Int :+: String :+: CNil
     type I = Symbol
     type R = Int :+: String :+: Symbol :+: CNil
@@ -117,7 +117,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testCorC {
+  def testCorC: Unit = {
     type C1 = Int :+: String :+: CNil
     type C2 = Symbol :+: Char :+: CNil
     type R = Int :+: String :+: Symbol :+: Char :+: CNil
@@ -129,7 +129,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testIandIandL {
+  def testIandIandL: Unit = {
     type I1 = Int
     type I2 = String
     type L = Symbol :: HNil
@@ -141,7 +141,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testIorIorC {
+  def testIorIorC: Unit = {
     type I1 = Int
     type I2 = String
     type C = Symbol :+: CNil
@@ -154,7 +154,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testHListSyntax {
+  def testHListSyntax: Unit = {
     type I1 = Int
     type I2 = String
     type L = Symbol :: HNil
@@ -164,7 +164,7 @@ class AdjoinTests {
   }
 
   @Test
-  def testCoproductSyntax {
+  def testCoproductSyntax: Unit = {
     type I1 = Int
     type I2 = String
     type C = Symbol :+: CNil

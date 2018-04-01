@@ -146,7 +146,7 @@ class LabelledGenericTests {
   import LabelledGenericTestsAux._
 
   @Test
-  def testProductBasics {
+  def testProductBasics: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -183,7 +183,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testGet {
+  def testGet: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -206,7 +206,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testApply {
+  def testApply: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -229,7 +229,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testAt {
+  def testAt: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -252,7 +252,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testUpdated {
+  def testUpdated: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -265,7 +265,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testUpdateWith {
+  def testUpdateWith: Unit = {
     val gen = LabelledGeneric[Book]
 
     val b0 = gen.to(tapl)
@@ -278,7 +278,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testExtension {
+  def testExtension: Unit = {
     val gen = LabelledGeneric[Book]
     val gen2 = LabelledGeneric[ExtendedBook]
 
@@ -291,7 +291,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testCoproductBasics {
+  def testCoproductBasics: Unit = {
     type TreeUnion = Union.`'Leaf -> Leaf, 'Node -> Node`.T
 
     val gen = LabelledGeneric[Tree]
@@ -302,7 +302,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testAbstractNonCC {
+  def testAbstractNonCC: Unit = {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
@@ -344,7 +344,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testNonCCWithCompanion {
+  def testNonCCWithCompanion: Unit = {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val rec = ('i ->> 23) :: ('s ->> "foo") :: HNil
@@ -362,7 +362,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testNonCCLazy {
+  def testNonCCLazy: Unit = {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
@@ -381,7 +381,7 @@ class LabelledGenericTests {
   }
 
   @Test
-  def testScalazTagged {
+  def testScalazTagged: Unit = {
     import ScalazTaggedAux._
 
     implicitly[TC[Int @@ CustomTag]]

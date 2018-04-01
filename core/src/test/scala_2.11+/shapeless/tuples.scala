@@ -24,7 +24,7 @@ class Tuple211Tests {
   import syntax.std.tuple._
 
   @Test
-  def testToCoproduct {
+  def testToCoproduct: Unit = {
     import ops.tuple._
 
     type PISB = (Int, String, Boolean)
@@ -34,7 +34,7 @@ class Tuple211Tests {
   }
 
   @Test
-  def testToSum {
+  def testToSum: Unit = {
     import ops.tuple._
 
     type PISB = (Int, String, Boolean)
@@ -48,7 +48,7 @@ class Tuple211Tests {
   }
 
   @Test
-  def testGrouper {
+  def testGrouper: Unit = {
     object toInt extends Poly1 {
       implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
     }
