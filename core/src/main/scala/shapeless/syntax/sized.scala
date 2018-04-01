@@ -27,7 +27,7 @@ object sized {
   implicit def stringSizedConv(s : String) = new SizedConv[Char, String](s)
 }
 
-final class SizedConv[A, Repr <% GenTraversableLike[A, Repr] : AdditiveCollection](r : Repr) {
+final class SizedConv[A, Repr](r : Repr)(implicit ev1: Repr => GenTraversableLike[A, Repr], ev2: AdditiveCollection[Repr]) {
   import ops.nat._
   import Sized._
 

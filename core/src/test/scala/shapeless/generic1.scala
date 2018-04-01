@@ -275,7 +275,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testOverlappingCoproducts1 {
+  def testOverlappingCoproducts1: Unit = {
     val gen = Generic1[Overlapping1, TC1]
     val o: Overlapping1[Int] = OAB1(1)
     val o0 = gen.to(o)
@@ -314,7 +314,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testSingletons {
+  def testSingletons: Unit = {
     type Unit1[t] = Unit
     type None1[t] = None.type
 
@@ -422,7 +422,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testPartiallyApplied {
+  def testPartiallyApplied: Unit = {
     implicitly[Trivial10[List, Int]]
     type FI[f[_]] = Trivial10[f, Int]
     implicitly[FI[List]]
@@ -476,7 +476,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testPartiallyApplied2 {
+  def testPartiallyApplied2: Unit = {
     type CRepr[t] = t :: List[t] :: HNil
     type LRepr[t] = scala.collection.immutable.::[t] :+: Nil.type :+: CNil
     type LS[t] = List[Set[t]]
@@ -538,7 +538,7 @@ class Generic1Tests {
     typed[TC3[Option, s3.I]](s3.fi)
   }
 
-  def testPartiallyApplied3 {
+  def testPartiallyApplied3: Unit = {
     def materialize1[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
     def materialize2[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
 
@@ -596,7 +596,7 @@ class SplitTests {
   import SplitTestDefns._
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     illTyped("""
     Split1[List, Dummy1, Dummy1]
     """)

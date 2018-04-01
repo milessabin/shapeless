@@ -30,11 +30,11 @@ import scala.collection.GenTraversable
  * @author Rob Norris
  */
 object traversable {
-  implicit def traversableOps[T <% GenTraversable[_]](t : T) = new TraversableOps(t)
+  implicit def traversableOps[T](t : T)(implicit ev: T => GenTraversable[_]) = new TraversableOps(t)
   implicit def traversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) = new TraversableOps2(as)
 }
 
-final class TraversableOps[T <% GenTraversable[_]](t : T) {
+final class TraversableOps[T](t : T)(implicit ev: T => GenTraversable[_]) {
   import ops.traversable._
 
   def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)

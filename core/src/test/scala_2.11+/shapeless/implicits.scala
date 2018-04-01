@@ -28,7 +28,7 @@ class Cached211Test {
   }
 
   @Test
-  def testAmbiguous {
+  def testAmbiguous: Unit = {
     implicit val a = new Foo[String] { }
     implicit val b = new Foo[String] { }
     illTyped(

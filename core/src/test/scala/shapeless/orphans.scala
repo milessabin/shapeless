@@ -182,7 +182,7 @@ class OrphansTest {
   import OrphansTestDefns._
 
   @Test
-  def testNoOrphans {
+  def testNoOrphans: Unit = {
     // Implicit scope only
     assertEquals(Ca.caFoo, implicitly[Ca[Foo]])
     assertEquals(Ca.caFallback, implicitly[Ca[Bar]])
@@ -191,7 +191,7 @@ class OrphansTest {
   }
 
   @Test
-  def testStandardPriorityOrphans {
+  def testStandardPriorityOrphans: Unit = {
     // Imported orphans dominate implicit scope
     import CaDeriver._
 
@@ -202,7 +202,7 @@ class OrphansTest {
   }
 
   @Test
-  def testLowPriorityOrphans {
+  def testLowPriorityOrphans: Unit = {
     // Imported orphans dominate implicit scope if at least as precise
     import LowPriorityCaDeriver._
 
@@ -213,7 +213,7 @@ class OrphansTest {
   }
 
   @Test
-  def testMultiOrphans {
+  def testMultiOrphans: Unit = {
     // Mass derivation of instances of multiple type classes
     import MultiOrphans._
 
@@ -229,7 +229,7 @@ class OrphansTest {
   }
 
   @Test
-  def testDerivedNoOrphans {
+  def testDerivedNoOrphans: Unit = {
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
     assertEquals("Eq.eqFoo", implicitly[Eq[Foo]].toString)
     assertEquals("Eq.fallback", implicitly[Eq[Bar]].toString)
@@ -240,7 +240,7 @@ class OrphansTest {
   }
 
   @Test
-  def testDerivedStandardPriorityOrphans {
+  def testDerivedStandardPriorityOrphans: Unit = {
     import EqDeriver._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
@@ -253,7 +253,7 @@ class OrphansTest {
   }
 
   @Test
-  def testDerivedLowPriorityOrphans {
+  def testDerivedLowPriorityOrphans: Unit = {
     import LowPriorityEqDeriver._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)
@@ -266,7 +266,7 @@ class OrphansTest {
   }
 
   @Test
-  def testMultiEqOrphans {
+  def testMultiEqOrphans: Unit = {
     import MultiEqOrphans._
 
     assertEquals("Eq.eqInt", implicitly[Eq[Int]].toString)

@@ -63,7 +63,7 @@ trait LensTests {
   val postcodeLens: Lens[Person, String]
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     val age1 = ageLens.get(person)
     typed[Int](age1)
     assertEquals(37, age1)
@@ -80,7 +80,7 @@ trait LensTests {
   }
 
   @Test
-  def testCompose {
+  def testCompose: Unit = {
     val addressLens = lens[Person] >> 2
     val streetLens = lens[Address] >> 0
 
@@ -102,7 +102,7 @@ trait LensTests {
   }
 
   @Test
-  def testTuples {
+  def testTuples: Unit = {
     type ISDB = (Int, (String, (Double, Boolean)))
 
     val tp = (23, ("foo", (2.0, false)))
@@ -164,7 +164,7 @@ trait LensTests {
   }
 
   @Test
-  def testHLists {
+  def testHLists: Unit = {
     type ISB = Int :: String :: Boolean :: HNil
     val l = 23 :: "foo" :: true :: HNil
 
@@ -207,7 +207,7 @@ trait LensTests {
   }
 
   @Test
-  def testRecords {
+  def testRecords: Unit = {
     import labelled.FieldType, syntax.singleton._
 
     val (fooT, barT) = (Witness("foo"), Witness("bar"))
@@ -225,7 +225,7 @@ trait LensTests {
   }
 
   @Test
-  def testSets {
+  def testSets: Unit = {
     val s = Set("foo", "bar", "baz")
     val lens = setLens[String]("bar")
 
@@ -243,7 +243,7 @@ trait LensTests {
   }
 
   @Test
-  def testMaps {
+  def testMaps: Unit = {
     val m = Map(23 -> "foo", 13 -> "bar", 11 -> "baz")
     val lens = mapLens[Int, String](13)
 
@@ -270,7 +270,7 @@ trait LensTests {
   }
 
   @Test
-  def testProducts {
+  def testProducts: Unit = {
     val nameAgeCityLens = nameLens ~ ageLens ~ cityLens
 
     val nac1 = nameAgeCityLens.get(person)
@@ -320,7 +320,7 @@ class AscribedOpticTestsDynamic extends LensTests {
 
 class OpticTests {
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     val s1: Sum1 = Prod1a(Prod2a(13), 23)
     val s2: Sum1 = Prod1b(Prod2b("foo"), "bar")
 
@@ -414,7 +414,7 @@ class OpticTests {
   }
 
   @Test
-  def testInferredProducts {
+  def testInferredProducts: Unit = {
     val s1: Sum1 = Prod1a(Prod2a(13), 23)
     val s2: Sum1 = Prod1b(Prod2b("foo"), "bar")
 
@@ -474,7 +474,7 @@ class OpticTests {
   }
 
   @Test
-  def testRecursive {
+  def testRecursive: Unit = {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -555,7 +555,7 @@ class OpticTests {
   }
 
   @Test
-  def testRecursiveInferredProducts {
+  def testRecursiveInferredProducts: Unit = {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -619,7 +619,7 @@ class OpticTests {
   }
 
   @Test
-  def testPaths {
+  def testPaths: Unit = {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
     val t3: Node[Int] = Node(Leaf(7), Leaf(8))
@@ -688,7 +688,7 @@ class OpticTests {
   }
 
   @Test
-  def testInferredLenses {
+  def testInferredLenses: Unit = {
     def update[T, E](t: T)(e: E)(implicit mkLens: p.Lens[T, E]): T = mkLens().set(t)(e)
 
     val p = ^.i
@@ -707,7 +707,7 @@ class OpticTests {
 
   
   @Test
-  def testUnapply {
+  def testUnapply: Unit = {
     val t1: Tree[Int] = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val t2: Tree[Int] = Node(Leaf(4), Node(Leaf(5), Leaf(6)))
 
@@ -751,7 +751,7 @@ class OpticTests {
   }
 
   @Test
-  def testLazyUnapply {
+  def testLazyUnapply: Unit = {
     val g = optic[BGraph[Int]]
     val l = g.left
     val rl = g.right.left

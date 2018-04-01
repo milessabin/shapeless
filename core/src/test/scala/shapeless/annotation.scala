@@ -49,7 +49,7 @@ object AnnotationTestsDefinitions {
 class AnnotationTests {
   import AnnotationTestsDefinitions._
 
-  def simpleAnnotation {
+  def simpleAnnotation: Unit = {
     {
       val other = Annotation[Other, CC].apply()
       assert(other == Other())
@@ -68,13 +68,13 @@ class AnnotationTests {
   }
 
   @Test
-  def invalidAnnotation {
+  def invalidAnnotation: Unit = {
     illTyped(" Annotation[Other, Dummy] ", "could not find implicit value for parameter annotation: .*")
     illTyped(" Annotation[Dummy, CC] ", "could not find implicit value for parameter annotation: .*")
   }
 
   @Test
-  def simpleAnnotations {
+  def simpleAnnotations: Unit = {
     {
       val first: Some[First] :: None.type :: None.type :: HNil = Annotations[First, CC].apply()
       assert(first == Some(First()) :: None :: None :: HNil)
@@ -111,7 +111,7 @@ class AnnotationTests {
   }
 
   @Test
-  def invalidAnnotations {
+  def invalidAnnotations: Unit = {
     illTyped(" Annotations[Dummy, CC] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" Annotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" Annotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")

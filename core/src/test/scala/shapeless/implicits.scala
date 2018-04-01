@@ -87,12 +87,12 @@ class CachedTest {
   import CachedTest._
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     assertTrue(CachedTest.i != null)
   }
 
   @Test
-  def testLazy {
+  def testLazy: Unit = {
     assertTrue(CachedTest.il != null)
   }
 
@@ -107,20 +107,20 @@ class CachedTest {
   }
 
   @Test
-  def testCompanion {
+  def testCompanion: Unit = {
     assertTrue(CachedTC.cached != null)
     assertTrue(Bar.foo != null)
   }
 
   @Test
-  def testDivergent {
+  def testDivergent: Unit = {
     illTyped(
       "cachedImplicit[math.Ordering[Ordered[Int]]]"
     )
   }
 
   @Test
-  def testNotFound1 {
+  def testNotFound1: Unit = {
     trait T[X]
     illTyped(
       "cachedImplicit[T[String]]"
@@ -128,7 +128,7 @@ class CachedTest {
   }
 
   @Test
-  def testNotFound2 {
+  def testNotFound2: Unit = {
     @scala.annotation.implicitNotFound("No U[${X}]")
     trait U[X]
     illTyped(
@@ -143,7 +143,7 @@ class CachedTest {
   }
 
   @Test
-  def testRefined {
+  def testRefined: Unit = {
     assert(Quux.gen != null)
     assert(Quux.gen eq Quux.gen0)
 
@@ -165,7 +165,7 @@ class CachedTest {
   }
 
   @Test
-  def testRefined2 {
+  def testRefined2: Unit = {
     assert(Quux2.gen != null)
     assert(Quux2.gen eq Quux2.gen0)
     assert(Quux2.lgen != null)
@@ -187,7 +187,7 @@ class CachedTest {
   }
 
   @Test
-  def testLazyRecursion {
+  def testLazyRecursion: Unit = {
     assert(Wibble.eqw != null)
   }
 }
