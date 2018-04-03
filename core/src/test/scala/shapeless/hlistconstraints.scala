@@ -28,7 +28,7 @@ class HListConstraintsTests {
   case object Pear extends Fruit
 
   @Test
-  def testUnaryTCConstraint {
+  def testUnaryTCConstraint: Unit = {
     import UnaryTCConstraint._
     
     def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
@@ -72,7 +72,7 @@ class HListConstraintsTests {
   }
   
   @Test
-  def testBasisConstraint {
+  def testBasisConstraint: Unit = {
     import BasisConstraint._
     
     type M = Int :: Boolean :: String :: HNil
@@ -90,7 +90,7 @@ class HListConstraintsTests {
   }
   
   @Test
-  def testLUBConstraint {
+  def testLUBConstraint: Unit = {
     import LUBConstraint._
     
     def acceptLUB[L <: HList : <<:[Fruit]#λ](l : L) = true
@@ -106,7 +106,7 @@ class HListConstraintsTests {
   }
 
   @Test
-  def testKeyValueConstraints {
+  def testKeyValueConstraints: Unit = {
     import KeyConstraint._
     import ValueConstraint._
     
@@ -147,7 +147,7 @@ class HListConstraintsTests {
   }
 
   @Test
-  def testNotContainsConstraint {
+  def testNotContainsConstraint: Unit = {
 
     import NotContainsConstraint._
 
@@ -168,7 +168,7 @@ class HListConstraintsTests {
   }
 
   @Test
-  def testIsDistinctConstraint {
+  def testIsDistinctConstraint: Unit = {
 
     def isDistinct[L <: HList](l: L)(implicit ev: IsDistinctConstraint[L]) = true
 

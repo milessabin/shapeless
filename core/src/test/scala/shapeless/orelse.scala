@@ -16,22 +16,22 @@ class OrElseTests {
   implicit val b: B = new B
 
   @Test
-  def testPrimaryFound {
+  def testPrimaryFound: Unit = {
     assertTypedEquals[T](the[A OrElse C].unify, a)
   }
 
   @Test
-  def testSecondaryFound {
+  def testSecondaryFound: Unit = {
     assertTypedEquals[T](the[C OrElse A].unify, a)
   }
 
   @Test
-  def testBothFound {
+  def testBothFound: Unit = {
     assertTypedEquals[T](the[A OrElse B].unify, a)
   }
 
   @Test
-  def testNeitherFound {
+  def testNeitherFound: Unit = {
     illTyped("the[C OrElse D]")
   }
 }

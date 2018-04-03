@@ -134,7 +134,7 @@ object SybClassExamples {
     assert(expected == result)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     paradise
     recursion
   }

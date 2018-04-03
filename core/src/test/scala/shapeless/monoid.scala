@@ -88,7 +88,7 @@ class MonoidTests {
   case class Bar(b: Boolean, s: String, d: Double)
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     implicit val fooInstance = Monoid[Foo]
     implicit val barInstance = Monoid[Bar]
 
@@ -100,7 +100,7 @@ class MonoidTests {
   }
 
   @Test
-  def testAuto {
+  def testAuto: Unit = {
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)
 
@@ -109,7 +109,7 @@ class MonoidTests {
   }
 
   @Test
-  def testNonMonoid {
+  def testNonMonoid: Unit = {
     illTyped(
       """
         val quxInstance = Monoid[Qux]

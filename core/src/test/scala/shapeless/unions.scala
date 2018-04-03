@@ -42,7 +42,7 @@ class UnionTests {
   type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
   @Test
-  def testGetLiterals {
+  def testGetLiterals: Unit = {
     val u1 = Coproduct[U]('i ->> 23)
     val u2 = Coproduct[U]('s ->> "foo")
     val u3 = Coproduct[U]('b ->> true)
@@ -65,7 +65,7 @@ class UnionTests {
   }
 
   @Test
-  def testSelectDynamic {
+  def testSelectDynamic: Unit = {
     val u1 = Coproduct[U]('i ->> 23).union
     val u2 = Coproduct[U]('s ->> "foo").union
     val u3 = Coproduct[U]('b ->> true).union
@@ -94,7 +94,7 @@ class UnionTests {
   }
 
   @Test
-  def testUnionTypeSelector {
+  def testUnionTypeSelector: Unit = {
     type ii = FieldType[i, Int] :+: CNil
     typed[ii](Coproduct[Union.`'i -> Int`.T]('i ->> 23))
 
@@ -192,7 +192,7 @@ class UnionTests {
   }
 
   @Test
-  def testNamedArgsInject {
+  def testNamedArgsInject: Unit = {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -215,7 +215,7 @@ class UnionTests {
   }
 
   @Test
-  def testFields {
+  def testFields: Unit = {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -251,7 +251,7 @@ class UnionTests {
   }
 
   @Test
-  def testUnzipFields {
+  def testUnzipFields: Unit = {
 
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
@@ -286,7 +286,7 @@ class UnionTests {
   }
 
   @Test
-  def testToMap {
+  def testToMap: Unit = {
     val u1 = Union[U](i = 23)
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
@@ -338,7 +338,7 @@ class UnionTests {
   }
 
   @Test
-  def testMapValues {
+  def testMapValues: Unit = {
     object f extends Poly1 {
       implicit def int = at[Int](i => i > 0)
       implicit def string = at[String](s => s"s: $s")

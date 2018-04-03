@@ -26,7 +26,7 @@ import test._
 class LazyStrictTests {
 
   @Test
-  def testEffectOrder {
+  def testEffectOrder: Unit = {
     val effects = ListBuffer[Int]()
 
     implicit def lazyInt: Lazy[Int] = Lazy[Int]{ effects += 3 ; 23 }
@@ -59,7 +59,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testDefConversion {
+  def testDefConversion: Unit = {
     val effects = ListBuffer[Int]()
 
     def effectfulLazyInt: Int = { effects += 3 ; 23 }
@@ -92,7 +92,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testLazyConversion {
+  def testLazyConversion: Unit = {
     val effects = ListBuffer[Int]()
 
     lazy val effectfulLazyInt: Int = { effects += 3 ; 23 }
@@ -124,7 +124,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testInlineConversion {
+  def testInlineConversion: Unit = {
     val effects = ListBuffer[Int]()
 
     def useEffectfulLazyInt(li: Lazy[Int]): Int = {
@@ -200,7 +200,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testRecursive {
+  def testRecursive: Unit = {
     val l: List[Int] = Cons(1, Cons(2, Cons(3, Nil)))
 
     val lazyRepr = {
@@ -225,7 +225,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testMultiple {
+  def testMultiple: Unit = {
     val foos = Lazy.values[Foo[Int] :: Foo[String] :: Foo[Boolean] :: HNil]
     implicit val x :: y :: z :: HNil = foos
 
@@ -248,7 +248,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testEta {
+  def testEta: Unit = {
     implicitly[Lazy[Bar[Int]]].value.foo _
     implicitly[Strict[Bar[Int]]].value.foo _
   }
@@ -268,7 +268,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testAux {
+  def testAux: Unit = {
     val lIS = Baz.lazyBaz(23)
     val sIS = Baz.strictBaz(23)
     typed[Baz.Aux[Int, String]](lIS)
@@ -281,7 +281,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testExtractors {
+  def testExtractors: Unit = {
     implicitly[Lazy[Generic[Symbol]]]
     implicitly[Strict[Generic[Symbol]]]
 
@@ -294,7 +294,7 @@ class LazyStrictTests {
   }
 
   @Test
-  def testNotFound {
+  def testNotFound: Unit = {
     @scala.annotation.implicitNotFound("No U[${X}]")
     trait U[X]
 

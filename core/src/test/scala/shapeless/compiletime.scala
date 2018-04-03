@@ -24,7 +24,7 @@ import shapeless.test.compileTime
 class CompileTimeTests {
 
   @Test
-  def testCompileTime {
+  def testCompileTime: Unit = {
     assertTrue(compileTime(""" val x = 42 """) > Duration.Zero)
   }
 }

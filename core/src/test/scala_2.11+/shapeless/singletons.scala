@@ -36,7 +36,7 @@ class SingletonTypes211Tests {
     val x1: o.type = wO.value
   }
 
-  def testSingletonWitness {
+  def testSingletonWitness: Unit = {
     trait Bound
     object Foo extends Bound
     val bar = "bar"
