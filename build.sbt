@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M3")
+  scalaVersion := "2.12.6",
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M3")
 ))
 
 addCommandAlias("root", ";project root")
@@ -295,7 +295,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
     if(scalaVersion.value == "2.13.0-M3") Set()
     else {
-      val previousVersion = if(scalaVersion.value == "2.12.4") "2.3.2" else "2.3.0"
+      val previousVersion = if(scalaVersion.value == "2.12.6") "2.3.2" else "2.3.0"
       val previousSJSVersion = "0.6.7"
       val previousSJSBinaryVersion =
         ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
