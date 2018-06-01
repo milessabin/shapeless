@@ -3,10 +3,7 @@ install:
   - pip install --user codecov
 
 scala:
-- 2.10.7
-- 2.11.12
-- 2.12.4
-- 2.13.0-M3
+- 2.13.0-M4
 
 jdk:
 - oraclejdk8
@@ -31,12 +28,3 @@ notifications:
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/e58e987de2f64f32c8c6
-
-matrix:
-  include:
-  - scala: 2.11.11
-    env: NATIVE=true
-    jdk: oraclejdk8
-    sudo: required
-    before_install:
-    - curl https://raw.githubusercontent.com/scala-native/scala-native/v0.3.1/bin/travis_setup.sh | travis_wait 15 bash -x

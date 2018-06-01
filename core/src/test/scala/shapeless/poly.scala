@@ -90,7 +90,7 @@ class PolyTests {
   }
   
   @Test
-  def testHRFn {
+  def testHRFn: Unit = {
     implicitly[choose.Case[Set[Int]]]
     
     implicitly[size.Case[Int]]
@@ -227,7 +227,7 @@ class PolyTests {
   }
 
   @Test
-  def testCompose {
+  def testCompose: Unit = {
     val so = singleton compose option
     
     val sos = so("foo")
@@ -240,7 +240,7 @@ class PolyTests {
   }
 
   @Test
-  def testPolyVal {
+  def testPolyVal: Unit = {
     val i1 = zero[Int]
     typed[Int](i1)
     assertEquals(0, i1)
@@ -274,7 +274,7 @@ class PolyTests {
   }
 
   @Test
-  def testBinary {
+  def testBinary: Unit = {
     val bi = bidi(23)
     typed[String](bi)
     assertEquals("23", bi)
@@ -290,7 +290,7 @@ class PolyTests {
   }
 
   @Test
-  def testRotateLeft {
+  def testRotateLeft: Unit = {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
@@ -331,7 +331,7 @@ class PolyTests {
   }
 
   @Test
-  def testRotateRight {
+  def testRotateRight: Unit = {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
@@ -372,7 +372,7 @@ class PolyTests {
   }
 
   @Test
-  def testPoly1Builder {
+  def testPoly1Builder: Unit = {
     val myPoly = Poly1.at[Int]( x => x).at[String](_.length).at[Boolean](if(_) 1 else 0).build
     import myPoly._
 
@@ -387,7 +387,7 @@ class PolyTests {
   }
 
   @Test
-  def testPoly2Builder {
+  def testPoly2Builder: Unit = {
     val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x).
                        at[Int, String]((acc, s) => acc + s.length).
                        at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0)).
@@ -405,7 +405,7 @@ class PolyTests {
   }
 
   @Test
-  def testPoly1BuilderMap {
+  def testPoly1BuilderMap: Unit = {
     val myPoly = Poly1.at[Int]( x => x.toString).at[String](_.length > 2).at[Boolean](if(_) 1 else 0).build
 
     import myPoly._
@@ -416,7 +416,7 @@ class PolyTests {
   }
 
   @Test
-  def testPoly2BuilderFoldLeft {
+  def testPoly2BuilderFoldLeft: Unit = {
     val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x).
                                 at[Int, String]((acc, s) => acc + s.length).
                                 at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0)).

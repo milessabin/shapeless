@@ -29,7 +29,7 @@ class FinTests {
   import ops.fin._
 
   @Test
-  def testFromNats {
+  def testFromNats: Unit = {
     val r1 = Fin[_0, _1]
     assertTypedEquals[FinZero[_1]](FinZero[_1](), r1)
 
@@ -46,7 +46,7 @@ class FinTests {
   }
 
   @Test
-  def testToNat {
+  def testToNat: Unit = {
     val r1 = Fin.toNat(Fin[_0, _3])
     assertTypedEquals[_0](_0, r1)
 

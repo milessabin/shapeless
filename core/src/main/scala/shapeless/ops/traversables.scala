@@ -17,7 +17,8 @@
 package shapeless
 package ops
 
-import scala.collection.{ GenTraversable, GenTraversableLike }
+import scala.collection.{ Iterable, IterableOps }
+import scala.collection.generic.IsIterableLike
 
 object traversable {
   /**
@@ -26,7 +27,7 @@ object traversable {
    * @author Miles Sabin
    */
   trait FromTraversable[Out <: HList] extends Serializable {
-    def apply(l : GenTraversable[_]) : Option[Out]
+    def apply(l : Iterable[_]) : Option[Out]
   }
 
   /**
@@ -40,13 +41,13 @@ object traversable {
     import syntax.typeable._
 
     implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
-      def apply(l : GenTraversable[_]) =
+      def apply(l : Iterable[_]) =
         if(l.isEmpty) Some(HNil) else None 
     }
     
     implicit def hlistFromTraversable[OutH, OutT <: HList]
       (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
-        def apply(l : GenTraversable[_]) : Option[OutH :: OutT] =
+        def apply(l : Iterable[_]) : Option[OutH :: OutT] =
           if(l.isEmpty) None
           else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
     }
@@ -57,7 +58,7 @@ object traversable {
    * 
    * @author Rob Norris
    */
-  trait ToSizedHList[CC[T] <: GenTraversable[T], A, N <: Nat] extends Serializable {
+  trait ToSizedHList[CC[_], A, N <: Nat] extends Serializable {
     type Out
     def apply(cc: CC[A]): Out
   }
@@ -69,7 +70,7 @@ object traversable {
    */
   object ToSizedHList {
 
-    def apply[CC[T] <: GenTraversable[T], A, N <: Nat](
+    def apply[CC[_], A, N <: Nat](
       implicit ev: ToSizedHList[CC, A, N]
     ): ToSizedHList.Aux[CC, A, N, ev.Out] = 
       ev
@@ -78,13 +79,13 @@ object traversable {
     import ops.nat._
     import ops.sized._
 
-    type Aux[CC[T] <: GenTraversable[T], A, N <: Nat, Out0] =
+    type Aux[CC[_], A, N <: Nat, Out0] =
       ToSizedHList[CC, A, N] {
         type Out = Out0
       }
 
-    implicit def instance[CC[T] <: GenTraversable[T], A, N <: Nat](
-      implicit gt: CC[A] => GenTraversableLike[A, CC[A]], 
+    implicit def instance[CC[T] <: Iterable[T], A, N <: Nat](
+      implicit gt: IsIterableLike[CC[A]],
                ac: AdditiveCollection[CC[A]],
                ti: ToInt[N], 
                th: ToHList[CC[A], N]

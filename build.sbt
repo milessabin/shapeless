@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M3")
+  scalaVersion := "2.13.0-M4",
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M4")
 ))
 
 addCommandAlias("root", ";project root")
@@ -22,8 +22,8 @@ addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
 addCommandAlias("validate", ";root;validateJVM;validateJS")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
@@ -40,12 +40,19 @@ lazy val commonSettings = Seq(
 
   scalacOptions := Seq(
     "-feature",
-    "-language:higherKinds",
-    "-language:implicitConversions",
-    "-Xfatal-warnings",
+    "-Xfuture",
+    "-language:higherKinds,implicitConversions",
+    //"-Xfatal-warnings",
     "-deprecation",
-    "-unchecked"
+    "-unchecked",
+    "-Ymacro-annotations"
   ),
+  scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 12)) =>
+      "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_" ::
+      "-Ywarn-unused:-implicits" :: Nil
+    case _ => Nil
+  }),
 
   resolvers ++= Seq(
     Resolver.sonatypeRepo("releases"),
@@ -75,9 +82,11 @@ def configureJUnit(crossProject: CrossProject) = {
 
 lazy val commonJsSettings = Seq(
   scalacOptions += {
-    val tagOrHash =
-      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lines_!.head
-      else tagName.value
+    val tagOrHash = {
+      val tag = tagName.value
+      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lineStream_!.head
+      else tag
+    }
     val a = (baseDirectory in LocalRootProject).value.toURI.toString
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
@@ -229,16 +238,21 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
-    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
+      // if scala 2.13+ is used, quasiquotes and macro-annotations are merged into scala-reflect
+      case Some((2, scalaMajor)) if scalaMajor >= 13 => Seq()
       // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
+      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+        )
       // in Scala 2.10, quasiquotes are provided by macro paradise
-      case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary)
+      case Some((2, 10)) => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
+          "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
+        )
     }
   }
 )
@@ -280,22 +294,19 @@ lazy val publishSettings = Seq(
   )
 )
 
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
+lazy val noPublishSettings =
+  skip in publish := true
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
   mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.13.0-M3") Set()
+    if(scalaVersion.value == "2.13.0-M4") Set()
     else {
-      val previousVersion = if(scalaVersion.value == "2.12.4") "2.3.2" else "2.3.0"
+      val previousVersion = if(scalaVersion.value == "2.12.6") "2.3.2" else "2.3.0"
       val previousSJSVersion = "0.6.7"
       val previousSJSBinaryVersion =
         ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
       val previousBinaryCrossVersion =
-        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
+        CrossVersion.binaryWith(s"sjs${previousSJSBinaryVersion}_", "")
       val scalaV = scalaVersion.value
       val scalaBinaryV = scalaBinaryVersion.value
       val thisProjectID = projectID.value
@@ -313,7 +324,7 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
           .cross(previousCrossVersion)
           .extra(prevExtraAttributes.toSeq: _*)
 
-      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
+      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled()))
     }
   },
 
@@ -343,7 +354,11 @@ lazy val mimaSettings = mimaDefaultSettings ++ Seq(
 
       // Implicit reorderings
       exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
-      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC")
+      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
+
+      // Relaxed constraints
+      exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.apply"),
+      exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#ToSizedHList.apply")
     )
   }
 )
@@ -383,7 +398,7 @@ lazy val releaseSettings = Seq(
     inquireVersions,
     runClean,
     runTest,
-    releaseStepCommand(s"++${Scala211}"),
+    releaseStepCommand(s"++${Scala211}!"),
     releaseStepCommand("nativeTest/run"),
     setReleaseVersion,
     commitReleaseVersion,
@@ -393,7 +408,7 @@ lazy val releaseSettings = Seq(
     releaseStepCommand("coreNative/publishSigned"),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+    releaseStepCommand("sonatypeReleaseAll"),
     pushChanges
   )
 )

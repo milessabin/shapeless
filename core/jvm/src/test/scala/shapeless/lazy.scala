@@ -71,7 +71,7 @@ class LazyStrictTestsJVM {
 
   /** Illustrates that a single `Lazy` is enough to break a cycle */
   @Test
-  def testCycle {
+  def testCycle: Unit = {
     val (ccTC0, genTC0, listTC0) = {
       import TC0._
       (TC[CC], TC[List[CC] :: HNil], TC[List[CC]])

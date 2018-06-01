@@ -51,7 +51,7 @@ class SingletonTypesTests {
   type Bar = wBar.T
 
   @Test
-  def testRefine {
+  def testRefine: Unit = {
     val sTrue = true.narrow
     val sFalse = false.narrow
 
@@ -116,7 +116,7 @@ class SingletonTypesTests {
   def show[T](t: T)(implicit s: Show[T]) = s.show
 
   @Test
-  def testRefinedTypeClass {
+  def testRefinedTypeClass: Unit = {
     val sTrue = show(true.narrow)
     assertEquals("true", sTrue)
 
@@ -162,7 +162,7 @@ class SingletonTypesTests {
   def literalShow[T](t: T)(implicit s: LiteralShow[T]) = s.show
 
   @Test
-  def testRefinedLiteralTypeClass {
+  def testRefinedLiteralTypeClass: Unit = {
     val sTrue = literalShow(true.narrow)
     assertEquals("true", sTrue)
 
@@ -202,7 +202,7 @@ class SingletonTypesTests {
   def literalsShow[T](t: T)(implicit s: LiteralsShow[T]) = s.show
 
   @Test
-  def testRefinedLiteralsTypeClass {
+  def testRefinedLiteralsTypeClass: Unit = {
     val sTrueFalse = literalsShow(true.narrow :: false.narrow :: HNil)
     assertEquals("true, false", sTrueFalse)
 
@@ -224,7 +224,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def testWitness {
+  def testWitness: Unit = {
     val wTrue = Witness(true)
     val wFalse = Witness(false)
 
@@ -266,7 +266,7 @@ class SingletonTypesTests {
 
   def boundedConvert2[B](w: Witness.Lt[B]): Witness.Aux[w.T] = w
 
-  def testSingletonWitness {
+  def testSingletonWitness: Unit = {
     trait Bound
     object Foo extends Bound
     val bar = "bar"
@@ -289,7 +289,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def testWitnessConversion {
+  def testWitnessConversion: Unit = {
     val cTrue = convert(true)
     val cFalse = convert(false)
 
@@ -346,7 +346,7 @@ class SingletonTypesTests {
   def boundedConvert(w: Witness.Lt[Int]): Witness.Aux[w.T] = w
 
   @Test
-  def testBoundedWitnessConversion {
+  def testBoundedWitnessConversion: Unit = {
     val c13 = boundedConvert(13)
     sameTyped(c13)(Witness(13))
     illTyped("""
@@ -369,7 +369,7 @@ class SingletonTypesTests {
   def showLiteral(t: Witness)(implicit s: Show[t.T]) = s.show
 
   @Test
-  def testLiteralTypeClass {
+  def testLiteralTypeClass: Unit = {
     val sTrue = showLiteral(true)
     assertEquals("true", sTrue)
 
@@ -410,7 +410,7 @@ class SingletonTypesTests {
   def showWitness(w: Witness)(implicit s: ShowWitness[w.T]) = s.show
 
   @Test
-  def testWitnessTypeClass {
+  def testWitnessTypeClass: Unit = {
     val sTrue = showWitness(true)
     assertEquals("true", sTrue)
 
@@ -436,7 +436,7 @@ class SingletonTypesTests {
   def showWitnessWith(w: WitnessWith[Show]) = w.instance.show
 
   @Test
-  def testWitnessWith {
+  def testWitnessWith: Unit = {
     val sTrue = showWitnessWith(true)
     assertEquals("true", sTrue)
 
@@ -471,7 +471,7 @@ class SingletonTypesTests {
   def check(w: WitnessWith[Rel])(v: w.instance.Out) = v
 
   @Test
-  def testWitnessWithOut {
+  def testWitnessWithOut: Unit = {
     val relTrue = check(true)(23)
     typed[Int](relTrue)
 
@@ -492,7 +492,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def testValueClass {
+  def testValueClass: Unit = {
     val x = new ValueTest(5)
     val y = new ValueTest(5)
     val wX = Witness(x)
@@ -503,7 +503,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def primitiveWiden {
+  def primitiveWiden: Unit = {
     {
       val w = Widen[Witness.`2`.T]
       illTyped(" w(3) ", "type mismatch;.*")
@@ -536,7 +536,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def symbolWiden {
+  def symbolWiden: Unit = {
     // Masks shapeless.syntax.singleton.narrowSymbol.
     // Having it in scope makes the illTyped tests fail in an unexpected way.
     def narrowSymbol = ???
@@ -551,7 +551,7 @@ class SingletonTypesTests {
   }
 
   @Test
-  def aliasWiden {
+  def aliasWiden: Unit = {
     type T = Witness.`2`.T
     val w = Widen[T]
     illTyped(" w(3) ", "type mismatch;.*")
@@ -567,12 +567,12 @@ class SingletonTypesTests {
   case object A extends B
 
   @Test
-  def singletonWiden {
+  def singletonWiden: Unit = {
     illTyped(" Widen[A.type] ", "could not find implicit value for parameter widen:.*")
   }
 
   @Test
-  def testWitnessThisType {
+  def testWitnessThisType: Unit = {
     class ClassThis {
       val w1 = Witness(this)
       val w2 = Witness[this.type]

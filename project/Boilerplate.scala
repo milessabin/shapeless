@@ -481,7 +481,7 @@ object Boilerplate {
       """
     }        
   }
-  
+
   object GenSizedBuilder extends Template {
     val filename = "sizedbuilder.scala"
 
@@ -490,15 +490,14 @@ object Boilerplate {
       val `a:T..n:T` = synVals map (_ + ":T") mkString ", "
 
       block"""
-        |
         |class SizedBuilder[CC[_]] {
-        |  import scala.collection.generic.CanBuildFrom
+        |  import scala.collection.Factory
         |  import nat._
         |  import Sized.wrap
         |
         -  def apply[T](${`a:T..n:T`})
-        -    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]], ev : AdditiveCollection[CC[T]]) =
-        -    wrap[CC[T], _${arity}]((cbf() += (${`a..n`})).result)
+        -    (implicit dis: DefaultToIndexedSeq[CC], factory : Factory[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
+        -    wrap[CC[T], _${arity}]((factory.newBuilder += (${`a..n`})).result)
         -
         |}
       """

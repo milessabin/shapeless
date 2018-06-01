@@ -47,7 +47,7 @@ class CachedTests {
   import CachedTestsDefinitions._
 
   @Test
-  def simple {
+  def simple: Unit = {
     val first = Intermediate()
     val cachedFirst = Cached.implicitly[Intermediate]
     assert(first.repr == "default")
@@ -67,7 +67,7 @@ class CachedTests {
   }
 
   @Test
-  def scalaDocExample {
+  def scalaDocExample: Unit = {
     import ScalaDocExample._
     
     val first = First.msg

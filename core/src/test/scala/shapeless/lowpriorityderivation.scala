@@ -1,7 +1,7 @@
 package shapeless
 
 import scala.language.reflectiveCalls
-import scala.collection.generic.CanBuildFrom
+import scala.collection.Factory
 import org.junit.Test
 
 
@@ -170,10 +170,10 @@ object LowPriorityDerivationTests {
       implicit def mkCollWriter[M[_], T]
        (implicit
          underlying: TC[T],
-         cbf: CanBuildFrom[Nothing, T, M[T]]
+         cbf: Factory[T, M[T]]
        ): MkStdTC[M[T]] =
         new MkStdTC[M[T]] {
-          lazy val tc = instance[M[T]](n => s"${cbf().result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
+          lazy val tc = instance[M[T]](n => s"${cbf.newBuilder.result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
         }
     }
 
@@ -317,7 +317,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simple {
+  def simple: Unit = {
     import SimpleTCDeriver._
 
     // All orphans
@@ -356,7 +356,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def composed {
+  def composed: Unit = {
     import ComposedTCDeriver._
 
     // All orphans
@@ -397,7 +397,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simpleWithIgnoring {
+  def simpleWithIgnoring: Unit = {
     import SimpleTC0Deriver._
 
     // More or less cut-n-pasted from 'simple above, I don't really see they could be factored

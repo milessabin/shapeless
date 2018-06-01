@@ -24,7 +24,7 @@ import syntax.zipper._
 
 class ZipperTests {
   @Test
-  def testTraversal {
+  def testTraversal: Unit = {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val z = l.toZipper
@@ -55,7 +55,7 @@ class ZipperTests {
   }
 
   @Test
-  def testUpdate {
+  def testUpdate: Unit = {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l2 = l.toZipper.right.put("wibble", 45).reify
@@ -80,7 +80,7 @@ class ZipperTests {
   }
 
   @Test
-  def testTypeIndexing {
+  def testTypeIndexing: Unit = {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l6 = l.toZipper.rightTo[Double]
@@ -95,7 +95,7 @@ class ZipperTests {
   }
   
   @Test
-  def testNatIndexing {
+  def testNatIndexing: Unit = {
     val l = 1 :: "foo" :: 3.0 :: HNil
 
     val l8 = l.toZipper.rightBy(2)
@@ -110,7 +110,7 @@ class ZipperTests {
   }
   
   @Test
-  def testEmpty {
+  def testEmpty: Unit = {
     val l = HNil
     val z = l.toZipper
     
@@ -139,7 +139,7 @@ class ZipperTests {
     )
   
   @Test
-  def testCaseClasses {
+  def testCaseClasses: Unit = {
     val z = p1.toZipper
     
     val name = z.get
