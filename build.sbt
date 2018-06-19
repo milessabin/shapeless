@@ -13,7 +13,7 @@ import sbtcrossproject.CrossProject
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.12.6",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M3")
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M4")
 ))
 
 addCommandAlias("root", ";project root")
@@ -35,21 +35,32 @@ lazy val scoverageSettings = Seq(
   coverageExcludedFiles := ".*/src/test/.*"
 )
 
+val scalacOptionsAll = Seq(
+  "-feature",
+  "-Xfuture",
+  "-language:higherKinds,implicitConversions",
+  "-Xfatal-warnings",
+  "-deprecation",
+  "-unchecked",
+)
+
+val scalacOptions212 = Seq(
+  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
+  "-Ywarn-unused:-implicits"
+)
+
+val scalacOptions213 = Seq(
+  "-Ymacro-annotations"
+)
+
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := Seq(
-    "-feature",
-    "-Xfuture",
-    "-language:higherKinds,implicitConversions",
-    "-Xfatal-warnings",
-    "-deprecation",
-    "-unchecked"
-  ),
+  scalacOptions := scalacOptionsAll,
+
   scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) =>
-      "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_" ::
-      "-Ywarn-unused:-implicits" :: Nil
+    case Some((2, 12)) => scalacOptions212
+    case Some((2, 13)) => scalacOptions212 ++ scalacOptions213
     case _ => Nil
   }),
 
@@ -184,7 +195,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1")
         case _ => Seq()
       }
     }
@@ -237,16 +248,21 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
-    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
   ),
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
+      // if scala 2.13+ is used, quasiquotes and macro-annotations are merged into scala-reflect
+      case Some((2, scalaMajor)) if scalaMajor >= 13 => Seq()
       // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
+      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+        )
       // in Scala 2.10, quasiquotes are provided by macro paradise
-      case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary)
+      case Some((2, 10)) => Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
+          "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
+        )
     }
   }
 )
@@ -254,11 +270,14 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
     (unmanagedSourceDirectories in sc) ++= {
-      (unmanagedSourceDirectories in sc ).value.map { dir: File =>
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, y)) if y == 10 => new File(dir.getPath + "_2.10")
-          case Some((2, y)) if y >= 11 => new File(dir.getPath + "_2.11+")
-        }
+      (unmanagedSourceDirectories in sc ).value.flatMap { dir: File =>
+        if(dir.getName != "scala") Seq(dir)
+        else
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"), new File(dir.getPath + "_2.11+"))
+            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.11+"), new File(dir.getPath + "_2.13-"))
+            case Some((2, y)) if y == 10 => Seq(new File(dir.getPath + "_2.10"), new File(dir.getPath + "_2.13-"))
+          }
       }
     }
   }
@@ -292,69 +311,8 @@ lazy val noPublishSettings =
   skip in publish := true
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.13.0-M3") Set()
-    else {
-      val previousVersion = if(scalaVersion.value == "2.12.6") "2.3.2" else "2.3.0"
-      val previousSJSVersion = "0.6.7"
-      val previousSJSBinaryVersion =
-        ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
-      val previousBinaryCrossVersion =
-        CrossVersion.binaryWith(s"sjs${previousSJSBinaryVersion}_", "")
-      val scalaV = scalaVersion.value
-      val scalaBinaryV = scalaBinaryVersion.value
-      val thisProjectID = projectID.value
-      val previousCrossVersion = thisProjectID.crossVersion match {
-        case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
-        case crossVersion               => crossVersion
-      }
-
-      // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
-      // artifact we're looking for has 0.6.6 (for example).
-      val prevExtraAttributes =
-        thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
-      val prevProjectID =
-        (thisProjectID.organization % thisProjectID.name % previousVersion)
-          .cross(previousCrossVersion)
-          .extra(prevExtraAttributes.toSeq: _*)
-
-      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled()))
-    }
-  },
-
-  mimaBinaryIssueFilters ++= {
-    import com.typesafe.tools.mima.core._
-    import com.typesafe.tools.mima.core.ProblemFilters._
-
-    Seq(
-      // Filtering the methods that were added since the checked version
-      // (these only break forward compatibility, not the backward one)
-      exclude[MissingMethodProblem]("shapeless.:+:.eliminate"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$15"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$16"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$17"),
-      exclude[MissingMethodProblem]("shapeless.UnwrappedInstances.tagUnwrapped"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.findField"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType"),
-      exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.parseSingletonSymbolType"),
-      exclude[MissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
-
-      // Filtering removals
-      exclude[MissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons"),
-      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
-      exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne"),
-      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef"),
-      exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_="),
-
-      // Implicit reorderings
-      exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
-      exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
-
-      // Relaxed constraints
-      exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.apply"),
-      exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#ToSizedHList.apply")
-    )
-  }
+  mimaPreviousArtifacts := Set(),
+  mimaBinaryIssueFilters := Seq()
 )
 
 def buildInfoSetup(crossProject: CrossProject): CrossProject = {

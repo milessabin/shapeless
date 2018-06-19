@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin 
+ * Copyright (c) 2011-18 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package shapeless
 package ops
 
-import scala.collection.{ GenTraversable, GenTraversableLike }
-
 object traversable {
   /**
    * Type class supporting type safe conversion of `Traversables` to `HLists`. 
@@ -26,7 +24,7 @@ object traversable {
    * @author Miles Sabin
    */
   trait FromTraversable[Out <: HList] extends Serializable {
-    def apply(l : GenTraversable[_]) : Option[Out]
+    def apply(l : Iterable[_]) : Option[Out]
   }
 
   /**
@@ -40,13 +38,13 @@ object traversable {
     import syntax.typeable._
 
     implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
-      def apply(l : GenTraversable[_]) =
+      def apply(l : Iterable[_]) =
         if(l.isEmpty) Some(HNil) else None 
     }
     
     implicit def hlistFromTraversable[OutH, OutT <: HList]
       (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
-        def apply(l : GenTraversable[_]) : Option[OutH :: OutT] =
+        def apply(l : Iterable[_]) : Option[OutH :: OutT] =
           if(l.isEmpty) None
           else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t
     }
@@ -83,8 +81,8 @@ object traversable {
         type Out = Out0
       }
 
-    implicit def instance[CC[T] <: GenTraversable[T], A, N <: Nat](
-      implicit gt: CC[A] => GenTraversableLike[A, CC[A]], 
+    implicit def instance[CC[T] <: Iterable[T], A, N <: Nat](
+      implicit gt: IsIterableLike[CC[A]],
                ac: AdditiveCollection[CC[A]],
                ti: ToInt[N], 
                th: ToHList[CC[A], N]

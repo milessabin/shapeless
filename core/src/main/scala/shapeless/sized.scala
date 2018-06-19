@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-16 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,9 @@
 
 package shapeless
 
-import scala.collection.GenTraversableLike
-import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
-
 /**
  * Wrapper for a collection type witnessing that it has the statically specified length. Can be
- * applied to any type which can be viewed as a `GenTraversableLike`, ie. standard collections,
+ * applied to any type which can be viewed as an `IterableOps`, ie. standard collections,
  * `Array`s, `String`s etc.
  * 
  * @author Miles Sabin
@@ -47,7 +44,7 @@ final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
  * 
  * @author Miles Sabin
  */
-class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsTraversableLike[Repr] { type A = A0 }) { outer =>
+class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsIterableLike[Repr] { type A = A0 }) { outer =>
   import nat._
   import ops.nat._
   import LT._
@@ -55,7 +52,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   import ops.sized._
   import ops.hlist.Tupler
 
-  private implicit def conv(repr: Repr): GenTraversableLike[A0, Repr] = itl.conversion(repr)
+  private implicit def conv(repr: Repr): IterableLike[A0, Repr] = itl.conversion(repr)
 
   /**
    * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
@@ -138,10 +135,10 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    * Prepend the argument element to this collection. The resulting collection will be statically known to have a size
    * one greater than this collection.
    */
-  def +:(elem : A0)(implicit cbf : CanBuildFrom[Repr, A0, Repr]) = {
-    val builder = cbf.apply(s.unsized)
+  def +:(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
+    val builder = cbf.newBuilder(s.unsized)
     builder += elem
-    builder ++= s.unsized.toIterator
+    builder ++= conv(s.unsized).iterator
     wrap[Repr, Succ[L]](builder.result)
   }
   
@@ -149,9 +146,9 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    * Append the argument element to this collection. The resulting collection will be statically known to have a size
    * one greater than this collection.
    */
-   def :+(elem : A0)(implicit cbf : CanBuildFrom[Repr, A0, Repr]) = {
-    val builder = cbf.apply(s.unsized)
-    builder ++= s.unsized.toIterator
+   def :+(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
+    val builder = cbf.newBuilder(s.unsized)
+    builder ++= conv(s.unsized).iterator
     builder += elem
     wrap[Repr, Succ[L]](builder.result)
   }
@@ -163,16 +160,21 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   def ++[B >: A0, That, M <: Nat](that : Sized[That, M])
     (implicit
       sum : Sum[L, M],
-      cbf : CanBuildFrom[Repr, B, That],
-      convThat : That => GenTraversableLike[B, That],
-      ev : AdditiveCollection[That]) = wrap[That, sum.Out](s.unsized ++ that.unsized)
-    
+      convThat : IsIterableLike[That] { type A = B },
+      cbf : Factory[B, That],
+      ev : AdditiveCollection[That]): Sized[That, sum.Out] =
+        wrap[That, sum.Out](cbf.fromSpecific(conv(s.unsized).iterator ++ convThat.conversion(that.unsized).iterator))
+
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
    * as this collection.
    */
-  def map[B, That](f : A0 => B)(implicit cbf : CanBuildFrom[Repr, B, That], ev : AdditiveCollection[That]) =
-    wrap[That, L](s.unsized map f)
+  def map[B, That](f : A0 => B)(implicit cbf : BuildFrom[Repr, B, That], ev : AdditiveCollection[That]) = {
+    val thisRepr: Repr = s.unsized
+    val builder = cbf.newBuilder(thisRepr)
+    builder ++= conv(thisRepr).iterator.map(f)
+    wrap[That, L](builder.result)
+  }
 
   /**
    * Converts this `Sized` to an `HList` whose elements have the same type as in `Repr`. 
@@ -191,14 +193,14 @@ trait LowPrioritySized {
 
 object Sized extends LowPrioritySized {
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
-    (implicit itl: IsTraversableLike[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
+    (implicit itl: IsIterableLike[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
       new SizedOps[itl.A, Repr, L](s, itl)
   
   def apply[CC[_]] = new SizedBuilder[CC]
   
   def apply[CC[_]]()
-    (implicit cbf : CanBuildFrom[Nothing, Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
-      new Sized[CC[Nothing], _0](cbf().result)
+    (implicit dis: DefaultToIndexedSeq[CC], cbf : Factory[Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
+      new Sized[CC[Nothing], _0](cbf.newBuilder.result)
   
   def wrap[Repr, L <: Nat](r : Repr)(implicit ev : AdditiveCollection[Repr]) = new Sized[Repr, L](r)
 
@@ -233,16 +235,18 @@ object AdditiveCollection {
   implicit def listAdditiveCollection[T]: AdditiveCollection[List[T]] =
     new AdditiveCollection[List[T]] {}
 
-  implicit def streamAdditiveCollection[T]: AdditiveCollection[Stream[T]] =
-    new AdditiveCollection[Stream[T]] {}
+  implicit def streamAdditiveCollection[T]: AdditiveCollection[LazyList[T]] =
+    new AdditiveCollection[LazyList[T]] {}
 
   implicit def queueAdditiveCollection[T]: AdditiveCollection[Queue[T]] =
     new AdditiveCollection[Queue[T]] {}
 
-  implicit def indexedSeqAdditiveCollection[T]: AdditiveCollection[IndexedSeq[T]] =
-    new AdditiveCollection[IndexedSeq[T]] {}
-
   implicit def defaultAdditiveCollection[T]: AdditiveCollection[collection.immutable.IndexedSeq[T]] =
     new AdditiveCollection[collection.immutable.IndexedSeq[T]] {}
+}
 
+class DefaultToIndexedSeq[CC[_]]
+object DefaultToIndexedSeq {
+  implicit def defaultInstance: DefaultToIndexedSeq[collection.immutable.IndexedSeq] = null
+  implicit def explicitInstance[CC[_]]: DefaultToIndexedSeq[CC] = null
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-16 Miles Sabin
+ * Copyright (c) 2013-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
 
-package object shapeless {
+package object shapeless extends ShapelessVersionSpecifics {
   def unexpected : Nothing = sys.error("Unexpected invocation")
 
   // Basic definitions

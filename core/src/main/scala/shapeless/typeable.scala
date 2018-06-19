@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-16 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ trait LowPriorityTypeable {
  */
 object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import java.{ lang => jl }
-  import scala.collection.{ GenMap, GenTraversable }
   import scala.reflect.ClassTag
   import syntax.typeable._
 
@@ -220,11 +219,11 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def describe = s"Right[${castB.describe}]"
     }
 
-  /** Typeable instance for `GenTraversable`.
+  /** Typeable instance for `Traversable`.
    *  Note that the contents be will tested for conformance to the element type. */
-  implicit def genTraversableTypeable[CC[X] <: GenTraversable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with GenTraversable[T]] =
-    // Nb. the apparently redundant `with GenTraversable[T]` is a workaround for a
+  implicit def genTraversableTypeable[CC[X] <: Iterable[X], T]
+    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with Iterable[T]] =
+    // Nb. the apparently redundant `with Iterable[T]` is a workaround for a
     // Scala 2.10.x bug which causes conflicts between this instance and `anyTypeable`.
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =

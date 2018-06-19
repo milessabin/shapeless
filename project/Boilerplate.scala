@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ object Boilerplate {
 
   val header = """
     |/*
-    | * Copyright (c) 2011-14 Miles Sabin
+    | * Copyright (c) 2011-18 Miles Sabin
     | *
     | * Licensed under the Apache License, Version 2.0 (the "License");
     | * you may not use this file except in compliance with the License.
@@ -492,13 +492,12 @@ object Boilerplate {
       block"""
         |
         |class SizedBuilder[CC[_]] {
-        |  import scala.collection.generic.CanBuildFrom
         |  import nat._
         |  import Sized.wrap
         |
         -  def apply[T](${`a:T..n:T`})
-        -    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]], ev : AdditiveCollection[CC[T]]) =
-        -    wrap[CC[T], _${arity}]((cbf() += (${`a..n`})).result)
+        -    (implicit dis: DefaultToIndexedSeq[CC], factory : Factory[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
+        -    wrap[CC[T], _${arity}]((factory.newBuilder += (${`a..n`})).result)
         -
         |}
       """

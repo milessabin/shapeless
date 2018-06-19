@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-16 Miles Sabin
+ * Copyright (c) 2015-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import java.io._
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.collection.generic.CanBuildFrom
-
 import labelled._
 import nat._
 import ops.function._
@@ -35,6 +33,7 @@ import syntax.std.TupleOps
 import syntax.singleton._
 import syntax.zipper._
 import test._
+import serializationtestutils._
 import union._
 
 object SerializationTestDefns {
@@ -272,16 +271,6 @@ object SerializationTestDefns {
       }
     }
   }
-
-  /**
-   * A `CanBuildFrom` for `List` implementing `Serializable`, unlike the one provided by the standard library.
-   */
-  implicit def listSerializableCanBuildFrom[T]: CanBuildFrom[List[T], T, List[T]] =
-    new CanBuildFrom[List[T], T, List[T]] with Serializable {
-      def apply(from: List[T]) = from.genericBuilder[T]
-      def apply() = List.newBuilder[T]
-    }
-
 }
 
 class SerializationTests {
@@ -968,12 +957,7 @@ class SerializationTests {
   def testTraversable: Unit = {
     type L = Int :: String :: Boolean :: HNil
     assertSerializable(FromTraversable[L])
-
-    // To satisfy serialization of `ToSizedHList` we must provide a serializable `IsTraversableLike`
-    import scala.collection.generic.IsTraversableLike
-    implicit val hack: IsTraversableLike[List[Int]] { type A = Int } = null
     assertSerializable(ToSizedHList[List, Int, _4])
-
   }
 
   @Test
