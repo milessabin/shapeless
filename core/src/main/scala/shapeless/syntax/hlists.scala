@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -609,7 +609,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     *
     * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
     */
-  def toCoproduct[M[_] <: Traversable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
+  def toCoproduct[M[_] <: Iterable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements

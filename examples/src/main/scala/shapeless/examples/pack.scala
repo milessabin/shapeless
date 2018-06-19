@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-18 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,25 +29,29 @@ object PackExamples extends App {
   final case class PCons[F[_], H, T <: HList](head: F[H], tail: Pack[F, T]) extends Pack[F, H :: T]
   final case class PNil[F[_]]() extends Pack[F, HNil]
   
-  object Pack {
+  object Pack extends Pack0 {
     implicit def packHNil[F[_]]: PNil[F] = PNil[F]()
 
     implicit def packHList[F[_], H, T <: HList]
       (implicit fh: F[H], pt: Pack[F, T]): Pack[F, H :: T] = PCons(fh, pt)
+  }
 
+  trait Pack0 {
     implicit def unpack[F[_], E, L <: HList](implicit pack: Pack[F, L], unpack: Unpack[F, L, E]): F[E] = unpack(pack)
 
     trait Unpack[F[_], L <: HList, E] {
       def apply(pack: Pack[F, L]): F[E]
     }
 
-    object Unpack extends {
+    object Unpack extends Unpack0 {
       implicit def unpack1[F[_], H, T <: HList]
         (implicit pc: IsPCons.Aux[F, H :: T, H, T]): Unpack[F, H :: T, H] =
           new Unpack[F, H :: T, H] {
             def apply(pack: Pack[F, H :: T]): F[H] = pc.split(pack)._1
           }
+    }
 
+    trait Unpack0 {
       implicit def unpack2[F[_], H, T <: HList, E]
         (implicit pc: IsPCons.Aux[F, H :: T, H, T], ut: Unpack[F, T, E]): Unpack[F, H :: T, E] =
           new Unpack[F, H :: T, E] {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-16 Lars Hupel, Miles Sabin
+ * Copyright (c) 2012-18 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -283,7 +283,7 @@ trait ReprTypes {
 }
 
 @macrocompat.bundle
-trait CaseClassMacros extends ReprTypes {
+trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   val c: whitebox.Context
 
   import c.universe._
@@ -407,7 +407,20 @@ trait CaseClassMacros extends ReprTypes {
         }
       val baseArgs = baseTpe.dealias.typeArgs
 
-      val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
+      def isLess(sym1: Symbol, sym2: Symbol): Boolean = {
+        val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+        val gSym1 = sym1.asInstanceOf[global.Symbol]
+        val gSym2 = sym2.asInstanceOf[global.Symbol]
+        gSym1.isLess(gSym2)
+      }
+
+      def orderSyms(s1: Symbol, s2: Symbol): Boolean = {
+        val fn1 = s1.fullName
+        val fn2 = s2.fullName
+        fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
+      }
+
+      val ctorSyms = collectCtors(baseSym).sortWith(orderSyms)
       val ctors =
         ctorSyms flatMap { sym =>
           def normalizeTermName(name: Name): TermName =
@@ -535,7 +548,7 @@ trait CaseClassMacros extends ReprTypes {
 
       case TypeRef(pre, _, args) if isVararg(tpe) =>
         val argTrees = args.map(mkTypTree)
-        AppliedTypeTree(tq"_root_.scala.collection.Seq", argTrees)
+        AppliedTypeTree(varargTpt, argTrees)
 
       case t => tq"$t"
     }
@@ -780,7 +793,7 @@ trait CaseClassMacros extends ReprTypes {
   def devarargify(tpe: Type): Type =
     tpe match {
       case TypeRef(pre, _, args) if isVararg(tpe) =>
-        appliedType(typeOf[scala.collection.Seq[_]].typeConstructor, args)
+        appliedType(varargTC, args)
       case _ => tpe
     }
 
@@ -1007,7 +1020,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
 
     val to = {
-      val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
+      val toCases = ctorsOf(tpe).zipWithIndex map (mkCoproductCases _).tupled
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
     }
 
