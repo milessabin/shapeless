@@ -309,7 +309,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
                   val gTpe = tpe.asInstanceOf[global.Type]
                   val errorMsg = gTpe.typeSymbolDirect match {
                     case analyzer.ImplicitNotFoundMsg(msg) =>
-                      msg.format(TermName("evidence").asInstanceOf[global.TermName], gTpe)
+                      msg.formatDefSiteMessage(gTpe)
                     case _ =>
                       s"Implicit value of type $tpe not found"
                   }

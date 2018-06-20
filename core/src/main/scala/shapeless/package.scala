@@ -161,7 +161,7 @@ package shapeless {
       if (best.isFailure) {
         val errorMsg = tpe.typeSymbolDirect match {
           case analyzer.ImplicitNotFoundMsg(msg) =>
-            msg.format(TermName("evidence").asInstanceOf[global.TermName], tpe)
+            msg.formatDefSiteMessage(tpe)
           case _ =>
             s"Could not find an implicit value of type $tpe to cache"
         }
