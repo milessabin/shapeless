@@ -775,12 +775,7 @@ object hlist {
         new ToSized[H1 :: H2 :: T, M] {
           type Lub = L
           type N = Succ[N0]
-          def apply(l : H1 :: H2 :: T) = {
-            val lhd: L = u.left(l.head)
-            val tl: Sized[M[LT], N0] = tts(l.tail)
-            val ltl: Sized[M[L], N0] = Sized.sizedOps(tl).map(u.right)
-            Sized.sizedOps(ltl).+:(lhd)
-          }
+          def apply(l : H1 :: H2 :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
         }
   }
 
