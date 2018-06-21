@@ -492,6 +492,7 @@ object Boilerplate {
       block"""
         |
         |class SizedBuilder[CC[_]] {
+        |  import VersionSpecifics._
         |  import nat._
         |  import Sized.wrap
         |

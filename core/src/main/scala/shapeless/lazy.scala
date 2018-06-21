@@ -303,17 +303,8 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             val tree = c.inferImplicitValue(tpe, silent = true)
             if(tree.isEmpty) {
               tpe.typeSymbol.annotations.
-                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { infAnn =>
-                  val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-                  val analyzer: global.analyzer.type = global.analyzer
-                  val gTpe = tpe.asInstanceOf[global.Type]
-                  val errorMsg = gTpe.typeSymbolDirect match {
-                    case analyzer.ImplicitNotFoundMsg(msg) =>
-                      msg.format(TermName("evidence").asInstanceOf[global.TermName], gTpe)
-                    case _ =>
-                      s"Implicit value of type $tpe not found"
-                  }
-                  setAnnotation(errorMsg)
+                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { _ =>
+                  setAnnotation(VersionSpecifics.implicitNotFoundMessage(c)(tpe))
                 }
             }
             (State.current.get, tree)

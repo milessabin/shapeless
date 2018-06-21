@@ -21,6 +21,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable
 
 import poly._
+import VersionSpecifics._
 
 object hlist {
   /**
