@@ -16,6 +16,8 @@
 
 package shapeless
 
+import VersionSpecifics._
+
 /**
  * Wrapper for a collection type witnessing that it has the statically specified length. Can be
  * applied to any type which can be viewed as an `IterableOps`, ie. standard collections,

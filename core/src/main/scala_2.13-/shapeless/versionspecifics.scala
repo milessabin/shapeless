@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+package shapeless
+
 import scala.collection.{ GenTraversableLike, GenTraversableOnce }
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 import scala.collection.mutable.Builder
 
-trait ShapelessVersionSpecifics extends LP0 {
+import scala.reflect.macros.whitebox
+
+object VersionSpecifics extends LP0 {
   type BuildFrom[-F, -E, +T] = CanBuildFrom[F, E, T]
   type Factory[-E, +T] = CanBuildFrom[Nothing, E, T]
   type IsIterableLike[Repr] = IsTraversableLike[Repr]
@@ -28,6 +32,17 @@ trait ShapelessVersionSpecifics extends LP0 {
   type IterableOps[T, CC[_], R] = GenTraversableLike[T, R]
   type Iterable[+T] = Traversable[T]
   type GenMap[K, +V] = scala.collection.GenMap[K, V]
+
+  def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    gTpe.typeSymbolDirect match {
+      case global.analyzer.ImplicitNotFoundMsg(msg) =>
+        msg.format(global.newTermName("evidence"), gTpe)
+      case _ =>
+        s"Implicit value of type $tpe not found"
+    }
+  }
 
   implicit class GenTraversableLikeOps[T, Repr](gtl: GenTraversableLike[T, Repr]) {
     def iterator: Iterator[T] = gtl.toIterator
@@ -55,4 +70,11 @@ trait LP1 {
       b.result()
     }
   }
+}
+
+trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>
+  import c.universe._
+
+  val varargTpt = tq"_root_.scala.collection.Seq"
+  val varargTC = typeOf[scala.collection.Seq[_]].typeConstructor
 }

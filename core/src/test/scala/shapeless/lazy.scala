@@ -251,6 +251,7 @@ class LazyStrictTests {
   def testEta: Unit = {
     implicitly[Lazy[Bar[Int]]].value.foo _
     implicitly[Strict[Bar[Int]]].value.foo _
+    ()
   }
 
   trait Baz[T] {

@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import VersionSpecifics._
+
 object traversable {
   /**
    * Type class supporting type safe conversion of `Traversables` to `HLists`. 

@@ -20,6 +20,8 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.blackbox
 
+import VersionSpecifics._
+
 /**
  * Type class supporting type safe cast.
  *

@@ -14,10 +14,32 @@
  * limitations under the License.
  */
 
-trait ShapelessVersionSpecifics {
+package shapeless
+
+import scala.reflect.macros.whitebox
+
+object VersionSpecifics {
   type BuildFrom[-F, -E, +T] = collection.BuildFrom[F, E, T]
   type Factory[-E, +T] = collection.Factory[E, T]
   type IsIterableLike[Repr] = collection.generic.IsIterableLike[Repr]
   type IterableLike[T, Repr] = collection.IterableOps[T, Iterable, Repr]
   type GenMap[K, +V] = Map[K, V]
+
+  def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
+    val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    gTpe.typeSymbolDirect match {
+      case global.analyzer.ImplicitNotFoundMsg(msg) =>
+        msg.formatDefSiteMessage(gTpe)
+      case _ =>
+        s"Implicit value of type $tpe not found"
+    }
+  }
+}
+
+trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>
+  import c.universe._
+
+  val varargTpt = tq"_root_.scala.collection.immutable.Seq"
+  val varargTC = typeOf[scala.collection.immutable.Seq[_]].typeConstructor
 }
