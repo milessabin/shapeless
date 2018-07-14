@@ -135,9 +135,9 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
 
     if(isCaseClass || hasNonGenericCompanionMember("apply"))
-      args => q"${companionRef(tpe)}(..$args)"
+      args => c.typecheck(q"${companionRef(tpe)}(..$args)", c.TERMmode)
     else
-      args => q"new $tpe(..$args)"
+      args => c.typecheck(q"new $tpe(..$args)", c.TERMmode)
   }
 
   def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
@@ -146,12 +146,11 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     if (!isProduct(annTpe))
       abort(s"$annTpe is not a case class-like type")
 
-    val construct0 = construct(annTpe)
-
     val tpe = weakTypeOf[T]
 
     val annTreeOpt = tpe.typeSymbol.annotations.collectFirst {
-      case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+      case ann if ann.tree.tpe <:< annTpe =>
+        construct(ann.tree.tpe)(ann.tree.children.tail)
     }
 
     annTreeOpt match {
@@ -167,8 +166,6 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     if (!isProduct(annTpe))
       abort(s"$annTpe is not a case class-like type")
-
-    val construct0 = construct(annTpe)
 
     val tpe = weakTypeOf[T]
 
@@ -186,20 +183,21 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
           val paramConstrSym = constructorSyms(name.decodedName.toString)
 
           paramConstrSym.annotations.collectFirst {
-            case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+            case ann if ann.tree.tpe <:< annTpe =>
+              construct(ann.tree.tpe)(ann.tree.children.tail)
           }
         }
       } else if (isCoproduct(tpe))
         ctorsOf(tpe).map { cTpe =>
           cTpe.typeSymbol.annotations.collectFirst {
-            case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+            case ann if ann.tree.tpe <:< annTpe => construct(ann.tree.tpe)(ann.tree.children.tail)
           }
         }
       else
         abort(s"$tpe is not case class like or the root of a sealed family of types")
 
     val wrapTpeTrees = annTreeOpts.map {
-      case Some(annTree) => appliedType(someTpe, annTpe) -> q"_root_.scala.Some($annTree)"
+      case Some(annTree) => appliedType(someTpe, annTree.tpe) -> q"_root_.scala.Some($annTree)"
       case None => noneTpe -> q"_root_.scala.None"
     }
 

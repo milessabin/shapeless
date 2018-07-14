@@ -30,10 +30,13 @@ object AnnotationTestsDefinitions {
 
   case class Unused() extends saAnnotation
 
+  case class CoParameterized[+T](value: T)
+
   @Other case class CC(
     @First i: Int,
     s: String,
-    @Second(2, "b") ob: Option[Boolean]
+    @Second(2, "b") ob: Option[Boolean],
+    @CoParameterized("value") fourth: String
   )
 
   @Last(true) trait Something
@@ -41,6 +44,7 @@ object AnnotationTestsDefinitions {
   sealed trait Base
   @First case class BaseI(i: Int) extends Base
   @Second(3, "e") case class BaseS(s: String) extends Base
+  @CoParameterized("value") case class BaseDouble(d: Double) extends Base
 
   trait Dummy
 
@@ -76,37 +80,50 @@ class AnnotationTests {
   @Test
   def simpleAnnotations: Unit = {
     {
-      val first: Some[First] :: None.type :: None.type :: HNil = Annotations[First, CC].apply()
-      assert(first == Some(First()) :: None :: None :: HNil)
+      val first: Some[First] :: None.type :: None.type :: None.type :: HNil = Annotations[First, CC].apply()
+      assert(first == Some(First()) :: None :: None :: None :: HNil)
 
-      val second: None.type :: None.type :: Some[Second] :: HNil = Annotations[Second, CC].apply()
-      assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+      val second: None.type :: None.type :: Some[Second] :: None.type :: HNil = Annotations[Second, CC].apply()
+      assert(second == None :: None :: Some(Second(2, "b")) :: None :: HNil)
 
-      val unused: None.type :: None.type :: None.type :: HNil = Annotations[Unused, CC].apply()
-      assert(unused == None :: None :: None :: HNil)
+      val coparameterized: None.type :: None.type :: None.type :: Some[CoParameterized[String]] :: HNil =
+        Annotations[CoParameterized[_], CC].apply()
+      assert(coparameterized == None :: None :: None :: Some(CoParameterized("value")) :: HNil)
 
-      val firstSum: Some[First] :: None.type :: HNil = Annotations[First, Base].apply()
-      assert(firstSum == Some(First()) :: None :: HNil)
+      val unused: None.type :: None.type :: None.type :: None.type :: HNil = Annotations[Unused, CC].apply()
+      assert(unused == None :: None :: None :: None :: HNil)
 
-      val secondSum: None.type :: Some[Second] :: HNil = Annotations[Second, Base].apply()
-      assert(secondSum == None :: Some(Second(3, "e")) :: HNil)
+      val firstSum: None.type :: Some[First] :: None.type :: HNil = Annotations[First, Base].apply()
+      assert(firstSum == None :: Some(First()) :: None :: HNil)
+
+      val secondSum: None.type :: None.type :: Some[Second] ::  HNil = Annotations[Second, Base].apply()
+      assert(secondSum == None :: None :: Some(Second(3, "e")) :: HNil)
+
+      val coparameterizedSum: Some[CoParameterized[String]] :: None.type :: None.type ::  HNil = Annotations[CoParameterized[_], Base].apply()
+      assert(coparameterizedSum == Some(CoParameterized("value")) :: None :: None :: HNil)
     }
 
     {
       val first = Annotations[First, CC].apply()
-      assert(first == Some(First()) :: None :: None :: HNil)
+      assert(first == Some(First()) :: None :: None :: None :: HNil)
 
       val second = Annotations[Second, CC].apply()
-      assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+      assert(second == None :: None :: Some(Second(2, "b")) :: None :: HNil)
+
+      val coparameterized = Annotations[CoParameterized[_], CC].apply()
+      assert(coparameterized == None :: None :: None :: Some(CoParameterized("value")) :: HNil)
 
       val unused = Annotations[Unused, CC].apply()
-      assert(unused == None :: None :: None :: HNil)
+      assert(unused == None :: None :: None :: None:: HNil)
 
       val firstSum = Annotations[First, Base].apply()
-      assert(firstSum == Some(First()) :: None :: HNil)
+      assert(firstSum == None :: Some(First()) :: None :: HNil)
 
       val secondSum = Annotations[Second, Base].apply()
-      assert(secondSum == None :: Some(Second(3, "e")) :: HNil)
+      assert(secondSum == None :: None :: Some(Second(3, "e")) :: HNil)
+
+      val coparameterizedSum = Annotations[CoParameterized[_], Base].apply()
+      assert(coparameterizedSum == Some(CoParameterized("value")) :: None :: None :: HNil)
     }
   }
 
