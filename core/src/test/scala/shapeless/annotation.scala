@@ -30,7 +30,7 @@ object AnnotationTestsDefinitions {
 
   case class Unused() extends saAnnotation
 
-  case class CoParameterized[+T](value: T)
+  case class CoParameterized[+T](value: T) extends saAnnotation
 
   @Other case class CC(
     @First i: Int,
