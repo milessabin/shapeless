@@ -18,7 +18,7 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
 
-package object shapeless {
+package object shapeless extends ScalaVersionSpecifics {
   def unexpected : Nothing = sys.error("Unexpected invocation")
 
   // Basic definitions
@@ -160,7 +160,7 @@ package shapeless {
       }
       val best = is.bestImplicit
       if (best.isFailure) {
-        val errorMsg = VersionSpecifics.implicitNotFoundMessage(c)(tpe)
+        val errorMsg = implicitNotFoundMessage(c)(tpe)
         c.abort(c.enclosingPosition, errorMsg)
       } else {
         best.tree.asInstanceOf[Tree]

@@ -16,8 +16,7 @@
 
 package shapeless
 
-import scala.collection.{ BuildFrom, Factory, IterableOps }
-import scala.collection.generic.IsIterableLike
+import scala.collection.IterableOps
 import scala.collection.mutable.Builder
 
 object serializationtestutils {

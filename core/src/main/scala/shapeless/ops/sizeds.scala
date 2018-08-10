@@ -17,8 +17,6 @@
 package shapeless
 package ops
 
-import VersionSpecifics._
-
 object sized {
   /**
    * Type class supporting conversion of this `Sized` to an `HList` whose elements have the same type as in `Repr`.

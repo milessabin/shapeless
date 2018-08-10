@@ -1762,16 +1762,16 @@ class CoproductTests {
     val c1_0 = Coproduct[S1](5)
     val c1_1 = c1_0.embed[S2]
     assertTypedEquals[S2](c1_1, Coproduct[S2](5))
-    assertTypedEquals[S1](c1_0, c1_1.deembed[S1].right.get)
+    assertTypedEquals[S1](c1_0, c1_1.deembed[S1].toOption.get)
 
     val c1_2 = c1_0.embed[S3]
     assertTypedEquals[S3](c1_2, Coproduct[S3](5))
-    assertTypedEquals[S1](c1_0, c1_2.deembed[S1].right.get)
+    assertTypedEquals[S1](c1_0, c1_2.deembed[S1].toOption.get)
 
     val c2_0 = Coproduct[S2]("toto")
     val c2 = c2_0.embed[S3]
     assertTypedEquals[S3](c2, Coproduct[S3]("toto"))
-    assertTypedEquals[S2](c2_0, c2.deembed[S2].right.get)
+    assertTypedEquals[S2](c2_0, c2.deembed[S2].toOption.get)
 
     illTyped("Coproduct[S1](5).embed[S4]")
 
@@ -1786,8 +1786,8 @@ class CoproductTests {
       val c1: II = Inr(Inl(1))
       val c2: II = Inl(1)
 
-      val c1_0 = c1.embed[IDI].deembed[II].right.get
-      val c2_0 = c2.embed[IDI].deembed[II].right.get
+      val c1_0 = c1.embed[IDI].deembed[II].toOption.get
+      val c2_0 = c2.embed[IDI].deembed[II].toOption.get
 
       assertTypedEquals[II](c1, c1_0)
       assertTypedEquals[II](c2, c2_0)

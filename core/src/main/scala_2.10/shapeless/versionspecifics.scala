@@ -44,10 +44,6 @@ trait ScalaVersionSpecifics extends LP0 {
     }
   }
 
-  private[shapeless] object macrocompat {
-    class bundle extends annotation.Annotation
-  }
-
   private[shapeless] implicit class GenTraversableLikeOps[T, Repr](gtl: GenTraversableLike[T, Repr]) {
     def iterator: Iterator[T] = gtl.toIterator
   }

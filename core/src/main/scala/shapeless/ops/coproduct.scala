@@ -95,8 +95,8 @@ object coproduct {
     type Suffix <: Coproduct
     type Out = Either[Prefix, Suffix]
 
-    def filter(c: C): Option[Prefix]    = apply(c).left.toOption
-    def filterNot(c: C): Option[Suffix] = apply(c).right.toOption
+    def filter(c: C): Option[Prefix]    = apply(c).swap.toOption
+    def filterNot(c: C): Option[Suffix] = apply(c).toOption
     def apply(c: C): Out = toEither(coproduct(c))
     def coproduct(c: C): Prefix :+: Suffix :+: CNil
   }
@@ -994,7 +994,9 @@ object coproduct {
     object Reverse0 {
       implicit def cnilReverse[Out <: Coproduct]: Reverse0[Out, CNil, Out] =
         new Reverse0[Out, CNil, Out] {
-          def apply(e: Either[Out, CNil]) = e.left.get
+          def apply(e: Either[Out, CNil]) = (e: @unchecked) match {
+            case Left(l) => l
+          }
         }
 
       implicit def cconsReverse[Acc <: Coproduct, InH, InT <: Coproduct, Out <: Coproduct]
@@ -1077,7 +1079,9 @@ object coproduct {
     implicit def cnilPrepend0[P <: Coproduct]: Aux[P, CNil, P] =
       new Prepend[P, CNil] {
         type Out = P
-        def apply(e : Either[P, CNil]): P = e.left.get
+        def apply(e : Either[P, CNil]): P = (e: @unchecked) match {
+          case Left(l) => l
+        }
       }
   }
 
@@ -1087,7 +1091,9 @@ object coproduct {
     implicit def cnilPrepend1[S <: Coproduct]: Aux[CNil, S, S] =
       new Prepend[CNil, S] {
         type Out = S
-        def apply(e: Either[CNil, S]): S = e.right.get
+        def apply(e: Either[CNil, S]): S = (e: @unchecked) match {
+          case Right(r) => r
+        }
       }
   }
 
@@ -1185,7 +1191,9 @@ object coproduct {
     implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {
       type Rest = Super
       def apply(s: Super) = Left(s)
-      def inverse(e: Either[Rest, CNil]) = e.left.get // No CNil exists, so e cannot be a Right
+      def inverse(e: Either[Rest, CNil]) = (e: @unchecked) match { // No CNil exists, so e cannot be a Right
+        case Left(l) => l
+      }
     }
 
     implicit def cconsBasis[Super <: Coproduct, H, T <: Coproduct, TRest <: Coproduct](implicit

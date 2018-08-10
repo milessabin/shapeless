@@ -25,6 +25,7 @@ addCommandAlias("validate", ";root;validateJVM;validateJS")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
+addCommandAlias("validateJVM-", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;coreJVM/doc")
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("releaseAll", ";root;release skip-tests")
@@ -49,18 +50,13 @@ val scalacOptions212 = Seq(
   "-Ywarn-unused:-implicits"
 )
 
-val scalacOptions213 = Seq(
-  "-Ymacro-annotations"
-)
-
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
   scalacOptions := scalacOptionsAll,
 
   scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212
-    case Some((2, 13)) => scalacOptions212 ++ scalacOptions213
+    case Some((2, y)) if y >= 12 => scalacOptions212
     case _ => Nil
   }),
 
@@ -246,7 +242,6 @@ lazy val nativeTest = project
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
     scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
   ),
@@ -260,6 +255,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
         )
       // in Scala 2.10, quasiquotes are provided by macro paradise
       case Some((2, 10)) => Seq(
+          "org.typelevel" %% "macro-compat" % "1.1.1",
           compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
           "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
         )
@@ -278,7 +274,7 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
           CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"), new File(dir.getPath + "_2.11+"))
             case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.11+"), new File(dir.getPath + "_2.13-"))
-            case Some((2, y)) if y == 10 => Seq(new File(dir.getPath + "_2.10"), new File(dir.getPath + "_2.13-"))
+            case Some((2, y)) if y == 10 => Seq(new File(dir.getPath + "_2.10"))
           }
       }
     }
