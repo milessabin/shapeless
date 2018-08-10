@@ -20,8 +20,6 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.blackbox
 
-import VersionSpecifics._
-
 /**
  * Type class supporting type safe cast.
  *
@@ -202,7 +200,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         if(t == null) None
         else if(t.isInstanceOf[Left[_, _]]) {
           val l = t.asInstanceOf[Left[_, _]]
-          for(a <- l.left.get.cast[A]) yield t.asInstanceOf[Left[A, B]]
+          for(a <- l.value.cast[A]) yield t.asInstanceOf[Left[A, B]]
         } else None
       }
       def describe = s"Left[${castA.describe}]"
@@ -215,7 +213,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
         if(t == null) None
         else if(t.isInstanceOf[Right[_, _]]) {
           val r = t.asInstanceOf[Right[_, _]]
-          for(b <- r.right.get.cast[B]) yield t.asInstanceOf[Right[A, B]]
+          for(b <- r.value.cast[B]) yield t.asInstanceOf[Right[A, B]]
         } else None
       }
       def describe = s"Right[${castB.describe}]"

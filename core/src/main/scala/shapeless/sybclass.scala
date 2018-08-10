@@ -17,7 +17,6 @@
 package shapeless
 
 import poly._
-import VersionSpecifics._
 
 /**
  * An implementation of [http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/

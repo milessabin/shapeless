@@ -809,7 +809,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def alignFields(tpe: Type, args: List[(TermName, Type)]): Option[List[(TermName, Type)]] = for {
     fields <- Option(fieldsOf(tpe))
     if fields.size == args.size
-    if (fields, args).zipped.forall { case ((fn, ft), (an, at)) =>
+    if fields.zip(args).forall { case ((fn, ft), (an, at)) =>
       (fn == an || at.typeSymbol == definitions.ByNameParamClass) && ft =:= unByName(at)
     }
   } yield fields

@@ -304,7 +304,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             if(tree.isEmpty) {
               tpe.typeSymbol.annotations.
                 find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { _ =>
-                  setAnnotation(VersionSpecifics.implicitNotFoundMessage(c)(tpe))
+                  setAnnotation(implicitNotFoundMessage(c)(tpe))
                 }
             }
             (State.current.get, tree)
@@ -443,7 +443,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
         val tmpState = state.copy(prevent = state.prevent :+ TypeWrapper(wrappedTpe))
 
-        val existingInstOpt = derive(tmpState)(innerTpe).right.toOption.flatMap {
+        val existingInstOpt = derive(tmpState)(innerTpe).toOption.flatMap {
           case (state2, inst) =>
             if (inst.inst.isEmpty)
               resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
@@ -492,11 +492,10 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
     def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
       deriveLowPriority(state, tpe).getOrElse {
-        state.lookup(tpe).left.flatMap { state0 =>
+        state.lookup(tpe).swap.flatMap { state0 =>
           val inst = state0.dict(TypeWrapper(tpe))
-          resolve(state0)(inst)
-            .toRight(s"Unable to derive $tpe")
-        }
+          resolve(state0)(inst).toLeft(s"Unable to derive $tpe")
+        }.swap
       }
     }
 
@@ -550,7 +549,8 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             }
           }
 
-        val primaryInstance = state.lookup(primaryTpe).right.get._2
+        //val primaryInstance = state.lookup(primaryTpe).right.get._2
+        val Right((_, primaryInstance)) = state.lookup(primaryTpe)
         val primaryNme = primaryInstance.name
         val clsName = TypeName(c.freshName(state.name))
 

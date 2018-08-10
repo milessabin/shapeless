@@ -17,8 +17,6 @@
 package shapeless
 package syntax
 
-import VersionSpecifics._
-
 object sized {
   implicit def genTraversableSizedConv[CC[X], T](cc : CC[T])
     (implicit iil: IsIterableLike[CC[T]], ev : AdditiveCollection[CC[T]]) =
