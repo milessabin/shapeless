@@ -34,7 +34,7 @@ object serializationtestutils {
    */
   implicit def listSerializableBuildFrom[From, T]: BuildFrom[From, T, List[T]] =
     new BuildFrom[From, T, List[T]] with Serializable {
-      def fromSpecificIterable(from: From)(it: Iterable[T]): List[T] = List.from(it)
+      def fromSpecific(from: From)(it: IterableOnce[T]): List[T] = List.from(it)
       def newBuilder(from: From): Builder[T, List[T]] = List.newBuilder
     }
 
