@@ -25,13 +25,10 @@ import scala.reflect.macros.whitebox
 trait ScalaVersionSpecifics extends LP0 {
   private[shapeless] type BuildFrom[-F, -E, +T] = CanBuildFrom[F, E, T]
   private[shapeless] type Factory[-E, +T] = CanBuildFrom[Nothing, E, T]
-  private[shapeless] type IsIterableLike[Repr] = IsTraversableLike[Repr]
-  private[shapeless] type IterableLike[T, Repr] = GenTraversableLike[T, Repr]
+  private[shapeless] type IsRegularIterable[Repr] = IsTraversableLike[Repr]
   private[shapeless] type LazyList[+T] = Stream[T]
   private[shapeless] type IterableOnce[+T] = GenTraversableOnce[T]
   private[shapeless] type IterableOps[T, CC[_], R] = GenTraversableLike[T, R]
-  private[shapeless] type Iterable[+T] = Traversable[T]
-  private[shapeless] type GenMap[K, +V] = scala.collection.GenMap[K, V]
 
   private[shapeless] def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
@@ -74,11 +71,19 @@ trait ScalaVersionSpecifics extends LP0 {
       case Right(b) => b
     }
   }
+
+  private[shapeless] implicit class NewIsIterable0[A0, Repr](itl: IsRegularIterable[Repr] { type A = A0 }) {
+    def apply(r: Repr): GenTraversableLike[A0, Repr] = itl.conversion(r)
+  }
 }
 
 trait LP0 extends LP1 {
   private[shapeless] implicit def canBuildFromNothing[E, T](cbf: CanBuildFrom[Nothing, E, T]): CanBuildFromOps[Nothing, E, T] =
     new CanBuildFromOps[Nothing, E, T](cbf)
+
+  private[shapeless] implicit class NewIsIterable1[Repr](val itl: IsRegularIterable[Repr]) {
+    def apply(r: Repr): GenTraversableLike[_, Repr] = itl.conversion(r)
+  }
 }
 
 trait LP1 {

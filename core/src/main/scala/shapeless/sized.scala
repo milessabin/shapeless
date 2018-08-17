@@ -16,6 +16,8 @@
 
 package shapeless
 
+import scala.collection._
+
 /**
  * Wrapper for a collection type witnessing that it has the statically specified length. Can be
  * applied to any type which can be viewed as an `IterableOps`, ie. standard collections,
@@ -44,7 +46,7 @@ final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
  * 
  * @author Miles Sabin
  */
-class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsIterableLike[Repr] { type A = A0 }) { outer =>
+class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsRegularIterable[Repr] { type A = A0 }) { outer =>
   import nat._
   import ops.nat._
   import LT._
@@ -52,13 +54,13 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   import ops.sized._
   import ops.hlist.Tupler
 
-  private implicit def conv(repr: Repr): IterableLike[A0, Repr] = itl.conversion(repr)
+  def underlying: IterableOps[A0, Iterable, Repr] = itl(s.unsized)
 
   /**
    * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
    * elements.
    */
-  def apply[N <: Nat](implicit diff: Diff[L, Succ[N]], ev: ToInt[N]): A0 = s.unsized.drop(toInt[N]).head
+  def apply[N <: Nat](implicit diff: Diff[L, Succ[N]], ev: ToInt[N]): A0 = itl(underlying.drop(toInt[N])).head
 
   /**
    * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
@@ -82,40 +84,40 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    * Returns the head of this collection. Available only if there is evidence that this collection has at least one
    * element.
    */
-  def head(implicit ev : _0 < L) : A0 = s.unsized.head
+  def head(implicit ev : _0 < L) : A0 = underlying.head
   
   /**
    * Returns the tail of this collection. Available only if there is evidence that this collection has at least one
    * element.
    */
-  def tail(implicit pred : Pred[L]) = wrap[Repr, pred.Out](s.unsized.tail)
+  def tail(implicit pred : Pred[L]) = wrap[Repr, pred.Out](underlying.tail)
   
   /**
    * Returns the first ''m'' elements of this collection. An explicit type argument must be provided. Available only if
    * there is evidence that this collection has at least ''m'' elements. The resulting collection will be statically
    * known to have ''m'' elements.
    */
-  def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, M](s.unsized.take(toInt[M]))
+  def take[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, M](underlying.take(toInt[M]))
   
   /**
    * Returns the first ''m'' elements of this collection. Available only if there is evidence that this collection has
    * at least ''m'' elements. The resulting collection will be statically known to have ''m'' elements.
    */
-  def take(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, m.N](s.unsized.take(toInt[m.N]))
+  def take(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, m.N](underlying.take(toInt[m.N]))
 
   /**
    * Returns all but the  first ''m'' elements of this collection. An explicit type argument must be provided. Available
    * only if there is evidence that this collection has at least ''m'' elements. The resulting collection will be 
    * statically known to have ''m'' less elements than this collection.
    */
-  def drop[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, diff.Out](s.unsized.drop(toInt[M]))
+  def drop[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = wrap[Repr, diff.Out](underlying.drop(toInt[M]))
   
   /**
    * Returns all but the  first ''m'' elements of this collection. Available only if there is evidence that this
    * collection has at least ''m'' elements. The resulting collection will be statically known to have ''m'' less
    * elements than this collection.
    */
-  def drop(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, diff.Out](s.unsized.drop(toInt[m.N]))
+  def drop(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = wrap[Repr, diff.Out](underlying.drop(toInt[m.N]))
   
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. An explicit type argument
@@ -138,7 +140,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   def +:(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
     val builder = cbf.newBuilder(s.unsized)
     builder += elem
-    builder ++= conv(s.unsized).iterator
+    builder ++= underlying.iterator
     wrap[Repr, Succ[L]](builder.result)
   }
   
@@ -148,7 +150,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
    */
    def :+(elem : A0)(implicit cbf : BuildFrom[Repr, A0, Repr]) = {
     val builder = cbf.newBuilder(s.unsized)
-    builder ++= conv(s.unsized).iterator
+    builder ++= underlying.iterator
     builder += elem
     wrap[Repr, Succ[L]](builder.result)
   }
@@ -160,19 +162,18 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   def ++[B >: A0, That, M <: Nat](that : Sized[That, M])
     (implicit
       sum : Sum[L, M],
-      convThat : IsIterableLike[That] { type A = B },
+      convThat : IsRegularIterable[That] { type A = B },
       cbf : Factory[B, That],
       ev : AdditiveCollection[That]): Sized[That, sum.Out] =
-        wrap[That, sum.Out](cbf.fromSpecific(conv(s.unsized).iterator ++ convThat.conversion(that.unsized).iterator))
+        wrap[That, sum.Out](cbf.fromSpecific(underlying.iterator ++ convThat(that.unsized).iterator))
 
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
    * as this collection.
    */
   def map[B, That](f : A0 => B)(implicit cbf : BuildFrom[Repr, B, That], ev : AdditiveCollection[That]) = {
-    val thisRepr: Repr = s.unsized
-    val builder = cbf.newBuilder(thisRepr)
-    builder ++= conv(thisRepr).iterator.map(f)
+    val builder = cbf.newBuilder(s.unsized)
+    builder ++= underlying.iterator.map(f)
     wrap[That, L](builder.result)
   }
 
@@ -193,7 +194,7 @@ trait LowPrioritySized {
 
 object Sized extends LowPrioritySized {
   implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
-    (implicit itl: IsIterableLike[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
+    (implicit itl: IsRegularIterable[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
       new SizedOps[itl.A, Repr, L](s, itl)
   
   def apply[CC[_]] = new SizedBuilder[CC]

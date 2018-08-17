@@ -16,14 +16,12 @@
 
 package shapeless
 
+import scala.collection.IterableOps
+import scala.collection.generic.IsIterableLike
 import scala.reflect.macros.whitebox
 
-trait ScalaVersionSpecifics {
-  private[shapeless] type BuildFrom[-F, -E, +T] = collection.BuildFrom[F, E, T]
-  private[shapeless] type Factory[-E, +T] = collection.Factory[E, T]
-  private[shapeless] type IsIterableLike[Repr] = collection.generic.IsIterableLike[Repr]
-  private[shapeless] type IterableLike[T, Repr] = collection.IterableOps[T, Iterable, Repr]
-  private[shapeless] type GenMap[K, +V] = Map[K, V]
+trait ScalaVersionSpecifics extends LP0 {
+  private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterableLike[Repr]
 
   private[shapeless] def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
@@ -38,6 +36,16 @@ trait ScalaVersionSpecifics {
 
   private[shapeless] object macrocompat {
     class bundle extends annotation.Annotation
+  }
+
+  private[shapeless] implicit class NewIsIterable0[A0, Repr](itl: IsIterableLike[Repr] { type A = A0 }) {
+    def apply(r: Repr): IterableOps[A0, Iterable, Repr] = itl.conversion(r)
+  }
+}
+
+trait LP0 {
+  private[shapeless] implicit class NewIsIterable1[Repr](val itl: IsRegularIterable[Repr]) {
+    def apply(r: Repr): IterableOps[_, Iterable, Repr] = itl.conversion(r)
   }
 }
 

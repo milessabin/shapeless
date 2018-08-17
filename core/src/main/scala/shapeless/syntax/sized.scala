@@ -18,25 +18,28 @@ package shapeless
 package syntax
 
 object sized {
-  implicit def genTraversableSizedConv[CC[X], T](cc : CC[T])
-    (implicit iil: IsIterableLike[CC[T]], ev : AdditiveCollection[CC[T]]) =
-      new SizedConv[T, CC[T]](cc)
+  implicit def genTraversableSizedConv[Repr](cc : Repr)
+    (implicit iil: IsRegularIterable[Repr], ev : AdditiveCollection[Repr]) =
+      new SizedConv[Repr](cc)
   
-  implicit def stringSizedConv(s : String) = new SizedConv[Char, String](s)
+  implicit def stringSizedConv(s : String) = new SizedConv[String](s)
 }
 
-final class SizedConv[A, Repr](r : Repr)(implicit iil: IsIterableLike[Repr], ev2: AdditiveCollection[Repr]) {
+final class SizedConv[Repr](r : Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr]) {
   import ops.nat._
   import Sized._
 
+  def checkSize[L <: Nat](implicit toInt: ToInt[L]): Boolean =
+    iil(r).size == toInt()
+
   def sized[L <: Nat](implicit toInt : ToInt[L]) =
-    if(iil.conversion(r).size == toInt()) Some(wrap[Repr, L](r)) else None
+    if(checkSize) Some(wrap[Repr, L](r)) else None
     
   def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
-    if(iil.conversion(r).size == toInt()) Some(wrap[Repr, l.N](r)) else None
+    if(checkSize) Some(wrap[Repr, l.N](r)) else None
     
   def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
-    assert(iil.conversion(r).size == toInt())
+    assert(checkSize)
     wrap[Repr, L](r)
   }
 }

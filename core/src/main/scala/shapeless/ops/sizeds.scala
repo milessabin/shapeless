@@ -38,7 +38,7 @@ object sized {
       }
 
     implicit def nonEmptySizedToHList[Repr, L <: Nat]
-      (implicit itl: IsIterableLike[Repr], ev: AdditiveCollection[Repr], ts: ToHList[Repr, L]): Aux[Repr, Succ[L], itl.A :: ts.Out] =
+      (implicit itl: IsRegularIterable[Repr], ev: AdditiveCollection[Repr], ts: ToHList[Repr, L]): Aux[Repr, Succ[L], itl.A :: ts.Out] =
         new ToHList[Repr, Succ[L]] {
           type Out = itl.A :: ts.Out
           def apply(s: Sized[Repr, Succ[L]]) = s.head :: ts(s.tail)

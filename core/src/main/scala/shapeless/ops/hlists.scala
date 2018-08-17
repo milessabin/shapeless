@@ -18,6 +18,7 @@ package shapeless
 package ops
 
 import scala.annotation.implicitNotFound
+import scala.collection._
 import scala.collection.mutable
 
 import poly._
@@ -765,12 +766,12 @@ object hlist {
       (implicit
        tts   : Aux[H2 :: T, M, LT, N0],
        u     : Lub[H1, LT, L],
-       tvs2  : IsIterableLike[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
+       tvs2  : IsRegularIterable[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
        tev   : AdditiveCollection[M[LT]],
        f     : Factory[L, M[L]],
        tcbf  : BuildFrom[M[L], L, M[L]],
        tcbf2 : BuildFrom[M[LT], L, M[L]],
-       tvs   : IsIterableLike[M[L]] { type A = L }, // tvs, tcbf2, and ev are required for the call to +: below
+       tvs   : IsRegularIterable[M[L]] { type A = L }, // tvs, tcbf2, and ev are required for the call to +: below
        ev    : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
         new ToSized[H1 :: H2 :: T, M] {
           type Lub = L
