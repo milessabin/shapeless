@@ -16,6 +16,8 @@
 
 package shapeless
 
+import scala.collection._
+
 import poly._
 
 /**
@@ -72,7 +74,7 @@ object Data extends Data1 {
       }
 
   implicit def genMapData[P, M[X, Y], K, V, R]
-    (implicit ev: M[K, V] <:< GenMap[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
+    (implicit ev: M[K, V] <:< Map[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
       new Data[P, M[K, V], R] {
         def gmapQ(t: M[K, V]) =
           t.foldLeft(List.newBuilder[R]) { case (b, el) =>
@@ -163,7 +165,7 @@ object DataT extends DataT1 {
 
   implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
     (implicit
-      ev: M[K, V] <:< GenMap[K, V],
+      ev: M[K, V] <:< Map[K, V],
       fv: Lazy[Case1.Aux[F, V, U]],
       cbf: Factory[(K, U), M[K, U]]
     ): Aux[F, M[K, V], M[K, U]] =

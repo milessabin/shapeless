@@ -16,7 +16,8 @@
 
 package shapeless
 
-import scala.collection.IterableOps
+import scala.collection.{ BuildFrom, Factory, IterableOps }
+import scala.collection.generic.IsIterable
 import scala.collection.mutable.Builder
 
 object serializationtestutils {
@@ -38,9 +39,10 @@ object serializationtestutils {
       def newBuilder(from: From): Builder[T, List[T]] = List.newBuilder
     }
 
-  implicit def listSerializableIsIterableLike[T]: IsIterableLike[List[T]] { type A = T } =
-    new IsIterableLike[List[T]] with Serializable {
+  implicit def listSerializableIsIterableLike[T]: IsRegularIterable[List[T]] { type A = T } =
+    new IsIterable[List[T]] with Serializable {
       type A = T
-      val conversion: List[T] => IterableOps[T, Iterable, List[T]] = identity
+      type C = List[T]
+      def apply(coll: List[T]): IterableOps[T, Iterable, List[T]] = coll
     }
 }

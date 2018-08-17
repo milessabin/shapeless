@@ -19,11 +19,7 @@ package shapeless
 import scala.reflect.macros.whitebox
 
 trait ScalaVersionSpecifics {
-  private[shapeless] type BuildFrom[-F, -E, +T] = collection.BuildFrom[F, E, T]
-  private[shapeless] type Factory[-E, +T] = collection.Factory[E, T]
-  private[shapeless] type IsIterableLike[Repr] = collection.generic.IsIterableLike[Repr]
-  private[shapeless] type IterableLike[T, Repr] = collection.IterableOps[T, Iterable, Repr]
-  private[shapeless] type GenMap[K, +V] = Map[K, V]
+  private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterable[Repr] { type C = Repr }
 
   private[shapeless] def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]

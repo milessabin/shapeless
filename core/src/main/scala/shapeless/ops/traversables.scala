@@ -82,7 +82,7 @@ object traversable {
       }
 
     implicit def instance[CC[T] <: Iterable[T], A, N <: Nat](
-      implicit gt: IsIterableLike[CC[A]],
+      implicit gt: IsRegularIterable[CC[A]],
                ac: AdditiveCollection[CC[A]],
                ti: ToInt[N], 
                th: ToHList[CC[A], N]

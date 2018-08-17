@@ -238,12 +238,12 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
   implicit def genMapTypeable[M[X, Y], K, V]
-    (implicit ev: M[K, V] <:< GenMap[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
+    (implicit ev: M[K, V] <:< Map[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
     new Typeable[M[K, V]] {
       def cast(t: Any): Option[M[K, V]] =
         if(t == null) None
         else if(mM.runtimeClass isAssignableFrom t.getClass) {
-          val m = t.asInstanceOf[GenMap[Any, Any]]
+          val m = t.asInstanceOf[Map[Any, Any]]
           if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
           else None
         } else None
