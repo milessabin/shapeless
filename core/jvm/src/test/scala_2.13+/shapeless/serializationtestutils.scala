@@ -39,8 +39,9 @@ object serializationtestutils {
     }
 
   implicit def listSerializableIsIterableLike[T]: IsIterableLike[List[T]] { type A = T } =
-    new IsIterableLike[List[T]] with Serializable {
+    new collection.generic.IsIterable[List[T]] with Serializable {
       type A = T
-      val conversion: List[T] => IterableOps[T, Iterable, List[T]] = identity
+      type C = List[T]
+      override def apply(coll: List[T]) = coll
     }
 }
