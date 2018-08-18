@@ -30,13 +30,13 @@ final class SizedConv[A, Repr](r : Repr)(implicit iil: IsIterableLike[Repr], ev2
   import Sized._
 
   def sized[L <: Nat](implicit toInt : ToInt[L]) =
-    if(iil.conversion(r).size == toInt()) Some(wrap[Repr, L](r)) else None
+    if(iil(r).size == toInt()) Some(wrap[Repr, L](r)) else None
     
   def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
-    if(iil.conversion(r).size == toInt()) Some(wrap[Repr, l.N](r)) else None
+    if(iil(r).size == toInt()) Some(wrap[Repr, l.N](r)) else None
     
   def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
-    assert(iil.conversion(r).size == toInt())
+    assert(iil(r).size == toInt())
     wrap[Repr, L](r)
   }
 }

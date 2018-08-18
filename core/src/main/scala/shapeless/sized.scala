@@ -52,7 +52,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   import ops.sized._
   import ops.hlist.Tupler
 
-  private implicit def conv(repr: Repr): IterableLike[A0, Repr] = itl.conversion(repr)
+  private implicit def conv(repr: Repr): IterableLike[A0, Repr] = itl(repr)
 
   /**
    * Returns the ''nth'' element of this `Sized`. Available only if there is evidence that this `Sized` has at least ''n''
@@ -163,7 +163,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
       convThat : IsIterableLike[That] { type A = B },
       cbf : Factory[B, That],
       ev : AdditiveCollection[That]): Sized[That, sum.Out] =
-        wrap[That, sum.Out](cbf.fromSpecific(conv(s.unsized).iterator ++ convThat.conversion(that.unsized).iterator))
+        wrap[That, sum.Out](cbf.fromSpecific(conv(s.unsized).iterator ++ convThat(that.unsized).iterator))
 
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
