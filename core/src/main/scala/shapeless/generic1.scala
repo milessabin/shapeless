@@ -153,7 +153,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
   def mkGeneric1Impl[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
-    val tpe = tTag.tpe
+    val tpe = tTag.tpe.etaExpand
 
     val frTpe =
       c.openImplicits.headOption match {
