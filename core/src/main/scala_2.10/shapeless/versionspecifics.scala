@@ -106,4 +106,8 @@ trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>
 
   val varargTpt = tq"_root_.scala.collection.Seq"
   val varargTC = typeOf[scala.collection.Seq[_]].typeConstructor
+
+  private[shapeless] implicit class EtaExpand(tpe: Type) {
+    def etaExpand: Type = tpe
+  }
 }
