@@ -16,6 +16,8 @@
 
 package shapeless
 
+import scala.language.reflectiveCalls
+
 import org.junit.Test
 import org.junit.Assert._
 
