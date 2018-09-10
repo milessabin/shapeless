@@ -484,8 +484,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
     if(fieldTypeables.contains(EmptyTree))
       c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
 
-    q""" _root_.shapeless.Typeable.namedCaseClassTypeable(
-      classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), ${nameOf(tpe)}
+    q"""_root_.shapeless.Typeable.namedCaseClassTypeable(
+      _root_.scala.Predef.classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), ${nameOf(tpe)}
     )"""
   }
 
