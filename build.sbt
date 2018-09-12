@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.6",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M4")
+  scalaVersion := "2.13.0-M5",
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M5")
 ))
 
 addCommandAlias("root", ";project root")
