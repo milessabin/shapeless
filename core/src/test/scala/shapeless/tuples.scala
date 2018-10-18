@@ -761,9 +761,9 @@ class TupleTests {
     val tl1 = (Option(1), Option("foo"), Option(2), Option(3))
     val tl2 = (Option(1), Option("foo"), (None : Option[Int]), Option(3))
 
-    val mlfl1 = (tl1 map isDefined).toList.foldLeft(true)(_ && _)
+    val mlfl1 = (tl1 map isDefined).toList.forall(identity)
     assertTrue(mlfl1)
-    val mlfl2 = (tl2 map isDefined).toList.foldLeft(true)(_ && _)
+    val mlfl2 = (tl2 map isDefined).toList.forall(identity)
     assertFalse(mlfl2)
 
     val fl1 = tl1.foldMap(true)(isDefined)(_ && _)
