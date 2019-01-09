@@ -2016,7 +2016,10 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable { type Out <: HList }
+  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable {
+    type Out <: HList
+    def inverse(p: Out): (P, S)
+  }
 
   trait LowestPriorityPrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
@@ -2026,6 +2029,11 @@ object hlist {
       new Prepend[PH :: PT, S] {
         type Out = PH :: PtOut
         def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
+
+        def inverse(p: PH :: PtOut): (PH :: PT, S) = {
+          val e = pt.inverse(p.tail)
+          (p.head :: e._1, e._2)
+        }
       }
   }
 
@@ -2036,20 +2044,24 @@ object hlist {
      */
     override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
-    implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
+    implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
         def apply(prefix : P, suffix : S): P = prefix
+
+        def inverse(p: P): (P, S) = (p, HNil)
       }
   }
 
   object Prepend extends LowPriorityPrepend {
     def apply[P <: HList, S <: HList](implicit prepend: Prepend[P, S]): Aux[P, S, prepend.Out] = prepend
 
-    implicit def hnilPrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
+    implicit def hnilPrepend1[P >: HNil.type <: HNil, S <: HList]: Aux[P, S, S] =
       new Prepend[P, S] {
         type Out = S
         def apply(prefix : P, suffix : S): S = suffix
+
+        def inverse(p: S): (P, S) = (HNil, p)
       }
   }
 

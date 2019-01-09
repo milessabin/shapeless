@@ -409,6 +409,9 @@ class HListTests {
   def testPrepend: Unit = {
     val apbp2 = ap ::: bp
     assertTypedEquals[APBP](a :: p :: b :: p :: HNil, apbp2)
+    val apbp2inv = implicitly[Prepend.Aux[AP, BP, APBP]].inverse(apbp2)
+    assertTypedEquals[AP](ap, apbp2inv._1)
+    assertTypedEquals[BP](bp, apbp2inv._2)
 
     typed[Apple](apbp2.head)
     typed[Pear](apbp2.tail.head)
@@ -425,28 +428,60 @@ class HListTests {
 
       val r1 = prependWithHNil(ap)
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = prependToHNil(ap)
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
+
       val r3 = HNil ::: HNil
       assertTypedSame[HNil](HNil, r3)
+      val r3inv = implicitly[Prepend.Aux[HNil, HNil, HNil]].inverse(r3)
+      assertTypedSame[HNil](HNil, r3inv._1)
+      assertTypedSame[HNil](HNil, r3inv._2)
 
       val r4 = prependWithHNil(pabp)
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = prependToHNil(pabp)
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
       // must also pass with the default implicit
       val r1 = HNil ::: ap
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = ap ::: HNil
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
 
       val r4 = HNil ::: pabp
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = pabp ::: HNil
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
