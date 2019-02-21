@@ -295,15 +295,25 @@ class PolyTests {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
       }
+
+      implicit val another = at[Long, Char, Boolean] {
+        case (l, c, b) => s"l: $l, c: $c, b: $b"
+      }
     }
 
     val r1 = isd(1, "foo", 2.0)
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r1)
 
+    val r11 = isd(1L, 'f', true)
+    assertTypedEquals[String](s"l: 1, c: f, b: true", r11)
+
     val sdi = isd.rotateLeft[Nat._1]
 
     val r2 = sdi("foo", 2.0, 1)
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r2)
+
+    val r21 = sdi('f', true, 1L)
+    assertTypedEquals[String](s"l: 1, c: f, b: true", r21)
 
     val dis  = isd.rotateLeft[Nat._2]
 
