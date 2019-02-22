@@ -562,6 +562,9 @@ class SingletonTypesTests {
     assertTypedEquals[Int](2, n)
   }
 
+  trait B
+  case object A extends B
+
   @Test
   def singletonWiden: Unit = {
     illTyped(" Widen[A.type] ", "could not find implicit value for parameter widen:.*")
@@ -586,13 +589,11 @@ class SingletonTypesTests {
 
   @Test
   def testWitnessTypeRefType: Unit = {
-    trait B
-    case object A extends B
-
     trait B1 {
       type T <: B
       def getT(implicit w: Witness.Aux[T]): T = w.value
     }
+    
     case class A1() extends B1 {
       type T = A.type
     }
