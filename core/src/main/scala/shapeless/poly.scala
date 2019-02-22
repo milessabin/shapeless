@@ -88,7 +88,7 @@ object PolyDefns extends Cases {
 
   object RotateLeft {
     implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
-      (implicit unpack: Unpack2[C, RotateLeft, P, N], cP: Case.Aux[P, L, LOut], rotateRight: hl.RotateRight.Aux[RL, N, L])
+      (implicit unpack: Unpack2[C, RotateLeft, P, N], rotateRight: hl.RotateRight.Aux[RL, N, L], cP: Case.Aux[P, L, LOut])
         : Case.Aux[C, RL, LOut] = new Case[C, RL] {
         type Result = LOut
 
@@ -105,7 +105,7 @@ object PolyDefns extends Cases {
 
   object RotateRight {
     implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
-      (implicit unpack: Unpack2[C, RotateRight, P, N], cP: Case.Aux[P, L, LOut], rotateLeft: hl.RotateLeft.Aux[RL, N, L])
+      (implicit unpack: Unpack2[C, RotateRight, P, N], rotateLeft: hl.RotateLeft.Aux[RL, N, L], cP: Case.Aux[P, L, LOut])
         : Case.Aux[C, RL, LOut] = new Case[C, RL] {
         type Result = LOut
 
