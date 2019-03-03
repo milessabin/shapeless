@@ -562,7 +562,6 @@ class SingletonTypesTests {
     assertTypedEquals[Int](2, n)
   }
 
-
   trait B
   case object A extends B
 
@@ -586,6 +585,20 @@ class SingletonTypesTests {
     val c = new ClassThis
     assertTypedEquals[c.type](c.w1.value, c.w2.value)
     assertTypedEquals[ObjectThis.type](ObjectThis.w1.value, ObjectThis.w2.value)
+  }
+
+  @Test
+  def testWitnessTypeRefType: Unit = {
+    trait B1 {
+      type T <: B
+      def getT(implicit w: Witness.Aux[T]): T = w.value
+    }
+    
+    case class A1() extends B1 {
+      type T = A.type
+    }
+
+    assertTypedEquals[A.type](A1().getT, A)
   }
 }
 

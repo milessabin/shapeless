@@ -118,11 +118,11 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
-shapeless 2.3.3 is Scala 2.12.4. Scala 2.10.x is supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and for 2.13.0-M5. The main line of development for
+shapeless 2.3.3 is Scala 2.12.8. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.8"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
@@ -139,6 +139,17 @@ libraryDependencies ++= Seq(
   compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
+
+For using snapshots of Shapeless you should add,
+```scala
+scalaVersion := "2.12.8"
+
+libraryDependencies ++= Seq(
+  "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
+)
+```
+
+
 
 ### shapeless and Typelevel Scala
 
@@ -215,7 +226,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.4 by default but also
+shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.8 by default but also
 cross-builds for 2.10.7 and 2.11.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640

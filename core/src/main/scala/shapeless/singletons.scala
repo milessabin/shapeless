@@ -291,11 +291,10 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
     """
   }
 
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+  def mkAttributedQualifier(tpe: Type): Tree = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val gPre = pre.asInstanceOf[global.Type]
-    val gSym = sym.asInstanceOf[global.Symbol]
-    global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    global.gen.mkAttributedQualifier(gTpe).asInstanceOf[Tree]
   }
 
   def extractSingletonValue(tpe: Type): Tree =
@@ -304,11 +303,13 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case ConstantType(c: Constant) => Literal(c)
 
-      case SingleType(p, v) => mkAttributedRef(p, v)
+      case t: SingleType => mkAttributedQualifier(t)
 
       case SingletonSymbolType(c) => mkSingletonSymbol(c)
 
       case ThisType(sym) => This(sym)
+
+      case t@TypeRef(_, sym, _) if sym.isModuleClass => mkAttributedQualifier(t)
 
       case _ =>
         c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
