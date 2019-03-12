@@ -36,8 +36,8 @@ class RefuteTests {
   @Test
   def increaseCodeCoverage: Unit = {
     // Increases the code coverage, as the above tests cannot
-    Refute.ambiguousIfPresent[PresentEvidence](presentEvidence)
-    Refute.refute[PresentEvidence]
+    Refute.Aux.amb1[PresentEvidence](presentEvidence)
+    Refute.Aux.amb2[PresentEvidence]
   }
 
 }
