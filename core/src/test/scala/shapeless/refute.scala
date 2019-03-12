@@ -38,6 +38,7 @@ class RefuteTests {
     // Increases the code coverage, as the above tests cannot
     Refute.Aux.amb1[PresentEvidence](presentEvidence)
     Refute.Aux.amb2[PresentEvidence]
+    Refute.refute(new Refute.Aux[PresentEvidence]{})
   }
 
 }
