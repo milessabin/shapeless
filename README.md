@@ -68,10 +68,10 @@ channels (mailing list, Gitter, IRC, github, etc.) to be welcoming environments 
 Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
 Contributors are usually available to field questions, give advice and discuss ideas on the [Gitter channel][gitter],
 and for people wanting to take their first steps at contributing we have a selection of open issues flagged up as
-being [good candidates to take on][lowhangingfruit]. No contribution is too small, and guidance is always available.
+being [good candidates to take on][goodfirstissue]. No contribution is too small, and guidance is always available.
 
 [codeofconduct]: https://www.scala-lang.org/conduct/
-[lowhangingfruit]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22Low+hanging+fruit%22
+[goodfirstissue]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 ## Using shapeless
 
