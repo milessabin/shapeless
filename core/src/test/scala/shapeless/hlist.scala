@@ -3040,7 +3040,7 @@ class HListTests {
   def testSingletonProductArgs: Unit = {
     object Obj
 
-    val l = SFoo(23, "foo", 'bar, Obj, true)
+    val l = SFoo(23, "foo", Symbol("bar"), Obj, true)
     typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`'bar`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
@@ -3052,7 +3052,7 @@ class HListTests {
     assertEquals("foo", v2)
 
     val v3: Witness.`'bar`.T = l.tail.tail.head
-    assertEquals('bar, v3)
+    assertEquals(Symbol("bar"), v3)
 
     val v4: Obj.type = l.tail.tail.tail.head
     assertEquals(Obj, v4)
@@ -3072,7 +3072,7 @@ class HListTests {
     NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
-    val ib = selectAll('i, 'b).from(quux)
+    val ib = selectAll(Symbol("i"), Symbol("b")).from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
   }
@@ -3345,10 +3345,10 @@ class HListTests {
     assertTypedEquals(HNil, Reify[HNil].apply)
 
     val s1 = HList.`'a`
-    assertTypedEquals('a.narrow :: HNil, Reify[s1.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: HNil, Reify[s1.T].apply)
 
     val s2 = HList.`'a, 1, "b", true`
-    assertTypedEquals('a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
 
     illTyped(""" Reify[String :: Int :: HNil] """)
     illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)

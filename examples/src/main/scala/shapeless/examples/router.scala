@@ -55,7 +55,7 @@ object RouterExample extends App {
   }
 
   val fooRouter: Router[Int] = matchString("foo").map(_ => 1)
-  val barRouter: Router[Symbol] = matchString("bar").map(_ => 'x)
+  val barRouter: Router[Symbol] = matchString("bar").map(_ => Symbol("x"))
   val bazRouter: Router[Double] = matchString("baz").map(_ => 0.0)
   val quxRouter: Router[Char] = matchString("qux").map(_ => 'z')
 
@@ -67,7 +67,7 @@ object RouterExample extends App {
   val allRouter: Router[All] = fooBarRouter :+: bazQuxRouter
 
   assert(allRouter("foo") == Some(Coproduct[All](1)))
-  assert(allRouter("bar") == Some(Coproduct[All]('x)))
+  assert(allRouter("bar") == Some(Coproduct[All](Symbol("x"))))
   assert(allRouter("baz") == Some(Coproduct[All](0.0)))
   assert(allRouter("qux") == Some(Coproduct[All]('z')))
   assert(allRouter("unknown") == None)

@@ -23,8 +23,8 @@ object recordsubtyping extends App{
   val employeeId = Record(firstName = "Jane", lastName = "Doe", title = "software engineer")
 
   val employee1 = Record(id = employeeId, city = new PopulatedCity("San Francisco", 2), company =  "Foo Inc.")
-  val employee2 = employee1.updated('company, "Bar Inc.")
-  val employee3 = employee1.updated('city, new PopulatedCity("Chernobyl", 1) )
+  val employee2 = employee1.updated(Symbol("company"), "Bar Inc.")
+  val employee3 = employee1.updated(Symbol("city"), new PopulatedCity("Chernobyl", 1) )
 
   type PersonId = Record.`'firstName -> String, 'lastName -> String`.T
   type Person = Record.`'id -> PersonId, 'city -> City`.T
@@ -59,7 +59,7 @@ object recordsubtyping extends App{
 
   //transform Person structure preserving Employee shape
   //this is only possible if no nominal subtyping relation is present between the record fields ('city' in this case)
-  val noNominalSubtypingEmployee = employee1.updateWith('city)(c => c: City)
+  val noNominalSubtypingEmployee = employee1.updateWith(Symbol("city"))(c => c: City)
 
   def transform[L <: HList, X <: HList, Y <: HList, O <: HList](input: L)(transform: X => Y)
     (implicit

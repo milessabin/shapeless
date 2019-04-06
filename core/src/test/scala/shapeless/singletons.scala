@@ -45,9 +45,9 @@ class SingletonTypesTests {
   val w3 = Witness(3)
   type _3 = w3.T
 
-  val wFoo = Witness('foo)
+  val wFoo = Witness(Symbol("foo"))
   type Foo = wFoo.T
-  val wBar = Witness('bar)
+  val wBar = Witness(Symbol("bar"))
   type Bar = wBar.T
 
   @Test
@@ -85,15 +85,15 @@ class SingletonTypesTests {
       sameTyped(sFoo)("bar")
     """)
 
-    val sFooSym = 'foo.narrow
-    val sBarSym = 'bar.narrow
+    val sFooSym = Symbol("foo").narrow
+    val sBarSym = Symbol("bar").narrow
 
     sameTyped(sFooSym)(sFooSym)
-    sameTyped(sFooSym)('foo)
+    sameTyped(sFooSym)(Symbol("foo"))
 
     illTyped("""
       sameTyped(sFooSym)(sBarSym)
-      sameTyped(sFooSym)('bar)
+      sameTyped(sFooSym)(Symbol("bar"))
     """)
   }
 
@@ -136,10 +136,10 @@ class SingletonTypesTests {
       show(0.narrow)
     """)
 
-    val sFoo = show('foo.narrow)
+    val sFoo = show(Symbol("foo").narrow)
     assertEquals("'foo", sFoo)
 
-    val sBar = show('bar.narrow)
+    val sBar = show(Symbol("bar").narrow)
     assertEquals("'bar", sBar)
   }
 
@@ -182,10 +182,10 @@ class SingletonTypesTests {
       literalShow(0.narrow)
     """)
 
-    val sFoo = literalShow('foo.narrow)
+    val sFoo = literalShow(Symbol("foo").narrow)
     assertEquals("'foo", sFoo)
 
-    val sBar = literalShow('bar.narrow)
+    val sBar = literalShow(Symbol("bar").narrow)
     assertEquals("'bar", sBar)
   }
 
@@ -219,7 +219,7 @@ class SingletonTypesTests {
       literalsShow(true :: false :: HNil)
     """)
 
-    val sFooBar = literalsShow('foo.narrow :: 'bar.narrow :: HNil)
+    val sFooBar = literalsShow(Symbol("foo").narrow :: Symbol("bar").narrow :: HNil)
     assertEquals("'foo, 'bar", sFooBar)
   }
 
@@ -252,8 +252,8 @@ class SingletonTypesTests {
       sameTyped(wFoo)(wBar)
     """)
 
-    val wFooSym = Witness('foo)
-    val wBarSym = Witness('bar)
+    val wFooSym = Witness(Symbol("foo"))
+    val wBarSym = Witness(Symbol("bar"))
 
     sameTyped(wFooSym)(wFooSym)
 
@@ -329,17 +329,17 @@ class SingletonTypesTests {
       sameTyped(cBar)(Witness("foo"))
     """)
 
-    val cFooSym = convert('foo)
-    val cBarSym = convert('bar)
+    val cFooSym = convert(Symbol("foo"))
+    val cBarSym = convert(Symbol("bar"))
 
-    sameTyped(cFooSym)(Witness('foo))
-    sameTyped(cBarSym)(Witness('bar))
+    sameTyped(cFooSym)(Witness(Symbol("foo")))
+    sameTyped(cBarSym)(Witness(Symbol("bar")))
 
     illTyped("""
-      sameTyped(cFooSym)(Witness('bar))
+      sameTyped(cFooSym)(Witness(Symbol("bar")))
     """)
     illTyped("""
-      sameTyped(cBarSym)(Witness('foo))
+      sameTyped(cBarSym)(Witness(Symbol("foo")))
     """)
   }
 
@@ -362,7 +362,7 @@ class SingletonTypesTests {
     """)
 
     illTyped("""
-      boundedConvert('foo)
+      boundedConvert(Symbol("foo"))
     """)
   }
 
@@ -385,10 +385,10 @@ class SingletonTypesTests {
     val sThree = showLiteral(3)
     assertEquals("Three", sThree)
 
-    val sFooSym = showLiteral('foo)
+    val sFooSym = showLiteral(Symbol("foo"))
     assertEquals("'foo", sFooSym)
 
-    val sBarSym = showLiteral('bar)
+    val sBarSym = showLiteral(Symbol("bar"))
     assertEquals("'bar", sBarSym)
 
     illTyped("""
@@ -426,10 +426,10 @@ class SingletonTypesTests {
     val sThree = showWitness(3)
     assertEquals("3", sThree)
 
-    val sFooSym = showWitness('foo)
+    val sFooSym = showWitness(Symbol("foo"))
     assertEquals("'foo", sFooSym)
 
-    val sBarSym = showWitness('bar)
+    val sBarSym = showWitness(Symbol("bar"))
     assertEquals("'bar", sBarSym)
   }
 
@@ -452,10 +452,10 @@ class SingletonTypesTests {
     val sThree = showWitnessWith(3)
     assertEquals("Three", sThree)
 
-    val sFooSym = showWitnessWith('foo)
+    val sFooSym = showWitnessWith(Symbol("foo"))
     assertEquals("'foo", sFooSym)
 
-    val sBarSym = showWitnessWith('bar)
+    val sBarSym = showWitnessWith(Symbol("bar"))
     assertEquals("'bar", sBarSym)
   }
 
@@ -542,12 +542,12 @@ class SingletonTypesTests {
     def narrowSymbol = ???
 
     val w = Widen[Witness.`'ab`.T]
-    illTyped(" w('s.narrow) ", "type mismatch;.*")
-    val s = w('ab.narrow)
+    illTyped(""" w(Symbol("s").narrow) """, "type mismatch;.*")
+    val s = w(Symbol("ab").narrow)
     val s0: Symbol = s
     illTyped(" val s1: Witness.`'ab`.T = s ", "type mismatch;.*")
 
-    assertTypedEquals[Symbol]('ab, s)
+    assertTypedEquals[Symbol](Symbol("ab"), s)
   }
 
   @Test
@@ -648,8 +648,8 @@ package UnrefineTest {
   final case class FooBar(x: String, y: Int)
 
   object Test {
-    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify('y.narrow, (_: Int) * 2)
+    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify(Symbol("y").narrow, (_: Int) * 2)
     new Bar(Foo.from( LabelledGeneric[FooBar] )).keys
-    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify('y.narrow, (_: Int) * 2).keys
+    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify(Symbol("y").narrow, (_: Int) * 2).keys
   }
 }
