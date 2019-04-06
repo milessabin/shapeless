@@ -40,16 +40,16 @@ object LabelledGenericTestsAux {
   )
 
   val taplRecord =
-    ('author ->> "Benjamin Pierce") ::
-    ('title  ->> "Types and Programming Languages") ::
-    ('id     ->>  262162091) ::
-    ('price  ->>  44.11) ::
+    (Symbol("author") ->> "Benjamin Pierce") ::
+    (Symbol("title")  ->> "Types and Programming Languages") ::
+    (Symbol("id")     ->>  262162091) ::
+    (Symbol("price")  ->>  44.11) ::
     HNil
 
   val dpRecord =
-    ('title   ->> "Design Patterns") ::
-    ('id      ->> 201633612) ::
-    ('authors ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
+    (Symbol("title")   ->> "Design Patterns") ::
+    (Symbol("id")      ->> 201633612) ::
+    (Symbol("authors") ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
     HNil
 
   type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
@@ -158,7 +158,7 @@ class LabelledGenericTests {
     assertEquals(tapl, b1)
 
     val keys = b0.keys
-    assertEquals('author.narrow :: 'title.narrow :: 'id.narrow :: 'price.narrow :: HNil, keys)
+    assertEquals(Symbol("author").narrow :: Symbol("title").narrow :: Symbol("id").narrow :: Symbol("price").narrow :: HNil, keys)
 
     val values = b0.values
     assertEquals("Benjamin Pierce" :: "Types and Programming Languages" :: 262162091 :: 44.11 :: HNil, values)
@@ -173,7 +173,7 @@ class LabelledGenericTests {
     assertEquals(dpRecord, b0)
 
     val keys = b0.keys
-    assertEquals('title.narrow :: 'id.narrow :: 'authors.narrow :: HNil, keys)
+    assertEquals(Symbol("title").narrow :: Symbol("id").narrow :: Symbol("authors").narrow :: HNil, keys)
 
     val values = b0.values
     assertEquals(
@@ -188,19 +188,19 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val e1 = b0.get('author)
+    val e1 = b0.get(Symbol("author"))
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
 
-    val e2 = b0.get('title)
+    val e2 = b0.get(Symbol("title"))
     typed[String](e2)
     assertEquals( "Types and Programming Languages", e2)
 
-    val e3 = b0.get('id)
+    val e3 = b0.get(Symbol("id"))
     typed[Int](e3)
     assertEquals(262162091, e3)
 
-    val e4 = b0.get('price)
+    val e4 = b0.get(Symbol("price"))
     typed[Double](e4)
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
@@ -211,19 +211,19 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val e1 = b0('author)
+    val e1 = b0(Symbol("author"))
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
 
-    val e2 = b0('title)
+    val e2 = b0(Symbol("title"))
     typed[String](e2)
     assertEquals( "Types and Programming Languages", e2)
 
-    val e3 = b0('id)
+    val e3 = b0(Symbol("id"))
     typed[Int](e3)
     assertEquals(262162091, e3)
 
-    val e4 = b0('price)
+    val e4 = b0(Symbol("price"))
     typed[Double](e4)
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
@@ -257,8 +257,8 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val b1 = b0.updated('title, "Types and Programming Languages (2nd Ed.)")
-    val b2 = b1.updated('price, 46.11)
+    val b1 = b0.updated(Symbol("title"), "Types and Programming Languages (2nd Ed.)")
+    val b2 = b1.updated(Symbol("price"), 46.11)
 
     val updated = gen.from(b2)
     assertEquals(tapl2, updated)
@@ -270,8 +270,8 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val b1 = b0.updateWith('title)(_+" (2nd Ed.)")
-    val b2 = b1.updateWith('price)(_+2.0)
+    val b1 = b0.updateWith(Symbol("title"))(_+" (2nd Ed.)")
+    val b2 = b1.updateWith(Symbol("price"))(_+2.0)
 
     val updated = gen.from(b2)
     assertEquals(tapl2, updated)
@@ -283,7 +283,7 @@ class LabelledGenericTests {
     val gen2 = LabelledGeneric[ExtendedBook]
 
     val b0 = gen.to(tapl)
-    val b1 = b0 + ('inPrint ->> true)
+    val b1 = b0 + (Symbol("inPrint") ->> true)
 
     val b2 = gen2.from(b1)
     typed[ExtendedBook](b2)
@@ -316,26 +316,26 @@ class LabelledGenericTests {
     val genAbs = LabelledGeneric[AbstractNonCC]
 
     val rA = genA.to(ncca)
-    assertTypedEquals[NonCCARec]('i ->> 23 :: 's ->> "foo" :: HNil, rA)
+    assertTypedEquals[NonCCARec](Symbol("i") ->> 23 :: Symbol("s") ->> "foo" :: HNil, rA)
 
     val rB = genB.to(nccb)
-    assertTypedEquals[NonCCBRec]('b ->> true :: 'd ->> 2.0 :: HNil, rB)
+    assertTypedEquals[NonCCBRec](Symbol("b") ->> true :: Symbol("d") ->> 2.0 :: HNil, rB)
 
     val rAbs = genAbs.to(ancc)
-    val injA = Coproduct[AbsUnion]('NonCCA ->> ncca)
+    val injA = Coproduct[AbsUnion](Symbol("NonCCA") ->> ncca)
     assertTypedEquals[AbsUnion](injA, rAbs)
 
-    val fA = genA.from('i ->> 13 :: 's ->> "bar" :: HNil)
+    val fA = genA.from(Symbol("i") ->> 13 :: Symbol("s") ->> "bar" :: HNil)
     typed[NonCCA](fA)
     assertEquals(13, fA.i)
     assertEquals("bar", fA.s)
 
-    val fB = genB.from('b ->> false :: 'd ->> 3.0 :: HNil)
+    val fB = genB.from(Symbol("b") ->> false :: Symbol("d") ->> 3.0 :: HNil)
     typed[NonCCB](fB)
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
 
-    val injB = Coproduct[AbsUnion]('NonCCB ->> nccb)
+    val injB = Coproduct[AbsUnion](Symbol("NonCCB") ->> nccb)
     val fAbs = genAbs.from(injB)
     typed[AbstractNonCC](fAbs)
     assertTrue(fAbs.isInstanceOf[NonCCB])
@@ -347,7 +347,7 @@ class LabelledGenericTests {
   def testNonCCWithCompanion: Unit = {
     val nccc = NonCCWithCompanion(23, "foo")
 
-    val rec = ('i ->> 23) :: ('s ->> "foo") :: HNil
+    val rec = (Symbol("i") ->> 23) :: (Symbol("s") ->> "foo") :: HNil
     type NonCCRec = Record.`'i -> Int, 's -> String`.T
 
     val gen = LabelledGeneric[NonCCWithCompanion]
@@ -355,7 +355,7 @@ class LabelledGenericTests {
     val r = gen.to(nccc)
     assertTypedEquals[NonCCRec](rec, r)
 
-    val f = gen.from('i ->> 13 :: 's ->> "bar" :: HNil)
+    val f = gen.from(Symbol("i") ->> 13 :: Symbol("s") ->> "bar" :: HNil)
     typed[NonCCWithCompanion](f)
     assertEquals(13, f.i)
     assertEquals("bar", f.s)
@@ -366,7 +366,7 @@ class LabelledGenericTests {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
-    val rec = 'prev ->> a :: 'next ->> c :: HNil
+    val rec = Symbol("prev") ->> a :: Symbol("next") ->> c :: HNil
     type LazyRec = Record.`'prev -> NonCCLazy, 'next -> NonCCLazy`.T
 
     val gen = LabelledGeneric[NonCCLazy]
@@ -374,7 +374,7 @@ class LabelledGenericTests {
     val rB = gen.to(b)
     assertTypedEquals[LazyRec](rec, rB)
 
-    val fD = gen.from('prev ->> a :: 'next ->> c :: HNil)
+    val fD = gen.from(Symbol("prev") ->> a :: Symbol("next") ->> c :: HNil)
     typed[NonCCLazy](fD)
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)

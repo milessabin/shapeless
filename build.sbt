@@ -12,8 +12,8 @@ import sbtcrossproject.CrossProject
 
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.13.0-M5",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6", "2.13.0-M5")
+  scalaVersion := "2.12.8",
+  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8", "2.13.0-RC1")
 ))
 
 addCommandAlias("root", ";project root")
@@ -38,7 +38,6 @@ lazy val scoverageSettings = Seq(
 
 val scalacOptionsAll = Seq(
   "-feature",
-  "-Xfuture",
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
   "-deprecation",
@@ -97,6 +96,9 @@ lazy val commonJsSettings = Seq(
     val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
     s"-P:scalajs:mapSourceURI:$a->$g/"
   },
+
+  scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
+
   parallelExecution in Test := false,
   coverageExcludedPackages := ".*"
 )
@@ -191,7 +193,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
         case _ => Seq()
       }
     }

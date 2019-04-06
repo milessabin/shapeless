@@ -318,14 +318,14 @@ class ProductTests {
     
     {
       val m = foo.toMap
-      val expected = Map('i.narrow -> 1, 's.narrow -> "b")
+      val expected = Map(Symbol("i").narrow -> 1, Symbol("s").narrow -> "b")
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
     }
 
     {
       val m = foo.toMap[Symbol, Any]
-      val expected = Map[Symbol, Any]('i -> 1, 's -> "b")
+      val expected = Map[Symbol, Any](Symbol("i") -> 1, Symbol("s") -> "b")
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
     }

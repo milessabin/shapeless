@@ -459,7 +459,7 @@ class GenericTests {
     assertTypedEquals[Boolean :: Double :: HNil](true :: 2.0 :: HNil, rB)
 
     val rC = genC.to(nccc)
-    assertTypedEquals[Char :: Long :: HNil]('c' :: 42l :: HNil, rC)
+    assertTypedEquals[Char :: Long :: HNil]('c' :: 42L :: HNil, rC)
 
     val rAbs = genAbs.to(ancc)
     assertTypedEquals[NonCCA :+: NonCCB :+: NonCCWithVars :+: CNil](Inl(ncca), rAbs)
@@ -474,10 +474,10 @@ class GenericTests {
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
 
-    val fC = genC.from('k' :: 313l :: HNil)
+    val fC = genC.from('k' :: 313L :: HNil)
     typed[NonCCWithVars](fC)
     assertEquals('k', fC.c)
-    assertEquals(313l, fC.l)
+    assertEquals(313L, fC.l)
 
     val fAbs = genAbs.from(Inr(Inl(nccb)))
     typed[AbstractNonCC](fAbs)

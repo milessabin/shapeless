@@ -549,8 +549,9 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             }
           }
 
-        //val primaryInstance = state.lookup(primaryTpe).right.get._2
-        val Right((_, primaryInstance)) = state.lookup(primaryTpe)
+        val primaryInstance = (state.lookup(primaryTpe): @unchecked) match {
+          case Right((_, pi)) => pi
+        }
         val primaryNme = primaryInstance.name
         val clsName = TypeName(c.freshName(state.name))
 

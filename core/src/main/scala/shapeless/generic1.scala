@@ -378,7 +378,9 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val (oTpt, iTpt) =
       lDealiasedTpe match {
         case tpe @ TypeRef(pre, sym, args) if balanced(args) =>
-          val Some(pivot) = args.find(_.contains(lParam))
+          val pivot = (args.find(_.contains(lParam)): @unchecked) match {
+            case Some(p) => p
+          }
           val oPoly = c.internal.polyType(List(lParam), appliedType(tpe.typeConstructor, args.map { arg => if(arg =:= pivot) lParamTpe else arg }))
           val oTpt = appliedTypTree1(oPoly, lParamTpe, nme)
           val iPoly = c.internal.polyType(List(lParam), pivot)

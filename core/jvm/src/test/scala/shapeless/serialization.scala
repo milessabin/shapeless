@@ -285,7 +285,7 @@ class SerializationTests {
     val cs = Coproduct[ISB]("foo")
     val cb = Coproduct[ISB](true)
 
-    val r = 'foo ->> 23 :: 'bar ->> "foo" :: 'baz ->> true :: HNil
+    val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
 
     assertSerializable(HNil)
     assertSerializable(l)
@@ -304,7 +304,7 @@ class SerializationTests {
     type ISB = Int :+: String :+: Boolean :+: CNil
     val cs = Coproduct[ISB]("foo")
 
-    val r = 'foo ->> 23 :: 'bar ->> "foo" :: 'baz ->> true :: HNil
+    val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
 
     type U = Union.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T
     val u = Union[U](bar = "quux")
@@ -989,7 +989,7 @@ class SerializationTests {
     // check that they indeed work
     // correctly after deserialization:
     val symInst = roundtrip(Typeable[Witness.`'foo`.T])
-    assertTrue(symInst.cast('foo : Any).isDefined)
+    assertTrue(symInst.cast(Symbol("foo") : Any).isDefined)
     val objInst = roundtrip(Typeable[Sing.type])
     assertTrue(objInst.cast(Sing : Any).isDefined)
     val caseObjInst = roundtrip(Typeable[CaseObj.type])
@@ -1184,9 +1184,9 @@ class SerializationTests {
     val l8 = optic.hlistSelectLens[Int :: String :: Boolean :: HNil, String]
     val l9 = optic.coproductSelectPrism[Int :+: String :+: Boolean :+: CNil, String]
     val l10 = optic.hlistNthLens[Int :: String :: Boolean :: HNil, _1]
-    val l11 = optic.recordLens[Record.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T]('bar)
+    val l11 = optic.recordLens[Record.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T](Symbol("bar"))
     val l12 = optic[Tree[Int]].l.r.l.t
-    val l13 = optic[Node[Int]] >> 'r
+    val l13 = optic[Node[Int]] >> Symbol("r")
     val l14 = optic[Node[Int]] >> _1
 
     assertSerializable(l1)

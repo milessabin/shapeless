@@ -94,7 +94,7 @@ object CartesianProductExample extends App {
   }
 
   // Two example lists.
-  val xs = 1 :: 'b :: 'c' :: HNil
+  val xs = 1 :: Symbol("b") :: 'c' :: HNil
   val ys = 4.0 :: "e" :: HNil
 
   // The Cartesian product of these lists.
@@ -109,7 +109,7 @@ object CartesianProductExample extends App {
   // The expected value.
   val expected =
     (1, 4.0) :: (1, "e") ::
-    ('b, 4.0) :: ('b, "e") ::
+    (Symbol("b"), 4.0) :: (Symbol("b"), "e") ::
     ('c', 4.0) :: ('c', "e") :: HNil 
 
   typed[Result](result)
