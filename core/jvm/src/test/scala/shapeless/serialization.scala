@@ -287,6 +287,9 @@ class SerializationTests {
 
     val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
 
+    val prim = new Primary(42)
+    val sec = new Secondary("qux")
+
     assertSerializable(HNil)
     assertSerializable(l)
 
@@ -295,6 +298,9 @@ class SerializationTests {
     assertSerializable(cb)
 
     assertSerializable(r)
+
+    assertSerializable(prim)
+    assertSerializable(sec)
   }
 
   @Test
