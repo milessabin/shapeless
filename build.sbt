@@ -10,10 +10,11 @@ import GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
+val scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.12.8",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8", "2.13.0-RC1")
+  crossScalaVersions := Seq("2.10.7", scala211, "2.12.8", "2.13.0-RC1")
 ))
 
 addCommandAlias("root", ";project root")
@@ -108,6 +109,11 @@ lazy val commonJvmSettings = Seq(
   coverageExcludedPackages := "shapeless.examples.*"
 )
 
+lazy val commonNativeSettings = Seq(
+  scalaVersion := scala211,
+  crossScalaVersions := Seq(scala211)
+)
+
 lazy val coreSettings = commonSettings ++ publishSettings ++
   releaseSettings ++ scoverageSettings
 
@@ -148,6 +154,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
+    commonNativeSettings,
     // disable scaladoc generation on native
     // currently getting errors like
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
@@ -168,6 +175,7 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossTy
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .nativeSettings(commonNativeSettings:_*)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
@@ -204,6 +212,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
+    commonNativeSettings,
     sources in Compile ~= {
       _.filterNot(_.getName == "sexp.scala")
     }
@@ -216,6 +225,7 @@ lazy val examplesNative = examples.native
 lazy val nativeTest = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
+    commonNativeSettings,
     noPublishSettings,
     sourceGenerators in Compile += Def.task {
       val exclude = List(
