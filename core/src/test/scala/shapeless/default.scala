@@ -59,6 +59,9 @@ object DefaultTestDefinitions {
       implicit val default = Default[CObj.type]
     }
   }
+
+  class DefaultRun extends Exception("Default value was run")
+  case class SideEffectingDefault(n: Int = throw new DefaultRun)
 }
 
 class DefaultTests {
@@ -223,5 +226,18 @@ class DefaultTests {
     assertTypedEquals[Some[Int] :: HNil](Some(0) :: HNil, default1())
     assertTypedEquals[None.type :: HNil](None :: HNil, default2())
     assertTypedEquals[HNil](HNil, default3())
+  }
+
+  @Test
+  def testByName: Unit = {
+    val default = Default[SideEffectingDefault]
+    val thrownException = try {
+      default()
+      false
+    } catch {
+      case _: DefaultRun =>
+        true
+    }
+    assert(thrownException, "Expected DefaultRun to be thrown")
   }
 }
