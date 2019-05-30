@@ -118,7 +118,7 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and for 2.13.0-RC2. The main line of development for
+Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and for 2.13.0-RC3. The main line of development for
 shapeless 2.3.3 is Scala 2.12.8. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
