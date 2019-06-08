@@ -9,7 +9,7 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
-[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.12)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
 [![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
@@ -118,11 +118,11 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and for 2.13.0-RC3. The main line of development for
-shapeless 2.3.3 is Scala 2.12.8. Scala 2.10.x is supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and 2.13.x. The main line of development for
+shapeless 2.3.3 is Scala 2.13.0. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.0"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
@@ -142,7 +142,7 @@ libraryDependencies ++= Seq(
 
 For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.0"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
@@ -151,30 +151,6 @@ libraryDependencies ++= Seq(
 
 
 
-### shapeless and Typelevel Scala
-
-[Typelevel Scala][tls] provides a number of enhancements to the Scala programming language which are relevant to
-programming in the Typelevel ecosystem in general and with shapeless in particular.
-
-To use Typelevel Scala you should,
-
-+ Update your `project/build.properties` to require SBT 0.13.16 or later,
-
-  ```
-  sbt.version=0.13.16
-  ```
-
-+ Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
-
-  ```
-  inThisBuild(Seq(
-    scalaOrganization := "org.typelevel",
-    scalaVersion := "2.12.4-bin-typelevel-4"
-  ))
-  ```
-
-[tls]: https://github.com/typelevel/scala
-
 ### shapeless-2.3.3 with Maven
 
 shapeless is also available for projects using the Maven build tool via the following dependency,
@@ -182,7 +158,7 @@ shapeless is also available for projects using the Maven build tool via the foll
 ```xml
 <dependency>
   <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.12</artifactId>
+  <artifactId>shapeless_2.13</artifactId>
   <version>2.3.3</version>
 </dependency>
 ```
@@ -226,8 +202,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.8 by default but also
-cross-builds for 2.10.7 and 2.11.12.
+shapeless is built with SBT 1.2.8 or later, and its master branch is built with Scala 2.13.0 by default but also
+cross-builds for 2.10.7, 2.11.12 and 2.12.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
