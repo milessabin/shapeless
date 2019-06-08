@@ -1,0 +1,32 @@
+# Ignore local configuration
+target/
+
+# Ignore project files for Eclipse
+.classpath
+.settings
+.project
+.worksheet
+
+# Ignore SBT files
+.js
+.jvm
+.cache-main
+.cache-tests
+
+# Ignore project files for IntelliJ
+.idea
+*.iml
+*.iws
+
+# Ignore OS X metadata
+.DS_Store
+
+# Ignore vim swap files
+.swp
+.*.swp
+.swo
+.*.swo
+
+# Dotty IDE files
+.dotty-ide-artifact
+.dotty-ide.json
