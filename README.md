@@ -6,11 +6,8 @@ library for Scala.
 This branch contains an early preview of shapeless 3.0 for Dotty/Scala 3.
 
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
-[![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
-[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
-[![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
 ## Finding out more about the project
 
