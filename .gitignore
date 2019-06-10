@@ -1,5 +1,7 @@
 # Ignore local configuration
 target/
+local/
+local.sbt
 
 # Ignore project files for Eclipse
 .classpath
@@ -30,3 +32,6 @@ target/
 # Dotty IDE files
 .dotty-ide-artifact
 .dotty-ide.json
+
+# Dottydoc
+_site/
