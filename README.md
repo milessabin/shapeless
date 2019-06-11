@@ -116,7 +116,7 @@ case class OrderF[F[_]](
 ) derives FunctorK
 
 val incompleteOrder = OrderF(Given("Epoisse"), Default(1))
-val completeOrder = incompleteOrder.mapK(OptionD.fold)
+val completeOrder = FunctorK[OrderF].mapK(incompleteOrder)(OptionD.fold)
 // == OrderF[Id]("Epoisse", 1)
 ```
 
