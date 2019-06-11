@@ -1,5 +1,9 @@
 # shapeless: generic programming for Scala
 
+[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
+
 **shapeless** is a type class and dependent type based generic programming
 library for Scala.
 
@@ -35,10 +39,6 @@ must be compiled as a single file. Expect this to be fixed shortly.
 A backport to Scala 2, and an adaptation layer to ease migration from shapeless
 2.x to shapeless 3.x are in progress. Other components of shapeless 2 will be
 migrated to shapeless 3 as it evolves.
-
-[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
-[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 
 ## Finding out more about the project
 
