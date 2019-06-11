@@ -52,7 +52,8 @@ object Functor {
   // Generic implementation
   implicit def functorGen[F[_]](implicit inst: => K1.Instances[Functor, F]): Functor[F] =
     new Functor[F] {
-      def map[A, B](fa: F[A])(f: A => B): F[B] = inst.map(fa)([t[_]] => (ft: Functor[t], ta: t[A]) => ft.map(ta)(f))
+      def map[A, B](fa: F[A])(f: A => B): F[B] =
+        inst.map(fa)([t[_]] => (ft: Functor[t], ta: t[A]) => ft.map(ta)(f))
     }
 
   // Hook for Dotty derives clause
