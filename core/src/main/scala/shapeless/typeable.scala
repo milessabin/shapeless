@@ -464,9 +464,19 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   }
 
   private def mkCaseClassTypeable(tpe: Type): Tree = {
+    // an unsafe accessor is one that isn't a case class accessor but has an abstract type.
+    def isUnsafeAccessor(sym: TermSymbol): Boolean = {
+      if (sym.isCaseAccessor) {
+        false
+      } else if (sym.typeSignature.typeSymbol.isAbstract) {
+        sym.isVal ||
+        sym.isVar ||
+        (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))
+      } else false
+    }
+
     val nonCaseAccessor = tpe.decls.exists {
-      case sym: TermSymbol if !sym.isCaseAccessor && (sym.isVal || sym.isVar ||
-        (sym.isParamAccessor && !(sym.accessed.isTerm && sym.accessed.asTerm.isCaseAccessor))) => true
+      case sym: TermSymbol if isUnsafeAccessor(sym) => true
       case _ => false
     }
     if (nonCaseAccessor) {
