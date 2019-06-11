@@ -30,45 +30,53 @@ The first two of these kinds equal the power of shapeless 2's `Generic` and
 `Generic1` (see their use in the [Kittens][kittens] type class derivation
 library for [Cats][cats]). The remainder go considerably beyond.
 
-Using shapeless 3 the derivation of a functor for a Scala ADT is as simple as,
+Using shapeless 3 the derivation of a monoid for a Scala ADT is as simple as,
 
 ```scala
-// Type class definition
-trait Functor[F[_]] {
-  def map[A, B](fa: F[A])(f: A => B): F[B]
+// Type class definition, eg. from Cats
+trait Monoid[A] {
+  def empty: A
+  def combine(x: A, y: A): A
 }
 
-object Functor {
-  inline def apply[F[_]](implicit ff: Functor[F]): Functor[F] = ff
+object Monoid {
+  inline def apply[A](implicit ma: Monoid[A]): Monoid[A] = ma
 
-  implicit val functorId: Functor[Id] = new Functor[Id] {
-    def map[A, B](a: A)(f: A => B): B = f(a)
+  // Standard instance for Boolean
+  implicit val monoidBoolean: Monoid[Boolean] = new Monoid[Boolean] {
+    def empty: Boolean = false
+    def combine(x: Boolean, y: Boolean): Boolean = x || y
+  }
+  // Standard instance for Int
+  implicit val monoidInt: Monoid[Int] = new Monoid[Int] {
+    def empty: Int = 0
+    def combine(x: Int, y: Int): Int = x+y
+  }
+  // Standard instance for String
+  implicit val monoidString: Monoid[String] = new Monoid[String] {
+    def empty: String = ""
+    def combine(x: String, y: String): String = x+y
   }
 
-  implicit def functorConst[T]: Functor[Const[T]] = new Functor[Const[T]] {
-    def map[A, B](t: T)(f: A => B): T = t
-  }
-
-  // Generic implementation
-  implicit def functorGen[F[_]](implicit inst: => K1.Instances[Functor, F]): Functor[F] =
-    new Functor[F] {
-      def map[A, B](fa: F[A])(f: A => B): F[B] =
-        inst.map(fa)([t[_]] => (ft: Functor[t], ta: t[A]) => ft.map(ta)(f))
+  // Generic instance
+  implicit def monoidGen[A](implicit inst: K0.ProductInstances[Monoid, A]): Monoid[A] =
+    new Monoid[A] {
+      def empty: A = inst.construct([t] => (ma: Monoid[t]) => ma.empty)
+      def combine(x: A, y: A): A =
+        inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0, t1))
     }
 
   // Hook for Dotty derives clause
-  inline def derived[F[_]](implicit gen: K1.Generic[F]): Functor[F] =
-    functorGen(K1.mkInstances[Functor, F](gen))
+  inline def derived[A](implicit gen: K0.ProductGeneric[A]): Monoid[A] =
+    monoidGen(K0.mkProductInstances[Monoid, A](gen))
 }
 
-// ADT definition with derives clause
-sealed trait Opt[+T] derives Functor
-object Opt {
-  case class Sm[+T](t: T) extends Opt[T]
-  case object Nn extends Opt[Nothing]
-}
+// ADT definition
+case class ISB(i: Int, s: String, b: Boolean) derives Monoid
+val a = ISB(23, "foo", true)
+val b = ISB(13, "bar", false)
 
-Functor[Opt].map(Sm("foo"))(_.length) // == Sm(3)
+Monoid[ISB].combine(a, b) // == ISB(36, "foobar", true)
 ```
 
 **Please Note** &mdash; currently there is an issue with separate compilation
