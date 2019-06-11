@@ -30,6 +30,46 @@ The first two of these kinds equal the power of shapeless 2's `Generic` and
 `Generic1` (see their use in the [Kittens][kittens] type class derivation
 library for [Cats][cats]). The remainder go considerably beyond.
 
+Using shapeless 3 the derivation of a functor for a Scala ADT is as simple as,
+
+```scala
+// Type class definition
+trait Functor[F[_]] {
+  def map[A, B](fa: F[A])(f: A => B): F[B]
+}
+
+object Functor {
+  inline def apply[F[_]](implicit ff: Functor[F]): Functor[F] = ff
+
+  implicit val functorId: Functor[Id] = new Functor[Id] {
+    def map[A, B](a: A)(f: A => B): B = f(a)
+  }
+
+  implicit def functorConst[T]: Functor[Const[T]] = new Functor[Const[T]] {
+    def map[A, B](t: T)(f: A => B): T = t
+  }
+
+  // Generic implementation
+  implicit def functorGen[F[_]](implicit inst: => K1.Instances[Functor, F]): Functor[F] =
+    new Functor[F] {
+      def map[A, B](fa: F[A])(f: A => B): F[B] = inst.map(fa)([t[_]] => (ft: Functor[t], ta: t[A]) => ft.map(ta)(f))
+    }
+
+  // Hook for Dotty derives clause
+  inline def derived[F[_]](implicit gen: K1.Generic[F]): Functor[F] =
+    functorGen(K1.mkInstances[Functor, F](gen))
+}
+
+// ADT definition with derives clause
+sealed trait Opt[+T] derives Functor
+object Opt {
+  case class Sm[+T](t: T) extends Opt[T]
+  case object Nn extends Opt[Nothing]
+}
+
+Functor[Opt].map(Sm("foo"))(_.length) // == Sm(3)
+```
+
 **Please Note** &mdash; currently there is an issue with separate compilation
 in Dotty which means that the test at `core/src/test/shapeless/deriving.scala`
 must be compiled as a single file. Expect this to be fixed shortly.
