@@ -22,13 +22,13 @@ a significantly reduced binary footprint.
 
 Support is provided for deriving type classes indexed by types of kinds `*`
 (eg.  `Monoid`, `Eq`, `Show`), `* -> *` (eg. `Functor`, `Traverse`, `Monad`)
-`(* -> *) -> *)`, (eg. `FunctorK` aka `HFunctor` in Haskell) and `* -> * -> *`
+`(* -> *) -> *)`, (eg. `FunctorK`, aka `HFunctor` in Haskell) and `* -> * -> *`
 (eg.  `Bifunctor`). Support for additional kinds can be added fairly
-straightforwardly with a small amount of additional biolerplate for each kind.
+straightforwardly with a small amount of additional boilerplate for each kind.
 
-The first two of these equal the power of shapeless 2 (see the
-[Kittens][kittens] type class derivation library for [Cats][cats]), and the
-remainder go considerably beyond.
+The first two of these kinds equal the power of shapeless 2's `Generic` and
+`Generic1` (see their use in the [Kittens][kittens] type class derivation
+library for [Cats][cats]). The remainder go considerably beyond.
 
 **Please Note** &mdash; currently there is an issue with separate compilation
 in Dotty which means that the test at `core/src/test/shapeless/deriving.scala`
@@ -36,7 +36,7 @@ must be compiled as a single file. Expect this to be fixed shortly.
 
 ## Roadmap
 
-A backport to Scala 2, and an adaptation layer to ease migration from shapeless
+A backport to Scala 2 and an adaptation layer to ease migration from shapeless
 2.x to shapeless 3.x are in progress. Other components of shapeless 2 will be
 migrated to shapeless 3 as it evolves.
 
