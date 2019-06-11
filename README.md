@@ -79,6 +79,47 @@ val b = ISB(13, "bar", false)
 Monoid[ISB].combine(a, b) // == ISB(36, "foobar", true)
 ```
 
+A similar derivation for [`Functor`][functor] allows the following,
+
+```scala
+sealed trait Opt[+A] derives Functor
+object Opt {
+  case class Sm[+A](value: A) extends Opt[A]
+  case object Nn extends Opt[Nothing]
+}
+
+Functor[Opt].map(Sm("foo")).map(_.length) // == Sm(3)
+```
+
+We can even derive [higher order functors][functork] in almost exactly the same
+way,
+
+```scala
+// An Option like type, with a default
+sealed trait OptionD[T] {
+  def fold: T = this match {
+    case Given(t) => t
+    case Default(t) => t
+  }
+}
+object OptionD {
+  case class Given[T](value: T) extends OptionD[T]
+  case class Default[T](value: T) extends OptionD[T]
+
+  val fold: OptionD ~> Id = [t] => (ot: OptionD[t]) => ot.fold
+}
+
+// A data type parameterized with an effect
+case class OrderF[F[_]](
+  item: F[String],
+  quantity: F[Int]
+) derives FunctorK
+
+val incompleteOrder = OrderF(Given("Epoisse"), Default(1))
+val completeOrder = incompleteOrder.mapK(OptionD.fold)
+// == OrderF[Id]("Epoisse", 1)
+```
+
 **Please Note** &mdash; currently there is an issue with separate compilation
 in Dotty which means that the test at `core/src/test/shapeless/deriving.scala`
 must be compiled as a single file. Expect this to be fixed shortly.
@@ -114,3 +155,5 @@ for everyone.
 [communitybuild]: https://github.com/lampepfl/dotty/pull/6645
 [kittens]: https://github.com/typelevel/kittens
 [cats]: https://github.com/typelevel/cats
+[functor]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/deriving.scala#L101-L124
+[functork]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/deriving.scala#L126-L152
