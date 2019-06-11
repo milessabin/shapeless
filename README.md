@@ -26,6 +26,10 @@ A backport to Scala 2, and an adaptation layer to ease migration from shapeless
 2.x to shapeless 3.x are in progress. Other components of shapeless 2 will be
 migrated to shapeless 3 as it evolves.
 
+**Please Note** &mdash; currently there is an issue with separate compilation
+in Dotty which means that the test at `core/src/test/shapeless/deriving.scala`
+must be compiled as a single file. Expect this to be fixed shortly.
+
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
