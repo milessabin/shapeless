@@ -652,4 +652,19 @@ class TypeableTests {
 
   }
 
+  @Test
+  def testValInNestedCaseClass: Unit = {
+    // https://github.com/milessabin/shapeless/issues/812
+    // This should compile if the issue is fixed.
+    object X {
+      case class A()
+      case class B(a: A) {
+        private[this] val aa = a
+      }
+    }
+    object Test {
+      shapeless.Typeable[X.B]
+    }
+  }
+
 }
