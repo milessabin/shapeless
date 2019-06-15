@@ -92,10 +92,10 @@ Compiling (synthetic)/ammonite/predef/interpBridge.sc
 Compiling (synthetic)/ammonite/predef/replBridge.sc
 Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
 Compiling /home/miles/projects/shapeless/(console)
-Welcome to the Ammonite Repl 1.6.7
-(Scala 2.12.8 Java 1.8.0_212)
+Welcome to the Ammonite Repl 1.6.8
+(Scala 2.13.0 Java 1.8.0_212)
 If you like Ammonite, please support our development at www.patreon.com/lihaoyi
-@ 23 :: "foo" :: true :: HNil
+@ 23 :: "foo" :: true :: HNil 
 res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
 
 @ Bye!
