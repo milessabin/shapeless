@@ -15,7 +15,6 @@
  */
 
 package shapeless
-
 import org.junit.Test
 
 import scala.compiletime._
@@ -560,6 +559,116 @@ object Transform {
       }
 }
 
+enum JVal(val value: Any) {
+  case True extends JVal(true)
+  case False extends JVal(false)
+  case Null extends JVal(null)
+  case Num( v: Double)  extends JVal(v)
+  case IntNum(val v: Int)  extends JVal(v)
+  case Arr( v: JVal*)  extends JVal(v)
+  case Obj( v: (java.lang.String, JVal)*)  extends JVal(v)
+  case Str( v: java.lang.String) extends JVal(v)
+}
+
+trait Json[A] {
+  def from(jsonString: JVal): Option[A]
+  def to(obj: A): JVal
+}
+
+object Json {
+  inline def apply[A] given (j: Json[A]) = j
+
+  private inline def SomeIfType[A](x: JVal) = x.value match{
+    case x: A => Some(x)
+    case _ => None
+  }
+
+  delegate IntJson for Json[Int] {
+    def from(jval: JVal): Option[Int] =  SomeIfType[Int](jval)
+
+    def to(obj: Int): JVal =  JVal.IntNum(obj)
+  }
+
+  delegate DoubleJson for Json[Double] {
+    def from(jval: JVal): Option[Double] = SomeIfType[Double](jval)
+
+    def to(obj: Double): JVal =  JVal.Num(obj)
+  }
+
+  delegate StringJson for Json[String] {
+    def from(jval: JVal): Option[String] =  SomeIfType[String](jval)
+
+    def to(obj: String): JVal =  JVal.Str(obj)
+  }
+
+  delegate SeqJson[A] for Json[Seq[A]] given (json: Json[A]) {
+    def from(jval: JVal): Option[Seq[A]] =  jval.value match {
+      case x: Seq[JVal] => val converted = x.map(json.from)
+        if(converted.exists( x => x.isEmpty )) None else Some(converted.flatten)
+      case _ => None
+    }
+
+    def to(obj: Seq[A]): JVal = {
+      val x = obj.map(json.to)
+      JVal.Arr(x:_*)
+    }
+  }
+
+  delegate BooleanJson for Json[Boolean] {
+    def from(jval: JVal):Option[Boolean] =  jval match {
+      case JVal.True => Some(true)
+      case JVal.False => Some(false)
+      case _ => None
+    }
+
+    def to(obj: Boolean): JVal =  if (obj) JVal.True else JVal.False
+  }
+
+  delegate jsonGen[T] for Json[T] given (inst: => K0.ProductInstances[Json, T], labelling: Labelling[T]) {
+    def from(jval: JVal):Option[T] =  {
+
+      def convertAll(o: JVal.Obj) = {
+        type Acc = Seq[String]
+        val x = inst.unfold[Json, T, Acc](labelling.elemLabels)(
+          [t] => (acc: Acc, js: Json[t]) => {
+          val labels = acc
+          val l = labels.head
+
+          (labels.tail, o.v
+            .find((k,_) => k == l)
+            .flatMap((_,v) => js.from(v)))
+        }
+        )
+        x._2
+      }
+
+      jval match {
+        case o: JVal.Obj => convertAll(o)
+        case _ => None
+      }
+
+    }
+
+    def to(obj: T): JVal =  {
+      val elems: List[JVal] = inst.foldLeft(obj)(List.empty[JVal])(
+        [t] => (acc: List[JVal], st: Json[t], t: t) => Continue(st.to(t) :: acc)
+      )
+      JVal.Obj(labelling.elemLabels.zip(elems.reverse).map((k, v) => k -> v):_*)
+    }
+  }
+
+  delegate jsonGenC[T] for Json[T] given (inst: => K0.CoproductInstances[Json, T]) {
+    def from(jval: JVal): Option[T] =  None
+
+    def to(obj: T): JVal =  {
+      inst.fold(obj)([t] => (st: Json[t], t: t) => st.to(t))
+    }
+  }
+
+  inline def derived[A] given (gen: K0.ProductGeneric[A]): Json[A] =
+  K0.derive(gen, inst => jsonGen given (inst, Labelling(gen)), jsonGenC given (_))
+}
+
 // ADTs
 
 case class ISB(i: Int, s: String, b: Boolean) derives Monoid, Eq, Empty, Show, Read
@@ -796,6 +905,34 @@ class DerivationTests {
     val v5 = Read[Order[Id]]
     assert(v5.read("""Order(item: "Epoisse", quantity: 10)""") == Some((Order[Id]("Epoisse", 10), "")))
   }
+
+  @Test
+  def json: Unit = {
+    val v0Conv = Json[ISB]
+    val v0 = ISB(i = 23, s = "foo", b = true)
+    val jsonV0 = v0Conv.to(v0)
+
+    assert(jsonV0 == JVal.Obj("i" -> JVal.IntNum(23),"s" -> JVal.Str("foo"), "b" -> JVal.True))
+    assert(v0Conv.from(jsonV0) == Some((ISB(23, "foo", true))))
+
+    //val v1 = Json[OptionInt]
+    //assert(v1.to(SomeInt(value = 23)) == Some((SomeInt(23), "")))
+    //assert(v1.to(NoneInt) == Some((NoneInt, "")))
+    //
+    //val v2 = Json[Box[Int]]
+    //assert(v2.to(Box(x = 23)) == Some((Box(23), "")))
+    //
+    //val v3 = Json[Opt[Int]]
+    //assert(v3.to(Sm(value = 23)) == Some((Sm(23), "")))
+    //assert(v3.to(Nn) == Some((Nn, "")))
+    //
+    //val v4 = Json[CList[Int]]
+    //assert(v4.to(CCons(hd = 1, tl = CCons(hd = 2, tl = CCons(hd = 3, tl = CNil)))) == Some((CCons(1, CCons(2, CCons(3, CNil))), "")))
+    //
+    //val v5 = Json[Order[Id]]
+    //assert(v5.to(Order(item = "Epoisse", quantit = 10)) == Some((Order[Id]("Epoisse", 10), "")))
+  }
+
 
   @Test
   def transform: Unit = {
