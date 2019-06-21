@@ -101,7 +101,7 @@ lazy val commonJsSettings = Seq(
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
 
   parallelExecution in Test := false,
-  coverageExcludedPackages := ".*"
+  coverageEnabled := false
 )
 
 lazy val commonJvmSettings = Seq(
@@ -114,8 +114,7 @@ lazy val commonNativeSettings = Seq(
   crossScalaVersions := Seq(scala211)
 )
 
-lazy val coreSettings = commonSettings ++ publishSettings ++
-  releaseSettings ++ scoverageSettings
+lazy val coreSettings = commonSettings ++ publishSettings ++ releaseSettings
 
 lazy val root = project.in(file("."))
   .aggregate(coreJS, coreJVM)
@@ -153,6 +152,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .jvmSettings(scoverageSettings:_*)
   .nativeSettings(
     commonNativeSettings,
     // disable scaladoc generation on native
