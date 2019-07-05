@@ -120,10 +120,6 @@ val completeOrder = FunctorK[OrderF].mapK(incompleteOrder)(OptionD.fold)
 // == OrderF[Id]("Epoisse", 1)
 ```
 
-**Please Note** &mdash; currently there is an issue with separate compilation
-in Dotty which means that the test at `core/src/test/shapeless/deriving.scala`
-must be compiled as a single file. Expect this to be fixed shortly.
-
 ## Roadmap
 
 A backport to Scala 2 and an adaptation layer to ease migration from shapeless
@@ -155,5 +151,5 @@ for everyone.
 [communitybuild]: https://github.com/lampepfl/dotty/pull/6645
 [kittens]: https://github.com/typelevel/kittens
 [cats]: https://github.com/typelevel/cats
-[functor]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/deriving.scala#L101-L124
-[functork]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/deriving.scala#L126-L152
+[functor]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/type-classes.scala#L95-L122
+[functork]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/type-classes.scala#L124-L150
