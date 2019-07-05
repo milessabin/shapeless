@@ -48,7 +48,7 @@ inline def summonValuesAsArray[T]: Array[Any] = inline erasedValue[Id[T]] match 
 
 case class Labelling[T](label: String, elemLabels: Seq[String])
 object Labelling {
-  inline implicit def apply[T0](implicit mirror: Mirror { type MirroredType = T0 }): Labelling[T0] =
+  inline given apply[T0] as Labelling[T0] given (mirror: Mirror { type MirroredType = T0 }) =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
       WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels])

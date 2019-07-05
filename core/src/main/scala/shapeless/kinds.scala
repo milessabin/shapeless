@@ -24,17 +24,17 @@ object K0 {
   type ProductGeneric[O] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes }
   type CoproductGeneric[O] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes }
 
-  def Generic[O](implicit gen: Generic[O]): Generic[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
-  def ProductGeneric[O](implicit gen: ProductGeneric[O]): ProductGeneric[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
-  def CoproductGeneric[O](implicit gen: CoproductGeneric[O]): CoproductGeneric[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
+  def Generic[O] given (gen: Generic[O]): Generic[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
+  def ProductGeneric[O] given (gen: ProductGeneric[O]): ProductGeneric[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
+  def CoproductGeneric[O] given (gen: CoproductGeneric[O]): CoproductGeneric[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
 
   type Instances[F[_], T] = ErasedInstances[F[T]]
   type ProductInstances[F[_], T] = ErasedProductInstances[F[T]]
   type CoproductInstances[F[_], T] = ErasedCoproductInstances[F[T]]
 
-  def Instances[F[_], T](implicit inst: Instances[F, T]): inst.type = inst
-  def ProductInstances[F[_], T](implicit inst: ProductInstances[F, T]): inst.type = inst
-  def CoproductInstances[F[_], T](implicit inst: CoproductInstances[F, T]): inst.type = inst
+  def Instances[F[_], T] given (inst: Instances[F, T]): inst.type = inst
+  def ProductInstances[F[_], T] given (inst: ProductInstances[F, T]): inst.type = inst
+  def CoproductInstances[F[_], T] given (inst: CoproductInstances[F, T]): inst.type = inst
 
   type ToUnion[T] = T match {
     case Unit => Nothing
@@ -75,7 +75,7 @@ object K0 {
     }
   }
 
-  implicit object Ops {
+  given Ops {
     inline def (gen: ProductGeneric[Obj]) toRepr [Obj] (o: Obj): gen.MirroredElemTypes = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes]
     inline def (gen: ProductGeneric[Obj]) fromRepr [Obj] (r: gen.MirroredElemTypes): Obj = gen.fromProduct(r.asInstanceOf).asInstanceOf[Obj]
 
@@ -107,22 +107,22 @@ object K0 {
   type ProductGenericR[O, R] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes = R }
   type CoproductGenericR[O, R] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes = R }
 
-  inline implicit def mkInstances[F[_], T](implicit gen: Generic[T]): ErasedInstances[F[T]] =
+  inline given mkInstances[F[_], T] as ErasedInstances[F[T]] given (gen: Generic[T]) =
     inline gen match {
-      case p: ProductGeneric[T]   => mkProductInstances[F, T](p)
-      case c: CoproductGeneric[T] => mkCoproductInstances[F, T](c)
+      case p: ProductGeneric[T]   => mkProductInstances[F, T] given p
+      case c: CoproductGeneric[T] => mkCoproductInstances[F, T] given c
     }
 
-  inline implicit def mkProductInstances[F[_], T](implicit gen: ProductGeneric[T]): ErasedProductInstances[F[T]] =
+  inline given mkProductInstances[F[_], T] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
     new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
-  inline implicit def mkCoproductInstances[F[_], T](implicit gen: CoproductGeneric[T]): ErasedCoproductInstances[F[T]] =
+  inline given mkCoproductInstances[F[_], T] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
   inline def derive[F[_], T](gen: Generic[T], pg: ProductInstances[F, T] => F[T], cg: CoproductInstances[F, T] => F[T]): F[T] =
     inline gen match {
-      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T](p))
-      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T](c))
+      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T] given p)
+      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T] given c)
     }
 }
 
@@ -131,17 +131,17 @@ object K1 {
   type ProductGeneric[O[_]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_] }
   type CoproductGeneric[O[_]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_] }
 
-  def Generic[O[_]](implicit gen: Generic[O]): gen.type = gen
-  def ProductGeneric[O[_]](implicit gen: ProductGeneric[O]): gen.type = gen
-  def CoproductGeneric[O[_]](implicit gen: CoproductGeneric[O]): gen.type = gen
+  def Generic[O[_]] given (gen: Generic[O]): gen.type = gen
+  def ProductGeneric[O[_]] given (gen: ProductGeneric[O]): gen.type = gen
+  def CoproductGeneric[O[_]] given (gen: CoproductGeneric[O]): gen.type = gen
 
   type Instances[F[_[_]], T[_]] = ErasedInstances[F[T]]
   type ProductInstances[F[_[_]], T[_]] = ErasedProductInstances[F[T]]
   type CoproductInstances[F[_[_]], T[_]] = ErasedCoproductInstances[F[T]]
 
-  def Instances[F[_[_]], T[_]](implicit inst: Instances[F, T]): inst.type = inst
-  def ProductInstances[F[_[_]], T[_]](implicit inst: ProductInstances[F, T]): inst.type = inst
-  def CoproductInstances[F[_[_]], T[_]](implicit inst: CoproductInstances[F, T]): inst.type = inst
+  def Instances[F[_[_]], T[_]] given (inst: Instances[F, T]): inst.type = inst
+  def ProductInstances[F[_[_]], T[_]] given (inst: ProductInstances[F, T]): inst.type = inst
+  def CoproductInstances[F[_[_]], T[_]] given (inst: CoproductInstances[F, T]): inst.type = inst
 
   class Dummy
   type Apply[T[_]] = T[Dummy]
@@ -181,7 +181,7 @@ object K1 {
     }
   }
 
-  implicit object Ops {
+  given Ops {
     inline def (gen: ProductGeneric[Obj]) toRepr [Obj[_], A] (o: Obj[A]): gen.MirroredElemTypes[A] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A]]
     inline def (gen: ProductGeneric[Obj]) fromRepr [Obj[_], A] (r: gen.MirroredElemTypes[A]): Obj[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[Obj[A]]
 
@@ -206,25 +206,27 @@ object K1 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline implicit def mkInstances[F[_[_]], T[_]](implicit gen: Generic[T]): ErasedInstances[F[T]] =
+  inline given mkInstances[F[_[_]], T[_]] as ErasedInstances[F[T]] given (gen: Generic[T]) =
     inline gen match {
-      case p: ProductGeneric[T] => mkProductInstances[F, T](p)
-      case c: CoproductGeneric[T] => mkCoproductInstances[F, T](c)
+      case p: ProductGeneric[T] => mkProductInstances[F, T] given p
+      case c: CoproductGeneric[T] => mkCoproductInstances[F, T] given c
     }
 
-  inline implicit def mkProductInstances[F[_[_]], T[_]](implicit gen: ProductGeneric[T]): ErasedProductInstances[F[T]] =
+  inline given mkProductInstances[F[_[_]], T[_]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
     new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
-  inline implicit def mkCoproductInstances[F[_[_]], T[_]](implicit gen: CoproductGeneric[T]): ErasedCoproductInstances[F[T]] =
+  inline given mkCoproductInstances[F[_[_]], T[_]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
   inline def derive[F[_[_]], T[_]](gen: Generic[T], pg: ProductInstances[F, T] => F[T], cg: CoproductInstances[F, T] => F[T]): F[T] =
     inline gen match {
-      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T](p))
-      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T](c))
+      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T] given p)
+      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T] given c)
     }
 
-  implicit def mkK1_0[O](implicit k0: K0.ProductGeneric[O]): ProductGeneric[Const[O]] { type MirroredElemTypes = Const[k0.MirroredElemTypes] } = k0.asInstanceOf
+  type LiftProductGeneric[O, E] = ProductGeneric[Const[O]] { type MirroredElemTypes = Const[E] }
+
+  given mkK1_0[O] as LiftProductGeneric[O, k0.MirroredElemTypes] given (k0: K0.ProductGeneric[O]) = k0.asInstanceOf
 }
 
 object K11 {
@@ -232,17 +234,17 @@ object K11 {
   type ProductGeneric[O[_[_]]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_[_]] }
   type CoproductGeneric[O[_[_]]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_[_]] }
 
-  def Generic[O[_[_]]](implicit gen: Generic[O]): gen.type = gen
-  def ProductGeneric[O[_[_]]](implicit gen: ProductGeneric[O]): gen.type = gen
-  def CoproductGeneric[O[_[_]]](implicit gen: CoproductGeneric[O]): gen.type = gen
+  def Generic[O[_[_]]] given (gen: Generic[O]): gen.type = gen
+  def ProductGeneric[O[_[_]]] given (gen: ProductGeneric[O]): gen.type = gen
+  def CoproductGeneric[O[_[_]]] given (gen: CoproductGeneric[O]): gen.type = gen
 
   type Instances[F[_[_[_]]], T[_[_]]] = ErasedInstances[F[T]]
   type ProductInstances[F[_[_[_]]], T[_[_]]] = ErasedProductInstances[F[T]]
   type CoproductInstances[F[_[_[_]]], T[_[_]]] = ErasedCoproductInstances[F[T]]
 
-  def Instances[F[_[_[_]]], T[_[_]]](implicit inst: Instances[F, T]): inst.type = inst
-  def ProductInstances[F[_[_[_]]], T[_[_]]](implicit inst: ProductInstances[F, T]): inst.type = inst
-  def CoproductInstances[F[_[_[_]]], T[_[_]]](implicit inst: CoproductInstances[F, T]): inst.type = inst
+  def Instances[F[_[_[_]]], T[_[_]]] given (inst: Instances[F, T]): inst.type = inst
+  def ProductInstances[F[_[_[_]]], T[_[_]]] given (inst: ProductInstances[F, T]): inst.type = inst
+  def CoproductInstances[F[_[_[_]]], T[_[_]]] given (inst: CoproductInstances[F, T]): inst.type = inst
 
   type Id[t] = [f[_]] =>> f[t]
   type Const[c] = [f[_]] =>> c
@@ -269,7 +271,7 @@ object K11 {
     // Add fallback for larger sizes
   }
 
-  implicit object Ops {
+  given Ops {
     inline def (inst: Instances[F, T]) map[F[_[_[_]]], T[_[_]], A[_], R[_]](x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => t[R]): T[R] =
       inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
@@ -288,16 +290,16 @@ object K11 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline implicit def mkInstances[F[_[_[_]]], T[_[_]]](implicit gen: Generic[T]): ErasedInstances[F[T]] =
+  inline given mkInstances[F[_[_[_]]], T[_[_]]] as ErasedInstances[F[T]] given (gen: Generic[T]) =
     inline gen match {
-      case p: Mirror.Product   => mkProductInstances[F, T](gen.asInstanceOf[ProductGeneric[T] { type MirroredElemTypes = gen.MirroredElemTypes }])
-      case c: Mirror.Sum => mkCoproductInstances[F, T](gen.asInstanceOf[CoproductGeneric[T] { type MirroredElemTypes = gen.MirroredElemTypes }])
+      case p: ProductGeneric[T]   => mkProductInstances[F, T] given p
+      case c: CoproductGeneric[T] => mkCoproductInstances[F, T] given c
     }
 
-  inline implicit def mkProductInstances[F[_[_[_]]], T[_[_]]](implicit gen: ProductGeneric[T]): ErasedProductInstances[F[T]] =
+  inline given mkProductInstances[F[_[_[_]]], T[_[_]]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
     new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
-  inline implicit def mkCoproductInstances[F[_[_[_]]], T[_[_]]](implicit gen: CoproductGeneric[T]): ErasedCoproductInstances[F[T]] =
+  inline given mkCoproductInstances[F[_[_[_]]], T[_[_]]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 }
 
@@ -306,17 +308,17 @@ object K2 {
   type ProductGeneric[O[_, _]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_, _] }
   type CoproductGeneric[O[_, _]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_, _] }
 
-  def Generic[O[_, _]](implicit gen: Generic[O]): gen.type = gen
-  def ProductGeneric[O[_, _]](implicit gen: ProductGeneric[O]): gen.type = gen
-  def CoproductGeneric[O[_, _]](implicit gen: CoproductGeneric[O]): gen.type = gen
+  def Generic[O[_, _]] given (gen: Generic[O]): gen.type = gen
+  def ProductGeneric[O[_, _]] given (gen: ProductGeneric[O]): gen.type = gen
+  def CoproductGeneric[O[_, _]] given (gen: CoproductGeneric[O]): gen.type = gen
 
   type Instances[F[_[_, _]], T[_, _]] = ErasedInstances[F[T]]
   type ProductInstances[F[_[_, _]], T[_, _]] = ErasedProductInstances[F[T]]
   type CoproductInstances[F[_[_, _]], T[_, _]] = ErasedCoproductInstances[F[T]]
 
-  def Instances[F[_[_, _]], T[_, _]](implicit inst: Instances[F, T]): inst.type = inst
-  def ProductInstances[F[_[_, _]], T[_, _]](implicit inst: ProductInstances[F, T]): inst.type = inst
-  def CoproductInstances[F[_[_, _]], T[_, _]](implicit inst: CoproductInstances[F, T]): inst.type = inst
+  def Instances[F[_[_, _]], T[_, _]] given (inst: Instances[F, T]): inst.type = inst
+  def ProductInstances[F[_[_, _]], T[_, _]] given (inst: ProductInstances[F, T]): inst.type = inst
+  def CoproductInstances[F[_[_, _]], T[_, _]] given (inst: CoproductInstances[F, T]): inst.type = inst
 
   type Id1[t, u] = t
   type Id2[t, u] = u
@@ -346,7 +348,7 @@ object K2 {
     // Add fallback for larger sizes
   }
 
-  implicit object Ops {
+  given Ops {
     inline def (inst: Instances[F, T]) map[F[_[_, _]], T[_, _], A, B, R, S](x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => t[R, S]): T[R, S] =
       inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
@@ -365,15 +367,15 @@ object K2 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline implicit def mkInstances[F[_[_, _]], T[_, _]](implicit gen: Generic[T]): ErasedInstances[F[T]] =
+  inline given mkInstances[F[_[_, _]], T[_, _]] as ErasedInstances[F[T]] given (gen: Generic[T]) =
     inline gen match {
-      case p: Mirror.Product   => mkProductInstances[F, T](gen.asInstanceOf[ProductGeneric[T] { type MirroredElemTypes = gen.MirroredElemTypes }])
-      case c: Mirror.Sum => mkCoproductInstances[F, T](gen.asInstanceOf[CoproductGeneric[T] { type MirroredElemTypes = gen.MirroredElemTypes }])
+      case p: ProductGeneric[T]   => mkProductInstances[F, T] given p
+      case c: CoproductGeneric[T] => mkCoproductInstances[F, T] given c
     }
 
-  inline implicit def mkProductInstances[F[_[_, _]], T[_, _]](implicit gen: ProductGeneric[T]): ErasedProductInstances[F[T]] =
+  inline given mkProductInstances[F[_[_, _]], T[_, _]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
     new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 
-  inline implicit def mkCoproductInstances[F[_[_, _]], T[_, _]](implicit gen: CoproductGeneric[T]): ErasedCoproductInstances[F[T]] =
+  inline given mkCoproductInstances[F[_[_, _]], T[_, _]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
 }

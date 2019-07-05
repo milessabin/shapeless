@@ -21,15 +21,15 @@ import org.junit.Test
 // Tests
 
 object Size {
-  implicit def intCase: Case[Size.type, Int, Int] = identity(_)
-  implicit def stringCase: Case[Size.type, String, Int] = _.length
-  implicit def booleanCase: Case[Size.type, Boolean, Int] = _ => 1
+  given as Case[Size.type, Int, Int] = identity(_)
+  given as Case[Size.type, String, Int] = _.length
+  given as Case[Size.type, Boolean, Int] = _ => 1
 }
 
 object Inc {
-  implicit def intCase: Case[Inc.type, Int, Int] = _+1
-  implicit def stringCase: Case[Inc.type, String, String] = _+"!"
-  implicit def booleanCase: Case[Inc.type, Boolean, Boolean] = !_
+  given as Case[Inc.type, Int, Int] = _+1
+  given as Case[Inc.type, String, String] = _+"!"
+  given as Case[Inc.type, Boolean, Boolean] = !_
 }
 
 class DerivationTests {
