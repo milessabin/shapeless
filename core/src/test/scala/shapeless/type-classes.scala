@@ -73,7 +73,7 @@ object Eq {
     def eqv(x: String, y: String): Boolean = x == y
   }
 
-  given eqGen[A] as Eq[A] given (inst: => K0.ProductInstances[Eq, A]) {
+  given eqGen[A] as Eq[A] given (inst: K0.ProductInstances[Eq, A]) {
     def eqv(x: A, y: A): Boolean = inst.foldLeft2(x, y)(true: Boolean)(
       [t] => (acc: Boolean, eqt: Eq[t], t0: t, t1: t) => Complete(!eqt.eqv(t0, t1))(false)(true)
     )
@@ -85,7 +85,10 @@ object Eq {
     )
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Eq[A] = K0.derive(gen, implicit inst => eqGen, implicit inst => eqGenC)
+  inline def derived[A] given (gen: K0.Generic[A]): Eq[A] = inline gen match {
+    case p: K0.ProductGeneric[A]   => given as p.type = p ; eqGen
+    case c: K0.CoproductGeneric[A] => given as c.type = c ; eqGenC
+  }
 }
 
 trait Functor[F[_]] {
@@ -193,7 +196,7 @@ object Data extends Data0 {
 
   type DFR[F, R] = [t] =>> Data[F, t, R]
 
-  given dataGen[F, T, R] as Data[F, T, R] given (inst: => K0.ProductInstances[DFR[F, R], T]) =
+  given dataGen[F, T, R] as Data[F, T, R] given (inst: K0.ProductInstances[DFR[F, R], T]) =
     mkData[F, T, R](t => inst.foldLeft[DFR[F, R], T, List[R]](t)(List.empty[R])(
       [t] => (acc: List[R], dt: Data[F, t, R], t: t) => Continue(dt.gmapQ(t) reverse_::: acc)
     ).reverse)
@@ -202,10 +205,6 @@ object Data extends Data0 {
     mkData[F, T, R](t => inst.fold[DFR[F, R], T, List[R]](t)(
       [t] => (dt: Data[F, t, R], t: t) => dt.gmapQ(t)
     ))
-
-  inline def derived[F, T, R] given (gen: K0.ProductGeneric[T]): Data[F, T, R] = dataGen
-
-  inline def derived[F, T, R] given (gen: K0.CoproductGeneric[T]): Data[F, T, R] = dataGenC
 }
 
 trait Data0 {
@@ -247,8 +246,6 @@ object DataT {
     case fn: Case[F, T, R] => mkDataT[F, T, R](fn)
     case ev: (T <:< R) => mkDataT[F, T, R](ev)
   }
-
-  inline def derived[F, T] given (gen: K0.Generic[T]): DataT[F, T] = dataTGen
 }
 
 trait Empty[T] {
@@ -268,7 +265,7 @@ object Empty {
   given as Empty[String] = mkEmpty("")
   given as Empty[Boolean] = mkEmpty(false)
 
-  given emptyGen[A] as Empty[A] given (inst: => K0.ProductInstances[Empty, A]) =
+  given emptyGen[A] as Empty[A] given (inst: K0.ProductInstances[Empty, A]) =
     mkEmpty(inst.construct([a] => (ma: Empty[a]) => ma.empty))
 
   inline given emptyGenC[A] as Empty[A] given (gen: K0.CoproductGeneric[A]) =
@@ -276,7 +273,7 @@ object Empty {
 
   inline def derived[A] given (gen: K0.Generic[A]): Empty[A] =
     inline gen match {
-      case p: K0.ProductGeneric[A]   => emptyGen given (K0.mkProductInstances[Empty, A] given p)
+      case p: K0.ProductGeneric[A]   => given as p.type = p ; emptyGen
       case c: K0.CoproductGeneric[A] => emptyGenC given c
     }
 }
@@ -293,7 +290,7 @@ object EmptyK {
       def empty[A] = f[A]()
     }
 
-  given emptyKGen[A[_]] as EmptyK[A] given (inst: => K1.ProductInstances[EmptyK, A]) =
+  given emptyKGen[A[_]] as EmptyK[A] given (inst: K1.ProductInstances[EmptyK, A]) =
     mkEmptyK([t] => () => inst.construct([f[_]] => (ef: EmptyK[f]) => ef.empty[t]))
 
   inline given emptyKGenC[A[_]] as EmptyK[A] given (gen: K1.CoproductGeneric[A]) =
@@ -301,7 +298,7 @@ object EmptyK {
 
   inline def derived[A[_]] given (gen: K1.Generic[A]): EmptyK[A] =
     inline gen match {
-      case p: K1.ProductGeneric[A]   => emptyKGen given (K1.mkProductInstances[EmptyK, A] given p)
+      case p: K1.ProductGeneric[A]   => given as p.type = p ; emptyKGen
       case c: K1.CoproductGeneric[A] => emptyKGenC given c
     }
 }
@@ -349,7 +346,7 @@ object Pure {
 
   inline def derived[A[_]] given (gen: K1.Generic[A]): Pure[A] =
     inline gen match {
-      case p: K1.ProductGeneric[A]   => pureGen given (K1.mkProductInstances[Alt1.Of[Pure, EmptyK], A] given p)
+      case p: K1.ProductGeneric[A]   => given as p.type = p ; pureGen
       case c: K1.CoproductGeneric[A] => pureGenC given c
     }
 }
@@ -370,7 +367,7 @@ object Show {
   given as Show[String] = (s: String) => "\""+s+"\""
   given as Show[Boolean] = (_: Boolean).toString
 
-  given showGen[T] as Show[T] given (inst: => K0.ProductInstances[Show, T], labelling: Labelling[T]) {
+  given showGen[T] as Show[T] given (inst: K0.ProductInstances[Show, T], labelling: Labelling[T]) {
     def show(t: T): String = {
       if(labelling.elemLabels.isEmpty) labelling.label
       else {
@@ -386,8 +383,10 @@ object Show {
     def show(t: T): String = inst.fold(t)([t] => (st: Show[t], t: t) => st.show(t))
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Show[A] =
-    K0.derive(gen, implicit inst => showGen, implicit inst => showGenC)
+  inline def derived[A] given (gen: K0.Generic[A]): Show[A] = inline gen match {
+    case p: K0.ProductGeneric[A]   => given as p.type = p ; showGen
+    case c: K0.CoproductGeneric[A] => given as c.type = c ; showGenC
+  }
 }
 
 trait Read[T] {
@@ -418,7 +417,7 @@ object Read {
   given as Read[String] = (s: String) => head(s, """\"(.*)\"(.*)""".r)
   given as Read[Boolean] = readPrimitive("""(true|false)(.*)""".r, s => Try(s.toBoolean).toOption)
 
-  given readGen[T] as Read[T] given (inst: => K0.ProductInstances[Read, T], labelling: Labelling[T]) {
+  given readGen[T] as Read[T] given (inst: K0.ProductInstances[Read, T], labelling: Labelling[T]) {
     def read(s: String): Option[(T, String)] = {
       def readUnit(s: String): Option[(T, String)] = {
         inst.unfold[Read, T, Unit](())(
@@ -482,8 +481,10 @@ object Read {
     }
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Read[A] =
-    K0.derive(gen, implicit inst => readGen, implicit inst => readGenC)
+  inline def derived[A] given (gen: K0.Generic[A]): Read[A] = inline gen match {
+    case p: K0.ProductGeneric[A]   => given as p.type = p ; readGen
+    case c: K0.CoproductGeneric[A] => given as c.type = c ; readGenC
+  }
 }
 
 trait Transform[T, U] {

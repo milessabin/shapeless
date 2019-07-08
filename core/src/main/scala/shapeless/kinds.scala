@@ -118,12 +118,6 @@ object K0 {
 
   inline given mkCoproductInstances[F[_], T] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
-
-  inline def derive[F[_], T](gen: Generic[T], pg: ProductInstances[F, T] => F[T], cg: CoproductInstances[F, T] => F[T]): F[T] =
-    inline gen match {
-      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T] given p)
-      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T] given c)
-    }
 }
 
 object K1 {
@@ -217,12 +211,6 @@ object K1 {
 
   inline given mkCoproductInstances[F[_[_]], T[_]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
     new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
-
-  inline def derive[F[_[_]], T[_]](gen: Generic[T], pg: ProductInstances[F, T] => F[T], cg: CoproductInstances[F, T] => F[T]): F[T] =
-    inline gen match {
-      case p: ProductGeneric[T]   => pg(mkProductInstances[F, T] given p)
-      case c: CoproductGeneric[T] => cg(mkCoproductInstances[F, T] given c)
-    }
 
   type LiftProductGeneric[O, E] = ProductGeneric[Const[O]] { type MirroredElemTypes = Const[E] }
 
