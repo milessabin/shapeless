@@ -32,15 +32,15 @@ object Monoid {
     def empty: Unit = ()
     def combine(x: Unit, y: Unit): Unit = ()
   }
-  given as Monoid[Boolean] = new Monoid[Boolean] {
+  given as Monoid[Boolean] {
     def empty: Boolean = false
     def combine(x: Boolean, y: Boolean): Boolean = x || y
   }
-  given as Monoid[Int] = new Monoid[Int] {
+  given as Monoid[Int] {
     def empty: Int = 0
     def combine(x: Int, y: Int): Int = x+y
   }
-  given as Monoid[String] = new Monoid[String] {
+  given as Monoid[String] {
     def empty: String = ""
     def combine(x: String, y: String): String = x+y
   }
@@ -60,16 +60,16 @@ trait Eq[A] {
 object Eq {
   inline def apply[A] given (ea: Eq[A]): Eq[A] = ea
 
-  given as Eq[Unit] = new Eq[Unit] {
+  given as Eq[Unit] {
     def eqv(x: Unit, y: Unit): Boolean = true
   }
-  given as Eq[Boolean] = new Eq[Boolean] {
+  given as Eq[Boolean] {
     def eqv(x: Boolean, y: Boolean): Boolean = x == y
   }
-  given as Eq[Int] = new Eq[Int] {
+  given as Eq[Int] {
     def eqv(x: Int, y: Int): Boolean = x == y
   }
-  given as Eq[String] = new Eq[String] {
+  given as Eq[String] {
     def eqv(x: String, y: String): Boolean = x == y
   }
 
@@ -95,7 +95,7 @@ trait Functor[F[_]] {
 object Functor {
   inline def apply[F[_]] given (ff: Functor[F]): Functor[F] = ff
 
-  given as Functor[Id] = new Functor[Id] {
+  given as Functor[Id] {
     def map[A, B](a: A)(f: A => B): B = f(a)
   }
 
