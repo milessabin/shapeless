@@ -51,16 +51,6 @@ object K0 {
     }
   }
 
-  inline def summonAsArray[F[_], T]: Array[Any] = inline erasedValue[T] match {
-    case _: Unit => Array()
-    case _: Tuple1[a] => Array(summon[F[a]])
-    case _: (a, b) => Array(summon[F[a]], summon[F[b]])
-    case _: (a, b, c) => Array(summon[F[a]], summon[F[b]], summon[F[c]])
-    case _: (a, b, c, d) => Array(summon[F[a]], summon[F[b]], summon[F[c]], summon[F[d]])
-    case _: (a, b, c, d, e) => Array(summon[F[a]], summon[F[b]], summon[F[c]], summon[F[d]], summon[F[e]])
-    // Add fallback for larger sizes
-  }
-
   type LiftP[F[_], T] <: Tuple = T match {
     case Unit => Unit
     case a *: b => F[a] *: LiftP[F, b]
@@ -114,10 +104,10 @@ object K0 {
     }
 
   inline given mkProductInstances[F[_], T] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
-    new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedProductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
   inline given mkCoproductInstances[F[_], T] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
-    new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedCoproductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
 
 object K1 {
@@ -143,20 +133,6 @@ object K1 {
     case Wrap[Apply[a]] => F[a]
     case Wrap[Dummy] => F[Id]
     case Wrap[c] => F[Const[c]]
-  }
-
-  inline def summon[F[_[_]], T] = implicit match {
-    case ft: Unapply[F, Wrap[T]] => ft
-  }
-
-  inline def summonAsArray[F[_[_]], T[_]]: Array[Any] = inline erasedValue[Apply[T]] match {
-    case _: Unit => Array()
-    case _: Tuple1[a] => Array(summon[F, a])
-    case _: (a, b) => Array(summon[F, a], summon[F, b])
-    case _: (a, b, c) => Array(summon[F, a], summon[F, b], summon[F, c])
-    case _: (a, b, c, d) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d])
-    case _: (a, b, c, d, e) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d], summon[F, e])
-    // Add fallback for larger sizes
   }
 
   type LiftP[F[_[_]], T[_]] = LiftP0[F, Apply[T]]
@@ -207,10 +183,10 @@ object K1 {
     }
 
   inline given mkProductInstances[F[_[_]], T[_]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
-    new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedProductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
   inline given mkCoproductInstances[F[_[_]], T[_]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
-    new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedCoproductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
   type LiftProductGeneric[O, E] = ProductGeneric[Const[O]] { type MirroredElemTypes = Const[E] }
 
@@ -245,18 +221,11 @@ object K11 {
     case Wrap[c] => F[Const[c]]
   }
 
-  inline def summon[F[_[_[_]]], T] = implicit match {
-    case ft: Unapply[F, Wrap[T]] => ft
-  }
+  type LiftP[F[_[_[_]]], T[_[_]]] = LiftP0[F, Apply[T]]
 
-  inline def summonAsArray[F[_[_[_]]], T[_[_]]]: Array[Any] = inline erasedValue[Apply[T]] match {
-    case _: Unit => Array()
-    case _: Tuple1[a] => Array(summon[F, a])
-    case _: (a, b) => Array(summon[F, a], summon[F, b])
-    case _: (a, b, c) => Array(summon[F, a], summon[F, b], summon[F, c])
-    case _: (a, b, c, d) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d])
-    case _: (a, b, c, d, e) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d], summon[F, e])
-    // Add fallback for larger sizes
+  type LiftP0[F[_[_[_]]], T] <: Tuple = T match {
+    case Unit => Unit
+    case (a *:  b) => Unapply[F, Wrap[a]] *: LiftP0[F, b]
   }
 
   given Ops {
@@ -285,10 +254,10 @@ object K11 {
     }
 
   inline given mkProductInstances[F[_[_[_]]], T[_[_]]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
-    new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedProductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
   inline given mkCoproductInstances[F[_[_[_]]], T[_[_]]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
-    new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedCoproductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
 
 object K2 {
@@ -322,18 +291,11 @@ object K2 {
     case Wrap[c] => F[Const[c]]
   }
 
-  inline def summon[F[_[_, _]], T] = implicit match {
-    case ft: Unapply[F, Wrap[T]] => ft
-  }
+  type LiftP[F[_[_, _]], T[_, _]] = LiftP0[F, Apply[T]]
 
-  inline def summonAsArray[F[_[_, _]], T[_, _]]: Array[Any] = inline erasedValue[Apply[T]] match {
-    case _: Unit => Array()
-    case _: Tuple1[a] => Array(summon[F, a])
-    case _: (a, b) => Array(summon[F, a], summon[F, b])
-    case _: (a, b, c) => Array(summon[F, a], summon[F, b], summon[F, c])
-    case _: (a, b, c, d) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d])
-    case _: (a, b, c, d, e) => Array(summon[F, a], summon[F, b], summon[F, c], summon[F, d], summon[F, e])
-    // Add fallback for larger sizes
+  type LiftP0[F[_[_, _]], T] <: Tuple = T match {
+    case Unit => Unit
+    case (a *:  b) => Unapply[F, Wrap[a]] *: LiftP0[F, b]
   }
 
   given Ops {
@@ -362,8 +324,8 @@ object K2 {
     }
 
   inline given mkProductInstances[F[_[_, _]], T[_, _]] as ErasedProductInstances[F[T]] given (gen: ProductGeneric[T]) =
-    new ErasedProductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedProductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
   inline given mkCoproductInstances[F[_[_, _]], T[_, _]] as ErasedCoproductInstances[F[T]] given (gen: CoproductGeneric[T]) =
-    new ErasedCoproductInstances(gen, summonAsArray[F, gen.MirroredElemTypes]).asInstanceOf
+    ErasedCoproductInstances[F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }

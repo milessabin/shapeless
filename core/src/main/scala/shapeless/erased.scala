@@ -124,6 +124,11 @@ final class ErasedProductInstances[FT](val mirror: Mirror.Product, is0: => Array
   }
 }
 
+object ErasedProductInstances {
+  inline def apply[FT, E <: Tuple](mirror: Mirror.Product) : ErasedProductInstances[FT] =
+    new ErasedProductInstances[FT](mirror, summonAsArray[E])
+}
+
 final class ErasedCoproductInstances[FT](mirror: Mirror.Sum, is0: => Array[Any]) extends ErasedInstances[FT] {
   lazy val is = is0
 
@@ -148,4 +153,9 @@ final class ErasedCoproductInstances[FT](mirror: Mirror.Sum, is0: => Array[Any])
     if(i == j) f(is(i), x, y)
     else a
   }
+}
+
+object ErasedCoproductInstances {
+  inline def apply[FT, E <: Tuple](mirror: Mirror.Sum) : ErasedCoproductInstances[FT] =
+    new ErasedCoproductInstances[FT](mirror, summonAsArray[E])
 }

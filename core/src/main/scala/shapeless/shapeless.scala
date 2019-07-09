@@ -31,6 +31,16 @@ inline def summon[T] = implicit match {
   case t: T => t
 }
 
+inline def summonAsArray[T <: Tuple]: Array[Any] =
+  summonAsArray0[T](0, new Array[Any](constValue[Tuple.Size[T]]))
+
+inline def summonAsArray0[T](i: Int, arr: Array[Any]): Array[Any] = inline erasedValue[T] match {
+  case _: Unit => arr
+  case _: (a *: b) =>
+    arr(i) = summon[a]
+    summonAsArray0[b](i+1, arr)
+}
+
 inline def summonValues[T] <: Tuple = inline erasedValue[T] match {
   case _: Unit => ()
   case _: (a *: b) => constValue[a] *: summonValues[b]
