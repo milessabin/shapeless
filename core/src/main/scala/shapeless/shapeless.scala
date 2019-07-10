@@ -46,14 +46,14 @@ inline def summonValues[T] <: Tuple = inline erasedValue[T] match {
   case _: (a *: b) => constValue[a] *: summonValues[b]
 }
 
-inline def summonValuesAsArray[T]: Array[Any] = inline erasedValue[Id[T]] match {
-  case _: Unit => Array()
-  case _: Tuple1[a] => Array(constValue[a])
-  case _: (a, b) => Array(constValue[a], constValue[b])
-  case _: (a, b, c) => Array(constValue[a], constValue[b], constValue[c])
-  case _: (a, b, c, d) => Array(constValue[a], constValue[b], constValue[c], constValue[d])
-  case _: (a, b, c, d, e) => Array(constValue[a], constValue[b], constValue[c], constValue[d], constValue[e])
-  // Add fallback for larger sizes
+inline def summonValuesAsArray[T <: Tuple]: Array[Any] =
+  summonValuesAsArray0[T](0, new Array[Any](constValue[Tuple.Size[T]]))
+
+inline def summonValuesAsArray0[T](i: Int, arr: Array[Any]): Array[Any] = inline erasedValue[T] match {
+  case _: Unit => arr
+  case _: (a *: b) =>
+    arr(i) = constValue[a]
+    summonValuesAsArray0[b](i+1, arr)
 }
 
 case class Labelling[T](label: String, elemLabels: Seq[String])
