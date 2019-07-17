@@ -144,6 +144,8 @@ class DerivationTests {
 
   @Test
   def emptyk: Unit = {
+    import given K1._
+
     val v0 = EmptyK[Opt]
     assert(v0.empty[Int] == Nn)
     val v1 = EmptyK[CList]
@@ -152,6 +154,8 @@ class DerivationTests {
 
   @Test
   def pure: Unit = {
+    import given K1._
+
     val v0 = Pure[Box]
     assert(v0.pure(23) == Box(23))
     val v1 = Pure[CList]
@@ -219,6 +223,8 @@ class DerivationTests {
 
   @Test
   def repr: Unit = {
+    import given K0._
+
     val v0 = K0.ProductGeneric[Box[Int]]
     val v1 = v0.toRepr(Box(23))
     val v1a: Tuple1[Int] = v1

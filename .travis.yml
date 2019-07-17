@@ -1,7 +1,7 @@
 language: scala
 
 scala:
-- 0.17.0-bin-20190704-3c99306-NIGHTLY
+- 0.17.0-bin-20190711-e2130b9-NIGHTLY
 
 jdk:
 - oraclejdk8
