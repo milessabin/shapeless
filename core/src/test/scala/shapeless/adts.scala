@@ -26,7 +26,6 @@ sealed trait OptionInt derives Eq, Empty, Show, Read
 case class SomeInt(value: Int) extends OptionInt
 case object NoneInt extends OptionInt
 
-import given K1._
 sealed trait Opt[+A] derives Eq, Show, Read, Functor, EmptyK, Pure
 case class Sm[+A](value: A) extends Opt[A]
 case object Nn extends Opt[Nothing]

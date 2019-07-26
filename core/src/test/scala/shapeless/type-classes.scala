@@ -492,8 +492,6 @@ trait Transform[T, U] {
 }
 
 object Transform {
-  import given K0._
-
   def apply[T, U] given (ttu: Transform[T, U]): Transform[T, U] = ttu
 
   inline def mkField[K, KT, RT <: NonEmptyTuple, V](rt: RT): Object =

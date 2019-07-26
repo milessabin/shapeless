@@ -20,9 +20,9 @@ import scala.compiletime._
 import scala.deriving._
 
 object K0 {
-  type Generic[O] = Mirror { type MirroredType = O ; type MirroredElemTypes }
-  type ProductGeneric[O] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes }
-  type CoproductGeneric[O] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes }
+  type Generic[O] = Mirror { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes }
+  type ProductGeneric[O] = Mirror.Product { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes }
+  type CoproductGeneric[O] = Mirror.Sum { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes }
 
   def Generic[O] given (gen: Generic[O]): Generic[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
   def ProductGeneric[O] given (gen: ProductGeneric[O]): ProductGeneric[O] { type MirroredElemTypes = gen.MirroredElemTypes ; type MirroredLabel = gen.MirroredLabel ; type MirroredElemLabels = gen.MirroredElemLabels } = gen
@@ -111,9 +111,9 @@ object K0 {
 }
 
 object K1 {
-  type Generic[O[_]] = Mirror { type MirroredType = O ; type MirroredElemTypes[_] }
-  type ProductGeneric[O[_]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_] }
-  type CoproductGeneric[O[_]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_] }
+  type Generic[O[_]] = Mirror { type Kind = K1.type ; type MirroredType = O ; type MirroredElemTypes[_] }
+  type ProductGeneric[O[_]] = Mirror.Product { type Kind = K1.type ; type MirroredType = O ; type MirroredElemTypes[_] }
+  type CoproductGeneric[O[_]] = Mirror.Sum { type Kind = K1.type ; type MirroredType = O ; type MirroredElemTypes[_] }
 
   def Generic[O[_]] given (gen: Generic[O]): gen.type = gen
   def ProductGeneric[O[_]] given (gen: ProductGeneric[O]): gen.type = gen
@@ -194,9 +194,9 @@ object K1 {
 }
 
 object K11 {
-  type Generic[O[_[_]]] = Mirror { type MirroredType = O ; type MirroredElemTypes[_[_]] }
-  type ProductGeneric[O[_[_]]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_[_]] }
-  type CoproductGeneric[O[_[_]]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_[_]] }
+  type Generic[O[_[_]]] = Mirror { type Kind = K11.type ; type MirroredType = O ; type MirroredElemTypes[_[_]] }
+  type ProductGeneric[O[_[_]]] = Mirror.Product { type Kind = K11.type ; type MirroredType = O ; type MirroredElemTypes[_[_]] }
+  type CoproductGeneric[O[_[_]]] = Mirror.Sum { type Kind = K11.type ; type MirroredType = O ; type MirroredElemTypes[_[_]] }
 
   def Generic[O[_[_]]] given (gen: Generic[O]): gen.type = gen
   def ProductGeneric[O[_[_]]] given (gen: ProductGeneric[O]): gen.type = gen
@@ -261,9 +261,9 @@ object K11 {
 }
 
 object K2 {
-  type Generic[O[_, _]] = Mirror { type MirroredType = O ; type MirroredElemTypes[_, _] }
-  type ProductGeneric[O[_, _]] = Mirror.Product { type MirroredType = O ; type MirroredElemTypes[_, _] }
-  type CoproductGeneric[O[_, _]] = Mirror.Sum { type MirroredType = O ; type MirroredElemTypes[_, _] }
+  type Generic[O[_, _]] = Mirror { type Kind = K2.type ; type MirroredType = O ; type MirroredElemTypes[_, _] }
+  type ProductGeneric[O[_, _]] = Mirror.Product { type Kind = K2.type ; type MirroredType = O ; type MirroredElemTypes[_, _] }
+  type CoproductGeneric[O[_, _]] = Mirror.Sum { type Kind = K2.type ; type MirroredType = O ; type MirroredElemTypes[_, _] }
 
   def Generic[O[_, _]] given (gen: Generic[O]): gen.type = gen
   def ProductGeneric[O[_, _]] given (gen: ProductGeneric[O]): gen.type = gen
