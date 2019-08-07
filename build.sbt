@@ -1,5 +1,5 @@
 //val dottyVersion = dottyLatestNightlyBuild.get
-val dottyVersion = "0.18.0-bin-20190725-8095c23-NIGHTLY"
+val dottyVersion = "0.18.0-bin-20190807-963719e-NIGHTLY"
 val scala2Version = "2.13.0"
 
 inThisBuild(Seq(

@@ -1,7 +1,9 @@
 language: scala
 
+dist: trusty
+
 scala:
-- 0.18.0-bin-20190725-8095c23-NIGHTLY
+- 0.18.0-bin-20190807-963719e-NIGHTLY
 
 jdk:
 - oraclejdk8
@@ -10,8 +12,6 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
-
-sudo: false
 
 notifications:
   irc: "chat.freenode.net#shapeless"

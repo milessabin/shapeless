@@ -18,6 +18,8 @@ package shapeless
 
 import org.junit.Test
 
+import adts._
+
 // Tests
 
 object Size {
