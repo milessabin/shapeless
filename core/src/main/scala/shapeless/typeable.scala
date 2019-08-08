@@ -360,8 +360,7 @@ object TypeableMacros {
       normalize(tp).dealias match {
         case Type.IsAppliedType(tp) =>
           simpleName(tp.tycon) + tp.args.map(simpleName).mkString("[", ", ", "]")
-        case Type.TypeRef(sym, _) =>
-          sym.name
+        case Type.TypeRef(_, name) => name
         case tp => tp.show
       }
 
@@ -388,7 +387,7 @@ object TypeableMacros {
       else None
     }
 
-    def mkCaseClassTypeable given (qctx: QuoteContext): Expr[Typeable[T]] = {
+    def mkCaseClassTypeable = {
       val sym = target.classSymbol.get
       val caseFields = sym.caseFields
       if (!sym.fields.forall(f => caseFields.contains(f) || !isAbstract(f.asValDef.tree.tpt.tpe))) {
@@ -401,7 +400,7 @@ object TypeableMacros {
             qctx.error(s"Missing Typeable for field of case class ${target.show}")
             '{???}
           case Some(ftps) =>
-            val clazz = Ref(definitions.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
+            val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
             val name = simpleName(target).toExpr
 
             '{ namedCaseClassTypeable($clazz, $ftps, $name) }
@@ -409,10 +408,16 @@ object TypeableMacros {
       }
     }
 
+    def mkNamedSimpleTypeable = {
+      val name = simpleName(target).toExpr
+      val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
+      '{ namedSimpleTypeable($clazz, $name) }
+    }
+
     target.dealias match {
       case Type.IsTermRef(tp) =>
-        val ident = Ident(tp.asInstanceOf[NamedTermRef]).seal.cast[T]
-        val Type.TermRef(sym, pre) = tp
+        val ident = Ident(tp).seal.cast[T]
+        val sym = tp.termSymbol
         val name = sym.name.toString.toExpr
         val serializable = sym.flags.is(Flags.Object).toExpr
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
@@ -439,17 +444,11 @@ object TypeableMacros {
         qual match {
           case _ if sym.flags.is(Flags.Case) => mkCaseClassTypeable
           case null =>
-            val name = simpleName(target).toExpr
-            val clazz = Ref(definitions.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
-            '{ namedSimpleTypeable($clazz, $name) }
-          case Type.TypeRef(qualSym, _) if normalizeModuleClass(qualSym) == owner =>
-            val name = simpleName(target).toExpr
-            val clazz = Ref(definitions.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
-            '{ namedSimpleTypeable($clazz, $name) }
-          case Type.TermRef(qualSym, _) if normalizeModuleClass(qualSym) == owner =>
-            val name = simpleName(target).toExpr
-            val clazz = Ref(definitions.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
-            '{ namedSimpleTypeable($clazz, $name) }
+            mkNamedSimpleTypeable
+          case Type.IsTypeRef(tp) if normalizeModuleClass(tp.typeSymbol) == owner =>
+            mkNamedSimpleTypeable
+          case Type.IsTermRef(tp) if normalizeModuleClass(tp.termSymbol) == owner =>
+            mkNamedSimpleTypeable
           case _ =>
             qctx.error(s"No Typeable for type ${target.show} with a dependent prefix")
             '{???}

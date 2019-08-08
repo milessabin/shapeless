@@ -1,11 +1,13 @@
 //val dottyVersion = dottyLatestNightlyBuild.get
-val dottyVersion = "0.18.0-bin-20190807-963719e-NIGHTLY"
+val dottyVersion = "0.18.0-bin-20190808-259ee05-NIGHTLY"
+//val dottyVersion = "0.18.0-bin-SNAPSHOT"
 val scala2Version = "2.13.0"
 
 inThisBuild(Seq(
   organization := "org.typelevel",
   scalaVersion := dottyVersion,
-  crossScalaVersions := Seq(dottyVersion, scala2Version)
+  crossScalaVersions := Seq(dottyVersion, scala2Version),
+  //updateOptions := updateOptions.value.withLatestSnapshots(false)
 ))
 
 lazy val commonSettings = Seq(
