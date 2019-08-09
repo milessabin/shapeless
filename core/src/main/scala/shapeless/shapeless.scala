@@ -62,7 +62,7 @@ object Labelling {
   inline given apply[T0] as Labelling[T0] given (mirror: Mirror { type MirroredType = T0 }) =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
-      WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels, String])
+      WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels, String]).toSeq
     )
 }
 
