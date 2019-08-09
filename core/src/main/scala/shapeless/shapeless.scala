@@ -19,6 +19,7 @@ package shapeless
 import scala.collection.mutable.WrappedArray
 import scala.compiletime._
 import scala.deriving._
+import scala.reflect.ClassTag
 
 type Id[t] = t
 type Const[c] = [t] =>> c
@@ -46,14 +47,14 @@ inline def summonValues[T] <: Tuple = inline erasedValue[T] match {
   case _: (a *: b) => constValue[a] *: summonValues[b]
 }
 
-inline def summonValuesAsArray[T <: Tuple]: Array[Any] =
-  summonValuesAsArray0[T](0, new Array[Any](constValue[Tuple.Size[T]]))
+inline def summonValuesAsArray[T <: Tuple, E: ClassTag]: Array[E] =
+  summonValuesAsArray0[T, E](0, new Array[E](constValue[Tuple.Size[T]]))
 
-inline def summonValuesAsArray0[T](i: Int, arr: Array[Any]): Array[Any] = inline erasedValue[T] match {
+inline def summonValuesAsArray0[T, E](i: Int, arr: Array[E]): Array[E] = inline erasedValue[T] match {
   case _: Unit => arr
   case _: (a *: b) =>
-    arr(i) = constValue[a]
-    summonValuesAsArray0[b](i+1, arr)
+    arr(i) = constValue[a & E]
+    summonValuesAsArray0[b, E](i+1, arr)
 }
 
 case class Labelling[T](label: String, elemLabels: Seq[String])
@@ -61,7 +62,7 @@ object Labelling {
   inline given apply[T0] as Labelling[T0] given (mirror: Mirror { type MirroredType = T0 }) =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
-      WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels])
+      WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels, String])
     )
 }
 
