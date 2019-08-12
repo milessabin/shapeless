@@ -49,6 +49,7 @@ object AnnotationTestsDefinitions {
 class AnnotationTests {
   import AnnotationTestsDefinitions._
 
+  @Test
   def simpleAnnotation: Unit = {
     {
       val other = Annotation[Other, CC].apply()
