@@ -28,7 +28,7 @@ case class Wrap[T](t: T)
 
 type ~>[A[_], B[_]] = [t] => A[t] => B[t]
 
-inline def summon[T] = implicit match {
+inline def summon[T] = given match {
   case t: T => t
 }
 
