@@ -16,7 +16,6 @@
 
 package shapeless
 
-import scala.annotation.tailrec
 import scala.compiletime._
 import scala.quoted._
 
@@ -379,7 +378,7 @@ object TypeableMacros {
     def summonAllTypeables(tps: List[Type]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => Type.AppliedType(TypeableType, List(tp)))
       val instances = ttps.flatMap(ttp => searchImplicit(ttp) match {
-        case IsImplicitSearchSuccess(iss) => List(iss.tree.seal.asInstanceOf[Expr[Typeable[_]]])
+        case IsImplicitSearchSuccess(iss) => List(iss.tree.seal.cast[Typeable[_]])
         case IsImplicitSearchFailure(_) => Nil
       })
 
