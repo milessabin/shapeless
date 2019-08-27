@@ -1,5 +1,5 @@
 //val dottyVersion = dottyLatestNightlyBuild.get
-val dottyVersion = "0.18.0-bin-20190821-f2e471e-NIGHTLY"
+val dottyVersion = "0.18.1-bin-20190826-26217ce-NIGHTLY"
 //val dottyVersion = "0.18.0-bin-SNAPSHOT"
 val scala2Version = "2.13.0"
 
@@ -38,7 +38,8 @@ lazy val local = project
   .dependsOn(core)
   .settings(
     moduleName := "shapeless-local",
-    scalacOptions += "-Xprint:posttyper",
+    scalacOptions ++= List("-Xmax-inlines", "1000"),
+    //scalacOptions += "-Xprint:posttyper",
     scalacOptions in console in Compile -= "-Xprint:posttyper",
     initialCommands in console := """import shapeless._ ; import scala.deriving._"""
   )
