@@ -280,6 +280,10 @@ trait EmptyK[F[_]] {
 object EmptyK {
   def apply[F[_]] given (ef: EmptyK[F]): EmptyK[F] = ef
 
+  given emptyK[C] as EmptyK[Const[C]] given (ec: Empty[C]) {
+    def empty[A]: C = ec.empty
+  }
+
   def mkEmptyK[F[_]](f: [a] => () => F[a]): EmptyK[F] =
     new EmptyK[F] {
       def empty[A] = f[A]()
