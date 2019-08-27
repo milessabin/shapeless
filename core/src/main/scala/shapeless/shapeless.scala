@@ -16,7 +16,7 @@
 
 package shapeless
 
-import scala.collection.mutable.WrappedArray
+import scala.collection.immutable.ArraySeq
 import scala.compiletime._
 import scala.deriving._
 import scala.reflect.ClassTag
@@ -62,16 +62,20 @@ object Labelling {
   inline given apply[T0] as Labelling[T0] given (mirror: Mirror { type MirroredType = T0 }) =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
-      WrappedArray.make[String](summonValuesAsArray[mirror.MirroredElemLabels, String]).toSeq
+      ArraySeq.unsafeWrapArray(summonValuesAsArray[mirror.MirroredElemLabels, String])
     )
 }
 
-sealed trait CompleteOr[T]
-case class Complete[T](t: T) extends CompleteOr[T]
-case class Continue[T](t: T) extends CompleteOr[T]
+type CompleteOr[T] = T | Complete[T]
+
+case class Complete[T](t: T)
 
 object Complete {
   inline def apply[T](c: Boolean)(t: T)(f: T): CompleteOr[T] =
     if(c) Complete(t)
-    else Continue(f)
+    else f
+}
+
+object Continue {
+  inline def apply[T](t: T): CompleteOr[T] = t
 }

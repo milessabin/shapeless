@@ -72,6 +72,12 @@ object K0 {
     inline def (gen: CoproductGeneric[Obj]) toRepr [Obj] (o: Obj): ToUnion[gen.MirroredElemTypes] = o.asInstanceOf
     inline def (gen: CoproductGeneric[Obj]) fromRepr [Obj] (r: ToUnion[gen.MirroredElemTypes]): Obj = r.asInstanceOf
 
+    inline def (gen: Generic[T]) derive [F[_], T] (f: => given (ProductGeneric[T] & gen.type) => F[T], g: => given (CoproductGeneric[T] & gen.type) => F[T]): F[T] =
+      inline gen match {
+        case p: ProductGeneric[T]   => f given p.asInstanceOf
+        case c: CoproductGeneric[T] => g given c.asInstanceOf
+      }
+
     inline def (inst: Instances[F, T]) map [F[_], T] (x: T)(f: [t] => (F[t], t) => t): T =
       inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
@@ -157,6 +163,12 @@ object K1 {
 
     inline def (gen: CoproductGeneric[Obj]) toRepr [Obj[_], A] (o: Obj[A]): K0.ToUnion[gen.MirroredElemTypes[A]] = o.asInstanceOf
     inline def (gen: CoproductGeneric[Obj]) fromRepr [Obj[_], A] (r: K0.ToUnion[gen.MirroredElemTypes[A]]): Obj[A] = r.asInstanceOf
+
+    inline def (gen: Generic[T]) derive [F[_[_]], T[_]] (f: => given (ProductGeneric[T] & gen.type) => F[T], g: => given (CoproductGeneric[T] & gen.type) => F[T]): F[T] =
+      inline gen match {
+        case p: ProductGeneric[T]   => f given p.asInstanceOf
+        case c: CoproductGeneric[T] => g given c.asInstanceOf
+      }
 
     inline def (inst: Instances[F, T]) map[F[_[_]], T[_], A, R](x: T[A])(f: [t[_]] => (F[t], t[A]) => t[R]): T[R] =
       inst.erasedMap(x)(f.asInstanceOf).asInstanceOf

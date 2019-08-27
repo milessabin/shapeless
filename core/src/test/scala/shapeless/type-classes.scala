@@ -85,10 +85,8 @@ object Eq {
     )
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Eq[A] = inline gen match {
-    case p: K0.ProductGeneric[A]   => given as p.type = p ; eqGen
-    case c: K0.CoproductGeneric[A] => given as c.type = c ; eqGenC
-  }
+  inline def derived[A] given (gen: K0.Generic[A]): Eq[A] =
+    gen.derive(eqGen, eqGenC)
 }
 
 trait Functor[F[_]] {
@@ -272,10 +270,7 @@ object Empty {
     mkEmpty(K0.summonFirst[Empty, gen.MirroredElemTypes, A].empty)
 
   inline def derived[A] given (gen: K0.Generic[A]): Empty[A] =
-    inline gen match {
-      case p: K0.ProductGeneric[A]   => given as p.type = p ; emptyGen
-      case c: K0.CoproductGeneric[A] => emptyGenC given c
-    }
+    gen.derive(emptyGen, emptyGenC)
 }
 
 trait EmptyK[F[_]] {
@@ -383,10 +378,8 @@ object Show {
     def show(t: T): String = inst.fold(t)([t] => (st: Show[t], t: t) => st.show(t))
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Show[A] = inline gen match {
-    case p: K0.ProductGeneric[A]   => given as p.type = p ; showGen
-    case c: K0.CoproductGeneric[A] => given as c.type = c ; showGenC
-  }
+  inline def derived[A] given (gen: K0.Generic[A]): Show[A] =
+    gen.derive(showGen, showGenC)
 }
 
 trait Read[T] {
@@ -481,10 +474,8 @@ object Read {
     }
   }
 
-  inline def derived[A] given (gen: K0.Generic[A]): Read[A] = inline gen match {
-    case p: K0.ProductGeneric[A]   => given as p.type = p ; readGen
-    case c: K0.CoproductGeneric[A] => given as c.type = c ; readGenC
-  }
+  inline def derived[A] given (gen: K0.Generic[A]): Read[A] =
+    gen.derive(readGen, readGenC)
 }
 
 trait Transform[T, U] {
