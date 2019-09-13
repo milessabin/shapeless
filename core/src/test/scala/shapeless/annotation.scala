@@ -44,6 +44,11 @@ object AnnotationTestsDefinitions {
 
   trait Dummy
 
+  case class CC2(
+    i: Int @First,
+    s: String,
+    ob: Option[Boolean] @Second(2, "b")
+  )
 }
 
 class AnnotationTests {
@@ -116,6 +121,38 @@ class AnnotationTests {
     illTyped(" Annotations[Dummy, CC] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" Annotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" Annotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
+  }
+
+  @Test
+  def typeAnnotations: Unit = {
+    {
+      val first: Some[First] :: None.type :: None.type :: HNil = TypeAnnotations[First, CC2].apply()
+      assert(first == Some(First()) :: None :: None :: HNil)
+
+      val second: None.type :: None.type :: Some[Second] :: HNil = TypeAnnotations[Second, CC2].apply()
+      assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+
+      val unused: None.type :: None.type :: None.type :: HNil = TypeAnnotations[Unused, CC2].apply()
+      assert(unused == None :: None :: None :: HNil)
+    }
+
+    {
+      val first = TypeAnnotations[First, CC2].apply()
+      assert(first == Some(First()) :: None :: None :: HNil)
+
+      val second = TypeAnnotations[Second, CC2].apply()
+      assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+
+      val unused = TypeAnnotations[Unused, CC2].apply()
+      assert(unused == None :: None :: None :: HNil)
+    }
+  }
+
+  @Test
+  def invalidTypeAnnotations: Unit = {
+    illTyped(" TypeAnnotations[Dummy, CC2] ", "could not find implicit value for parameter annotations: .*")
+    illTyped(" TypeAnnotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
+    illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
   }
 
 }
