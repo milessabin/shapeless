@@ -1,4 +1,3 @@
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import ReleaseTransformations._
 
