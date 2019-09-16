@@ -93,7 +93,7 @@ Compiling (synthetic)/ammonite/predef/replBridge.sc
 Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
 Compiling /home/miles/projects/shapeless/(console)
 Welcome to the Ammonite Repl 1.6.8
-(Scala 2.13.0 Java 1.8.0_212)
+(Scala 2.13.1 Java 1.8.0_212)
 If you like Ammonite, please support our development at www.patreon.com/lihaoyi
 @ 23 :: "foo" :: true :: HNil 
 res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
@@ -122,10 +122,10 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and 2.13.x. The main line of development for
-shapeless 2.3.3 is Scala 2.13.0. Scala 2.10.x is supported via the macro paradise compiler plugin.
+shapeless 2.3.3 is Scala 2.13.1. Scala 2.10.x is supported via the macro paradise compiler plugin.
 
 ```scala
-scalaVersion := "2.13.0"
+scalaVersion := "2.13.1"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
@@ -145,7 +145,7 @@ libraryDependencies ++= Seq(
 
 For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.13.0"
+scalaVersion := "2.13.1"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
@@ -205,7 +205,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 1.2.8 or later, and its master branch is built with Scala 2.13.0 by default but also
+shapeless is built with SBT 1.2.8 or later, and its master branch is built with Scala 2.13.1 by default but also
 cross-builds for 2.10.7, 2.11.12 and 2.12.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
