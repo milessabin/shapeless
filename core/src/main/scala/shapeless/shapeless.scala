@@ -28,7 +28,7 @@ case class Wrap[T](t: T)
 
 type ~>[A[_], B[_]] = [t] => A[t] => B[t]
 
-inline def summon[T] = given match {
+inline def summon[T] = summonFrom {
   case t: T => t
 }
 
@@ -59,7 +59,7 @@ inline def summonValuesAsArray0[T, E](i: Int, arr: Array[E]): Array[E] = inline 
 
 case class Labelling[T](label: String, elemLabels: Seq[String])
 object Labelling {
-  inline given apply[T0] as Labelling[T0] given (mirror: Mirror { type MirroredType = T0 }) =
+  inline given apply[T0](given mirror: Mirror { type MirroredType = T0 }): Labelling[T0] =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
       ArraySeq.unsafeWrapArray(summonValuesAsArray[mirror.MirroredElemLabels, String])

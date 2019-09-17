@@ -23,15 +23,15 @@ import adts._
 // Tests
 
 object Size {
-  given as Case[Size.type, Int, Int] = identity(_)
-  given as Case[Size.type, String, Int] = _.length
-  given as Case[Size.type, Boolean, Int] = _ => 1
+  given Case[Size.type, Int, Int] = identity(_)
+  given Case[Size.type, String, Int] = _.length
+  given Case[Size.type, Boolean, Int] = _ => 1
 }
 
 object Inc {
-  given as Case[Inc.type, Int, Int] = _+1
-  given as Case[Inc.type, String, String] = _+"!"
-  given as Case[Inc.type, Boolean, Boolean] = !_
+  given Case[Inc.type, Int, Int] = _+1
+  given Case[Inc.type, String, String] = _+"!"
+  given Case[Inc.type, Boolean, Boolean] = !_
 }
 
 class DerivationTests {
