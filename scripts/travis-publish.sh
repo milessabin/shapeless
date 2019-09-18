@@ -18,8 +18,8 @@ fi
 
 if [[ "$NATIVE" == "true" ]]; then
     ${SBT} clean validateNative coreNative/${PUBLISH}
-elif [[ "$TRAVIS_SCALA_VERSION" == 2.13.* ]]; then
-    eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
+#elif [[ "$TRAVIS_SCALA_VERSION" == 2.13.* ]]; then
+#    eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
 else
     ${SBT} clean validate ${PUBLISH}
 fi
