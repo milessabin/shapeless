@@ -380,7 +380,7 @@ object TypeableMacros {
         case IsImplicitSearchFailure(_) => Nil
       })
 
-      if (tps.length == instances.length) Some(instances.toExprOfSeq)
+      if (tps.length == instances.length) Some(Expr.ofSeq(instances))
       else None
     }
 
