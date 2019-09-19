@@ -398,7 +398,7 @@ object TypeableMacros {
             '{???}
           case Some(ftps) =>
             val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
-            val name = simpleName(target).toExpr
+            val name = Expr(simpleName(target))
 
             '{ namedCaseClassTypeable($clazz, $ftps, $name) }
         }
@@ -406,7 +406,7 @@ object TypeableMacros {
     }
 
     def mkNamedSimpleTypeable = {
-      val name = simpleName(target).toExpr
+      val name = Expr(simpleName(target))
       val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
       '{ namedSimpleTypeable($clazz, $name) }
     }
@@ -415,13 +415,13 @@ object TypeableMacros {
       case Type.IsTermRef(tp) =>
         val ident = Ident(tp).seal.cast[T]
         val sym = tp.termSymbol
-        val name = sym.name.toString.toExpr
-        val serializable = sym.flags.is(Flags.Object).toExpr
+        val name = Expr(sym.name.toString)
+        val serializable = Expr(sym.flags.is(Flags.Object))
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
 
       case Type.ConstantType(Constant(c)) =>
         val value = Literal(Constant(c)).seal.cast[T]
-        val name = target.widen.typeSymbol.name.toString.toExpr
+        val name = Expr(target.widen.typeSymbol.name.toString)
         '{ valueSingletonTypeable[T]($value, $name) }
 
       case Type.IsTypeRef(tp) =>
