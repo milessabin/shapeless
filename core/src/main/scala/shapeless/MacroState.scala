@@ -11,12 +11,12 @@ private[shapeless] object MacroState {
    * Associates some state with a global.Run. Preferable to using static state in the macro
    * classloader (e.g vars in top level objects) so as to avoid race conditions under `-Ycache-macro-classloader`.
    *
-   * @tparam T the type of the state. The class tag for this type will be used a a map key, so each user of
+   * @tparam T the type of the state. The erased `Class[_]` value for this type will be used a a map key, so each user of
    *           this facility should use a dedicated and distinct class to wrap the state.
    * @param u The reflection universe, typically obtained from `context.universe` in a macro implementation.
    * @param factory Factory to create the state.
    */
-  def apply[T: ClassTag](u: Universe, factory: => T): T = {
+  def getOrElseUpdate[T: ClassTag](u: Universe, factory: => T): T = {
     // Cast needed for access to perRunCaches and convenient access to attachments
     val g = u.asInstanceOf[scala.reflect.internal.SymbolTable]
 

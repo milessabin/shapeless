@@ -69,7 +69,7 @@ class CachedMacrosState {
 @macrocompat.bundle
 class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) with OpenImplicitMacros {
   import c.universe._
-  private val state = MacroState.apply[CachedMacrosState](c.universe, new CachedMacrosState)
+  private val state = MacroState.getOrElseUpdate[CachedMacrosState](c.universe, new CachedMacrosState)
 
   def deepCopyTree(t: Tree): Tree = {
     val treeDuplicator = new Transformer {
