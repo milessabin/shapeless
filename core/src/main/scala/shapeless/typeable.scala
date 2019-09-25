@@ -437,7 +437,7 @@ object TypeableMacros {
         val sym = tp.typeSymbol
 
         def normalizeModuleClass(sym: Symbol): Symbol =
-          if (sym.flags.is(Flags.ModuleClass)) sym.asClassDef.companionModule else sym
+          if (sym.flags.is(Flags.ModuleClass)) sym.companionModule else sym
 
         val owner = normalizeModuleClass(sym.owner)
 
