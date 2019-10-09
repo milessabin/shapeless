@@ -328,7 +328,7 @@ object TypeableMacros {
   import Typeable._
 
   def impl[T: Type](given qctx: QuoteContext): Expr[Typeable[T]] = {
-    import qctx.tasty._
+    import qctx.tasty.{_, given}
     import util._
 
     val TypeableType = typeOf[Typeable[_]] match {

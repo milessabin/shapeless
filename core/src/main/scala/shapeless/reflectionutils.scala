@@ -22,7 +22,7 @@ import scala.quoted._
 
 class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
   implicit val qctx: Q = q
-  import qctx.tasty._
+  import qctx.tasty.{_, given}
 
   case class Mirror(
     MirroredType: Type,
