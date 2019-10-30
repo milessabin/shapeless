@@ -332,7 +332,7 @@ object TypeableMacros {
     import util._
 
     val TypeableType = typeOf[Typeable[_]] match {
-      case Type.IsAppliedType(tp) => tp.tycon
+      case IsAppliedType(tp) => tp.tycon
     }
 
     val target = typeOf[T]
@@ -340,7 +340,7 @@ object TypeableMacros {
     def isAbstract(tp: Type): Boolean =
       tp.typeSymbol.isAbstractType ||
         (tp match {
-          case Type.IsAppliedType(tp) =>
+          case IsAppliedType(tp) =>
             isAbstract(tp.tycon) || tp.args.exists {
               case IsType(tp) => isAbstract(tp)
               case _ => false
@@ -355,26 +355,26 @@ object TypeableMacros {
 
     def simpleName(tp: TypeOrBounds): String =
       normalize(tp).dealias match {
-        case Type.IsAppliedType(tp) =>
+        case IsAppliedType(tp) =>
           simpleName(tp.tycon) + tp.args.map(simpleName).mkString("[", ", ", "]")
-        case Type.TypeRef(_, name) => name
+        case TypeRef(_, name) => name
         case tp => tp.show
       }
 
     def collectConjuncts(tp: Type): List[Type] = tp match {
-      case Type.IsAndType(tp) =>
+      case IsAndType(tp) =>
         collectConjuncts(tp.left) ++ collectConjuncts(tp.right)
       case tp => List(tp)
     }
 
     def collectDisjuncts(tp: Type): List[Type] = tp match {
-      case Type.IsOrType(tp) =>
+      case IsOrType(tp) =>
         collectDisjuncts(tp.left) ++ collectDisjuncts(tp.right)
       case tp => List(tp)
     }
 
     def summonAllTypeables(tps: List[Type]): Option[Expr[Seq[Typeable[_]]]] = {
-      val ttps = tps.map(tp => Type.AppliedType(TypeableType, List(tp)))
+      val ttps = tps.map(tp => AppliedType(TypeableType, List(tp)))
       val instances = ttps.flatMap(ttp => searchImplicit(ttp) match {
         case IsImplicitSearchSuccess(iss) => List(iss.tree.seal.cast[Typeable[_]])
         case IsImplicitSearchFailure(_) => Nil
@@ -415,21 +415,21 @@ object TypeableMacros {
     }
 
     target.dealias match {
-      case Type.IsTermRef(tp) =>
+      case IsTermRef(tp) =>
         val ident = Ident(tp).seal.cast[T]
         val sym = tp.termSymbol
         val name = Expr(sym.name.toString)
         val serializable = Expr(sym.flags.is(Flags.Object))
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
 
-      case Type.ConstantType(Constant(c)) =>
+      case ConstantType(Constant(c)) =>
         val value = Literal(Constant(c)).seal.cast[T]
         val name = Expr(target.widen.typeSymbol.name.toString)
         '{ valueSingletonTypeable[T]($value, $name) }
 
-      case Type.IsTypeRef(tp) =>
+      case IsTypeRef(tp) =>
         val qual = tp.qualifier match {
-          case Type.IsThisType(tp) => tp.tref
+          case IsThisType(tp) => tp.tref
           case IsType(tp) => tp
           case _ => null.asInstanceOf[Type]
         }
@@ -445,16 +445,16 @@ object TypeableMacros {
           case _ if sym.flags.is(Flags.Case) => mkCaseClassTypeable
           case null =>
             mkNamedSimpleTypeable
-          case Type.IsTypeRef(tp) if normalizeModuleClass(tp.typeSymbol) == owner =>
+          case IsTypeRef(tp) if normalizeModuleClass(tp.typeSymbol) == owner =>
             mkNamedSimpleTypeable
-          case Type.IsTermRef(tp) if normalizeModuleClass(tp.termSymbol) == owner =>
+          case IsTermRef(tp) if normalizeModuleClass(tp.termSymbol) == owner =>
             mkNamedSimpleTypeable
           case _ =>
             qctx.error(s"No Typeable for type ${target.show} with a dependent prefix")
             '{???}
         }
 
-      case Type.IsAppliedType(tp) =>
+      case IsAppliedType(tp) =>
         val tycon = tp.tycon
         val args = tp.args
 
@@ -472,7 +472,7 @@ object TypeableMacros {
           '{???}
         }
 
-      case Type.IsAndType(tp) =>
+      case IsAndType(tp) =>
         val conjuncts = collectConjuncts(tp)
         summonAllTypeables(conjuncts) match {
           case Some(ctps) =>
@@ -482,7 +482,7 @@ object TypeableMacros {
             '{???}
         }
 
-      case Type.IsOrType(tp) =>
+      case IsOrType(tp) =>
         val disjuncts = collectDisjuncts(tp)
         summonAllTypeables(disjuncts) match {
           case Some(dtps) =>

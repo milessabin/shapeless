@@ -43,8 +43,8 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
         mels <- findMemberType(mirrorTpe, "MirroredElemLabels")
       } yield {
         val mets0 = tupleTypeElements(mets)
-        val Type.ConstantType(Constant(ml0: String)) = ml
-        val mels0 = tupleTypeElements(mels).map { case Type.ConstantType(Constant(l: String)) => l }
+        val ConstantType(Constant(ml0: String)) = ml
+        val mels0 = tupleTypeElements(mels).map { case ConstantType(Constant(l: String)) => l }
         Mirror(mt, mmt, mets0, ml0, mels0)
       }
     }
@@ -52,7 +52,7 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
 
   def tupleTypeElements(tp: Type): List[Type] = {
     @tailrec def loop(tp: Type, acc: List[Type]): List[Type] = tp match {
-      case Type.AppliedType(pairTpe, List(IsType(hd), IsType(tl))) => loop(tl, hd :: acc)
+      case AppliedType(pairTpe, List(IsType(hd), IsType(tl))) => loop(tl, hd :: acc)
       case _ => acc
     }
     loop(tp, Nil).reverse
@@ -64,9 +64,9 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
   }
 
   def findMemberType(tp: Type, name: String): Option[Type] = tp match {
-    case Type.Refinement(_, `name`, tp) => Some(low(tp))
-    case Type.Refinement(parent, _, _) => findMemberType(parent, name)
-    case Type.AndType(left, right) => findMemberType(left, name).orElse(findMemberType(right, name))
+    case Refinement(_, `name`, tp) => Some(low(tp))
+    case Refinement(parent, _, _) => findMemberType(parent, name)
+    case AndType(left, right) => findMemberType(left, name).orElse(findMemberType(right, name))
     case _ => None
   }
 }
