@@ -66,7 +66,7 @@ object K0 {
     }
   }
 
-  given Ops: {
+  given Ops: Object {
     inline def (gen: ProductGeneric[T]) toRepr [T] (o: T): gen.MirroredElemTypes = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes]
     inline def (gen: ProductGeneric[T]) fromRepr [T] (r: gen.MirroredElemTypes): T = gen.fromProduct(r.asInstanceOf).asInstanceOf[T]
 
@@ -156,7 +156,7 @@ object K1 {
     }
   }
 
-  given Ops: {
+  given Ops: Object {
     inline def (gen: ProductGeneric[T]) toRepr [T[_], A] (o: T[A]): gen.MirroredElemTypes[A] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A]]
     inline def (gen: ProductGeneric[T]) fromRepr [T[_], A] (r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
 
@@ -245,7 +245,7 @@ object K11 {
     }
   }
 
-  given Ops: {
+  given Ops: Object {
     inline def (gen: ProductGeneric[T]) toRepr [T[_[_]], A[_]] (o: T[A]): gen.MirroredElemTypes[A] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A]]
     inline def (gen: ProductGeneric[T]) fromRepr [T[_[_]], A[_]] (r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
 
@@ -337,7 +337,7 @@ object K2 {
     }
   }
 
-  given Ops: {
+  given Ops: Object {
     inline def (gen: ProductGeneric[T]) toRepr [T[_, _], A, B] (o: T[A, B]): gen.MirroredElemTypes[A, B] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A, B]]
     inline def (gen: ProductGeneric[T]) fromRepr [T[_, _], A, B] (r: gen.MirroredElemTypes[A, B]): T[A, B] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A, B]]
 
