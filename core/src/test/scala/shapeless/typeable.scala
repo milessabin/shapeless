@@ -674,4 +674,21 @@ class TypeableTests {
     }
   }
 
+  @Test
+  def testDescribeWithSymbolicNames: Unit = {
+    class ***
+    object ***
+    final case class <+>[A](left: A, right: A)
+    val |+| = "Tie-fighter"
+    val witness = Witness("witness")
+
+    // `Typeable.genTraversableTypeable` is not a macro.
+    // Appart from that there is a difference in the encoded name between JVM and JS.
+    assert(Typeable[scala.::[Int]].describe.endsWith("colon[Int]"))
+    assertEquals("***", Typeable[***].describe)
+    assertEquals("***.type", Typeable[***.type].describe)
+    assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
+    assertEquals("|+|.type", Typeable[|+|.type].describe)
+    assertEquals("String(witness)", Typeable[witness.T].describe)
+  }
 }
