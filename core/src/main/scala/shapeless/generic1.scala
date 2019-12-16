@@ -20,7 +20,7 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
 
-trait Generic1[F[_], FR[_[_]]] extends Serializable {
+trait Generic1[F[_], +FR[_[_]]] extends Serializable {
   type R[t]
 
   lazy val fr: FR[R] = mkFrr
@@ -32,7 +32,7 @@ trait Generic1[F[_], FR[_[_]]] extends Serializable {
 }
 
 object Generic1 extends Generic10 {
-  type Aux[F[_], FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
+  type Aux[F[_], +FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
 
   implicit def mkGeneric10[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[t, U] })#λ] =
     macro Generic1Macros.mkGeneric1Impl[T, ({ type λ[t[_]] = FR[t, U] })#λ]
@@ -45,7 +45,7 @@ trait Generic10 {
   implicit def apply[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.mkGeneric1Impl[T, FR]
 }
 
-trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
+trait IsHCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: HList
 
@@ -60,7 +60,7 @@ trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
 }
 
 object IsHCons1 extends IsHCons10 {
-  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+  type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
   implicit def mkIsHCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsHCons1Macros.mkIsHCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
@@ -79,7 +79,7 @@ trait IsHCons10 {
   implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
 }
 
-trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
+trait IsCCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: Coproduct
 
@@ -94,7 +94,7 @@ trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
 }
 
 object IsCCons1 extends IsCCons10 {
-  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+  type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
   implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsCCons1Macros.mkIsCCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
@@ -113,7 +113,7 @@ trait IsCCons10 {
   implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
-trait Split1[L[_], FO[_[_]], FI[_[_]]] extends Serializable {
+trait Split1[L[_], +FO[_[_]], +FI[_[_]]] extends Serializable {
   type O[_]
   type I[_]
 
@@ -128,7 +128,7 @@ trait Split1[L[_], FO[_[_]], FI[_[_]]] extends Serializable {
 }
 
 object Split1 extends Split10 {
-  type Aux[L[_], FO[_[_]], FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
+  type Aux[L[_], +FO[_[_]], +FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
 
   implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI] =
     macro Split1Macros.mkSplit1Impl[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI]
