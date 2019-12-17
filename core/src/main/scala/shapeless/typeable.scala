@@ -455,7 +455,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
             c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
           }
         } else {
-          q"""_root_.shapeless.Typeable.namedSimpleTypeable(classOf[$tpe], ${nameOf(tsym)})"""
+          q"""_root_.shapeless.Typeable.namedSimpleTypeable(_root_.scala.Predef.classOf[$tpe], ${nameOf(tsym)})"""
         }
     }
   }
@@ -497,7 +497,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
       c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
 
     q""" _root_.shapeless.Typeable.namedCaseClassTypeable(
-      classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), ${nameOf(tpe)}
+      _root_.scala.Predef.classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), ${nameOf(tpe)}
     )"""
   }
 
