@@ -1460,6 +1460,32 @@ class HListTests {
   }
 
   @Test
+  def testSelectFirst: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val si = sl.selectFirst[Int::HNil]
+    assertTypedEquals[Int](1, si)
+
+    val sb = sl.selectFirst[Boolean::HNil]
+    assertTypedEquals[Boolean](true, sb)
+
+    val ss = sl.selectFirst[String::HNil]
+    assertTypedEquals[String]("foo", ss)
+
+    val sd = sl.selectFirst[Double::HNil]
+    assertEquals(2.0, sd, Double.MinPositiveValue)
+
+    val sib = sl.selectFirst[Int::Boolean::HNil]
+    assertTypedEquals[Int](1, sib)
+
+    val sulb = sl.selectFirst[Unit::Long::Boolean::HNil]
+    assertTypedEquals[Boolean](true, sulb)
+
+    val ssbi = sl.selectFirst[String::Boolean::Int::HNil]
+    assertTypedEquals[String]("foo", ssbi)
+  }
+
+  @Test
   def testFilter: Unit = {
     val l1 = 1 :: 2 :: HNil
     val f1 = l1.filter[Int]

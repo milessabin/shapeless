@@ -955,7 +955,36 @@ object hlist {
       }
   }
 
+  /**
+   * Type class supporting access to the first element of `S` in this `HList`.
+   * Available only if this `HList` contains at least one element of `S`.
+   *
+   * @author Akiomi Kamakura
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectFirst[${L}, ${S}]. You requested an element of ${S}, but there is none in the HList ${L}.")
+  trait SelectFirst[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out }
 
+  object SelectFirst {
+    def apply[L <: HList, S <: HList](implicit sel: SelectFirst[L, S]): Aux[L, S, sel.Out] = sel
+
+    type Aux[L <: HList, S <: HList, Out0] = SelectFirst[L, S] { type Out = Out0 }
+
+    implicit def selectAny[L <: HList, H, S <: HList](
+      implicit sel: Selector[L, H]
+    ): Aux[L, H :: S, H] =
+      new SelectFirst[L, H :: S] {
+        type Out = H
+        def apply(l: L): Out = sel(l)
+      }
+
+    implicit def recurse[L <: HList, H, S <: HList, SelOut](
+      implicit sel: Aux[L, S, SelOut]
+    ): Aux[L, H :: S, SelOut] =
+      new SelectFirst[L, H :: S] {
+        type Out = SelOut
+        def apply(l: L): Out = sel(l)
+      }
+  }
 
   /**
    * Type class supporting partitioning this `HList` into those elements of type `U` and the

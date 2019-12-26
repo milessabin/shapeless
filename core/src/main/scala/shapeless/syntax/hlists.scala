@@ -138,6 +138,12 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
 
   /**
+   * Returns the first element of `S` in this `HList`.
+   * Available only if there is evidence that this `HList` contains at least one element of `S`.
+   */
+  def selectFirst[S <: HList](implicit sel: SelectFirst[L, S]): sel.Out = sel(l)
+
+  /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
   def filter[U](implicit partition : Partition[L, U]) : partition.Prefix  = partition.filter(l)
