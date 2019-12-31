@@ -396,11 +396,23 @@ object Read {
   import scala.util.matching.Regex
   import scala.util.Try
 
-  def head(s: String, r: Regex): Option[(String, String)] =
+  def head(s: String, r: Regex): Option[(String, String)] = {
+    /*
+    // The following trips up -Yexplicit-nulls
+    // See https://github.com/lampepfl/dotty/issues/7883
     s.trim match {
       case r(hd, tl) => Some((hd, tl))
       case _ => None
     }
+    */
+    val st = s.trim
+    if (st == null) None
+    else
+      r.unapplySeq(st) match {
+        case Some(List(hd, tl)) => Some((hd, tl))
+        case _ => None
+      }
+  }
 
   def readPrimitive[T](r: Regex, f: String => Option[T]): Read[T] =
     (s: String) =>

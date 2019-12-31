@@ -429,9 +429,9 @@ object TypeableMacros {
 
       case tp: TypeRef =>
         val qual = tp.qualifier match {
-          case tp: ThisType => tp.tref
-          case tp: Type => tp
-          case _ => null.asInstanceOf[Type]
+          case tp: ThisType => Some(tp.tref)
+          case tp: Type => Some(tp)
+          case _ => None
         }
 
         val sym = tp.typeSymbol
@@ -442,12 +442,12 @@ object TypeableMacros {
         val owner = normalizeModuleClass(sym.owner)
 
         qual match {
-          case _ if sym.flags.is(Flags.Case) => mkCaseClassTypeable
-          case null =>
+          case Some(_) if sym.flags.is(Flags.Case) => mkCaseClassTypeable
+          case None =>
             mkNamedSimpleTypeable
-          case tp: TypeRef if normalizeModuleClass(tp.typeSymbol) == owner =>
+          case Some(tp: TypeRef) if normalizeModuleClass(tp.typeSymbol) == owner =>
             mkNamedSimpleTypeable
-          case tp: TermRef if normalizeModuleClass(tp.termSymbol) == owner =>
+          case Some(tp: TermRef) if normalizeModuleClass(tp.termSymbol) == owner =>
             mkNamedSimpleTypeable
           case _ =>
             qctx.error(s"No Typeable for type ${target.show} with a dependent prefix")

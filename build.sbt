@@ -14,6 +14,11 @@ lazy val commonSettings = Seq(
   scalaVersion := dottyVersion,
   crossScalaVersions := Seq(dottyVersion, scala2Version),
 
+  scalacOptions ++= Seq(
+    "-Xfatal-warnings",
+    "-Yexplicit-nulls"
+  ),
+
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
 )
 
