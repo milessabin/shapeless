@@ -408,8 +408,8 @@ object Read {
     val st = s.trim
     if (st == null) None
     else
-      r.unapplySeq(st) match {
-        case Some(List(hd, tl)) => Some((hd, tl))
+      st match {
+        case r(hd, tl) => Some((hd, tl))
         case _ => None
       }
   }
