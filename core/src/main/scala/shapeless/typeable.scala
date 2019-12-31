@@ -332,7 +332,7 @@ object TypeableMacros {
     import util._
 
     val TypeableType = typeOf[Typeable[_]] match {
-      case IsAppliedType(tp) => tp.tycon
+      case tp: AppliedType => tp.tycon
     }
 
     val target = typeOf[T]
@@ -340,9 +340,9 @@ object TypeableMacros {
     def isAbstract(tp: Type): Boolean =
       tp.typeSymbol.isAbstractType ||
         (tp match {
-          case IsAppliedType(tp) =>
+          case tp: AppliedType =>
             isAbstract(tp.tycon) || tp.args.exists {
-              case IsType(tp) => isAbstract(tp)
+              case tp: Type => isAbstract(tp)
               case _ => false
             }
           case _ => false
@@ -350,25 +350,25 @@ object TypeableMacros {
 
     def normalize(tp: TypeOrBounds): Type = tp match {
       case TypeBounds(lo, _) => lo
-      case IsType(tp) => tp
+      case tp: Type => tp
     }
 
     def simpleName(tp: TypeOrBounds): String =
       normalize(tp).dealias match {
-        case IsAppliedType(tp) =>
+        case tp: AppliedType =>
           simpleName(tp.tycon) + tp.args.map(simpleName).mkString("[", ", ", "]")
         case TypeRef(_, name) => name
         case tp => tp.show
       }
 
     def collectConjuncts(tp: Type): List[Type] = tp match {
-      case IsAndType(tp) =>
+      case tp: AndType =>
         collectConjuncts(tp.left) ++ collectConjuncts(tp.right)
       case tp => List(tp)
     }
 
     def collectDisjuncts(tp: Type): List[Type] = tp match {
-      case IsOrType(tp) =>
+      case tp: OrType =>
         collectDisjuncts(tp.left) ++ collectDisjuncts(tp.right)
       case tp => List(tp)
     }
@@ -376,8 +376,8 @@ object TypeableMacros {
     def summonAllTypeables(tps: List[Type]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => AppliedType(TypeableType, List(tp)))
       val instances = ttps.flatMap(ttp => searchImplicit(ttp) match {
-        case IsImplicitSearchSuccess(iss) => List(iss.tree.seal.cast[Typeable[_]])
-        case IsImplicitSearchFailure(_) => Nil
+        case iss: ImplicitSearchSuccess => List(iss.tree.seal.cast[Typeable[_]])
+        case _: ImplicitSearchFailure => Nil
       })
 
       if (tps.length == instances.length) Some(Expr.ofSeq(instances))
@@ -388,7 +388,7 @@ object TypeableMacros {
       val sym = target.classSymbol.get
       val caseFields = sym.caseFields
       def fieldTpe(f: Symbol) = f.tree match {
-        case IsValDef(tree) => tree.tpt.tpe
+        case tree: ValDef => tree.tpt.tpe
       }
       if (!sym.fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
         qctx.error(s"No Typeable for case class ${target.show} with non-case fields")
@@ -415,7 +415,7 @@ object TypeableMacros {
     }
 
     target.dealias match {
-      case IsTermRef(tp) =>
+      case tp: TermRef =>
         val ident = Ident(tp).seal.cast[T]
         val sym = tp.termSymbol
         val name = Expr(sym.name.toString)
@@ -427,10 +427,10 @@ object TypeableMacros {
         val name = Expr(target.widen.typeSymbol.name.toString)
         '{ valueSingletonTypeable[T]($value, $name) }
 
-      case IsTypeRef(tp) =>
+      case tp: TypeRef =>
         val qual = tp.qualifier match {
-          case IsThisType(tp) => tp.tref
-          case IsType(tp) => tp
+          case tp: ThisType => tp.tref
+          case tp: Type => tp
           case _ => null.asInstanceOf[Type]
         }
 
@@ -445,16 +445,16 @@ object TypeableMacros {
           case _ if sym.flags.is(Flags.Case) => mkCaseClassTypeable
           case null =>
             mkNamedSimpleTypeable
-          case IsTypeRef(tp) if normalizeModuleClass(tp.typeSymbol) == owner =>
+          case tp: TypeRef if normalizeModuleClass(tp.typeSymbol) == owner =>
             mkNamedSimpleTypeable
-          case IsTermRef(tp) if normalizeModuleClass(tp.termSymbol) == owner =>
+          case tp: TermRef if normalizeModuleClass(tp.termSymbol) == owner =>
             mkNamedSimpleTypeable
           case _ =>
             qctx.error(s"No Typeable for type ${target.show} with a dependent prefix")
             '{???}
         }
 
-      case IsAppliedType(tp) =>
+      case tp: AppliedType =>
         val tycon = tp.tycon
         val args = tp.args
 
@@ -472,7 +472,7 @@ object TypeableMacros {
           '{???}
         }
 
-      case IsAndType(tp) =>
+      case tp: AndType =>
         val conjuncts = collectConjuncts(tp)
         summonAllTypeables(conjuncts) match {
           case Some(ctps) =>
@@ -482,7 +482,7 @@ object TypeableMacros {
             '{???}
         }
 
-      case IsOrType(tp) =>
+      case tp: OrType =>
         val disjuncts = collectDisjuncts(tp)
         summonAllTypeables(disjuncts) match {
           case Some(dtps) =>

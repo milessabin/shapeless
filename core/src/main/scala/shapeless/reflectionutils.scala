@@ -52,15 +52,15 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
 
   def tupleTypeElements(tp: Type): List[Type] = {
     @tailrec def loop(tp: Type, acc: List[Type]): List[Type] = tp match {
-      case AppliedType(pairTpe, List(IsType(hd), IsType(tl))) => loop(tl, hd :: acc)
+      case AppliedType(pairTpe, List(hd: Type, tl: Type)) => loop(tl, hd :: acc)
       case _ => acc
     }
     loop(tp, Nil).reverse
   }
 
   def low(tp: TypeOrBounds): Type = tp match {
-    case IsType(tp) => tp
-    case IsTypeBounds(tp) => tp.low
+    case tp: Type => tp
+    case tp: TypeBounds => tp.low
   }
 
   def findMemberType(tp: Type, name: String): Option[Type] = tp match {
