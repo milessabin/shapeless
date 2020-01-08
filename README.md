@@ -129,7 +129,7 @@ migrated to shapeless 3 as it evolves.
 ## Finding out more about the project
 
 shapeless is part of the [Typelevel][typelevel] family of projects. It is an
-Open Source project under the Apache License v2, hosted on [github][source].
+Open Source project under the Apache License v2, hosted on [GitHub][source].
 Binary artefacts are published to the [Sonatype OSS Repository Hosting
 service][sonatype] and synced to Maven Central.
 
