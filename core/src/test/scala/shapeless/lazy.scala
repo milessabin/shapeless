@@ -316,4 +316,21 @@ class LazyStrictTests {
       "lazily[W[String, Int]]", "No W\\[String, Int]"
     )
   }
+
+  @Test
+  def testInteractionWithTaggedTypes: Unit = {
+    import tag._
+
+    class Readable[A]
+    trait IdTag
+    type Id = String @@ IdTag
+
+    implicit def taggedStringReadable[T, M[_, _]](
+      implicit ev: String @@ T =:= M[String, T]
+    ): Readable[M[String, T]] = new Readable
+
+    implicitly[Readable[Id]]
+    implicitly[Lazy[Readable[Id]]]
+    implicitly[Strict[Readable[Id]]]
+  }
 }
