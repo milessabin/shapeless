@@ -7,7 +7,7 @@ inThisBuild(Seq(
   organization := "org.typelevel",
   scalaVersion := dottyVersion,
   crossScalaVersions := Seq(dottyVersion, scala2Version),
-  updateOptions := updateOptions.value.withLatestSnapshots(false)
+  updateOptions := updateOptions.value.withLatestSnapshots(false),
 ))
 
 lazy val commonSettings = Seq(
@@ -19,7 +19,9 @@ lazy val commonSettings = Seq(
     "-Yexplicit-nulls"
   ),
 
-  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
+  libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+  aggregate in doc := false,
+  publishArtifact in (Compile, packageDoc) := false
 )
 
 lazy val noPublishSettings =
