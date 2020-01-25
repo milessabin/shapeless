@@ -119,7 +119,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   def namedSimpleTypeable[T](erased: Class[T], name: => String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] = {
-        if(t != null && erased.isAssignableFrom(t.getClass)) Some(t.asInstanceOf[T]) else None
+        if(t != null && erased.isInstance(t)) Some(t.asInstanceOf[T]) else None
       }
       def describe = name
     }
@@ -233,7 +233,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     new Typeable[CC[T]] {
       def cast(t: Any): Option[CC[T]] =
         if(t == null) None
-        else if(mCC.runtimeClass isAssignableFrom t.getClass) {
+        else if(mCC.runtimeClass isInstance t) {
           val cc = t.asInstanceOf[CC[Any]]
           if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
           else None
@@ -247,7 +247,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     new Typeable[M[K, V]] {
       def cast(t: Any): Option[M[K, V]] =
         if(t == null) None
-        else if(mM.runtimeClass isAssignableFrom t.getClass) {
+        else if(mM.runtimeClass isInstance t) {
           val m = t.asInstanceOf[Map[Any, Any]]
           if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
           else None
@@ -263,7 +263,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   def namedCaseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]], name: => String): Typeable[T] =
     new Typeable[T] {
       def cast(t: Any): Option[T] =
-        if(classOf[Product].isAssignableFrom(erased) && erased.isAssignableFrom(t.getClass)) {
+        if(classOf[Product].isAssignableFrom(erased) && erased.isInstance(t)) {
           val c = t.asInstanceOf[Product with T]
           val f = c.productIterator.toList
           if((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(c)
