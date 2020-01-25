@@ -75,7 +75,12 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   implicit val unitTypeable: Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
 
   def isValClass[T](clazz: Class[T]) =
-    (classOf[jl.Number] isAssignableFrom clazz) ||
+    clazz == classOf[jl.Byte] ||
+    clazz == classOf[jl.Short] ||
+    clazz == classOf[jl.Integer] ||
+    clazz == classOf[jl.Long] ||
+    clazz == classOf[jl.Float] ||
+    clazz == classOf[jl.Double] ||
     clazz == classOf[jl.Boolean] ||
     clazz == classOf[jl.Character] ||
     clazz == classOf[runtime.BoxedUnit]
