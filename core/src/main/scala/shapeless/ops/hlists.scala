@@ -933,7 +933,7 @@ object hlist {
   }
 
   /**
-   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
+   * Type class supporting access to the elements in range [a,b[ of this `HList`.
    * Avaialable only if this `HList` contains all elements in range
    *
    * @author Andreas Koestler

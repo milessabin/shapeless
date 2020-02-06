@@ -1181,4 +1181,80 @@ class RecordTests {
 
     assertTypedEquals[Witness.`'a`.T](swapped.head, select(swapped))
  }
+
+  @Test
+  def testFieldIndex: Unit = {
+    val r0 = HNil
+    illTyped("""
+      r0.fieldIndex(intField1)
+    """)
+
+    val r1 =
+      (intField1 ->> 23) ::
+      HNil
+
+    val i10 = r1.fieldIndex(intField1)
+    typed[Nat._0](i10)
+    assertEquals(0, Nat toInt i10)
+
+    val r4 =
+      (intField1    ->>    23) ::
+      (stringField1 ->> "foo") ::
+      (boolField1   ->>  true) ::
+      (doubleField1 ->>   2.0) ::
+      HNil
+
+    val i40 = r4.fieldIndex(intField1)
+    typed[Nat._0](i40)
+    assertEquals(0, Nat toInt i40)
+
+    val i41 = r4.fieldIndex(stringField1)
+    typed[Nat._1](i41)
+    assertEquals(1, Nat toInt i41)
+
+    val i43 = r4.fieldIndex(doubleField1)
+    typed[Nat._3](i43)
+    assertEquals(3, Nat toInt i43)
+  }
+
+  @Test
+  def testSelectFieldRange: Unit = {
+    val r1 =
+      (intField1 ->> 23) ::
+      HNil
+
+    val ra10 = r1.sliceFields(intField1, intField1)
+    typed[intField1.F :: HNil](ra10)
+    assertEquals(r1, ra10)
+
+    illTyped("""r1.sliceFields(stringField1, stringField1)""")
+
+    val r4 =
+      (intField1    ->>    23) ::
+      (stringField1 ->> "foo") ::
+      (boolField1   ->>  true) ::
+      (doubleField1 ->>   2.0) ::
+      HNil
+
+    val ra400 = r4.sliceFields(intField1, intField1)
+    typed[intField1.F :: HNil](ra400)
+    assertEquals(r1, ra400)
+
+    val ra401 = r4.sliceFields(intField1, stringField1)
+    typed[intField1.F :: stringField1.F :: HNil](ra401)
+    assertEquals((intField1 ->> 23) :: (stringField1 ->> "foo") :: HNil, ra401)
+
+    val ra402 = r4.sliceFields(intField1, boolField1)
+    typed[intField1.F :: stringField1.F :: boolField1.F :: HNil](ra402)
+    assertEquals((intField1 ->> 23) :: (stringField1 ->> "foo") :: (boolField1 ->> true) :: HNil, ra402)
+
+    val ra413 = r4.sliceFields(stringField1, doubleField1)
+    typed[stringField1.F :: boolField1.F :: doubleField1.F :: HNil](ra413)
+    assertEquals((stringField1 ->> "foo") :: (boolField1 ->> true) :: (doubleField1 ->> 2.0) :: HNil, ra413)
+
+    // fields are present but not in order
+    illTyped("""r4.sliceFields(stringField1, intField1)""")
+
+    illTyped("""(HNil: HNil).sliceFields(intField1, intField1)""")
+  }
 }

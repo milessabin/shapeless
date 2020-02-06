@@ -148,6 +148,19 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def alignByKeys[K <: HList](implicit alignByKeys: AlignByKeys[L, K]): alignByKeys.Out = alignByKeys(l)
 
   /**
+    * Return the `Nat` index of the field with singleton typed key `k`. Only
+    * available if this record has a field with key type equal to the singleton
+    * type `k.T`.
+    */
+  def fieldIndex(k: Witness)(implicit fieldIndex: FieldIndex[L, k.T]): fieldIndex.Out = fieldIndex()
+
+  /**
+    * Slices this record beginning at the field with the singleton typed key
+    * `k1`, up through the field with singleton typed key `k2` (inclusive).
+    */
+  def sliceFields(k1: Witness, k2: Witness)(implicit sliceFields: SliceFields[L, k1.T, k2.T]): sliceFields.Out = sliceFields(l)
+
+  /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.
    */
   def record: DynamicRecordOps[L] = DynamicRecordOps(l)

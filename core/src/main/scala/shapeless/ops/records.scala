@@ -873,4 +873,69 @@ package record {
       }
     }
   }
+
+  /**
+   * Type class returning the `Nat` index of a record field.
+   *
+   * @author Cody Allen
+   */
+  trait FieldIndex[L <: HList, K] extends DepFn0 with Serializable {
+    type Out <: Nat
+  }
+
+  object FieldIndex {
+    import shapeless.nat._
+
+    type Aux[L <: HList, K, Out0 <: Nat] = FieldIndex[L, K] { type Out = Out0 }
+
+    def apply[L <: HList, K](implicit ev: FieldIndex[L, K]): Aux[L, K, ev.Out] = ev
+
+    implicit def headFieldIndex[KH, VH, T <: HList]: Aux[FieldType[KH, VH] :: T, KH, _0] =
+      new FieldIndex[FieldType[KH, VH] :: T, KH] {
+        type Out = _0
+        def apply(): Out = _0
+      }
+
+    implicit def tailFieldIndex[K, H, T <: HList, N <: Nat](implicit fit: Aux[T, K, N], sn: Witness.Aux[Succ[N]]): Aux[H :: T, K, Succ[N]] =
+      new FieldIndex[H :: T, K] {
+        type Out = Succ[N]
+        def apply(): Out = sn.value
+      }
+  }
+
+  /**
+   * Type class returning a slice of fields within a record.
+   *
+   * The slice includes the first field with key `K1` through (inclusive) the first field with key
+   * `K2`. Integer-indexed slices are usually exclusive on the second argument, but when selecting
+   * by keys this wouldn't allow a slice to include the last element in the sequence.
+   *
+   * @author Cody Allen
+   */
+  trait SliceFields[L <: HList, K1, K2] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object SliceFields {
+    type Aux[L <: HList, K1, K2, Out0] = SliceFields[L, K1, K2] { type Out = Out0 }
+
+    def apply[L <: HList, K1, K2](implicit ev: SliceFields[L, K1, K2]): Aux[L, K1, K2, ev.Out] = ev
+
+    /**
+     * Since Slice is exclusive of the second index and we want to include the second index, we
+     * search for a `Slice` instance with a second index of `Succ[N2]`. There is an edge case where
+     * `N2 = N1 - 1`; this shouldn't compile since it is an out of order range, but this translates
+     * into a `Slice[N1, N1]` which will happily return a `Slice` instance with an `Out` type of
+     * `HNil`.  We explicitly force `N2` to be greater than `N1` to work around this edge case.
+     */
+    implicit def sliceFields[L <: HList, K1, K2, N1 <: Nat, N2 <: Nat](implicit
+      fi1: FieldIndex.Aux[L, K1, N1],
+      fi2: FieldIndex.Aux[L, K2, N2],
+      gte: nat.GTEq[N2, N1],
+      slice: hlist.Slice[N1, Succ[N2], L]): Aux[L, K1, K2, slice.Out] =
+      new SliceFields[L, K1, K2] {
+        type Out = slice.Out
+        def apply(l: L): Out = slice(l)
+      }
+  }
 }
