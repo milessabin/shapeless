@@ -39,21 +39,21 @@ object syntax {
        * will be as precise wrt erasure as possible given the in-scope
        * `Typeable` instances available.
        */
-      inline def cast[U](given tu: Typeable[U]): Option[U] = tu.cast(t)
+      inline def cast[U](using tu: Typeable[U]): Option[U] = tu.cast(t)
 
       /**
        * Test whether the receiver can be cast to a value of type `U`. This
        * operation will be as precise wrt erasure as possible given the
        * in-scope `Typeable` instances available.
        */
-      inline def castable[U](given tu: Typeable[U]): Boolean = tu.castable(t)
+      inline def castable[U](using tu: Typeable[U]): Boolean = tu.castable(t)
 
       /**
        * Cast the receiver to a value of subtype `U` of the receiver's static
        * type if possible. This operation will be as precise wrt erasure as
        * possible given the in-scope `Typeable` instances available.
        */
-      inline def narrowTo[U](given ev: U <:< T, tu: Typeable[U]): Option[U] = t.cast[U]
+      inline def narrowTo[U](using ev: U <:< T, tu: Typeable[U]): Option[U] = t.cast[U]
     }
   }
 }
@@ -66,7 +66,7 @@ object Typeable extends Typeable0 {
   import scala.reflect.ClassTag
   import syntax.typeable.given
 
-  inline def apply[T](given tt: Typeable[T]): Typeable[T] = tt
+  inline def apply[T](using tt: Typeable[T]): Typeable[T] = tt
 
   case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
     def castable(t: Any): Boolean = t != null && cB.isInstance(t)
@@ -116,7 +116,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Option`. */
-  given optionTypeable[T](given tt: Typeable[T]): Typeable[Option[T]] {
+  given optionTypeable[T](using tt: Typeable[T]): Typeable[Option[T]] {
     def castable(t: Any): Boolean =
       t match {
         case Some(e) => e.castable[T]
@@ -126,7 +126,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Either`. */
-  given eitherTypeable[A, B](given ta: Typeable[A], tb: Typeable[B]): Typeable[Either[A, B]] {
+  given eitherTypeable[A, B](using ta: Typeable[A], tb: Typeable[B]): Typeable[Either[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Left(l) => l.castable[A]
@@ -137,7 +137,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Left`. */
-  given leftTypeable[A, B](given ta: Typeable[A]): Typeable[Left[A, B]] {
+  given leftTypeable[A, B](using ta: Typeable[A]): Typeable[Left[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Left(l) => l.castable[A]
@@ -147,7 +147,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Right`. */
-  given rightTypeable[A, B](given tb: Typeable[B]): Typeable[Right[A, B]] {
+  given rightTypeable[A, B](using tb: Typeable[B]): Typeable[Right[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Right(r) => r.castable[B]
@@ -159,7 +159,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Iterable`.  Note that the contents be will tested
    *  for conformance to the element type.
    */
-  given iterableTypeable[CC[t] <: Iterable[t], T](given CCTag: ClassTag[CC[Any]], tt: Typeable[T]): Typeable[CC[T]] {
+  given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]): Typeable[CC[T]] {
     def castable(t: Any): Boolean =
       t match {
         case (cc: CC[_] @unchecked) if CCTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -172,7 +172,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Map`. Note that the contents will be tested for
    *  conformance to the key/value types.
    */
-  given mapTypeable[M[k, v] <: Map[k, v], K, V](given MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]): Typeable[M[K, V]] {
+  given mapTypeable[M[k, v] <: Map[k, v], K, V](using MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]): Typeable[M[K, V]] {
     def castable(t: Any): Boolean =
       t match {
         case (m: Map[Any, Any] @unchecked) if MTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -191,7 +191,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `HList`s. Note that the contents will be tested for
    *  conformance to the element types.
    */
-  given hconsTypeable[H, T <: HList](given th: Typeable[H], tt: Typeable[T]): Typeable[H :*: T] {
+  given hconsTypeable[H, T <: HList](using th: Typeable[H], tt: Typeable[T]): Typeable[H :*: T] {
     def castable(t: Any): Boolean =
       t match {
         case l: :*:[_, _] => l.head.castable[H] && l.tail.castable[T]
@@ -210,7 +210,7 @@ object Typeable extends Typeable0 {
    * Typeable instance for `Coproduct`s.  Note that the contents will be tested
    * for conformance to one of the element types.
    */
-  given cconsTypeable[H, T <: Coproduct](given th: Typeable[H], tt: Typeable[T]): Typeable[H :+: T] {
+  given cconsTypeable[H, T <: Coproduct](using th: Typeable[H], tt: Typeable[T]): Typeable[H :+: T] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inl[_, _] => c.head.castable[H]
@@ -221,7 +221,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Inl`. */
-  given inlTypeable[H, T <: Coproduct](given th: Typeable[H]): Typeable[Inl[H, T]] {
+  given inlTypeable[H, T <: Coproduct](using th: Typeable[H]): Typeable[Inl[H, T]] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inl[_, _] => c.head.castable[H]
@@ -231,7 +231,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Inr`. */
-  given inrTypeable[H, T <: Coproduct](given tt: Typeable[T]): Typeable[Inr[H, T]] {
+  given inrTypeable[H, T <: Coproduct](using tt: Typeable[T]): Typeable[Inr[H, T]] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inr[_, _] => c.tail.castable[T]
@@ -327,7 +327,7 @@ trait Typeable0 {
 object TypeableMacros {
   import Typeable._
 
-  def impl[T: Type](given qctx: QuoteContext): Expr[Typeable[T]] = {
+  def impl[T: Type](using qctx: QuoteContext): Expr[Typeable[T]] = {
     import qctx.tasty.{_, given}
     import util._
 
@@ -512,7 +512,7 @@ trait TypeCase[T] extends Serializable {
 
 object TypeCase {
   import syntax.typeable.given
-  def apply[T](given tt: Typeable[T]): TypeCase[T] =
+  def apply[T](using tt: Typeable[T]): TypeCase[T] =
     new TypeCase[T] {
       def unapply(t: Any): Option[T] = t.cast[T]
       override def toString = s"TypeCase[${tt.describe}]"

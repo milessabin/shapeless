@@ -118,12 +118,12 @@ object Annotations {
       def apply() = annotations
     }
 
-  inline implicit def mkAnnotations[A, T](given m: Mirror.Of[T]) <: Annotations[A, T] =
+  inline implicit def mkAnnotations[A, T](using m: Mirror.Of[T]) <: Annotations[A, T] =
     ${ AnnotationMacros.mkAnnotations[A, T]('{m}) }
 }
 
 object AnnotationMacros {
-  def mkAnnotation[A: Type, T: Type](given qctx: QuoteContext): Expr[Annotation[A, T]] = {
+  def mkAnnotation[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotation[A, T]] = {
     import qctx.tasty.{_, given}
 
     val annotTpe = typeOf[A]
@@ -142,7 +142,7 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](m: Expr[Mirror.Of[T]])(given qctx: QuoteContext): Expr[Annotations[A, T]] = {
+  def mkAnnotations[A: Type, T: Type](m: Expr[Mirror.Of[T]])(using qctx: QuoteContext): Expr[Annotations[A, T]] = {
     import qctx.tasty.{_, given}
 
     val annotTpe = typeOf[A]
