@@ -124,7 +124,7 @@ object Annotations {
 
 object AnnotationMacros {
   def mkAnnotation[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotation[A, T]] = {
-    import qctx.tasty.{_, given}
+    import qctx.tasty.{_, given _}
 
     val annotTpe = typeOf[A]
     val annotFlags = annotTpe.typeSymbol.flags
@@ -143,7 +143,7 @@ object AnnotationMacros {
   }
 
   def mkAnnotations[A: Type, T: Type](m: Expr[Mirror.Of[T]])(using qctx: QuoteContext): Expr[Annotations[A, T]] = {
-    import qctx.tasty.{_, given}
+    import qctx.tasty.{_, given _}
 
     val annotTpe = typeOf[A]
     val annotFlags = annotTpe.typeSymbol.flags
