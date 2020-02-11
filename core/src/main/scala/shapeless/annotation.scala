@@ -55,7 +55,7 @@ object Annotation {
 
   inline def mkAnnotation[A, T]: Annotation[A, T] = ${ AnnotationMacros.mkAnnotation }
 
-  inline given [A, T]: Annotation[A, T] = mkAnnotation[A, T]
+  inline given [A, T] as Annotation[A, T] = mkAnnotation[A, T]
 }
 
 /**

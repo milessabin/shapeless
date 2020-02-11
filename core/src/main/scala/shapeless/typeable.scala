@@ -73,23 +73,23 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Byte`. */
-  given byteTypeable: Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte], "Byte")
+  given byteTypeable as Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte], "Byte")
   /** Typeable instance for `Short`. */
-  given shortTypeable: Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short], "Short")
+  given shortTypeable as Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short], "Short")
   /** Typeable instance for `Char`. */
-  given charTypeable: Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character], "Char")
+  given charTypeable as Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character], "Char")
   /** Typeable instance for `Int`. */
-  given intTypeable: Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer], "Int")
+  given intTypeable as Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer], "Int")
   /** Typeable instance for `Long`. */
-  given longTypeable: Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long], "Long")
+  given longTypeable as Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long], "Long")
   /** Typeable instance for `Float`. */
-  given floatTypeable: Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float], "Float")
+  given floatTypeable as Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float], "Float")
   /** Typeable instance for `Double`. */
-  given doubleTypeable: Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double], "Double")
+  given doubleTypeable as Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double], "Double")
   /** Typeable instance for `Boolean`. */
-  given booleanTypeable: Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
+  given booleanTypeable as Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
   /** Typeable instance for `Unit`. */
-  given unitTypeable: Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
+  given unitTypeable as Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
 
   def isAnyValClass[T](clazz: Class[T]) =
     (classOf[jl.Number] isAssignableFrom clazz) ||
@@ -98,25 +98,25 @@ object Typeable extends Typeable0 {
     clazz == classOf[runtime.BoxedUnit]
 
   /** Typeable instance for `Any`. */
-  given anyTypeable: Typeable[Any] {
+  given anyTypeable as Typeable[Any] {
     def castable(t: Any): Boolean = true
     def describe = "Any"
   }
 
   /** Typeable instance for `AnyVal`. */
-  given anyValTypeable: Typeable[AnyVal] {
+  given anyValTypeable as Typeable[AnyVal] {
     def castable(t: Any): Boolean = t != null && isAnyValClass(t.getClass)
     def describe = "AnyVal"
   }
 
   /** Typeable instance for `AnyRef`. */
-  given anyRefTypeable: Typeable[AnyRef] {
+  given anyRefTypeable as Typeable[AnyRef] {
     def castable(t: Any): Boolean = t != null && !isAnyValClass(t.getClass)
     def describe = "AnyRef"
   }
 
   /** Typeable instance for `Option`. */
-  given optionTypeable[T](using tt: Typeable[T]): Typeable[Option[T]] {
+  given optionTypeable[T](using tt: Typeable[T]) as Typeable[Option[T]] {
     def castable(t: Any): Boolean =
       t match {
         case Some(e) => e.castable[T]
@@ -126,7 +126,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Either`. */
-  given eitherTypeable[A, B](using ta: Typeable[A], tb: Typeable[B]): Typeable[Either[A, B]] {
+  given eitherTypeable[A, B](using ta: Typeable[A], tb: Typeable[B]) as Typeable[Either[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Left(l) => l.castable[A]
@@ -137,7 +137,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Left`. */
-  given leftTypeable[A, B](using ta: Typeable[A]): Typeable[Left[A, B]] {
+  given leftTypeable[A, B](using ta: Typeable[A]) as Typeable[Left[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Left(l) => l.castable[A]
@@ -147,7 +147,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Right`. */
-  given rightTypeable[A, B](using tb: Typeable[B]): Typeable[Right[A, B]] {
+  given rightTypeable[A, B](using tb: Typeable[B]) as Typeable[Right[A, B]] {
     def castable(t: Any): Boolean =
       t match {
         case Right(r) => r.castable[B]
@@ -159,7 +159,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Iterable`.  Note that the contents be will tested
    *  for conformance to the element type.
    */
-  given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]): Typeable[CC[T]] {
+  given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]) as Typeable[CC[T]] {
     def castable(t: Any): Boolean =
       t match {
         case (cc: CC[_] @unchecked) if CCTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -172,7 +172,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Map`. Note that the contents will be tested for
    *  conformance to the key/value types.
    */
-  given mapTypeable[M[k, v] <: Map[k, v], K, V](using MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]): Typeable[M[K, V]] {
+  given mapTypeable[M[k, v] <: Map[k, v], K, V](using MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]) as Typeable[M[K, V]] {
     def castable(t: Any): Boolean =
       t match {
         case (m: Map[Any, Any] @unchecked) if MTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -183,7 +183,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `HNil`. */
-  given hnilTypeable: Typeable[HNil] {
+  given hnilTypeable as Typeable[HNil] {
     def castable(t: Any): Boolean = t.isInstanceOf[HNil]
     def describe = "HNil"
   }
@@ -191,7 +191,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `HList`s. Note that the contents will be tested for
    *  conformance to the element types.
    */
-  given hconsTypeable[H, T <: HList](using th: Typeable[H], tt: Typeable[T]): Typeable[H :*: T] {
+  given hconsTypeable[H, T <: HList](using th: Typeable[H], tt: Typeable[T]) as Typeable[H :*: T] {
     def castable(t: Any): Boolean =
       t match {
         case l: :*:[_, _] => l.head.castable[H] && l.tail.castable[T]
@@ -201,7 +201,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `CNil`. */
-  given cnilTypeable: Typeable[CNil] {
+  given cnilTypeable as Typeable[CNil] {
     def castable(t: Any): Boolean = t.isInstanceOf[CNil] // should always be false
     def describe = "CNil"
   }
@@ -210,7 +210,7 @@ object Typeable extends Typeable0 {
    * Typeable instance for `Coproduct`s.  Note that the contents will be tested
    * for conformance to one of the element types.
    */
-  given cconsTypeable[H, T <: Coproduct](using th: Typeable[H], tt: Typeable[T]): Typeable[H :+: T] {
+  given cconsTypeable[H, T <: Coproduct](using th: Typeable[H], tt: Typeable[T]) as Typeable[H :+: T] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inl[_, _] => c.head.castable[H]
@@ -221,7 +221,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Inl`. */
-  given inlTypeable[H, T <: Coproduct](using th: Typeable[H]): Typeable[Inl[H, T]] {
+  given inlTypeable[H, T <: Coproduct](using th: Typeable[H]) as Typeable[Inl[H, T]] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inl[_, _] => c.head.castable[H]
@@ -231,7 +231,7 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Inr`. */
-  given inrTypeable[H, T <: Coproduct](using tt: Typeable[T]): Typeable[Inr[H, T]] {
+  given inrTypeable[H, T <: Coproduct](using tt: Typeable[T]) as Typeable[Inr[H, T]] {
     def castable(t: Any): Boolean =
       t match {
         case c: Inr[_, _] => c.tail.castable[T]
@@ -321,7 +321,7 @@ object Typeable extends Typeable0 {
 trait Typeable0 {
   inline def mkDefaultTypeable[T]: Typeable[T] = ${ TypeableMacros.impl[T] }
 
-  inline given [T]: Typeable[T] = mkDefaultTypeable[T]
+  inline given [T] as Typeable[T] = mkDefaultTypeable[T]
 }
 
 object TypeableMacros {
