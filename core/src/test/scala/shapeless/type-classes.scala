@@ -535,7 +535,7 @@ object Transform {
   inline given [T, U](using
     gent: K0.ProductGeneric[T] { type MirroredElemTypes <: NonEmptyTuple },
     genu: K0.ProductGeneric[U] { type MirroredElemTypes <: Tuple }
-  ): Transform[T, U] = new Transform[T, U] {
+  ) as Transform[T, U] = new Transform[T, U] {
     def apply(t: T): U =
       genu.fromRepr(mkRecord[genu.MirroredElemLabels, genu.MirroredElemTypes, gent.MirroredElemLabels, gent.MirroredElemTypes](gent.toRepr(t)))
   }
