@@ -187,6 +187,7 @@ cross-builds for 2.11.12 and 2.12.8.
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
 + Brian Zeligson <brian.zeligson@gmail.com> [@beezee](https://twitter.com/bzeg)
 + Bryn Keller <xoltar@xoltar.org> [@brynkeller](https://twitter.com/brynkeller)
++ Carlos Quiroz [@carlosmquiroz](https://twitter.com/carlosmquiroz)
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
