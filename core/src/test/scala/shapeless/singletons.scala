@@ -273,7 +273,8 @@ class SingletonTypesTests {
     val wFoo = Witness(Foo)
     val wBar = Witness(bar)
 
-    // Note: Further tests in SingletonTypes211Tests
+    typed[Foo.type](wFoo.value)
+    typed[bar.type](wBar.value)
 
     val cFoo = convert(Foo)
     val cBar = convert(bar)
@@ -586,6 +587,48 @@ class SingletonTypesTests {
     val c = new ClassThis
     assertTypedEquals[c.type](c.w1.value, c.w2.value)
     assertTypedEquals[ObjectThis.type](ObjectThis.w1.value, ObjectThis.w2.value)
+  }
+
+  class NestingBug {
+    val o: AnyRef = new Object {}
+
+    val wO = {
+      final class W extends _root_.shapeless.Witness {
+        type T = o.type
+        val value: T = o
+      }
+      new W
+    }
+
+    val x1: o.type = wO.value
+  }
+
+  class PathDependentSingleton1 {
+    val o: AnyRef = new Object {}
+    val wO = Witness(o)
+    type OT = wO.T
+    implicitly[OT =:= o.type]
+
+    val x0: OT = wO.value
+    val x1: o.type = wO.value
+
+    val x2 = wO.value
+    typed[o.type](x2)
+    typed[OT](x2)
+  }
+
+  object PathDependentSingleton2 {
+    val o: AnyRef = new Object {}
+    val wO = Witness(o)
+    type OT = wO.T
+    implicitly[OT =:= o.type]
+
+    val x0: OT = wO.value
+    val x1: o.type = wO.value
+
+    val x2 = wO.value
+    typed[o.type](x2)
+    typed[OT](x2)
   }
 }
 
