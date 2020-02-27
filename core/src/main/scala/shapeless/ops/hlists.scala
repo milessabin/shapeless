@@ -916,10 +916,10 @@ object hlist {
   }
 
   /**
-   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
-   * Avaialable only if this `HList` contains all elements in range
+   * Type class supporting supporting access to the elements in range [a,b] of this `HList`.
+   * Available only if this `HList` contains all elements in range
    *
-   * @author Andreas Koestler
+   * @author Ivan Aristov
    */
   @implicitNotFound("Implicit not found: shapeless.Ops.SelectRange[${L}, ${A}, ${B}]. You requested the elements in range [${A},${B}[, but HList ${L} does not contain all of them.")
   trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
@@ -929,12 +929,22 @@ object hlist {
 
     type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
 
-    implicit def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList, SelOut <: HList]
-    (implicit range: shapeless.ops.nat.Range.Aux[A, B, Ids], sel: SelectMany.Aux[L, Ids, SelOut]): Aux[L, A, B, SelOut] =
-      new SelectRange[L, A, B] {
-        type Out = SelOut
+    implicit def take[L <: HList, T <: Nat](
+      implicit take: Take[L, T]
+     ): Aux[L, _0, T, take.Out] =
+      new SelectRange[L, _0, T] {
+        type Out = take.Out
 
-        def apply(l: L): Out = sel(l)
+        def apply(t: L): take.Out = take(t)
+      }
+
+    implicit def drop[H, L <: HList, A <: Nat, B <: Nat](
+      implicit select: SelectRange[L, A, B]
+    ): Aux[H :: L, Succ[A], Succ[B], select.Out] =
+      new SelectRange[H :: L, Succ[A], Succ[B]] {
+        type Out = select.Out
+
+        def apply(t: H :: L): select.Out = select(t.tail)
       }
   }
 
