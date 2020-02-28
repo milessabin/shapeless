@@ -65,11 +65,11 @@ addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("runAll", ";examplesJVM/runAll")
+addCommandAlias("mima", ";coreJVM/mimaReportBinaryIssues")
 
 lazy val scoverageSettings = Seq(
   coverageMinimum := 60,
@@ -315,8 +315,15 @@ lazy val mimaSettings = Seq(
   mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.3"),
   mimaBinaryIssueFilters := {
     // Macro internals - ignore
-    val macroFilters = List("CaseClassMacros", "IsCons1Macros", "LazyMacros")
-      .map(macros => exclude[Problem](s"shapeless.$macros*"))
+    val macroFilters = List(
+      "ReprTypes",
+      "CaseClassMacros",
+      "IsHCons1Macros",
+      "IsCCons1Macros",
+      "IsCons1Macros",
+      "LazyMacros",
+      "SingletonTypeMacros"
+    ).map(macros => exclude[Problem](s"shapeless.$macros*"))
 
     scalaBinaryVersion.value match {
       case "2.11" =>
