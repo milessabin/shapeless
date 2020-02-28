@@ -150,9 +150,20 @@ object Generic {
   /** Provides an instance of Generic. Prefer this over finding one with `implicitly`, or else use `the`.
     *
     * Either of these approaches preserves the Repr type refinement, which `implicitly` will lose.
-    *
     */
   def apply[T](implicit gen: Generic[T]): Aux[T, gen.Repr] = gen
+
+  /** Creates a new Generic instance from a pair of functions.
+    *
+    * The functions `f` and `g` should be the inverse of each other, i.e.
+    *   - `f(g(x)) == x`
+    *   - `g(f(y)) == y`
+    */
+  def instance[T, R](f: T => R, g: R => T): Aux[T, R] = new Generic[T] {
+    type Repr = R
+    def to(t: T): R = f(t)
+    def from(r: R): T = g(r)
+  }
 
   implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materialize[T, R]
 }
@@ -280,6 +291,8 @@ trait ReprTypes {
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
   def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_, _]].typeConstructor
   def symbolTpe = typeOf[Symbol]
+
+  def objectRef[O: TypeTag]: Tree = Ident(typeOf[O].termSymbol)
 }
 
 @macrocompat.bundle
@@ -979,83 +992,64 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
+  private val generic = objectRef[Generic.type]
+
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
-    if(isReprType(tpe))
+    if (isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    if(isProduct(tpe))
-      mkProductGeneric(tpe)
-    else
-      mkCoproductGeneric(tpe)
+    if (isProduct(tpe)) mkProductGeneric(tpe)
+    else mkCoproductGeneric(tpe)
   }
 
   def mkProductGeneric(tpe: Type): Tree = {
+    val repr = reprTypTree(tpe)
     val ctorDtor = CtorDtor(tpe)
     val (p, ts) = ctorDtor.binding
-    val to = cq""" $p => ${mkHListValue(ts)} """
+    val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
     val (rp, rts) = ctorDtor.reprBinding
-    val from = cq""" $rp => ${ctorDtor.construct(rts)} """
-
-    val clsName = TypeName(c.freshName("anon$"))
-    q"""
-      final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
-        def to(p: $tpe): Repr = (p match { case $to }).asInstanceOf[Repr]
-        def from(p: Repr): $tpe = p match { case $from }
-      }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
-    """
+    val from = cq"$rp => ${ctorDtor.construct(rts)}"
+    q"$generic.instance[$tpe, $repr]({ case $to }, { case $from })"
   }
 
   def mkCoproductGeneric(tpe: Type): Tree = {
-    def mkCoproductCases(tpe0: Type, index: Int): CaseDef = {
-      tpe0 match {
-        case SingleType(pre, sym) =>
-          val singleton = mkAttributedRef(pre, sym)
-          cq"p if p eq $singleton => $index"
-        case _ =>
-          cq"_: $tpe0 => $index"
-      }
+    def mkCoproductCases(tpe0: Type, index: Int) = tpe0 match {
+      case SingleType(pre, sym) =>
+        val singleton = mkAttributedRef(pre, sym)
+        cq"p if p eq $singleton => $index"
+      case _ =>
+        cq"_: $tpe0 => $index"
     }
 
-    val to = {
-      val toCases = ctorsOf(tpe).zipWithIndex map (mkCoproductCases _).tupled
-      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
-    }
-
-    val clsName = TypeName(c.freshName("anon$"))
-    q"""
-      final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
-        def to(p: $tpe): Repr = $to
-        def from(p: Repr): $tpe = _root_.shapeless.Coproduct.unsafeGet(p).asInstanceOf[$tpe]
-      }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
-    """
+    val coproduct = objectRef[Coproduct.type]
+    val repr = reprTypTree(tpe)
+    val toCases = ctorsOf(tpe).zipWithIndex.map((mkCoproductCases _).tupled)
+    val to = q"$coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[$repr]"
+    q"$generic.instance[$tpe, $repr]((p: $tpe) => $to, $coproduct.unsafeGet(_).asInstanceOf[$tpe])"
   }
 
   def mkIsTuple[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(!isTuple(tTpe))
+    if (!isTuple(tTpe))
       abort(s"Unable to materialize IsTuple for non-tuple type $tTpe")
 
-    q"""new _root_.shapeless.IsTuple[$tTpe]: _root_.shapeless.IsTuple[$tTpe]"""
+    q"new ${weakTypeOf[IsTuple[T]]}"
   }
 
   def mkHasProductGeneric[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(isReprType(tTpe) || !isProduct(tTpe))
+    if (isReprType(tTpe) || !isProduct(tTpe))
       abort(s"Unable to materialize HasProductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasProductGeneric[$tTpe]: _root_.shapeless.HasProductGeneric[$tTpe]"""
+    q"new ${weakTypeOf[HasProductGeneric[T]]}"
   }
 
   def mkHasCoproductGeneric[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(isReprType(tTpe) || !isCoproduct(tTpe))
+    if (isReprType(tTpe) || !isCoproduct(tTpe))
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe]: _root_.shapeless.HasCoproductGeneric[$tTpe]"""
+    q"new ${weakTypeOf[HasCoproductGeneric[T]]}"
   }
 }
