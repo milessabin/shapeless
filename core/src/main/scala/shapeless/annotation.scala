@@ -237,28 +237,21 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       if (isProduct(tpe)) {
         val constructorSyms = tpe
           .member(termNames.CONSTRUCTOR)
-          .asMethod
-          .paramLists
-          .flatten
-          .map { sym => sym.name.decodedName.toString -> sym }
+          .asMethod.paramLists.flatten
+          .map(sym => nameAsString(sym.name) -> sym)
           .toMap
 
         fieldsOf(tpe).map { case (name, _) =>
-          val paramConstrSym = constructorSyms(name.decodedName.toString)
-
-          val annots = extract(typeAnnotation, paramConstrSym)
-          annots.collectFirst {
+          extract(typeAnnotation, constructorSyms(nameAsString(name))).collectFirst {
             case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
           }
         }
       } else if (isCoproduct(tpe))
         ctorsOf(tpe).map { cTpe =>
-
-        val annots = extract(typeAnnotation, cTpe.typeSymbol)
-        annots.collectFirst {
-          case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+          extract(typeAnnotation, cTpe.typeSymbol).collectFirst {
+            case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+          }
         }
-      }
       else
         abort(s"$tpe is not case class like or the root of a sealed family of types")
 
