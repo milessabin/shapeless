@@ -197,16 +197,12 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       if (isProduct(tpe)) {
         val constructorSyms = tpe
           .member(termNames.CONSTRUCTOR)
-          .asMethod
-          .paramLists
-          .flatten
-          .map { sym => sym.name.decodedName.toString -> sym }
+          .asMethod.paramLists.flatten
+          .map(sym => nameAsString(sym.name) -> sym)
           .toMap
 
         fieldsOf(tpe).map { case (name, _) =>
-          val paramConstrSym = constructorSyms(name.decodedName.toString)
-
-          paramConstrSym.annotations.collectFirst {
+          constructorSyms(nameAsString(name)).annotations.collectFirst {
             case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
           }
         }
