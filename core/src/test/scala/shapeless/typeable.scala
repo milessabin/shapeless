@@ -217,6 +217,13 @@ class TypeableTests {
 
     val cr2 = r.cast[AnyVal]
     assertTrue(cr2.isEmpty)
+
+    val n: Any = BigInt(23)
+    val cn = n.cast[AnyRef]
+    assertTrue(cn.isDefined)
+
+    val cn2 = n.cast[AnyVal]
+    assertTrue(cn2.isEmpty)
   }
 
   @Test

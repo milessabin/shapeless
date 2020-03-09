@@ -9,11 +9,11 @@ import GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
-val scala211 = "2.11.12"
+val Scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.13.1",
-  crossScalaVersions := Seq("2.10.7", scala211, "2.12.10", "2.13.1"),
+  crossScalaVersions := Seq(Scala211, "2.12.10", "2.13.1"),
   mimaFailOnNoPrevious := false
 ))
 
@@ -110,8 +110,8 @@ lazy val commonJvmSettings = Seq(
 )
 
 lazy val commonNativeSettings = Seq(
-  scalaVersion := scala211,
-  crossScalaVersions := Seq(scala211)
+  scalaVersion := Scala211,
+  crossScalaVersions := Seq(Scala211)
 )
 
 lazy val coreSettings = commonSettings ++ publishSettings ++ releaseSettings
@@ -256,18 +256,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
     scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
-  ),
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      // macro-compat and Macro paradise needed for Scala 2.10
-      case Some((2, 10)) => Seq(
-          "org.typelevel" %% "macro-compat" % "1.1.1",
-          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
-          "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
-        )
-      case _ => Seq()
-    }
-  }
+  )
 )
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
@@ -275,13 +264,10 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
     (unmanagedSourceDirectories in sc) ++= {
       (unmanagedSourceDirectories in sc ).value.flatMap { dir: File =>
         if(dir.getName != "scala") Seq(dir)
-        else if(scalaVersion.value == "2.13.0-M4")
-          Seq(new File(dir.getPath + "_2.13.0-M4"), new File(dir.getPath + "_2.11+"))
         else
           CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"), new File(dir.getPath + "_2.11+"))
-            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.11+"), new File(dir.getPath + "_2.13-"))
-            case Some((2, y)) if y == 10 => Seq(new File(dir.getPath + "_2.10"))
+            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
+            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.13-"))
           }
       }
     }
@@ -343,8 +329,6 @@ lazy val coreOsgiSettings = osgiSettings ++ Seq(
 lazy val tagName = Def.setting{
   s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 }
-
-val Scala211 = "2.11.12"
 
 lazy val releaseSettings = Seq(
   releaseCrossBuild := true,

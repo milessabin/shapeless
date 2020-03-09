@@ -121,25 +121,14 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x, 2.12.x and 2.13.x. The main line of development for
-shapeless 2.3.3 is Scala 2.13.1. Scala 2.10.x is supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.x, 2.12.x and 2.13.x. The main line of development for
+shapeless 2.3.3 is Scala 2.13.1.
 
 ```scala
 scalaVersion := "2.13.1"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
-)
-```
-
-If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
-
-```scala
-scalaVersion := "2.10.7"
-
-libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.3",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 ```
 
@@ -166,36 +155,6 @@ shapeless is also available for projects using the Maven build tool via the foll
 </dependency>
 ```
 
-If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
-
-```xml
-<dependency>
-  <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.10</artifactId>
-  <version>2.2.5</version>
-</dependency>
-
-<plugins>
-  ...
-  <plugin>
-    ...
-    <configuration>
-      ...
-      <compilerPlugins>
-        <compilerPlugin>
-          <groupId>org.scala-lang.plugins</groupId>
-          <artifactId>macro-paradise_2.10</artifactId>
-          <version>2.1.0</version>
-        </compilerPlugin>
-      </compilerPlugins>
-      ...
-    </configuration>
-    ...
-  </plugin>
-  ...
-</plugins>
-```
-
 ### Older releases
 
 Please use a current release if possible. If unavoidable, you can find [usage information for older
@@ -206,7 +165,7 @@ releases][olderusage] on the shapeless wiki.
 ## Building shapeless
 
 shapeless is built with SBT 1.2.8 or later, and its master branch is built with Scala 2.13.1 by default but also
-cross-builds for 2.10.7, 2.11.12 and 2.12.8.
+cross-builds for 2.11.12 and 2.12.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
@@ -228,6 +187,7 @@ cross-builds for 2.10.7, 2.11.12 and 2.12.8.
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
 + Brian Zeligson <brian.zeligson@gmail.com> [@beezee](https://twitter.com/bzeg)
 + Bryn Keller <xoltar@xoltar.org> [@brynkeller](https://twitter.com/brynkeller)
++ Carlos Quiroz [@carlosmquiroz](https://twitter.com/carlosmquiroz)
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
