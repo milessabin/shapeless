@@ -307,6 +307,7 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
 
 @macrocompat.bundle
 trait IsCons1Macros extends CaseClassMacros {
+  val c: whitebox.Context
   import c.ImplicitCandidate
   import c.internal._
   import c.universe._
