@@ -1041,7 +1041,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit e: U =:!= H, p: Aux[L, U, LPrefix, LSuffix]
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
@@ -1301,23 +1301,13 @@ object hlist {
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
-  trait LowPriorityUnion {
+  object Union {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
-    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
-    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
-    def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
-      (implicit u: Union.Aux[T, M, U]): Aux[H :: T, M, H :: U] =
-        new Union[H :: T, M] {
-          type Out = H :: U
-          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
-        }
-  }
-
-  object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
     // let ∅ ∪ M = M
@@ -1330,8 +1320,8 @@ object hlist {
     // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
     implicit def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
       (implicit
-       u: Union.Aux[T, M, U],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       u: Union.Aux[T, M, U]
       ): Aux[H :: T, M, H :: U] =
         new Union[H :: T, M] {
           type Out = H :: U
@@ -1358,23 +1348,13 @@ object hlist {
    * Also available if `M` contains types absent in this `HList`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
-  trait LowPriorityIntersection {
+  object Intersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
-    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
-    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
-    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
-      (implicit i: Intersection.Aux[T, M, I]): Aux[H :: T, M, I] =
-        new Intersection[H :: T, M] {
-          type Out = I
-          def apply(l: H :: T): Out = i(l.tail)
-        }
-  }
-
-  object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
     // let ∅ ∩ M = ∅
@@ -1387,8 +1367,8 @@ object hlist {
     // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
     implicit def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
       (implicit
-       i: Intersection.Aux[T, M, I],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       i: Intersection.Aux[T, M, I]
       ): Aux[H :: T, M, I] =
         new Intersection[H :: T, M] {
           type Out = I

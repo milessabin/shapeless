@@ -42,6 +42,12 @@ class TypeOperatorTests {
   }
 
   @Test
+  def testTaggingValueClass: Unit = {
+    val x = tag[ATag](AValueClass(1L))
+    assertEquals(x.l, Array(x).apply(0))
+  }
+
+  @Test
   def testNewtype: Unit = {
     type MyString = Newtype[String, MyStringOps]
 
