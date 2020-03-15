@@ -1041,7 +1041,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit e: U =:!= H, p: Aux[L, U, LPrefix, LSuffix]
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
@@ -1178,7 +1178,6 @@ object hlist {
    * Type class supporting access to the all elements of this `HList` of type `U`.
    *
    * @author Alois Cochard
-   * @author Arya Irani
    */
   trait Filter[L <: HList, U] extends DepFn1[L] with Serializable { type Out <: HList }
 
@@ -1187,35 +1186,19 @@ object hlist {
 
     type Aux[L <: HList, U, Out0 <: HList] = Filter[L, U] { type Out = Out0 }
 
-    // let (HNil filter U) = HNil
-    implicit def hnilFilter[U]: Aux[HNil, U, HNil] =
-      new Filter[HNil, U] {
-        type Out = HNil
-        def apply(l: HNil): HNil = l
-      }
+    implicit def hlistFilter[L <: HList, U, LPrefix <: HList, LSuffix <: HList](
+      implicit partition: Partition.Aux[L, U, LPrefix, LSuffix]
+    ): Aux[L, U, LPrefix] = new Filter[L, U] {
+      type Out = LPrefix
 
-    // let ((U :: T) filter U) = U :: (T filter U)
-    implicit def hlistFilter1[T <: HList, U, TR <: HList](implicit filter: Aux[T, U, TR]): Aux[U :: T, U, U :: TR] =
-      new Filter[U :: T, U] {
-        type Out = U :: TR
-        def apply(l: U :: T): Out = l.head :: filter(l.tail)
-      }
-
-    // if H != U, let ((H :: T) filter U) = (T filter U)
-    implicit def hlistFilter2[H, T <: HList, U, TR <: HList](
-      implicit neq: H =:!= U, filter: Aux[T, U, TR]
-    ): Aux[H :: T, U, TR] =
-      new Filter[H :: T, U] {
-        type Out = TR
-        def apply(l: H :: T): Out = filter(l.tail)
-      }
+      def apply(l: L): Out = partition.filter(l)
+    }
   }
 
   /**
    * Type class supporting access to the all elements of this `HList` of type different than `U`.
    *
    * @author Alois Cochard
-   * @author Arya Irani
    */
   trait FilterNot[L <: HList, U] extends DepFn1[L] with Serializable { type Out <: HList }
 
@@ -1224,30 +1207,13 @@ object hlist {
 
     type Aux[L <: HList, U, Out0 <: HList] = FilterNot[L, U] { type Out = Out0 }
 
-    // let (HNil filterNot U) = HNil
-    implicit def hnilFilterNot[U]: Aux[HNil, U, HNil] =
-      new FilterNot[HNil, U] {
-        type Out = HNil
-        def apply(l: HNil): HNil = l
-      }
+    implicit def hlistFilterNot[L <: HList, U, LPrefix <: HList, LSuffix <: HList](
+      implicit partition: Partition.Aux[L, U, LPrefix, LSuffix]
+    ): Aux[L, U, LSuffix] = new FilterNot[L, U] {
+      type Out = LSuffix
 
-    // if H != U, let ((H::T) filterNot U) = H::(T filterNot U)
-    implicit def hlistFilterNot1[H, T <: HList, U, TR <: HList](
-      implicit neq: H =:!= U, filterNot: Aux[T, U, TR]
-    ): Aux[H::T, U, H::TR] =
-      new FilterNot[H::T, U] {
-        type Out = H :: TR
-        def apply(l: H :: T): Out = l.head :: filterNot(l.tail)
-      }
-
-    // let ((U::T) filterNot U) = (T filterNot U)
-    implicit def hlistFilterNot2[T <: HList, U, TR <: HList](
-      implicit filterNot: Aux[T, U, TR]
-    ): Aux[U::T, U, TR] =
-      new FilterNot[U :: T, U] {
-        type Out = TR
-        def apply(l: U :: T): Out = filterNot(l.tail)
-      }
+      def apply(l: L): Out = partition.filterNot(l)
+    }
   }
 
   /**
