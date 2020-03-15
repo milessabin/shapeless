@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package shapeless.test
+package shapeless
+package test
 
 import scala.language.experimental.macros
 

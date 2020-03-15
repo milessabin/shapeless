@@ -105,45 +105,45 @@ class ProductTypeClassTests {
   illTyped("""implicitly[Image[Cases[Int, String]]]""")
 
   @Test
-  def testManualSingle {
+  def testManualSingle: Unit = {
     assertEquals(fooResult, Image[Foo])
   }
 
   @Test
-  def testManualEmpty {
+  def testManualEmpty: Unit = {
     assertEquals(barResult, Image[Bar])
   }
 
   @Test
-  def testManualTuple {
+  def testManualTuple: Unit = {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
   @Test
-  def testManualUnit {
+  def testManualUnit: Unit = {
     assertEquals(unitResult, Image[Unit])
   }
 
   @Test
-  def testAutoSingle {
+  def testAutoSingle: Unit = {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
-  def testAutoEmpty {
+  def testAutoEmpty: Unit = {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
-  def testAutoTuple {
+  def testAutoTuple: Unit = {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
-  def testAutoUnit {
+  def testAutoUnit: Unit = {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
@@ -180,56 +180,56 @@ class TypeClassTests {
     )
 
   @Test
-  def testManualSingle {
+  def testManualSingle: Unit = {
     assertEquals(fooResult, Image[Foo])
   }
 
   @Test
-  def testManualEmpty {
+  def testManualEmpty: Unit = {
     assertEquals(barResult, Image[Bar])
   }
 
   @Test
-  def testManualMulti {
+  def testManualMulti: Unit = {
     assertEquals(casesResult, Image[Cases[Int, String]])
   }
 
   @Test
-  def testManualTuple {
+  def testManualTuple: Unit = {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
   @Test
-  def testManualUnit {
+  def testManualUnit: Unit = {
     assertEquals(unitResult, Image[Unit])
   }
 
   @Test
-  def testAutoSingle {
+  def testAutoSingle: Unit = {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
-  def testAutoEmpty {
+  def testAutoEmpty: Unit = {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
-  def testAutoMulti {
+  def testAutoMulti: Unit = {
     assertEquals(casesResult, Image[Cases[Int, String]])
     assertEquals(casesResult, (CaseA(23): Cases[Int, String]).image)
   }
 
   @Test
-  def testAutoTuple {
+  def testAutoTuple: Unit = {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
-  def testAutoUnit {
+  def testAutoUnit: Unit = {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }

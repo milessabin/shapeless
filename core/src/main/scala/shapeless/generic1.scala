@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-16 Miles Sabin
+ * Copyright (c) 2015-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,11 @@
 
 package shapeless
 
-import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.annotation.{ StaticAnnotation, tailrec }
-import scala.reflect.api.Universe
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
-import ops.{ hlist, coproduct }
-
-trait Generic1[F[_], FR[_[_]]] extends Serializable {
+trait Generic1[F[_], +FR[_[_]]] extends Serializable {
   type R[t]
 
   lazy val fr: FR[R] = mkFrr
@@ -37,12 +32,8 @@ trait Generic1[F[_], FR[_[_]]] extends Serializable {
 }
 
 object Generic1 extends Generic10 {
-  type Aux[F[_], FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
+  type Aux[F[_], +FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
 
-  implicit def apply[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.mkGeneric1Impl[T, FR]
-}
-
-trait Generic10 {
   implicit def mkGeneric10[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[t, U] })#λ] =
     macro Generic1Macros.mkGeneric1Impl[T, ({ type λ[t[_]] = FR[t, U] })#λ]
 
@@ -50,7 +41,11 @@ trait Generic10 {
     macro Generic1Macros.mkGeneric1Impl[T, ({ type λ[t[_]] = FR[U, t] })#λ]
 }
 
-trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
+trait Generic10 {
+  implicit def apply[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.mkGeneric1Impl[T, FR]
+}
+
+trait IsHCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: HList
 
@@ -65,12 +60,8 @@ trait IsHCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
 }
 
 object IsHCons1 extends IsHCons10 {
-  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+  type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
-  implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
-}
-
-trait IsHCons10 {
   implicit def mkIsHCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsHCons1Macros.mkIsHCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
 
@@ -84,7 +75,11 @@ trait IsHCons10 {
     macro IsHCons1Macros.mkIsHCons1Impl[L, FH, ({ type λ[t[_]] = FT[U, t] })#λ]
 }
 
-trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
+trait IsHCons10 {
+  implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
+}
+
+trait IsCCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   type H[_]
   type T[_] <: Coproduct
 
@@ -99,12 +94,8 @@ trait IsCCons1[L[_], FH[_[_]], FT[_[_]]] extends Serializable {
 }
 
 object IsCCons1 extends IsCCons10 {
-  type Aux[L[_], FH[_[_]], FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
+  type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
-  implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
-}
-
-trait IsCCons10 {
   implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsCCons1Macros.mkIsCCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
 
@@ -118,7 +109,11 @@ trait IsCCons10 {
     macro IsCCons1Macros.mkIsCCons1Impl[L, FH, ({ type λ[t[_]] = FT[U, t] })#λ]
 }
 
-trait Split1[L[_], FO[_[_]], FI[_[_]]] extends Serializable {
+trait IsCCons10 {
+  implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
+}
+
+trait Split1[L[_], +FO[_[_]], +FI[_[_]]] extends Serializable {
   type O[_]
   type I[_]
 
@@ -133,12 +128,8 @@ trait Split1[L[_], FO[_[_]], FI[_[_]]] extends Serializable {
 }
 
 object Split1 extends Split10 {
-  type Aux[L[_], FO[_[_]], FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
+  type Aux[L[_], +FO[_[_]], +FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
 
-  implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = macro Split1Macros.mkSplit1Impl[L, FO, FI]
-}
-
-trait Split10 {
   implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI] =
     macro Split1Macros.mkSplit1Impl[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI]
 
@@ -152,15 +143,17 @@ trait Split10 {
     macro Split1Macros.mkSplit1Impl[L, FO, ({ type λ[t[_]] = FI[U, t] })#λ]
 }
 
+trait Split10 {
+  implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = macro Split1Macros.mkSplit1Impl[L, FO, FI]
+}
+
 @macrocompat.bundle
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._
-  import internal.constantType
-  import Flag._
 
   def mkGeneric1Impl[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
-    val tpe = tTag.tpe
+    val tpe = tTag.tpe.etaExpand
 
     val frTpe =
       c.openImplicits.headOption match {
@@ -222,7 +215,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val rnme = TypeName(c.freshName)
 
     val to = {
-      val toCases = ctorsOf1(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
+      val toCases = ctorsOf1(tpe).zipWithIndex map (mkCoproductCases _).tupled
       q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((ft: Any) match { case ..$toCases }, ft).asInstanceOf[R[$nme]]"""
     }
 
@@ -385,7 +378,9 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val (oTpt, iTpt) =
       lDealiasedTpe match {
         case tpe @ TypeRef(pre, sym, args) if balanced(args) =>
-          val Some(pivot) = args.find(_.contains(lParam))
+          val pivot = (args.find(_.contains(lParam)): @unchecked) match {
+            case Some(p) => p
+          }
           val oPoly = c.internal.polyType(List(lParam), appliedType(tpe.typeConstructor, args.map { arg => if(arg =:= pivot) lParamTpe else arg }))
           val oTpt = appliedTypTree1(oPoly, lParamTpe, nme)
           val iPoly = c.internal.polyType(List(lParam), pivot)

@@ -32,7 +32,7 @@ object SizedExamples extends App {
   def csv[N <: Nat](hdrs : Sized[Seq[String], N], rows : List[Sized[Seq[String], N]]) =
     row(hdrs) :: rows.map(row(_))
   
-  def fullyStatic {
+  def fullyStatic: Unit = {
     val hdrs = Sized("Title", "Author")                     // Sized[IndexedSeq[String], _2]
     val rows = List(                                        // List[Sized[IndexedSeq[String], _2]]
       Sized("Types and Programming Languages", "Benjamin Pierce"),
@@ -56,7 +56,7 @@ object SizedExamples extends App {
     extendedFormatted foreach println
   }
 
-  def mixedDynamicStatic {
+  def mixedDynamicStatic: Unit = {
     val hdrs = List("Title", "Author")
     val rows = List(
       List("Types and Programming Languages", "Benjamin Pierce"),

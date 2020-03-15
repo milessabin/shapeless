@@ -59,13 +59,16 @@ object DefaultTestDefinitions {
       implicit val default = Default[CObj.type]
     }
   }
+
+  class DefaultRun extends Exception("Default value was run")
+  case class SideEffectingDefault(n: Int = throw new DefaultRun)
 }
 
 class DefaultTests {
   import DefaultTestDefinitions._
 
   @Test
-  def simple {
+  def simple: Unit = {
     val default = Default[CC].apply()
     assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
       None :: Some("b") :: Some(Some(true)) :: HNil,
@@ -74,7 +77,7 @@ class DefaultTests {
   }
 
   @Test
-  def topLevel {
+  def topLevel: Unit = {
     // See https://github.com/milessabin/shapeless/issues/474
     val default = Default[DefaultCC].apply()
     assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
@@ -84,7 +87,7 @@ class DefaultTests {
   }
 
   @Test
-  def simpleFromPath {
+  def simpleFromPath: Unit = {
     val default = Default[definitions.CC].apply()
     assertTypedEquals[None.type :: Some[String] :: Some[Option[Boolean]] :: HNil](
       None :: Some("b") :: Some(Some(true)) :: HNil,
@@ -93,7 +96,7 @@ class DefaultTests {
   }
 
   @Test
-  def invalid {
+  def invalid: Unit = {
     illTyped(" Default[Base] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default[Dummy] ", "could not find implicit value for parameter default: .*")
@@ -104,7 +107,7 @@ class DefaultTests {
   }
 
   @Test
-  def simpleAsRecord {
+  def simpleAsRecord: Unit = {
     val default = Default.AsRecord[CC].apply()
     assertTypedEquals[Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T](
       Record(s = "b", flagOpt = Some(true)),
@@ -113,7 +116,7 @@ class DefaultTests {
   }
 
   @Test
-  def simpleFromPathAsRecord {
+  def simpleFromPathAsRecord: Unit = {
     val default = Default.AsRecord[definitions.CC].apply()
     assertTypedEquals[Record.`'s -> String, 'flagOpt -> Option[Boolean]`.T](
       Record(s = "b", flagOpt = Some(true)),
@@ -122,7 +125,7 @@ class DefaultTests {
   }
 
   @Test
-  def invalidAsRecord {
+  def invalidAsRecord: Unit = {
     illTyped(" Default.AsRecord[Base] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default.AsRecord[Dummy] ", "could not find implicit value for parameter default: .*")
@@ -133,7 +136,7 @@ class DefaultTests {
   }
 
   @Test
-  def simpleAsOptions {
+  def simpleAsOptions: Unit = {
     illTyped(
       " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[CC].apply() ",
       "type mismatch.*"
@@ -147,7 +150,7 @@ class DefaultTests {
   }
 
   @Test
-  def simpleFromPathAsOptions {
+  def simpleFromPathAsOptions: Unit = {
     illTyped(
       " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[definitions.CC].apply() ",
       "type mismatch.*"
@@ -161,7 +164,7 @@ class DefaultTests {
   }
 
   @Test
-  def invalidAsOptions {
+  def invalidAsOptions: Unit = {
     illTyped(" Default.AsOptions[Base] ", "could not find implicit value for parameter default: .*")
 
     illTyped(" Default.AsOptions[Dummy] ", "could not find implicit value for parameter default: .*")
@@ -172,7 +175,7 @@ class DefaultTests {
   }
 
   @Test
-  def localClass {
+  def localClass: Unit = {
     case class Default0(d: Double = 1.0)
 
     val default0 = Default[Default0].apply()
@@ -191,7 +194,7 @@ class DefaultTests {
   }
 
   @Test
-  def applyWithDefault1 {
+  def applyWithDefault1: Unit = {
     val default = Default[ApplyWithDefault1.CC].apply()
     assertTypedEquals[None.type :: None.type :: HNil](
       None :: None :: HNil,
@@ -200,7 +203,7 @@ class DefaultTests {
   }
 
   @Test
-  def applyWithDefault2 {
+  def applyWithDefault2: Unit = {
     val default = Default[ApplyWithDefault2.CC].apply()
     assertTypedEquals[None.type :: None.type :: HNil](
       None :: None :: HNil,
@@ -209,7 +212,7 @@ class DefaultTests {
   }
 
   @Test
-  def testSemiAuto {
+  def testSemiAuto: Unit = {
     import SemiAuto._
 
     val default1 = Default[CCl1]
@@ -223,5 +226,18 @@ class DefaultTests {
     assertTypedEquals[Some[Int] :: HNil](Some(0) :: HNil, default1())
     assertTypedEquals[None.type :: HNil](None :: HNil, default2())
     assertTypedEquals[HNil](HNil, default3())
+  }
+
+  @Test
+  def testByName: Unit = {
+    val default = Default[SideEffectingDefault]
+    val thrownException = try {
+      default()
+      false
+    } catch {
+      case _: DefaultRun =>
+        true
+    }
+    assert(thrownException, "Expected DefaultRun to be thrown")
   }
 }

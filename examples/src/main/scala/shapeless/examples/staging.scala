@@ -16,8 +16,6 @@
 
 package shapeless.examples
 
-import scala.language.existentials
-
 object StagedTypeClassExample extends App {
   import scala.reflect.runtime.universe._
   import ReflectionUtils._
@@ -28,7 +26,7 @@ object StagedTypeClassExample extends App {
 
   object TupleConsumer {
     implicit val intString = new TupleConsumer[Int, String] {
-      def apply(t: (Int, String)) = t._1+t._2
+      def apply(t: (Int, String)) = s"${t._1}${t._2}"
     }
 
     implicit val booleanDouble = new TupleConsumer[Boolean, Double] {

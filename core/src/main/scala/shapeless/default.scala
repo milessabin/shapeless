@@ -39,7 +39,11 @@ trait Default[T] extends DepFn0 with Serializable {
 object Default {
   def apply[T](implicit default: Default[T]): Aux[T, default.Out] = default
 
+  // only kept to preserve binary compatibility
   def mkDefault[T, Out0 <: HList](defaults: Out0): Aux[T, Out0] =
+    mkDefaultByName(defaults)
+
+  def mkDefaultByName[T, Out0 <: HList](defaults: => Out0): Aux[T, Out0] =
     new Default[T] {
       type Out = Out0
       def apply() = defaults
@@ -258,7 +262,7 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
       val (types, values) = defaults.unzip
       val outTpe = mkHListTpe(types)
       val outVal = mkHListValue(values)
-      q"_root_.shapeless.Default.mkDefault[$tpe, $outTpe]($outVal)"
+      q"_root_.shapeless.Default.mkDefaultByName[$tpe, $outTpe]($outVal)"
     }
 
     if (isCaseObjectLike(cls)) return mkDefault(Nil)
@@ -283,7 +287,7 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
     mkDefault {
       val fields = fieldsOf(tpe)
       if (hasUniqueDefaults) defaultsFor(fields)
-      else List.fill(fields.size)(noneTpe, none)
+      else List.fill(fields.size)((noneTpe, none))
     }
   }
 }

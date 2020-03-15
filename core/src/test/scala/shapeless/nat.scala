@@ -25,10 +25,10 @@ class NatTests {
   import ops.nat._
   
   trait Check[N <: Nat]
-  def check(expected: Nat)(actually : => Check[expected.N]) {}
+  def check(expected: Nat)(actually : => Check[expected.N]): Unit = {}
   
   @Test
-  def testNat {
+  def testNat: Unit = {
     implicitly[Succ[_1] =:= _2]
     
     implicitly[Pred.Aux[_19, _18]]

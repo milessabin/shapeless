@@ -19,25 +19,26 @@ class RefuteTests {
   import RefuteTests._
 
   @Test
-  def testRefuteNotFound {
+  def testRefuteNotFound: Unit = {
     illTyped("the[Refute[PresentEvidence]]")
   }
 
   @Test
-  def testRefuteNotPresent {
+  def testRefuteNotPresent: Unit = {
     the[Refute[NotPresentEvidence]]
   }
 
   @Test
-  def testInductivePresent {
+  def testInductivePresent: Unit = {
     the[InductiveEvidence]
   }
 
   @Test
-  def increaseCodeCoverage {
+  def increaseCodeCoverage: Unit = {
     // Increases the code coverage, as the above tests cannot
-    Refute.ambiguousIfPresent[PresentEvidence](presentEvidence)
-    Refute.refute[PresentEvidence]
+    Refute.Impl.amb1[PresentEvidence](presentEvidence)
+    Refute.Impl.amb2[PresentEvidence]
+    Refute.refute(new Refute.Impl[PresentEvidence]{})
   }
 
 }

@@ -16,7 +16,6 @@
 
 package shapeless
 
-import language.existentials
 import language.experimental.macros
 
 import reflect.macros.whitebox
@@ -89,7 +88,7 @@ object PolyDefns extends Cases {
 
   object RotateLeft {
     implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
-      (implicit unpack: Unpack2[C, RotateLeft, P, N], cP: Case.Aux[P, L, LOut], rotateRight: hl.RotateRight.Aux[RL, N, L])
+      (implicit unpack: Unpack2[C, RotateLeft, P, N], rotateRight: hl.RotateRight.Aux[RL, N, L], cP: Case.Aux[P, L, LOut])
         : Case.Aux[C, RL, LOut] = new Case[C, RL] {
         type Result = LOut
 
@@ -106,7 +105,7 @@ object PolyDefns extends Cases {
 
   object RotateRight {
     implicit def rotateLeftCase[C, P <: Poly, N <: Nat, L <: HList, LOut, RL <: HList]
-      (implicit unpack: Unpack2[C, RotateRight, P, N], cP: Case.Aux[P, L, LOut], rotateLeft: hl.RotateLeft.Aux[RL, N, L])
+      (implicit unpack: Unpack2[C, RotateRight, P, N], rotateLeft: hl.RotateLeft.Aux[RL, N, L], cP: Case.Aux[P, L, LOut])
         : Case.Aux[C, RL, LOut] = new Case[C, RL] {
         type Result = LOut
 
@@ -166,9 +165,10 @@ object PolyDefns extends Cases {
     implicit def inst2[G[_], T](f : Id ~> G) : T => G[T] = f(_)
     implicit def inst3[F[_], T](f : F ~> Id) : F[T] => T = f(_)
     implicit def inst4[T](f : Id ~> Id) : T => T = f[T](_)  // Explicit type argument needed here to prevent recursion?
-    implicit def inst5[F[_], G, T](f : F ~> Const[G]#λ) : F[T] => G = f(_)
-    implicit def inst6[G, T](f : Id ~> Const[G]#λ) : T => G = f(_)
-    implicit def inst7[F, G](f : Const[F]#λ ~> Const[G]#λ) : F => G = f(_)
+    // Retained as non-implicit for binary compatibility
+    def inst5[F[_], G, T](f : F ~> Const[G]#λ) : F[T] => G = f(_)
+    def inst6[G, T](f : Id ~> Const[G]#λ) : T => G = f(_)
+    def inst7[F, G](f : Const[F]#λ ~> Const[G]#λ) : F => G = f(_)
   }
 
   /** Natural transformation with a constant type constructor on the right hand side. */

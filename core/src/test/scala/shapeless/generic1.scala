@@ -27,6 +27,11 @@ package Generic1TestsAux {
     implicit def tc1Id: TC1[Id] = new TC1[Id] {}
   }
 
+  trait TC1sub[F[_]] extends TC1[F]
+  object TC1sub {
+    implicit def tc1sub[F[_]]: TC1sub[F] = new TC1sub[F] {}
+  }
+
   trait TC10 {
     implicit def tc1[F[_]]: TC1[F] = new TC1[F] {}
   }
@@ -34,6 +39,11 @@ package Generic1TestsAux {
   trait TC2[L[_]]
   object TC2 {
     implicit def tc2[L[_]]: TC2[L] = new TC2[L] {}
+  }
+
+  trait TC2sub[F[_]] extends TC2[F]
+  object TC2sub {
+    implicit def tc2sub[F[_]]: TC2sub[F] = new TC2sub[F] {}
   }
 
   trait TC3[F[_], G[_]]
@@ -97,6 +107,13 @@ package Generic1TestsAux {
         }
       }
 
+    implicit def constFunctor[T]: Functor[Const[T]#λ] =
+      new Functor[Const[T]#λ] {
+        def map[A, B](t: T)(f: A => B): T = t
+      }
+  }
+
+  trait Functor0 {
     // Induction step for coproducts
     implicit def ccons[F[_]](implicit icc: IsCCons1[F, Functor, Functor]): Functor[F] =
       new Functor[F] {
@@ -108,13 +125,6 @@ package Generic1TestsAux {
       new Functor[F] {
         def map[A, B](fa: F[A])(f: A => B): F[B] =
           gen.from(gen.fr.map(gen.to(fa))(f))
-      }
-  }
-
-  trait Functor0 {
-    implicit def constFunctor[T]: Functor[Const[T]#λ] =
-      new Functor[Const[T]#λ] {
-        def map[A, B](t: T)(f: A => B): T = t
       }
   }
 
@@ -275,7 +285,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testOverlappingCoproducts1 {
+  def testOverlappingCoproducts1: Unit = {
     val gen = Generic1[Overlapping1, TC1]
     val o: Overlapping1[Int] = OAB1(1)
     val o0 = gen.to(o)
@@ -314,7 +324,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testSingletons {
+  def testSingletons: Unit = {
     type Unit1[t] = Unit
     type None1[t] = None.type
 
@@ -422,7 +432,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testPartiallyApplied {
+  def testPartiallyApplied: Unit = {
     implicitly[Trivial10[List, Int]]
     type FI[f[_]] = Trivial10[f, Int]
     implicitly[FI[List]]
@@ -476,7 +486,7 @@ class Generic1Tests {
   }
 
   @Test
-  def testPartiallyApplied2 {
+  def testPartiallyApplied2: Unit = {
     type CRepr[t] = t :: List[t] :: HNil
     type LRepr[t] = scala.collection.immutable.::[t] :+: Nil.type :+: CNil
     type LS[t] = List[Set[t]]
@@ -538,7 +548,7 @@ class Generic1Tests {
     typed[TC3[Option, s3.I]](s3.fi)
   }
 
-  def testPartiallyApplied3 {
+  def testPartiallyApplied3: Unit = {
     def materialize1[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[r, Option]})#λ]): Unit = ()
     def materialize2[F[_]](implicit gen: Generic1[F, ({ type λ[r[_]] = TC3[Option, r]})#λ]): Unit = ()
 
@@ -581,6 +591,17 @@ class Generic1Tests {
     materialize13[S]
     materialize14[S]
   }
+
+  @Test
+  def testCovariance: Unit = {
+    type L[A] = (A, A) :: List[A] :: HNil
+    type C[A] = (A, A) :+: List[A] :+: CNil
+    type N[A] = List[(A, A)]
+    typed[Generic1[Foo, TC2]](Generic1[Foo, TC2sub])
+    typed[IsHCons1[L, TC1, TC2]](IsHCons1[L, TC1sub, TC2sub])
+    typed[IsCCons1[C, TC1, TC2]](IsCCons1[C, TC1sub, TC2sub])
+    typed[Split1[N, TC1, TC2]](Split1[N, TC1sub, TC2sub])
+  }
 }
 
 object SplitTestDefns {
@@ -596,7 +617,7 @@ class SplitTests {
   import SplitTestDefns._
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     illTyped("""
     Split1[List, Dummy1, Dummy1]
     """)

@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless._, labelled.{ field, FieldType }, syntax.singleton._
+import shapeless._, labelled.{ field, FieldType }
 
 /*
  * This example shows how to write a simple serialiser/deserialiser
@@ -112,7 +112,7 @@ package sexp.ast {
     val field = term.field
   }
   case class PreferToken(tree: TokenTree, before: Option[Prefer], after: Option[Prefer]) extends TokenTree {
-    val text = before.getOrElse("") + tree.text + after.getOrElse("")
+    val text = before.map(_.toString).getOrElse("") + tree.text + after.map(_.toString).getOrElse("")
   }
   case class InTerm(field: DatabaseField, value: String, text: String = "") extends CompressedToken
   case class QualifierToken(text: String, field: DatabaseField) extends ContextualToken with Term

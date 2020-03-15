@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-16 Miles Sabin
+ * Copyright (c) 2012-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package shapeless
-
-import ops.hlist.{ IsHCons, ReversePrepend, Split, SplitLeft }
 
 /**
  * Generic Zipper for any type with a representation via `Generic`.
@@ -102,6 +100,6 @@ object Zipper {
   implicit class Modifier[C, L <: HList, RH, RT <: HList, P](val zipper: Zipper[C, L, RH :: RT, P]) extends AnyVal {
     import ops.zipper._
     /** Modifies the element at the cursor by the use of function f. Available only if the underlying `HList` is non-empty. */
-    def modify[E](f: RH => E)(implicit modify: Modify[zipper.Self, RH, E]): modify.Out = modify(zipper, f)
+    def modify[E](f: RH => E)(implicit modify: Modify[Zipper[C, L, RH :: RT, P], RH, E]): modify.Out = modify(zipper, f)
   }
 }

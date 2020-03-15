@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-16 Miles Sabin
+ * Copyright (c) 2013-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
 
-package object shapeless {
+package object shapeless extends ScalaVersionSpecifics {
   def unexpected : Nothing = sys.error("Unexpected invocation")
 
   // Basic definitions
@@ -132,14 +132,15 @@ package shapeless {
           if (tTpe.typeSymbol.isParameter) owner.tpe.asInstanceOf[Type]
           else tTpe
         tpe0.finalResultType
-      }.asInstanceOf[global.Type]
+      }
+      val gTpe = tpe.asInstanceOf[global.Type]
 
       // Run our own custom implicit search that isn't allowed to find
       // the thing we are enclosed in
       val sCtx = tCtx.makeImplicit(false)
       val is = new analyzer.ImplicitSearch(
         tree = application,
-        pt = tpe,
+        pt = gTpe,
         isView = false,
         context0 = sCtx,
         pos0 = c.enclosingPosition.asInstanceOf[global.Position]
@@ -159,12 +160,7 @@ package shapeless {
       }
       val best = is.bestImplicit
       if (best.isFailure) {
-        val errorMsg = tpe.typeSymbolDirect match {
-          case analyzer.ImplicitNotFoundMsg(msg) =>
-            msg.format(TermName("evidence").asInstanceOf[global.TermName], tpe)
-          case _ =>
-            s"Could not find an implicit value of type $tpe to cache"
-        }
+        val errorMsg = implicitNotFoundMessage(c)(tpe)
         c.abort(c.enclosingPosition, errorMsg)
       } else {
         best.tree.asInstanceOf[Tree]

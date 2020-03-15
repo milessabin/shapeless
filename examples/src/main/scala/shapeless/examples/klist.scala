@@ -20,7 +20,7 @@ object KList {
   import shapeless._
   import UnaryTCConstraint._
   
-  // Function which will only accept HList's whose elements all have have Option as their
+  // Function which will only accept HList's whose elements all have Option as their
   // outer type constructor
   def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
   

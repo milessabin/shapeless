@@ -17,10 +17,9 @@
 package shapeless
 
 import scala.language.dynamics
-import scala.language.existentials
 import scala.language.experimental.macros
 
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
 import tag.@@
 import scala.util.Try
@@ -193,17 +192,20 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 
   def parseSingletonSymbolType(typeStr: String): Option[Type] =
-    for {
-      LiteralSymbol(name) <- Try(c.parse(typeStr)).toOption
-    } yield SingletonSymbolType(name)
+    if (typeStr.startsWith("'") && !typeStr.endsWith("'"))
+      Some(SingletonSymbolType(typeStr.tail))
+    else
+      None
 
   def parseLiteralType(typeStr: String): Option[Type] =
-    for {
-      parsed <- Try(c.parse(typeStr)).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
-      tpe <- SingletonType.unapply(checked)
-    } yield tpe
+    parseSingletonSymbolType(typeStr).orElse(
+      for {
+        parsed <- Try(c.parse(typeStr)).toOption
+        checked = c.typecheck(parsed, silent = true)
+        if checked.nonEmpty
+        tpe <- SingletonType.unapply(checked)
+      } yield tpe
+    )
 
   def parseStandardType(typeStr: String): Option[Type] =
     for {
@@ -292,11 +294,10 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
     """
   }
 
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
+  def mkAttributedQualifier(tpe: Type): Tree = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-    val gPre = pre.asInstanceOf[global.Type]
-    val gSym = sym.asInstanceOf[global.Symbol]
-    global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
+    val gTpe = tpe.asInstanceOf[global.Type]
+    global.gen.mkAttributedQualifier(gTpe).asInstanceOf[Tree]
   }
 
   def extractSingletonValue(tpe: Type): Tree =
@@ -305,11 +306,13 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
       case ConstantType(c: Constant) => Literal(c)
 
-      case SingleType(p, v) => mkAttributedRef(p, v)
+      case t: SingleType => mkAttributedQualifier(t)
 
       case SingletonSymbolType(c) => mkSingletonSymbol(c)
 
       case ThisType(sym) => This(sym)
+
+      case t@TypeRef(_, sym, _) if sym.isModuleClass => mkAttributedQualifier(t)
 
       case _ =>
         c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")

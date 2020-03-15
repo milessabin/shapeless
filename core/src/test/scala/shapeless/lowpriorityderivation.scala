@@ -1,7 +1,22 @@
+/*
+ * Copyright (c) 2016-18 Miles Sabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package shapeless
 
 import scala.language.reflectiveCalls
-import scala.collection.generic.CanBuildFrom
 import org.junit.Test
 
 
@@ -74,6 +89,87 @@ object LowPriorityDerivationTests {
     implicit def tuple2TC[A: TC0, B: TC0]: TC0[(A, B)] = instance[(A, B)](n => s"(${apply[A].msg(n-1)}, ${apply[B].msg(n-1)})")
     implicit val cc1TC: TC0[CC1] = instance[CC1](_ => "CC1")
   }
+
+  trait TCR[T] {
+    type Out
+    def msg(n: Int): String
+  }
+
+  object TCR {
+    def apply[T](implicit tc: TCR[T]): Aux[T, tc.Out] = tc
+
+    type Aux[T, Out0] = TCR[T] { type Out = Out0 }
+
+    def instance[T, Out0](msg0: Int => String): Aux[T, Out0] =
+      new TCR[T] {
+        type Out = Out0
+        def msg(n: Int) = if (n >= 0) msg0(n) else "…"
+      }
+
+    // These implicits are similar to the ones in the companion of TC above -
+    // I found no way to share their definitions (in a common trait like Companion[TC[_]], say)
+    // without running into implicit collisions with defaultTC.
+
+    implicit val int: Aux[Int, Int] = instance(_ => "Int")
+    implicit val boolean: Aux[Boolean, Boolean] = instance(_ => "Boolean")
+    implicit def option[T, TOut](implicit t: Aux[T, TOut]): Aux[Option[T], Option[TOut]] =
+      instance(n => s"Option[${t.msg(n-1)}]")
+    implicit def tuple2[A, B, AOut, BOut](implicit a: Aux[A, AOut], b: Aux[B, BOut]): Aux[(A, B), AOut :: BOut :: HNil] =
+      instance(n => s"(${a.msg(n-1)}, ${b.msg(n-1)})")
+    implicit val cc1: Aux[CC1, Int] = instance(_ => "CC1")
+  }
+
+  object TCRDeriver {
+
+    trait MkHListTC[L <: HList] {
+      type Out <: HList
+      def tc: TCR.Aux[L, Out]
+    }
+
+    object MkHListTC {
+      type Aux[L <: HList, Out0 <: HList] = MkHListTC[L] { type Out = Out0 }
+      implicit def hnil: Aux[HNil, HNil] =
+        new MkHListTC[HNil] {
+          type Out = HNil
+          val tc = TCR.instance[HNil, HNil](_ => "HNil")
+        }
+      implicit def hcons[H, T <: HList, HOut, TOut <: HList]
+       (implicit
+         head: Strict[TCR.Aux[H, HOut]],
+         tail: Aux[T, TOut]
+       ): Aux[H :: T, HOut :: TOut] =
+        new MkHListTC[H :: T] {
+          type Out = HOut :: TOut
+          lazy val tc = TCR.instance[H :: T, HOut :: TOut](n => s"${head.value.msg(n-1)} :: ${tail.tc.msg(n-1)}")
+        }
+    }
+
+    trait MkTC[T] {
+      type Out
+      def tc: TCR.Aux[T, Out]
+    }
+
+    object MkTC {
+      type Aux[T, Out0] = MkTC[T] { type Out = Out0 }
+      implicit def generic[P, L <: HList, Out0 <: HList]
+       (implicit
+         gen: Generic.Aux[P, L],
+         underlying: Lazy[MkHListTC.Aux[L, Out0]]
+       ): Aux[P, Out0] =
+        new MkTC[P] {
+          type Out = Out0
+          lazy val tc = TCR.instance[P, Out0](n => s"Generic[${underlying.value.tc.msg(n-1)}]")
+        }
+    }
+
+    implicit def mkTCR[T, Out]
+     (implicit
+       ev: LowPriority,
+       cached: Strict[MkTC.Aux[T, Out]]
+     ): TCR.Aux[T, Out] =
+      cached.value.tc
+  }
+
 
   trait SimpleDeriver[TC[_] <: {def msg(n: Int): String}] {
     def instance[T](msg0: Int => String): TC[T]
@@ -167,14 +263,14 @@ object LowPriorityDerivationTests {
           val tc = instance[Double](_ => "Double")
         }
 
-      implicit def mkCollWriter[M[_], T]
+      implicit def mkCollWriter[T]
        (implicit
-         underlying: TC[T],
-         cbf: CanBuildFrom[Nothing, T, M[T]]
-       ): MkStdTC[M[T]] =
-        new MkStdTC[M[T]] {
-          lazy val tc = instance[M[T]](n => s"${cbf().result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
+         underlying: TC[T]
+       ): MkStdTC[List[T]] = {
+        new MkStdTC[List[T]] {
+          lazy val tc = instance[List[T]](n => s"List[${underlying.msg(n - 1)}]")
         }
+       }
     }
 
     trait MkGenericTupleTC[T] extends MkTC[T]
@@ -308,16 +404,21 @@ class LowPriorityDerivationTests {
 
   def validateTC[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   def validateTC0[T: TC0](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC0[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
+  }
+
+  def validateTCR[T](expected: String, n: Int = Int.MaxValue)(implicit tcr: TCR[T]): Unit = {
+    val msg = tcr.msg(n)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   @Test
-  def simple {
+  def simple: Unit = {
     import SimpleTCDeriver._
 
     // All orphans
@@ -356,7 +457,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def composed {
+  def composed: Unit = {
     import ComposedTCDeriver._
 
     // All orphans
@@ -397,7 +498,36 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simpleWithIgnoring {
+  def refinement: Unit = {
+    import TCRDeriver._
+
+    // Orphans
+    validateTCR[Int]("Int")
+    validateTCR[CC1]("CC1")
+    validateTCR[Option[Int]]("Option[Int]")
+    validateTCR[Option[CC1]]("Option[CC1]")
+    validateTCR[(Int, CC1)]("(Int, CC1)")
+    validateTCR[(CC1, Int)]("(CC1, Int)")
+    validateTCR[(CC1, Boolean)]("(CC1, Boolean)")
+
+    val cc1 = TCR[CC1]
+    val cc1Value: cc1.Out = 2
+
+    mkTCR[CC2, Int :: HNil](null, implicitly)
+
+    // Derived
+    validateTCR[CC2]("Generic[Int :: HNil]")
+
+    val cc2 = TCR[CC2]
+    val cc2Value: cc2.Out = 2 :: HNil
+
+    // Mix of orphans and derived
+    validateTCR[(Int, CC1, Boolean)]("Generic[Int :: CC1 :: Boolean :: HNil]")
+    validateTCR[(Int, CC2)]("(Int, Generic[Int :: HNil])")
+  }
+
+  @Test
+  def simpleWithIgnoring: Unit = {
     import SimpleTC0Deriver._
 
     // More or less cut-n-pasted from 'simple above, I don't really see they could be factored

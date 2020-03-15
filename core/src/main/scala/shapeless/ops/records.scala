@@ -18,7 +18,7 @@ package shapeless
 package ops
 
 import scala.language.experimental.macros
-import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.whitebox
 
 import poly._
 
@@ -549,19 +549,19 @@ package record {
 
     implicit def hconsRemoveAll[L <: HList, H, T <: HList, OutT <: HList, RemovedH, RemainderH <: HList, RemovedT <: HList, RemainderT <: HList]
       (implicit
-        rt: RemoveAll.Aux[L, T, (RemovedT, RemainderT)],
-        rh: Remove.Aux[RemainderT, H, (RemovedH, RemainderH)]
-      ): Aux[L, H :: T, (RemovedH :: RemovedT, RemainderH)] =
+        rh: Remove.Aux[L, H, (RemovedH, RemainderH)],
+        rt: RemoveAll.Aux[RemainderH, T, (RemovedT, RemainderT)]
+      ): Aux[L, H :: T, (RemovedH :: RemovedT, RemainderT)] =
         new RemoveAll[L, H :: T] {
-          type Out = (RemovedH :: RemovedT, RemainderH)
+          type Out = (RemovedH :: RemovedT, RemainderT)
 
           def apply(l: L): Out = {
-            val (removedT, remainderT) = rt(l)
-            val (removedH, remainderH) = rh(remainderT)
-            (removedH :: removedT, remainderH)
+            val (removedH, remainderH) = rh(l)
+            val (removedT, remainderT) = rt(remainderH)
+            (removedH :: removedT, remainderT)
           }
 
-          def reinsert(out: Out): L = rt.reinsert((out._1.tail, rh.reinsert((out._1.head, out._2))))
+          def reinsert(out: Out): L = rh.reinsert((out._1.head, rt.reinsert((out._1.tail, out._2))))
         }
   }
 
