@@ -28,7 +28,7 @@ object tag {
   trait Tagged[U] extends Any
   type @@[+T, U] = T with Tagged[U]
 
-  trait Tagger[U] {
+  class Tagger[U] {
     def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
   }
   private object Tagger extends Tagger[Nothing]
