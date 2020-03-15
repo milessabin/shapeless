@@ -94,6 +94,23 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   def merge[M <: HList](m: M)(implicit merger: Merger[L, M]): merger.Out = merger(l, m)
 
   /**
+    * Returns the deep union of this record and another record.
+    */
+  def deepMerge[M <: HList](m: M)(implicit merger: DeepMerger[L, M]): merger.Out = merger(l, m)
+
+  /**
+    * Extracts super-record from sub-record according to depth subtype relation
+    */
+  def extract[E <: HList](implicit extractor: Extractor[L, E]): E = extractor(l)
+
+  /**
+    * Returns the union of this record and another record using the provided `f` to combine the values of fields which are present in both.
+    *
+    * The duplicated fields will be merged with `f`.
+    */
+  def mergeWith[M <: HList](m: M)(f: Poly)(implicit merger: MergeWith[L, M, f.type]): merger.Out = merger(l, m)
+
+  /**
    * Rename the field associated with the singleton typed key oldKey. Only available if this
    * record has a field with keyType equal to the singleton type oldKey.T.
    */
@@ -124,6 +141,11 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
    * Maps a higher rank function across the values of this record.
    */
   def mapValues(f: Poly)(implicit mapValues: MapValues[f.type, L]): mapValues.Out = mapValues(l)
+
+  /**
+    * Align the keys on the order of HList of keys K
+    */
+  def alignByKeys[K <: HList](implicit alignByKeys: AlignByKeys[L, K]): alignByKeys.Out = alignByKeys(l)
 
   /**
    * Returns a wrapped version of this record that provides `selectDynamic` access to fields.

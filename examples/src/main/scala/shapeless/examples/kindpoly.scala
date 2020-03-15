@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-18 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,20 @@ import shapeless._
 
 class TyApp[App, TyCon, Args <: HList]
 
-object TyApp {
-  class Arbitrary
-  implicit def tyApp1[TC[_], A] =
-    new TyApp[TC[A], TC[Arbitrary], A :: HNil]
-  
-  implicit def tyApp2[TC[_, _], A, B] =
-    new TyApp[TC[A, B], TC[Arbitrary, Arbitrary], A :: B :: HNil]
-
-  implicit def tyApp3[TC[_, _, _], A, B, C] =
+object TyApp extends TyApp0 {
+  implicit def tyApp3[TC[_, _, _], A, B, C]: TyApp[TC[A, B, C], TC[Arbitrary, Arbitrary, Arbitrary], A :: B :: C :: HNil] =
     new TyApp[TC[A, B, C], TC[Arbitrary, Arbitrary, Arbitrary], A :: B :: C :: HNil]
+}
+
+trait TyApp0 extends TyApp1 {
+  implicit def tyApp2[TC[_, _], A, B]: TyApp[TC[A, B], TC[Arbitrary, Arbitrary], A :: B :: HNil] =
+    new TyApp[TC[A, B], TC[Arbitrary, Arbitrary], A :: B :: HNil]
+}
+
+trait TyApp1 {
+  class Arbitrary
+  implicit def tyApp1[TC[_], A]: TyApp[TC[A], TC[Arbitrary], A :: HNil] =
+    new TyApp[TC[A], TC[Arbitrary], A :: HNil]
 }
 
 object KindPolyExamples {

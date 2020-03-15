@@ -26,7 +26,7 @@ class ConversionTests {
   import test._
 
   @Test
-  def testTuples {
+  def testTuples: Unit = {
     val t1 = (23, "foo", 2.0, true)
     
     val h1 = t1.productElements
@@ -61,7 +61,7 @@ class ConversionTests {
   }
   
   @Test
-  def testFunctions {
+  def testFunctions: Unit = {
     val sum : (Int, Int) => Int = _+_
     val prd : (Int, Int, Int) => Int = _*_*_
 
@@ -102,7 +102,7 @@ class ConversionTests {
   }
   
   @Test
-  def testCaseClasses {
+  def testCaseClasses: Unit = {
     case class Foo(a : Int, b : String, c : Double)
     
     val f1 = Foo(23, "foo", 2.3)

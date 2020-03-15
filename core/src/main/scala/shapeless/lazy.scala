@@ -125,6 +125,7 @@ object Lazy {
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
+  @implicitNotFound("could not find Lazy implicit values for all of the types enumerated in ${T}")
   class Values[T <: HList](val values: T) extends Serializable
   object Values {
     implicit val hnilValues: Values[HNil] = new Values(HNil)
@@ -134,7 +135,7 @@ object Lazy {
 
   def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
 
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacrosRef.mkLazyImpl[I]
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
 }
 
 object lazily {
@@ -164,7 +165,7 @@ object Strict {
 
   def unapply[T](lt: Strict[T]): Option[T] = Some(lt.value)
 
-  implicit def mkStrict[I]: Strict[I] = macro LazyMacrosRef.mkStrictImpl[I]
+  implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
 }
 
 @macrocompat.bundle
@@ -179,7 +180,7 @@ trait OpenImplicitMacros {
   def openImplicitTpeParam: Option[Type] =
     openImplicitTpe.map {
       case TypeRef(_, _, List(tpe)) =>
-        tpe.map(_.dealias)
+        tpe.dealias
       case other =>
         c.abort(c.enclosingPosition, s"Bad materialization: $other")
     }
@@ -233,7 +234,6 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
     class SubstMessage extends Transformer {
       val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-      import global.nme
 
       override def transform(tree: Tree): Tree = {
         super.transform {
@@ -303,17 +303,8 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             val tree = c.inferImplicitValue(tpe, silent = true)
             if(tree.isEmpty) {
               tpe.typeSymbol.annotations.
-                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { infAnn =>
-                  val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
-                  val analyzer: global.analyzer.type = global.analyzer
-                  val gTpe = tpe.asInstanceOf[global.Type]
-                  val errorMsg = gTpe.typeSymbolDirect match {
-                    case analyzer.ImplicitNotFoundMsg(msg) =>
-                      msg.format(TermName("evidence").asInstanceOf[global.TermName], gTpe)
-                    case _ =>
-                      s"Implicit value of type $tpe not found"
-                  }
-                  setAnnotation(errorMsg)
+                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { _ =>
+                  setAnnotation(implicitNotFoundMessage(c)(tpe))
                 }
             }
             (State.current.get, tree)
@@ -452,7 +443,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
         val tmpState = state.copy(prevent = state.prevent :+ TypeWrapper(wrappedTpe))
 
-        val existingInstOpt = derive(tmpState)(innerTpe).right.toOption.flatMap {
+        val existingInstOpt = derive(tmpState)(innerTpe).toOption.flatMap {
           case (state2, inst) =>
             if (inst.inst.isEmpty)
               resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
@@ -501,11 +492,10 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
     def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
       deriveLowPriority(state, tpe).getOrElse {
-        state.lookup(tpe).left.flatMap { state0 =>
+        state.lookup(tpe).swap.flatMap { state0 =>
           val inst = state0.dict(TypeWrapper(tpe))
-          resolve(state0)(inst)
-            .toRight(s"Unable to derive $tpe")
-        }
+          resolve(state0)(inst).toLeft(s"Unable to derive $tpe")
+        }.swap
       }
     }
 
@@ -559,7 +549,9 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
             }
           }
 
-        val primaryInstance = state.lookup(primaryTpe).right.get._2
+        val primaryInstance = (state.lookup(primaryTpe): @unchecked) match {
+          case Right((_, pi)) => pi
+        }
         val primaryNme = primaryInstance.name
         val clsName = TypeName(c.freshName(state.name))
 
@@ -579,15 +571,24 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 }
 
 object LazyMacros {
-  var dcRef: Option[LazyMacros#DerivationContext] = None
+  def dcRef(lm: LazyMacros): Option[LazyMacros#DerivationContext] = {
+    // N.B. openMacros/enclosingMacros annoyingly include macros which are not enclosing this macro at all,
+    // but simply happen to be expanding further up on the same compiler stack (and the compiler stack doesn't
+    // necessarily correspond to a single path through the AST - it can jump to other trees during typing), so
+    // we need to stop once the position of the open macros no longer matches ours
+    lm.c.openMacros.takeWhile(_.enclosingPosition == lm.c.enclosingPosition)
+      // use the first enclosing DerivationContext we find (if any)
+      .find(c => c.internal.attachments(c.macroApplication).contains[lm.DerivationContext])
+      .flatMap(c => c.internal.attachments(c.macroApplication).get[lm.DerivationContext])
+  }
 
   def deriveInstance(lm: LazyMacros)(tpe: lm.c.Type, mkInst: (lm.c.Tree, lm.c.Type) => lm.c.Tree): lm.c.Tree = {
     val (dc, root) =
-      dcRef match {
+      dcRef(lm) match {
         case None =>
           lm.resetAnnotation
           val dc = new lm.DerivationContext
-          dcRef = Some(dc)
+          lm.c.internal.updateAttachment(lm.c.macroApplication, dc)
           (dc, true)
         case Some(dc) =>
           (dc.asInstanceOf[lm.DerivationContext], false)
@@ -601,7 +602,7 @@ object LazyMacros {
       dc.State.deriveInstance(tpe, root, mkInst)
     } finally {
       if(root) {
-        dcRef = None
+        lm.c.internal.removeAttachment[lm.DerivationContext](lm.c.macroApplication)
       }
     }
   }

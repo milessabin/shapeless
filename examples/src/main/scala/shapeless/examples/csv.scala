@@ -16,7 +16,7 @@
 
 package shapeless.examples
 
-import shapeless._, syntax.singleton._
+import shapeless._
 
 import scala.collection.immutable.{:: => Cons}
 import scala.util.{Try,Success,Failure}
@@ -28,15 +28,15 @@ import scala.util.{Try,Success,Failure}
  * */
 
 // The class to serialize or deserialize
-case class Person(name: String, surname: String, age: Int, id: Option[Int])
+case class Person(name: String, surname: String, age: Int, id: Option[Int], weight: Option[Int], height: Int)
 
 object CSVExample extends App {
 
   import CSVConverter._
 
-  val input = """John,Carmack,23,0
-Brian,Fargo,35
-Markus,Persson,32"""
+  val input = """John,Carmack,23,0,,100
+Brian,Fargo,35,,,110
+Markus,Persson,32,,,120"""
 
   println(CSVConverter[List[Person]].from(input))
 }
@@ -45,7 +45,7 @@ Markus,Persson,32"""
 // Implementation
 
 /** Exception to throw if something goes wrong during CSV parsing */
-class CSVException(s: String) extends RuntimeException
+class CSVException(s: String) extends RuntimeException(s)
 
 /** Trait for types that can be serialized to/deserialized from CSV */
 trait CSVConverter[T] {
@@ -130,7 +130,7 @@ object CSVConverter {
             front <- scv.value.from(before)
             back <- sct.value.from(if (after.isEmpty) after else after.tail)
           } yield Some(front) :: back).orElse {
-            sct.value.from(s).map(None :: _)
+            sct.value.from(if (s.isEmpty) s else s.tail).map(None :: _)
           }
 
         case _ => fail("Cannot convert '" ++ s ++ "' to HList")

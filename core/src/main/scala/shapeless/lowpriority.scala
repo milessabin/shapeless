@@ -67,11 +67,18 @@ class LowPriorityMacros(val c: whitebox.Context) extends OpenImplicitMacros with
 
   def strictTpe = typeOf[Strict[_]].typeConstructor
 
+  // FIXME Also in LazyMacros
+  def stripRefinements(tpe: Type): Option[Type] =
+    tpe match {
+      case RefinedType(parents, _) => Some(parents.head)
+      case _ => None
+    }
+
   def mkLowPriority: Tree =
     secondOpenImplicitTpe match {
       case Some(tpe) =>
         c.inferImplicitValue(
-          appliedType(strictTpe, appliedType(lowPriorityForTpe, tpe)),
+          appliedType(strictTpe, appliedType(lowPriorityForTpe, stripRefinements(tpe.dealias).getOrElse(tpe))),
           silent = false
         )
 
@@ -119,7 +126,7 @@ trait LowPriorityTypes {
         case TypeRef(_, cpdTpe, List(ConstantType(Constant(ignored: String)), tTpe))
           if cpdTpe.asType.toType.typeConstructor =:= lowPriorityForIgnoringTpe &&
             ignored.nonEmpty =>
-          Some(ignored, tTpe)
+          Some((ignored, tTpe))
         case _ =>
           None
       }

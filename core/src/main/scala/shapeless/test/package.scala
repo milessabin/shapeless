@@ -20,9 +20,9 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 package object test {
-  def typed[T](t : => T) {}
+  def typed[T](t : => T): Unit = {}
 
-  def sameTyped[T](t1: => T)(t2: => T) {}
+  def sameTyped[T](t1: => T)(t2: => T): Unit = {}
 
   def showType[T]: String = macro TestMacros.showTypeNoValue[T]
 

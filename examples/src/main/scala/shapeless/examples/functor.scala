@@ -99,6 +99,13 @@ object Functor extends Functor0 {
       }
     }
 
+  implicit def constFunctor[T]: Functor[Const[T]#λ] =
+    new Functor[Const[T]#λ] {
+      def map[A, B](t: T)(f: A => B): T = t
+    }
+}
+
+trait Functor0 {
   // Induction step for coproducts
   implicit def ccons[F[_]](implicit icc: IsCCons1[F, Functor, Functor]): Functor[F] =
     new Functor[F] {
@@ -110,13 +117,6 @@ object Functor extends Functor0 {
     new Functor[F] {
       def map[A, B](fa: F[A])(f: A => B): F[B] =
         gen.from(gen.fr.map(gen.to(fa))(f))
-    }
-}
-
-trait Functor0 {
-  implicit def constFunctor[T]: Functor[Const[T]#λ] =
-    new Functor[Const[T]#λ] {
-      def map[A, B](t: T)(f: A => B): T = t
     }
 }
 

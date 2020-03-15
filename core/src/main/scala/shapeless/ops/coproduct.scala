@@ -19,7 +19,13 @@ package ops
 
 import poly._
 
+import annotation.implicitNotFound
+
 object coproduct {
+
+  /**
+    * Type class for converting a value of type I into the coproduct C. (Type I need to occur in the coproduct C)
+    */
   trait Inject[C <: Coproduct, I] extends Serializable {
     def apply(i: I): C
   }
@@ -31,11 +37,15 @@ object coproduct {
       def apply(i: I): H :+: T = Inr(tlInj(i))
     }
 
-    implicit def hdInject[H, T <: Coproduct]: Inject[H :+: T, H] = new Inject[H :+: T, H] {
-      def apply(i: H): H :+: T = Inl(i)
+    implicit def hdInject[H, HH <: H, T <: Coproduct]: Inject[H :+: T, HH] = new Inject[H :+: T, HH] {
+      def apply(i: HH): H :+: T = Inl(i)
     }
   }
 
+  /**
+    * Type class for attempting to get a value of type T out of an instance of corpdocut C.
+    * If the coproduct instance is not of the specified type, None is returned
+    */
   trait Selector[C <: Coproduct, T] extends Serializable {
     def apply(c: C): Option[T]
   }
@@ -57,6 +67,9 @@ object coproduct {
     }
   }
 
+  /**
+    * Type class supporting getting the Nth type from a coproduct C.
+    * */
   trait At[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable {
     type A
     type Out = Option[A]
@@ -88,13 +101,45 @@ object coproduct {
     }
   }
 
+  /**
+    *  find index of A in C
+    */
+  trait IndexOf[C <: Coproduct, A] extends DepFn0 with Serializable {
+    type Out <: Nat
+    def value(implicit n: ops.nat.ToInt[Out]): Int = n.apply()
+  }
+  object IndexOf {
+    type Aux[C <: Coproduct, A, R <: Nat] = IndexOf[C, A] { type Out = R }
+    def apply[C <: Coproduct, A](
+      implicit index: IndexOf[C, A]): Aux[C, A, index.Out] = index
+
+    implicit def matched[C <: Coproduct, A]: Aux[A :+: C, A, Nat._0] =
+      new IndexOf[A :+: C, A] {
+        type Out = Nat._0
+        def apply(): Out = Nat._0
+      }
+
+    implicit def notMatched[C <: Coproduct, A, H, Next <: Nat](
+      implicit ev: A =:!= H,
+      next: Aux[C, A, Next],
+      n: Witness.Aux[Succ[Next]]
+    ): Aux[H :+: C, A, Succ[Next]] = new IndexOf[H :+: C, A] {
+      type Out = Succ[Next]
+      def apply(): Out = n.value
+    }
+  }
+
+  /**
+    * Type class for filtering coproduct by type U, splitting into a coproduct containing only type U and
+    * a coproduct of all other types.
+    */
   trait Partition[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type Prefix <: Coproduct
     type Suffix <: Coproduct
     type Out = Either[Prefix, Suffix]
 
-    def filter(c: C): Option[Prefix]    = apply(c).left.toOption
-    def filterNot(c: C): Option[Suffix] = apply(c).right.toOption
+    def filter(c: C): Option[Prefix]    = apply(c).swap.toOption
+    def filterNot(c: C): Option[Suffix] = apply(c).toOption
     def apply(c: C): Out = toEither(coproduct(c))
     def coproduct(c: C): Prefix :+: Suffix :+: CNil
   }
@@ -147,6 +192,10 @@ object coproduct {
     }
   }
 
+  /**
+    * Type class which filters a coproduct by a type U, producing a coproduct containing only U.
+    * (The output is a coproduct because type U may occur multiple times in the original coproduct)
+    */
   trait Filter[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type A <: Coproduct
     type Out = Option[A]
@@ -166,6 +215,10 @@ object coproduct {
     }
   }
 
+  /**
+    * Type class which filters a coproduct by a type U, producing a coproduct that does not contain U
+    * If U does not exist in the coproduct, the original coproduct is returned
+    */
   trait FilterNot[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type A <: Coproduct
     type Out = Option[A]
@@ -185,6 +238,11 @@ object coproduct {
     }
   }
 
+  /**
+    * Type class that can removes the first occurrence of a particular type from a coproduct, splitting it into the
+    * specified type U and a coproduct representing the rest of the coproduct (with first occurrence of U removed).
+    * Also provides the [[inverse]] method which allows for reconstructing the original coproduct from its subparts.
+    */
   trait Remove[C <: Coproduct, U] extends DepFn1[C] with Serializable {
     type Rest <: Coproduct
     type Out = Either[U, Rest]
@@ -241,6 +299,9 @@ object coproduct {
     }
   }
 
+  /**
+    * Type class similar to [[Remove]], but removes the last occurance of the specified type (I) instead
+    */
   trait RemoveLast[C <: Coproduct, I] extends DepFn1[C] with Serializable {
     type Rest <: Coproduct
     type Out = Either[I, Rest]
@@ -278,6 +339,10 @@ object coproduct {
     ): Aux[H :+: T, I, H :+: tailRemoveLast.Rest] = fromRemove(Remove.removeTail(toRemove(tailRemoveLast)))
   }
 
+  /**
+    * For each type in the coproduct run a function (provide in Poly) which produces some coproduct, then flatten all
+    * the resulting coproducts. This is conceptually similar to List#flatMap with the list items being types
+    * */
   trait FlatMap[C <: Coproduct, F <: Poly] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object FlatMap {
@@ -307,6 +372,9 @@ object coproduct {
 
   }
 
+  /**
+    * For each type in a coproduct, map it to another type. Conceptually similar to List#map
+    */
   trait Mapper[F <: Poly, C <: Coproduct] extends DepFn1[C] with Serializable { type Out <: Coproduct }
 
   object Mapper {
@@ -331,6 +399,10 @@ object coproduct {
         }
   }
 
+  /**
+    * Type class that unifies all the types in a coproduct into one single type which is their closest common parent type
+    * (i.e. least upper bound of all the types in the coproduct)
+    */
   trait Unifier[C <: Coproduct] extends DepFn1[C] with Serializable
 
   object Unifier {
@@ -357,6 +429,9 @@ object coproduct {
         }
   }
 
+  /**
+    * Type class folding all possible types of a coproduct down to a single type
+    */
   trait Folder[F <: Poly, C <: Coproduct] extends DepFn1[C] with Serializable
 
   object Folder {
@@ -373,6 +448,9 @@ object coproduct {
         }
   }
 
+  /** Type class which performs left fold on a coproduct. Provided with a dependent function that can convert
+    * all types in a coproduct into the same type as the initial value of type In, combines the actual value
+    * of the coproduct with the initial value */
   trait LeftFolder[C <: Coproduct, In, F] extends DepFn2[C,In] with Serializable
 
   object LeftFolder {
@@ -425,6 +503,9 @@ object coproduct {
       }
   }
 
+  /** Type class that zips an HList with a Coproduct, producing a Coproduct of tuples where each element from
+    * the original coproduct is combined with the matching HList element
+    */
   trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] with Serializable { type Out <: Coproduct }
 
   object ZipWithKeys {
@@ -449,37 +530,6 @@ object coproduct {
               case Inr(vt) => Inr(zipWithKeys(vt))
             }
           }
-  }
-
-  /**
-   * Type class supporting zipping this `Coproduct` with a `Coproduct` returning a `Coproduct` of tuples of the form
-   * ({element from input tuple}, {element index})
-   *
-   * @author Andreas Koestler
-   */
-  trait ZipOne[C1 <: Coproduct, C2 <: Coproduct] extends DepFn2[C1, C2] with Serializable { type Out <: Coproduct }
-
-  object ZipOne {
-    def apply[C1 <: Coproduct, C2 <: Coproduct](implicit zip: ZipOne[C1, C2]): Aux[C1, C2, zip.Out] = zip
-
-    type Aux[C1 <: Coproduct, C2 <: Coproduct, Out0 <: Coproduct] = ZipOne[C1, C2] {type Out = Out0}
-
-    implicit def singleZipOne[C1H, C2H]: Aux[C1H :+: CNil, C2H :+: CNil, (C1H, C2H) :+: CNil] =
-      new ZipOne[C1H :+: CNil, C2H :+: CNil] {
-        type Out = (C1H, C2H) :+: CNil
-
-        def apply(c: C1H :+: CNil, c2: C2H :+: CNil): Out = Coproduct[Out]((c.head.get, c2.head.get))
-      }
-
-    implicit def cpZipOne[C1H, C1T <: Coproduct, C2H, C2T <: Coproduct, OutC <: Coproduct]
-    (implicit
-     zot: ZipOne.Aux[C1T, C2T, OutC],
-     extend: ExtendRightBy[(C1H, C2H) :+: CNil, OutC]
-      ): Aux[C1H :+: C1T, C2H :+: C2T, extend.Out] = new ZipOne[C1H :+: C1T, C2H :+: C2T] {
-      type Out = extend.Out
-
-      def apply(c: C1H :+: C1T, c2: C2H :+: C2T): Out = extend(Coproduct[(C1H, C2H) :+: CNil](c.head.get, c2.head.get))
-    }
   }
 
   /**
@@ -541,7 +591,7 @@ object coproduct {
   /**
    * Type class supporting zipping a `Coproduct` with an `HList`, resulting in a `Coproduct` of tuples of the form
    * ({element from input `Coproduct`}, {element from input `HList`})
-   * 
+   *
    * @author William Harvey
    */
   trait ZipWith[H <: HList, V <: Coproduct] extends DepFn2[H, V] with Serializable { type Out <: Coproduct }
@@ -556,7 +606,7 @@ object coproduct {
       def apply(h: HNil, v: CNil) = v
     }
 
-    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]): 
+    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]):
         Aux[HH :: HT, VH :+: VT, (VH, HH) :+: zipWith.Out] = new ZipWith[HH :: HT, VH :+: VT] {
       type Out = (VH, HH) :+: zipWith.Out
       def apply(h: HH :: HT, v: VH :+: VT): Out = v match {
@@ -628,6 +678,10 @@ object coproduct {
         }
   }
 
+  /**
+    * Type class which combines the functionality of [[ExtendRightBy]] and [[ExtendLeftBy]]. The combined coproduct
+    * and be produced by either providing the left part or the right part.
+    * */
   trait ExtendBy[L <: Coproduct, R <: Coproduct] extends Serializable {
     type Out <: Coproduct
 
@@ -651,6 +705,9 @@ object coproduct {
     }
   }
 
+  /**
+    * Extend a coproduct to the left by another coproduct. Conceptually similar to prepending a List to the original List
+    */
   trait ExtendLeftBy[L <: Coproduct, R <: Coproduct] extends DepFn1[R] with Serializable { type Out <: Coproduct }
 
   object ExtendLeftBy {
@@ -688,6 +745,9 @@ object coproduct {
     }
   }
 
+  /**
+    * Similar to [[ExtendLeftBy]]. Conceptually similar to appending a List to the original List
+    */
   trait ExtendRightBy[L <: Coproduct, R <: Coproduct] extends DepFn1[L] with Serializable { type Out <: Coproduct }
 
   object ExtendRightBy {
@@ -1023,7 +1083,9 @@ object coproduct {
     object Reverse0 {
       implicit def cnilReverse[Out <: Coproduct]: Reverse0[Out, CNil, Out] =
         new Reverse0[Out, CNil, Out] {
-          def apply(e: Either[Out, CNil]) = e.left.get
+          def apply(e: Either[Out, CNil]) = (e: @unchecked) match {
+            case Left(l) => l
+          }
         }
 
       implicit def cconsReverse[Acc <: Coproduct, InH, InT <: Coproduct, Out <: Coproduct]
@@ -1106,7 +1168,9 @@ object coproduct {
     implicit def cnilPrepend0[P <: Coproduct]: Aux[P, CNil, P] =
       new Prepend[P, CNil] {
         type Out = P
-        def apply(e : Either[P, CNil]): P = e.left.get
+        def apply(e : Either[P, CNil]): P = (e: @unchecked) match {
+          case Left(l) => l
+        }
       }
   }
 
@@ -1116,7 +1180,9 @@ object coproduct {
     implicit def cnilPrepend1[S <: Coproduct]: Aux[CNil, S, S] =
       new Prepend[CNil, S] {
         type Out = S
-        def apply(e: Either[CNil, S]): S = e.right.get
+        def apply(e: Either[CNil, S]): S = (e: @unchecked) match {
+          case Right(r) => r
+        }
       }
   }
 
@@ -1194,7 +1260,7 @@ object coproduct {
 
 
   /**
-    * Typeclass checking that :
+    * Type class checking that :
     * - coproduct is a sub-union of a bigger coproduct
     * - embeds a sub-coproduct into a bigger coproduct
     */
@@ -1214,7 +1280,9 @@ object coproduct {
     implicit def cnilBasis[Super <: Coproduct]: Aux[Super, CNil, Super] = new Basis[Super, CNil] {
       type Rest = Super
       def apply(s: Super) = Left(s)
-      def inverse(e: Either[Rest, CNil]) = e.left.get // No CNil exists, so e cannot be a Right
+      def inverse(e: Either[Rest, CNil]) = (e: @unchecked) match { // No CNil exists, so e cannot be a Right
+        case Left(l) => l
+      }
     }
 
     implicit def cconsBasis[Super <: Coproduct, H, T <: Coproduct, TRest <: Coproduct](implicit
@@ -1275,6 +1343,9 @@ object coproduct {
       }
   }
 
+  /** Type class supporting finding a typeclass instance for each type in a coproduct, resulting in
+    * a coproduct of typeclass instances.
+    */
   sealed trait LiftAll[F[_], In <: Coproduct] {
     type Out <: HList
     def instances: Out
@@ -1302,7 +1373,7 @@ object coproduct {
   }
 
   /**
-    * Typeclass converting a `Coproduct` to an `Either`
+    * Type class converting a `Coproduct` to an `Either`
     *
     * @author Michael Zuber
     */
@@ -1332,7 +1403,7 @@ object coproduct {
   }
 
   /**
-    * Typeclass converting an `Either` to a `Coproduct`
+    * Type class converting an `Either` to a `Coproduct`
     *
     * @author Michael Zuber
     */
@@ -1355,10 +1426,43 @@ object coproduct {
   trait EitherToCoproductLowPrio {
     implicit def baseEitherToCoproduct[L, R]: EitherToCoproduct.Aux[L, R, L :+: R :+: CNil] = new EitherToCoproduct[L, R] {
       type Out = L :+: R :+: CNil
+
       def apply(t: Either[L, R]): L :+: R :+: CNil = t match {
         case Left(l) => Inl(l)
         case Right(r) => Coproduct[L :+: R :+: CNil](r)
       }
     }
+  }
+
+  /**
+    * Type class supporting the injection of runtime values of type `Any` in `Coproduct`.
+    *
+    * @author Juan José Vázquez Delgado
+    * @author Fabio Labella
+    */
+  @implicitNotFound("Implicit not found. CNil has no values, so it's impossible to convert anything to it")
+  trait RuntimeInject[C <: Coproduct] extends Serializable {
+    def apply(x: Any): Option[C]
+  }
+
+  object RuntimeInject extends RuntimeInjectLowPrio {
+    implicit def baseCaseRuntimeInject[H](
+        implicit castH: Typeable[H]): RuntimeInject[H :+: CNil] =
+      new RuntimeInject[H :+: CNil] {
+        def apply(x: Any): Option[H :+: CNil] =
+          castH.cast(x).map(v => Inl(v))
+      }
+  }
+
+  trait RuntimeInjectLowPrio {
+    implicit def inductiveCaseRuntimeInject[H, T <: Coproduct](
+        implicit next: RuntimeInject[T],
+        castH: Typeable[H]): RuntimeInject[H :+: T] =
+      new RuntimeInject[H :+: T] {
+        def apply(x: Any): Option[H :+: T] = castH.cast(x) match {
+          case Some(value) => Option(Inl(value))
+          case None => next(x).map(v => Inr(v))
+        }
+      }
   }
 }
