@@ -192,17 +192,20 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 
   def parseSingletonSymbolType(typeStr: String): Option[Type] =
-    for {
-      LiteralSymbol(name) <- Try(c.parse(typeStr)).toOption
-    } yield SingletonSymbolType(name)
+    if (typeStr.startsWith("'") && !typeStr.endsWith("'"))
+      Some(SingletonSymbolType(typeStr.tail))
+    else
+      None
 
   def parseLiteralType(typeStr: String): Option[Type] =
-    for {
-      parsed <- Try(c.parse(typeStr)).toOption
-      checked = c.typecheck(parsed, silent = true)
-      if checked.nonEmpty
-      tpe <- SingletonType.unapply(checked)
-    } yield tpe
+    parseSingletonSymbolType(typeStr).orElse(
+      for {
+        parsed <- Try(c.parse(typeStr)).toOption
+        checked = c.typecheck(parsed, silent = true)
+        if checked.nonEmpty
+        tpe <- SingletonType.unapply(checked)
+      } yield tpe
+    )
 
   def parseStandardType(typeStr: String): Option[Type] =
     for {
