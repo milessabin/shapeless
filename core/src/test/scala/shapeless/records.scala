@@ -860,7 +860,7 @@ class RecordTests {
 
     typed[Record.`'i -> 2, 's -> "a", 'b -> true`.T](Symbol("i") ->> 2.narrow :: Symbol("s") ->> "a".narrow :: Symbol("b") ->> true.narrow :: HNil)
 
-    illTyped(""" typed[Record.`'i -> 2`.T]('i ->> 3.narrow :: HNil) """)
+    illTyped(""" typed[Record.`'i -> 2`.T](Symbol("i") ->> 3.narrow :: HNil) """)
 
     // Mix of standard and literal types
 
