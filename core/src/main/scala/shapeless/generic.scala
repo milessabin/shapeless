@@ -297,7 +297,7 @@ trait ReprTypes {
 
 @macrocompat.bundle
 trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
-  val c: whitebox.Context
+  val c: blackbox.Context
 
   import c.universe._
   import internal.constantType
