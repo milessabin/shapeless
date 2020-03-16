@@ -388,24 +388,21 @@ object Boilerplate {
         |object PolyNBuilders {
         -
         - trait Poly${arity}Builder[HL <: HList] { self =>
-        -
         -   val functions: HL
         -   class AtAux[${`A..N`}] {
-        -     def apply[Out](λ: (${`A..N`}) => Out) = {
+        -     def apply[Out](λ: (${`A..N`}) => Out): Poly${arity}Builder[((${`A..N`}) => Out) :: HL] = {
         -       new Poly${arity}Builder[((${`A..N`}) => Out) :: HL] {
         -         val functions = λ :: self.functions
         -       }
         -     }
         -   }
+        -
         -   def at[${`A..N`}] = new AtAux[${`A..N`}]
         -
-        -   def build = new Poly${arity} {
+        -   object build extends Poly${arity} {
         -     val functions = self.functions
-        -
-        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]) = {
-        -       val func: (${`A..N`}) => Out = tL(functions)
-        -       at(func)
-        -     }
+        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]): Case.Aux[${`A..N`}, Out] =
+        -       at(tL(functions))
         -   }
         - }
         -
@@ -415,17 +412,15 @@ object Boilerplate {
         - }
         -
         - object Function${arity}TypeAt {
-        -   implicit def at0[${`A..N`}, Out, Tail <: HList] = new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
-        -     def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = {
-        -       l.head
+        -   implicit def at0[${`A..N`}, Out, Tail <: HList]: Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] =
+        -     new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
+        -       def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = l.head
         -     }
-        -   }
         -
-        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]) = new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
-        -     def apply(l: Head::Tail): (${`A..N`}) => Out = {
-        -       tprev(l.tail)
+        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]): Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] =
+        -     new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
+        -       def apply(l: Head::Tail): (${`A..N`}) => Out = tprev(l.tail)
         -     }
-        -   }
         - }
         |}
       """
