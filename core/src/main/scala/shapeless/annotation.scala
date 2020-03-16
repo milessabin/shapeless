@@ -50,10 +50,11 @@ object Annotation {
 
   def mkAnnotation[A, T](annotation: => A): Annotation[A, T] =
     new Annotation[A, T] {
-      def apply() = annotation
+      def apply(): A = annotation
     }
 
-  implicit def materialize[A, T]: Annotation[A, T] = macro AnnotationMacros.materializeAnnotation[A, T]
+  implicit def materialize[A, T]: Annotation[A, T] = macro AnnotationMacros.materializeAnnotationRequired[A, T]
+  implicit def materializeOption[A, T]: Annotation[Option[A], T] = macro AnnotationMacros.materializeAnnotationOptional[A, T]
 }
 
 /**
@@ -111,7 +112,7 @@ object Annotations {
   def mkAnnotations[A, T, Out0 <: HList](annotations: => Out0): Aux[A, T, Out0] =
     new Annotations[A, T] {
       type Out = Out0
-      def apply() = annotations
+      def apply(): Out = annotations
     }
 
   implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeVariableAnnotations[A, T, Out]
@@ -165,23 +166,21 @@ object TypeAnnotations {
   def mkAnnotations[A, T, Out0 <: HList](annotations: => Out0): Aux[A, T, Out0] =
     new TypeAnnotations[A, T] {
       type Out = Out0
-      def apply() = annotations
+      def apply(): Out = annotations
     }
 
   implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeTypeAnnotations[A, T, Out]
 }
 
-/*
- * AnnotationsHelper is defined in scala_2.10 or scala_2.11+ folders.
- */
 @macrocompat.bundle
 class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
-  def someTpe = typeOf[Some[_]].typeConstructor
-  def noneTpe = typeOf[None.type]
+  def optionTpe: Type = typeOf[Option[_]].typeConstructor
+  def someTpe: Type = typeOf[Some[_]].typeConstructor
+  def noneTpe: Type = typeOf[None.type]
 
-    // FIXME Most of the content of this method is cut-n-pasted from generic.scala
+  // FIXME Most of the content of this method is cut-n-pasted from generic.scala
   def construct(tpe: Type): List[Tree] => Tree = {
     // FIXME Cut-n-pasted from generic.scala
     val sym = tpe.typeSymbol
@@ -197,7 +196,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       args => q"new $tpe(..$args)"
   }
 
-  def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
+  def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Option[Tree] = {
     val annTpe = weakTypeOf[A]
 
     if (!isProduct(annTpe))
@@ -207,11 +206,16 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
 
     val tpe = weakTypeOf[T]
 
-    val annTreeOpt = tpe.typeSymbol.annotations.collectFirst {
+    tpe.typeSymbol.annotations.collectFirst {
       case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
     }
+  }
 
-    annTreeOpt match {
+  def materializeAnnotationRequired[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
+    val annTpe = weakTypeOf[A]
+    val tpe = weakTypeOf[T]
+
+    materializeAnnotation[A, T] match {
       case Some(annTree) =>
         q"_root_.shapeless.Annotation.mkAnnotation[$annTpe, $tpe]($annTree)"
       case None =>
@@ -219,9 +223,23 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
   }
 
-  def materializeVariableAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree = materializeAnnotations[A, T, Out](false)
+  def materializeAnnotationOptional[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
+    val optAnnTpe = appliedType(optionTpe, weakTypeOf[A])
+    val tpe = weakTypeOf[T]
 
-  def materializeTypeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree = materializeAnnotations[A, T, Out](true)
+    materializeAnnotation[A, T] match {
+      case Some(annTree) =>
+        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.Some($annTree))"
+      case None =>
+        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.None)"
+    }
+  }
+
+  def materializeVariableAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree =
+    materializeAnnotations[A, T, Out](typeAnnotation = false)
+
+  def materializeTypeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree =
+    materializeAnnotations[A, T, Out](typeAnnotation = true)
 
   def materializeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag](typeAnnotation: Boolean): Tree = {
     val annTpe = weakTypeOf[A]

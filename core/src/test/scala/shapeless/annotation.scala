@@ -74,6 +74,26 @@ class AnnotationTests {
   }
 
   @Test
+  def optionalAnnotation: Unit = {
+    {
+      val other = Annotation[Option[Other], CC].apply()
+      assert(other == Some(Other()))
+
+      val last = Annotation[Option[Last], Something].apply()
+      assert(last == Some(Last(true)))
+    }
+
+    {
+      val other: Option[Other] = Annotation[Option[Other], Something].apply()
+      assert(other == None)
+
+      val last: Option[Last] = Annotation[Option[Last], CC].apply()
+      assert(last == None)
+    }
+  }
+
+
+  @Test
   def invalidAnnotation: Unit = {
     illTyped(" Annotation[Other, Dummy] ", "could not find implicit value for parameter annotation: .*")
     illTyped(" Annotation[Dummy, CC] ", "could not find implicit value for parameter annotation: .*")
