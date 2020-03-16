@@ -429,7 +429,7 @@ object hlist {
       }
 
     implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH, FtOut]
-      (implicit f : Case2.Aux[HF, In, H, OutH], ft : Lazy[LeftFolder.Aux[T, OutH, HF, FtOut]]): Aux[H :: T, In, HF, FtOut] =
+      (implicit f : Case2.Aux[HF, In, H, OutH], ft : Strict[LeftFolder.Aux[T, OutH, HF, FtOut]]): Aux[H :: T, In, HF, FtOut] =
         new LeftFolder[H :: T, In, HF] {
           type Out = FtOut
           def apply(l : H :: T, in : In) : Out = ft.value(l.tail, f(in, l.head))
