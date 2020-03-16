@@ -409,6 +409,9 @@ class HListTests {
   def testPrepend: Unit = {
     val apbp2 = ap ::: bp
     assertTypedEquals[APBP](a :: p :: b :: p :: HNil, apbp2)
+    val apbp2inv = implicitly[Prepend.Aux[AP, BP, APBP]].inverse(apbp2)
+    assertTypedEquals[AP](ap, apbp2inv._1)
+    assertTypedEquals[BP](bp, apbp2inv._2)
 
     typed[Apple](apbp2.head)
     typed[Pear](apbp2.tail.head)
@@ -425,28 +428,60 @@ class HListTests {
 
       val r1 = prependWithHNil(ap)
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = prependToHNil(ap)
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
+
       val r3 = HNil ::: HNil
       assertTypedSame[HNil](HNil, r3)
+      val r3inv = implicitly[Prepend.Aux[HNil, HNil, HNil]].inverse(r3)
+      assertTypedSame[HNil](HNil, r3inv._1)
+      assertTypedSame[HNil](HNil, r3inv._2)
 
       val r4 = prependWithHNil(pabp)
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = prependToHNil(pabp)
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
       // must also pass with the default implicit
       val r1 = HNil ::: ap
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = ap ::: HNil
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
 
       val r4 = HNil ::: pabp
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = pabp ::: HNil
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
@@ -1422,6 +1457,32 @@ class HListTests {
     assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, sl5)
     assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, sl5i)
 
+  }
+
+  @Test
+  def testSelectFirst: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val si = sl.selectFirst[Int::HNil]
+    assertTypedEquals[Int](1, si)
+
+    val sb = sl.selectFirst[Boolean::HNil]
+    assertTypedEquals[Boolean](true, sb)
+
+    val ss = sl.selectFirst[String::HNil]
+    assertTypedEquals[String]("foo", ss)
+
+    val sd = sl.selectFirst[Double::HNil]
+    assertEquals(2.0, sd, Double.MinPositiveValue)
+
+    val sib = sl.selectFirst[Int::Boolean::HNil]
+    assertTypedEquals[Int](1, sib)
+
+    val sulb = sl.selectFirst[Unit::Long::Boolean::HNil]
+    assertTypedEquals[Boolean](true, sulb)
+
+    val ssbi = sl.selectFirst[String::Boolean::Int::HNil]
+    assertTypedEquals[String]("foo", ssbi)
   }
 
   @Test
@@ -3040,7 +3101,7 @@ class HListTests {
   def testSingletonProductArgs: Unit = {
     object Obj
 
-    val l = SFoo(23, "foo", 'bar, Obj, true)
+    val l = SFoo(23, "foo", Symbol("bar"), Obj, true)
     typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`'bar`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
@@ -3052,7 +3113,7 @@ class HListTests {
     assertEquals("foo", v2)
 
     val v3: Witness.`'bar`.T = l.tail.tail.head
-    assertEquals('bar, v3)
+    assertEquals(Symbol("bar"), v3)
 
     val v4: Obj.type = l.tail.tail.tail.head
     assertEquals(Obj, v4)
@@ -3072,7 +3133,7 @@ class HListTests {
     NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
-    val ib = selectAll('i, 'b).from(quux)
+    val ib = selectAll(Symbol("i"), Symbol("b")).from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
   }
@@ -3345,10 +3406,10 @@ class HListTests {
     assertTypedEquals(HNil, Reify[HNil].apply)
 
     val s1 = HList.`'a`
-    assertTypedEquals('a.narrow :: HNil, Reify[s1.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: HNil, Reify[s1.T].apply)
 
     val s2 = HList.`'a, 1, "b", true`
-    assertTypedEquals('a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
 
     illTyped(""" Reify[String :: Int :: HNil] """)
     illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)

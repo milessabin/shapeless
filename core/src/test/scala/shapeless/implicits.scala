@@ -190,4 +190,13 @@ class CachedTest {
   def testLazyRecursion: Unit = {
     assert(Wibble.eqw != null)
   }
+
+  @Test
+  def testAmbiguous: Unit = {
+    implicit val a = new Foo[String] { }
+    implicit val b = new Foo[String] { }
+    illTyped(
+      "cachedImplicit[Foo[String]]"
+    )
+  }
 }

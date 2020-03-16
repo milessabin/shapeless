@@ -25,7 +25,9 @@ package shapeless.examples
 object PackExamples extends App {
   import shapeless._
   
-  sealed trait Pack[F[_], L <: HList]
+  sealed trait Pack[F[_], L <: HList] {
+    implicit def unpack[E](implicit unpack: Pack.Unpack[F, L, E]): F[E] = unpack(this)
+  }
   final case class PCons[F[_], H, T <: HList](head: F[H], tail: Pack[F, T]) extends Pack[F, H :: T]
   final case class PNil[F[_]]() extends Pack[F, HNil]
   
@@ -37,8 +39,6 @@ object PackExamples extends App {
   }
 
   trait Pack0 {
-    implicit def unpack[F[_], E, L <: HList](implicit pack: Pack[F, L], unpack: Unpack[F, L, E]): F[E] = unpack(pack)
-
     trait Unpack[F[_], L <: HList, E] {
       def apply(pack: Pack[F, L]): F[E]
     }
@@ -80,8 +80,6 @@ object PackExamples extends App {
     }
   }
   
-  import Pack._
-
   trait A
   trait B
   trait C
@@ -102,6 +100,7 @@ object PackExamples extends App {
 
   def use3[T, U, V](t : T, u : U, v : V)(implicit pack : Pack[Show, T :: U :: V :: HNil]) = {
     // Instances automatically unpacked here
+    import pack.unpack
     (show(t), show(u), show(v))
   }
   

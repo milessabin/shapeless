@@ -30,45 +30,45 @@ import ops.union.UnzipFields
 
 class UnionTests {
 
-  val wI = Witness('i)
+  val wI = Witness(Symbol("i"))
   type i = wI.T
 
-  val wS = Witness('s)
+  val wS = Witness(Symbol("s"))
   type s = wS.T
 
-  val sB = Witness('b)
+  val sB = Witness(Symbol("b"))
   type b = sB.T
 
   type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
   @Test
   def testGetLiterals: Unit = {
-    val u1 = Coproduct[U]('i ->> 23)
-    val u2 = Coproduct[U]('s ->> "foo")
-    val u3 = Coproduct[U]('b ->> true)
+    val u1 = Coproduct[U](Symbol("i") ->> 23)
+    val u2 = Coproduct[U](Symbol("s") ->> "foo")
+    val u3 = Coproduct[U](Symbol("b") ->> true)
 
-    val v1 = u1.get('i)
+    val v1 = u1.get(Symbol("i"))
     typed[Option[Int]](v1)
     assertEquals(Some(23), v1)
 
-    val v2 = u2.get('s)
+    val v2 = u2.get(Symbol("s"))
     typed[Option[String]](v2)
     assertEquals(Some("foo"), v2)
 
-    val v3 = u3.get('b)
+    val v3 = u3.get(Symbol("b"))
     typed[Option[Boolean]](v3)
     assertEquals(Some(true), v3)
 
     illTyped("""
-      u1.get('foo)
+      u1.get(Symbol("foo"))
     """)
   }
 
   @Test
   def testSelectDynamic: Unit = {
-    val u1 = Coproduct[U]('i ->> 23).union
-    val u2 = Coproduct[U]('s ->> "foo").union
-    val u3 = Coproduct[U]('b ->> true).union
+    val u1 = Coproduct[U](Symbol("i") ->> 23).union
+    val u2 = Coproduct[U](Symbol("s") ->> "foo").union
+    val u3 = Coproduct[U](Symbol("b") ->> true).union
 
     val v1 = u1.i
     typed[Option[Int]](v1)
@@ -96,13 +96,13 @@ class UnionTests {
   @Test
   def testUnionTypeSelector: Unit = {
     type ii = FieldType[i, Int] :+: CNil
-    typed[ii](Coproduct[Union.`'i -> Int`.T]('i ->> 23))
+    typed[ii](Coproduct[Union.`'i -> Int`.T](Symbol("i") ->> 23))
 
     type iiss = FieldType[i, Int] :+: FieldType[s, String] :+: CNil
-    typed[iiss](Coproduct[Union.`'i -> Int, 's -> String`.T]('s ->> "foo"))
+    typed[iiss](Coproduct[Union.`'i -> Int, 's -> String`.T](Symbol("s") ->> "foo"))
 
     type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
-    typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T]('b ->> true))
+    typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T](Symbol("b") ->> true))
 
     // Curiously, lines like
     //   typed[Union.`'i -> Int, 's -> String`.T](Inl('i ->> 23))
@@ -119,7 +119,7 @@ class UnionTests {
     {
       type U = Union.`'i -> Int`.T
 
-      val u = Inl('i ->> 23)
+      val u = Inl(Symbol("i") ->> 23)
 
       typed[U](u)
     }
@@ -127,8 +127,8 @@ class UnionTests {
     {
       type U = Union.`'i -> Int, 's -> String`.T
 
-      val u0 = Inl('i ->> 23)
-      val u1 = Inr(Inl('s ->> "foo"))
+      val u0 = Inl(Symbol("i") ->> 23)
+      val u1 = Inr(Inl(Symbol("s") ->> "foo"))
 
       typed[U](u0)
       typed[U](u1)
@@ -137,9 +137,9 @@ class UnionTests {
     {
       type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
 
-      val u0 = Inl('i ->> 23)
-      val u1 = Inr(Inl('s ->> "foo"))
-      val u2 = Inr(Inr(Inl('b ->> true)))
+      val u0 = Inl(Symbol("i") ->> 23)
+      val u1 = Inr(Inl(Symbol("s") ->> "foo"))
+      val u2 = Inr(Inr(Inl(Symbol("b") ->> true)))
 
       typed[U](u0)
       typed[U](u1)
@@ -151,7 +151,7 @@ class UnionTests {
     {
       type U = Union.`'i -> 2`.T
 
-      val u = Inl('i ->> 2.narrow)
+      val u = Inl(Symbol("i") ->> 2.narrow)
 
       typed[U](u)
     }
@@ -159,9 +159,9 @@ class UnionTests {
     {
       type U = Union.`'i -> 2, 's -> "a", 'b -> true`.T
 
-      val u0 = Inl('i ->> 2.narrow)
-      val u1 = Inr(Inl('s ->> "a".narrow))
-      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+      val u0 = Inl(Symbol("i") ->> 2.narrow)
+      val u1 = Inr(Inl(Symbol("s") ->> "a".narrow))
+      val u2 = Inr(Inr(Inl(Symbol("b") ->> true.narrow)))
 
       typed[U](u0)
       typed[U](u1)
@@ -171,7 +171,7 @@ class UnionTests {
     {
       type U = Union.`'i -> 2`.T
 
-      val u = Inl('i ->> 3.narrow)
+      val u = Inl(Symbol("i") ->> 3.narrow)
 
       illTyped(""" typed[U](u) """)
     }
@@ -181,9 +181,9 @@ class UnionTests {
     {
       type U = Union.`'i -> 2, 's -> String, 'b -> true`.T
 
-      val u0 = Inl('i ->> 2.narrow)
-      val u1 = Inr(Inl('s ->> "a"))
-      val u2 = Inr(Inr(Inl('b ->> true.narrow)))
+      val u0 = Inl(Symbol("i") ->> 2.narrow)
+      val u1 = Inr(Inl(Symbol("s") ->> "a"))
+      val u2 = Inr(Inr(Inl(Symbol("b") ->> true.narrow)))
 
       typed[U](u0)
       typed[U](u1)
@@ -197,20 +197,20 @@ class UnionTests {
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
 
-    val v1 = u1.get('i)
+    val v1 = u1.get(Symbol("i"))
     typed[Option[Int]](v1)
     assertEquals(Some(23), v1)
 
-    val v2 = u2.get('s)
+    val v2 = u2.get(Symbol("s"))
     typed[Option[String]](v2)
     assertEquals(Some("foo"), v2)
 
-    val v3 = u3.get('b)
+    val v3 = u3.get(Symbol("b"))
     typed[Option[Boolean]](v3)
     assertEquals(Some(true), v3)
 
     illTyped("""
-      u1.get('foo)
+      u1.get(Symbol("foo"))
     """)
   }
 
@@ -227,9 +227,9 @@ class UnionTests {
       val f2 = u2.fields
       val f3 = u3.fields
 
-      assertTypedEquals(Coproduct[UF]('i.narrow -> 23), f1)
-      assertTypedEquals(Coproduct[UF]('s.narrow -> "foo"), f2)
-      assertTypedEquals(Coproduct[UF]('b.narrow -> true), f3)
+      assertTypedEquals(Coproduct[UF](Symbol("i").narrow -> 23), f1)
+      assertTypedEquals(Coproduct[UF](Symbol("s").narrow -> "foo"), f2)
+      assertTypedEquals(Coproduct[UF](Symbol("b").narrow -> true), f3)
     }
 
     type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
@@ -262,7 +262,7 @@ class UnionTests {
 
       type UV = Coproduct.`Int, String, Boolean`.T
 
-      assertTypedEquals('i.narrow :: 's.narrow :: 'b.narrow :: HNil, uf.keys)
+      assertTypedEquals(Symbol("i").narrow :: Symbol("s").narrow :: Symbol("b").narrow :: HNil, uf.keys)
       assertTypedEquals(Coproduct[UV](23), uf.values(u1))
       assertTypedEquals(Coproduct[UV]("foo"), uf.values(u2))
       assertTypedEquals(Coproduct[UV](true), uf.values(u3))
@@ -296,9 +296,9 @@ class UnionTests {
       val m2 = u2.toMap
       val m3 = u3.toMap
 
-      assertTypedEquals(Map[Symbol, Any]('i -> 23), m1)
-      assertTypedEquals(Map[Symbol, Any]('s -> "foo"), m2)
-      assertTypedEquals(Map[Symbol, Any]('b -> true), m3)
+      assertTypedEquals(Map[Symbol, Any](Symbol("i") -> 23), m1)
+      assertTypedEquals(Map[Symbol, Any](Symbol("s") -> "foo"), m2)
+      assertTypedEquals(Map[Symbol, Any](Symbol("b") -> true), m3)
     }
 
     {
@@ -306,9 +306,9 @@ class UnionTests {
       val m2 = u2.toMap[Symbol, Any]
       val m3 = u3.toMap[Symbol, Any]
 
-      assertTypedEquals(Map[Symbol, Any]('i -> 23), m1)
-      assertTypedEquals(Map[Symbol, Any]('s -> "foo"), m2)
-      assertTypedEquals(Map[Symbol, Any]('b -> true), m3)
+      assertTypedEquals(Map[Symbol, Any](Symbol("i") -> 23), m1)
+      assertTypedEquals(Map[Symbol, Any](Symbol("s") -> "foo"), m2)
+      assertTypedEquals(Map[Symbol, Any](Symbol("b") -> true), m3)
     }
 
     type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T

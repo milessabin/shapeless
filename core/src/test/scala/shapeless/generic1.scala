@@ -27,6 +27,11 @@ package Generic1TestsAux {
     implicit def tc1Id: TC1[Id] = new TC1[Id] {}
   }
 
+  trait TC1sub[F[_]] extends TC1[F]
+  object TC1sub {
+    implicit def tc1sub[F[_]]: TC1sub[F] = new TC1sub[F] {}
+  }
+
   trait TC10 {
     implicit def tc1[F[_]]: TC1[F] = new TC1[F] {}
   }
@@ -34,6 +39,11 @@ package Generic1TestsAux {
   trait TC2[L[_]]
   object TC2 {
     implicit def tc2[L[_]]: TC2[L] = new TC2[L] {}
+  }
+
+  trait TC2sub[F[_]] extends TC2[F]
+  object TC2sub {
+    implicit def tc2sub[F[_]]: TC2sub[F] = new TC2sub[F] {}
   }
 
   trait TC3[F[_], G[_]]
@@ -580,6 +590,17 @@ class Generic1Tests {
     materialize12[S]
     materialize13[S]
     materialize14[S]
+  }
+
+  @Test
+  def testCovariance: Unit = {
+    type L[A] = (A, A) :: List[A] :: HNil
+    type C[A] = (A, A) :+: List[A] :+: CNil
+    type N[A] = List[(A, A)]
+    typed[Generic1[Foo, TC2]](Generic1[Foo, TC2sub])
+    typed[IsHCons1[L, TC1, TC2]](IsHCons1[L, TC1sub, TC2sub])
+    typed[IsCCons1[C, TC1, TC2]](IsCCons1[C, TC1sub, TC2sub])
+    typed[Split1[N, TC1, TC2]](Split1[N, TC1sub, TC2sub])
   }
 }
 

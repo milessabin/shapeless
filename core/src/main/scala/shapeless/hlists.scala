@@ -85,7 +85,7 @@ object HList extends Dynamic {
   /**
     * Produces a [[HList]] filled from a [[Poly0]].
     * 
-    * @usecase def fillWith[L <: HList](f: Poly): L = ???
+    * @example def fillWith[L <: HList](f: Poly): L = ???
     */
   def fillWith[L <: HList] = new FillWithOps[L]
 
@@ -254,8 +254,8 @@ trait ProductArgs extends Dynamic {
  *
  */
 trait FromProductArgs extends Dynamic {
-  def applyDynamic[L <: HList](method: String)(product: L): Any =
-    macro ProductMacros.forwardFromProductImpl[L]
+  def applyDynamic(method: String)(hlist: HList): Any =
+    macro ProductMacros.forwardFromProductImpl
 }
 
 /**
@@ -327,7 +327,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def forwardFromProductImpl[L <: HList](method: Tree)(product: Expr[L]): Tree = {
+  def forwardFromProductImpl(method: Tree)(hlist: Tree): Tree = {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
@@ -341,8 +341,21 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     if(!lhsTpe.member(methodName).isMethod)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, product)
-    q""" $lhs.$methodName(...$params) """
+    val methodSym = lhsTpe.member(methodName).asMethod
+    val paramss = methodSym.paramLists.filterNot(_.forall(_.isImplicit))
+    val argss = paramss.map(_.map(_ => TermName(c.freshName("pat"))))
+    val names = argss.flatten
+
+    val pattern =
+      names.foldRight(q"_root_.shapeless.HNil": Tree) {
+        case (nme, acc) => pq"_root_.shapeless.::($nme, $acc)"
+      }
+
+    q"""
+      $hlist match {
+        case $pattern => $lhs.$methodName(...$argss)
+      }
+    """
   }
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
@@ -372,13 +385,5 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
        case (elem, _) =>
         c.abort(c.enclosingPosition, s"Expression $elem does not evaluate to a non-negative Int literal")
     }._2
-  }
-
-  def mkParamsImpl[L <: HList](method: MethodSymbol, product: Expr[L]): List[List[Tree]] = {
-    val slices = method.paramLists.filterNot(_.forall(x => x.isImplicit))
-      .foldLeft((List[List[Int]](), 0))((acc, e) =>
-        (acc._1 :+ (acc._2 to (acc._2 + (e.size - 1))).toList, acc._2 + e.size))._1
-
-    slices.map(_.map(i => q"${product}.apply(${i})"))
   }
 }

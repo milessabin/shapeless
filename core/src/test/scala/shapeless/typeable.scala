@@ -25,6 +25,11 @@ class TypeableTests {
   import syntax.typeable._
   import test._
 
+  class Outer {
+    class Inner
+    val inner = new Inner
+  }
+
   @Test
   def testPrimitives: Unit = {
     val b: Any = 23.toByte
@@ -212,6 +217,13 @@ class TypeableTests {
 
     val cr2 = r.cast[AnyVal]
     assertTrue(cr2.isEmpty)
+
+    val n: Any = BigInt(23)
+    val cn = n.cast[AnyRef]
+    assertTrue(cn.isDefined)
+
+    val cn2 = n.cast[AnyVal]
+    assertTrue(cn2.isEmpty)
   }
 
   @Test
@@ -485,7 +497,7 @@ class TypeableTests {
     val wFoo = Witness("foo")
     type Foo = wFoo.T
 
-    val wSym = Witness('Foo)
+    val wSym = Witness(Symbol("Foo"))
     type Sym = wSym.T
 
     object ObjA
@@ -515,11 +527,11 @@ class TypeableTests {
     typed[Option[Foo]](c6)
     assertEquals(None, c6)
 
-    val c7 = ('Foo: Any).cast[Sym]
+    val c7 = (Symbol("Foo"): Any).cast[Sym]
     typed[Option[Sym]](c7)
-    assertEquals(Some('Foo), c7)
+    assertEquals(Some(Symbol("Foo")), c7)
 
-    val c8 = ('Bar: Any).cast[Sym]
+    val c8 = (Symbol("Bar"): Any).cast[Sym]
     typed[Option[Sym]](c8)
     assertEquals(None, c8)
 
@@ -566,12 +578,12 @@ class TypeableTests {
     assertEquals("Typeable[A]", typeableString(new A{}))
     assertEquals("Typeable[A]", Typeable.simpleTypeable(classOf[A]).toString)
 
-    val o: Option[Long] = Some(4l)
+    val o: Option[Long] = Some(4L)
     assertEquals("Typeable[Option[Long]]", typeableString(o))
 
     val e: Either[Long, String] = Right("")
     assertEquals("Typeable[Either[Long, String]]", typeableString(e))
-    assertEquals("Typeable[Right[Long]]", typeableString(Right(3l)))
+    assertEquals("Typeable[Right[Long]]", typeableString(Right(3L)))
 
     val l: List[Int] = List(1,2)
     assertEquals("Typeable[List[Int]]", typeableString(l))
@@ -624,7 +636,7 @@ class TypeableTests {
     class B2C[U] extends B2T { override final type T = U }
     val ttB2C  = Typeable[B2C[Int]#C]
     val b2CInt = { val tmp = new B2C[Int]; tmp.C(5) }
-    val b2CSym = { val tmp = new B2C[Symbol]; tmp.C('foo) }
+    val b2CSym = { val tmp = new B2C[Symbol]; tmp.C(Symbol("foo")) }
     assertEquals(Some(b2CInt), ttB2C.cast(b2CInt))
     assertEquals(None, ttB2C.cast(b2CSym))
 
@@ -646,10 +658,50 @@ class TypeableTests {
     class D2[T] { case class D2I[U](t: T, u: U) }
     val ttD2I = Typeable[D2[Long]#D2I[String]]
     val d2LS  = { val d = new D2[Long]; d.D2I[String](1L, "hello") }
-    val d2SF  = { val d = new D2[Symbol]; d.D2I[Float]('bippy, 4.2f) }
+    val d2SF  = { val d = new D2[Symbol]; d.D2I[Float](Symbol("bippy"), 4.2f) }
     assertEquals(Some(d2LS), ttD2I.cast(d2LS))
     assertEquals(None, ttD2I.cast(d2SF))
 
   }
 
+  @Test
+  def testValInNestedCaseClass: Unit = {
+    // https://github.com/milessabin/shapeless/issues/812
+    // This should compile if the issue is fixed.
+    object X {
+      case class A()
+      case class B(a: A) {
+        private[this] val aa = a
+      }
+    }
+    object Test {
+      shapeless.Typeable[X.B]
+    }
+  }
+
+  @Test
+  def testDescribeWithSymbolicNames: Unit = {
+    class ***
+    object ***
+    final case class <+>[A](left: A, right: A)
+    val |+| = "Tie-fighter"
+    val witness = Witness(Symbol("witness"))
+
+    // `Typeable.genTraversableTypeable` is not a macro.
+    // Appart from that there is a difference in the encoded name between JVM and JS.
+    assert(Typeable[scala.::[Int]].describe.endsWith("colon[Int]"))
+    assertEquals("***", Typeable[***].describe)
+    assertEquals("***.type", Typeable[***.type].describe)
+    assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
+    assertEquals("|+|.type", Typeable[|+|.type].describe)
+    assertEquals("Symbol('witness)", Typeable[witness.T].describe)
+  }
+
+  @Test
+  def testInnerClasses(): Unit = {
+    val outer1 = new Outer
+    val outer2 = new Outer
+    assertEquals(None, outer1.inner.cast[outer2.Inner])
+    assertEquals(Some(outer1.inner), outer1.inner.cast[outer1.Inner])
+  }
 }

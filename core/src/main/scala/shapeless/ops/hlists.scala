@@ -933,10 +933,10 @@ object hlist {
   }
 
   /**
-   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
-   * Avaialable only if this `HList` contains all elements in range
+   * Type class supporting supporting access to the elements in range [a,b] of this `HList`.
+   * Available only if this `HList` contains all elements in range
    *
-   * @author Andreas Koestler
+   * @author Ivan Aristov
    */
   @implicitNotFound("Implicit not found: shapeless.Ops.SelectRange[${L}, ${A}, ${B}]. You requested the elements in range [${A},${B}[, but HList ${L} does not contain all of them.")
   trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
@@ -946,16 +946,55 @@ object hlist {
 
     type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
 
-    implicit def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList, SelOut <: HList]
-    (implicit range: shapeless.ops.nat.Range.Aux[A, B, Ids], sel: SelectMany.Aux[L, Ids, SelOut]): Aux[L, A, B, SelOut] =
-      new SelectRange[L, A, B] {
-        type Out = SelOut
+    implicit def take[L <: HList, T <: Nat](
+      implicit take: Take[L, T]
+     ): Aux[L, _0, T, take.Out] =
+      new SelectRange[L, _0, T] {
+        type Out = take.Out
 
-        def apply(l: L): Out = sel(l)
+        def apply(t: L): take.Out = take(t)
+      }
+
+    implicit def drop[H, L <: HList, A <: Nat, B <: Nat](
+      implicit select: SelectRange[L, A, B]
+    ): Aux[H :: L, Succ[A], Succ[B], select.Out] =
+      new SelectRange[H :: L, Succ[A], Succ[B]] {
+        type Out = select.Out
+
+        def apply(t: H :: L): select.Out = select(t.tail)
       }
   }
 
+  /**
+   * Type class supporting access to the first element of `S` in this `HList`.
+   * Available only if this `HList` contains at least one element of `S`.
+   *
+   * @author Akiomi Kamakura
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectFirst[${L}, ${S}]. You requested an element of ${S}, but there is none in the HList ${L}.")
+  trait SelectFirst[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out }
 
+  object SelectFirst {
+    def apply[L <: HList, S <: HList](implicit sel: SelectFirst[L, S]): Aux[L, S, sel.Out] = sel
+
+    type Aux[L <: HList, S <: HList, Out0] = SelectFirst[L, S] { type Out = Out0 }
+
+    implicit def selectAny[L <: HList, H, S <: HList](
+      implicit sel: Selector[L, H]
+    ): Aux[L, H :: S, H] =
+      new SelectFirst[L, H :: S] {
+        type Out = H
+        def apply(l: L): Out = sel(l)
+      }
+
+    implicit def recurse[L <: HList, H, S <: HList, SelOut](
+      implicit sel: Aux[L, S, SelOut]
+    ): Aux[L, H :: S, SelOut] =
+      new SelectFirst[L, H :: S] {
+        type Out = SelOut
+        def apply(l: L): Out = sel(l)
+      }
+  }
 
   /**
    * Type class supporting partitioning this `HList` into those elements of type `U` and the
@@ -1002,7 +1041,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit e: U =:!= H, p: Aux[L, U, LPrefix, LSuffix]
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
@@ -1262,23 +1301,13 @@ object hlist {
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
-  trait LowPriorityUnion {
+  object Union {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
-    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
-    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
-    def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
-      (implicit u: Union.Aux[T, M, U]): Aux[H :: T, M, H :: U] =
-        new Union[H :: T, M] {
-          type Out = H :: U
-          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
-        }
-  }
-
-  object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
     // let ∅ ∪ M = M
@@ -1291,8 +1320,8 @@ object hlist {
     // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
     implicit def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
       (implicit
-       u: Union.Aux[T, M, U],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       u: Union.Aux[T, M, U]
       ): Aux[H :: T, M, H :: U] =
         new Union[H :: T, M] {
           type Out = H :: U
@@ -1319,23 +1348,13 @@ object hlist {
    * Also available if `M` contains types absent in this `HList`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
-  trait LowPriorityIntersection {
+  object Intersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
-    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
-    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
-    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
-      (implicit i: Intersection.Aux[T, M, I]): Aux[H :: T, M, I] =
-        new Intersection[H :: T, M] {
-          type Out = I
-          def apply(l: H :: T): Out = i(l.tail)
-        }
-  }
-
-  object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
     // let ∅ ∩ M = ∅
@@ -1348,8 +1367,8 @@ object hlist {
     // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
     implicit def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
       (implicit
-       i: Intersection.Aux[T, M, I],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       i: Intersection.Aux[T, M, I]
       ): Aux[H :: T, M, I] =
         new Intersection[H :: T, M] {
           type Out = I
@@ -2016,7 +2035,10 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable { type Out <: HList }
+  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable {
+    type Out <: HList
+    def inverse(p: Out): (P, S)
+  }
 
   trait LowestPriorityPrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
@@ -2026,6 +2048,11 @@ object hlist {
       new Prepend[PH :: PT, S] {
         type Out = PH :: PtOut
         def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
+
+        def inverse(p: PH :: PtOut): (PH :: PT, S) = {
+          val e = pt.inverse(p.tail)
+          (p.head :: e._1, e._2)
+        }
       }
   }
 
@@ -2036,20 +2063,24 @@ object hlist {
      */
     override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
-    implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
+    implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
         def apply(prefix : P, suffix : S): P = prefix
+
+        def inverse(p: P): (P, S) = (p, HNil)
       }
   }
 
   object Prepend extends LowPriorityPrepend {
     def apply[P <: HList, S <: HList](implicit prepend: Prepend[P, S]): Aux[P, S, prepend.Out] = prepend
 
-    implicit def hnilPrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
+    implicit def hnilPrepend1[P >: HNil.type <: HNil, S <: HList]: Aux[P, S, S] =
       new Prepend[P, S] {
         type Out = S
         def apply(prefix : P, suffix : S): S = suffix
+
+        def inverse(p: S): (P, S) = (HNil, p)
       }
   }
 

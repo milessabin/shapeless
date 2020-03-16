@@ -350,7 +350,7 @@ object Boilerplate {
         -      = poly.Case[outer.type, ${`A::N`}] { type Result = Result0 }
         -  }
         -
-        -  class CaseBuilder[${`A..N`}] {
+        -  class CaseBuilder${arity}[${`A..N`}] {
         -    def apply[Res]
         -      (fn: (${`A..N`}) => Res) = new Case[${`A..N`}] {
         -      type Result = Res
@@ -360,7 +360,7 @@ object Boilerplate {
         -  }
         -  
         -  def at[${`A..N`}]
-        -    = new CaseBuilder[${`A..N`}]
+        -    = new CaseBuilder${arity}[${`A..N`}]
         -}
         -
         -object Poly${arity} extends PolyNBuilders.Poly${arity}Builder[HNil] {

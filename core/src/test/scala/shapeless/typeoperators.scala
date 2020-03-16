@@ -42,6 +42,12 @@ class TypeOperatorTests {
   }
 
   @Test
+  def testTaggingValueClass: Unit = {
+    val x = tag[ATag](AValueClass(1L))
+    assertEquals(x.l, Array(x).apply(0))
+  }
+
+  @Test
   def testNewtype: Unit = {
     type MyString = Newtype[String, MyStringOps]
 
@@ -141,8 +147,27 @@ class TypeOperatorTests {
       res
     }
 
-    // Note: Slightly different method signature in TypeOperator211Tests
+    // Note: Slightly different method signature in testTheQuantifiers2
     def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[U0] = {
+      val res: Option[the.`Bar[T]`.U] = None
+      res
+    }
+
+    val b0 = bar0[Boolean, Int]
+    typed[Bar[Boolean] { type U = Int }](b0)
+
+    val b1 = bar1[Boolean, Int]
+    typed[Option[Int]](b1)
+  }
+
+  @Test
+  def testTheQuantifiers2: Unit = {
+    def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
+      val res = the[Bar[T]]
+      res
+    }
+
+    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
       val res: Option[the.`Bar[T]`.U] = None
       res
     }

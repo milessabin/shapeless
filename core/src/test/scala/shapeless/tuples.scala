@@ -395,9 +395,20 @@ class TupleTests {
 
     implicitly[Unifier.Aux[(Int, String, Int, Int), YYYY]]
 
-    val uapap = implicitly[Unifier.Aux[(Apple, Pear, Apple, Pear), (PWS, PWS, PWS, PWS)]]
-    val unified1 = uapap(apap)
-    typed[FFFF](unified1)
+    // This fails with 2.13.0 > M5 because the unified type is computed as
+    //
+    //   Product with Fruit with java.io.Serializable
+    //
+    // which is distinct from the,
+    //
+    //   Product with Serializable with Fruit
+    //
+    // which was being computed before.
+    //
+    //val uapap = implicitly[Unifier.Aux[(Apple, Pear, Apple, Pear), (PWS, PWS, PWS, PWS)]]
+    //val unified1 = uapap(apap)
+    //typed[FFFF](unified1)
+
     val unified2 = apap.unify
     typed[FFFF](unified2)
 
@@ -524,7 +535,8 @@ class TupleTests {
     val CISBb = ToCoproduct[PISB]
     implicitly[CISBa =:= CISBb.Out]
 
-    // Note: Slightly different tests in Tuple211Tests
+    type CISBc = the.`ToCoproduct[PISB]`.Out
+    implicitly[CISBa =:= CISBc]
   }
 
   @Test
@@ -540,7 +552,11 @@ class TupleTests {
     val SISBb = ToSum[PIISSB]
     implicitly[CISBa =:= SISBb.Out]
 
-    // Note: Slightly different tests in Tuple211Tests
+    type SISBc = the.`ToSum[PISB]`.Out
+    implicitly[CISBa =:= SISBc]
+
+    type SISBd = the.`ToSum[PIISSB]`.Out
+    implicitly[CISBa =:= SISBd]
   }
 
   @Test
@@ -1780,7 +1796,7 @@ class TupleTests {
                                                             tupler: ops.hlist.Tupler[OutL]
       ): tupler.Out = tupler(mapper(range()))
 
-    // Note: Slightly different method signature in Tuple211Tests
+    // Note: Slightly different method signature in testGrouper2
 
     // group Unit
     assertEquals( (), () group (2,1) )
@@ -1821,6 +1837,60 @@ class TupleTests {
       ((0, 1), (2, 3), (4, 'a')),
       range(0, 5) group(2, 2, ('a', 'b', 'c'))
     )
+  }
+
+  @Test
+  def testGrouper2: Unit = {
+    object toInt extends Poly1 {
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+    }
+
+    def range[R <: HList, T, OutL <: HList](a: Nat, b: Nat)(implicit
+                                                            range: ops.nat.Range.Aux[a.N, b.N, R],
+                                                            mapper: ops.hlist.Mapper.Aux[toInt.type, R, OutL],
+                                                            tupler: ops.hlist.Tupler.Aux[OutL, T]
+      ) = tupler(mapper(range()))
+
+    // group Unit
+    assertEquals( (), () group (2,1) )
+
+    // partition a Tuple of 4 items into 2 (4/2) tuples of 2 items
+    assertEquals(
+      ((0, 1), (2, 3)),
+      range(0, 4) group(2, 2)
+    )
+
+    // partition a Tuple of 5 items into 2 (5/2) tuples of 2 items
+    // the last item does not make a complete partition and is dropped.
+    assertEquals(
+      ((0, 1), (2, 3)),
+      range(0, 5) group(2, 2)
+    )
+
+    // uses the step to select the starting point for each partition
+    assertEquals(
+      ((0, 1), (4, 5)),
+      range(0, 6) group(2, 4)
+    )
+
+    // if the step is smaller than the partition size, items will be reused
+    assertEquals(
+      ((0, 1), (1, 2), (2, 3)),
+      range(0, 4) group(2, 1)
+    )
+
+    // when there are not enough items to fill the last partition, a pad can be supplied.
+    assertEquals(
+      ((0, 1), (2, 3), (4, 'a')),
+      range(0, 5) group(2, 2, Tuple1('a'))
+    )
+
+    // but only as many pad elements are used as necessary to fill the final partition.
+    assertEquals(
+      ((0, 1), (2, 3), (4, 'a')),
+      range(0, 5) group(2, 2, ('a', 'b', 'c'))
+    )
+
   }
 
   @Test

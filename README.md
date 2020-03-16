@@ -7,9 +7,8 @@ experimental project into a library which, while still testing the limits of wha
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped.
 
 [![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
-[![Stories in Ready](https://badge.waffle.io/milessabin/shapeless.png?label=Ready)](https://waffle.io/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
-[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.12)
+[![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
 [![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
 
@@ -46,7 +45,7 @@ Classes as Object and Implicits][tcoi] is useful background material.
 [migration210]: https://github.com/milessabin/shapeless/wiki/Migration-guide:-shapeless-2.0.0-to-2.1.0
 [milessabin]: https://twitter.com/milessabin
 [syb]: https://www.microsoft.com/en-us/research/publication/scrap-your-boilerplate-with-class/
-[higherrank]: http://camlunity.ru/swap/ocaml/Sexy%20Types.pdf
+[higherrank]: http://homes.sice.indiana.edu/ccshan/cs252/usage.pdf
 [typelevel]: http://typelevel.org/
 [scalaz]: https://github.com/scalaz/scalaz
 [spire]: https://github.com/non/spire
@@ -62,16 +61,16 @@ Classes as Object and Implicits][tcoi] is useful background material.
 
 ## Participation
 
-The shapeless project supports the [Typelevel][typelevel] [code of conduct][codeofconduct] and wants all of its
+The shapeless project supports the [Scala Code of Conduct][codeofconduct] and wants all of its
 channels (mailing list, Gitter, IRC, github, etc.) to be welcoming environments for everyone.
 
 Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
 Contributors are usually available to field questions, give advice and discuss ideas on the [Gitter channel][gitter],
 and for people wanting to take their first steps at contributing we have a selection of open issues flagged up as
-being [good candidates to take on][lowhangingfruit]. No contribution is too small, and guidance is always available.
+being [good candidates to take on][goodfirstissue]. No contribution is too small, and guidance is always available.
 
-[codeofconduct]: http://typelevel.org/conduct.html
-[lowhangingfruit]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22Low+hanging+fruit%22
+[codeofconduct]: https://www.scala-lang.org/conduct/
+[goodfirstissue]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 ## Using shapeless
 
@@ -89,10 +88,14 @@ of shapeless. It then drops you immediately into a REPL session,
 ```text
 % curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
 Loading...
-Welcome to the Ammonite Repl 1.0.3
-(Scala 2.12.4 Java 1.8.0_152)
+Compiling (synthetic)/ammonite/predef/interpBridge.sc
+Compiling (synthetic)/ammonite/predef/replBridge.sc
+Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
+Compiling /home/miles/projects/shapeless/(console)
+Welcome to the Ammonite Repl 1.6.8
+(Scala 2.13.1 Java 1.8.0_212)
 If you like Ammonite, please support our development at www.patreon.com/lihaoyi
-@ 23 :: "foo" :: true :: HNil
+@ 23 :: "foo" :: true :: HNil 
 res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
 
 @ Bye!
@@ -118,51 +121,27 @@ resolvers ++= Seq(
 [ci]: https://travis-ci.org/milessabin/shapeless
 
 
-Builds are available for Scala 2.10.x, 2.11.x and for 2.12.x. The main line of development for
-shapeless 2.3.3 is Scala 2.12.4. Scala 2.10.x is supported via the macro paradise compiler plugin.
+Builds are available for Scala 2.11.x, 2.12.x and 2.13.x. The main line of development for
+shapeless 2.3.3 is Scala 2.13.1.
 
 ```scala
-scalaVersion := "2.12.4"
+scalaVersion := "2.13.1"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
 )
 ```
 
-If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
-
+For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.10.7"
+scalaVersion := "2.13.1"
 
 libraryDependencies ++= Seq(
-  "com.chuusai" %% "shapeless" % "2.3.3",
-  compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
 )
 ```
 
-### shapeless and Typelevel Scala
 
-[Typelevel Scala][tls] provides a number of enhancements to the Scala programming language which are relevant to
-programming in the Typelevel ecosystem in general and with shapeless in particular.
-
-To use Typelevel Scala you should,
-
-+ Update your `project/build.properties` to require SBT 0.13.16 or later,
-
-  ```
-  sbt.version=0.13.16
-  ```
-
-+ Add the following to your `build.sbt` immediately next to where you set `scalaVersion`,
-
-  ```
-  inThisBuild(Seq(
-    scalaOrganization := "org.typelevel",
-    scalaVersion := "2.12.4-bin-typelevel-4"
-  ))
-  ```
-
-[tls]: https://github.com/typelevel/scala
 
 ### shapeless-2.3.3 with Maven
 
@@ -171,39 +150,9 @@ shapeless is also available for projects using the Maven build tool via the foll
 ```xml
 <dependency>
   <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.12</artifactId>
+  <artifactId>shapeless_2.13</artifactId>
   <version>2.3.3</version>
 </dependency>
-```
-
-If you are using Scala 2.10.x, you should also add the macro paradise plugin to your build,
-
-```xml
-<dependency>
-  <groupId>com.chuusai</groupId>
-  <artifactId>shapeless_2.10</artifactId>
-  <version>2.2.5</version>
-</dependency>
-
-<plugins>
-  ...
-  <plugin>
-    ...
-    <configuration>
-      ...
-      <compilerPlugins>
-        <compilerPlugin>
-          <groupId>org.scala-lang.plugins</groupId>
-          <artifactId>macro-paradise_2.10</artifactId>
-          <version>2.1.0</version>
-        </compilerPlugin>
-      </compilerPlugins>
-      ...
-    </configuration>
-    ...
-  </plugin>
-  ...
-</plugins>
 ```
 
 ### Older releases
@@ -215,8 +164,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 0.13.16 or later, and its master branch is built with Scala 2.12.4 by default but also
-cross-builds for 2.10.7 and 2.11.12.
+shapeless is built with SBT 1.2.8 or later, and its master branch is built with Scala 2.13.1 by default but also
+cross-builds for 2.11.12 and 2.12.8.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
@@ -238,6 +187,7 @@ cross-builds for 2.10.7 and 2.11.12.
 + Brian McKenna <brian@brianmckenna.org> [@puffnfresh](https://twitter.com/puffnfresh)
 + Brian Zeligson <brian.zeligson@gmail.com> [@beezee](https://twitter.com/bzeg)
 + Bryn Keller <xoltar@xoltar.org> [@brynkeller](https://twitter.com/brynkeller)
++ Carlos Quiroz [@carlosmquiroz](https://twitter.com/carlosmquiroz)
 + Chris Hodapp <clhodapp1@gmail.com> [@clhodapp](https://twitter.com/clhodapp)
 + Cody Allen <ceedubs@gmail.com> [@fourierstrick](https://twitter.com/fourierstrick)
 + Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
