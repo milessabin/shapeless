@@ -455,10 +455,10 @@ object hlist {
       }
 
     implicit def hlistRightFolder[H, T <: HList, In, HF, OutT]
-      (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
+      (implicit ft : Strict[RightFolder.Aux[T, In, HF, OutT]], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
         new RightFolder[H :: T, In, HF] {
           type Out = f.Result
-          def apply(l : H :: T, in : In): Out = f(l.head, ft(l.tail, in))
+          def apply(l : H :: T, in : In): Out = f(l.head, ft.value(l.tail, in))
         }
   }
 

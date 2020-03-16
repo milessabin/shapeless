@@ -427,10 +427,12 @@ class PolyTests {
 
   @Test
   def testPoly2BuilderFoldLeft: Unit = {
-    val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x).
-                                at[Int, String]((acc, s) => acc + s.length).
-                                at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0)).
-                                build
+    import scala.language.reflectiveCalls
+
+    val myPoly = Poly2.at[Int, Int]((acc, x) => acc + x)
+      .at[Int, String]((acc, s) => acc + s.length)
+      .at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0))
+      .build
 
     import myPoly._
 
