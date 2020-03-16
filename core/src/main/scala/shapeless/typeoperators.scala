@@ -18,23 +18,20 @@ package shapeless
 
 import scala.language.dynamics
 import scala.language.experimental.macros
-
 import scala.reflect.ClassTag
 import scala.reflect.macros.whitebox
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Failure, Success, Try}
 
-private[shapeless] trait TagTypes {
+object tag {
+  def apply[U]: Tagger[U] = Tagger.asInstanceOf[Tagger[U]]
+
+  trait Tagged[U] extends Any
   type @@[+T, U] <: T with Tagged[U]
-  trait Tagged[U]
-}
-
-object tag extends TagTypes {
 
   implicit def atatClassTag[T, U](implicit tag: ClassTag[T]): ClassTag[T @@ U] =
     ClassTag(tag.runtimeClass)
 
-  def apply[U]: Tagger[U] = new Tagger
-
+  private object Tagger extends Tagger[Nothing]
   class Tagger[U] {
     def apply[T](t: T): T @@ U = t.asInstanceOf[T @@ U]
   }
@@ -120,8 +117,9 @@ object the extends Dynamic {
 
 @macrocompat.bundle
 class TheMacros(val c: whitebox.Context) {
-  import c.universe.{ Try => _, _ }
-  import internal._, decorators._
+  import c.universe.{Try => _, _}
+  import internal._
+  import decorators._
 
   def applyImpl(t: Tree): Tree = t
 
@@ -164,7 +162,8 @@ object TypeOf extends Dynamic {
   @macrocompat.bundle
   private[TypeOf] final class Macros(val c: whitebox.Context) {
     import c.universe.{Try => _, _}
-    import internal._, decorators._
+    import internal._
+    import decorators._
 
     def selectDynamic(code: Tree): Tree = {
 

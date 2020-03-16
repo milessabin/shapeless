@@ -26,7 +26,7 @@ if [[ "$NATIVE" == "true" ]]; then
 #    eval $COVERAGE && ${SBT} validate ${PUBLISH} && codecov
 else
   ${SBT} clean validateJVM ${PUBLISH}
-  for sjs in '1.0.0' '0.6.32'; do
+  for sjs in '1.0.1' '0.6.32'; do
     SCALAJS_VERSION=$sjs ${SBT} clean validateJS ${PUBLISHJS}
   done
 fi
