@@ -31,6 +31,11 @@ object LabelledGenericTestsAux {
   case class ExtendedBook(author: String, title: String, id: Int, price: Double, inPrint: Boolean)
   case class BookWithMultipleAuthors(title: String, id: Int, authors: String*)
 
+  case class Private1(private val a: Int)
+  case class Private2(private val a: Int, b: Int)
+  case class Private3(a: Int, private val b: String)
+  case class Private4(private val a: Int, b: String)
+
   val tapl = Book("Benjamin Pierce", "Types and Programming Languages", 262162091, 44.11)
   val tapl2 = Book("Benjamin Pierce", "Types and Programming Languages (2nd Ed.)", 262162091, 46.11)
   val taplExt = ExtendedBook("Benjamin Pierce", "Types and Programming Languages", 262162091, 44.11, true)
@@ -79,6 +84,13 @@ object LabelledGenericTestsAux {
   }
 }
 
+object ShapelessTaggedAux {
+  import tag.@@
+
+  trait CustomTag
+  case class Dummy(i: Int @@ CustomTag)
+}
+
 object ScalazTaggedAux {
   import labelled.FieldType
 
@@ -93,7 +105,7 @@ object ScalazTaggedAux {
     def apply(): String
   }
 
-  object TC {
+  object TC extends TCLowPriority {
     implicit val intTC: TC[Int] =
       new TC[Int] {
         def apply() = "Int"
@@ -114,22 +126,13 @@ object ScalazTaggedAux {
         def apply() = "HNil"
       }
 
-    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
-      key: Witness.Aux[K],
-      headTC: Lazy[TC[H @@ HT]],
-      tailTC: Lazy[TC[T]]
-    ): TC[FieldType[K, H @@ HT] :: T] =
-      new TC[FieldType[K, H @@ HT] :: T] {
-        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
-      }
-
     implicit def hconsTC[K <: Symbol, H, T <: HList](implicit
       key: Witness.Aux[K],
       headTC: Lazy[TC[H]],
-      tailTC: Lazy[TC[T]]
+      tailTC: TC[T]
     ): TC[FieldType[K, H] :: T] =
       new TC[FieldType[K, H] :: T] {
-        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC.value()}"
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC()}"
       }
 
     implicit def projectTC[F, G](implicit
@@ -138,6 +141,18 @@ object ScalazTaggedAux {
     ): TC[F] =
       new TC[F] {
         def apply() = s"Proj(${tc.value()})"
+      }
+  }
+
+  abstract class TCLowPriority {
+    // FIXME: Workaround #309
+    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
+      key: Witness.Aux[K],
+      headTC: Lazy[TC[H @@ HT]],
+      tailTC: TC[T]
+    ): TC[FieldType[K, H @@ HT] :: T] =
+      new TC[FieldType[K, H @@ HT] :: T] {
+        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC()}"
       }
   }
 }
@@ -162,6 +177,39 @@ class LabelledGenericTests {
 
     val values = b0.values
     assertEquals("Benjamin Pierce" :: "Types and Programming Languages" :: 262162091 :: 44.11 :: HNil, values)
+  }
+
+  @Test
+  def testPrivateFields: Unit = {
+    val gen1 = LabelledGeneric[Private1]
+    val gen2 = LabelledGeneric[Private2]
+    val gen3 = LabelledGeneric[Private3]
+    val gen4 = LabelledGeneric[Private4]
+    val ab = Symbol("a").narrow :: Symbol("b").narrow :: HNil
+
+    val p1 = Private1(1)
+    val r1 = gen1.to(p1)
+    assertTypedEquals(Symbol("a").narrow :: HNil, r1.keys)
+    assertTypedEquals(1 :: HNil, r1.values)
+    assertEquals(p1, gen1.from(r1))
+
+    val p2 = Private2(2, 12)
+    val r2 = gen2.to(p2)
+    assertTypedEquals(ab, r2.keys)
+    assertTypedEquals(2 :: 12 :: HNil, r2.values)
+    assertEquals(p2, gen2.from(r2))
+
+    val p3 = Private3(3, "p3")
+    val r3 = gen3.to(p3)
+    assertTypedEquals(ab, r3.keys)
+    assertTypedEquals(3 :: "p3" :: HNil, r3.values)
+    assertEquals(p3, gen3.from(r3))
+
+    val p4 = Private4(4, "p4")
+    val r4 = gen4.to(p4)
+    assertTypedEquals(ab, r4.keys)
+    assertTypedEquals(4 :: "p4" :: HNil, r4.values)
+    assertEquals(p4, gen4.from(r4))
   }
 
   @Test
@@ -381,6 +429,16 @@ class LabelledGenericTests {
   }
 
   @Test
+  def testShapelessTagged: Unit = {
+    import ShapelessTaggedAux._
+
+    val lgen = LabelledGeneric[Dummy]
+    val s = s"${lgen from Record(i=tag[CustomTag](0))}"
+    assertEquals(s, "Dummy(0)")
+  }
+
+
+  @Test
   def testScalazTagged: Unit = {
     import ScalazTaggedAux._
 
@@ -394,6 +452,14 @@ class LabelledGenericTests {
 
     implicitly[TC[DummyTagged]]
 
-    // Note: Further tests in LabelledGeneric211Tests
+    type R = Record.`'i -> Int @@ CustomTag`.T
+    val lgen = LabelledGeneric[Dummy]
+    implicitly[lgen.Repr =:= R]
+    implicitly[TC[R]]
+
+    type RT = Record.`'b -> Boolean, 'i -> Int @@ CustomTag`.T
+    val lgent = LabelledGeneric[DummyTagged]
+    implicitly[lgent.Repr =:= RT]
+    implicitly[TC[RT]]
   }
 }

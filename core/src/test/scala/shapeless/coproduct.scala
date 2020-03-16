@@ -1179,6 +1179,27 @@ class CoproductTests {
   }
 
   @Test
+  def testIndexOf: Unit = {
+    import Nat._
+    type S = String; type I = Int; type D = Double; type C = Char
+    type SIDC = S :+: I :+: D :+: C :+: CNil
+
+    {
+      val r1 = IndexOf[SIDC, S].value
+      assertTypedEquals(0, r1)
+
+      val r2: Nat = IndexOf[SIDC, I].apply()
+      assertTypedEquals(Nat._1, r2)
+
+      val r3 = Coproduct[SIDC](1).indexOf[D]
+      assertTypedEquals(Nat._2, r3)
+
+      val r4 = IndexOf[SIDC, C].value
+      assertTypedEquals(3, r4)
+    }
+  }
+
+  @Test
   def testAt: Unit = {
     import Nat._
     type S = String; type I = Int; type D = Double; type C = Char

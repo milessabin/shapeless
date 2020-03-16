@@ -102,6 +102,34 @@ object coproduct {
   }
 
   /**
+    *  find index of A in C
+    */
+  trait IndexOf[C <: Coproduct, A] extends DepFn0 with Serializable {
+    type Out <: Nat
+    def value(implicit n: ops.nat.ToInt[Out]): Int = n.apply()
+  }
+  object IndexOf {
+    type Aux[C <: Coproduct, A, R <: Nat] = IndexOf[C, A] { type Out = R }
+    def apply[C <: Coproduct, A](
+      implicit index: IndexOf[C, A]): Aux[C, A, index.Out] = index
+
+    implicit def matched[C <: Coproduct, A]: Aux[A :+: C, A, Nat._0] =
+      new IndexOf[A :+: C, A] {
+        type Out = Nat._0
+        def apply(): Out = Nat._0
+      }
+
+    implicit def notMatched[C <: Coproduct, A, H, Next <: Nat](
+      implicit ev: A =:!= H,
+      next: Aux[C, A, Next],
+      n: Witness.Aux[Succ[Next]]
+    ): Aux[H :+: C, A, Succ[Next]] = new IndexOf[H :+: C, A] {
+      type Out = Succ[Next]
+      def apply(): Out = n.value
+    }
+  }
+
+  /**
     * Type class for filtering coproduct by type U, splitting into a coproduct containing only type U and
     * a coproduct of all other types.
     */

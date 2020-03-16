@@ -610,20 +610,29 @@ class RecordTests {
 
     type R = Record.`'i -> Int, 's -> String, 'c -> Char, 'j -> Int`.T
     type L = Record.`'c -> Char, 'j -> Int`.T
+    type L2 = Record.`'s -> String, 'c -> Char`.T
 
     type A1 = Record.`'i -> Int, 's -> String`.T
     type A2 = Int :: String :: HNil
+    type A3 = Record.`'i -> Int, 'j -> Int`.T
+    type A4 = Int :: Int :: HNil
 
     val r = Symbol("i") ->> 10 :: Symbol("s") ->> "foo" :: Symbol("c") ->> 'x' :: Symbol("j") ->> 42 :: HNil
 
     val removeAll1 = RemoveAll[R, A1]
     val removeAll2 = RemoveAll[R, A2]
+    val removeAll3 = RemoveAll[R, A3]
+    val removeAll4 = RemoveAll[R, A4]
 
     val (removed1, remaining1) = removeAll1(r)
     val (removed2, remaining2) = removeAll2(r)
+    val (removed3, remaining3) = removeAll3(r)
+    val (removed4, remaining4) = removeAll4(r)
 
     val r1 = removeAll1.reinsert((removed1, remaining1))
     val r2 = removeAll2.reinsert((removed2, remaining2))
+    val r3 = removeAll3.reinsert((removed3, remaining3))
+    val r4 = removeAll4.reinsert((removed4, remaining4))
 
     typed[A1](removed1)
     assertEquals(Symbol("i") ->> 10 :: Symbol("s") ->> "foo" :: HNil, removed1)
@@ -631,17 +640,35 @@ class RecordTests {
     typed[A2](removed2)
     assertEquals(10 :: "foo" :: HNil, removed2)
 
+    typed[A3](removed3)
+    assertEquals(Symbol("i") ->> 10 :: Symbol("j") ->> 42 :: HNil, removed3)
+
+    typed[A4](removed4)
+    assertEquals(10 :: 42 :: HNil, removed4)
+
     typed[L](remaining1)
     assertEquals(Symbol("c") ->> 'x' :: Symbol("j") ->> 42 :: HNil, remaining1)
 
     typed[L](remaining2)
     assertEquals(Symbol("c") ->> 'x' :: Symbol("j") ->> 42 :: HNil, remaining2)
 
+    typed[L2](remaining3)
+    assertEquals(Symbol("s") ->> "foo" :: Symbol("c") ->> 'x' :: HNil, remaining3)
+
+    typed[L2](remaining4)
+    assertEquals(Symbol("s") ->> "foo" :: Symbol("c") ->> 'x' :: HNil, remaining4)
+
     typed[R](r1)
     assertEquals(r, r1)
 
     typed[R](r2)
     assertEquals(r, r2)
+
+    typed[R](r3)
+    assertEquals(r, r3)
+
+    typed[R](r4)
+    assertEquals(r, r4)
   }
 
   @Test
@@ -833,7 +860,7 @@ class RecordTests {
 
     typed[Record.`'i -> 2, 's -> "a", 'b -> true`.T](Symbol("i") ->> 2.narrow :: Symbol("s") ->> "a".narrow :: Symbol("b") ->> true.narrow :: HNil)
 
-    illTyped(""" typed[Record.`'i -> 2`.T]('i ->> 3.narrow :: HNil) """)
+    illTyped(""" typed[Record.`'i -> 2`.T](Symbol("i") ->> 3.narrow :: HNil) """)
 
     // Mix of standard and literal types
 

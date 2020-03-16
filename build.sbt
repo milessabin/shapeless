@@ -1,4 +1,3 @@
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import ReleaseTransformations._
 
@@ -10,10 +9,12 @@ import GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
+val Scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.12.8",
-  crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8", "2.13.0-RC1")
+  scalaVersion := "2.13.1",
+  crossScalaVersions := Seq(Scala211, "2.12.10", "2.13.1"),
+  mimaFailOnNoPrevious := false
 ))
 
 addCommandAlias("root", ";project root")
@@ -100,7 +101,7 @@ lazy val commonJsSettings = Seq(
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
 
   parallelExecution in Test := false,
-  coverageExcludedPackages := ".*"
+  coverageEnabled := false
 )
 
 lazy val commonJvmSettings = Seq(
@@ -108,8 +109,12 @@ lazy val commonJvmSettings = Seq(
   coverageExcludedPackages := "shapeless.examples.*"
 )
 
-lazy val coreSettings = commonSettings ++ publishSettings ++
-  releaseSettings ++ scoverageSettings
+lazy val commonNativeSettings = Seq(
+  scalaVersion := Scala211,
+  crossScalaVersions := Seq(Scala211)
+)
+
+lazy val coreSettings = commonSettings ++ publishSettings ++ releaseSettings
 
 lazy val root = project.in(file("."))
   .aggregate(coreJS, coreJVM)
@@ -147,7 +152,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .jvmSettings(scoverageSettings:_*)
   .nativeSettings(
+    commonNativeSettings,
     // disable scaladoc generation on native
     // currently getting errors like
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
@@ -168,6 +175,7 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossTy
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .nativeSettings(commonNativeSettings:_*)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
@@ -204,6 +212,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
+    commonNativeSettings,
     sources in Compile ~= {
       _.filterNot(_.getName == "sexp.scala")
     }
@@ -216,6 +225,7 @@ lazy val examplesNative = examples.native
 lazy val nativeTest = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
+    commonNativeSettings,
     noPublishSettings,
     sourceGenerators in Compile += Def.task {
       val exclude = List(
@@ -246,23 +256,7 @@ lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
     scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
-  ),
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      // if scala 2.13+ is used, quasiquotes and macro-annotations are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 13 => Seq()
-      // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
-        )
-      // in Scala 2.10, quasiquotes are provided by macro paradise
-      case Some((2, 10)) => Seq(
-          "org.typelevel" %% "macro-compat" % "1.1.1",
-          compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch),
-          "org.scalamacros" %% "quasiquotes" % "2.1.1" cross CrossVersion.binary
-        )
-    }
-  }
+  )
 )
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
@@ -270,13 +264,10 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
     (unmanagedSourceDirectories in sc) ++= {
       (unmanagedSourceDirectories in sc ).value.flatMap { dir: File =>
         if(dir.getName != "scala") Seq(dir)
-        else if(scalaVersion.value == "2.13.0-M4")
-          Seq(new File(dir.getPath + "_2.13.0-M4"), new File(dir.getPath + "_2.11+"))
         else
           CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"), new File(dir.getPath + "_2.11+"))
-            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.11+"), new File(dir.getPath + "_2.13-"))
-            case Some((2, y)) if y == 10 => Seq(new File(dir.getPath + "_2.10"))
+            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
+            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.13-"))
           }
       }
     }
@@ -338,8 +329,6 @@ lazy val coreOsgiSettings = osgiSettings ++ Seq(
 lazy val tagName = Def.setting{
   s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 }
-
-val Scala211 = "2.11.12"
 
 lazy val releaseSettings = Seq(
   releaseCrossBuild := true,

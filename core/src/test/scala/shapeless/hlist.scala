@@ -409,6 +409,9 @@ class HListTests {
   def testPrepend: Unit = {
     val apbp2 = ap ::: bp
     assertTypedEquals[APBP](a :: p :: b :: p :: HNil, apbp2)
+    val apbp2inv = implicitly[Prepend.Aux[AP, BP, APBP]].inverse(apbp2)
+    assertTypedEquals[AP](ap, apbp2inv._1)
+    assertTypedEquals[BP](bp, apbp2inv._2)
 
     typed[Apple](apbp2.head)
     typed[Pear](apbp2.tail.head)
@@ -425,28 +428,60 @@ class HListTests {
 
       val r1 = prependWithHNil(ap)
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = prependToHNil(ap)
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
+
       val r3 = HNil ::: HNil
       assertTypedSame[HNil](HNil, r3)
+      val r3inv = implicitly[Prepend.Aux[HNil, HNil, HNil]].inverse(r3)
+      assertTypedSame[HNil](HNil, r3inv._1)
+      assertTypedSame[HNil](HNil, r3inv._2)
 
       val r4 = prependWithHNil(pabp)
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = prependToHNil(pabp)
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
       // must also pass with the default implicit
       val r1 = HNil ::: ap
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = ap ::: HNil
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
 
       val r4 = HNil ::: pabp
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = pabp ::: HNil
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
@@ -1425,6 +1460,32 @@ class HListTests {
   }
 
   @Test
+  def testSelectFirst: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val si = sl.selectFirst[Int::HNil]
+    assertTypedEquals[Int](1, si)
+
+    val sb = sl.selectFirst[Boolean::HNil]
+    assertTypedEquals[Boolean](true, sb)
+
+    val ss = sl.selectFirst[String::HNil]
+    assertTypedEquals[String]("foo", ss)
+
+    val sd = sl.selectFirst[Double::HNil]
+    assertEquals(2.0, sd, Double.MinPositiveValue)
+
+    val sib = sl.selectFirst[Int::Boolean::HNil]
+    assertTypedEquals[Int](1, sib)
+
+    val sulb = sl.selectFirst[Unit::Long::Boolean::HNil]
+    assertTypedEquals[Boolean](true, sulb)
+
+    val ssbi = sl.selectFirst[String::Boolean::Int::HNil]
+    assertTypedEquals[String]("foo", ssbi)
+  }
+
+  @Test
   def testFilter: Unit = {
     val l1 = 1 :: 2 :: HNil
     val f1 = l1.filter[Int]
@@ -2078,6 +2139,11 @@ class HListTests {
     implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
+  object toMapL extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[T, Int, Map[List[Int], T]] =
+      at[T, Int]((end, t) => Map(List(t) -> end))
+  }
+
   @Test
   def testFoldLeft: Unit = {
     val c1a = combine('o', "foo")
@@ -2103,6 +2169,22 @@ class HListTests {
     val l2 = "bar" :: false :: HNil
     val f2 = l2.foldLeft('o')(combine)
     assertTypedEquals[String]("pass", f2)
+
+    val l3 = 1 :: 2 :: HNil
+    val f3 = l3.foldLeft(0)(toMapL)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(2) -> Map(List(1) -> 0)), f3)
+  }
+
+  object toMapR extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[Int, T, Map[List[Int], T]] =
+      at[Int, T]((t, end) => Map(List(t) -> end))
+  }
+
+  @Test
+  def testFoldRight: Unit = {
+    val l1 = 1 :: 2 :: HNil
+    val f1 = l1.foldRight(0)(toMapR)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(1) -> Map(List(2) -> 0)), f1)
   }
 
   @Test

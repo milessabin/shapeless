@@ -1,12 +1,14 @@
 language: scala
+
+dist: trusty
+
 install:
   - pip install --user codecov
 
 scala:
-- 2.10.7
 - 2.11.12
-- 2.12.8
-- 2.13.0-RC1
+- 2.12.10
+- 2.13.1
 
 jdk:
 - oraclejdk8
@@ -23,8 +25,6 @@ env:
   global:
   - secure: eXcMQIb0hHeaJsJGaJYhLS8aONu5YnhK1NOHJZGTBIb6ukSd48uXm6xNgBMozgkOEUBXyrBU9ZnCOxSS+HmJZDbK0Wkr90C4sZH7dHBZYMN3hNfCp5SjPFY2+TgrYZ24G8s/BPei6725AlbXM0vmdXPsvxaOvT36d2Ej7xto8+c=
   - secure: c3IO3G34aTFD+fh/5vqc3sCgwMaClPDziYQDCEUqQBOQFdTS7wbBZFVpqTUUlkMLkeyHZ0BGSLUiDZnu8TGGITtgJBaCUchhLYK5WOavyzCl/NPVOBebviazgtBOzPDKyYDcahjmxCGrMspTiRei86VgCdkNIvldJJm7zK1OAOU=
-
-sudo: false
 
 notifications:
   irc: "chat.freenode.net#shapeless"

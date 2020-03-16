@@ -25,6 +25,11 @@ class TypeableTests {
   import syntax.typeable._
   import test._
 
+  class Outer {
+    class Inner
+    val inner = new Inner
+  }
+
   @Test
   def testPrimitives: Unit = {
     val b: Any = 23.toByte
@@ -212,6 +217,13 @@ class TypeableTests {
 
     val cr2 = r.cast[AnyVal]
     assertTrue(cr2.isEmpty)
+
+    val n: Any = BigInt(23)
+    val cn = n.cast[AnyRef]
+    assertTrue(cn.isDefined)
+
+    val cn2 = n.cast[AnyVal]
+    assertTrue(cn2.isEmpty)
   }
 
   @Test
@@ -652,4 +664,44 @@ class TypeableTests {
 
   }
 
+  @Test
+  def testValInNestedCaseClass: Unit = {
+    // https://github.com/milessabin/shapeless/issues/812
+    // This should compile if the issue is fixed.
+    object X {
+      case class A()
+      case class B(a: A) {
+        private[this] val aa = a
+      }
+    }
+    object Test {
+      shapeless.Typeable[X.B]
+    }
+  }
+
+  @Test
+  def testDescribeWithSymbolicNames: Unit = {
+    class ***
+    object ***
+    final case class <+>[A](left: A, right: A)
+    val |+| = "Tie-fighter"
+    val witness = Witness(Symbol("witness"))
+
+    // `Typeable.genTraversableTypeable` is not a macro.
+    // Appart from that there is a difference in the encoded name between JVM and JS.
+    assert(Typeable[scala.::[Int]].describe.endsWith("colon[Int]"))
+    assertEquals("***", Typeable[***].describe)
+    assertEquals("***.type", Typeable[***.type].describe)
+    assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
+    assertEquals("|+|.type", Typeable[|+|.type].describe)
+    assertEquals("Symbol('witness)", Typeable[witness.T].describe)
+  }
+
+  @Test
+  def testInnerClasses(): Unit = {
+    val outer1 = new Outer
+    val outer2 = new Outer
+    assertEquals(None, outer1.inner.cast[outer2.Inner])
+    assertEquals(Some(outer1.inner), outer1.inner.cast[outer1.Inner])
+  }
 }
