@@ -1610,6 +1610,37 @@ object hlist {
   }
 
   /**
+   * Type class supporting removal ''m'' elements after the ''n'' elements of this `HList`.
+   * Available only if this `HList` has at least ''n + m'' elements.
+   *
+   * @author Ivan Aristov
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.DropRange[${L}, ${N}, ${M}]. You requested to drop ${M} elements from position ${N}, but the HList ${L} is too short.")
+  trait DropRange[L <: HList, N <: Nat, M <: Nat] extends DepFn1[L] with Serializable { type Out <: HList }
+
+  object DropRange {
+    def apply[L <: HList, N <: Nat, M <: Nat](implicit drop: DropRange[L, N, M]): Aux[L, N, M, drop.Out] = drop
+
+    type Aux[L <: HList, N <: Nat, M <: Nat, Out0 <: HList] = DropRange[L, N, M] { type Out = Out0 }
+
+    implicit def hlistDrop1[L <: HList, M <: Nat, Out0 <: HList](
+      implicit dt: Drop[L, M]
+    ): Aux[L, _0, M, dt.Out] =
+      new DropRange[L, _0, M] {
+        type Out = dt.Out
+        def apply(l : L): Out = dt(l)
+      }
+
+    implicit def hlistDrop2[H, T <: HList, N <: Nat, M <: Nat, Out0 <: HList](
+      implicit dt: DropRange[T, N, M]
+    ): Aux[H :: T, Succ[N], Succ[M], H :: dt.Out] =
+      new DropRange[H :: T, Succ[N], Succ[M]] {
+        type Out = H :: dt.Out
+        def apply(l : H :: T): Out = l.head :: dt(l.tail)
+      }
+  }
+
+  /**
    * Type class supporting retrieval of the first ''n'' elements of this `HList`. Available only if this `HList` has at
    * least ''n'' elements.
    *

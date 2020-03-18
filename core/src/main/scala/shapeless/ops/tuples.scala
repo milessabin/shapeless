@@ -255,6 +255,32 @@ object tuple {
   }
 
   /**
+   * Type class supporting removal of the first `N` elements of this tuple.
+   * Available only if this tuple has at least `N` elements.
+   *
+   * @author Ivan Aristov
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.DropRange[${T}, ${N}, ${M}]. You requested to drop ${M} elements from position ${N}, but the Tuple ${T} is too short.")
+  trait DropRange[T, N <: Nat, M <: Nat] extends DepFn1[T] with Serializable
+
+  object DropRange {
+    def apply[T, N <: Nat, M <: Nat](implicit drop: DropRange[T, N, M]): Aux[T, N, M, drop.Out] = drop
+
+    type Aux[T, N <: Nat, M <: Nat, Out0] = DropRange[T, N, M] { type Out = Out0 }
+
+    implicit def remove[T, N <: Nat, M <: Nat, L <: HList, Out0 <: HList, Out1](
+      implicit
+      gen: Generic.Aux[T, L],
+      rm: hl.DropRange.Aux[L, N, M, Out0],
+      tp: hl.Tupler.Aux[Out0, Out1]
+    ): Aux[T, N, M, Out1] = new DropRange[T, N, M] {
+      type Out = Out1
+
+      def apply(t: T): Out = tp(rm(gen.to(t)))
+    }
+  }
+
+  /**
    * Type class supporting replacement of the first element of type V from this tuple with an element of type U.
    * Available only if this tuple contains an element of type `V`.
    *

@@ -923,6 +923,43 @@ class TupleTests {
   }
 
   @Test
+  def testDropRange: Unit = {
+    val sn1 = (23, 3.0, "foo", (), "bar", true, 5L)
+
+    val d0 = sn1.dropRange[_0, _2]
+    assertTypedEquals[(String, Unit, String, Boolean, Long)](("foo", (), "bar", true, 5L), d0)
+
+    val d1 = sn1.dropRange[_2, _4]
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "bar", true, 5L), d1)
+
+    val d2 = sn1.dropRange[_3, _5]
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "foo", true, 5L), d2)
+  }
+
+  @Test
+  def testDropRangeLiteral: Unit = {
+    val sn1 = (23, 3.0, "foo", (), "bar", true, 5L)
+
+    val d0 = sn1.dropRange(_0, _2)
+    assertTypedEquals[(String, Unit, String, Boolean, Long)](("foo", (), "bar", true, 5L), d0)
+
+    val d1 = sn1.dropRange(0, 2)
+    assertTypedEquals[(String, Unit, String, Boolean, Long)](("foo", (), "bar", true, 5L), d1)
+
+    val d10 = sn1.dropRange(_2, _4)
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "bar", true, 5L), d10)
+
+    val d11 = sn1.dropRange(2, 4)
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "bar", true, 5L), d11)
+
+    val d20 = sn1.dropRange(_3, _5)
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "foo", true, 5L), d20)
+
+    val d21 = sn1.dropRange(3, 5)
+    assertTypedEquals[(Int, Double, String, Boolean, Long)]((23, 3.0, "foo", true, 5L), d21)
+  }
+
+  @Test
   def testSplit: Unit = {
     val sn1 = (23, 3.0, "foo", (), "bar", true, 5L)
 

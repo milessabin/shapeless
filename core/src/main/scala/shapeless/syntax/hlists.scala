@@ -130,7 +130,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def selectMany = SelectManyAux(l)
 
   /**
-   * Returns the elements of this `HList` specified by the range of ids in [A,B[
+   * Returns the elements of this `HList` specified by the range of ids in [A,B]
    * Available only if there is evidence that this `HList` contains all elements in that range
    */
   def selectRange[A <: Nat, B <: Nat](implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
@@ -311,6 +311,19 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * has at least ''n'' elements.
    */
   def drop(n : Nat)(implicit drop : Drop[L, n.N]) : drop.Out = drop(l)
+
+  /**
+   * Returns all but drop elements specified by the range of ids in ''[n, m]'' of this `HList`.
+   * Available only if there is evidence that this `HList` has at least ''n + m'' elements.
+   */
+  def dropRange(n : Nat, m: Nat)(implicit drop : DropRange[L, n.N, m.N]) : drop.Out = drop(l)
+
+  /**
+   * Returns all but but drop elements specified by the range of ids in ''[N, M]'' of this `HList`.
+   * An explicit type arguments must be provided.
+   * Available only if there is evidence that this `HList` has at least ''N + M'' elements.
+   */
+  def dropRange[N <: Nat, M <: Nat](implicit drop : DropRange[L, N, M]) : drop.Out = drop(l)
 
   /**
    * Splits this `HList` at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type argument

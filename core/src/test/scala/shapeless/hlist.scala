@@ -1232,6 +1232,43 @@ class HListTests {
   }
 
   @Test
+  def testDropRange: Unit = {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+
+    val r0 = sn1.dropRange[_0, _2]
+    assertTypedEquals[String :: Unit :: String :: Boolean :: Long :: HNil]("foo" :: () :: "bar" :: true :: 5L :: HNil, r0)
+
+    val r1 = sn1.dropRange[_2, _4]
+    assertTypedEquals[Int :: Double :: String :: Boolean :: Long :: HNil](23 :: 3.0 :: "bar" :: true :: 5L :: HNil, r1)
+
+    val r2 = sn1.dropRange[_1, _4]
+    assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](23 :: "bar" :: true :: 5L :: HNil, r2)
+  }
+
+  @Test
+  def testDropRangeLiteral: Unit = {
+    val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
+
+    val r0 = sn1.dropRange(_0, _2)
+    assertTypedEquals[String :: Unit :: String :: Boolean :: Long :: HNil]("foo" :: () :: "bar" :: true :: 5L :: HNil, r0)
+
+    val r01 = sn1.dropRange(0, 2)
+    assertTypedEquals[String :: Unit :: String :: Boolean :: Long :: HNil]("foo" :: () :: "bar" :: true :: 5L :: HNil, r01)
+
+    val r1 = sn1.dropRange(_2, _4)
+    assertTypedEquals[Int :: Double :: String :: Boolean :: Long :: HNil](23 :: 3.0 :: "bar" :: true :: 5L :: HNil, r1)
+
+    val r11 = sn1.dropRange(2, 4)
+    assertTypedEquals[Int :: Double :: String :: Boolean :: Long :: HNil](23 :: 3.0 :: "bar" :: true :: 5L :: HNil, r11)
+
+    val r2 = sn1.dropRange(_1, _4)
+    assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](23 :: "bar" :: true :: 5L :: HNil, r2)
+
+    val r21 = sn1.dropRange(1, 4)
+    assertTypedEquals[Int :: String :: Boolean :: Long :: HNil](23 :: "bar" :: true :: 5L :: HNil, r21)
+  }
+
+  @Test
   def testSplit: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 

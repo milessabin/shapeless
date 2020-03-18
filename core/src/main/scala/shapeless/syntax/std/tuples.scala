@@ -240,6 +240,20 @@ final class TupleOps[T](t: T) extends Serializable {
    * has at least ''n'' elements.
    */
   def drop(n: Nat)(implicit drop: Drop[T, n.N]): drop.Out = drop(t)
+
+  /**
+   * Returns all but remove `M` elements from `N` element of this tuple.
+   * An explicit type argument must be provided.
+   * Available only if there is evidence that this tuple has at least `N + M` elements.
+   */
+  def dropRange[N <: Nat, M <: Nat](implicit drop: DropRange[T, N, M]): drop.Out = drop(t)
+
+  /**
+   * Returns all but remove `M` elements from `N` element of this tuple.
+   * An explicit type argument must be provided.
+   * Available only if there is evidence that this tuple has at least `N + M` elements.
+   */
+  def dropRange(n: Nat, m: Nat)(implicit drop: DropRange[T, n.N, m.N]): drop.Out = drop(t)
   
   /**
    * Splits this tuple at the ''nth'' element, returning the prefix and suffix as a pair. An explicit type argument
