@@ -748,5 +748,5 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   /**
    * Converts this `HList` into a nested pair
    */
-  def nestedProduct(implicit hListToProduct: HListToProduct[L]): hListToProduct.Out = hListToProduct(l)
+  def toProduct(implicit hListToProduct: HListToProduct[L]): hListToProduct.Out = hListToProduct(l)
 }

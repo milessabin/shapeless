@@ -3490,9 +3490,11 @@ class HListTests {
     val p = (2, ("abc", (true, (3.0, ()))))
 
     import syntax.std.tuple._
-    assertEquals(isbd.nestedProduct, p)
+    assertEquals(isbd.toProduct, p)
     assertEquals(p.toHList, isbd)
-    assertEquals(isbd.nestedProduct.toHList, isbd)
-    assertEquals(p.toHList.nestedProduct, p)
+    assertEquals(isbd.toProduct.toHList, isbd)
+    assertEquals(p.toHList.toProduct, p)
+    assertEquals((), (HNil: HNil).toProduct)
+    assertEquals(HNil, ().toHList)
   }
 }

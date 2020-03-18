@@ -18,6 +18,8 @@ package shapeless
 package syntax
 package std
 
+import shapeless.ops.hlist.ProductToHList
+
 trait LowPriorityTuple {
   implicit def productTupleOps[P <: Product](p: P): TupleOps[P] = new TupleOps(p)
 }
@@ -524,5 +526,5 @@ final class TupleOps[T](t: T) extends Serializable {
   /**
    * Converts this nested `Product` into an `HList`
    */
-  def toHList(implicit toHList: ops.hlist.ToHList[T]): toHList.Out = toHList(t)
+  def toHList(implicit productToHList: ProductToHList[T]): productToHList.Out = productToHList(t)
 }
