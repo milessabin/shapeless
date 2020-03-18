@@ -429,10 +429,10 @@ object hlist {
       }
 
     implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH, FtOut]
-      (implicit f : Case2.Aux[HF, In, H, OutH], ft : LeftFolder.Aux[T, OutH, HF, FtOut]): Aux[H :: T, In, HF, FtOut] =
+      (implicit f : Case2.Aux[HF, In, H, OutH], ft : Strict[LeftFolder.Aux[T, OutH, HF, FtOut]]): Aux[H :: T, In, HF, FtOut] =
         new LeftFolder[H :: T, In, HF] {
           type Out = FtOut
-          def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
+          def apply(l : H :: T, in : In) : Out = ft.value(l.tail, f(in, l.head))
         }
   }
 
@@ -455,10 +455,10 @@ object hlist {
       }
 
     implicit def hlistRightFolder[H, T <: HList, In, HF, OutT]
-      (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
+      (implicit ft : Strict[RightFolder.Aux[T, In, HF, OutT]], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
         new RightFolder[H :: T, In, HF] {
           type Out = f.Result
-          def apply(l : H :: T, in : In): Out = f(l.head, ft(l.tail, in))
+          def apply(l : H :: T, in : In): Out = f(l.head, ft.value(l.tail, in))
         }
   }
 
@@ -1041,7 +1041,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit e: U =:!= H, p: Aux[L, U, LPrefix, LSuffix]
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
@@ -1301,23 +1301,13 @@ object hlist {
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
-  trait LowPriorityUnion {
+  object Union {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
-    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
-    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
-    def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
-      (implicit u: Union.Aux[T, M, U]): Aux[H :: T, M, H :: U] =
-        new Union[H :: T, M] {
-          type Out = H :: U
-          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
-        }
-  }
-
-  object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
     // let ∅ ∪ M = M
@@ -1330,8 +1320,8 @@ object hlist {
     // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
     implicit def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
       (implicit
-       u: Union.Aux[T, M, U],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       u: Union.Aux[T, M, U]
       ): Aux[H :: T, M, H :: U] =
         new Union[H :: T, M] {
           type Out = H :: U
@@ -1358,23 +1348,13 @@ object hlist {
    * Also available if `M` contains types absent in this `HList`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
-  trait LowPriorityIntersection {
+  object Intersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
-    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
-    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
-    def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
-      (implicit i: Intersection.Aux[T, M, I]): Aux[H :: T, M, I] =
-        new Intersection[H :: T, M] {
-          type Out = I
-          def apply(l: H :: T): Out = i(l.tail)
-        }
-  }
-
-  object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
     // let ∅ ∩ M = ∅
@@ -1387,8 +1367,8 @@ object hlist {
     // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
     implicit def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
       (implicit
-       i: Intersection.Aux[T, M, I],
-       f: FilterNot.Aux[M, H, M]
+       f: NotContainsConstraint[M, H],
+       i: Intersection.Aux[T, M, I]
       ): Aux[H :: T, M, I] =
         new Intersection[H :: T, M] {
           type Out = I
@@ -3087,5 +3067,58 @@ object hlist {
         type Out = HNil
         def apply(l: HNil): Out = HNil
       }
+  }
+
+  /**
+   * Type class supporting mappings from type `T` to an `HList`. Currently only supports mapping nested pairs to an `HList`
+   *
+   * @author Michael Zuber
+   */
+  sealed trait ProductToHList[-T] extends Serializable {
+    type Out <: HList
+    def apply(t: T): Out
+  }
+
+  object ProductToHList {
+    def apply[P](implicit ev: ProductToHList[P]): ProductToHList[P] = ev
+
+    type Aux[P, HL <: HList] = ProductToHList[P] { type Out = HL }
+
+    implicit def pairToHCons[H, T, HL <: HList](
+      implicit ev: ProductToHList.Aux[T, HL]
+    ): ProductToHList.Aux[Product2[H, T], H :: HL] = new ProductToHList[Product2[H, T]] {
+      type Out = H :: HL
+      def apply(p: Product2[H, T]): Out = p._1 :: ev(p._2)
+    }
+
+    implicit val unitToHNil: ProductToHList.Aux[Unit, HNil] = new ProductToHList[Unit] {
+      type Out = HNil
+      def apply(p: Unit): Out = HNil
+    }
+  }
+
+  /**
+   * Type class supporting mappings from an `HList` to a nested pair
+   *
+   * @author Michael Zuber
+   */
+  sealed trait HListToProduct[HL <: HList] extends DepFn1[HL] with Serializable
+
+  object HListToProduct {
+    def apply[HL <: HList](implicit ev: HListToProduct[HL]): HListToProduct[HL] = ev
+
+    type Aux[HL <: HList, P] = HListToProduct[HL] { type Out = P }
+
+    implicit val hnilToUnit: HListToProduct.Aux[HNil, Unit] = new HListToProduct[HNil] {
+      type Out = Unit
+      def apply(hl: HNil): Out = ()
+    }
+
+    implicit def hconsToPair[H, T <: HList, TP](
+      implicit ev: HListToProduct.Aux[T, TP]
+    ): HListToProduct.Aux[H :: T, (H, TP)] = new HListToProduct[H :: T] {
+      type Out = (H, TP)
+      def apply(hl: H :: T): Out = (hl.head, ev(hl.tail))
+    }
   }
 }

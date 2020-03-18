@@ -744,4 +744,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Returns all combinations of exactly length `N` of elements from this `Hlist`
    */
   def combinations(n: Nat)(implicit combinations: Combinations[n.N, L]): combinations.Out = combinations(l)
+
+  /**
+   * Converts this `HList` into a nested pair
+   */
+  def toProduct(implicit hListToProduct: HListToProduct[L]): hListToProduct.Out = hListToProduct(l)
 }
