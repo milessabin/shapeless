@@ -22,7 +22,7 @@ package shapeless
  * Instead of left and right constructors `OrElse` has primary and secondary implicits that lazily
  * try to resolve first a value of type `A` or otherwise a value of type `B`.
  */
-sealed trait OrElse[+A, +B] {
+sealed trait OrElse[+A, +B] extends Serializable {
   def fold[C](prim: A => C, sec: B => C): C
   def unify[C >: A](implicit ev: B <:< C): C = fold(identity, ev)
 }

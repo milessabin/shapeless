@@ -27,7 +27,7 @@ class LiftTests {
   import Lift._
   
   @Test
-  def testLiftO {
+  def testLiftO: Unit = {
     
     val sum : (Int, Int) => Int = _ + _
     val prd : (Int, Int, Int) => Int = _ * _ * _

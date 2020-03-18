@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-16 Lars Hupel, Miles Sabin
+ * Copyright (c) 2012-18 Lars Hupel, Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,9 +150,20 @@ object Generic {
   /** Provides an instance of Generic. Prefer this over finding one with `implicitly`, or else use `the`.
     *
     * Either of these approaches preserves the Repr type refinement, which `implicitly` will lose.
-    *
     */
   def apply[T](implicit gen: Generic[T]): Aux[T, gen.Repr] = gen
+
+  /** Creates a new Generic instance from a pair of functions.
+    *
+    * The functions `f` and `g` should be the inverse of each other, i.e.
+    *   - `f(g(x)) == x`
+    *   - `g(f(y)) == y`
+    */
+  def instance[T, R](f: T => R, g: R => T): Aux[T, R] = new Generic[T] {
+    type Repr = R
+    def to(t: T): R = f(t)
+    def from(r: R): T = g(r)
+  }
 
   implicit def materialize[T, R]: Aux[T, R] = macro GenericMacros.materialize[T, R]
 }
@@ -280,11 +291,13 @@ trait ReprTypes {
   def fieldTypeTpe = typeOf[shapeless.labelled.FieldType[_, _]].typeConstructor
   def keyTagTpe = typeOf[shapeless.labelled.KeyTag[_, _]].typeConstructor
   def symbolTpe = typeOf[Symbol]
+
+  def objectRef[O: TypeTag]: Tree = Ident(typeOf[O].termSymbol)
 }
 
 @macrocompat.bundle
-trait CaseClassMacros extends ReprTypes {
-  val c: whitebox.Context
+trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
+  val c: blackbox.Context
 
   import c.universe._
   import internal.constantType
@@ -349,13 +362,13 @@ trait CaseClassMacros extends ReprTypes {
   }
 
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
-    val tSym = tpe.typeSymbol
-    if(tSym.isClass && isAnonOrRefinement(tSym)) Nil
-    else
-      tpe.decls.sorted collect {
-        case sym: TermSymbol if isCaseAccessorLike(sym) =>
-          (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultType)
-      }
+    val clazz = tpe.typeSymbol.asClass
+    val isCaseClass = clazz.isCaseClass
+    if (isAnonOrRefinement(clazz)) Nil
+    else tpe.decls.sorted.collect {
+      case sym: TermSymbol if isCaseAccessorLike(sym, isCaseClass) =>
+        (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+    }
   }
 
   def productCtorsOf(tpe: Type): List[Symbol] = tpe.decls.toList.filter(_.isConstructor)
@@ -407,7 +420,20 @@ trait CaseClassMacros extends ReprTypes {
         }
       val baseArgs = baseTpe.dealias.typeArgs
 
-      val ctorSyms = collectCtors(baseSym).sortBy(_.fullName)
+      def isLess(sym1: Symbol, sym2: Symbol): Boolean = {
+        val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
+        val gSym1 = sym1.asInstanceOf[global.Symbol]
+        val gSym2 = sym2.asInstanceOf[global.Symbol]
+        gSym1.isLess(gSym2)
+      }
+
+      def orderSyms(s1: Symbol, s2: Symbol): Boolean = {
+        val fn1 = s1.fullName
+        val fn2 = s2.fullName
+        fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
+      }
+
+      val ctorSyms = collectCtors(baseSym).sortWith(orderSyms)
       val ctors =
         ctorSyms flatMap { sym =>
           def normalizeTermName(name: Name): TermName =
@@ -535,7 +561,7 @@ trait CaseClassMacros extends ReprTypes {
 
       case TypeRef(pre, _, args) if isVararg(tpe) =>
         val argTrees = args.map(mkTypTree)
-        AppliedTypeTree(tq"_root_.scala.collection.Seq", argTrees)
+        AppliedTypeTree(varargTpt, argTrees)
 
       case t => tq"$t"
     }
@@ -621,27 +647,23 @@ trait CaseClassMacros extends ReprTypes {
   }
 
   def isCaseClassLike(sym: ClassSymbol): Boolean = {
-    def checkCtor: Boolean = {
-      def unique[T](s: Seq[T]): Option[T] =
-        s.headOption.find(_ => s.tail.isEmpty)
-
-      val tpe = sym.typeSignature
-      (for {
-        ctor <- accessiblePrimaryCtorOf(tpe)
-        params <- unique(ctor.asMethod.paramLists)
-      } yield params.size == fieldsOf(tpe).size).getOrElse(false)
-    }
-
-    sym.isCaseClass ||
-    (!sym.isAbstract && !sym.isTrait && !(sym == symbolOf[Object]) &&
-     sym.knownDirectSubclasses.isEmpty && checkCtor)
+    def isConcrete = !(sym.isAbstract || sym.isTrait || sym == symbolOf[Object])
+    def isFinalLike = sym.isFinal || sym.knownDirectSubclasses.isEmpty
+    def ctor = for {
+      ctor <- accessiblePrimaryCtorOf(sym.typeSignature)
+      Seq(params) <- Option(ctor.typeSignature.paramLists)
+      if params.size == fieldsOf(sym.typeSignature).size
+    } yield ctor
+    sym.isCaseClass || (isConcrete && isFinalLike && ctor.isDefined)
   }
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
 
-  def isCaseAccessorLike(sym: TermSymbol): Boolean = {
-    def isGetter = if (sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isGetter
-    sym.isPublic && isGetter && !isNonGeneric(sym)
+  def isCaseAccessorLike(sym: TermSymbol, inCaseClass: Boolean): Boolean = {
+    val isGetter =
+      if (inCaseClass) sym.isCaseAccessor && !sym.isMethod
+      else sym.isGetter && sym.isPublic && (sym.isParamAccessor || sym.isLazy)
+    isGetter && !isNonGeneric(sym)
   }
 
   def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
@@ -786,7 +808,7 @@ trait CaseClassMacros extends ReprTypes {
   def devarargify(tpe: Type): Type =
     tpe match {
       case TypeRef(pre, _, args) if isVararg(tpe) =>
-        appliedType(typeOf[scala.collection.Seq[_]].typeConstructor, args)
+        appliedType(varargTC, args)
       case _ => tpe
     }
 
@@ -799,64 +821,47 @@ trait CaseClassMacros extends ReprTypes {
   def equalTypes(as: List[Type], bs: List[Type]): Boolean =
     as.length == bs.length && (as zip bs).foldLeft(true) { case (acc, (a, b)) => acc && unByName(a) =:= unByName(b) }
 
-  def alignFields(tpe: Type, ts: List[Type]): Option[List[(TermName, Type)]] = {
-    val fields = fieldsOf(tpe)
-    if(fields.length != ts.length) None
-    else {
-      @tailrec
-      def loop(fields: Seq[(TermName, Type)], ts: Seq[Type], acc: List[(TermName, Type)]): Option[List[(TermName, Type)]] =
-        ts match {
-          case Nil => Some(acc.reverse)
-          case Seq(hd, tl @ _*) =>
-            fields.span { case (_, tpe) => !(tpe =:= hd) } match {
-              case (fpre, List(f, fsuff @ _*)) => loop(fpre ++ fsuff, tl, f :: acc)
-              case _ => None
-            }
-        }
-
-      loop(fields, ts, Nil)
+  def alignFields(tpe: Type, args: List[(TermName, Type)]): Option[List[(TermName, Type)]] = for {
+    fields <- Option(fieldsOf(tpe))
+    if fields.size == args.size
+    if fields.zip(args).forall { case ((fn, ft), (an, at)) =>
+      (fn == an || at.typeSymbol == definitions.ByNameParamClass) && ft =:= unByName(at)
     }
-  }
+  } yield fields
 
   object HasApply {
-    def unapply(tpe: Type): Option[List[(TermName, Type)]] = {
-      val sym = tpe.typeSymbol
-      val companionTpe = sym.companion.info
-      val applySym = companionTpe.member(TermName("apply"))
-      if(applySym.isTerm && !applySym.asTerm.isOverloaded && applySym.isMethod && !isNonGeneric(applySym) && isAccessible(companionTpe, applySym)) {
-        val applyParamss = applySym.asMethod.paramLists
-        if(applyParamss.length == 1)
-          alignFields(tpe, applyParamss.head.map(tpe => unByName(tpe.infoIn(companionTpe))))
-        else None
-      } else None
-    }
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
+      companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
+      apply = companion.member(TermName("apply"))
+      if apply.isTerm && !apply.asTerm.isOverloaded
+      if apply.isMethod && !isNonGeneric(apply)
+      if isAccessible(companion, apply)
+      Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
+      aligned <- alignFields(tpe, for (param <- params)
+        yield param.name.toTermName -> param.typeSignature)
+    } yield aligned
   }
 
   object HasUnapply {
-    def unapply(tpe: Type): Option[List[Type]] = {
-      val sym = tpe.typeSymbol
-      val companionTpe = sym.companion.info
-      val unapplySym = companionTpe.member(TermName("unapply"))
-      if(unapplySym.isTerm && !unapplySym.asTerm.isOverloaded && unapplySym.isMethod && !isNonGeneric(unapplySym) && isAccessible(companionTpe, unapplySym))
-        unapplySym.asMethod.infoIn(companionTpe).finalResultType.baseType(symbolOf[Option[_]]) match {
-          case TypeRef(_, _, List(o @ TypeRef(_, _, args))) if o <:< typeOf[Product] => Some(args)
-          case TypeRef(_, _, args @ List(arg)) => Some(args)
-          case _ => None
-        }
-      else None
-    }
+    def unapply(tpe: Type): Option[List[Type]] = for {
+      companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
+      unapply = companion.member(TermName("unapply"))
+      if unapply.isTerm && !unapply.asTerm.isOverloaded
+      if unapply.isMethod && !isNonGeneric(unapply)
+      if isAccessible(companion, unapply)
+      returnTpe <- unapply.asMethod.typeSignatureIn(companion).finalResultType
+        .baseType(symbolOf[Option[_]]).typeArgs.headOption
+    } yield if (returnTpe <:< typeOf[Product]) returnTpe.typeArgs else List(returnTpe)
   }
 
   object HasUniqueCtor {
-    def unapply(tpe: Type): Option[List[(TermName, Type)]] =
-      tpe.decls.find { sym => sym.isMethod && sym.asMethod.isPrimaryConstructor && isAccessible(tpe, sym) } match {
-        case Some(ctorSym) if !isNonGeneric(ctorSym) =>
-          val ctorParamss = ctorSym.asMethod.infoIn(tpe).paramLists
-          if(ctorParamss.length == 1)
-            alignFields(tpe, ctorParamss.head.map(param => unByName(param.info)))
-          else None
-        case _ => None
-      }
+    def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
+      ctor <- accessiblePrimaryCtorOf(tpe)
+      if !isNonGeneric(ctor)
+      Seq(params) <- Option(ctor.typeSignatureIn(tpe).paramLists)
+      aligned <- alignFields(tpe, for (param <- params)
+        yield param.name.toTermName -> param.typeSignature)
+    } yield aligned
   }
 
   object HasApplyUnapply {
@@ -989,83 +994,64 @@ trait CaseClassMacros extends ReprTypes {
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
+  private val generic = objectRef[Generic.type]
+
   def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
-    if(isReprType(tpe))
+    if (isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
-    if(isProduct(tpe))
-      mkProductGeneric(tpe)
-    else
-      mkCoproductGeneric(tpe)
+    if (isProduct(tpe)) mkProductGeneric(tpe)
+    else mkCoproductGeneric(tpe)
   }
 
   def mkProductGeneric(tpe: Type): Tree = {
+    val repr = reprTypTree(tpe)
     val ctorDtor = CtorDtor(tpe)
     val (p, ts) = ctorDtor.binding
-    val to = cq""" $p => ${mkHListValue(ts)} """
+    val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
     val (rp, rts) = ctorDtor.reprBinding
-    val from = cq""" $rp => ${ctorDtor.construct(rts)} """
-
-    val clsName = TypeName(c.freshName("anon$"))
-    q"""
-      final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
-        def to(p: $tpe): Repr = (p match { case $to }).asInstanceOf[Repr]
-        def from(p: Repr): $tpe = p match { case $from }
-      }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
-    """
+    val from = cq"$rp => ${ctorDtor.construct(rts)}"
+    q"$generic.instance[$tpe, $repr]({ case $to }, { case $from })"
   }
 
   def mkCoproductGeneric(tpe: Type): Tree = {
-    def mkCoproductCases(tpe0: Type, index: Int): CaseDef = {
-      tpe0 match {
-        case SingleType(pre, sym) =>
-          val singleton = mkAttributedRef(pre, sym)
-          cq"p if p eq $singleton => $index"
-        case _ =>
-          cq"_: $tpe0 => $index"
-      }
+    def mkCoproductCases(tpe0: Type, index: Int) = tpe0 match {
+      case SingleType(pre, sym) =>
+        val singleton = mkAttributedRef(pre, sym)
+        cq"p if p eq $singleton => $index"
+      case _ =>
+        cq"_: $tpe0 => $index"
     }
 
-    val to = {
-      val toCases = ctorsOf(tpe) zip (Stream from 0) map (mkCoproductCases _).tupled
-      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[Repr]"""
-    }
-
-    val clsName = TypeName(c.freshName("anon$"))
-    q"""
-      final class $clsName extends _root_.shapeless.Generic[$tpe] {
-        type Repr = ${reprTypTree(tpe)}
-        def to(p: $tpe): Repr = $to
-        def from(p: Repr): $tpe = _root_.shapeless.Coproduct.unsafeGet(p).asInstanceOf[$tpe]
-      }
-      new $clsName(): _root_.shapeless.Generic.Aux[$tpe, ${reprTypTree(tpe)}]
-    """
+    val coproduct = objectRef[Coproduct.type]
+    val repr = reprTypTree(tpe)
+    val toCases = ctorsOf(tpe).zipWithIndex.map((mkCoproductCases _).tupled)
+    val to = q"$coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[$repr]"
+    q"$generic.instance[$tpe, $repr]((p: $tpe) => $to, $coproduct.unsafeGet(_).asInstanceOf[$tpe])"
   }
 
   def mkIsTuple[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(!isTuple(tTpe))
+    if (!isTuple(tTpe))
       abort(s"Unable to materialize IsTuple for non-tuple type $tTpe")
 
-    q"""new _root_.shapeless.IsTuple[$tTpe]: _root_.shapeless.IsTuple[$tTpe]"""
+    q"new ${weakTypeOf[IsTuple[T]]}"
   }
 
   def mkHasProductGeneric[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(isReprType(tTpe) || !isProduct(tTpe))
+    if (isReprType(tTpe) || !isProduct(tTpe))
       abort(s"Unable to materialize HasProductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasProductGeneric[$tTpe]: _root_.shapeless.HasProductGeneric[$tTpe]"""
+    q"new ${weakTypeOf[HasProductGeneric[T]]}"
   }
 
   def mkHasCoproductGeneric[T: WeakTypeTag]: Tree = {
     val tTpe = weakTypeOf[T]
-    if(isReprType(tTpe) || !isCoproduct(tTpe))
+    if (isReprType(tTpe) || !isCoproduct(tTpe))
       abort(s"Unable to materialize HasCoproductGeneric for $tTpe")
 
-    q"""new _root_.shapeless.HasCoproductGeneric[$tTpe]: _root_.shapeless.HasCoproductGeneric[$tTpe]"""
+    q"new ${weakTypeOf[HasCoproductGeneric[T]]}"
   }
 }

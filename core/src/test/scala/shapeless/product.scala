@@ -15,7 +15,7 @@ class ProductTests {
   case class Bar(b: Boolean, f: Foo)
   case class Baz(s: String, f: Foo)
 
-  def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+  def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
   @Test
   def testToTuple = {
@@ -159,7 +159,7 @@ class ProductTests {
   }
 
   @Test
-  def testToTraversable {
+  def testToTraversable: Unit = {
     def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
       assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
 
@@ -220,7 +220,7 @@ class ProductTests {
   }
   
   @Test
-  def testToSized {
+  def testToSized: Unit = {
     def assertArrayEquals0[T](a: Array[T], b: Array[T]) =
       assertArrayEquals(a.asInstanceOf[Array[Object]], b.asInstanceOf[Array[Object]])
 
@@ -281,7 +281,7 @@ class ProductTests {
   }
   
   @Test
-  def testToMap {
+  def testToMap: Unit = {
     import syntax.singleton._
     
     {
@@ -318,14 +318,14 @@ class ProductTests {
     
     {
       val m = foo.toMap
-      val expected = Map('i.narrow -> 1, 's.narrow -> "b")
+      val expected = Map(Symbol("i").narrow -> 1, Symbol("s").narrow -> "b")
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
     }
 
     {
       val m = foo.toMap[Symbol, Any]
-      val expected = Map[Symbol, Any]('i -> 1, 's -> "b")
+      val expected = Map[Symbol, Any](Symbol("i") -> 1, Symbol("s") -> "b")
       equalInferredTypes(expected, m)
       assertTypedEquals(expected, m)
     }

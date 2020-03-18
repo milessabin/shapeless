@@ -28,7 +28,7 @@ class HMapTests {
   implicit val stringToInt = new BiMapIS[String, Int]
   
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
     
     illTyped("""
@@ -47,7 +47,7 @@ class HMapTests {
   }
   
   @Test
-  def testPoly {
+  def testPoly: Unit = {
     val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
     import hm._
     
@@ -66,7 +66,7 @@ class HMapTests {
   }
   
   @Test
-  def testNatTrans {
+  def testNatTrans: Unit = {
     val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     
     illTyped("""
@@ -91,7 +91,7 @@ class HMapTests {
   }
   
   @Test
-  def testPolyNatTrans {
+  def testPolyNatTrans: Unit = {
     val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     import nt._
     
@@ -113,7 +113,7 @@ class HMapTests {
   }
   
   @Test
-  def testIdKeyNatTrans {
+  def testIdKeyNatTrans: Unit = {
     val nt = HMap[(Id ~?> Option)#λ]("foo" -> Option("bar"), 23 -> Option(13))
     
     illTyped("""
@@ -138,7 +138,7 @@ class HMapTests {
   }  
   
   @Test
-  def testIdValueNatTrans {
+  def testIdValueNatTrans: Unit = {
     val nt = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> 13)
     
     illTyped("""
@@ -175,7 +175,7 @@ class HMapTests {
   object Y
 
   @Test
-  def testSingleton {
+  def testSingleton: Unit = {
 
     val hm = HMap[Mapping](X -> X(13), Y -> Y("foo"))
 

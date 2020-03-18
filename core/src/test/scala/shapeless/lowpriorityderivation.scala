@@ -1,7 +1,22 @@
+/*
+ * Copyright (c) 2016-18 Miles Sabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package shapeless
 
 import scala.language.reflectiveCalls
-import scala.collection.generic.CanBuildFrom
 import org.junit.Test
 
 
@@ -248,14 +263,14 @@ object LowPriorityDerivationTests {
           val tc = instance[Double](_ => "Double")
         }
 
-      implicit def mkCollWriter[M[_], T]
+      implicit def mkCollWriter[T]
        (implicit
-         underlying: TC[T],
-         cbf: CanBuildFrom[Nothing, T, M[T]]
-       ): MkStdTC[M[T]] =
-        new MkStdTC[M[T]] {
-          lazy val tc = instance[M[T]](n => s"${cbf().result().toString.stripSuffix("()")}[${underlying.msg(n - 1)}]")
+         underlying: TC[T]
+       ): MkStdTC[List[T]] = {
+        new MkStdTC[List[T]] {
+          lazy val tc = instance[List[T]](n => s"List[${underlying.msg(n - 1)}]")
         }
+       }
     }
 
     trait MkGenericTupleTC[T] extends MkTC[T]
@@ -389,12 +404,12 @@ class LowPriorityDerivationTests {
 
   def validateTC[T: TC](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   def validateTC0[T: TC0](expected: String, n: Int = Int.MaxValue): Unit = {
     val msg = TC0[T].msg(n)
-    assert(expected == msg)
+    assert(expected == msg, s"Expected: $expected, got: $msg")
   }
 
   def validateTCR[T](expected: String, n: Int = Int.MaxValue)(implicit tcr: TCR[T]): Unit = {
@@ -403,7 +418,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simple {
+  def simple: Unit = {
     import SimpleTCDeriver._
 
     // All orphans
@@ -442,7 +457,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def composed {
+  def composed: Unit = {
     import ComposedTCDeriver._
 
     // All orphans
@@ -483,7 +498,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def refinement {
+  def refinement: Unit = {
     import TCRDeriver._
 
     // Orphans
@@ -512,7 +527,7 @@ class LowPriorityDerivationTests {
   }
 
   @Test
-  def simpleWithIgnoring {
+  def simpleWithIgnoring: Unit = {
     import SimpleTC0Deriver._
 
     // More or less cut-n-pasted from 'simple above, I don't really see they could be factored

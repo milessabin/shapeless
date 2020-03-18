@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package shapeless
+
+import scala.collection._
 
 import poly._
 
@@ -49,8 +51,6 @@ trait Data1 extends Data0 {
 }
 
 object Data extends Data1 {
-  import scala.collection.{ GenMap, GenTraversable }
-
   def apply[P, T, R](implicit dt: Lazy[Data[P, T, R]]): Data[P, T, R] = dt.value
 
   def gmapQ[F, T, R](f: F)(t: T)(implicit data: Lazy[Data[F, T, R]]) = data.value.gmapQ(t)
@@ -64,7 +64,7 @@ object Data extends Data1 {
       def gmapQ(t: List[T]) = t.map(qt.value(_))
     }
 
-  implicit def genTraversableData[P, C[X] <: GenTraversable[X], T, R]
+  implicit def genTraversableData[P, C[X] <: Iterable[X], T, R]
     (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
       new Data[P, C[T], R] {
         def gmapQ(t: C[T]) =
@@ -74,7 +74,7 @@ object Data extends Data1 {
       }
 
   implicit def genMapData[P, M[X, Y], K, V, R]
-    (implicit ev: M[K, V] <:< GenMap[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
+    (implicit ev: M[K, V] <:< Map[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
       new Data[P, M[K, V], R] {
         def gmapQ(t: M[K, V]) =
           t.foldLeft(List.newBuilder[R]) { case (b, el) =>
@@ -139,9 +139,6 @@ trait DataT1 extends DataT0 {
 }
 
 object DataT extends DataT1 {
-  import scala.collection.{ GenMap, GenTraversable }
-  import scala.collection.generic.CanBuildFrom
-
   def apply[P, T](implicit dtt: Lazy[DataT[P, T]]): DataT[P, T] = dtt.value
 
   def gmapT[F, T](f: F)(t: T)(implicit data: Lazy[DataT[F, T]]) = data.value.gmapT(t)
@@ -156,26 +153,26 @@ object DataT extends DataT1 {
       def gmapT(t: List[T]) = t.map(ft.value)
     }
 
-  implicit def genTraversableDataT[F <: Poly, CC[X] <: GenTraversable[X], T, U]
-    (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: CanBuildFrom[Nothing, U, CC[U]]): Aux[F, CC[T], CC[U]] =
+  implicit def genTraversableDataT[F <: Poly, CC[X] <: Iterable[X], T, U]
+    (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: Factory[U, CC[U]]): Aux[F, CC[T], CC[U]] =
       new DataT[F, CC[T]] {
         type Out = CC[U]
         def gmapT(t: CC[T]) =
-          t.foldLeft(cbf()) { (b, x) =>
+          t.foldLeft(cbf.newBuilder) { (b, x) =>
             b += ft.value(x)
           }.result
       }
 
   implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
     (implicit
-      ev: M[K, V] <:< GenMap[K, V],
+      ev: M[K, V] <:< Map[K, V],
       fv: Lazy[Case1.Aux[F, V, U]],
-      cbf: CanBuildFrom[Nothing, (K, U), M[K, U]]
+      cbf: Factory[(K, U), M[K, U]]
     ): Aux[F, M[K, V], M[K, U]] =
       new DataT[F, M[K, V]] {
         type Out = M[K, U]
         def gmapT(t: M[K, V]) =
-          t.foldLeft(cbf()) { case (b, (k, v)) =>
+          t.foldLeft(cbf.newBuilder) { case (b, (k, v)) =>
             b += k -> fv.value(v)
           }.result
       }

@@ -35,7 +35,7 @@ class ALaCarteTests {
   import ALaCarteTestsAux._
 
   @Test
-  def testApplyUnapply {
+  def testApplyUnapply: Unit = {
     val foo = Foo(23, "foo")
     typed[Foo](foo)
 
@@ -45,7 +45,7 @@ class ALaCarteTests {
   }
 
   @Test
-  def testProduct {
+  def testProduct: Unit = {
     val foo = Foo(23, "foo")
 
     val foo_1 = foo.productElement(0)
@@ -67,7 +67,7 @@ class ALaCarteTests {
   }
 
   @Test
-  def testPolyEquality {
+  def testPolyEquality: Unit = {
     val foo = Foo(23, "foo")
     val foo2 = Foo(23, "foo")
     val foo3 = Foo(13, "bar")
@@ -77,7 +77,7 @@ class ALaCarteTests {
   }
 
   @Test
-  def testCopy {
+  def testCopy: Unit = {
     val foo = Foo(23, "foo")
     val fooCopy = foo.copy()
     assertFalse(fooCopy eq foo)
@@ -92,7 +92,7 @@ class ALaCarteTests {
   }
 
   @Test
-  def testToString {
+  def testToString: Unit = {
     val foo = Foo(23, "foo")
     val fooStr = foo.toString
     assertEquals("Foo(23,foo)", fooStr)

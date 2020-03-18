@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,6 +136,12 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def selectRange[A <: Nat, B <: Nat](implicit sel: SelectRange[L,A,B]): sel.Out = sel(l)
 
   def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
+
+  /**
+   * Returns the first element of `S` in this `HList`.
+   * Available only if there is evidence that this `HList` contains at least one element of `S`.
+   */
+  def selectFirst[S <: HList](implicit sel: SelectFirst[L, S]): sel.Out = sel(l)
 
   /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
@@ -609,7 +615,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     *
     * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
     */
-  def toCoproduct[M[_] <: Traversable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
+  def toCoproduct[M[_] <: Iterable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements

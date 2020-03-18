@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-14 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ object Boilerplate {
 
   val header = """
     |/*
-    | * Copyright (c) 2011-14 Miles Sabin
+    | * Copyright (c) 2011-18 Miles Sabin
     | *
     | * Licensed under the Apache License, Version 2.0 (the "License");
     | * you may not use this file except in compliance with the License.
@@ -350,7 +350,7 @@ object Boilerplate {
         -      = poly.Case[outer.type, ${`A::N`}] { type Result = Result0 }
         -  }
         -
-        -  class CaseBuilder[${`A..N`}] {
+        -  class CaseBuilder${arity}[${`A..N`}] {
         -    def apply[Res]
         -      (fn: (${`A..N`}) => Res) = new Case[${`A..N`}] {
         -      type Result = Res
@@ -360,7 +360,7 @@ object Boilerplate {
         -  }
         -  
         -  def at[${`A..N`}]
-        -    = new CaseBuilder[${`A..N`}]
+        -    = new CaseBuilder${arity}[${`A..N`}]
         -}
         -
         -object Poly${arity} extends PolyNBuilders.Poly${arity}Builder[HNil] {
@@ -388,24 +388,21 @@ object Boilerplate {
         |object PolyNBuilders {
         -
         - trait Poly${arity}Builder[HL <: HList] { self =>
-        -
         -   val functions: HL
         -   class AtAux[${`A..N`}] {
-        -     def apply[Out](λ: (${`A..N`}) => Out) = {
+        -     def apply[Out](λ: (${`A..N`}) => Out): Poly${arity}Builder[((${`A..N`}) => Out) :: HL] = {
         -       new Poly${arity}Builder[((${`A..N`}) => Out) :: HL] {
         -         val functions = λ :: self.functions
         -       }
         -     }
         -   }
+        -
         -   def at[${`A..N`}] = new AtAux[${`A..N`}]
         -
-        -   def build = new Poly${arity} {
+        -   object build extends Poly${arity} {
         -     val functions = self.functions
-        -
-        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]) = {
-        -       val func: (${`A..N`}) => Out = tL(functions)
-        -       at(func)
-        -     }
+        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]): Case.Aux[${`A..N`}, Out] =
+        -       at(tL(functions))
         -   }
         - }
         -
@@ -415,17 +412,15 @@ object Boilerplate {
         - }
         -
         - object Function${arity}TypeAt {
-        -   implicit def at0[${`A..N`}, Out, Tail <: HList] = new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
-        -     def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = {
-        -       l.head
+        -   implicit def at0[${`A..N`}, Out, Tail <: HList]: Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] =
+        -     new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
+        -       def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = l.head
         -     }
-        -   }
         -
-        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]) = new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
-        -     def apply(l: Head::Tail): (${`A..N`}) => Out = {
-        -       tprev(l.tail)
+        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]): Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] =
+        -     new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
+        -       def apply(l: Head::Tail): (${`A..N`}) => Out = tprev(l.tail)
         -     }
-        -   }
         - }
         |}
       """
@@ -492,13 +487,13 @@ object Boilerplate {
       block"""
         |
         |class SizedBuilder[CC[_]] {
-        |  import scala.collection.generic.CanBuildFrom
+        |  import scala.collection._
         |  import nat._
         |  import Sized.wrap
         |
         -  def apply[T](${`a:T..n:T`})
-        -    (implicit cbf : CanBuildFrom[Nothing, T, CC[T]], ev : AdditiveCollection[CC[T]]) =
-        -    wrap[CC[T], _${arity}]((cbf() += (${`a..n`})).result)
+        -    (implicit dis: DefaultToIndexedSeq[CC], factory : Factory[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
+        -    wrap[CC[T], _${arity}]((factory.newBuilder ++= Seq(${`a..n`})).result)
         -
         |}
       """

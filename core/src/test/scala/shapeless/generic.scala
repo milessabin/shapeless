@@ -98,6 +98,9 @@ package GenericTestsAux {
   class NonCCA(val i: Int, val s: String) extends AbstractNonCC
   class NonCCB(val b: Boolean, val d: Double) extends AbstractNonCC
   class NonCCWithVars(var c: Char, var l: Long) extends AbstractNonCC
+  class NonCCWithVal(val n: Int) extends AbstractNonCC {
+    val isEven: Boolean = n % 2 == 0
+  }
 
   class NonCCWithCompanion private (val i: Int, val s: String)
   object NonCCWithCompanion {
@@ -127,6 +130,16 @@ package GenericTestsAux {
   case object COSemiAuto {
     implicit val gen = Generic[COSemiAuto.type]
   }
+
+  case class CCOrdered[A: Ordering](value: A)
+  class CCLikeOrdered[A: Ordering](val value: A)
+
+  case class CCDegen(i: Int)()
+  class CCLikeDegen(val i: Int)()
+
+  class Squared(x: Long) {
+    val x2 = x * x
+  }
 }
 
 class GenericTests {
@@ -140,7 +153,7 @@ class GenericTests {
   type ABC = A.type :+: B.type :+: C.type :+: CNil
 
   @Test
-  def testProductBasics {
+  def testProductBasics: Unit = {
     val p = Person("Joe Soap", "Brighton", 23)
     type SSI = String :: String :: Int :: HNil
     val gen = Generic[Person]
@@ -155,7 +168,7 @@ class GenericTests {
   }
 
   @Test
-  def testProductVarargs {
+  def testProductVarargs: Unit = {
     val p = PersonWithPseudonims("Joe Soap", "X", "M", "Z")
     val gen = Generic[PersonWithPseudonims]
 
@@ -169,7 +182,7 @@ class GenericTests {
   }
 
   @Test
-  def testTuples {
+  def testTuples: Unit = {
     val gen1 = Generic[Tuple1[Int]]
     typed[Generic[Tuple1[Int]] { type Repr = Int :: HNil }](gen1)
 
@@ -181,7 +194,7 @@ class GenericTests {
   }
 
   @Test
-  def testProductMapBasics {
+  def testProductMapBasics: Unit = {
     val p = Person("Joe Soap", "Brighton", 23)
 
     val p0 = star(p)
@@ -190,7 +203,7 @@ class GenericTests {
   }
 
   @Test
-  def testProductNestedMap {
+  def testProductNestedMap: Unit = {
     val p = Person("Joe Soap", "Brighton", 23)
     val e = Employee(p, Salary(2000))
 
@@ -200,7 +213,7 @@ class GenericTests {
   }
 
   @Test
-  def testCoproductBasics {
+  def testCoproductBasics: Unit = {
     val a: Fruit = Apple()
     val p: Fruit = Pear()
     val b: Fruit = Banana()
@@ -234,7 +247,7 @@ class GenericTests {
   }
 
   @Test
-  def testCoproductMapBasics {
+  def testCoproductMapBasics: Unit = {
     val a: Fruit = Apple()
     val p: Fruit = Pear()
     val b: Fruit = Banana()
@@ -264,7 +277,7 @@ class GenericTests {
   }
 
   @Test
-  def testSingletonCoproducts {
+  def testSingletonCoproducts: Unit = {
     type S = Single
 
     val gen = Generic[AbstractSingle]
@@ -279,7 +292,7 @@ class GenericTests {
   }
 
   @Test
-  def testOverlappingCoproducts {
+  def testOverlappingCoproducts: Unit = {
     val gen = Generic[Overlapping]
     val o: Overlapping = OAB(1)
     val o0 = gen.to(o)
@@ -290,7 +303,7 @@ class GenericTests {
   }
 
   @Test
-  def testCaseObjects {
+  def testCaseObjects: Unit = {
     val a: Enum = A
     val b: Enum = B
     val c: Enum = C
@@ -317,7 +330,7 @@ class GenericTests {
   }
 
   @Test
-  def testCaseObjectMap {
+  def testCaseObjectMap: Unit = {
     val a: Enum = A
     val b: Enum = B
     val c: Enum = C
@@ -347,7 +360,7 @@ class GenericTests {
   }
 
   @Test
-  def testParametrized {
+  def testParametrized: Unit = {
     val t: Tree[Int] = Node(Node(Leaf(23), Leaf(13)), Leaf(11))
     type NI = Leaf[Int] :+: Node[Int] :+: CNil
 
@@ -361,7 +374,7 @@ class GenericTests {
   }
 
   @Test
-  def testParametrizedWithVarianceOption {
+  def testParametrizedWithVarianceOption: Unit = {
     val o: Option[Int] = Option(23)
     type SN = None.type :+: Some[Int] :+: CNil
 
@@ -375,7 +388,7 @@ class GenericTests {
   }
 
   @Test
-  def testMapOption {
+  def testMapOption: Unit = {
     val o: Option[Int] = Option(23)
 
     val o0 = inc(o)
@@ -389,7 +402,7 @@ class GenericTests {
   }
 
   @Test
-  def testParametrizedWithVarianceList {
+  def testParametrizedWithVarianceList: Unit = {
     import scala.collection.immutable.{ :: => Cons }
 
     val l: List[Int] = List(1, 2, 3)
@@ -405,7 +418,7 @@ class GenericTests {
   }
 
   @Test
-  def testParametrzedSubset {
+  def testParametrzedSubset: Unit = {
     val l = Left(23)
     val r = Right(true)
     type IB = Left[Int] :+: Right[Boolean] :+: CNil
@@ -420,7 +433,7 @@ class GenericTests {
   }
 
   @Test
-  def testParametrizedPermute {
+  def testParametrizedPermute: Unit = {
     val s = Swap(23, true)
     type IB = Swap[Int, Boolean] :+: CNil
 
@@ -431,15 +444,17 @@ class GenericTests {
   }
 
   @Test
-  def testAbstractNonCC {
+  def testAbstractNonCC: Unit = {
     val ncca = new NonCCA(23, "foo")
     val nccb = new NonCCB(true, 2.0)
     val nccc = new NonCCWithVars('c', 42)
+    val nccd = new NonCCWithVal(313)
     val ancc: AbstractNonCC = ncca
 
     val genA = Generic[NonCCA]
     val genB = Generic[NonCCB]
     val genC = Generic[NonCCWithVars]
+    val genD = Generic[NonCCWithVal]
     val genAbs = Generic[AbstractNonCC]
 
     val rA = genA.to(ncca)
@@ -449,10 +464,13 @@ class GenericTests {
     assertTypedEquals[Boolean :: Double :: HNil](true :: 2.0 :: HNil, rB)
 
     val rC = genC.to(nccc)
-    assertTypedEquals[Char :: Long :: HNil]('c' :: 42l :: HNil, rC)
+    assertTypedEquals[Char :: Long :: HNil]('c' :: 42L :: HNil, rC)
+
+    val rD = genD.to(nccd)
+    assertTypedEquals[Int :: HNil](313 :: HNil, rD)
 
     val rAbs = genAbs.to(ancc)
-    assertTypedEquals[NonCCA :+: NonCCB :+: NonCCWithVars :+: CNil](Inl(ncca), rAbs)
+    assertTypedEquals[NonCCA :+: NonCCB :+: NonCCWithVal :+: NonCCWithVars :+: CNil](Inl(ncca), rAbs)
 
     val fA = genA.from(13 :: "bar" :: HNil)
     typed[NonCCA](fA)
@@ -464,10 +482,14 @@ class GenericTests {
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
 
-    val fC = genC.from('k' :: 313l :: HNil)
+    val fC = genC.from('k' :: 313L :: HNil)
     typed[NonCCWithVars](fC)
     assertEquals('k', fC.c)
-    assertEquals(313l, fC.l)
+    assertEquals(313L, fC.l)
+
+    val fD = genD.from(99 :: HNil)
+    typed[NonCCWithVal](fD)
+    assertEquals(99, fD.n)
 
     val fAbs = genAbs.from(Inr(Inl(nccb)))
     typed[AbstractNonCC](fAbs)
@@ -477,7 +499,7 @@ class GenericTests {
   }
 
   @Test
-  def testNonCCWithCompanion {
+  def testNonCCWithCompanion: Unit = {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val gen = Generic[NonCCWithCompanion]
@@ -492,7 +514,7 @@ class GenericTests {
   }
 
   @Test
-  def testNonCCLazy {
+  def testNonCCLazy: Unit = {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
@@ -525,7 +547,7 @@ class GenericTests {
   object O extends Child
 
   @Test
-  def testNestedInherited {
+  def testNestedInherited: Unit = {
     val n0 = O.Nested(23, "foo")
     val repr = O.gen.to(n0)
     typed[Int :: String :: HNil](repr)
@@ -547,7 +569,7 @@ class GenericTests {
   }
 
   @Test
-  def testIsTuple {
+  def testIsTuple: Unit = {
     import record._
     import union._
 
@@ -570,7 +592,7 @@ class GenericTests {
   }
 
   @Test
-  def testHasProductGeneric {
+  def testHasProductGeneric: Unit = {
     import record._
     import union._
 
@@ -595,7 +617,7 @@ class GenericTests {
   }
 
   @Test
-  def testHasCoproductGeneric {
+  def testHasCoproductGeneric: Unit = {
     import record._
     import union._
 
@@ -618,7 +640,7 @@ class GenericTests {
   }
 
   @Test
-  def testNonGeneric {
+  def testNonGeneric: Unit = {
     import record._
     import union._
 
@@ -640,7 +662,7 @@ class GenericTests {
   }
 
   @Test
-  def testNestedCaseObjects {
+  def testNestedCaseObjects: Unit = {
     Generic[Green.type]
     Generic[Color.Red.type]
     LabelledGeneric[Green.type]
@@ -666,16 +688,45 @@ class GenericTests {
   }
 
   @Test
-  def testCaseObjectsAndLazy {
+  def testCaseObjectsAndLazy: Unit = {
     TC[Base1]
   }
 
   @Test
-  def testCaseObjectSemiAuto {
+  def testCaseObjectSemiAuto: Unit = {
     val gen = Generic[COSemiAuto.type]
     assertSame(gen, COSemiAuto.gen)
     assertTypedEquals[HNil](HNil, gen.to(COSemiAuto))
     assertTypedEquals[COSemiAuto.type](COSemiAuto, gen.from(HNil))
+  }
+
+  @Test
+  def testGenericImplicitParams: Unit = {
+    type Repr = Int :: HNil
+    val gen = Generic[CCOrdered[Int]]
+    val cc = CCOrdered(42)
+    val rep = 42 :: HNil
+
+    assertTypedEquals[CCOrdered[Int]](gen.from(rep), cc)
+    assertTypedEquals[Repr](gen.to(cc), rep)
+    illTyped("Generic[CCLikeOrdered[Int]]")
+  }
+
+  @Test
+  def testGenericDegenerate: Unit = {
+    type Repr = Int :: HNil
+    val gen = Generic[CCDegen]
+    val cc = CCDegen(313)
+    val rep = 313 :: HNil
+
+    assertTypedEquals[CCDegen](gen.from(rep), cc)
+    assertTypedEquals[Repr](gen.to(cc), rep)
+    illTyped("Generic[CCLikeDegen]")
+  }
+
+  @Test
+  def testCtorFieldsMismatch: Unit = {
+    illTyped("Generic[Squared]")
   }
 }
 
@@ -930,7 +981,7 @@ object EnumDefns7 {
 
 class TestEnum {
   @Test
-  def testEnum0 {
+  def testEnum0: Unit = {
     import EnumDefns0._
 
     val gen = Generic[EnumVal]
@@ -945,7 +996,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum1 {
+  def testEnum1: Unit = {
     import EnumDefns1._
 
     val gen = Generic[EnumVal]
@@ -960,7 +1011,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum2 {
+  def testEnum2: Unit = {
     import EnumDefns2._
 
     val gen = Generic[EnumVal]
@@ -975,7 +1026,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum3 {
+  def testEnum3: Unit = {
     import EnumDefns3._
 
     val gen = Generic[EnumVal]
@@ -990,7 +1041,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum4 {
+  def testEnum4: Unit = {
     import EnumDefns4._
     import EnumVal._
 
@@ -1006,7 +1057,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum5 {
+  def testEnum5: Unit = {
     import EnumDefns5._
     import EnumVal._
 
@@ -1022,7 +1073,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum6 {
+  def testEnum6: Unit = {
     import EnumDefns6._
     import EnumVal._
 
@@ -1038,7 +1089,7 @@ class TestEnum {
   }
 
   @Test
-  def testEnum7 {
+  def testEnum7: Unit = {
     import EnumDefns7._
     import EnumVal._
 
