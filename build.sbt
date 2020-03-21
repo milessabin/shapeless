@@ -1,19 +1,17 @@
-//val dottyVersion = dottyLatestNightlyBuild.get
-val dottyVersion = "0.23.0-bin-20200314-b08d746-NIGHTLY"
-//val dottyVersion = "0.22.0-RC1"
+val dottyLatestNightly = dottyLatestNightlyBuild.get
+//val dottyVersion = dottyLatestNightly 
+//val dottyVersion = "0.24.0-bin-20200320-30f8c6f-NIGHTLY"
+val dottyVersion = "0.23.0-RC1"
 val scala2Version = "2.13.1"
 
 inThisBuild(Seq(
   organization := "org.typelevel",
   scalaVersion := dottyVersion,
-  crossScalaVersions := Seq(dottyVersion, scala2Version),
+  crossScalaVersions := Seq(dottyVersion, dottyLatestNightly, scala2Version),
   updateOptions := updateOptions.value.withLatestSnapshots(false),
 ))
 
 lazy val commonSettings = Seq(
-  scalaVersion := dottyVersion,
-  crossScalaVersions := Seq(dottyVersion, scala2Version),
-
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
     "-Yexplicit-nulls"
