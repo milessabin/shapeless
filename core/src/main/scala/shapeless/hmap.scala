@@ -19,11 +19,16 @@ package shapeless
 import poly._
   
 /**
- * Heterogenous map with type-level key/value associations that are fixed by an arbitrary
- * relation `R`.
+ * Heterogeneous map with type-level key/value associations that are fixed by an arbitrary relation `R`.
  * 
- * `HMap`s extend `Poly` and hence are also polymorphic function values with type-specific
- * cases corresponding to the map's type-level key/value associations. 
+ * `HMap`s extend `Poly` and hence are also polymorphic function values with type-specific cases
+ * corresponding to the map's type-level key/value associations.
+ *
+ * Note: keys and values are stored in erased form in an `HMap`.
+ * Therefore one should be careful when using parameterized types as keys, because it might lead to unsoundness.
+ * For a parameterized key type `K[T]` it is important that `T` is part of the `hashCode` / `equals` contract:
+ *   - Good: `case class Key[T](id: T)` - `Key[Int](1)` and `Key[String]("1")` have different hash codes.
+ *   - Bad: `case class Key[T](id: Int)` - `Key[Int](1)` and `Key[String](1)` have different types but the same hash code.
  */
 class HMap[R[_, _]](underlying : Map[Any, Any] = Map.empty) extends Poly1 {
   def get[K, V](k : K)(implicit ev : R[K, V]) : Option[V] = underlying.get(k).asInstanceOf[Option[V]]
