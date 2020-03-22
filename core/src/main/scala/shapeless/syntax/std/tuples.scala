@@ -20,16 +20,11 @@ package std
 
 import shapeless.ops.hlist.ProductToHList
 
-trait LowPriorityTuple {
-  implicit def productTupleOps[P <: Product](p: P): TupleOps[P] = new TupleOps(p)
-}
-
-object tuple extends LowPriorityTuple {
-  implicit def unitTupleOps(u: Unit): TupleOps[Unit] = new TupleOps(u)
-
+object tuple {
   // Duplicated here from shapeless.HList so that explicit imports of tuple._ don't
   // clobber the conversion to HListOps.
   implicit def hlistOps[L <: HList](l : L) : HListOps[L] = new HListOps(l)
+  implicit def productTupleOps[P: IsTuple](p: P): TupleOps[P] = new TupleOps(p)
 }
 
 final class TupleOps[T](t: T) extends Serializable {
