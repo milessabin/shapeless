@@ -439,4 +439,38 @@ class PolyTests {
 
     assertTypedEquals[Int](16, r)
   }
+
+  @Test
+  def testBindFirst: Unit = {
+    object p extends Poly3 {
+      implicit def x = at[Int, String, Double] { (i, s, d) =>
+        s"$i, $d, $s"
+      }
+    }
+
+    val bf = Poly.bindFirst(p, 2)
+    val r = bf("bar", 3.5)
+    assertTypedEquals[String]("2, 3.5, bar", r)
+
+    val l = 1.5 :: 2.5 :: 3.5 :: HNil
+    assertTypedEquals[String]("2, 3.5, 2, 2.5, 2, 1.5, x", l.foldLeft("x")(bf))
+  }
+
+  @Test
+  def testCurried: Unit = {
+    object p extends Poly3 {
+      implicit def x = at[Int, Double, String] { (i, d, s) =>
+        s"$i, $d, $s"
+      }
+    }
+
+    val c = Poly.curried(p)
+    val c1 = c(1)
+    val c2 = c1(42.5)
+    val r = c2("foo")
+    assertTypedEquals[String]("1, 42.5, foo", r)
+
+    val l = "x" :: "y" :: "z" :: HNil
+    assertEquals("1, 42.5, x" :: "1, 42.5, y" :: "1, 42.5, z" :: HNil, l.map(c2))
+  }
 }
