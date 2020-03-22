@@ -712,3 +712,11 @@ object VarArgsWitnessTest {
   poly(dep)
   poly(dep, dep)
 }
+
+object RefinedWithSingletonTypeWitnessTest {
+  import nat._
+
+  implicitly[Witness { type T = _0 }]
+  implicitly[Witness { type T = _1 }]
+  implicitly[Witness { type T = None.type }]
+}
