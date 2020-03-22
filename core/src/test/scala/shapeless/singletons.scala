@@ -696,3 +696,19 @@ package UnrefineTest {
     new Bar(Foo.from( LabelledGeneric[FooBar] )).modify(Symbol("y").narrow, (_: Int) * 2).keys
   }
 }
+
+object VarArgsWitnessTest {
+  trait Base
+  class Dep[B <: Base with Singleton]
+  object instance extends Base
+  val dep = new Dep[instance.type]
+
+  def varargs[B <: Base with Singleton](el: Dep[B]*)(implicit w: Witness.Aux[B]): Unit = ()
+  def poly[B <: Base with Singleton](el1: Dep[B])(implicit w: Witness.Aux[B]): Unit = ()
+  def poly[B <: Base with Singleton](el1: Dep[B], el2: Dep[B])(implicit w: Witness.Aux[B]): Unit = ()
+
+  varargs(dep)
+  varargs(dep, dep)
+  poly(dep)
+  poly(dep, dep)
+}
