@@ -259,10 +259,11 @@ object Boilerplate {
         |
         |trait PolyApply {
         |  import poly._
+        |  type λ <: Singleton
         -  def apply
         -    [${`A..N`}]
         -    (${`a:A..n:N`})
-        -    (implicit cse : Case[this.type, ${`A::N`}])
+        -    (implicit cse : Case[λ, ${`A::N`}])
         -  : cse.Result =
         -    cse(${`a::n`})
         -
@@ -387,7 +388,8 @@ object Boilerplate {
         |  */
         |object PolyNBuilders {
         -
-        - trait Poly${arity}Builder[HL <: HList] { self =>
+        - trait Poly${arity}Builder[HL <: HList] extends PolyApply { self =>
+        -   type λ = build.type
         -   val functions: HL
         -   class AtAux[${`A..N`}] {
         -     def apply[Out](λ: (${`A..N`}) => Out): Poly${arity}Builder[((${`A..N`}) => Out) :: HL] = {

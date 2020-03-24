@@ -240,6 +240,7 @@ object PolyDefns extends Cases {
  */
 trait Poly extends PolyApply with Serializable {
   import poly._
+  type λ = this.type
 
   def compose(f: Poly) = new Compose[this.type, f.type](this, f)
 
