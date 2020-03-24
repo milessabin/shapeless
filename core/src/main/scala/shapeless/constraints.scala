@@ -27,50 +27,51 @@ import scala.annotation.implicitNotFound
 @implicitNotFound("Implicit not found: shapeless.UnaryTCConstraint[${L}, ${TC}]. Some element of ${L} does not have ${TC} as it's outer type constructor.")
 trait UnaryTCConstraint[L, TC[_]] extends Serializable
 
-trait LowPriorityUnaryTCConstraint0 {
-  private val dummy =  new UnaryTCConstraint[Any, Id]{}
-  protected def instance[A, TC[_]] = dummy.asInstanceOf[UnaryTCConstraint[A, TC]]
+trait LowPriorityUnaryTCConstraint {
+  private val dummy =  new UnaryTCConstraint[Any, Id] { }
+  protected def instance[A, TC[_]]: UnaryTCConstraint[A, TC] =
+    dummy.asInstanceOf[UnaryTCConstraint[A, TC]]
 
-  implicit def genericConstUnaryTC[H, HG, TC](implicit
-    genH: Generic.Aux[H, HG],
-    utc: UnaryTCConstraint[HG, Const[TC]#λ]) = instance[H, Const[TC]#λ]
+  implicit def hnilUnaryTC[TC[_]]: UnaryTCConstraint[HNil, TC] = instance[HNil, TC]
+  implicit def cnilUnaryTC[TC[_]]: UnaryTCConstraint[CNil, TC] = instance[CNil, TC]
 
-  implicit def genericUnaryTC[H, HG, TC[_]](implicit
-    genH: Generic.Aux[H, HG],
-    utc: UnaryTCConstraint[HG, TC]) = instance[H, TC]
+  implicit def hlistUnaryTC[H, T <: HList, TC[_]](
+    implicit utc : UnaryTCConstraint[T, TC]
+  ): UnaryTCConstraint[TC[H] :: T, TC] = instance[TC[H] :: T, TC]
 
-  implicit def hlistIdUnaryTC[L <: HList] = instance[L, Id]
-  implicit def coproductIdUnarcyTC[C <: Coproduct] = instance[C, Id]
-}
+  implicit def coproductUnaryTC[H, T <: Coproduct, TC[_]](
+    implicit utc : UnaryTCConstraint[T, TC]
+  ): UnaryTCConstraint[TC[H] :+: T, TC] = instance[TC[H] :+: T, TC]
 
-trait LowPriorityUnaryTCConstraint extends LowPriorityUnaryTCConstraint0 {
-  implicit def hnilUnaryTC[TC[_]] = instance[HNil, TC]
+  implicit def genericUnaryTC[A, R, TC[_]](
+    implicit gen: Generic.Aux[A, R], utc: UnaryTCConstraint[R, TC]
+  ): UnaryTCConstraint[A, TC] = instance[A, TC]
 
-  implicit def hlistConstUnaryTC[H, T <: HList](implicit utct : UnaryTCConstraint[T, Const[H]#λ]) =
-    instance[H :: T, Const[H]#λ]
+  implicit def hnilConstUnaryTC[TC]: UnaryTCConstraint[HNil, Const[TC]#λ] = instance[HNil, Const[TC]#λ]
+  implicit def cnilConstUnaryTC[TC]: UnaryTCConstraint[CNil, Const[TC]#λ] = instance[CNil, Const[TC]#λ]
 
-  implicit def cnilUnaryTC[TC[_]] = instance[CNil, TC]
+  implicit def hlistConstUnaryTC[H, T <: HList](
+    implicit utc : UnaryTCConstraint[T, Const[H]#λ]
+  ): UnaryTCConstraint[H :: T, Const[H]#λ] = instance[H :: T, Const[H]#λ]
 
-  implicit def coproductConstUnaryTC[H, C <: Coproduct](implicit utct : UnaryTCConstraint[C, Const[H]#λ]) =
-    instance[H :+: C, Const[H]#λ]
+  implicit def coproductConstUnaryTC[H, T <: Coproduct](
+    implicit utc : UnaryTCConstraint[T, Const[H]#λ]
+  ): UnaryTCConstraint[H :+: T, Const[H]#λ] = instance[H :+: T, Const[H]#λ]
+
+  implicit def genericConstUnaryTC[A, R, TC](
+    implicit gen: Generic.Aux[A, R], utc: UnaryTCConstraint[R, Const[TC]#λ]
+  ): UnaryTCConstraint[A, Const[TC]#λ] = instance[A, Const[TC]#λ]
 }
 
 object UnaryTCConstraint extends LowPriorityUnaryTCConstraint {
-  def apply[L, TC[_]](implicit utcc: UnaryTCConstraint[L, TC]): UnaryTCConstraint[L, TC] = utcc
+  def apply[A, TC[_]](implicit utc: UnaryTCConstraint[A, TC]): UnaryTCConstraint[A, TC] = utc
 
   type *->*[TC[_]] = {
-    type λ[L] = UnaryTCConstraint[L, TC] 
+    type λ[A] = UnaryTCConstraint[A, TC]
   }
 
-  implicit def hnilConstUnaryTC[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
-  
-  implicit def hlistUnaryTC[H, T <: HList, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
-    new UnaryTCConstraint[TC[H] :: T, TC] {}
-
-  implicit def cnilConstUnaryTC[H] = new UnaryTCConstraint[CNil, Const[H]#λ] {}
-  
-  implicit def coproductUnaryTC[H, T <: Coproduct, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
-    new UnaryTCConstraint[TC[H] :+: T, TC] {}
+  implicit def hlistIdUnaryTC[L <: HList]: UnaryTCConstraint[L, Id] = instance[L, Id]
+  implicit def coproductIdUnaryTC[C <: Coproduct]: UnaryTCConstraint[C, Id] = instance[C, Id]
 }
 
 /**
@@ -86,22 +87,27 @@ object BasisConstraint {
     type λ[L] = BasisConstraint[L, M] 
   }
 
-  private val dummy = new BasisConstraint[Any, Any]{}
-  protected def instance[L, M] = dummy.asInstanceOf[BasisConstraint[L, M]]
-
-  implicit def genericBasis[L, M, LG, MG](implicit
-    genL : Generic.Aux[L, LG],
-    genM : Generic.Aux[M, MG],
-    bct : BasisConstraint[LG, MG]) = instance[L, M] 
+  private val dummy = new BasisConstraint[Any, Any] { }
+  protected def instance[L, M]: BasisConstraint[L, M] =
+    dummy.asInstanceOf[BasisConstraint[L, M]]
   
-  implicit def hnilBasis[M <: HList] = instance[HNil, M]
-  implicit def hlistBasis[H, T <: HList, M <: HList](implicit bct : BasisConstraint[T, M], sel : HSelector[M, H]) =
-    instance[H :: T, M]
+  implicit def hnilBasis[M <: HList]: BasisConstraint[HNil, M] = instance[HNil, M]
+  implicit def cnilBasis[M <: Coproduct]: BasisConstraint[CNil, M] = instance[CNil, M]
 
-  implicit def cnilBasis[M <: Coproduct] = instance[CNil, M]
-  implicit def coproductBasis[H, T <: Coproduct, M <: Coproduct](implicit 
-    bct : BasisConstraint[T, M], 
-    sel : CSelector[M, H]) = instance[H :+: T, M]
+  implicit def hlistBasis[H, T <: HList, M <: HList](
+    implicit bct: BasisConstraint[T, M], sel: HSelector[M, H]
+  ): BasisConstraint[H :: T, M] = instance[H :: T, M]
+
+  implicit def coproductBasis[H, T <: Coproduct, M <: Coproduct](
+    implicit bct: BasisConstraint[T, M], sel: CSelector[M, H]
+  ): BasisConstraint[H :+: T, M] = instance[H :+: T, M]
+
+  implicit def genericBasis[L, M, LG, MG](
+    implicit
+    genL: Generic.Aux[L, LG],
+    genM: Generic.Aux[M, MG],
+    bct: BasisConstraint[LG, MG]
+  ): BasisConstraint[L, M] = instance[L, M]
 }
 
 /**
@@ -117,20 +123,24 @@ object LUBConstraint {
     type λ[L] = LUBConstraint[L, B] 
   }
 
-  private val dummy = new LUBConstraint[Any, Any]{}
-  protected def instance[L, B] = dummy.asInstanceOf[LUBConstraint[L, B]]
+  private val dummy = new LUBConstraint[Any, Any] { }
+  protected def instance[L, B]: LUBConstraint[L, B] =
+    dummy.asInstanceOf[LUBConstraint[L, B]]
 
-  implicit def genericLUB[G, L, B](implicit 
-    gen : Generic.Aux[G, L], 
-    bct : LUBConstraint[L, B]) = instance[G, B] 
+  implicit def genericLUB[G, L, B](
+    implicit gen: Generic.Aux[G, L], bct: LUBConstraint[L, B]
+  ): LUBConstraint[G, B] = instance[G, B]
   
-  implicit def hnilLUB[T] = instance[HNil, T]
-  implicit def hlistLUB[H, T <: HList, B](implicit bct : LUBConstraint[T, B], ev: H <:< B) =
-    instance[H :: T, B]
+  implicit def hnilLUB[T]: LUBConstraint[HNil, T] = instance[HNil, T]
+  implicit def cnilLUB[T]: LUBConstraint[CNil, T] = instance[CNil, T]
 
-  implicit def cnilLUB[T] = instance[CNil, T]
-  implicit def coproductLUB[H, T <: Coproduct, B](implicit bct : LUBConstraint[T, B], ev: H <:< B) =
-    instance[H :+: T, B]
+  implicit def hlistLUB[H, T <: HList, B](
+    implicit bct : LUBConstraint[T, B], ev: H <:< B
+  ): LUBConstraint[H :: T, B] = instance[H :: T, B]
+
+  implicit def coproductLUB[H, T <: Coproduct, B](
+    implicit bct : LUBConstraint[T, B], ev: H <:< B
+  ): LUBConstraint[H :+: T, B] = instance[H :+: T, B]
 }
 
 /**
@@ -147,21 +157,27 @@ object KeyConstraint {
     type λ[L] = KeyConstraint[L, M] 
   }
 
-  private val dummy = new KeyConstraint[Any, Any]{}
-  protected def instance[L, M] = dummy.asInstanceOf[KeyConstraint[L, M]]
+  private val dummy = new KeyConstraint[Any, Any] { }
+  protected def instance[L, M]: KeyConstraint[L, M] =
+    dummy.asInstanceOf[KeyConstraint[L, M]]
 
-  implicit def genericKey[L, LG, M, MG](implicit
-    genL : Generic.Aux[L, LG],
-    genM : Generic.Aux[M, MG],
-    kc : KeyConstraint[LG, MG]) = instance[L, M]
+  implicit def genericKey[L, LG, M, MG](
+    implicit
+    genL: Generic.Aux[L, LG],
+    genM: Generic.Aux[M, MG],
+    kc: KeyConstraint[LG, MG]
+  ): KeyConstraint[L, M] = instance[L, M]
   
-  implicit def hnilKeys[M <: HList] = instance[HNil, M]
-  implicit def hlistKeys[K, V, T <: HList, M <: HList]
-    (implicit bct : KeyConstraint[T, M], sel : HSelector[M, K]) = instance[FieldType[K, V] :: T, M]
+  implicit def hnilKeys[M <: HList]: KeyConstraint[HNil, M] = instance[HNil, M]
+  implicit def cnilKeys[C <: Coproduct]: KeyConstraint[CNil, C] = instance[CNil, C]
 
-  implicit def cnilKeys[C <: Coproduct] = instance[CNil, C]
-  implicit def coproductKeys[K, V, T <: Coproduct, M <: Coproduct]
-    (implicit bct : KeyConstraint[T, M], sel : CSelector[M, K]) = instance[FieldType[K, V] :+: T, M]
+  implicit def hlistKeys[K, V, T <: HList, M <: HList](
+    implicit bct: KeyConstraint[T, M], sel: HSelector[M, K]
+  ): KeyConstraint[FieldType[K, V] :: T, M] = instance[FieldType[K, V] :: T, M]
+
+  implicit def coproductKeys[K, V, T <: Coproduct, M <: Coproduct](
+    implicit bct: KeyConstraint[T, M], sel: CSelector[M, K]
+  ): KeyConstraint[FieldType[K, V] :+: T, M] = instance[FieldType[K, V] :+: T, M]
 }
 
 /**
@@ -178,21 +194,27 @@ object ValueConstraint {
     type λ[L] = ValueConstraint[L, M] 
   }
 
-  private val dummy = new ValueConstraint[Any, Any]{}
-  protected def instance[L, M] = dummy.asInstanceOf[ValueConstraint[L, M]]
+  private val dummy = new ValueConstraint[Any, Any] { }
+  protected def instance[L, M]: ValueConstraint[L, M] =
+    dummy.asInstanceOf[ValueConstraint[L, M]]
 
-  implicit def genericValue[L, LG, M, MG](implicit
-    genL : Generic.Aux[L, LG],
-    genM : Generic.Aux[M, MG],
-    vc : ValueConstraint[LG, MG]) = instance[L, M]
+  implicit def genericValue[L, LG, M, MG](
+    implicit
+    genL: Generic.Aux[L, LG],
+    genM: Generic.Aux[M, MG],
+    vc: ValueConstraint[LG, MG]
+  ): ValueConstraint[L, M] = instance[L, M]
   
-  implicit def hnilValues[M <: HList] = instance[HNil, M]
-  implicit def hlistValues[K, V, T <: HList, M <: HList]
-    (implicit bct : ValueConstraint[T, M], sel : HSelector[M, V]) = instance[FieldType[K, V] :: T, M]
+  implicit def hnilValues[M <: HList]: ValueConstraint[HNil, M] = instance[HNil, M]
+  implicit def cnilValues[C <: Coproduct]: ValueConstraint[CNil, C] = instance[CNil, C]
 
-  implicit def cnilValues[C <: Coproduct] = instance[CNil, C]
-  implicit def coproductValues[K, V, T <: Coproduct, M <: Coproduct]
-    (implicit bct : ValueConstraint[T, M], sel : CSelector[M, V]) = instance[FieldType[K, V] :+: T, M]
+  implicit def hlistValues[K, V, T <: HList, M <: HList](
+    implicit bct: ValueConstraint[T, M], sel: HSelector[M, V]
+  ): ValueConstraint[FieldType[K, V] :: T, M] = instance[FieldType[K, V] :: T, M]
+
+  implicit def coproductValues[K, V, T <: Coproduct, M <: Coproduct](
+    implicit bct: ValueConstraint[T, M], sel: CSelector[M, V]
+  ): ValueConstraint[FieldType[K, V] :+: T, M] = instance[FieldType[K, V] :+: T, M]
 }
 
 /**
@@ -208,20 +230,24 @@ object NotContainsConstraint {
     type λ[L] = NotContainsConstraint[L, U]
   }
 
-  private val dummy = new NotContainsConstraint[Any, Any]{}
-  protected def instance[L, U] = dummy.asInstanceOf[NotContainsConstraint[L, U]]
+  private val dummy = new NotContainsConstraint[Any, Any] { }
+  protected def instance[L, U]: NotContainsConstraint[L, U] =
+    dummy.asInstanceOf[NotContainsConstraint[L, U]]
 
-  implicit def genericNotContains[G, L, U](implicit 
-    gen : Generic.Aux[G, L], 
-    nc : NotContainsConstraint[L, U]) = instance[G, U]
+  implicit def genericNotContains[G, L, U](
+    implicit gen: Generic.Aux[G, L], nc: NotContainsConstraint[L, U]
+  ): NotContainsConstraint[G, U] = instance[G, U]
 
-  implicit def hnilNotContains[U] = instance[HNil, U]
-  implicit def hlistNotContains[H, T <: HList, U](implicit nc: T NotContainsConstraint U, neq: U =:!= H) =
-    instance[H :: T, U]
+  implicit def hnilNotContains[U]: NotContainsConstraint[HNil, U] = instance[HNil, U]
+  implicit def cnilNotContains[U]: NotContainsConstraint[CNil, U] = instance[CNil, U]
 
-  implicit def cnilNotContains[U] = instance[CNil, U]
-  implicit def coproductNotContains[H, T <: Coproduct, U](implicit nc: T NotContainsConstraint U, neq: U =:!= H) =
-    instance[H :+: T, U]
+  implicit def hlistNotContains[H, T <: HList, U](
+    implicit nc: T NotContainsConstraint U, neq: U =:!= H
+  ): NotContainsConstraint[H :: T, U] = instance[H :: T, U]
+
+  implicit def coproductNotContains[H, T <: Coproduct, U](
+    implicit nc: T NotContainsConstraint U, neq: U =:!= H
+  ): NotContainsConstraint[H :+: T, U] = instance[H :+: T, U]
 }
 
 /**
@@ -233,20 +259,22 @@ trait IsDistinctConstraint[L] extends Serializable
 object IsDistinctConstraint {
   def apply[L](implicit idc: IsDistinctConstraint[L]): IsDistinctConstraint[L] = idc
 
-  private val dummy = new IsDistinctConstraint[Any]{}
-  protected def instance[L] = dummy.asInstanceOf[IsDistinctConstraint[L]]
+  private val dummy = new IsDistinctConstraint[Any] { }
+  protected def instance[L]: IsDistinctConstraint[L] =
+    dummy.asInstanceOf[IsDistinctConstraint[L]]
 
-  implicit def genericIsDistinct[G, L](implicit 
-    gen : Generic.Aux[G, L], 
-    d : IsDistinctConstraint[L]) = instance[G]
+  implicit def genericIsDistinct[G, L](
+    implicit gen: Generic.Aux[G, L], d: IsDistinctConstraint[L]
+  ): IsDistinctConstraint[G] = instance[G]
 
-  implicit def hnilIsDistinct = instance[HNil]
-  implicit def hlistIsDistinct[H, T <: HList](implicit d: IsDistinctConstraint[T],
-                                                      nc: NotContainsConstraint[T, H]): IsDistinctConstraint[H :: T] =
-    instance[H :: T]
+  implicit def hnilIsDistinct: IsDistinctConstraint[HNil] = instance[HNil]
+  implicit def cnilIsDistinct: IsDistinctConstraint[CNil] = instance[CNil]
 
-  implicit def cnilIsDistinct = instance[CNil]
-  implicit def coproductIsDistinct[H, T <: Coproduct](implicit d: IsDistinctConstraint[T],
-                                                              nc: NotContainsConstraint[T, H]): IsDistinctConstraint[H :+: T] =
-    instance[H :+: T]
+  implicit def hlistIsDistinct[H, T <: HList](
+    implicit d: IsDistinctConstraint[T], nc: NotContainsConstraint[T, H]
+  ): IsDistinctConstraint[H :: T] = instance[H :: T]
+
+  implicit def coproductIsDistinct[H, T <: Coproduct](
+    implicit d: IsDistinctConstraint[T], nc: NotContainsConstraint[T, H]
+  ): IsDistinctConstraint[H :+: T] = instance[H :+: T]
 }
