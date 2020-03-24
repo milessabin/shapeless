@@ -293,17 +293,21 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
 
       private var current = Option.empty[State]
 
+      private def typeParamsToWildcards(tpe: Type): Type = tpe.map { t =>
+        val sym = t.typeSymbol
+        if (sym.isParameter) boundedWildcardType(sym.info.asInstanceOf[TypeBounds]) else t
+      }
+
       def resolveInstance(state: State)(tpe: Type): Option[(State, Tree)] = {
         val former = State.current
         State.current = Some(state)
         val (state0, tree) =
           try {
-            val tree = c.inferImplicitValue(tpe, silent = true)
-            if(tree.isEmpty) {
-              tpe.typeSymbol.annotations.
-                find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound]).foreach { _ =>
-                  setAnnotation(implicitNotFoundMessage(c)(tpe))
-                }
+            val tree = c.inferImplicitValue(tpe, silent = true) orElse c.inferImplicitValue(typeParamsToWildcards(tpe), silent = true)
+            if (tree.isEmpty) {
+              tpe.typeSymbol.annotations
+                .find(_.tree.tpe =:= typeOf[_root_.scala.annotation.implicitNotFound])
+                .foreach(_ => setAnnotation(implicitNotFoundMessage(c)(tpe)))
             }
             (State.current.get, tree)
           } finally {
