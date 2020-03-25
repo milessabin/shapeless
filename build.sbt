@@ -1,7 +1,4 @@
-import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import ReleaseTransformations._
-
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
@@ -13,7 +10,7 @@ val Scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(Scala211, "2.12.10", "2.13.1"),
+  crossScalaVersions := Seq(Scala211, "2.12.11", "2.13.1"),
   mimaFailOnNoPrevious := false
 ))
 
@@ -301,7 +298,8 @@ lazy val publishSettings = Seq(
 lazy val noPublishSettings =
   skip in publish := true
 
-lazy val mimaSettings = mimaDefaultSettings ++ Seq(
+enablePlugins(MimaPlugin)
+lazy val mimaSettings = Seq(
   mimaPreviousArtifacts := Set(),
   mimaBinaryIssueFilters := Seq()
 )
