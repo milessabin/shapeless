@@ -17,7 +17,6 @@
 package shapeless
 
 import scala.language.experimental.macros
-
 import scala.reflect.macros.whitebox
 
 trait Generic1[F[_], +FR[_[_]]] extends Serializable {
@@ -224,7 +223,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val to = cq"$p => ${mkHListValue(ts)}"
     val (rp, rts) = ctorDtor.reprBinding
     val from = cq"$rp => ${ctorDtor.construct(rts)}"
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName("P"))
     val reprTpt = reprTypTree1(tpe, name)
     val reprName = TypeName(c.freshName("R"))
 
@@ -243,7 +242,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       cq"$pat: $tpt => $index"
     }
 
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName("C"))
     val reprTpt = reprTypTree1(tpe, name)
     val reprName = TypeName(c.freshName("R"))
     val coproduct = objectRef[Coproduct.type]
@@ -269,7 +268,7 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   val isCons1TC: Tree = objectRef[IsHCons1.type]
   val consTpe: Type = hconsTpe
 
-  val mkPackUnpack: (Tree, Tree) = {
+  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) = {
     val cons = objectRef[::.type]
     (q"$cons(_, _)", q"{ case $cons(hd, tl) => (hd, tl) }")
   }
@@ -278,6 +277,7 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
 @macrocompat.bundle
 class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
+  import definitions._
 
   def mkIsCCons1Impl[L[_], FH[_[_]], FT[_[_]]]
     (implicit lTag: WeakTypeTag[L[_]], fhTag: WeakTypeTag[FH[Any]], ftTag: WeakTypeTag[FT[Any]]): Tree =
@@ -286,7 +286,7 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   val isCons1TC: Tree = objectRef[IsCCons1.type]
   val consTpe: Type = cconsTpe
 
-  val mkPackUnpack: (Tree, Tree) = {
+  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) = {
     val left = objectRef[Left.type]
     val right = objectRef[Right.type]
     val inl = objectRef[Inl.type]
@@ -294,12 +294,12 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
 
     (
       q"""{
-        case $left(hd) => $inl(hd)
-        case $right(tl) => $inr(tl)
+        case $left(hd) => $inl(hd: $hdName[$AnyTpe])
+        case $right(tl) => $inr(tl: $tlName[$AnyTpe])
       }""",
       q"""{
-        case $inl(hd) => $left(hd)
-        case $inr(tl) => $right(tl)
+        case $inl(hd) => $left(hd: $hdName[$AnyTpe])
+        case $inr(tl) => $right(tl: $tlName[$AnyTpe])
       }"""
     )
   }
@@ -307,13 +307,14 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
 
 @macrocompat.bundle
 trait IsCons1Macros extends CaseClassMacros {
+  val c: whitebox.Context
   import c.ImplicitCandidate
   import c.internal._
   import c.universe._
 
   def isCons1TC: Tree
   def consTpe: Type
-  def mkPackUnpack: (Tree, Tree)
+  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree)
 
   def mkIsCons1(lTpe: Type, fhTpe0: Type, ftTpe0: Type): Tree = {
     val lParam = lTpe.typeParams.head
@@ -336,7 +337,7 @@ trait IsCons1Macros extends CaseClassMacros {
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, name)
     val hdName = TypeName(c.freshName("H"))
     val tlName = TypeName(c.freshName("T"))
-    val (pack, unpack) = mkPackUnpack
+    val (pack, unpack) = mkPackUnpack(hdName, tlName)
 
     q"""
       type $hdName[$name] = $hdTpt

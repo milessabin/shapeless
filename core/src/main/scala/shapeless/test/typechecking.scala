@@ -21,7 +21,7 @@ import scala.language.experimental.macros
 
 import java.util.regex.Pattern
 
-import scala.reflect.macros.{ whitebox, ParseException, TypecheckException }
+import scala.reflect.macros.{ blackbox, ParseException, TypecheckException }
 
 /**
  * A utility which ensures that a code fragment does not typecheck.
@@ -34,7 +34,7 @@ object illTyped {
 }
 
 @macrocompat.bundle
-class IllTypedMacros(val c: whitebox.Context) {
+class IllTypedMacros(val c: blackbox.Context) {
   import c.universe._
 
   def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
@@ -55,7 +55,7 @@ class IllTypedMacros(val c: whitebox.Context) {
     } catch {
       case e: TypecheckException =>
         val msg = e.getMessage
-        if((expected ne null) && !(expPat.matcher(msg)).matches)
+        if((expected ne null) && !expPat.matcher(msg).matches)
           c.error(c.enclosingPosition, "Type-checking failed in an unexpected way.\n"+expMsg+"\nActual error: "+msg)
       case e: ParseException =>
         c.error(c.enclosingPosition, s"Parsing failed.\n${e.getMessage}")

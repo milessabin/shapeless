@@ -2139,6 +2139,11 @@ class HListTests {
     implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
+  object toMapL extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[T, Int, Map[List[Int], T]] =
+      at[T, Int]((end, t) => Map(List(t) -> end))
+  }
+
   @Test
   def testFoldLeft: Unit = {
     val c1a = combine('o', "foo")
@@ -2164,6 +2169,22 @@ class HListTests {
     val l2 = "bar" :: false :: HNil
     val f2 = l2.foldLeft('o')(combine)
     assertTypedEquals[String]("pass", f2)
+
+    val l3 = 1 :: 2 :: HNil
+    val f3 = l3.foldLeft(0)(toMapL)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(2) -> Map(List(1) -> 0)), f3)
+  }
+
+  object toMapR extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[Int, T, Map[List[Int], T]] =
+      at[Int, T]((t, end) => Map(List(t) -> end))
+  }
+
+  @Test
+  def testFoldRight: Unit = {
+    val l1 = 1 :: 2 :: HNil
+    val f1 = l1.foldRight(0)(toMapR)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(1) -> Map(List(2) -> 0)), f1)
   }
 
   @Test
@@ -3463,4 +3484,24 @@ class HListTests {
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
 
+  @Test
+  def testToProduct = {
+    val isbd = 2 :: "abc" :: true :: 3.0 :: HNil
+    val p = (2, ("abc", (true, (3.0, ()))))
+
+    import syntax.std.tuple._
+    assertEquals(isbd.toProduct, p)
+    assertEquals(p.toHList, isbd)
+    assertEquals(isbd.toProduct.toHList, isbd)
+    assertEquals(p.toHList.toProduct, p)
+    assertEquals((), (HNil: HNil).toProduct)
+    assertEquals(HNil, ().toHList)
+  }
+
+  @Test
+  def testAuxImplicits: Unit = {
+    the[SplitRight.Aux[String :: Int :: Boolean :: HNil, Int, String :: Int :: HNil, Boolean :: HNil]]
+    the[Grouper.Aux[Int :: String :: Boolean :: HNil, _2, _1, (Int, String) :: (String, Boolean) :: HNil]]
+    the[PaddedGrouper.Aux[Int :: String :: Boolean :: HNil, _2, _2, Long :: HNil, (Int, String) :: (Boolean, Long) :: HNil]]
+  }
 }
