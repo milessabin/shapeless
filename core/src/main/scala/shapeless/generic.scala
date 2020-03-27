@@ -552,18 +552,16 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       case (FieldType(k, v), i) if k =:= kTpe => (v, i)
     }
 
-  def mkTypTree(tpe: Type): Tree = {
+  def mkTypTree(tpe: Type): Tree =
     tpe match {
-      case SingleType(pre @ SingleType(_, _), sym) =>
-        SingletonTypeTree(mkAttributedRef(pre, sym))
-
-      case TypeRef(pre, _, args) if isVararg(tpe) =>
+      case singleton: SingleType =>
+        SingletonTypeTree(mkAttributedRef(singleton))
+      case TypeRef(_, _, args) if isVararg(tpe) =>
         val argTrees = args.map(mkTypTree)
         AppliedTypeTree(varargTpt, argTrees)
-
-      case t => tq"$t"
+      case other =>
+        tq"$other"
     }
-  }
 
   def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
     tpe match {
@@ -571,13 +569,13 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         Ident(arg)
       case PolyType(params, body) if params.head.asType.toType =:= param =>
         appliedTypTree1(body, param, arg)
-      case TypeRef(pre, sym, List()) =>
+      case TypeRef(pre, sym, Nil) =>
         mkAttributedRef(pre, sym)
       case TypeRef(pre, sym, args) =>
         val argTrees = args.map(appliedTypTree1(_, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
-      case t =>
-        tq"$tpe"
+      case other =>
+        tq"$other"
     }
   }
 
@@ -780,6 +778,12 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     val gPre = pre.asInstanceOf[global.Type]
     val gSym = sym.asInstanceOf[global.Symbol]
     global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
+  }
+
+  def mkAttributedRef(singleton: SingleType): Tree = {
+    val sym = singleton.sym
+    val getter = sym.asTerm.getter.orElse(sym)
+    mkAttributedRef(singleton.pre, getter)
   }
 
   def isNonGeneric(sym: Symbol): Boolean = {
@@ -1020,7 +1024,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   }
 
   def mkProductGeneric(tpe: Type): Tree = {
-    val repr = reprTypTree(tpe)
+    val repr = mkHListTpe(fieldsOf(tpe).map(_._2))
     val ctorDtor = CtorDtor(tpe)
     val (p, ts) = ctorDtor.binding
     val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
@@ -1030,17 +1034,19 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   }
 
   def mkCoproductGeneric(tpe: Type): Tree = {
-    def mkCoproductCases(tpe0: Type, index: Int) = tpe0 match {
-      case SingleType(pre, sym) =>
-        val singleton = mkAttributedRef(pre, sym)
-        cq"p if p eq $singleton => $index"
+    def mkCoproductCases(tpe0: Type, index: Int): Tree = tpe0 match {
+      case TypeRef(pre, sym, Nil) if sym.isModuleClass =>
+        cq"p if p eq ${mkAttributedRef(pre, sym.asClass.module)} => $index"
+      case singleton: SingleType =>
+        cq"p if p eq ${mkAttributedRef(singleton)} => $index"
       case _ =>
         cq"_: $tpe0 => $index"
     }
 
     val coproduct = objectRef[Coproduct.type]
-    val repr = reprTypTree(tpe)
-    val toCases = ctorsOf(tpe).zipWithIndex.map((mkCoproductCases _).tupled)
+    val ctors = ctorsOf(tpe)
+    val repr = mkCoproductTpe(ctors)
+    val toCases = ctors.zipWithIndex.map((mkCoproductCases _).tupled)
     val to = q"$coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[$repr]"
     q"$generic.instance[$tpe, $repr]((p: $tpe) => $to, $coproduct.unsafeGet(_).asInstanceOf[$tpe])"
   }
