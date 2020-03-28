@@ -299,7 +299,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   val c: blackbox.Context
 
   import c.universe._
-  import internal.constantType
 
   def abort(msg: String) =
     c.abort(c.enclosingPosition, msg)
@@ -345,17 +344,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       else loop(sym.owner, sym :: acc)
 
     loop(sym, Nil)
-  }
-
-  def mkDependentRef(prefix: Type, path: List[Name]): (Type, Symbol) = {
-    val (_, pre, sym) =
-      path.foldLeft((prefix, NoType, NoSymbol)) {
-        case ((pre, _, sym), nme) =>
-          val sym0 = pre.member(nme)
-          val pre0 = sym0.typeSignature
-          (pre0, pre, sym0)
-      }
-    (pre, sym)
   }
 
   def isAnonOrRefinement(sym: Symbol): Boolean = {
@@ -510,13 +498,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       case (tpe, acc) => appliedType(cons, List(devarargify(tpe), acc))
     }
 
-  def mkLabelTpe(name: Name): Type =
-    appliedType(atatTpe, List(typeOf[scala.Symbol], constantType(nameAsValue(name))))
-
-  def mkFieldTpe(name: Name, valueTpe: Type): Type = {
-    appliedType(fieldTypeTpe, List(mkLabelTpe(name), valueTpe))
-  }
-
   def mkHListTpe(items: List[Type]): Type =
     mkCompoundTpe(hnilTpe, hconsTpe, items)
 
@@ -557,26 +538,10 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     }
   }
 
-  def unpackFieldType(tpe: Type): (Type, Type) =
-    FieldType.unapply(tpe).getOrElse(abort(s"$tpe is not a field type"))
-
   def findField(lTpe: Type, kTpe: Type): Option[(Type, Int)] =
     unpackHListTpe(lTpe).zipWithIndex.collectFirst {
       case (FieldType(k, v), i) if k =:= kTpe => (v, i)
     }
-
-  def mkTypTree(tpe: Type): Tree = {
-    tpe match {
-      case SingleType(pre @ SingleType(_, _), sym) =>
-        SingletonTypeTree(mkAttributedRef(pre, sym))
-
-      case TypeRef(pre, _, args) if isVararg(tpe) =>
-        val argTrees = args.map(mkTypTree)
-        AppliedTypeTree(varargTpt, argTrees)
-
-      case t => tq"$t"
-    }
-  }
 
   def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
     tpe match {
@@ -584,60 +549,26 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         Ident(arg)
       case PolyType(params, body) if params.head.asType.toType =:= param =>
         appliedTypTree1(body, param, arg)
-      case TypeRef(pre, sym, List()) =>
+      case TypeRef(pre, sym, Nil) =>
         mkAttributedRef(pre, sym)
       case TypeRef(pre, sym, args) =>
         val argTrees = args.map(appliedTypTree1(_, param, arg))
         AppliedTypeTree(mkAttributedRef(pre, sym), argTrees)
-      case t =>
-        tq"$tpe"
+      case other =>
+        tq"$other"
     }
   }
-
-  def mkCompoundTypTree(nil: Type, cons: Type, items: List[Type]): Tree =
-    items.foldRight(mkAttributedRef(nil): Tree) { case (tpe, acc) =>
-      AppliedTypeTree(mkAttributedRef(cons), List(mkTypTree(tpe), acc))
-    }
 
   def mkCompoundTypTree1(nil: Type, cons: Type, items: List[Type], param: Type, arg: TypeName): Tree =
     items.foldRight(mkAttributedRef(nil): Tree) { case (tpe, acc) =>
       AppliedTypeTree(mkAttributedRef(cons), List(appliedTypTree1(tpe, param, arg), acc))
     }
 
-  def mkHListTypTree(items: List[Type]): Tree =
-    mkCompoundTypTree(hnilTpe, hconsTpe, items)
-
   def mkHListTypTree1(items: List[Type], param: Type, arg: TypeName): Tree =
     mkCompoundTypTree1(hnilTpe, hconsTpe, items, param, arg)
 
-  def mkCoproductTypTree(items: List[Type]): Tree =
-    mkCompoundTypTree(cnilTpe, cconsTpe, items)
-
   def mkCoproductTypTree1(items: List[Type], param: Type, arg: TypeName): Tree =
     mkCompoundTypTree1(cnilTpe, cconsTpe, items, param, arg)
-
-  def unfoldCompoundTpe(compoundTpe: Type, nil: Type, cons: Type): List[Type] = {
-    @tailrec
-    def loop(tpe: Type, acc: List[Type]): List[Type] =
-      tpe.dealias match {
-        case TypeRef(_, consSym, List(hd, tl))
-          if consSym.asType.toType.typeConstructor =:= cons => loop(tl, hd :: acc)
-        case `nil` => acc
-        case other => abort(s"Bad compound type $compoundTpe")
-      }
-    loop(compoundTpe, Nil).reverse
-  }
-
-  def hlistElements(tpe: Type): List[Type] =
-    unfoldCompoundTpe(tpe, hnilTpe, hconsTpe)
-
-  def coproductElements(tpe: Type): List[Type] =
-    unfoldCompoundTpe(tpe, cnilTpe, cconsTpe)
-
-  def reprTpe(tpe: Type): Type = {
-    if(isProduct(tpe)) mkHListTpe(fieldsOf(tpe).map(_._2))
-    else mkCoproductTpe(ctorsOf(tpe))
-  }
 
   def param1(tpe: Type): Type =
     tpe match {
@@ -645,11 +576,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       case TypeRef(_, _, List(arg)) => arg
       case _ => NoType
     }
-
-  def reprTypTree(tpe: Type): Tree = {
-    if(isProduct(tpe)) mkHListTypTree(fieldsOf(tpe).map(_._2))
-    else mkCoproductTypTree(ctorsOf(tpe))
-  }
 
   def reprTypTree1(tpe: Type, arg: TypeName): Tree = {
     val param = param1(tpe)
@@ -675,19 +601,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       if (inCaseClass) sym.isCaseAccessor && !sym.isMethod
       else sym.isGetter && sym.isPublic && (sym.isParamAccessor || sym.isLazy)
     isGetter && !isNonGeneric(sym)
-  }
-
-  def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
-    def helper(classSym: ClassSymbol): Boolean = {
-      classSym.knownDirectSubclasses.toList forall { child0 =>
-        val child = child0.asClass
-        child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-
-        isCaseClassLike(child) || (child.isSealed && helper(child))
-      }
-    }
-
-    symbol.isSealed && helper(symbol)
   }
 
   def classSym(tpe: Type): ClassSymbol = {
@@ -793,6 +706,12 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     val gPre = pre.asInstanceOf[global.Type]
     val gSym = sym.asInstanceOf[global.Symbol]
     global.gen.mkAttributedRef(gPre, gSym).asInstanceOf[Tree]
+  }
+
+  def mkAttributedRef(singleton: SingleType): Tree = {
+    val SingleType(pre, sym) = singleton
+    val getter = sym.asTerm.getter.orElse(sym)
+    mkAttributedRef(pre, getter)
   }
 
   def isNonGeneric(sym: Symbol): Boolean = {
@@ -1017,7 +936,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   }
 
   def mkProductGeneric(tpe: Type): Tree = {
-    val repr = mkHListTypTree(fieldsOf(tpe).map(_._2))
+    val repr = mkHListTpe(fieldsOf(tpe).map(_._2))
     val ctorDtor = CtorDtor(tpe)
     val (p, ts) = ctorDtor.binding
     val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
@@ -1029,18 +948,16 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   def mkCoproductGeneric(tpe: Type): Tree = {
     def mkCoproductCases(tpe0: Type, index: Int): Tree = tpe0 match {
       case TypeRef(pre, sym, Nil) if sym.isModuleClass =>
-        val singleton = mkAttributedRef(pre, sym.asClass.module)
-        cq"p if p eq $singleton => $index"
-      case SingleType(pre, sym) =>
-        val singleton = mkAttributedRef(pre, sym)
-        cq"p if p eq $singleton => $index"
+        cq"p if p eq ${mkAttributedRef(pre, sym.asClass.module)} => $index"
+      case singleton: SingleType =>
+        cq"p if p eq ${mkAttributedRef(singleton)} => $index"
       case _ =>
         cq"_: $tpe0 => $index"
     }
 
     val coproduct = objectRef[Coproduct.type]
     val ctors = ctorsOf(tpe)
-    val repr = mkCoproductTypTree(ctors)
+    val repr = mkCoproductTpe(ctors)
     val toCases = ctors.zipWithIndex.map((mkCoproductCases _).tupled)
     val to = q"$coproduct.unsafeMkCoproduct((p: @_root_.scala.unchecked) match { case ..$toCases }, p).asInstanceOf[$repr]"
     q"$generic.instance[$tpe, $repr]((p: $tpe) => $to, $coproduct.unsafeGet(_).asInstanceOf[$tpe])"
