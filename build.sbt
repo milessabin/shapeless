@@ -1,5 +1,3 @@
-import ReleaseTransformations._
-
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
@@ -14,6 +12,11 @@ inThisBuild(Seq(
   mimaFailOnNoPrevious := false
 ))
 
+val platform: sbtcrossproject.Platform =
+  if (sys.env.contains("SCALA_NATIVE")) NativePlatform
+  else if (sys.env.contains("SCALA_JS_VERSION")) JSPlatform
+  else JVMPlatform
+
 addCommandAlias("root", ";project root")
 addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
@@ -27,6 +30,12 @@ addCommandAlias("validateJVM-", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues
 
 addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("releaseAll", ";root;release skip-tests")
+
+addCommandAlias("validateCI", platform match {
+  case JVMPlatform => "validateJVM"
+  case JSPlatform => "validateJS"
+  case NativePlatform => "validateNative"
+})
 
 lazy val scoverageSettings = Seq(
   coverageMinimum := 60,
@@ -84,19 +93,7 @@ def configureJUnit(crossProject: CrossProject) = {
 }
 
 lazy val commonJsSettings = Seq(
-  scalacOptions += {
-    val tagOrHash = {
-      val tag = tagName.value
-      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lineStream_!.head
-      else tag
-    }
-    val a = (baseDirectory in LocalRootProject).value.toURI.toString
-    val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
-    s"-P:scalajs:mapSourceURI:$a->$g/"
-  },
-
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
-
   parallelExecution in Test := false,
   coverageEnabled := false
 )
@@ -111,7 +108,7 @@ lazy val commonNativeSettings = Seq(
   crossScalaVersions := Seq(Scala211)
 )
 
-lazy val coreSettings = commonSettings ++ publishSettings ++ releaseSettings
+lazy val coreSettings = commonSettings ++ publishSettings
 
 lazy val root = project.in(file("."))
   .aggregate(coreJS, coreJVM)
@@ -150,6 +147,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .jvmSettings(scoverageSettings:_*)
+  .jvmSettings(skip in publish := platform != JVMPlatform)
+  .jsSettings(skip in publish := platform != JSPlatform)
+  .nativeSettings(skip in publish := platform != NativePlatform)
   .nativeSettings(
     commonNativeSettings,
     // disable scaladoc generation on native
@@ -271,27 +271,14 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   }
 
 lazy val publishSettings = Seq(
-  publishMavenStyle := true,
   publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
+  pomIncludeRepository := (_ => false),
   homepage := Some(url("https://github.com/milessabin/shapeless")),
   licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   scmInfo := Some(ScmInfo(url("https://github.com/milessabin/shapeless"), "scm:git:git@github.com:milessabin/shapeless.git")),
-  pomExtra := (
-    <developers>
-      <developer>
-        <id>milessabin</id>
-        <name>Miles Sabin</name>
-        <url>http://milessabin.com/blog</url>
-      </developer>
-    </developers>
+  developers := List(
+    Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
+    Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
   )
 )
 
@@ -323,36 +310,3 @@ lazy val coreOsgiSettings = osgiSettings ++ Seq(
   },
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
-
-lazy val tagName = Def.setting{
-  s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
-}
-
-lazy val releaseSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := tagName.value,
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    runClean,
-    runTest,
-    releaseStepCommand(s"++${Scala211}!"),
-    releaseStepCommand("nativeTest/run"),
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    publishArtifacts,
-    releaseStepCommand(s"++${Scala211}"),
-    releaseStepCommand("coreNative/publishSigned"),
-    setNextVersion,
-    commitNextVersion,
-    releaseStepCommand("sonatypeReleaseAll"),
-    pushChanges
-  )
-)
-
-credentials in ThisBuild ++= (for {
-  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
