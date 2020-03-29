@@ -104,10 +104,11 @@ lazy val commonNativeSettings = Seq(
 lazy val coreSettings = commonSettings ++ publishSettings
 
 lazy val shapeless = project.in(file("."))
-  .aggregate(coreJS, coreJVM)
-  .dependsOn(coreJS, coreJVM)
+  .aggregate(coreJS, coreJVM, coreNative)
+  .dependsOn(coreJS, coreJVM, coreNative)
   .settings(coreSettings:_*)
   .settings(noPublishSettings)
+  .settings(crossScalaVersions := List())
 
 lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
@@ -147,7 +148,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
     publishArtifact in (Compile, packageDoc) := false,
     publishArtifact in packageDoc := false,
-    sources in (Compile,doc) := Seq.empty
+    sources in (Compile,doc) := Seq.empty,
+    sources in Test := Seq.empty
   )
 
 lazy val coreJVM = core.jvm
