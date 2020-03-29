@@ -1,32 +1,14 @@
 os: linux
+dist: trusty
 language: scala
 
-dist: trusty
-
-before_install:
-  - git fetch --tags
-  - '[ -z "$SCALA_NATIVE" ] || curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x'
+jdk:
+  - oraclejdk8
 
 scala:
-- 2.11.12
-- 2.12.11
-- 2.13.1
-
-jdk:
-- openjdk11
-
-cache:
-  directories:
-    - $HOME/.cache/coursier
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-
-script: sbt ++$TRAVIS_SCALA_VERSION! clean validateCI
-
-stages:
-  - name: test
-  - name: release
-    if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
+  - 2.11.12
+  - 2.12.11
+  - 2.13.1
 
 env:
   matrix:
@@ -40,16 +22,41 @@ env:
     - secure: eXcMQIb0hHeaJsJGaJYhLS8aONu5YnhK1NOHJZGTBIb6ukSd48uXm6xNgBMozgkOEUBXyrBU9ZnCOxSS+HmJZDbK0Wkr90C4sZH7dHBZYMN3hNfCp5SjPFY2+TgrYZ24G8s/BPei6725AlbXM0vmdXPsvxaOvT36d2Ej7xto8+c=
     - secure: c3IO3G34aTFD+fh/5vqc3sCgwMaClPDziYQDCEUqQBOQFdTS7wbBZFVpqTUUlkMLkeyHZ0BGSLUiDZnu8TGGITtgJBaCUchhLYK5WOavyzCl/NPVOBebviazgtBOzPDKyYDcahjmxCGrMspTiRei86VgCdkNIvldJJm7zK1OAOU=
 
+before_install:
+  - git fetch --tags
+  - '[[ -z "$SCALA_NATIVE" ]] || curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x'
+
+cache:
+  directories:
+    - $HOME/.cache/coursier
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+script: sbt ++$TRAVIS_SCALA_VERSION! clean validateCI
+
+deploy:
+  - provider: script
+    script: sbt ++$TRAVIS_SCALA_VERSION! ci-release
+    on:
+      repo: milessabin/shapeless
+      branch: master
+  - provider: script
+    script: sbt ++$TRAVIS_SCALA_VERSION! ci-release
+    on:
+      repo: milessabin/shapeless
+      tags: true
+  - provider: script
+    script: echo "deploying"
+    on:
+      all_branches: true
+
 notifications:
   irc: "chat.freenode.net#shapeless"
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/e58e987de2f64f32c8c6
 
-jobs:
-  include:
-    - stage: release
-      script: sbt ++$TRAVIS_SCALA_VERSION! ci-release
+matrix:
   exclude:
     - scala: [2.12.11]
       env: SCALA_NATIVE=true
