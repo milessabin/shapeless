@@ -8,14 +8,15 @@ val Scala211 = "2.11.12"
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(Scala211, "2.12.11", "2.13.1"),
   mimaFailOnNoPrevious := false
 ))
 
 val platform: sbtcrossproject.Platform =
   if (sys.env.contains("SCALA_NATIVE")) NativePlatform
-  else if (sys.env.contains("SCALA_JS_VERSION")) JSPlatform
+  else if (isCustomScalaJSVersion) JSPlatform
   else JVMPlatform
+
+lazy val isCustomScalaJSVersion = sys.env.contains("SCALA_JS_VERSION")
 
 addCommandAlias("root", ";project root")
 addCommandAlias("core", ";project coreJVM")
@@ -92,16 +93,20 @@ def configureJUnit(crossProject: CrossProject) = {
   )
 }
 
+lazy val fullCrossScalaVersions = List(
+  crossScalaVersions := Seq(Scala211, "2.12.11", "2.13.1")
+)
+
 lazy val commonJsSettings = Seq(
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
   parallelExecution in Test := false,
   coverageEnabled := false
-)
+) ++ fullCrossScalaVersions
 
 lazy val commonJvmSettings = Seq(
   parallelExecution in Test := false,
   coverageExcludedPackages := "shapeless.examples.*"
-)
+) ++ fullCrossScalaVersions
 
 lazy val commonNativeSettings = Seq(
   scalaVersion := Scala211,
@@ -110,11 +115,8 @@ lazy val commonNativeSettings = Seq(
 
 lazy val coreSettings = commonSettings ++ publishSettings
 
-lazy val root = project.in(file("."))
-  .aggregate(coreJS, coreJVM)
-  .dependsOn(coreJS, coreJVM)
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings)
+noPublishSettings
+crossScalaVersions := List()
 
 lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
@@ -147,9 +149,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .jvmSettings(scoverageSettings:_*)
-  .jvmSettings(skip in publish := platform != JVMPlatform)
-  .jsSettings(skip in publish := platform != JSPlatform)
-  .nativeSettings(skip in publish := platform != NativePlatform)
+  .jvmSettings(skip in publish := isCustomScalaJSVersion)
+  .nativeSettings(skip in publish := isCustomScalaJSVersion)
   .nativeSettings(
     commonNativeSettings,
     // disable scaladoc generation on native
