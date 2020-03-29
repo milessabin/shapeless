@@ -5,19 +5,20 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
+val Scala212 = "2.12.11"
+val Scala213 = "2.13.1"
+
+val isScalaNative = System.getenv("SCALA_NATIVE") != null
+val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
+
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(Scala211, "2.12.11", "2.13.1"),
+  scalaVersion := Scala213,
+  crossScalaVersions := Seq(Scala211, Scala212, Scala213),
   mimaFailOnNoPrevious := false
 ))
 
-val platform: sbtcrossproject.Platform =
-  if (sys.env.contains("SCALA_NATIVE")) NativePlatform
-  else if (sys.env.contains("SCALA_JS_VERSION")) JSPlatform
-  else JVMPlatform
-
-addCommandAlias("root", ";project root")
+addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
@@ -26,16 +27,8 @@ addCommandAlias("validate", ";root;validateJVM;validateJS")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
-addCommandAlias("validateJVM-", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;coreJVM/doc")
-
+addCommandAlias("validateCI", if (isScalaNative) "validateNative" else if (hasScalaJsVersion) "validateJS" else "validateJVM")
 addCommandAlias("runAll", ";examplesJVM/runAll")
-addCommandAlias("releaseAll", ";root;release skip-tests")
-
-addCommandAlias("validateCI", platform match {
-  case JVMPlatform => "validateJVM"
-  case JSPlatform => "validateJS"
-  case NativePlatform => "validateNative"
-})
 
 lazy val scoverageSettings = Seq(
   coverageMinimum := 60,
@@ -110,7 +103,7 @@ lazy val commonNativeSettings = Seq(
 
 lazy val coreSettings = commonSettings ++ publishSettings
 
-lazy val root = project.in(file("."))
+lazy val shapeless = project.in(file("."))
   .aggregate(coreJS, coreJVM)
   .dependsOn(coreJS, coreJVM)
   .settings(coreSettings:_*)
@@ -140,16 +133,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .configureCross(buildInfoSetup)
   .enablePlugins(SbtOsgi)
   .settings(coreOsgiSettings:_*)
-  .settings(
-    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
-  )
+  .settings(sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .jvmSettings(scoverageSettings:_*)
-  .jvmSettings(skip in publish := platform != JVMPlatform)
-  .jsSettings(skip in publish := platform != JSPlatform)
-  .nativeSettings(skip in publish := platform != NativePlatform)
+  .jvmSettings(skip in publish := hasScalaJsVersion)
+  .nativeSettings(skip in publish := hasScalaJsVersion)
   .nativeSettings(
     commonNativeSettings,
     // disable scaladoc generation on native
