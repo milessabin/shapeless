@@ -11,6 +11,10 @@ val Scala213 = "2.13.1"
 val isScalaNative = System.getenv("SCALA_NATIVE") != null
 val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
 
+commonSettings
+noPublishSettings
+crossScalaVersions := Nil
+
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := Scala213,
@@ -23,10 +27,10 @@ addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;validateJVM;validateJS")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
-addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
+addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
+addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("validateCI", if (isScalaNative) "validateNative" else if (hasScalaJsVersion) "validateJS" else "validateJVM")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
@@ -103,13 +107,6 @@ lazy val commonNativeSettings = Seq(
 
 lazy val coreSettings = commonSettings ++ publishSettings
 
-lazy val shapeless = project.in(file("."))
-  .aggregate(coreJS, coreJVM, coreNative)
-  .dependsOn(coreJS, coreJVM, coreNative)
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings)
-  .settings(crossScalaVersions := List())
-
 lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
     crossBase / projectType
@@ -148,8 +145,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
     publishArtifact in (Compile, packageDoc) := false,
     publishArtifact in packageDoc := false,
-    sources in (Compile,doc) := Seq.empty,
-    sources in Test := Seq.empty
+    sources in (Compile,doc) := Nil,
+    sources in Test := Nil
   )
 
 lazy val coreJVM = core.jvm
@@ -202,9 +199,8 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
     commonNativeSettings,
-    sources in Compile ~= {
-      _.filterNot(_.getName == "sexp.scala")
-    }
+    sources in Compile ~= (_.filterNot(_.getName == "sexp.scala")),
+    sources in Test := Nil
   )
 
 lazy val examplesJVM = examples.jvm
