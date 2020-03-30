@@ -1,5 +1,3 @@
-import ReleaseTransformations._
-
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
 
@@ -7,26 +5,34 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
+val Scala212 = "2.12.11"
+val Scala213 = "2.13.1"
+
+val isScalaNative = System.getenv("SCALA_NATIVE") != null
+val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
+
+commonSettings
+noPublishSettings
+crossScalaVersions := Nil
+
 inThisBuild(Seq(
   organization := "com.chuusai",
-  scalaVersion := "2.13.1",
-  crossScalaVersions := Seq(Scala211, "2.12.11", "2.13.1"),
+  scalaVersion := Scala213,
+  crossScalaVersions := Seq(Scala211, Scala212, Scala213),
   mimaFailOnNoPrevious := false
 ))
 
-addCommandAlias("root", ";project root")
+addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;validateJVM;validateJS")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
-addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run")
-addCommandAlias("validateJVM-", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;coreJVM/doc")
-
+addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
+addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
+addCommandAlias("validateCI", if (isScalaNative) "validateNative" else if (hasScalaJsVersion) "validateJS" else "validateJVM")
 addCommandAlias("runAll", ";examplesJVM/runAll")
-addCommandAlias("releaseAll", ";root;release skip-tests")
 
 lazy val scoverageSettings = Seq(
   coverageMinimum := 60,
@@ -84,19 +90,7 @@ def configureJUnit(crossProject: CrossProject) = {
 }
 
 lazy val commonJsSettings = Seq(
-  scalacOptions += {
-    val tagOrHash = {
-      val tag = tagName.value
-      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lineStream_!.head
-      else tag
-    }
-    val a = (baseDirectory in LocalRootProject).value.toURI.toString
-    val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
-    s"-P:scalajs:mapSourceURI:$a->$g/"
-  },
-
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
-
   parallelExecution in Test := false,
   coverageEnabled := false
 )
@@ -111,13 +105,7 @@ lazy val commonNativeSettings = Seq(
   crossScalaVersions := Seq(Scala211)
 )
 
-lazy val coreSettings = commonSettings ++ publishSettings ++ releaseSettings
-
-lazy val root = project.in(file("."))
-  .aggregate(coreJS, coreJVM)
-  .dependsOn(coreJS, coreJVM)
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings)
+lazy val coreSettings = commonSettings ++ publishSettings
 
 lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
@@ -143,13 +131,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .configureCross(buildInfoSetup)
   .enablePlugins(SbtOsgi)
   .settings(coreOsgiSettings:_*)
-  .settings(
-    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
-  )
+  .settings(sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .jvmSettings(scoverageSettings:_*)
+  .jvmSettings(skip in publish := hasScalaJsVersion)
+  .nativeSettings(skip in publish := hasScalaJsVersion)
   .nativeSettings(
     commonNativeSettings,
     // disable scaladoc generation on native
@@ -157,7 +145,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
     publishArtifact in (Compile, packageDoc) := false,
     publishArtifact in packageDoc := false,
-    sources in (Compile,doc) := Seq.empty
+    sources in (Compile,doc) := Nil,
+    sources in Test := Nil
   )
 
 lazy val coreJVM = core.jvm
@@ -210,9 +199,8 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
     commonNativeSettings,
-    sources in Compile ~= {
-      _.filterNot(_.getName == "sexp.scala")
-    }
+    sources in Compile ~= (_.filterNot(_.getName == "sexp.scala")),
+    sources in Test := Nil
   )
 
 lazy val examplesJVM = examples.jvm
@@ -271,27 +259,14 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   }
 
 lazy val publishSettings = Seq(
-  publishMavenStyle := true,
   publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
+  pomIncludeRepository := (_ => false),
   homepage := Some(url("https://github.com/milessabin/shapeless")),
   licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   scmInfo := Some(ScmInfo(url("https://github.com/milessabin/shapeless"), "scm:git:git@github.com:milessabin/shapeless.git")),
-  pomExtra := (
-    <developers>
-      <developer>
-        <id>milessabin</id>
-        <name>Miles Sabin</name>
-        <url>http://milessabin.com/blog</url>
-      </developer>
-    </developers>
+  developers := List(
+    Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
+    Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
   )
 )
 
@@ -323,36 +298,3 @@ lazy val coreOsgiSettings = osgiSettings ++ Seq(
   },
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
-
-lazy val tagName = Def.setting{
-  s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
-}
-
-lazy val releaseSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := tagName.value,
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    runClean,
-    runTest,
-    releaseStepCommand(s"++${Scala211}!"),
-    releaseStepCommand("nativeTest/run"),
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    publishArtifacts,
-    releaseStepCommand(s"++${Scala211}"),
-    releaseStepCommand("coreNative/publishSigned"),
-    setNextVersion,
-    commitNextVersion,
-    releaseStepCommand("sonatypeReleaseAll"),
-    pushChanges
-  )
-)
-
-credentials in ThisBuild ++= (for {
-  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
