@@ -61,10 +61,10 @@ object Annotation {
 /**
  * Provides the annotations of type `A` of the fields or constructors of case class-like or sum type `T`.
  *
- * If type `T` is case class-like, this type class inspects its fields and provides their annotations of type `A`. If
- * type `T` is a sum type, its constructor types are inspected for annotations.
+ * If type `T` is case class-like, this type class inspects the parameters in the first parameter list of the primary constructor
+ * and provides their annotations of type `A`. If type `T` is a sum type, its constructor types are inspected for annotations.
  *
- * Type `Out` is a tuple having the same number of elements as `T` (number of fields of `T` if `T` is case class-like,
+ * Type `Out` is a tuple having the same number of elements as `T` (number of parameters of `T` if `T` is case class-like,
  * or number of constructors of `T` if it is a sum type). It is made of `None.type` (no annotation on corresponding
  * field or constructor) and `Some[A]` (corresponding field or constructor is annotated).
  *
@@ -97,7 +97,7 @@ object Annotation {
  * }}}
  *
  * @tparam A: annotation type
- * @tparam T: case class-like or sum type, whose fields or constructors are annotated
+ * @tparam T: case class-like or sum type, whose constructor parameters or constructors are annotated
  *
  * @author Alexandre Archambault
  */
@@ -168,7 +168,8 @@ object AnnotationMacros {
       val annoteeTpe = typeOf[T]
       annoteeTpe.classSymbol match {
         case Some(annoteeCls) if annoteeCls.flags.is(Flags.Case) =>
-          mkAnnotations(annoteeCls.caseFields.map { field => findAnnotation[A](field) })
+          mkAnnotations(annoteeCls.primaryConstructor.paramSymss._2.headOption.getOrElse(Nil)
+            .map { vparam => findAnnotation[A](vparam) })
         case Some(annoteeCls) =>
           Mirror(m) match {
             case Some(rm) =>
