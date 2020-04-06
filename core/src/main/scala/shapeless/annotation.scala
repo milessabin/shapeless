@@ -168,8 +168,9 @@ object AnnotationMacros {
       val annoteeTpe = typeOf[T]
       annoteeTpe.classSymbol match {
         case Some(annoteeCls) if annoteeCls.flags.is(Flags.Case) =>
-          mkAnnotations(annoteeCls.primaryConstructor.paramSymss._2.headOption.getOrElse(Nil)
-            .map { vparam => findAnnotation[A](vparam) })
+          val valueParams = annoteeCls.primaryConstructor.paramSymss
+            .find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
+          mkAnnotations(valueParams.map { vparam => findAnnotation[A](vparam) })
         case Some(annoteeCls) =>
           Mirror(m) match {
             case Some(rm) =>
