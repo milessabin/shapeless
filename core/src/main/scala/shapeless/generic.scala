@@ -482,11 +482,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       abort(s"$tpe is not a case class, case class-like, a sealed trait or Unit")
   }
 
-  def nameAsString(name: Name): String = name.decodedName.toString.trim
+  def nameAsString(name: Name): String =
+    name.decodedName.toString.trim
 
-  def nameAsValue(name: Name): Constant = Constant(nameAsString(name))
+  def nameAsValue(name: Name): Constant =
+    Constant(nameAsString(name))
 
-  def nameOf(tpe: Type) = tpe.typeSymbol.name
+  def nameOf(tpe: Type): Name =
+    tpe.typeSymbol.name
 
   def mkHListValue(elems: List[Tree]): Tree =
     elems.foldRight(q"_root_.shapeless.HNil": Tree) {

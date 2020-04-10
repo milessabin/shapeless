@@ -312,7 +312,7 @@ class SerializationTests {
 
     val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
 
-    type U = Union.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T
+    type U = Union.`"foo" -> Int, "bar" -> String, "baz" -> Boolean`.T
     val u = Union[U](bar = "quux")
 
     val t = (23, "foo", true)
@@ -1192,7 +1192,7 @@ class SerializationTests {
     val l10 = optic.hlistNthLens[Int :: String :: Boolean :: HNil, _1]
     val l11 = optic.recordLens[Record.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T](Symbol("bar"))
     val l12 = optic[Tree[Int]].l.r.l.t
-    val l13 = optic[Node[Int]] >> Symbol("r")
+    val l13 = optic[Node[Int]] >> "r"
     val l14 = optic[Node[Int]] >> _1
 
     assertSerializable(l1)

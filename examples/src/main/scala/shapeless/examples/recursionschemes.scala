@@ -23,7 +23,6 @@ import shapeless.ops.hlist.Tupler
 import shapeless.ops.union.Selector
 import shapeless.record._
 import shapeless.syntax.DynamicRecordOps
-import shapeless.tag.@@
 
 /**
  * Example adapted from the talk "Recursion Schemes by Example" by Tim Williams.
@@ -208,7 +207,7 @@ package recursionschemes {
     object F extends Dynamic {
       import shapeless.ops.record.Values
 
-      trait Extractor[K <: Symbol] {
+      trait Extractor[K <: String] {
         object as {
           def unapply[C <: Coproduct, R <: HList](c: C)(
             implicit sel: Selector.Aux[C, K, R]
@@ -228,9 +227,9 @@ package recursionschemes {
         }
       }
 
-      private val extractor = new Extractor[Symbol] { }
-      def selectDynamic(name: String): Extractor[Symbol @@ name.type] =
-        extractor.asInstanceOf[Extractor[Symbol @@ name.type]]
+      private val extractor = new Extractor[String] { }
+      def selectDynamic(name: String): Extractor[name.type] =
+        extractor.asInstanceOf[Extractor[name.type]]
     }
   }
 

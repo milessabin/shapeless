@@ -29,7 +29,7 @@ import scala.reflect.macros.whitebox
 object record {
   import syntax.RecordOps
 
-  implicit def recordOps[L <: HList](l : L) : RecordOps[L] = new RecordOps(l)
+  implicit def recordOps[L <: HList](l : L): RecordOps[L] = new RecordOps(l)
 
   /**
    * Records encoded as `HLists` of their value types intersected with the
@@ -41,7 +41,7 @@ object record {
    * appears to the compiler as stable,
    *
    * {{{
-   * type Xyz = Record.`'x -> Int, 'y -> String, 'z -> Boolean`.T
+   * type Xyz = Record.`"x" -> Int, "y" -> String, "z" -> Boolean`.T
    * }}}
    *
    * The use of singleton-typed `Symbols` as keys would make this type extremely
@@ -52,13 +52,12 @@ object record {
    *
    * {{{
    * val xyz = Record(x = 23, y = "foo", z = true)
-   * xyz('y) // == "foo"
+   * xyz("y") // == "foo"
    * }}}
    */
   object Record extends Dynamic {
     def applyDynamic(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordEmptyImpl
     def applyDynamicNamed(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordNamedImpl
-
     def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.recordTypeImpl
   }
 }
@@ -75,7 +74,7 @@ object record {
  * to be rewritten as,
  *
  * {{{
- * lhs.methodRecord('x ->> 23 :: 'y ->> "foo", 'z ->> true)
+ * lhs.methodRecord("x" ->> 23 :: "y" ->> "foo", "z" ->> true)
  * }}}
  *
  * ie. the named arguments are rewritten as record fields with the argument name
@@ -94,7 +93,7 @@ trait RecordArgs extends Dynamic {
  * Mixing in this trait enables method applications of the form,
  *
  * {{{
- * lhs.methodRecord('x ->> 23 :: 'y ->> "foo" :: 'z ->> true :: HNil)
+ * lhs.methodRecord("x" ->> 23 :: "y" ->> "foo" :: "z" ->> true :: HNil)
  * }}}
  *
  * to be rewritten as,
@@ -117,22 +116,20 @@ class RecordMacros(val c: whitebox.Context) {
   import internal.constantType
   import labelled.FieldType
 
-  val hconsValueTree = reify {  ::  }.tree
-  val hnilValueTree  = reify { HNil: HNil }.tree
-  val fieldTypeTpe = typeOf[FieldType[_, _]].typeConstructor
-  val SymTpe = typeOf[scala.Symbol]
-  val atatTpe = typeOf[tag.@@[_,_]].typeConstructor
+  val hconsValueTree: Tree = reify(::).tree
+  val hnilValueTree: Tree = reify(HNil: HNil).tree
+  val fieldTypeTpe: Type = typeOf[FieldType[_, _]].typeConstructor
 
   def mkRecordEmptyImpl(method: Tree)(rec: Tree*): Tree = {
-    if(rec.nonEmpty)
+    if (rec.nonEmpty)
       c.abort(c.enclosingPosition, "this method must be called with named arguments")
 
-    q"_root_.shapeless.HNil"
+    hnilValueTree
   }
 
   def mkRecordNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val q"${methodString: String}" = method
-    if(methodString != "apply")
+    if (methodString != "apply")
       c.abort(c.enclosingPosition, s"this method must be called as 'apply' not '$methodString'")
 
     mkRecordImpl(rec: _*)
@@ -145,14 +142,13 @@ class RecordMacros(val c: whitebox.Context) {
     val lhsTpe = lhs.tpe
 
     val q"${methodString: String}" = method
-    val methodName = TermName(methodString+"Record")
+    val methodName = TermName(methodString + "Record")
 
-    if(lhsTpe.member(methodName) == NoSymbol)
+    if (lhsTpe.member(methodName) == NoSymbol)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val recTree = mkRecordImpl(rec: _*)
-
-    q""" $lhs.$methodName($recTree) """
+    q"$lhs.$methodName($recTree)"
   }
 
   def forwardFromRecordImpl[L <: HList](method: Tree)(rec: Expr[L]): Tree = {
@@ -166,15 +162,12 @@ class RecordMacros(val c: whitebox.Context) {
 
     val methodName = TermName(methodString.replaceAll("Record$", ""))
 
-    if(!lhsTpe.member(methodName).isMethod)
+    if (!lhsTpe.member(methodName).isMethod)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
     val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, rec)
-    q""" $lhs.$methodName(...$params) """
+    q"$lhs.$methodName(...$params)"
   }
-
-  def mkSingletonSymbolType(c: Constant): Type =
-    appliedType(atatTpe, List(SymTpe, constantType(c)))
 
   def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
     appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
@@ -184,23 +177,22 @@ class RecordMacros(val c: whitebox.Context) {
       q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
-      case q""" $prefix(${Literal(k: Constant)}, $v) """ => mkElem(mkSingletonSymbolType(k), v)
-      case _ =>
-        c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
+      case q"$_(${Literal(k)}, $v)" => mkElem(constantType(k), v)
+      case _ => c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }
 
-    rec.foldRight(hnilValueTree) {
-      case(elem, acc) => q""" $hconsValueTree(${promoteElem(elem)}, $acc) """
+    rec.foldRight(hnilValueTree) { case (elem, acc) =>
+      q"$hconsValueTree(${promoteElem(elem)}, $acc)"
     }
   }
 
   def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[List[Tree]] = {
+    val selector = reify(ops.hlist.Selector)
     def mkElem(keyTpe: Type, value: Tree): Tree =
-      q"_root_.scala.Predef.implicitly[_root_.shapeless.ops.hlist.Selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}]].apply($rec)"
+      q"$selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}].apply($rec)"
 
-    method.paramLists.filterNot(_.forall(x => x.isImplicit)).map(_.map { x =>
-      mkElem(mkSingletonSymbolType(Constant(x.name.decodedName.toString)), q"${x.typeSignature}")
+    method.paramLists.filterNot(_.forall(_.isImplicit)).map(_.map { p =>
+      mkElem(constantType(Constant(p.name.decodedName.toString)), q"${p.typeSignature}")
     })
-
   }
 }

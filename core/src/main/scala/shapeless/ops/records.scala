@@ -631,13 +631,14 @@ package record {
 
     type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
 
-    implicit def hnilKeys[L <: HNil]: Aux[L, HNil] =
-      new Keys[L] {
-        type Out = HNil
-        def apply(): Out = HNil
-      }
+    implicit val hnilKeys: Aux[HNil, HNil] = new Keys[HNil] {
+      type Out = HNil
+      def apply(): Out = HNil
+    }
 
-    implicit def hlistKeys[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: Keys[T]): Aux[FieldType[K, V] :: T, K :: kt.Out] =
+    implicit def hlistKeys[K, V, T <: HList](
+      implicit wk: Witness.Aux[K], kt: Keys[T]
+    ): Aux[FieldType[K, V] :: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :: T] {
         type Out = K :: kt.Out
         def apply(): Out = wk.value :: kt()
