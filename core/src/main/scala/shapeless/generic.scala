@@ -226,32 +226,30 @@ object LabelledGeneric {
   def apply[T](implicit lgen: LabelledGeneric[T]): Aux[T, lgen.Repr] = lgen
 
   /** Handles the Product case (fields in a case class, for example) */
-  implicit def materializeProduct[T, K <: HList, V <: HList, R <: HList]
-    (implicit
-      lab: DefaultSymbolicLabelling.Aux[T, K],
-      gen: Generic.Aux[T, V],
-      zip: hlist.ZipWithKeys.Aux[K, V, R],
-      ev: R <:< V
-    ): Aux[T, R] =
-    new LabelledGeneric[T] {
-      type Repr = R
-      def to(t: T): Repr = zip(gen.to(t))
-      def from(r: Repr): T = gen.from(r)
-    }
+  implicit def materializeProduct[T, K <: HList, V <: HList, R <: HList](
+    implicit
+    lab: Labelling.Aux[T, K],
+    gen: Generic.Aux[T, V],
+    zip: hlist.ZipWithKeys.Aux[K, V, R],
+    ev: R <:< V
+  ): Aux[T, R] = new LabelledGeneric[T] {
+    type Repr = R
+    def to(t: T): Repr = zip(gen.to(t))
+    def from(r: Repr): T = gen.from(r)
+  }
 
   /** Handles the Coproduct case (specifying subclasses derive from a sealed trait) */
-  implicit def materializeCoproduct[T, K <: HList, V <: Coproduct, R <: Coproduct]
-    (implicit
-      lab: DefaultSymbolicLabelling.Aux[T, K],
-      gen: Generic.Aux[T, V],
-      zip: coproduct.ZipWithKeys.Aux[K, V, R],
-      ev: R <:< V
-    ): Aux[T, R] =
-    new LabelledGeneric[T] {
-      type Repr = R
-      def to(t: T): Repr = zip(gen.to(t))
-      def from(r: Repr): T = gen.from(r)
-    }
+  implicit def materializeCoproduct[T, K <: HList, V <: Coproduct, R <: Coproduct](
+    implicit
+    lab: Labelling.Aux[T, K],
+    gen: Generic.Aux[T, V],
+    zip: coproduct.ZipWithKeys.Aux[K, V, R],
+    ev: R <:< V
+  ): Aux[T, R] = new LabelledGeneric[T] {
+    type Repr = R
+    def to(t: T): Repr = zip(gen.to(t))
+    def from(r: Repr): T = gen.from(r)
+  }
 }
 
 class nonGeneric extends StaticAnnotation

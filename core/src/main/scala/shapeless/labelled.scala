@@ -37,21 +37,20 @@ object labelled {
   }
 }
 
-trait DefaultSymbolicLabelling[T] extends DepFn0 with Serializable { type Out <: HList }
+trait Labelling[T] extends DepFn0 with Serializable { type Out <: HList }
 
-object DefaultSymbolicLabelling {
-  type Aux[T, Out0] = DefaultSymbolicLabelling[T] { type Out = Out0 }
+object Labelling {
+  type Aux[T, Out0] = Labelling[T] { type Out = Out0 }
 
-  def apply[T](implicit lab: DefaultSymbolicLabelling[T]): Aux[T, lab.Out] = lab
+  def apply[T](implicit lab: Labelling[T]): Aux[T, lab.Out] = lab
 
-  implicit def mkDefaultSymbolicLabelling[T]: DefaultSymbolicLabelling[T] =
+  implicit def mkDefaultSymbolicLabelling[T]: Labelling[T] =
     macro LabelledMacros.mkDefaultSymbolicLabellingImpl[T]
 
-  def instance[T, L <: HList](labels: L): Aux[T, L] =
-    new DefaultSymbolicLabelling[T] {
-      type Out = L
-      def apply(): L = labels
-    }
+  def instance[T, L <: HList](labels: L): Aux[T, L] = new Labelling[T] {
+    type Out = L
+    def apply(): L = labels
+  }
 }
 
 /**
@@ -115,7 +114,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
 
     val labelsType = mkHListTpe(labels.map(constantType))
     val labelsValue = mkHListValue(labels.map(Literal.apply))
-    val labelling = objectRef[DefaultSymbolicLabelling.type]
+    val labelling = objectRef[Labelling.type]
     q"$labelling.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
   }
 

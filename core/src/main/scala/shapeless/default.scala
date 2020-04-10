@@ -119,7 +119,7 @@ object Default {
     implicit def asRecord[T, Labels <: HList, Options <: HList](
       implicit
       default: Default.Aux[T, Options],
-      labelling: DefaultSymbolicLabelling.Aux[T, Labels],
+      labelling: Labelling.Aux[T, Labels],
       helper: Helper[Options, Labels]
     ): Aux[T, helper.Out] = new AsRecord[T] {
       type Out = helper.Out

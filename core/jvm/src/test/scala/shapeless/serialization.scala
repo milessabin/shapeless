@@ -950,8 +950,8 @@ class SerializationTests {
     assertSerializable(Generic[(Int, String, Boolean)])
     assertSerializable(Generic[Option[Int]])
 
-    assertSerializable(DefaultSymbolicLabelling[(Int, String, Boolean)])
-    assertSerializable(DefaultSymbolicLabelling[Option[Int]])
+    assertSerializable(Labelling[(Int, String, Boolean)])
+    assertSerializable(Labelling[Option[Int]])
 
     assertSerializable(LabelledGeneric[(Int, String, Boolean)])
     assertSerializable(LabelledGeneric[Option[Int]])
