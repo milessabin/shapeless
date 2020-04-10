@@ -43,6 +43,10 @@ class RecordTests {
 
   case class Bar(a: Int, b: String)
 
+  type MapRec = Record.`'map -> Map[String, Int]`.T
+  type TupleRec = Record.`'tuple -> (String, Int)`.T
+  type ComplexRec = Record.`'map -> Map[String, Int], 'tuple -> (String, Int)`.T
+
   @Test
   def testGet: Unit = {
     val r1 =

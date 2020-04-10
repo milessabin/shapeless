@@ -94,28 +94,45 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
   import c.universe._
   import internal.constantType
 
-  private def commaSeparated(str: String): Array[String] = {
-    val trimmed = str.trim
-    if (trimmed.isEmpty) Array.empty else trimmed.split(',')
+  private def commaSeparated(str: String): List[String] = {
+    val builder = List.newBuilder[String]
+    var i, j, k = 0
+    while (j < str.length) {
+      str.charAt(j) match {
+        case ',' if k == 0 =>
+          builder += str.substring(i, j).trim
+          i = j + 1
+        case '(' | '[' =>
+          k += 1
+        case ')' | ']' =>
+          k = k - 1 max 0
+        case _ =>
+      }
+
+      j += 1
+    }
+
+    val last = str.substring(i, j).trim
+    if (last.nonEmpty) builder += last
+    builder.result()
   }
 
   private def parseTypeOrFail(tpe: String): Type =
-    parseType(tpe.trim).getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $tpe"))
+    parseType(tpe).getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $tpe"))
 
   private def parseLiteralTypeOrFail(tpe: String): Type =
-    parseLiteralType(tpe.trim).getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $tpe"))
+    parseLiteralType(tpe).getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $tpe"))
 
   def mkDefaultSymbolicLabellingImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
     val labels: List[Constant] =
-      if (isProduct(tpe)) fieldsOf(tpe).map(f => nameAsValue(f._1))
+      if (isProduct(tpe)) fieldsOf(tpe).map { case (f, _) => nameAsValue(f) }
       else if (isCoproduct(tpe)) ctorsOf(tpe).map(c => nameAsValue(nameOf(c)))
       else c.abort(c.enclosingPosition, s"$tpe is not case class like or the root of a sealed family of types")
 
     val labelsType = mkHListTpe(labels.map(constantType))
     val labelsValue = mkHListValue(labels.map(Literal.apply))
-    val labelling = objectRef[Labelling.type]
-    q"$labelling.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
+    q"${reify(Labelling)}.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
   }
 
   def recordTypeImpl(tpeSelector: Tree): Tree =
@@ -129,8 +146,8 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
 
     val q"${tpeString: String}" = tpeSelector
-    val fields = commaSeparated(tpeString).map(_.trim.split("->") match {
-      case Array(key, value) => (parseLiteralTypeOrFail(key), parseTypeOrFail(value))
+    val fields = commaSeparated(tpeString).map(_.split("->") match {
+      case Array(key, value) => (parseLiteralTypeOrFail(key.trim), parseTypeOrFail(value.trim))
       case _ => c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
     })
 
