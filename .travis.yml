@@ -3,7 +3,7 @@ language: scala
 dist: trusty
 
 scala:
-- 0.23.0-RC1
+- 0.24.0-bin-20200409-f64e879-NIGHTLY
 
 jdk:
 - oraclejdk8
