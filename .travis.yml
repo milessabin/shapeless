@@ -1,17 +1,31 @@
 language: scala
 
-dist: trusty
+jdk:
+- openjdk8
 
 scala:
 - 0.24.0-bin-20200409-f64e879-NIGHTLY
 
-jdk:
-- oraclejdk8
-
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+
+before_install:
+  - git fetch --tags
+
+stages:
+  - name: test
+  - name: release
+    if: ((branch = shapeless-3 AND type = push) OR (tag IS present)) AND NOT fork
+
+jobs:
+  include:
+    - stage: test
+      script: sbt clean validate
+    - stage: release
+      script: sbt ci-release
 
 notifications:
   irc: "chat.freenode.net#shapeless"
