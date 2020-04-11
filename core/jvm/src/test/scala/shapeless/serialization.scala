@@ -170,15 +170,15 @@ object SerializationTestDefns {
 
   case class Box[T](t: T)
 
-  type K = HList.`'a, 'b, 'c`.T
-  type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-  type U = Union.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-  type RM = Record.`'c -> Boolean, 'd -> Double`.T
-  type RM1 = Record.`'c -> Boolean, 'b -> String`.T
-  type RM2 = Record.`'b -> String, 'c -> Boolean`.T
-  type KA = Witness.`'a`.T
-  type KB = Witness.`'b`.T
-  type KC = Witness.`'c`.T
+  type K = HList.`"a", "b", "c"`.T
+  type R = Record.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
+  type U = Union.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
+  type RM = Record.`"c" -> Boolean, "d" -> Double`.T
+  type RM1 = Record.`"c" -> Boolean, "b" -> String`.T
+  type RM2 = Record.`"b" -> String, "c" -> Boolean`.T
+  type KA = Witness.`"a"`.T
+  type KB = Witness.`"b"`.T
+  type KC = Witness.`"c"`.T
 
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
@@ -285,7 +285,7 @@ class SerializationTests {
     val cs = Coproduct[ISB]("foo")
     val cb = Coproduct[ISB](true)
 
-    val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
+    val r = "foo" ->> 23 :: "bar" ->> "foo" :: "baz" ->> true :: HNil
 
     val prim = new Primary(42)
     val sec = new Secondary("qux")
@@ -310,7 +310,7 @@ class SerializationTests {
     type ISB = Int :+: String :+: Boolean :+: CNil
     val cs = Coproduct[ISB]("foo")
 
-    val r = Symbol("foo") ->> 23 :: Symbol("bar") ->> "foo" :: Symbol("baz") ->> true :: HNil
+    val r = "foo" ->> 23 :: "bar" ->> "foo" :: "baz" ->> true :: HNil
 
     type U = Union.`"foo" -> Int, "bar" -> String, "baz" -> Boolean`.T
     val u = Union[U](bar = "quux")
@@ -353,7 +353,7 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
-    val s = HList.`'a, "boo", 23, true`
+    val s = HList.`"a", "boo", 23, true`
     type S = s.T
 
     assertSerializable(IsHCons[L])
@@ -614,7 +614,7 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
-    val s = Coproduct.`'a, "boo", 23, true`
+    val s = Coproduct.`"a", "boo", 23, true`
     type S = s.T
 
     assertSerializable(Inject[L, Int])
@@ -988,16 +988,16 @@ class SerializationTests {
     // special cases of referenceSingletonTypeable,
     // because symbols and objects preserve their
     // identity during serialization/deserialization:
-    assertSerializable(Typeable[Witness.`'foo`.T])
+    assertSerializable(Typeable[Witness.`"foo"`.T])
     assertSerializable(Typeable[Sing.type])
     assertSerializable(Typeable[CaseObj.type])
 
     // check that they indeed work
     // correctly after deserialization:
-    val symInst = roundtrip(Typeable[Witness.`'foo`.T])
-    assertTrue(symInst.cast(Symbol("foo") : Any).isDefined)
+    val symInst = roundtrip(Typeable[Witness.`"foo"`.T])
+    assertTrue(symInst.cast("foo": Any).isDefined)
     val objInst = roundtrip(Typeable[Sing.type])
-    assertTrue(objInst.cast(Sing : Any).isDefined)
+    assertTrue(objInst.cast(Sing: Any).isDefined)
     val caseObjInst = roundtrip(Typeable[CaseObj.type])
     assertTrue(caseObjInst.cast(CaseObj).isDefined)
 
@@ -1112,8 +1112,8 @@ class SerializationTests {
     type OL = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
     type I3 = Int :: Int :: Int :: HNil
     type IS = Int :: String :: HNil
-    type R = Record.`'a -> Int, 'b -> String, 'c -> Boolean`.T
-    type K = HList.`'a, 'b, 'c`.T
+    type R = Record.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
+    type K = HList.`"a", "b", "c"`.T
 
     assertSerializable(UnaryTCConstraint[HNil, Option])
     assertSerializable(UnaryTCConstraint[OL, Option])
@@ -1190,7 +1190,7 @@ class SerializationTests {
     val l8 = optic.hlistSelectLens[Int :: String :: Boolean :: HNil, String]
     val l9 = optic.coproductSelectPrism[Int :+: String :+: Boolean :+: CNil, String]
     val l10 = optic.hlistNthLens[Int :: String :: Boolean :: HNil, _1]
-    val l11 = optic.recordLens[Record.`'foo -> Int, 'bar -> String, 'baz -> Boolean`.T](Symbol("bar"))
+    val l11 = optic.recordLens[Record.`"foo" -> Int, "bar" -> String, "baz" -> Boolean`.T]("bar")
     val l12 = optic[Tree[Int]].l.r.l.t
     val l13 = optic[Node[Int]] >> "r"
     val l14 = optic[Node[Int]] >> _1
