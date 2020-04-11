@@ -55,15 +55,6 @@ object Data extends Data1 {
 
   def gmapQ[F, T, R](f: F)(t: T)(implicit data: Lazy[Data[F, T, R]]) = data.value.gmapQ(t)
 
-  /**
-   * Data type class instance for `List`s.
-   */
-  @deprecated("Superseded by genTraversableData", "2.3.1")
-  def listData[P, T, R](implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, List[T], R] =
-    new Data[P, List[T], R] {
-      def gmapQ(t: List[T]) = t.map(qt.value(_))
-    }
-
   implicit def genTraversableData[P, C[X] <: Iterable[X], T, R]
     (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
       new Data[P, C[T], R] {
@@ -142,16 +133,6 @@ object DataT extends DataT1 {
   def apply[P, T](implicit dtt: Lazy[DataT[P, T]]): DataT[P, T] = dtt.value
 
   def gmapT[F, T](f: F)(t: T)(implicit data: Lazy[DataT[F, T]]) = data.value.gmapT(t)
-
-  /**
-   * DataT type class instance for `List`s.
-   */
-  @deprecated("Superseded by genTraversableDataT", "2.3.1")
-  def listDataT[F <: Poly, T, U](implicit ft: Lazy[Case1.Aux[F, T, U]]): Aux[F, List[T], List[U]] =
-    new DataT[F, List[T]] {
-      type Out = List[U]
-      def gmapT(t: List[T]) = t.map(ft.value)
-    }
 
   implicit def genTraversableDataT[F <: Poly, CC[X] <: Iterable[X], T, U]
     (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: Factory[U, CC[U]]): Aux[F, CC[T], CC[U]] =

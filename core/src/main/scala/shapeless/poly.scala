@@ -218,10 +218,6 @@ object PolyDefns extends Cases {
     implicit def inst2[G[_], T](f : Id ~> G) : T => G[T] = f(_)
     implicit def inst3[F[_], T](f : F ~> Id) : F[T] => T = f(_)
     implicit def inst4[T](f : Id ~> Id) : T => T = f[T](_)  // Explicit type argument needed here to prevent recursion?
-    // Retained as non-implicit for binary compatibility
-    def inst5[F[_], G, T](f : F ~> Const[G]#λ) : F[T] => G = f(_)
-    def inst6[G, T](f : Id ~> Const[G]#λ) : T => G = f(_)
-    def inst7[F, G](f : Const[F]#λ ~> Const[G]#λ) : F => G = f(_)
   }
 
   /** Natural transformation with a constant type constructor on the right hand side. */
