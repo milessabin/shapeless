@@ -16,8 +16,6 @@
 
 package shapeless
 
-import shapeless.ops.{coproduct, hlist}
-
 import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
 import scala.reflect.macros.{blackbox, whitebox}
@@ -225,31 +223,14 @@ object LabelledGeneric {
     * use this method or {{{the[LabelledGeneric[T]]}}} to obtain an instance for suitable given T. */
   def apply[T](implicit lgen: LabelledGeneric[T]): Aux[T, lgen.Repr] = lgen
 
-  /** Handles the Product case (fields in a case class, for example) */
-  implicit def materializeProduct[T, K <: HList, V <: HList, R <: HList](
-    implicit
-    lab: Labelling.Aux[T, K],
-    gen: Generic.Aux[T, V],
-    zip: hlist.ZipWithKeys.Aux[K, V, R],
-    ev: R <:< V
-  ): Aux[T, R] = new LabelledGeneric[T] {
+  def unsafeInstance[T, R](gen: Generic[T]): Aux[T, R] = new LabelledGeneric[T] {
     type Repr = R
-    def to(t: T): Repr = zip(gen.to(t))
-    def from(r: Repr): T = gen.from(r)
+    def to(t: T): Repr = gen.to(t).asInstanceOf[R]
+    def from(r: Repr): T = gen.from(r.asInstanceOf[gen.Repr])
   }
 
-  /** Handles the Coproduct case (specifying subclasses derive from a sealed trait) */
-  implicit def materializeCoproduct[T, K <: HList, V <: Coproduct, R <: Coproduct](
-    implicit
-    lab: Labelling.Aux[T, K],
-    gen: Generic.Aux[T, V],
-    zip: coproduct.ZipWithKeys.Aux[K, V, R],
-    ev: R <:< V
-  ): Aux[T, R] = new LabelledGeneric[T] {
-    type Repr = R
-    def to(t: T): Repr = zip(gen.to(t))
-    def from(r: Repr): T = gen.from(r)
-  }
+  implicit def materialize[T, R]: Aux[T, R] =
+    macro LabelledMacros.mkLabelledGeneric[T, R]
 }
 
 class nonGeneric extends StaticAnnotation
@@ -931,7 +912,9 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   private val generic = objectRef[Generic.type]
 
-  def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
+  def materialize[T: WeakTypeTag, R]: Tree = mkGeneric[T]
+
+  def mkGeneric[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
     if (isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")

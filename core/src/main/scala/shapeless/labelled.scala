@@ -85,7 +85,7 @@ trait FieldOf[V] {
 }
 
 @macrocompat.bundle
-class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
+class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) with SingletonTypeUtils {
   import c.universe._
   import internal.constantType
 
@@ -117,6 +117,17 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
 
   private def parseLiteralTypeOrFail(tpe: String): Type =
     parseLiteralType(tpe).getOrElse(abort(s"Malformed literal type $tpe"))
+
+  def mkLabelledGeneric[T: WeakTypeTag, R]: Tree = {
+    val q"$_.instance[$_, $labels]($_)" = mkLabelling[T]
+    val generic @ q"$_.instance[$_, $repr]($_, $_)" = mkGeneric[T]
+    val keys = unpackHList(labels.tpe)
+    val isProduct = repr.tpe <:< hlistTpe
+    val values = if (isProduct) unpackHList(repr.tpe) else unpackCoproduct(repr.tpe)
+    val items = keys.zip(values).map((FieldType.apply _).tupled)
+    val labelled = if (isProduct) mkHListTpe(items) else mkCoproductTpe(items)
+    q"${reify(LabelledGeneric)}.unsafeInstance[${weakTypeOf[T]}, $labelled]($generic)"
+  }
 
   def mkLabelling[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
