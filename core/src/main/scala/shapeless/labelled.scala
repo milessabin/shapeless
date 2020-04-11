@@ -118,24 +118,25 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
   private def parseLiteralTypeOrFail(tpe: String): Type =
     parseLiteralType(tpe).getOrElse(abort(s"Malformed literal type $tpe"))
 
+  private def labelsOf(tpe: Type): List[Constant] =
+    if (isProduct(tpe)) fieldsOf(tpe).map { case (f, _) => nameAsValue(f) }
+    else if (isCoproduct(tpe)) ctorsOf(tpe).map(c => nameAsValue(nameOf(c)))
+    else abort(s"$tpe is not case class like or the root of a sealed family of types")
+
   def mkLabelledGeneric[T: WeakTypeTag, R]: Tree = {
-    val q"$_.instance[$_, $labels]($_)" = mkLabelling[T]
-    val generic @ q"$_.instance[$_, $repr]($_, $_)" = mkGeneric[T]
-    val keys = unpackHList(labels.tpe)
+    val tpe = weakTypeOf[T]
+    val keys = labelsOf(tpe).map(constantType)
+    val generic @ q"$_.instance[$_, ${repr: Tree}]($_, $_)" = mkGeneric[T]
     val isProduct = repr.tpe <:< hlistTpe
     val values = if (isProduct) unpackHList(repr.tpe) else unpackCoproduct(repr.tpe)
     val items = keys.zip(values).map((FieldType.apply _).tupled)
     val labelled = if (isProduct) mkHListTpe(items) else mkCoproductTpe(items)
-    q"${reify(LabelledGeneric)}.unsafeInstance[${weakTypeOf[T]}, $labelled]($generic)"
+    q"${reify(LabelledGeneric)}.unsafeInstance[$tpe, $labelled]($generic)"
   }
 
   def mkLabelling[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
-    val labels: List[Constant] =
-      if (isProduct(tpe)) fieldsOf(tpe).map { case (f, _) => nameAsValue(f) }
-      else if (isCoproduct(tpe)) ctorsOf(tpe).map(c => nameAsValue(nameOf(c)))
-      else abort(s"$tpe is not case class like or the root of a sealed family of types")
-
+    val labels = labelsOf(tpe)
     val labelsType = mkHListTpe(labels.map(constantType))
     val labelsValue = mkHListValue(labels.map(Literal.apply))
     q"${reify(Labelling)}.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
@@ -147,14 +148,14 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
   def unionType(tpeSelector: Tree): Tree =
     labelledType(tpeSelector, "union", cnilTpe, cconsTpe)
 
-  def labelledType(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
+  def labelledType(tpeSelector: Tree, variety: String, nil: Type, cons: Type): Tree = {
     val q"${tpeString: String}" = tpeSelector
-    val labelledTpe = commaSeparated(tpeString).foldRight(nilTpe) { (element, acc) =>
+    val labelledTpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
       element.split("->") match {
-        case Array(key, value) =>
-          val keyTpe = parseLiteralTypeOrFail(key.trim)
-          val valueTpe = parseTypeOrFail(value.trim)
-          appliedType(consTpe, appliedType(fieldTypeTpe, keyTpe, valueTpe), acc)
+        case Array(keyString, valueString) =>
+          val key = parseLiteralTypeOrFail(keyString.trim)
+          val value = parseTypeOrFail(valueString.trim)
+          appliedType(cons, FieldType(key, value), acc)
         case _ =>
           abort(s"Malformed $variety type $tpeString")
       }
@@ -169,10 +170,10 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
   def coproductType(tpeSelector: Tree): Tree =
     nonLabelledType(tpeSelector, cnilTpe, cconsTpe)
 
-  def nonLabelledType(tpeSelector: Tree, nilTpe: Type, consTpe: Type): Tree = {
+  def nonLabelledType(tpeSelector: Tree, nil: Type, cons: Type): Tree = {
     val q"${tpeString: String}" = tpeSelector
-    val tpe = commaSeparated(tpeString).foldRight(nilTpe) { (element, acc) =>
-      appliedType(consTpe, parseTypeOrFail(element), acc)
+    val tpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
+      appliedType(cons, parseTypeOrFail(element), acc)
     }
 
     typeCarrier(tpe)
