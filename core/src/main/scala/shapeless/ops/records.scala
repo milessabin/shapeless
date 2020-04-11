@@ -34,43 +34,37 @@ package record {
    *
    * @author Miles Sabin
    */
-  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
-  trait Selector[L <: HList, K] extends DepFn1[L] with Serializable {
-    type Out
-    def apply(l : L): Out
-  }
+  @annotation.implicitNotFound(msg = "No field ${K} in record ${R}")
+  sealed abstract class Selector[R <: HList, K] extends DepFn1[R] with Serializable
 
   object Selector {
-    type Aux[L <: HList, K, Out0] = Selector[L, K] { type Out = Out0 }
+    type Aux[R <: HList, K, O] = Selector[R, K] { type Out = O }
+    def apply[R <: HList, K](implicit selector: Selector[R, K]): Aux[R, K, selector.Out] = selector
 
-    def apply[L <: HList, K](implicit selector: Selector[L, K]): Aux[L, K, selector.Out] = selector
-
-    implicit def mkSelector[L <: HList, K, O]: Aux[L, K, O] = macro SelectorMacros.applyImpl[L, K]
+    implicit def materialize[R <: HList, K, O]: Aux[R, K, O] =
+      macro SelectorMacros.materialize[R, K]
   }
 
-  class UnsafeSelector(i: Int) extends Selector[HList, Any] {
+  final class UnsafeSelector(i: Int) extends Selector[HList, Any] {
     type Out = Any
-    def apply(l: HList): Any = HList.unsafeGet(l, i)
+    def apply(record: HList): Any = HList.unsafeGet(record, i)
   }
 
   @macrocompat.bundle
   class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
-    def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val kTpe = kTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
+      val record = weakTypeOf[R].dealias
+      val key = weakTypeOf[K].dealias
+      if (!(record <:< hlistTpe))
+        abort(s"$record is not a record type")
 
-      findField(lTpe, kTpe) match {
+      findField(record, key) match {
         case Some((v, i)) =>
-          q"""
-            new _root_.shapeless.ops.record.UnsafeSelector($i).
-              asInstanceOf[_root_.shapeless.ops.record.Selector.Aux[$lTpe, $kTpe, $v]]
-          """
+          q"new ${typeOf[UnsafeSelector]}($i).asInstanceOf[${reify(Selector)}.Aux[$record, $key, $v]]"
         case _ =>
-          abort(s"No field $kTpe in record type $lTpe")
+          abort(s"No field $key in record type $record")
       }
     }
   }
@@ -110,42 +104,42 @@ package record {
    *
    * @author Miles Sabin
    */
-  trait Updater[L <: HList, F] extends DepFn2[L, F] with Serializable { type Out <: HList }
-
-  object Updater {
-    type Aux[L <: HList, F, Out0 <: HList] = Updater[L, F] { type Out = Out0 }
-
-    def apply[L <: HList, F](implicit updater: Updater[L, F]): Aux[L, F, updater.Out] = updater
-
-    implicit def mkUpdater[L <: HList, F, O]: Aux[L, F, O] = macro UpdaterMacros.applyImpl[L, F]
+  @annotation.implicitNotFound(msg = "No element of type ${E} in ${L}")
+  sealed abstract class Updater[L <: HList, E] extends DepFn2[L, E] with Serializable {
+    type Out <: HList
   }
 
-  class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
+  object Updater {
+    type Aux[L <: HList, E, O <: HList] = Updater[L, E] { type Out = O }
+    def apply[L <: HList, E](implicit updater: Updater[L, E]): Aux[L, E, updater.Out] = updater
+
+    implicit def meterialize[L <: HList, F, O]: Aux[L, F, O] =
+      macro UpdaterMacros.materialize[L, F]
+  }
+
+  final class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
     type Out = HList
-    def apply(l: HList, f: Any): HList = HList.unsafeUpdateAppend(l, i, f)
+    def apply(l: HList, e: Any): HList = HList.unsafeUpdateAppend(l, i, e)
   }
 
   @macrocompat.bundle
   class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
-    def applyImpl[L <: HList, F](implicit lTag: WeakTypeTag[L], fTag: WeakTypeTag[F]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val fTpe = fTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+    def materialize[L <: HList: WeakTypeTag, E: WeakTypeTag]: Tree = {
+      val list = weakTypeOf[L].dealias
+      val element = weakTypeOf[E].dealias
+      if (!(list <:< hlistTpe))
+        abort(s"$list is not a record type")
 
-      val lTpes = unpackHListTpe(lTpe)
-      val (uTpes, i) = {
-        val i0 = lTpes.indexWhere(_ =:= fTpe)
-        if(i0 < 0) (lTpes :+ fTpe, lTpes.length)
-        else (lTpes.updated(i0, fTpe), i0)
+      val (updated, i) = {
+        val elements = unpackHList(list)
+        val i = elements.indexWhere(_ =:= element)
+        if (i < 0) (elements :+ element, elements.length)
+        else (elements.updated(i, element), i)
       }
-      val uTpe = mkHListTpe(uTpes)
-      q"""
-        new _root_.shapeless.ops.record.UnsafeUpdater($i)
-          .asInstanceOf[_root_.shapeless.ops.record.Updater.Aux[$lTpe, $fTpe, $uTpe]]
-      """
+
+      q"new ${typeOf[UnsafeUpdater]}($i).asInstanceOf[${reify(Updater)}.Aux[$list, $element, ${mkHListTpe(updated)}]]"
     }
   }
 
@@ -354,60 +348,43 @@ package record {
    *
    * @author Joni Freeman
    */
-  @annotation.implicitNotFound(msg = "No field ${F} with value of type ${A} in record ${L}")
-  trait Modifier[L <: HList, F, A, B] extends DepFn2[L, A => B] with Serializable { type Out <: HList }
-
-  object Modifier {
-    def apply[L <: HList, F, A, B](implicit modifier: Modifier[L, F, A, B]): Aux[L, F, A, B, modifier.Out] = modifier
-
-    type Aux[L <: HList, F, A, B, Out0 <: HList] = Modifier[L, F, A, B] { type Out = Out0 }
-
-    implicit def mkModifier[L <: HList, K, A, B, O <: HList]: Aux[L, K, A, B, O] = macro ModifierMacros.applyImpl[L, K, A, B]
-
-    @deprecated("Retained for binary compatability", "2.3.1")
-    def hlistModify1[F, A, B, T <: HList]: Aux[FieldType[F, A] :: T, F, A, B, FieldType[F, B] :: T] =
-      new Modifier[FieldType[F, A] :: T, F, A, B] {
-        type Out = FieldType[F, B] :: T
-        def apply(l: FieldType[F, A] :: T, f: A => B): Out = field[F](f(l.head)) :: l.tail
-      }
-
-    @deprecated("Retained for binary compatability", "2.3.1")
-    def hlistModify[H, T <: HList, F, A, B]
-      (implicit mt: Modifier[T, F, A, B]): Aux[H :: T, F, A, B, H :: mt.Out] =
-        new Modifier[H :: T, F, A, B] {
-          type Out = H :: mt.Out
-          def apply(l: H :: T, f: A => B): Out = l.head :: mt(l.tail, f)
-        }
+  @annotation.implicitNotFound(msg = "No field ${K} with value of type ${A} in record ${R}")
+  sealed abstract class Modifier[R <: HList, K, A, B] extends DepFn2[R, A => B] with Serializable {
+    type Out <: HList
   }
 
-  class UnsafeModifier(i: Int) extends Modifier[HList, Any, Any, Any] {
+  object Modifier {
+    type Aux[R <: HList, K, A, B, O <: HList] = Modifier[R, K, A, B] { type Out = O }
+    def apply[R <: HList, K, A, B](implicit modifier: Modifier[R, K, A, B]): Aux[R, K, A, B, modifier.Out] = modifier
+
+    implicit def materialize[R <: HList, K, A, B, O <: HList]: Aux[R, K, A, B, O] =
+      macro ModifierMacros.materialize[R, K, A, B]
+  }
+
+  final class UnsafeModifier(i: Int) extends Modifier[HList, Any, Any, Any] {
     type Out = HList
-    def apply(l: HList, f: Any => Any): HList = HList.unsafeUpdateWith(l, i, f)
+    def apply(record: HList, f: Any => Any): HList = HList.unsafeUpdateWith(record, i, f)
   }
 
   @macrocompat.bundle
   class ModifierMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
-    def applyImpl[L <: HList, K, A, B]
-      (implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K], aTag: WeakTypeTag[A], bTag: WeakTypeTag[B]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val kTpe = kTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
-      val aTpe = aTag.tpe
-      val bTpe = bTag.tpe
+    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag, A: WeakTypeTag, B: WeakTypeTag]: Tree = {
+      val record = weakTypeOf[R].dealias
+      val key = weakTypeOf[K].dealias
+      if (!(record <:< hlistTpe))
+        abort(s"$record is not a record type")
 
-      findField(lTpe, kTpe) match {
-        case Some((v, i)) if v <:< aTpe =>
-          val (prefix, List(_, suffix @ _*)) = unpackHListTpe(lTpe).splitAt(i)
-          val outTpe = mkHListTpe(prefix ++ (FieldType(kTpe, bTpe) :: suffix.toList))
-          q"""
-            new _root_.shapeless.ops.record.UnsafeModifier($i).
-              asInstanceOf[_root_.shapeless.ops.record.Modifier.Aux[$lTpe, $kTpe, $aTpe, $bTpe, $outTpe]]
-          """
+      val a = weakTypeOf[A]
+      val b = weakTypeOf[B]
+      val fields = unpackHList(record)
+      findField(fields, key) match {
+        case Some((v, i)) if v <:< a =>
+          val out = mkHListTpe(fields.updated(i, FieldType(key, b)))
+          q"new ${typeOf[UnsafeModifier]}($i).asInstanceOf[${reify(Modifier)}.Aux[$record, $key, $a, $b, $out]]"
         case _ =>
-          abort(s"No field $kTpe in record type $lTpe")
+          abort(s"No field $key in record type $record")
       }
     }
   }
@@ -417,62 +394,42 @@ package record {
    *
    * @author Miles Sabin
    */
-  @annotation.implicitNotFound(msg = "No field ${K} in record ${L}")
-  trait Remover[L <: HList, K] extends DepFn1[L] with Serializable
-
-  trait LowPriorityRemover {
-    type Aux[L <: HList, K, Out0] = Remover[L, K] { type Out = Out0 }
-
-    @deprecated("Retained for binary compatability", "2.3.1")
-    def hlistRemove[H, T <: HList, K, V, OutT <: HList]
-      (implicit rt: Aux[T, K, (V, OutT)]): Aux[H :: T, K, (V, H :: OutT)] =
-        new Remover[H :: T, K] {
-          type Out = (V, H :: OutT)
-          def apply(l : H :: T): Out = {
-            val (v, tail) = rt(l.tail)
-            (v, l.head :: tail)
-          }
-        }
+  @annotation.implicitNotFound(msg = "No field ${K} in record ${R}")
+  sealed abstract class Remover[R <: HList, K] extends DepFn1[R] with Serializable {
+    type Out <: (Any, HList)
   }
 
-  object Remover extends LowPriorityRemover {
-    def apply[L <: HList, K](implicit remover: Remover[L, K]): Aux[L, K, remover.Out] = remover
+  object Remover {
+    type Aux[R <: HList, K, O] = Remover[R, K] { type Out = O }
+    def apply[R <: HList, K](implicit remover: Remover[R, K]): Aux[R, K, remover.Out] = remover
 
-    implicit def mkRemover[L <: HList, K, V, O <: HList]: Aux[L, K, (V, O)] = macro RemoverMacros.applyImpl[L, K]
-
-    @deprecated("Retained for binary compatability", "2.3.1")
-    def hlistRemove1[K, V, T <: HList]: Aux[FieldType[K, V] :: T, K, (V, T)] =
-      new Remover[FieldType[K, V] :: T, K] {
-        type Out = (V, T)
-        def apply(l: FieldType[K, V] :: T): Out = (l.head, l.tail)
-      }
+    implicit def materialize[R <: HList, K, V, O <: HList]: Aux[R, K, (V, O)] =
+      macro RemoverMacros.materialize[R, K]
   }
 
-  class UnsafeRemover(i: Int) extends Remover[HList, Any] {
+  final class UnsafeRemover(i: Int) extends Remover[HList, Any] {
     type Out = (Any, HList)
-    def apply(l: HList): (Any, HList) = HList.unsafeRemove(l, i)
+    def apply(record: HList): (Any, HList) = HList.unsafeRemove(record, i)
   }
 
   @macrocompat.bundle
   class RemoverMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
-    def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val kTpe = kTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
+      val record = weakTypeOf[R].dealias
+      val key = weakTypeOf[K].dealias
+      if (!(record <:< hlistTpe))
+        abort(s"$record is not a record type")
 
-      findField(lTpe, kTpe) match {
+      val fields = unpackHList(record)
+      findField(fields, key) match {
         case Some((v, i)) =>
-          val (prefix, List(_, suffix @ _*)) = unpackHListTpe(lTpe).splitAt(i)
-          val outTpe = mkHListTpe(prefix ++ suffix)
-          q"""
-            new _root_.shapeless.ops.record.UnsafeRemover($i).
-              asInstanceOf[_root_.shapeless.ops.record.Remover.Aux[$lTpe, $kTpe, ($v, $outTpe)]]
-          """
+          val (prefix, suffix) = fields.splitAt(i)
+          val out = mkHListTpe(prefix ++ suffix.tail)
+          q"new ${typeOf[UnsafeRemover]}($i).asInstanceOf[${reify(Remover)}.Aux[$record, $key, ($v, $out)]]"
         case _ =>
-          abort(s"No field $kTpe in record type $lTpe")
+          abort(s"No field $key in record type $record")
       }
     }
   }
@@ -592,29 +549,28 @@ package record {
         }
   }
 
-  trait LacksKey[L <: HList, K]
-
+  @annotation.implicitNotFound(msg = "Record ${R} contains field ${K}")
+  final class LacksKey[R <: HList, K]
   object LacksKey {
-    implicit def apply[L <: HList, K]: LacksKey[L, K] = macro LacksKeyMacros.applyImpl[L, K]
+    def apply[R <: HList, K](implicit ev: LacksKey[R, K]): LacksKey[R, K] = ev
+
+    implicit def materialize[R <: HList, K]: LacksKey[R, K] =
+      macro LacksKeyMacros.materialize[R, K]
   }
 
   @macrocompat.bundle
   class LacksKeyMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
-    def applyImpl[L <: HList, K](implicit lTag: WeakTypeTag[L], kTag: WeakTypeTag[K]): Tree = {
-      val lTpe = lTag.tpe.dealias
-      val kTpe = kTag.tpe.dealias
-      if(!(lTpe <:< hlistTpe))
-        abort(s"$lTpe is not a record type")
+    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
+      val record = weakTypeOf[R].dealias
+      val key = weakTypeOf[K].dealias
+      if (!(record <:< hlistTpe))
+        abort(s"$record is not a record type")
 
-      findField(lTpe, kTpe) match {
-        case None =>
-          q"""
-            new _root_.shapeless.ops.record.LacksKey[$lTpe, $kTpe] {}
-          """
-        case _ =>
-          abort(s"Record type $lTpe contains field $kTpe")
+      findField(record, key) match {
+        case None => q"new ${weakTypeOf[LacksKey[R, K]]}"
+        case _ => abort(s"Record type $record contains field $key")
       }
     }
   }
@@ -631,13 +587,14 @@ package record {
 
     type Aux[L <: HList, Out0 <: HList] = Keys[L] { type Out = Out0 }
 
-    implicit def hnilKeys[L <: HNil]: Aux[L, HNil] =
-      new Keys[L] {
-        type Out = HNil
-        def apply(): Out = HNil
-      }
+    implicit val hnilKeys: Aux[HNil, HNil] = new Keys[HNil] {
+      type Out = HNil
+      def apply(): Out = HNil
+    }
 
-    implicit def hlistKeys[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: Keys[T]): Aux[FieldType[K, V] :: T, K :: kt.Out] =
+    implicit def hlistKeys[K, V, T <: HList](
+      implicit wk: Witness.Aux[K], kt: Keys[T]
+    ): Aux[FieldType[K, V] :: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :: T] {
         type Out = K :: kt.Out
         def apply(): Out = wk.value :: kt()

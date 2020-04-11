@@ -658,42 +658,44 @@ package SingletonTypeTestsAux {
 
 package UnrefineTest {
   import shapeless._
+  import shapeless.labelled.{FieldType, KeyTag}
   import shapeless.ops.record._
   import shapeless.syntax.singleton._
 
   trait Foo[A] {
     type Out
-
     def to(a: A): Out
   }
 
   object Foo {
     type Aux[A, Out0] = Foo[A] { type Out = Out0 }
-    def apply[A, Out](implicit foo: Aux[A, Out]) = foo
+    def apply[A](implicit foo: Foo[A]): Aux[A, foo.Out] = foo
 
-    implicit def from[A, Out0](implicit gen: LabelledGeneric.Aux[A, Out0]) =
-      new Foo[A] {
-        type Out = Out0
-        def to(a: A) = gen.to(a)
-      }
+    implicit def from[A](
+      implicit gen: LabelledGeneric[A]
+    ): Aux[A, gen.Repr] = new Foo[A] {
+      type Out = gen.Repr
+      def to(a: A): Out = gen.to(a)
+    }
   }
 
   class Bar[A, HL <: HList](gen: Foo.Aux[A, HL]) {
-    def modify[K, V, U, Out0 <: HList](k: K, f: V => U)(implicit modifier: Modifier.Aux[HL, K, V, U, Out0]) =
-      new Bar[A, Out0](new Foo[A] {
-        type Out = Out0
-        def to(a: A): Out = modifier.apply(gen.to(a), f)
-      })
+    def modify[K, V, U](k: K, f: V => U)(
+      implicit modifier: Modifier[HL, K, V, U]
+    ): Bar[A, modifier.Out] = new Bar[A, modifier.Out](new Foo[A] {
+      type Out = modifier.Out
+      def to(a: A): Out = modifier.apply(gen.to(a), f)
+    })
 
-    def keys[Out <: HList](implicit keys: Keys.Aux[HL, Out]): Out = keys.apply()
+    def keys(implicit keys: Keys[HL]): keys.Out = keys()
   }
 
   final case class FooBar(x: String, y: Int)
 
   object Test {
-    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify(Symbol("y").narrow, (_: Int) * 2)
-    new Bar(Foo.from( LabelledGeneric[FooBar] )).keys
-    new Bar(Foo.from( LabelledGeneric[FooBar] )).modify(Symbol("y").narrow, (_: Int) * 2).keys
+    new Bar(Foo.from(LabelledGeneric[FooBar])).modify("y".narrow, (_: Int) * 2)
+    new Bar(Foo.from(LabelledGeneric[FooBar])).keys
+    new Bar(Foo.from(LabelledGeneric[FooBar])).modify("y".narrow, (_: Int) * 2).keys
   }
 }
 

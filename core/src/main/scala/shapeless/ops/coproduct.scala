@@ -506,30 +506,32 @@ object coproduct {
   /** Type class that zips an HList with a Coproduct, producing a Coproduct of tuples where each element from
     * the original coproduct is combined with the matching HList element
     */
-  trait ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] with Serializable { type Out <: Coproduct }
+  sealed abstract class ZipWithKeys[K <: HList, V <: Coproduct] extends DepFn1[V] with Serializable {
+    type Out <: Coproduct
+  }
 
   object ZipWithKeys {
     import shapeless.labelled._
 
-    def apply[K <: HList, V <: Coproduct]
-      (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
-
-    type Aux[K <: HList, V <: Coproduct, Out0 <: Coproduct] = ZipWithKeys[K, V] { type Out = Out0 }
-
-    implicit val cnilZipWithKeys: Aux[HNil, CNil, CNil] = new ZipWithKeys[HNil, CNil] {
-      type Out = CNil
-      def apply(v: CNil) = v
+    private val instance = new ZipWithKeys[HList, Coproduct] {
+      type Out = Coproduct
+      def apply(v: Coproduct): Coproduct = v
     }
 
-    implicit def cpZipWithKeys[KH, VH, KT <: HList, VT <: Coproduct] (implicit zipWithKeys: ZipWithKeys[KT, VT], wkh: Witness.Aux[KH])
-        : Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out] =
-          new ZipWithKeys[KH :: KT, VH :+: VT] {
-            type Out = FieldType[KH, VH] :+: zipWithKeys.Out
-            def apply(v: VH :+: VT): Out = v match {
-              case Inl(vh) => Inl(field[wkh.T](vh))
-              case Inr(vt) => Inr(zipWithKeys(vt))
-            }
-          }
+    def apply[K <: HList, V <: Coproduct](
+      implicit zipWithKeys: ZipWithKeys[K, V]
+    ): Aux[K, V, zipWithKeys.Out] = zipWithKeys
+
+    type Aux[K <: HList, V <: Coproduct, Out0 <: Coproduct] =
+      ZipWithKeys[K, V] { type Out = Out0 }
+
+    implicit def cnilZipWithKeys: Aux[HNil, CNil, CNil] =
+      instance.asInstanceOf[Aux[HNil, CNil, CNil]]
+
+    implicit def cconsZipWithKeys[KH, VH, KT <: HList, VT <: Coproduct](
+      implicit wkh: Witness.Aux[KH], zipWithKeys: ZipWithKeys[KT, VT]
+    ): Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out] =
+      instance.asInstanceOf[Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out]]
   }
 
   /**

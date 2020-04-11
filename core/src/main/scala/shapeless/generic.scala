@@ -16,8 +16,6 @@
 
 package shapeless
 
-import shapeless.ops.{coproduct, hlist}
-
 import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
 import scala.reflect.macros.{blackbox, whitebox}
@@ -219,39 +217,20 @@ object LabelledGeneric {
     * @tparam T the type
     * @tparam Repr0 the labelled generic representation of the type
     */
-  type Aux[T, Repr0] = LabelledGeneric[T]{ type Repr = Repr0 }
+  type Aux[T, Repr0] = LabelledGeneric[T] { type Repr = Repr0 }
 
   /** Provides an instance of LabelledGeneric for the given T. As with [[shapeless.Generic]],
     * use this method or {{{the[LabelledGeneric[T]]}}} to obtain an instance for suitable given T. */
   def apply[T](implicit lgen: LabelledGeneric[T]): Aux[T, lgen.Repr] = lgen
 
-  /** Handles the Product case (fields in a case class, for example) */
-  implicit def materializeProduct[T, K <: HList, V <: HList, R <: HList]
-    (implicit
-      lab: DefaultSymbolicLabelling.Aux[T, K],
-      gen: Generic.Aux[T, V],
-      zip: hlist.ZipWithKeys.Aux[K, V, R],
-      ev: R <:< V
-    ): Aux[T, R] =
-    new LabelledGeneric[T] {
-      type Repr = R
-      def to(t: T): Repr = zip(gen.to(t))
-      def from(r: Repr): T = gen.from(r)
-    }
+  def unsafeInstance[T, R](gen: Generic[T]): Aux[T, R] = new LabelledGeneric[T] {
+    type Repr = R
+    def to(t: T): Repr = gen.to(t).asInstanceOf[R]
+    def from(r: Repr): T = gen.from(r.asInstanceOf[gen.Repr])
+  }
 
-  /** Handles the Coproduct case (specifying subclasses derive from a sealed trait) */
-  implicit def materializeCoproduct[T, K <: HList, V <: Coproduct, R <: Coproduct]
-    (implicit
-      lab: DefaultSymbolicLabelling.Aux[T, K],
-      gen: Generic.Aux[T, V],
-      zip: coproduct.ZipWithKeys.Aux[K, V, R],
-      ev: R <:< V
-    ): Aux[T, R] =
-    new LabelledGeneric[T] {
-      type Repr = R
-      def to(t: T): Repr = zip(gen.to(t))
-      def from(r: Repr): T = gen.from(r)
-    }
+  implicit def materialize[T, R]: Aux[T, R] =
+    macro LabelledMacros.mkLabelledGeneric[T, R]
 }
 
 class nonGeneric extends StaticAnnotation
@@ -300,7 +279,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   import c.universe._
 
-  def abort(msg: String) =
+  def abort(msg: String): Nothing =
     c.abort(c.enclosingPosition, msg)
 
   def isReprType(tpe: Type): Boolean =
@@ -482,65 +461,72 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       abort(s"$tpe is not a case class, case class-like, a sealed trait or Unit")
   }
 
-  def nameAsString(name: Name): String = name.decodedName.toString.trim
+  def nameAsString(name: Name): String =
+    name.decodedName.toString.trim
 
-  def nameAsValue(name: Name): Constant = Constant(nameAsString(name))
+  def nameAsValue(name: Name): Constant =
+    Constant(nameAsString(name))
 
-  def nameOf(tpe: Type) = tpe.typeSymbol.name
+  def nameOf(tpe: Type): Name =
+    tpe.typeSymbol.name
 
   def mkHListValue(elems: List[Tree]): Tree =
     elems.foldRight(q"_root_.shapeless.HNil": Tree) {
       case (elem, acc) => q"_root_.shapeless.::($elem, $acc)"
     }
 
-  def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
-    items.foldRight(nil) {
-      case (tpe, acc) => appliedType(cons, List(devarargify(tpe), acc))
+  def mkCompoundTpe(nil: Type, cons: Type, items: Seq[Type]): Type =
+    items.foldRight(nil) { (tpe, acc) =>
+      appliedType(cons, List(devarargify(tpe), acc))
     }
 
-  def mkHListTpe(items: List[Type]): Type =
+  def mkHListTpe(items: Seq[Type]): Type =
     mkCompoundTpe(hnilTpe, hconsTpe, items)
 
-  def mkCoproductTpe(items: List[Type]): Type =
+  def mkCoproductTpe(items: Seq[Type]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, items)
 
-  def unpackHListTpe(tpe: Type): List[Type] = {
-    @tailrec
-    def unfold(u: Type, acc: List[Type]): List[Type] = {
-      val HNilTpe = hnilTpe
-      val HConsPre = prefix(hconsTpe)
-      val HConsSym = hconsTpe.typeSymbol
-      if(u <:< HNilTpe) acc
-      else (u baseType HConsSym) match {
-        case TypeRef(pre, _, List(hd, tl)) if pre =:= HConsPre => unfold(tl, hd :: acc)
-        case _ => abort(s"$tpe is not an HList type")
-      }
-    }
+  def unpackHList(tpe: Type): Vector[Type] =
+    unpackReprType(tpe, hnilTpe, hconsTpe)
 
-    unfold(tpe, List()).reverse
+  def unpackCoproduct(tpe: Type): Vector[Type] =
+    unpackReprType(tpe, cnilTpe, cconsTpe)
+
+  def unpackReprType(tpe: Type, nil: Type, cons: Type): Vector[Type] = {
+    val consSym = cons.typeSymbol
+    @tailrec def unpack(tpe: Type, acc: Vector[Type]): Vector[Type] =
+      if (tpe <:< nil) acc else tpe.baseType(consSym) match {
+        case TypeRef(_, _, List(head, tail)) => unpack(tail, acc :+ head)
+        case _ => abort(s"$tpe is not an HList or Coproduct type")
+      }
+
+    unpack(tpe, Vector.empty)
   }
 
   object FieldType {
     import internal._
 
-    def apply(kTpe: Type, vTpe: Type): Type =
-      refinedType(List(vTpe, typeRef(prefix(keyTagTpe), keyTagTpe.typeSymbol, List(kTpe, vTpe))), NoSymbol)
+    private val KeyTagSym = keyTagTpe.typeSymbol
 
-    def unapply(fTpe: Type): Option[(Type, Type)] = {
-      val KeyTagPre = prefix(keyTagTpe)
-      val KeyTagSym = keyTagTpe.typeSymbol
-      fTpe.dealias match {
-        case RefinedType(v0 :+ TypeRef(pre, KeyTagSym, List(k, v1)), scope)
-          if pre =:= KeyTagPre && refinedType(v0, NoSymbol, scope, NoPosition) =:= v1 =>
-            Some((k, v1))
-        case _ => None
-      }
+    def apply(key: Type, value: Type): Type =
+      appliedType(fieldTypeTpe, key, value)
+
+    def unapply(field: Type): Option[(Type, Type)] = field.dealias match {
+      case RefinedType(List(value, TypeRef(_, KeyTagSym, List(key, _))), scope)
+        if scope.isEmpty => Some(key -> value)
+      case RefinedType(parents :+ TypeRef(_, KeyTagSym, List(key, value)), scope)
+        if value =:= refinedType(parents, scope) => Some(key -> value)
+      case _ =>
+        None
     }
   }
 
-  def findField(lTpe: Type, kTpe: Type): Option[(Type, Int)] =
-    unpackHListTpe(lTpe).zipWithIndex.collectFirst {
-      case (FieldType(k, v), i) if k =:= kTpe => (v, i)
+  def findField(record: Type, key: Type): Option[(Type, Int)] =
+    findField(unpackHList(record), key)
+
+  def findField(fields: Seq[Type], key: Type): Option[(Type, Int)] =
+    fields.iterator.zipWithIndex.collectFirst {
+      case (FieldType(k, v), i) if k =:= key => (v, i)
     }
 
   def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
@@ -926,7 +912,9 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   private val generic = objectRef[Generic.type]
 
-  def materialize[T: WeakTypeTag, R: WeakTypeTag]: Tree = {
+  def materialize[T: WeakTypeTag, R]: Tree = mkGeneric[T]
+
+  def mkGeneric[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
     if (isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")

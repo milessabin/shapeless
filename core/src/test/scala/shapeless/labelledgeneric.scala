@@ -57,11 +57,11 @@ object LabelledGenericTestsAux {
     (Symbol("authors") ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
     HNil
 
-  type BookRec = Record.`'author -> String, 'title -> String, 'id -> Int, 'price -> Double`.T
+  type BookRec = Record.`"author" -> String, "title" -> String, "id" -> Int, "price" -> Double`.T
   type BookKeys = Keys[BookRec]
   type BookValues = Values[BookRec]
 
-  type BookWithMultipleAuthorsRec = Record.`'title -> String, 'id -> Int, 'authors -> Seq[String]`.T
+  type BookWithMultipleAuthorsRec = Record.`"title" -> String, "id" -> Int, "authors" -> Seq[String]`.T
 
 
   sealed trait Tree
@@ -106,54 +106,35 @@ object ScalazTaggedAux {
   }
 
   object TC extends TCLowPriority {
-    implicit val intTC: TC[Int] =
-      new TC[Int] {
-        def apply() = "Int"
-      }
+    implicit val intTC: TC[Int] = instance("Int")
+    implicit val booleanTC: TC[Boolean] = instance("Boolean")
+    implicit val taggedIntTC: TC[Int @@ CustomTag] = instance("TaggedInt")
+    implicit val hnilTC: TC[HNil] = instance("HNil")
 
-    implicit val booleanTC: TC[Boolean] =
-      new TC[Boolean] {
-        def apply() = "Boolean"
-      }
+    implicit def hconsTC[K <: String, H, T <: HList](
+      implicit key: Witness.Aux[K], headTC: Lazy[TC[H]], tailTC: TC[T]
+    ): TC[FieldType[K, H] :: T] = instance {
+      s"${key.value}: ${headTC.value()} :: ${tailTC()}"
+    }
 
-    implicit val taggedIntTC: TC[Int @@ CustomTag] =
-      new TC[Int @@ CustomTag] {
-        def apply() = s"TaggedInt"
-      }
-
-    implicit val hnilTC: TC[HNil] =
-      new TC[HNil] {
-        def apply() = "HNil"
-      }
-
-    implicit def hconsTC[K <: Symbol, H, T <: HList](implicit
-      key: Witness.Aux[K],
-      headTC: Lazy[TC[H]],
-      tailTC: TC[T]
-    ): TC[FieldType[K, H] :: T] =
-      new TC[FieldType[K, H] :: T] {
-        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC()}"
-      }
-
-    implicit def projectTC[F, G](implicit
-      lgen: LabelledGeneric.Aux[F, G],
-      tc: Lazy[TC[G]]
-    ): TC[F] =
-      new TC[F] {
-        def apply() = s"Proj(${tc.value()})"
-      }
+    implicit def projectTC[F, G](
+      implicit lgen: LabelledGeneric.Aux[F, G], tc: Lazy[TC[G]]
+    ): TC[F] = instance {
+      s"Proj(${tc.value()})"
+    }
   }
 
   abstract class TCLowPriority {
+    def instance[T](display: String): TC[T] = new TC[T] {
+      def apply(): String = display
+    }
+
     // FIXME: Workaround #309
-    implicit def hconsTCTagged[K <: Symbol, H, HT, T <: HList](implicit
-      key: Witness.Aux[K],
-      headTC: Lazy[TC[H @@ HT]],
-      tailTC: TC[T]
-    ): TC[FieldType[K, H @@ HT] :: T] =
-      new TC[FieldType[K, H @@ HT] :: T] {
-        def apply() = s"${key.value.name}: ${headTC.value()} :: ${tailTC()}"
-      }
+    implicit def hconsTCTagged[K <: String, H, HT, T <: HList](
+      implicit key: Witness.Aux[K], headTC: Lazy[TC[H @@ HT]], tailTC: TC[T]
+    ): TC[FieldType[K, H @@ HT] :: T] = instance {
+      s"${key.value}: ${headTC.value()} :: ${tailTC()}"
+    }
   }
 }
 
@@ -173,7 +154,7 @@ class LabelledGenericTests {
     assertEquals(tapl, b1)
 
     val keys = b0.keys
-    assertEquals(Symbol("author").narrow :: Symbol("title").narrow :: Symbol("id").narrow :: Symbol("price").narrow :: HNil, keys)
+    assertEquals("author".narrow :: "title".narrow :: "id".narrow :: "price".narrow :: HNil, keys)
 
     val values = b0.values
     assertEquals("Benjamin Pierce" :: "Types and Programming Languages" :: 262162091 :: 44.11 :: HNil, values)
@@ -185,11 +166,11 @@ class LabelledGenericTests {
     val gen2 = LabelledGeneric[Private2]
     val gen3 = LabelledGeneric[Private3]
     val gen4 = LabelledGeneric[Private4]
-    val ab = Symbol("a").narrow :: Symbol("b").narrow :: HNil
+    val ab = "a".narrow :: "b".narrow :: HNil
 
     val p1 = Private1(1)
     val r1 = gen1.to(p1)
-    assertTypedEquals(Symbol("a").narrow :: HNil, r1.keys)
+    assertTypedEquals("a".narrow :: HNil, r1.keys)
     assertTypedEquals(1 :: HNil, r1.values)
     assertEquals(p1, gen1.from(r1))
 
@@ -221,7 +202,7 @@ class LabelledGenericTests {
     assertEquals(dpRecord, b0)
 
     val keys = b0.keys
-    assertEquals(Symbol("title").narrow :: Symbol("id").narrow :: Symbol("authors").narrow :: HNil, keys)
+    assertEquals("title".narrow :: "id".narrow :: "authors".narrow :: HNil, keys)
 
     val values = b0.values
     assertEquals(
@@ -236,19 +217,19 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val e1 = b0.get(Symbol("author"))
+    val e1 = b0.get("author")
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
 
-    val e2 = b0.get(Symbol("title"))
+    val e2 = b0.get("title")
     typed[String](e2)
     assertEquals( "Types and Programming Languages", e2)
 
-    val e3 = b0.get(Symbol("id"))
+    val e3 = b0.get("id")
     typed[Int](e3)
     assertEquals(262162091, e3)
 
-    val e4 = b0.get(Symbol("price"))
+    val e4 = b0.get("price")
     typed[Double](e4)
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
@@ -259,19 +240,19 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val e1 = b0(Symbol("author"))
+    val e1 = b0("author")
     typed[String](e1)
     assertEquals("Benjamin Pierce", e1)
 
-    val e2 = b0(Symbol("title"))
+    val e2 = b0("title")
     typed[String](e2)
     assertEquals( "Types and Programming Languages", e2)
 
-    val e3 = b0(Symbol("id"))
+    val e3 = b0("id")
     typed[Int](e3)
     assertEquals(262162091, e3)
 
-    val e4 = b0(Symbol("price"))
+    val e4 = b0("price")
     typed[Double](e4)
     assertEquals(44.11, e4, Double.MinPositiveValue)
   }
@@ -305,8 +286,8 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val b1 = b0.updated(Symbol("title"), "Types and Programming Languages (2nd Ed.)")
-    val b2 = b1.updated(Symbol("price"), 46.11)
+    val b1 = b0.updated("title", "Types and Programming Languages (2nd Ed.)")
+    val b2 = b1.updated("price", 46.11)
 
     val updated = gen.from(b2)
     assertEquals(tapl2, updated)
@@ -318,8 +299,8 @@ class LabelledGenericTests {
 
     val b0 = gen.to(tapl)
 
-    val b1 = b0.updateWith(Symbol("title"))(_+" (2nd Ed.)")
-    val b2 = b1.updateWith(Symbol("price"))(_+2.0)
+    val b1 = b0.updateWith("title")(_+" (2nd Ed.)")
+    val b2 = b1.updateWith("price")(_+2.0)
 
     val updated = gen.from(b2)
     assertEquals(tapl2, updated)
@@ -331,7 +312,7 @@ class LabelledGenericTests {
     val gen2 = LabelledGeneric[ExtendedBook]
 
     val b0 = gen.to(tapl)
-    val b1 = b0 + (Symbol("inPrint") ->> true)
+    val b1 = b0 + ("inPrint" ->> true)
 
     val b2 = gen2.from(b1)
     typed[ExtendedBook](b2)
@@ -340,7 +321,7 @@ class LabelledGenericTests {
 
   @Test
   def testCoproductBasics: Unit = {
-    type TreeUnion = Union.`'Leaf -> Leaf, 'Node -> Node`.T
+    type TreeUnion = Union.`"Leaf" -> Leaf, "Node" -> Node`.T
 
     val gen = LabelledGeneric[Tree]
 
@@ -355,35 +336,35 @@ class LabelledGenericTests {
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
 
-    type NonCCARec = Record.`'i -> Int, 's -> String`.T
-    type NonCCBRec = Record.`'b -> Boolean, 'd -> Double`.T
-    type AbsUnion = Union.`'NonCCA -> NonCCA, 'NonCCB -> NonCCB`.T
+    type NonCCARec = Record.`"i" -> Int, "s" -> String`.T
+    type NonCCBRec = Record.`"b" -> Boolean, "d" -> Double`.T
+    type AbsUnion = Union.`"NonCCA" -> NonCCA, "NonCCB" -> NonCCB`.T
 
     val genA = LabelledGeneric[NonCCA]
     val genB = LabelledGeneric[NonCCB]
     val genAbs = LabelledGeneric[AbstractNonCC]
 
     val rA = genA.to(ncca)
-    assertTypedEquals[NonCCARec](Symbol("i") ->> 23 :: Symbol("s") ->> "foo" :: HNil, rA)
+    assertTypedEquals[NonCCARec]("i" ->> 23 :: "s" ->> "foo" :: HNil, rA)
 
     val rB = genB.to(nccb)
-    assertTypedEquals[NonCCBRec](Symbol("b") ->> true :: Symbol("d") ->> 2.0 :: HNil, rB)
+    assertTypedEquals[NonCCBRec]("b" ->> true :: "d" ->> 2.0 :: HNil, rB)
 
     val rAbs = genAbs.to(ancc)
-    val injA = Coproduct[AbsUnion](Symbol("NonCCA") ->> ncca)
+    val injA = Coproduct[AbsUnion]("NonCCA" ->> ncca)
     assertTypedEquals[AbsUnion](injA, rAbs)
 
-    val fA = genA.from(Symbol("i") ->> 13 :: Symbol("s") ->> "bar" :: HNil)
+    val fA = genA.from("i" ->> 13 :: "s" ->> "bar" :: HNil)
     typed[NonCCA](fA)
     assertEquals(13, fA.i)
     assertEquals("bar", fA.s)
 
-    val fB = genB.from(Symbol("b") ->> false :: Symbol("d") ->> 3.0 :: HNil)
+    val fB = genB.from("b" ->> false :: "d" ->> 3.0 :: HNil)
     typed[NonCCB](fB)
     assertEquals(false, fB.b)
     assertEquals(3.0, fB.d, Double.MinPositiveValue)
 
-    val injB = Coproduct[AbsUnion](Symbol("NonCCB") ->> nccb)
+    val injB = Coproduct[AbsUnion]("NonCCB" ->> nccb)
     val fAbs = genAbs.from(injB)
     typed[AbstractNonCC](fAbs)
     assertTrue(fAbs.isInstanceOf[NonCCB])
@@ -395,15 +376,15 @@ class LabelledGenericTests {
   def testNonCCWithCompanion: Unit = {
     val nccc = NonCCWithCompanion(23, "foo")
 
-    val rec = (Symbol("i") ->> 23) :: (Symbol("s") ->> "foo") :: HNil
-    type NonCCRec = Record.`'i -> Int, 's -> String`.T
+    val rec = ("i" ->> 23) :: ("s" ->> "foo") :: HNil
+    type NonCCRec = Record.`"i" -> Int, "s" -> String`.T
 
     val gen = LabelledGeneric[NonCCWithCompanion]
 
     val r = gen.to(nccc)
     assertTypedEquals[NonCCRec](rec, r)
 
-    val f = gen.from(Symbol("i") ->> 13 :: Symbol("s") ->> "bar" :: HNil)
+    val f = gen.from("i" ->> 13 :: "s" ->> "bar" :: HNil)
     typed[NonCCWithCompanion](f)
     assertEquals(13, f.i)
     assertEquals("bar", f.s)
@@ -414,15 +395,15 @@ class LabelledGenericTests {
     lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
-    val rec = Symbol("prev") ->> a :: Symbol("next") ->> c :: HNil
-    type LazyRec = Record.`'prev -> NonCCLazy, 'next -> NonCCLazy`.T
+    val rec = "prev" ->> a :: "next" ->> c :: HNil
+    type LazyRec = Record.`"prev" -> NonCCLazy, "next" -> NonCCLazy`.T
 
     val gen = LabelledGeneric[NonCCLazy]
 
     val rB = gen.to(b)
     assertTypedEquals[LazyRec](rec, rB)
 
-    val fD = gen.from(Symbol("prev") ->> a :: Symbol("next") ->> c :: HNil)
+    val fD = gen.from("prev" ->> a :: "next" ->> c :: HNil)
     typed[NonCCLazy](fD)
     assertEquals(a, fD.prev)
     assertEquals(c, fD.next)
@@ -452,12 +433,12 @@ class LabelledGenericTests {
 
     implicitly[TC[DummyTagged]]
 
-    type R = Record.`'i -> Int @@ CustomTag`.T
+    type R = Record.`"i" -> Int @@ CustomTag`.T
     val lgen = LabelledGeneric[Dummy]
     implicitly[lgen.Repr =:= R]
     implicitly[TC[R]]
 
-    type RT = Record.`'b -> Boolean, 'i -> Int @@ CustomTag`.T
+    type RT = Record.`"b" -> Boolean, "i" -> Int @@ CustomTag`.T
     val lgent = LabelledGeneric[DummyTagged]
     implicitly[lgent.Repr =:= RT]
     implicitly[TC[RT]]

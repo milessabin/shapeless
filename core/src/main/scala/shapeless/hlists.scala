@@ -113,7 +113,7 @@ object HList extends Dynamic {
    * type TwoTrueStr = HList.`2, true, "str"`.T
    * }}}
    */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistType
 
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =

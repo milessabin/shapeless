@@ -3154,7 +3154,7 @@ class HListTests {
     NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
-    val ib = selectAll(Symbol("i"), Symbol("b")).from(quux)
+    val ib = selectAll("i", "b").from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
   }

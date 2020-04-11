@@ -69,7 +69,7 @@ object Default {
    *
    *   val default = Default.AsRecord[CC]
    *
-   *   // default.Out is  Record.`'s -> String`.T
+   *   // default.Out is  Record.`"s" -> String`.T
    *   // default() returns Record(s = "b")
    * }}}
    *
@@ -93,41 +93,38 @@ object Default {
 
       type Aux[L <: HList, Labels <: HList, Out0 <: HList] = Helper[L, Labels] { type Out = Out0 }
 
-      implicit def hnilHelper: Aux[HNil, HNil, HNil] =
+      implicit val hnilHelper: Aux[HNil, HNil, HNil] =
         new Helper[HNil, HNil] {
           type Out = HNil
           def apply(l: HNil) = HNil
         }
 
-      implicit def hconsSomeHelper[K <: Symbol, H, T <: HList, LabT <: HList, OutT <: HList]
-       (implicit
-         tailHelper: Aux[T, LabT, OutT]
-       ): Aux[Some[H] :: T, K :: LabT, FieldType[K, H] :: OutT] =
+      implicit def hconsSomeHelper[K, H, T <: HList, LabT <: HList](
+        implicit tailHelper: Helper[T, LabT]
+      ): Aux[Some[H] :: T, K :: LabT, FieldType[K, H] :: tailHelper.Out] =
         new Helper[Some[H] :: T, K :: LabT] {
-          type Out = FieldType[K, H] :: OutT
-          def apply(l: Some[H] :: T) = field[K](l.head.get) :: tailHelper(l.tail)
+          type Out = FieldType[K, H] :: tailHelper.Out
+          def apply(l: Some[H] :: T): Out = field[K](l.head.get) :: tailHelper(l.tail)
         }
 
-      implicit def hconsNoneHelper[K <: Symbol, T <: HList, LabT <: HList, OutT <: HList]
-       (implicit
-         tailHelper: Aux[T, LabT, OutT]
-       ): Aux[None.type :: T, K :: LabT, OutT] =
+      implicit def hconsNoneHelper[K, T <: HList, LabT <: HList](
+        implicit tailHelper: Helper[T, LabT]
+      ): Aux[None.type :: T, K :: LabT, tailHelper.Out] =
         new Helper[None.type :: T, K :: LabT] {
-          type Out = OutT
-          def apply(l: None.type :: T) = tailHelper(l.tail)
+          type Out = tailHelper.Out
+          def apply(l: None.type :: T): Out = tailHelper(l.tail)
         }
     }
 
-    implicit def asRecord[T, Labels <: HList, Options <: HList, Rec <: HList]
-     (implicit
-       default: Default.Aux[T, Options],
-       labelling: DefaultSymbolicLabelling.Aux[T, Labels],
-       helper: Helper.Aux[Options, Labels, Rec]
-     ): Aux[T, Rec] =
-      new AsRecord[T] {
-        type Out = Rec
-        def apply() = helper(default())
-      }
+    implicit def asRecord[T, Labels <: HList, Options <: HList](
+      implicit
+      default: Default.Aux[T, Options],
+      labelling: Labelling.Aux[T, Labels],
+      helper: Helper[Options, Labels]
+    ): Aux[T, helper.Out] = new AsRecord[T] {
+      type Out = helper.Out
+      def apply(): Out = helper(default())
+    }
   }
 
 
