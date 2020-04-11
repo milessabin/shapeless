@@ -58,7 +58,7 @@ object record {
   object Record extends Dynamic {
     def applyDynamic(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordEmptyImpl
     def applyDynamicNamed(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordNamedImpl
-    def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.recordTypeImpl
+    def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.recordType
   }
 }
 

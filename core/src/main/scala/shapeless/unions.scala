@@ -52,7 +52,7 @@ object union {
    */
   object Union extends Dynamic {
     def applyDynamicNamed[U <: Coproduct](method: String)(elems: Any*): U = macro UnionMacros.mkUnionNamedImpl[U]
-    def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.unionTypeImpl
+    def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.unionType
   }
 }
 

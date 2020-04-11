@@ -249,7 +249,9 @@ package recursionschemes {
     trait RecCoproduct[T, U] extends Rec[T, U] { type F[_] <: Coproduct }
 
     object Rec extends Rec1 {
-      implicit def reflexive[T] = new Rec[T, T] {
+      implicit def reflexive[T]: Rec[T, T] {
+        type F[x] = x
+      } = new Rec[T, T] {
         type F[x] = x
         def tie(t: T): T = t
         def untie(t: T): T = t
@@ -258,50 +260,56 @@ package recursionschemes {
 
       implicit def traverse[H[_], T, U](
         implicit H: Traverse[H], U: Rec[T, U]
-      ) = new Rec[T, H[U]] {
+      ): Rec[T, H[U]] {
+        type F[x] = H[U.F[x]]
+      } = new Rec[T, H[U]] {
         type F[x] = H[U.F[x]]
         def tie(ft: F[T]): H[U] = H.map(ft)(U.tie)
-        def untie(hu: H[U]): F[T] = H.map(hu)(U.untie(_))
-        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[F[B]] = H.traverse(fa)(U.traverse(_)(f))
+        def untie(hu: H[U]): F[T] = H.map(hu)(u => U.untie(u))
+        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
+          H.traverse(fa)(U.traverse(_)(f))
       }
     }
 
     trait Rec1 extends Rec2 {
       implicit def fieldType[T, K, V](
         implicit V: Rec[T, V]
-      ) = new Rec[T, FieldType[K, V]] {
+      ): Rec[T, FieldType[K, V]] {
+        type F[x] = FieldType[K, V.F[x]]
+      } = new Rec[T, FieldType[K, V]] {
         type F[x] = FieldType[K, V.F[x]]
         val key = field[K]
         def tie(ft: F[T]): FieldType[K, V] = key[V](V.tie(ft: V.F[T]))
         def untie(kv: FieldType[K, V]): F[T] = key[V.F[T]](V.untie(kv))
-        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[F[B]] = G.map(V.traverse(fa: V.F[A])(f))(key[V.F[B]](_))
+        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
+          G.map(V.traverse(fa: V.F[A])(f))(a => key[V.F[B]](a))
       }
 
-      implicit def hnil[T] = new RecHList[T, HNil] {
+      implicit def hnil[T]: RecHList[T, HNil] {
+        type F[x] = HNil
+      } = new RecHList[T, HNil] {
         type F[x] = HNil
         def tie(nil: HNil): HNil = nil
         def untie(nil: HNil): HNil = nil
-        def traverse[G[_], A, B](nil: HNil)(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[HNil] = G.pure(nil)
+        def traverse[G[_], A, B](nil: HNil)(f: A => G[B])(implicit G: Applicative[G]): G[HNil] =
+          G.pure(nil)
       }
 
-      implicit def cnil[T] = new RecCoproduct[T, CNil] {
+      implicit def cnil[T]: RecCoproduct[T, CNil] {
+        type F[x] = CNil
+      } = new RecCoproduct[T, CNil] {
         type F[x] = CNil
         def tie(nil: CNil): CNil = nil
         def untie(nil: CNil): CNil = nil
-        def traverse[G[_], A, B](nil: CNil)(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[CNil] = G.pure(nil)
+        def traverse[G[_], A, B](nil: CNil)(f: A => G[B])(implicit G: Applicative[G]): G[CNil] =
+          G.pure(nil)
       }
 
       implicit def hcons[U, H, T <: HList](
         implicit H: Strict[Rec[U, H]], T: RecHList[U, T]
-      ) = new RecHList[U, H :: T] {
+      ): RecHList[U, H :: T] {
+        type F[x] = H.value.F[x] :: T.F[x]
+      } = new RecHList[U, H :: T] {
         type F[x] = H.value.F[x] :: T.F[x]
         def tie(fu: F[U]): H :: T = H.value.tie(fu.head) :: T.tie(fu.tail)
         def untie(l: H :: T): F[U] = H.value.untie(l.head) :: T.untie(l.tail)
@@ -311,7 +319,9 @@ package recursionschemes {
 
       implicit def ccons[T, L, R <: Coproduct](
         implicit L: Strict[Rec[T, L]], R: RecCoproduct[T, R]
-      ) = new RecCoproduct[T, L :+: R] {
+      ): RecCoproduct[T, L :+: R] {
+        type F[t] = L.value.F[t] :+: R.F[t]
+      } = new RecCoproduct[T, L :+: R] {
         type F[t] = L.value.F[t] :+: R.F[t]
 
         def tie(ft: F[T]): L :+: R = ft match {
@@ -334,36 +344,39 @@ package recursionschemes {
 
       implicit def generic[T, U, R](
         implicit gen: LabelledGeneric.Aux[U, R], R: Rec[T, R]
-      ) = new Rec[T, U] {
+      ): Rec[T, U] {
+        type F[x] = R.F[x]
+      } = new Rec[T, U] {
         type F[x] = R.F[x]
         def tie(ft: F[T]): U = gen.from(R.tie(ft))
         def untie(u: U): F[T] = R.untie(gen.to(u))
-        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[F[B]] = R.traverse(fa)(f)
+        def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
+          R.traverse(fa)(f)
       }
     }
 
     trait Rec2 {
-      implicit def const[T, U] = new Rec[T, U] {
+      implicit def const[T, U]: Rec[T, U] {
+        type F[x] = U
+      } = new Rec[T, U] {
         type F[x] = U
         def tie(u: U): U = u
         def untie(u: U): U = u
-        def traverse[G[_], A, B](u: U)(f: A => G[B])(
-          implicit G: Applicative[G]
-        ): G[U] = G.pure(u)
+        def traverse[G[_], A, B](u: U)(f: A => G[B])(implicit G: Applicative[G]): G[U] =
+          G.pure(u)
       }
     }
 
     implicit def morph[T, R](
       implicit gen: LabelledGeneric.Aux[T, R], R: Rec[T, R]
-    ) = new Morph[T] {
+    ): Morph[T] {
+      type F[x] = R.F[x]
+    } = new Morph[T] {
       type F[x] = R.F[x]
       def tie(ft: F[T]): T = gen.from(R.tie(ft))
       def untie(t: T): F[T] = R.untie(gen.to(t))
-      def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(
-        implicit G: Applicative[G]
-      ): G[F[B]] = R.traverse(fa)(f)
+      def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
+        R.traverse(fa)(f)
     }
   }
 }
