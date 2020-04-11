@@ -66,7 +66,6 @@ class CachedMacrosState {
   var cache = List.empty[(Any, Any)]
 }
 
-@macrocompat.bundle
 class CachedMacros(override val c: whitebox.Context) extends LazyMacros(c) with OpenImplicitMacros {
   import c.universe._
   private val state = MacroState.getOrElseUpdate[CachedMacrosState](c.universe, new CachedMacrosState)

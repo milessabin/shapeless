@@ -29,7 +29,6 @@ package object test {
   def showType[T](t: => T): String = macro TestMacros.showType[T]
 }
 
-@macrocompat.bundle
 class TestMacros(val c: blackbox.Context) {
   import c.universe._
 
