@@ -111,41 +111,34 @@ trait FromRecordArgs extends Dynamic {
 }
 
 @macrocompat.bundle
-class RecordMacros(val c: whitebox.Context) {
+class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import internal.constantType
-  import labelled.FieldType
 
   val hconsValueTree: Tree = reify(::).tree
   val hnilValueTree: Tree = reify(HNil: HNil).tree
-  val fieldTypeTpe: Type = typeOf[FieldType[_, _]].typeConstructor
 
   def mkRecordEmptyImpl(method: Tree)(rec: Tree*): Tree = {
-    if (rec.nonEmpty)
-      c.abort(c.enclosingPosition, "this method must be called with named arguments")
-
+    if (rec.nonEmpty) abort("this method must be called with named arguments")
     hnilValueTree
   }
 
   def mkRecordNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val q"${methodString: String}" = method
-    if (methodString != "apply")
-      c.abort(c.enclosingPosition, s"this method must be called as 'apply' not '$methodString'")
-
+    if (methodString != "apply") abort(s"this method must be called as 'apply' not '$methodString'")
     mkRecordImpl(rec: _*)
   }
 
-  def forwardImpl(method: Tree)(): Tree = forwardNamedImpl(method)()
+  def forwardImpl(method: Tree)(): Tree =
+    forwardNamedImpl(method)()
 
   def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
-
     val q"${methodString: String}" = method
     val methodName = TermName(methodString + "Record")
-
     if (lhsTpe.member(methodName) == NoSymbol)
-      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+      abort(s"missing method '$methodName'")
 
     val recTree = mkRecordImpl(rec: _*)
     q"$lhs.$methodName($recTree)"
@@ -154,45 +147,39 @@ class RecordMacros(val c: whitebox.Context) {
   def forwardFromRecordImpl[L <: HList](method: Tree)(rec: Expr[L]): Tree = {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
-
     val q"${methodString: String}" = method
-
     if (!methodString.matches(".*Record$"))
-      c.abort(c.enclosingPosition, s"missing method '$methodString'")
+      abort(s"missing method '$methodString'")
 
     val methodName = TermName(methodString.replaceAll("Record$", ""))
-
     if (!lhsTpe.member(methodName).isMethod)
-      c.abort(c.enclosingPosition, s"missing method '$methodName'")
+      abort(s"missing method '$methodName'")
 
     val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, rec)
     q"$lhs.$methodName(...$params)"
   }
 
-  def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
-    appliedType(fieldTypeTpe, List(keyTpe, valueTpe.widen))
-
   def mkRecordImpl(rec: Tree*): Tree = {
-    def mkElem(keyTpe: Type, value: Tree): Tree =
-      q"$value.asInstanceOf[${mkFieldTpe(keyTpe, value.tpe)}]"
+    def mkElem(key: Type, value: Tree): Tree =
+      q"$value.asInstanceOf[${FieldType(key, value.tpe.widen)}]"
 
     def promoteElem(elem: Tree): Tree = elem match {
       case q"$_(${Literal(k)}, $v)" => mkElem(constantType(k), v)
-      case _ => c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
+      case _ => abort(s"$elem has the wrong shape for a record field")
     }
 
-    rec.foldRight(hnilValueTree) { case (elem, acc) =>
+    rec.foldRight(hnilValueTree) { (elem, acc) =>
       q"$hconsValueTree(${promoteElem(elem)}, $acc)"
     }
   }
 
   def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[List[Tree]] = {
     val selector = reify(ops.hlist.Selector)
-    def mkElem(keyTpe: Type, value: Tree): Tree =
-      q"$selector[${rec.actualType}, ${mkFieldTpe(keyTpe, value.tpe)}].apply($rec)"
+    def mkElem(key: Type, value: Tree): Tree =
+      q"$selector[${rec.actualType}, ${FieldType(key, value.tpe.widen)}].apply($rec)"
 
     method.paramLists.filterNot(_.forall(_.isImplicit)).map(_.map { p =>
-      mkElem(constantType(Constant(p.name.decodedName.toString)), q"${p.typeSignature}")
+      mkElem(constantType(nameAsValue(p.name)), q"${p.typeSignature}")
     })
   }
 }

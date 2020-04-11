@@ -279,7 +279,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   import c.universe._
 
-  def abort(msg: String) =
+  def abort(msg: String): Nothing =
     c.abort(c.enclosingPosition, msg)
 
   def isReprType(tpe: Type): Boolean =
