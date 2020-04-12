@@ -39,10 +39,6 @@ trait Default[T] extends DepFn0 with Serializable {
 object Default {
   def apply[T](implicit default: Default[T]): Aux[T, default.Out] = default
 
-  // only kept to preserve binary compatibility
-  def mkDefault[T, Out0 <: HList](defaults: Out0): Aux[T, Out0] =
-    mkDefaultByName(defaults)
-
   def mkDefaultByName[T, Out0 <: HList](defaults: => Out0): Aux[T, Out0] =
     new Default[T] {
       type Out = Out0
@@ -209,7 +205,6 @@ object Default {
   }
 }
 
-@macrocompat.bundle
 class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

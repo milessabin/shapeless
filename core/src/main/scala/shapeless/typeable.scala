@@ -381,7 +381,6 @@ object TypeCase {
   }
 }
 
-@macrocompat.bundle
 class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import definitions.NothingClass

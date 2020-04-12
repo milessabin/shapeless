@@ -791,44 +791,6 @@ object coproduct {
       type Out = CNil
       def apply(c: CNil) = c
     }
-
-    /** Binary compatibility stub */
-    def implToRotateLeft[C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_]](implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Size, NModSize],
-      impl: Impl[C, NModSize]
-    ): Aux[C, N, impl.Out] =
-      new RotateLeft[C, N] {
-        type Out = impl.Out
-        def apply(c: C): Out = impl(c)
-      }
-
-    /** Binary compatibility stub */
-    trait Impl[C <: Coproduct, N <: Nat] extends DepFn1[C] with Serializable { type Out <: Coproduct }
-
-    /** Binary compatibility stub */
-    object Impl {
-      type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] { type Out = Out0 }
-
-      def rotateCoproductOne[H, T <: Coproduct, TH <: Coproduct]
-        (implicit extendRight: ExtendRight.Aux[T, H, TH], inject: Inject[TH, H]): Aux[H :+: T, Nat._1, TH] =
-          new Impl[H :+: T, Nat._1] {
-            type Out = TH
-
-            def apply(c: H :+: T): Out = c match {
-              case Inl(a)    => inject(a)
-              case Inr(tail) => extendRight(tail)
-            }
-          }
-
-      def rotateCoproductN[C <: Coproduct, N <: Nat, CN <: Coproduct, CSN <: Coproduct]
-        (implicit rotateN: Aux[C, N, CN], rotate1: Aux[CN, Nat._1, CSN]): Aux[C, Succ[N], CSN] =
-          new Impl[C, Succ[N]] {
-            type Out = CSN
-
-            def apply(c: C): Out = rotate1(rotateN(c))
-          }
-    }
   }
 
   trait LowPriorityRotateLeft {
@@ -848,12 +810,6 @@ object coproduct {
         prepend(e.swap)
       }
     }
-
-    /** Binary compatibility stub */
-    def noopRotateLeftImpl[C <: Coproduct, N <: Nat]: RotateLeft.Aux[C, N, C] = new RotateLeft[C, N] {
-      type Out = C
-      def apply(c: C): Out = c
-    }
   }
 
   /**
@@ -872,19 +828,6 @@ object coproduct {
       type Out = CNil
       def apply(c: CNil) = c
     }
-
-    /** Binary compatibility stub */
-    def hlistRotateRight[
-      C <: Coproduct, N <: Nat, Size <: Nat, NModSize <: Succ[_], Size_Diff_NModSize <: Nat
-    ](implicit
-      length: Length.Aux[C, Size],
-      mod: nat.Mod.Aux[N, Size, NModSize],
-      diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
-      rotateLeft: RotateLeft.Impl[C, Size_Diff_NModSize]
-    ): Aux[C, N, rotateLeft.Out] = new RotateRight[C, N] {
-      type Out = rotateLeft.Out
-      def apply(c: C): Out = rotateLeft(c)
-    }
   }
 
   trait LowPriorityRotateRight {
@@ -901,12 +844,6 @@ object coproduct {
       type Out = rotateLeft.Out
 
       def apply(c: C): Out = rotateLeft(c)
-    }
-
-    /** Binary compatibility stub */
-    def noopRotateRight[C <: Coproduct, N <: Nat]: Aux[C, N, C] = new RotateRight[C, N] {
-      type Out = C
-      def apply(c: C): Out = c
     }
   }
 
@@ -1099,22 +1036,6 @@ object coproduct {
             case Right(Inr(t)) => Right(t)
           })
         }
-    }
-
-    /** Binary compatibility stub */
-    val reverseCNil: Aux[CNil, CNil] = reverse[CNil, CNil]
-
-    /** Binary compatibility stub */
-    def reverseCoproduct[H, T <: Coproduct, ReverseT <: Coproduct, RotateL_HReverseT <: Coproduct](implicit
-      reverse: Aux[T, ReverseT],
-      rotateLeft: RotateLeft.Aux[H :+: ReverseT, Nat._1, RotateL_HReverseT],
-      inject: Inject[RotateL_HReverseT, H]
-    ): Aux[H :+: T, RotateL_HReverseT] = new Reverse[H :+: T] {
-      type Out = RotateL_HReverseT
-      def apply(c: H :+: T): Out = c match {
-        case Inl(h) => inject(h)
-        case Inr(t) => rotateLeft(Inr[H, ReverseT](reverse(t)))
-      }
     }
   }
 

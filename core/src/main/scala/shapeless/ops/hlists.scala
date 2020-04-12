@@ -2057,11 +2057,6 @@ object hlist {
   }
 
   trait LowPriorityPrepend extends LowestPriorityPrepend {
-    /**
-     * Binary compatibility stub
-     * This one is for https://github.com/milessabin/shapeless/issues/406
-     */
-    override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
     implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
@@ -2656,12 +2651,6 @@ object hlist {
 
         prepend(after, before)
       }
-    }
-
-    /** Binary compatibility stub */
-    def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
-      type Out = L
-      def apply(l: L): Out = l
     }
   }
 

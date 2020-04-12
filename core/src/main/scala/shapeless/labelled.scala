@@ -84,7 +84,6 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-@macrocompat.bundle
 class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) with SingletonTypeUtils {
   import c.universe._
   import internal.constantType

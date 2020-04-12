@@ -159,10 +159,6 @@ object HList extends Dynamic {
     loop(l, i, HNil)
   }
 
-  @deprecated("use unsafeUpdateAppend instead", "2.3.1")
-  def unsafeUpdate(l: HList, i: Int, e: Any): HList =
-    unsafeUpdateAppend(l, i, e)
-
   def unsafeUpdateWith(l: HList, i: Int, f: Any => Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
@@ -281,7 +277,6 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
-@macrocompat.bundle
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
 

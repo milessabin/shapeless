@@ -155,7 +155,6 @@ object Widen {
   implicit def materialize[T, Out]: Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
 }
 
-@macrocompat.bundle
 trait SingletonTypeUtils extends ReprTypes {
   import c.universe._
   import internal._
@@ -221,7 +220,6 @@ trait SingletonTypeUtils extends ReprTypes {
   }
 }
 
-@macrocompat.bundle
 class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
   import definitions._

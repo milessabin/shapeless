@@ -38,7 +38,6 @@ object compileTime {
   def apply(code: String): FiniteDuration = macro CompileTimeMacros.applyImpl
 }
 
-@macrocompat.bundle
 class CompileTimeMacros(val c: blackbox.Context) {
   import c.universe._
 

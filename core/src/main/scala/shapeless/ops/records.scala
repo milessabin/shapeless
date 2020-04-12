@@ -50,7 +50,6 @@ package record {
     def apply(record: HList): Any = HList.unsafeGet(record, i)
   }
 
-  @macrocompat.bundle
   class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -122,7 +121,6 @@ package record {
     def apply(l: HList, e: Any): HList = HList.unsafeUpdateAppend(l, i, e)
   }
 
-  @macrocompat.bundle
   class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -366,7 +364,6 @@ package record {
     def apply(record: HList, f: Any => Any): HList = HList.unsafeUpdateWith(record, i, f)
   }
 
-  @macrocompat.bundle
   class ModifierMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -412,7 +409,6 @@ package record {
     def apply(record: HList): (Any, HList) = HList.unsafeRemove(record, i)
   }
 
-  @macrocompat.bundle
   class RemoverMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
@@ -558,7 +554,6 @@ package record {
       macro LacksKeyMacros.materialize[R, K]
   }
 
-  @macrocompat.bundle
   class LacksKeyMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 
