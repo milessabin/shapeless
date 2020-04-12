@@ -405,9 +405,6 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         normalizedTypeable
 
-      case SingletonSymbolType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe](${mkSingletonSymbol(c)}, "Symbol")"""
-
       case RefinedType(parents, decls) =>
         if (decls.nonEmpty)
           c.abort(c.enclosingPosition, "No Typeable for a refinement with non-empty decls")

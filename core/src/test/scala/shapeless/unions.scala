@@ -30,13 +30,13 @@ import ops.union.UnzipFields
 
 class UnionTests {
 
-  val wI = Witness(Symbol("i"))
+  val wI = Witness("i")
   type i = wI.T
 
-  val wS = Witness(Symbol("s"))
+  val wS = Witness("s")
   type s = wS.T
 
-  val sB = Witness(Symbol("b"))
+  val sB = Witness("b")
   type b = sB.T
 
   type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
@@ -94,13 +94,13 @@ class UnionTests {
   @Test
   def testUnionTypeSelector: Unit = {
     type ii = FieldType[i, Int] :+: CNil
-    typed[ii](Coproduct[Union.`'i -> Int`.T](Symbol("i") ->> 23))
+    typed[ii](Coproduct[Union.`"i" -> Int`.T]("i" ->> 23))
 
     type iiss = FieldType[i, Int] :+: FieldType[s, String] :+: CNil
-    typed[iiss](Coproduct[Union.`'i -> Int, 's -> String`.T](Symbol("s") ->> "foo"))
+    typed[iiss](Coproduct[Union.`"i" -> Int, "s" -> String`.T]("s" ->> "foo"))
 
     type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
-    typed[iissbb](Coproduct[Union.`'i -> Int, 's -> String, 'b -> Boolean`.T](Symbol("b") ->> true))
+    typed[iissbb](Coproduct[Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T]("b" ->> true))
 
     // Curiously, lines like
     //   typed[Union.`'i -> Int, 's -> String`.T](Inl('i ->> 23))
@@ -115,29 +115,29 @@ class UnionTests {
     }
 
     {
-      type U = Union.`'i -> Int`.T
+      type U = Union.`"i" -> Int`.T
 
-      val u = Inl(Symbol("i") ->> 23)
+      val u = Inl("i" ->> 23)
 
       typed[U](u)
     }
 
     {
-      type U = Union.`'i -> Int, 's -> String`.T
+      type U = Union.`"i" -> Int, "s" -> String`.T
 
-      val u0 = Inl(Symbol("i") ->> 23)
-      val u1 = Inr(Inl(Symbol("s") ->> "foo"))
+      val u0 = Inl("i" ->> 23)
+      val u1 = Inr(Inl("s" ->> "foo"))
 
       typed[U](u0)
       typed[U](u1)
     }
 
     {
-      type U = Union.`'i -> Int, 's -> String, 'b -> Boolean`.T
+      type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
 
-      val u0 = Inl(Symbol("i") ->> 23)
-      val u1 = Inr(Inl(Symbol("s") ->> "foo"))
-      val u2 = Inr(Inr(Inl(Symbol("b") ->> true)))
+      val u0 = Inl("i" ->> 23)
+      val u1 = Inr(Inl("s" ->> "foo"))
+      val u2 = Inr(Inr(Inl("b" ->> true)))
 
       typed[U](u0)
       typed[U](u1)
@@ -147,19 +147,19 @@ class UnionTests {
     // Literal types
 
     {
-      type U = Union.`'i -> 2`.T
+      type U = Union.`"i" -> 2`.T
 
-      val u = Inl(Symbol("i") ->> 2.narrow)
+      val u = Inl("i" ->> 2.narrow)
 
       typed[U](u)
     }
 
     {
-      type U = Union.`'i -> 2, 's -> "a", 'b -> true`.T
+      type U = Union.`"i" -> 2, "s" -> "a", "b" -> true`.T
 
-      val u0 = Inl(Symbol("i") ->> 2.narrow)
-      val u1 = Inr(Inl(Symbol("s") ->> "a".narrow))
-      val u2 = Inr(Inr(Inl(Symbol("b") ->> true.narrow)))
+      val u0 = Inl("i" ->> 2.narrow)
+      val u1 = Inr(Inl("s" ->> "a".narrow))
+      val u2 = Inr(Inr(Inl("b" ->> true.narrow)))
 
       typed[U](u0)
       typed[U](u1)
@@ -167,21 +167,21 @@ class UnionTests {
     }
 
     {
-      type U = Union.`'i -> 2`.T
+      type U = Union.`"i" -> 2`.T
 
-      val u = Inl(Symbol("i") ->> 3.narrow)
+      val u = Inl("i" ->> 3.narrow)
 
-      illTyped(""" typed[U](u) """)
+      illTyped("typed[U](u)")
     }
 
     // Mix of standard and literal types
 
     {
-      type U = Union.`'i -> 2, 's -> String, 'b -> true`.T
+      type U = Union.`"i" -> 2, "s" -> String, "b" -> true`.T
 
-      val u0 = Inl(Symbol("i") ->> 2.narrow)
-      val u1 = Inr(Inl(Symbol("s") ->> "a"))
-      val u2 = Inr(Inr(Inl(Symbol("b") ->> true.narrow)))
+      val u0 = Inl("i" ->> 2.narrow)
+      val u1 = Inr(Inl("s" ->> "a"))
+      val u2 = Inr(Inr(Inl("b" ->> true.narrow)))
 
       typed[U](u0)
       typed[U](u1)

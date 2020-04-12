@@ -45,16 +45,16 @@ object LabelledGenericTestsAux {
   )
 
   val taplRecord =
-    (Symbol("author") ->> "Benjamin Pierce") ::
-    (Symbol("title")  ->> "Types and Programming Languages") ::
-    (Symbol("id")     ->>  262162091) ::
-    (Symbol("price")  ->>  44.11) ::
+    ("author" ->> "Benjamin Pierce") ::
+    ("title"  ->> "Types and Programming Languages") ::
+    ("id"     ->>  262162091) ::
+    ("price"  ->>  44.11) ::
     HNil
 
   val dpRecord =
-    (Symbol("title")   ->> "Design Patterns") ::
-    (Symbol("id")      ->> 201633612) ::
-    (Symbol("authors") ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
+    ("title"   ->> "Design Patterns") ::
+    ("id"      ->> 201633612) ::
+    ("authors" ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
     HNil
 
   type BookRec = Record.`"author" -> String, "title" -> String, "id" -> Int, "price" -> Double`.T

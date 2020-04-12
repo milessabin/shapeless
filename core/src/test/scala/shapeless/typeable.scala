@@ -497,7 +497,7 @@ class TypeableTests {
     val wFoo = Witness("foo")
     type Foo = wFoo.T
 
-    val wSym = Witness(Symbol("Foo"))
+    val wSym = Witness("Foo")
     type Sym = wSym.T
 
     object ObjA
@@ -527,11 +527,11 @@ class TypeableTests {
     typed[Option[Foo]](c6)
     assertEquals(None, c6)
 
-    val c7 = (Symbol("Foo"): Any).cast[Sym]
+    val c7 = ("Foo": Any).cast[Sym]
     typed[Option[Sym]](c7)
-    assertEquals(Some(Symbol("Foo")), c7)
+    assertEquals(Some("Foo"), c7)
 
-    val c8 = (Symbol("Bar"): Any).cast[Sym]
+    val c8 = ("Bar": Any).cast[Sym]
     typed[Option[Sym]](c8)
     assertEquals(None, c8)
 
@@ -685,7 +685,7 @@ class TypeableTests {
     object ***
     final case class <+>[A](left: A, right: A)
     val |+| = "Tie-fighter"
-    val witness = Witness(Symbol("witness"))
+    val witness = Witness("witness")
 
     // `Typeable.genTraversableTypeable` is not a macro.
     // Appart from that there is a difference in the encoded name between JVM and JS.
@@ -694,7 +694,7 @@ class TypeableTests {
     assertEquals("***.type", Typeable[***.type].describe)
     assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
     assertEquals("|+|.type", Typeable[|+|.type].describe)
-    assertEquals("Symbol('witness)", Typeable[witness.T].describe)
+    assertEquals("String(witness)", Typeable[witness.T].describe)
   }
 
   @Test
