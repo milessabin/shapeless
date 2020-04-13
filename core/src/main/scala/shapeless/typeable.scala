@@ -115,48 +115,7 @@ object Typeable extends Typeable0 {
     def describe = "AnyRef"
   }
 
-  /** Typeable instance for `Option`. */
-  given optionTypeable[T](using tt: Typeable[T]) as Typeable[Option[T]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case Some(e) => e.castable[T]
-        case _ => false
-      }
-    def describe = s"Option[${tt.describe}]"
-  }
-
-  /** Typeable instance for `Either`. */
-  given eitherTypeable[A, B](using ta: Typeable[A], tb: Typeable[B]) as Typeable[Either[A, B]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case Left(l) => l.castable[A]
-        case Right(r) => r.castable[B]
-        case _ => false
-      }
-    def describe = s"Either[${ta.describe}, ${tb.describe}]"
-  }
-
-  /** Typeable instance for `Left`. */
-  given leftTypeable[A, B](using ta: Typeable[A]) as Typeable[Left[A, B]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case Left(l) => l.castable[A]
-        case _ => false
-      }
-    def describe = s"Left[${ta.describe}]"
-  }
-
-  /** Typeable instance for `Right`. */
-  given rightTypeable[A, B](using tb: Typeable[B]) as Typeable[Right[A, B]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case Right(r) => r.castable[B]
-        case _ => false
-      }
-    def describe = s"Right[${tb.describe}]"
-  }
-
-  /** Typeable instance for `Iterable`.  Note that the contents be will tested
+  /** Typeable instance for `Iterable`. Note that the contents be will tested
    *  for conformance to the element type.
    */
   given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]) as Typeable[CC[T]] {
@@ -182,63 +141,6 @@ object Typeable extends Typeable0 {
     def describe = s"${MTag.runtimeClass.getSimpleName}[${tk.describe}, ${tv.describe}]"
   }
 
-  /** Typeable instance for `HNil`. */
-  given hnilTypeable as Typeable[HNil] {
-    def castable(t: Any): Boolean = t.isInstanceOf[HNil]
-    def describe = "HNil"
-  }
-
-  /** Typeable instance for `HList`s. Note that the contents will be tested for
-   *  conformance to the element types.
-   */
-  given hconsTypeable[H, T <: HList](using th: Typeable[H], tt: Typeable[T]) as Typeable[H :*: T] {
-    def castable(t: Any): Boolean =
-      t match {
-        case l: :*:[_, _] => l.head.castable[H] && l.tail.castable[T]
-        case _ => false
-      }
-    def describe = s"${th.describe} :*: ${tt.describe}"
-  }
-
-  /** Typeable instance for `CNil`. */
-  given cnilTypeable as Typeable[CNil] {
-    def castable(t: Any): Boolean = t.isInstanceOf[CNil] // should always be false
-    def describe = "CNil"
-  }
-
-  /**
-   * Typeable instance for `Coproduct`s.  Note that the contents will be tested
-   * for conformance to one of the element types.
-   */
-  given cconsTypeable[H, T <: Coproduct](using th: Typeable[H], tt: Typeable[T]) as Typeable[H :+: T] {
-    def castable(t: Any): Boolean =
-      t match {
-        case c: Inl[_, _] => c.head.castable[H]
-        case c: Inr[_, _] => c.tail.castable[T]
-        case _ => false
-      }
-    def describe = s"${th.describe} :+: ${tt.describe}"
-  }
-
-  /** Typeable instance for `Inl`. */
-  given inlTypeable[H, T <: Coproduct](using th: Typeable[H]) as Typeable[Inl[H, T]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case c: Inl[_, _] => c.head.castable[H]
-        case _ => false
-      }
-    def describe = s"Inl[${th.describe}}]"
-  }
-
-  /** Typeable instance for `Inr`. */
-  given inrTypeable[H, T <: Coproduct](using tt: Typeable[T]) as Typeable[Inr[H, T]] {
-    def castable(t: Any): Boolean =
-      t match {
-        case c: Inr[_, _] => c.tail.castable[T]
-        case _ => false
-      }
-    def describe = s"Inr[${tt.describe}}]"
-  }
   /** Typeable instance for simple monomorphic types */
   def namedSimpleTypeable[T](clazz: Class[T], name: String): Typeable[T] =
     new Typeable[T] {
@@ -292,19 +194,6 @@ object Typeable extends Typeable0 {
       def describe = parents.map(_.describe) mkString " | "
     }
 
-  /** Typeable instance for tuple types with typeable elements */
-  def tupleTypeable[T](elems: Seq[Typeable[_]]): Typeable[T] =
-    new Typeable[T] {
-      def castable(t: Any): Boolean =
-        t match {
-          case p: Product if p.productArity == elems.length =>
-            elems.iterator.zip(p.productIterator).forall { case (e, p) => e.castable(p) }
-          case _ => false
-        }
-
-      def describe: String = elems.map(_.describe).mkString("(", ", ", ")")
-    }
-
   /** Typeable instance for polymorphic case classes with typeable elements. */
   def namedCaseClassTypeable[T](clazz: Class[T], fields: Seq[Typeable[_]], name: String): Typeable[T] =
     new Typeable[T] {
@@ -314,6 +203,13 @@ object Typeable extends Typeable0 {
             fields.iterator.zip(p.productIterator).forall { case (f, p) => f.castable(p) }
           case _ => false
         }
+      def describe = name
+    }
+
+  /** Typeable instance for polymorphic sums with typeable elements. */
+  def namedSumTypeable[T](elems: Seq[Typeable[_]], name: String): Typeable[T] =
+    new Typeable[T] {
+      def castable(t: Any): Boolean = elems.exists(_.castable(t))
       def describe = name
     }
 }
@@ -373,7 +269,7 @@ object TypeableMacros {
       case tp => List(tp)
     }
 
-    def summonAllTypeables(tps: List[Type]): Option[Expr[Seq[Typeable[_]]]] = {
+    def summonAllTypeables(tps: Seq[Type]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => AppliedType(TypeableType, List(tp)))
       val instances = ttps.flatMap(ttp => searchImplicit(ttp) match {
         case iss: ImplicitSearchSuccess => List(iss.tree.seal.cast[Typeable[_]])
@@ -386,7 +282,8 @@ object TypeableMacros {
 
     def mkCaseClassTypeable = {
       val sym = target.classSymbol.get
-      val caseFields = sym.caseFields
+      val fields = sym.fields
+      val caseFields = sym.caseFields.filter(f => fields.contains(f))
       def fieldTpe(f: Symbol) = f.tree match {
         case tree: ValDef => tree.tpt.tpe
       }
@@ -405,6 +302,29 @@ object TypeableMacros {
 
             '{ namedCaseClassTypeable($clazz, $ftps, $name) }
         }
+      }
+    }
+
+    def mkSumTypeable = {
+      val r = new ReflectionUtils(qctx)
+      import r._
+
+      Mirror(target) match {
+        case Some(rm) =>
+          val elemTps = rm.MirroredElemTypes
+          summonAllTypeables(elemTps) match {
+            case None =>
+              qctx.error(s"Missing Typeable for child of sum type ${target.show}")
+              '{???}
+            case Some(etps) =>
+              val name = Expr(simpleName(target))
+
+              '{ namedSumTypeable[T]($etps, $name) }
+          }
+
+        case None =>
+          qctx.error(s"Typeable for sum type ${target.show} with no Mirror")
+          '{???}
       }
     }
 
@@ -449,6 +369,7 @@ object TypeableMacros {
             mkNamedSimpleTypeable
           case Some(tp: TermRef) if normalizeModuleClass(tp.termSymbol) == owner =>
             mkNamedSimpleTypeable
+          case Some(_) if sym.flags.is(Flags.Sealed) => mkSumTypeable
           case _ =>
             qctx.error(s"No Typeable for type ${target.show} with a dependent prefix")
             '{???}
@@ -458,15 +379,8 @@ object TypeableMacros {
         val tycon = tp.tycon
         val args = tp.args
 
-        if (tp <:< typeOf[Tuple]) {
-          summonAllTypeables(args.map(normalize)) match {
-            case Some(etps) =>
-              '{ tupleTypeable($etps) }
-            case None =>
-              qctx.error(s"No Typeable for tuple type ${target.show} with missing elements(s)")
-              '{???}
-          }
-        } else if (tp.typeSymbol.flags.is(Flags.Case)) mkCaseClassTypeable
+        if (tp.typeSymbol.flags.is(Flags.Case)) mkCaseClassTypeable
+        else if (tp.typeSymbol.flags.is(Flags.Sealed)) mkSumTypeable
         else {
           qctx.error(s"No Typeable for parametrized type ${target.show}")
           '{???}

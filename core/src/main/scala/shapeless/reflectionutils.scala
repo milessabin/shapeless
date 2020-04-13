@@ -48,6 +48,17 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
         Mirror(mt, mmt, mets0, ml0, mels0)
       }
     }
+
+    def apply(tpe: Type): Option[Mirror] = {
+      val MirrorType = typeOf[scala.deriving.Mirror]
+
+      val mtpe = Refinement(MirrorType, "MirroredType", TypeBounds(tpe, tpe))
+      val instance = searchImplicit(mtpe) match {
+        case iss: ImplicitSearchSuccess => Some(iss.tree.seal.cast[scala.deriving.Mirror])
+        case _: ImplicitSearchFailure => None
+      }
+      instance.flatMap(Mirror(_))
+    }
   }
 
   def tupleTypeElements(tp: Type): List[Type] = {

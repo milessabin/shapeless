@@ -164,7 +164,7 @@ class TypeableTests {
   }
 
   @Test
-  def testCoproductt: Unit = {
+  def testCoproduct: Unit = {
     type CP = Int :+: String :+: Double :+: Boolean :+: CNil
     type CP2 = Char :+: Long :+: Unit :+: CNil
 
@@ -570,7 +570,7 @@ class TypeableTests {
 
     val e: Either[Long, String] = Right("")
     assertEquals("Typeable[Either[Long, String]]", typeableString(e))
-    assertEquals("Typeable[Right[Long]]", typeableString(Right(3L)))
+    assertEquals("Typeable[Right[Nothing, Long]]", typeableString(Right(3L)))
 
     val l: List[Int] = List(1,2)
     assertEquals("Typeable[List[Int]]", typeableString(l))
@@ -580,11 +580,11 @@ class TypeableTests {
 
     assertEquals("Typeable[HNil.type]", typeableString[HNil.type](HNil))
     val hl = 1 :*: "" :*: HNil
-    assertEquals("Typeable[Int :*: String :*: HNil]", typeableString(hl))
+    assertEquals("Typeable[:*:[Int, :*:[String, HNil]]]", typeableString(hl))
 
     type CP = Double :+: Boolean :+: CNil
     val cpd: CP = Coproduct[CP](2.0)
-    assertEquals("Typeable[Double :+: Boolean :+: CNil]", typeableString(cpd))
+    assertEquals("Typeable[:+:[Double, :+:[Boolean, CNil]]]", typeableString(cpd))
 
     val one: 1 = 1
     assertEquals("Typeable[Int(1)]", typeableString[1](one))
