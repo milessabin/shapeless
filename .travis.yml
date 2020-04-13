@@ -23,7 +23,7 @@ stages:
 jobs:
   include:
     - stage: test
-      script: sbt clean validate
+      script: sbt clean compile test
     - stage: release
       script: sbt ci-release
 

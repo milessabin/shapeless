@@ -4,11 +4,6 @@ val dottyVersion = "0.24.0-bin-20200409-f64e879-NIGHTLY"
 //val dottyVersion = "0.23.0-RC1"
 val scala2Version = "2.13.1"
 
-addCommandAlias("root", ";project root")
-addCommandAlias("core", ";project core")
-
-addCommandAlias("validate", ";root;core/compile;core/test") // no ;core/doc due to dottydoc crash
-
 inThisBuild(Seq(
   organization := "org.typelevel",
   scalaVersion := dottyVersion,
@@ -16,35 +11,67 @@ inThisBuild(Seq(
   updateOptions := updateOptions.value.withLatestSnapshots(false),
 ))
 
+lazy val modules: List[ProjectReference] = List(
+  data,
+  deriving,
+  test,
+  typeable
+)
+
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
     "-Yexplicit-nulls"
   ),
+  sources in (Compile,doc) := Nil,
 
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
 )
 
 lazy val root = project.in(file("."))
-  .aggregate(core)
-  .dependsOn(core)
+  .aggregate(modules:_*)
   .settings(commonSettings:_*)
   .settings(noPublishSettings)
 
-lazy val core = project
-  .in(file("core"))
+lazy val data = project
+  .in(file("modules/data"))
   .settings(
-    moduleName := "shapeless-core",
-    sources in (Compile,doc) := Nil
+    moduleName := "shapeless3-data"
+  )
+  .settings(commonSettings: _*)
+  .settings(publishSettings)
+
+lazy val deriving = project
+  .in(file("modules/deriving"))
+  .dependsOn(test % "test")
+  .settings(
+    moduleName := "shapeless3-deriving"
+  )
+  .settings(commonSettings: _*)
+  .settings(publishSettings)
+
+lazy val test = project
+  .in(file("modules/test"))
+  .settings(
+    moduleName := "shapeless3-test"
+  )
+  .settings(commonSettings: _*)
+  .settings(publishSettings)
+
+lazy val typeable = project
+  .in(file("modules/typeable"))
+  .dependsOn(test % "test", data % "test")
+  .settings(
+    moduleName := "shapeless3-typeable"
   )
   .settings(commonSettings: _*)
   .settings(publishSettings)
 
 lazy val local = project
   .in(file("local"))
-  .dependsOn(core)
+  .dependsOn(data, deriving, test, typeable)
   .settings(
-    moduleName := "shapeless-local",
+    moduleName := "shapeless3-local",
     scalacOptions ++= List("-Xmax-inlines", "1000"),
     //scalacOptions += "-Xprint:posttyper",
     scalacOptions in console in Compile -= "-Xprint:posttyper",
