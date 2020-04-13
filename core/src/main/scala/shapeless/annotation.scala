@@ -118,8 +118,8 @@ object Annotations {
       def apply() = annotations
     }
 
-  inline implicit def mkAnnotations[A, T](using m: Mirror.Of[T]) <: Annotations[A, T] =
-    ${ AnnotationMacros.mkAnnotations[A, T]('{m}) }
+  inline implicit def mkAnnotations[A, T] <: Annotations[A, T] =
+    ${ AnnotationMacros.mkAnnotations[A, T] }
 }
 
 object AnnotationMacros {
@@ -142,7 +142,7 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](m: Expr[Mirror.Of[T]])(using qctx: QuoteContext): Expr[Annotations[A, T]] = {
+  def mkAnnotations[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotations[A, T]] = {
     import qctx.tasty._
 
     val annotTpe = typeOf[A]
@@ -172,7 +172,7 @@ object AnnotationMacros {
             .find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
           mkAnnotations(valueParams.map { vparam => findAnnotation[A](vparam) })
         case Some(annoteeCls) =>
-          Mirror(m) match {
+          Mirror(annoteeTpe) match {
             case Some(rm) =>
               mkAnnotations(rm.MirroredElemTypes.map { child => findAnnotation[A](child.typeSymbol) })
             case None =>
