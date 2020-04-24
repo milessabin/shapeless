@@ -6,7 +6,7 @@ import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
 val Scala212 = "2.12.11"
-val Scala213 = "2.13.1"
+val Scala213 = "2.13.2"
 
 val isScalaNative = System.getenv("SCALA_NATIVE") != null
 val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
