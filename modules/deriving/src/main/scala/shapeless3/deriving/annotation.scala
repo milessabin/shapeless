@@ -118,7 +118,7 @@ object Annotations {
       def apply() = annotations
     }
 
-  inline implicit def mkAnnotations[A, T] <: Annotations[A, T] =
+  transparent inline implicit def mkAnnotations[A, T]: Annotations[A, T] =
     ${ AnnotationMacros.mkAnnotations[A, T] }
 }
 

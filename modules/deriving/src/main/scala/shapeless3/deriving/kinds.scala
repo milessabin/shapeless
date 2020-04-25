@@ -59,7 +59,7 @@ object K0 {
 
   inline def summonFirst[F[_], T, U]: F[U] = summonFirst0[LiftP[F, T]].asInstanceOf[F[U]]
 
-  inline def summonFirst0[T] <: Any = inline erasedValue[T] match {
+  transparent inline def summonFirst0[T]: Any = inline erasedValue[T] match {
     case _: (a *: b) => summonFrom {
       case aa: `a` => aa
       case _ => summonFirst0[b]
@@ -149,7 +149,7 @@ object K1 {
 
   inline def summonFirst[F[_[_]], T[_], U[_]]: F[U] = summonFirst0[LiftP[F, T]].asInstanceOf[F[U]]
 
-  inline def summonFirst0[T] <: Any = inline erasedValue[T] match {
+  transparent inline def summonFirst0[T]: Any = inline erasedValue[T] match {
     case _: (a *: b) => summonFrom {
       case aa: `a` => aa
       case _ => summonFirst0[b]
@@ -238,7 +238,7 @@ object K11 {
 
   inline def summonFirst[F[_[_[_]]], T[_[_]], U[_[_]]]: F[U] = summonFirst0[LiftP[F, T]].asInstanceOf[F[U]]
 
-  inline def summonFirst0[T] <: Any = inline erasedValue[T] match {
+  transparent inline def summonFirst0[T]: Any = inline erasedValue[T] match {
     case _: (a *: b) => summonFrom {
       case aa: `a` => aa
       case _ => summonFirst0[b]
@@ -330,7 +330,7 @@ object K2 {
 
   inline def summonFirst[F[_[_, _]], T[_, _], U[_, _]]: F[U] = summonFirst0[LiftP[F, T]].asInstanceOf[F[U]]
 
-  inline def summonFirst0[T] <: Any = inline erasedValue[T] match {
+  transparent inline def summonFirst0[T]: Any = inline erasedValue[T] match {
     case _: (a *: b) => summonFrom {
       case aa: `a` => aa
       case _ => summonFirst0[b]
