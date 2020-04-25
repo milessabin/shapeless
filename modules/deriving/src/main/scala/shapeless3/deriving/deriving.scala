@@ -42,7 +42,7 @@ inline def summonAsArray0[T](i: Int, arr: Array[Any]): Array[Any] = inline erase
     summonAsArray0[b](i+1, arr)
 }
 
-inline def summonValues[T] <: Tuple = inline erasedValue[T] match {
+transparent inline def summonValues[T]: Tuple = inline erasedValue[T] match {
   case _: Unit => ()
   case _: (a *: b) => constValue[a] *: summonValues[b]
 }
