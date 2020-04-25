@@ -25,7 +25,7 @@ object labelled {
    * The type of fields with keys of singleton type `K` and value type `V`.
    */
   type FieldType[K, +V] = V with KeyTag[K, V]
-  trait KeyTag[K, +V]
+  trait KeyTag[K, +V] extends Any
 
   /**
    * Yields a result encoding the supplied value with the singleton type `K` of its key.
