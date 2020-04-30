@@ -4,7 +4,7 @@ jdk:
 - openjdk8
 
 scala:
-- 0.24.0-bin-20200424-17d1633-NIGHTLY
+- 0.24.0-RC1
 
 cache:
   directories:
