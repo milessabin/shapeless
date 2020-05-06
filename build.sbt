@@ -48,7 +48,7 @@ val scalacOptionsAll = Seq(
   "-unchecked",
 )
 
-val scalacOptions212 = Seq(
+val scalacOptions212 = List(
   "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
   "-Ywarn-unused:-implicits"
 )
@@ -59,7 +59,10 @@ lazy val commonSettings = Seq(
   scalacOptions := scalacOptionsAll,
 
   scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y >= 12 => scalacOptions212
+    case Some((2, 13)) =>
+      val pluginJar = (plugin / Compile / packageBin).value
+      s"-Xplugin:${pluginJar.getAbsolutePath}" :: s"-Jdummy=${pluginJar.lastModified}" :: scalacOptions212
+    case Some((2, 12)) => scalacOptions212
     case _ => Nil
   }),
 
@@ -123,6 +126,14 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
   def sharedSrcDir(projectBase: File, conf: String): Option[File] =
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
+
+lazy val plugin = project.in(file("plugin"))
+  .settings(
+    name := "shapeless-plugin",
+    sbtPlugin := true,
+    scalaVersion := Scala213,
+    crossScalaVersions := Seq(Scala213)
+  )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)

@@ -113,14 +113,16 @@ package Generic1TestsAux {
       }
   }
 
-  trait Functor0 {
+  trait Functor0 extends Functor1 {
     // Induction step for coproducts
     implicit def ccons[F[_]](implicit icc: IsCCons1[F, Functor, Functor]): Functor[F] =
       new Functor[F] {
         def map[A, B](fa: F[A])(f: A => B): F[B] =
           icc.pack(icc.unpack(fa).fold(hd => Left(icc.fh.map(hd)(f)), tl => Right(icc.ft.map(tl)(f))))
       }
+  }
 
+  trait Functor1 {
     implicit def generic[F[_]](implicit gen: Generic1[F, Functor]): Functor[F] =
       new Functor[F] {
         def map[A, B](fa: F[A])(f: A => B): F[B] =

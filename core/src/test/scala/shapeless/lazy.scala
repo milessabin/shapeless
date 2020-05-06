@@ -305,15 +305,18 @@ class LazyStrictTests {
     trait W[X, Y]
 
     illTyped(
-      "lazily[U[String]]", "No U\\[String]"
+      "lazily[U[String]]",
+      "(No U\\[String])|(could not find implicit value for parameter lv: => U\\[String])"
     )
 
     illTyped(
-      "lazily[V]", "could not find Lazy implicit value of type V"
+      "lazily[V]",
+      "(could not find Lazy implicit value of type V)|(could not find implicit value for parameter lv: => V)"
     )
 
     illTyped(
-      "lazily[W[String, Int]]", "No W\\[String, Int]"
+      "lazily[W[String, Int]]",
+      "(No W\\[String, Int])|(could not find implicit value for parameter lv: => W\\[String,Int])"
     )
   }
 

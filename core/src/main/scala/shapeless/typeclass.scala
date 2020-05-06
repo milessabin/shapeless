@@ -113,13 +113,12 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
       typeClass.product(key.value, ch.value, ct.unwrap)
     )
 
-  implicit def deriveInstance[T, LKV](
-    implicit lgen: LabelledGeneric.Aux[T, LKV], wrap: Lazy[Wrap[LKV]]
+  implicit def deriveInstance[T, LKV, V](
+    implicit lgen: LabelledGeneric.Aux[T, LKV], wrap: Lazy[Wrap.Aux[LKV, V]]
   ): C[T] = {
-    import wrap.value._
-    val to = (t: T) => unlabel(lgen.to(t))
-    val from = (v: V) => lgen.from(label(v))
-    typeClass.project(unwrap, to, from)
+    val to = (t: T) => wrap.value.unlabel(lgen.to(t))
+    val from = (v: V) => lgen.from(wrap.value.label(v))
+    typeClass.project(wrap.value.unwrap, to, from)
   }
 }
 

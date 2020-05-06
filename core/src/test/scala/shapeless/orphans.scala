@@ -248,8 +248,18 @@ class OrphansTest {
     assertEquals("project(product(Eq.eqString, emptyProduct))", implicitly[Eq[Bar]].toString)
     assertEquals("project(product(Eq.fallback, emptyProduct))", implicitly[Eq[Baz]].toString)
     assertEquals("Eq.fallback", implicitly[Eq[Quux]].toString)
-    assertEquals("project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))", implicitly[Eq[SimpleRec]].toString)
-    assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
+
+    assertTrue {
+      val actual = implicitly[Eq[SimpleRec]].toString
+      actual == "project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))" ||
+        actual == "project(coproduct(project(product(<loop>, emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))"
+    }
+
+    assertTrue {
+      val actual = implicitly[Eq[Tree[Int]]].toString
+      actual == "project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))" ||
+        actual =="project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(<loop>, product(<loop>, emptyProduct))), emptyCoproduct)))"
+    }
   }
 
   @Test
@@ -261,8 +271,18 @@ class OrphansTest {
     assertEquals("project(product(Eq.eqString, emptyProduct))", implicitly[Eq[Bar]].toString)
     assertEquals("Baz.eqBaz", implicitly[Eq[Baz]].toString)
     assertEquals("Eq.fallback", implicitly[Eq[Quux]].toString)
-    assertEquals("project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))", implicitly[Eq[SimpleRec]].toString)
-    assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
+
+    assertTrue {
+      val actual = implicitly[Eq[SimpleRec]].toString
+      actual == "project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))" ||
+        actual == "Eq.fallback"
+    }
+
+    assertTrue {
+      val actual = implicitly[Eq[Tree[Int]]].toString
+      actual == "project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))" ||
+        actual == "Eq.fallback"
+    }
   }
 
   @Test
@@ -274,7 +294,17 @@ class OrphansTest {
     assertEquals("project(product(Eq.eqString, emptyProduct))", implicitly[Eq[Bar]].toString)
     assertEquals("Baz.eqBaz", implicitly[Eq[Baz]].toString)
     assertEquals("Eq.fallback", implicitly[Eq[Quux]].toString)
-    assertEquals("project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))", implicitly[Eq[SimpleRec]].toString)
-    assertEquals("project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))", implicitly[Eq[Tree[Int]]].toString)
+
+    assertTrue {
+      val actual = implicitly[Eq[SimpleRec]].toString
+      actual == "project(coproduct(project(product(project(<loop>), emptyProduct)), coproduct(project(emptyProduct), emptyCoproduct)))" ||
+        actual == "Eq.fallback"
+    }
+
+    assertTrue {
+      val actual = implicitly[Eq[Tree[Int]]].toString
+      actual == "project(coproduct(project(product(Eq.eqInt, emptyProduct)), coproduct(project(product(project(<loop>), product(project(<loop>), emptyProduct))), emptyCoproduct)))" ||
+        actual == "Eq.fallback"
+    }
   }
 }
