@@ -3310,42 +3310,42 @@ class HListTests {
       ) = mapper(range())
 
     // group HNil
-    assertEquals(HNil: HNil, (HNil: HNil) group(2, 1))
+    assertEquals(HNil: HNil, (HNil: HNil).group(2, 1))
     // group a HList of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // group a HList of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       (0, 1) ::(4, 5) :: HNil,
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       (0, 1) ::(1, 2) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: HNil)
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
   }
