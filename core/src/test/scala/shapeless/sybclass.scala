@@ -24,7 +24,7 @@ import test._
 class SybClassTests {
 
   trait gsizeAll0 extends Poly1 {
-    implicit def default[T](implicit data: Lazy[Data[this.type, T, Int]]) = at[T](1+data.value.gmapQ(_).sum)
+    implicit def default[T](implicit data: => Data[this.type, T, Int]) = at[T](1+data.gmapQ(_).sum)
   }
   object gsizeAll extends gsizeAll0 {
     implicit def caseString = at[String](_.length)
@@ -41,7 +41,7 @@ class SybClassTests {
   def gsizeAll2[T](t: T)(implicit everything: Everything[gsize.type, plus.type, T]) = everything(t)
 
   trait incAll0 extends Poly1 {
-    implicit def default[T](implicit data: Lazy[DataT[this.type, T]]) = at[T](data.value.gmapT(_))
+    implicit def default[T](implicit data: => DataT.Aux[incAll.type, T, T]) = at[T](data.gmapT(_))
   }
   object incAll extends incAll0 {
     implicit def caseInt = at[Int](_+1)

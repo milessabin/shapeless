@@ -44,32 +44,32 @@ trait Data0 {
 }
 
 trait Data1 extends Data0 {
-  implicit def deriveInstance[P, F, R, G](implicit gen: Generic.Aux[F, G], dg: Lazy[Data[P, G, R]]): Data[P, F, R] =
+  implicit def deriveInstance[P, F, R, G](implicit gen: Generic.Aux[F, G], dg: => Data[P, G, R]): Data[P, F, R] =
     new Data[P, F, R] {
-      def gmapQ(t: F) = dg.value.gmapQ(gen.to(t))
+      def gmapQ(t: F) = dg.gmapQ(gen.to(t))
     }
 }
 
 object Data extends Data1 {
-  def apply[P, T, R](implicit dt: Lazy[Data[P, T, R]]): Data[P, T, R] = dt.value
+  def apply[P, T, R](implicit dt: => Data[P, T, R]): Data[P, T, R] = dt
 
-  def gmapQ[F, T, R](f: F)(t: T)(implicit data: Lazy[Data[F, T, R]]) = data.value.gmapQ(t)
+  def gmapQ[F, T, R](f: F)(t: T)(implicit data: => Data[F, T, R]) = data.gmapQ(t)
 
   implicit def genTraversableData[P, C[X] <: Iterable[X], T, R]
-    (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
+    (implicit qt: => Case1.Aux[P, T, R]): Data[P, C[T], R] =
       new Data[P, C[T], R] {
         def gmapQ(t: C[T]) =
           t.foldLeft(List.newBuilder[R]) { (b, el) =>
-            b += qt.value(el)
+            b += qt(el)
           }.result
       }
 
   implicit def genMapData[P, M[X, Y], K, V, R]
-    (implicit ev: M[K, V] <:< Map[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
+    (implicit ev: M[K, V] <:< Map[K, V], qv: => Case1.Aux[P, (K, V), R]): Data[P, M[K, V], R] =
       new Data[P, M[K, V], R] {
         def gmapQ(t: M[K, V]) =
           t.foldLeft(List.newBuilder[R]) { case (b, el) =>
-            b += qv.value(el)
+            b += qv(el)
           }.result
       }
 
@@ -79,9 +79,9 @@ object Data extends Data1 {
     }
 
   implicit def deriveHCons[P, H, T <: HList, R]
-    (implicit ch: Lazy[Case1.Aux[P, H, R]], dt: Lazy[Data[P, T, R]]): Data[P, H :: T, R] =
+    (implicit ch: => Case1.Aux[P, H, R], dt: => Data[P, T, R]): Data[P, H :: T, R] =
       new Data[P, H :: T, R] {
-        def gmapQ(t: H :: T) = ch.value(t.head :: HNil) :: dt.value.gmapQ(t.tail)
+        def gmapQ(t: H :: T) = ch(t.head) :: dt.gmapQ(t.tail)
       }
 
   implicit def deriveCNil[P, R]: Data[P, CNil, R] =
@@ -90,12 +90,12 @@ object Data extends Data1 {
     }
 
   implicit def deriveCCons[P, H, T <: Coproduct, R]
-    (implicit ch: Lazy[Case1.Aux[P, H, R]], dt: Lazy[Data[P, T, R]]): Data[P, H :+: T, R] =
+    (implicit ch: => Case1.Aux[P, H, R], dt: => Data[P, T, R]): Data[P, H :+: T, R] =
       new Data[P, H :+: T, R] {
         def gmapQ(c: H :+: T) =
           c match {
-            case Inl(h) => List(ch.value(h :: HNil))
-            case Inr(t) => dt.value.gmapQ(t)
+            case Inl(h) => List(ch(h))
+            case Inr(t) => dt.gmapQ(t)
           }
       }
 }
@@ -122,41 +122,43 @@ trait DataT0 {
 
 trait DataT1 extends DataT0 {
   implicit def deriveInstance[P, F, G]
-    (implicit gen: Generic.Aux[F, G], dtg: Lazy[DataT.Aux[P, G, G]]): Aux[P, F, F] =
+    (implicit gen: Generic.Aux[F, G], dtg: => DataT.Aux[P, G, G]): Aux[P, F, F] =
       new DataT[P, F] {
         type Out = F
-        def gmapT(t: F) = gen.from(dtg.value.gmapT(gen.to(t)))
+        def gmapT(t: F) = gen.from(dtg.gmapT(gen.to(t)))
       }
 }
 
-object DataT extends DataT1 {
-  def apply[P, T](implicit dtt: Lazy[DataT[P, T]]): DataT[P, T] = dtt.value
-
-  def gmapT[F, T](f: F)(t: T)(implicit data: Lazy[DataT[F, T]]) = data.value.gmapT(t)
-
+trait DataT2 extends DataT1 {
   implicit def genTraversableDataT[F <: Poly, CC[X] <: Iterable[X], T, U]
-    (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: Factory[U, CC[U]]): Aux[F, CC[T], CC[U]] =
+    (implicit ft: => Case1.Aux[F, T, U], cbf: Factory[U, CC[U]]): Aux[F, CC[T], CC[U]] =
       new DataT[F, CC[T]] {
         type Out = CC[U]
         def gmapT(t: CC[T]) =
           t.foldLeft(cbf.newBuilder) { (b, x) =>
-            b += ft.value(x)
+            b += ft(x)
           }.result
       }
 
   implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
     (implicit
       ev: M[K, V] <:< Map[K, V],
-      fv: Lazy[Case1.Aux[F, V, U]],
+      fv: => Case1.Aux[F, V, U],
       cbf: Factory[(K, U), M[K, U]]
     ): Aux[F, M[K, V], M[K, U]] =
       new DataT[F, M[K, V]] {
         type Out = M[K, U]
         def gmapT(t: M[K, V]) =
           t.foldLeft(cbf.newBuilder) { case (b, (k, v)) =>
-            b += k -> fv.value(v)
+            b += k -> fv(v)
           }.result
       }
+}
+
+object DataT extends DataT2 {
+  def apply[P, T](implicit dtt: => DataT[P, T]): DataT[P, T] = dtt
+
+  def gmapT[F, T](f: F)(t: T)(implicit data: => DataT[F, T]) = data.gmapT(t)
 
   implicit def deriveHNil[P]: Aux[P, HNil, HNil] =
     new DataT[P, HNil] {
@@ -165,10 +167,10 @@ object DataT extends DataT1 {
     }
 
   implicit def deriveHCons[P, H, T <: HList, OutH, OutT <: HList]
-    (implicit ch: Lazy[Case1.Aux[P, H, OutH]], dtt: Lazy[DataT.Aux[P, T, OutT]]): Aux[P, H :: T, OutH :: OutT] =
+    (implicit ch: => Case1.Aux[P, H, OutH], dtt: => DataT.Aux[P, T, OutT]): Aux[P, H :: T, OutH :: OutT] =
       new DataT[P, H :: T] {
         type Out = OutH :: OutT
-        def gmapT(t: H :: T): Out = ch.value(t.head :: HNil) :: dtt.value.gmapT(t.tail)
+        def gmapT(t: H :: T): Out = ch(t.head) :: dtt.gmapT(t.tail)
       }
 
   implicit def deriveCNil[P]: Aux[P, CNil, CNil] =
@@ -178,12 +180,12 @@ object DataT extends DataT1 {
     }
 
   implicit def deriveCCons[P, H, T <: Coproduct, OutH, OutT <: Coproduct]
-    (implicit ch: Lazy[Case1.Aux[P, H, OutH]], dtt: Lazy[DataT.Aux[P, T, OutT]]): Aux[P, H :+: T, OutH :+: OutT] =
+    (implicit ch: => Case1.Aux[P, H, OutH], dtt: => DataT.Aux[P, T, OutT]): Aux[P, H :+: T, OutH :+: OutT] =
       new DataT[P, H :+: T] {
         type Out = OutH :+: OutT
         def gmapT(c: H :+: T) = c match {
-          case Inl(h) => Inl(ch.value(h :: HNil))
-          case Inr(t) => Inr(dtt.value.gmapT(t))
+          case Inl(h) => Inl(ch(h))
+          case Inr(t) => Inr(dtt.gmapT(t))
         }
       }
 }
@@ -191,22 +193,29 @@ object DataT extends DataT1 {
 class EverythingAux[F, K] extends Poly
 
 object EverythingAux {
-  implicit def default[E, F <: Poly, K <: Poly, T, R]
+  implicit def default[F <: Poly, K <: Poly, T, R]
     (implicit
-      unpack: Unpack2[E, EverythingAux, F, K],
       f: Case1.Aux[F, T, R],
-      data: Lazy[Data[E, T, R]],
+      data: => Data[EverythingAux[F, K], T, R],
       k: Case2.Aux[K, R, R, R]
-    ): Case1.Aux[E, T, R] = Case1[E, T, R](t => data.value.gmapQ(t).foldLeft(f(t))(k))
+    ): Case1.Aux[EverythingAux[F, K], T, R] = Case1[EverythingAux[F, K], T, R](t => data.gmapQ(t).foldLeft(f(t))(k))
 }
 
 class EverywhereAux[F] extends Poly
 
-object EverywhereAux {
-  implicit def default[E, F <: Poly, T, U, V]
+object EverywhereAux extends EverywhereAux0 {
+  implicit def everywhere[F, T, U, Out]
     (implicit
-      unpack: Unpack1[E, EverywhereAux, F],
-      data: Lazy[DataT.Aux[E, T, U]],
-      f: Case1.Aux[F, U, V] = Case1[F, U, U](identity)
-    ): Case1.Aux[E, T, V] = Case1[E, T, V](t => f(data.value.gmapT(t)))
+      dtef: => DataT.Aux[EverywhereAux[F], T, U],
+      f: Case1.Aux[F, U, Out]
+    ): Case1.Aux[EverywhereAux[F], T, Out] =
+      Case1[EverywhereAux[F], T, Out](t => f(dtef.gmapT(t)))
+}
+
+trait EverywhereAux0 {
+  implicit def everywhere0[F, T, U]
+    (implicit
+      dtef: => DataT.Aux[EverywhereAux[F], T, U]
+    ): Case1.Aux[EverywhereAux[F], T, U] =
+      Case1[EverywhereAux[F], T, U](t => dtef.gmapT(t))
 }
