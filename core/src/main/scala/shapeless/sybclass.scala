@@ -27,186 +27,160 @@ import poly._
  * @author Miles Sabin
  */
 
-/**
- * Type class representing one-level generic queries.
- */
+/** Type class representing one-level generic queries. */
 trait Data[F, T, R] extends Serializable {
   def gmapQ(t: T): List[R]
 }
 
-trait Data0 {
-  /**
-   * Default Data type class instance.
-   */
-  implicit def dfltData[F, T, R]: Data[F, T, R] = new Data[F, T, R] {
-    def gmapQ(t: T): List[R] = Nil
+sealed abstract class DataDefault {
+  def instance[F, T, R](f: T => List[R]): Data[F, T, R] = new Data[F, T, R] {
+    def gmapQ(t: T): List[R] = f(t)
+  }
+
+  /** Default Data type class instance. */
+  implicit def default[F, T, R]: Data[F, T, R] =
+    instance(_ => Nil)
+}
+
+sealed abstract class DataGeneric extends DataDefault {
+  implicit def deriveInstance[F, T, R, Q](
+    implicit gen: Generic.Aux[T, R], data: Lazy[Data[F, R, Q]]
+  ): Data[F, T, Q] = instance { t =>
+    data.value.gmapQ(gen.to(t))
   }
 }
 
-trait Data1 extends Data0 {
-  implicit def deriveInstance[P, F, R, G](implicit gen: Generic.Aux[F, G], dg: Lazy[Data[P, G, R]]): Data[P, F, R] =
-    new Data[P, F, R] {
-      def gmapQ(t: F) = dg.value.gmapQ(gen.to(t))
-    }
+sealed abstract class DataCollections extends DataGeneric {
+  implicit def deriveIterable[F, I[_], T, R](
+    implicit ev: I[T] <:< Iterable[T], cse: Lazy[Case1.Aux[F, T, R]]
+  ): Data[F, I[T], R] = instance {
+    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result
+  }
+
+  implicit def deriveMap[F, M[_, _], K, V, R](
+    implicit ev: M[K, V] <:< Map[K, V], cse: Lazy[Case1.Aux[F, (K, V), R]]
+  ): Data[F, M[K, V], R] = instance {
+    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result
+  }
 }
 
-object Data extends Data1 {
-  def apply[P, T, R](implicit dt: Lazy[Data[P, T, R]]): Data[P, T, R] = dt.value
+object Data extends DataCollections {
+  def apply[F, T, R](implicit data: Data[F, T, R]): Data[F, T, R] = data
+  def gmapQ[F, T, R](f: F)(t: T)(implicit data: Data[F, T, R]): List[R] = data.gmapQ(t)
 
-  def gmapQ[F, T, R](f: F)(t: T)(implicit data: Lazy[Data[F, T, R]]) = data.value.gmapQ(t)
+  implicit def deriveHNil[F, R]: Data[F, HNil, R] =
+    instance(_ => Nil)
 
-  implicit def genTraversableData[P, C[X] <: Iterable[X], T, R]
-    (implicit qt: Lazy[Case1.Aux[P, T, R]]): Data[P, C[T], R] =
-      new Data[P, C[T], R] {
-        def gmapQ(t: C[T]) =
-          t.foldLeft(List.newBuilder[R]) { (b, el) =>
-            b += qt.value(el)
-          }.result
-      }
+  implicit def deriveHCons[F, H, T <: HList, R](
+    implicit cse: Lazy[Case1.Aux[F, H, R]], data: Lazy[Data[F, T, R]]
+  ): Data[F, H :: T, R] = instance {
+    case h :: t => cse.value(h) :: data.value.gmapQ(t)
+  }
 
-  implicit def genMapData[P, M[X, Y], K, V, R]
-    (implicit ev: M[K, V] <:< Map[K, V], qv: Lazy[Case1.Aux[P, (K, V), R]]): Data[P, M[K, V], R] =
-      new Data[P, M[K, V], R] {
-        def gmapQ(t: M[K, V]) =
-          t.foldLeft(List.newBuilder[R]) { case (b, el) =>
-            b += qv.value(el)
-          }.result
-      }
+  implicit def deriveCNil[F, R]: Data[F, CNil, R] =
+    instance(_ => Nil)
 
-  implicit def deriveHNil[P, R]: Data[P, HNil, R] =
-    new Data[P, HNil, R] {
-      def gmapQ(t: HNil) = Nil
-    }
-
-  implicit def deriveHCons[P, H, T <: HList, R]
-    (implicit ch: Lazy[Case1.Aux[P, H, R]], dt: Lazy[Data[P, T, R]]): Data[P, H :: T, R] =
-      new Data[P, H :: T, R] {
-        def gmapQ(t: H :: T) = ch.value(t.head :: HNil) :: dt.value.gmapQ(t.tail)
-      }
-
-  implicit def deriveCNil[P, R]: Data[P, CNil, R] =
-    new Data[P, CNil, R] {
-      def gmapQ(t: CNil) = Nil
-    }
-
-  implicit def deriveCCons[P, H, T <: Coproduct, R]
-    (implicit ch: Lazy[Case1.Aux[P, H, R]], dt: Lazy[Data[P, T, R]]): Data[P, H :+: T, R] =
-      new Data[P, H :+: T, R] {
-        def gmapQ(c: H :+: T) =
-          c match {
-            case Inl(h) => List(ch.value(h :: HNil))
-            case Inr(t) => dt.value.gmapQ(t)
-          }
-      }
+  implicit def deriveCCons[F, H, T <: Coproduct, R](
+    implicit cse: Lazy[Case1.Aux[F, H, R]], data: Lazy[Data[F, T, R]]
+  ): Data[F, H :+: T, R] = instance {
+    case Inl(h) => List(cse.value(h))
+    case Inr(t) => data.value.gmapQ(t)
+  }
 }
 
-/**
- * Type class representing one-level generic transformations.
- */
+/** Type class representing one-level generic transformations. */
 trait DataT[F, T] extends Serializable {
   type Out
   def gmapT(t: T): Out
 }
 
-trait DataT0 {
-  type Aux[F, T, Out0] = DataT[F, T] { type Out = Out0 }
+sealed abstract class DataTDefault {
+  type Aux[F, T, O] = DataT[F, T] { type Out = O }
 
-  /**
-   * Default DataT type class instance.
-   */
-  implicit def dfltDataT[F, T]: Aux[F, T, T] = new DataT[F, T] {
-    type Out = T
-    def gmapT(t: T) = t
+  def instance[F, T, O](f: T => O): Aux[F, T, O] = new DataT[F, T] {
+    type Out = O
+    def gmapT(t: T): Out = f(t)
+  }
+
+  /** Default DataT type class instance. */
+  implicit def dfltDataT[F, T]: Aux[F, T, T] =
+    instance(identity)
+}
+
+sealed abstract class DataTGeneric extends DataTDefault {
+  implicit def deriveInstance[F, T, R](
+    implicit gen: Generic.Aux[T, R], data: Lazy[Aux[F, R, R]]
+  ): Aux[F, T, T] = instance { t =>
+    gen.from(data.value.gmapT(gen.to(t)))
   }
 }
 
-trait DataT1 extends DataT0 {
-  implicit def deriveInstance[P, F, G]
-    (implicit gen: Generic.Aux[F, G], dtg: Lazy[DataT.Aux[P, G, G]]): Aux[P, F, F] =
-      new DataT[P, F] {
-        type Out = F
-        def gmapT(t: F) = gen.from(dtg.value.gmapT(gen.to(t)))
-      }
+sealed abstract class DataTCollections extends DataTGeneric {
+  implicit def deriveIterable[F <: Poly, I[_], T, O](
+    implicit ev: I[T] <:< Iterable[T], cse: Lazy[Case1.Aux[F, T, O]], factory: Factory[O, I[O]]
+  ): Aux[F, I[T], I[O]] = instance {
+    _.foldLeft(factory.newBuilder)(_ += cse.value(_)).result
+  }
+
+  implicit def deriveMap[F <: Poly, M[_, _], K, V, O](
+    implicit ev: M[K, V] <:< Map[K, V], cse: Lazy[Case1.Aux[F, V, O]], factory: Factory[(K, O), M[K, O]]
+  ): Aux[F, M[K, V], M[K, O]] = instance {
+    _.foldLeft(factory.newBuilder) {
+      case (b, (k, v)) => b += k -> cse.value(v)
+    }.result
+  }
 }
 
-object DataT extends DataT1 {
-  def apply[P, T](implicit dtt: Lazy[DataT[P, T]]): DataT[P, T] = dtt.value
+object DataT extends DataTCollections {
+  def apply[F, T](implicit data: DataT[F, T]): Aux[F, T, data.Out] = data
+  def gmapT[F, T](f: F)(t: T)(implicit data: DataT[F, T]): data.Out = data.gmapT(t)
 
-  def gmapT[F, T](f: F)(t: T)(implicit data: Lazy[DataT[F, T]]) = data.value.gmapT(t)
+  implicit def deriveHNil[F]: Aux[F, HNil, HNil] =
+    instance(identity)
 
-  implicit def genTraversableDataT[F <: Poly, CC[X] <: Iterable[X], T, U]
-    (implicit ft: Lazy[Case1.Aux[F, T, U]], cbf: Factory[U, CC[U]]): Aux[F, CC[T], CC[U]] =
-      new DataT[F, CC[T]] {
-        type Out = CC[U]
-        def gmapT(t: CC[T]) =
-          t.foldLeft(cbf.newBuilder) { (b, x) =>
-            b += ft.value(x)
-          }.result
-      }
+  implicit def deriveHCons[F, H, T <: HList, OH, OT <: HList](
+    implicit cse: Lazy[Case1.Aux[F, H, OH]], data: Lazy[Aux[F, T, OT]]
+  ): Aux[F, H :: T, OH :: OT] = instance {
+    case h :: t => cse.value(h) :: data.value.gmapT(t)
+  }
 
-  implicit def genMapDataT[F <: Poly, M[X, Y], K, V, U]
-    (implicit
-      ev: M[K, V] <:< Map[K, V],
-      fv: Lazy[Case1.Aux[F, V, U]],
-      cbf: Factory[(K, U), M[K, U]]
-    ): Aux[F, M[K, V], M[K, U]] =
-      new DataT[F, M[K, V]] {
-        type Out = M[K, U]
-        def gmapT(t: M[K, V]) =
-          t.foldLeft(cbf.newBuilder) { case (b, (k, v)) =>
-            b += k -> fv.value(v)
-          }.result
-      }
+  implicit def deriveCNil[F]: Aux[F, CNil, CNil] =
+    instance(identity)
 
-  implicit def deriveHNil[P]: Aux[P, HNil, HNil] =
-    new DataT[P, HNil] {
-      type Out = HNil
-      def gmapT(t: HNil) = HNil
-    }
-
-  implicit def deriveHCons[P, H, T <: HList, OutH, OutT <: HList]
-    (implicit ch: Lazy[Case1.Aux[P, H, OutH]], dtt: Lazy[DataT.Aux[P, T, OutT]]): Aux[P, H :: T, OutH :: OutT] =
-      new DataT[P, H :: T] {
-        type Out = OutH :: OutT
-        def gmapT(t: H :: T): Out = ch.value(t.head :: HNil) :: dtt.value.gmapT(t.tail)
-      }
-
-  implicit def deriveCNil[P]: Aux[P, CNil, CNil] =
-    new DataT[P, CNil] {
-      type Out = CNil
-      def gmapT(t: CNil) = sys.error("CNil is equivelant to Nothing: there should be no values of this type")
-    }
-
-  implicit def deriveCCons[P, H, T <: Coproduct, OutH, OutT <: Coproduct]
-    (implicit ch: Lazy[Case1.Aux[P, H, OutH]], dtt: Lazy[DataT.Aux[P, T, OutT]]): Aux[P, H :+: T, OutH :+: OutT] =
-      new DataT[P, H :+: T] {
-        type Out = OutH :+: OutT
-        def gmapT(c: H :+: T) = c match {
-          case Inl(h) => Inl(ch.value(h :: HNil))
-          case Inr(t) => Inr(dtt.value.gmapT(t))
-        }
-      }
+  implicit def deriveCCons[F, H, T <: Coproduct, OH, OT <: Coproduct](
+    implicit cse: Lazy[Case1.Aux[F, H, OH]], data: Lazy[Aux[F, T, OT]]
+  ): Aux[F, H :+: T, OH :+: OT] = instance {
+    case Inl(h) => Inl(cse.value(h))
+    case Inr(t) => Inr(data.value.gmapT(t))
+  }
 }
 
 class EverythingAux[F, K] extends Poly
 
 object EverythingAux {
-  implicit def default[E, F <: Poly, K <: Poly, T, R]
-    (implicit
-      unpack: Unpack2[E, EverythingAux, F, K],
-      f: Case1.Aux[F, T, R],
-      data: Lazy[Data[E, T, R]],
-      k: Case2.Aux[K, R, R, R]
-    ): Case1.Aux[E, T, R] = Case1[E, T, R](t => data.value.gmapQ(t).foldLeft(f(t))(k))
+  implicit def default[F <: Poly, K <: Poly, T, R](
+    implicit
+    f: Case1.Aux[F, T, R],
+    data: Lazy[Data[EverythingAux[F, K], T, R]],
+    k: Case2.Aux[K, R, R, R]
+  ): Case1.Aux[EverythingAux[F, K], T, R] =
+    Case1(t => data.value.gmapQ(t).foldLeft(f(t))(k))
 }
 
 class EverywhereAux[F] extends Poly
 
-object EverywhereAux {
-  implicit def default[E, F <: Poly, T, U, V]
-    (implicit
-      unpack: Unpack1[E, EverywhereAux, F],
-      data: Lazy[DataT.Aux[E, T, U]],
-      f: Case1.Aux[F, U, V] = Case1[F, U, U](identity)
-    ): Case1.Aux[E, T, V] = Case1[E, T, V](t => f(data.value.gmapT(t)))
+object EverywhereAux extends EverywhereAuxDefault {
+  implicit def everywhere[F, T, U, O](
+    implicit
+    data: Lazy[DataT.Aux[EverywhereAux[F], T, U]],
+    f: Case1.Aux[F, U, O]
+  ): Case1.Aux[EverywhereAux[F], T, O] =
+    Case1(t => f(data.value.gmapT(t)))
+}
+
+sealed abstract class EverywhereAuxDefault {
+  implicit def default[F, T, U](
+    implicit data: Lazy[DataT.Aux[EverywhereAux[F], T, U]]
+  ): Case1.Aux[EverywhereAux[F], T, U] =
+    Case1(data.value.gmapT)
 }
