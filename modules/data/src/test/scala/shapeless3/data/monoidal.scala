@@ -78,7 +78,7 @@ object MonoidalTest {
   type t = (Int, String, Boolean)
   type tb = (Double, Char)
   type tc = ("i", "s", "b")
-  type td = ((Int, String), Tuple1[Boolean], Unit, (Double, Char))
+  type td = ((Int, String), Tuple1[Boolean], EmptyTuple, (Double, Char))
   summon[tuples.length[t] =:= 3]
   summon[tuples.reverse[t] =:= (Boolean, String, Int)]
   summon[tuples.map[t][Option] =:= (Option[Int], Option[String], Option[Boolean])]

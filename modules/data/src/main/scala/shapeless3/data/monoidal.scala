@@ -176,7 +176,7 @@ object DirectMonoidal {
 
 object pairs extends UnboundedMonoidal[Tuple2, Unit] with Cartesian
 
-object tuples extends BoundedMonoidal[Tuple, *:, Unit] with Cartesian
+object tuples extends BoundedMonoidal[Tuple, *:, EmptyTuple] with Cartesian
 
 object eithers extends UnboundedMonoidal[Either, Nothing] with Cocartesian
 
