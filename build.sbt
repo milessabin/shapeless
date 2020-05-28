@@ -131,8 +131,7 @@ lazy val plugin = project.in(file("plugin"))
   .settings(
     name := "shapeless-plugin",
     sbtPlugin := true,
-    scalaVersion := Scala213,
-    crossScalaVersions := Seq(Scala213)
+    scalaVersion := Scala213
   )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
