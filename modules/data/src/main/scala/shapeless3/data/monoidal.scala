@@ -101,8 +101,8 @@ object Monoidal {
 }
 
 trait UnboundedMonoidal[T[_, _], U] extends Monoidal{
-  type to = UnboundedMonoidal.to[T, U]
-  type from = UnboundedMonoidal.from[T, U]
+  type to[t] = UnboundedMonoidal.to[T, U][t]
+  type from[t] = UnboundedMonoidal.from[T, U][t]
 }
 
 object UnboundedMonoidal {
@@ -120,8 +120,8 @@ object UnboundedMonoidal {
 }
 
 trait BoundedMonoidal[B, T[_, _ <: B] <: B, U <: B] extends Monoidal {
-  type to = BoundedMonoidal.to[B, T, U]
-  type from = BoundedMonoidal.from[B, T, U]
+  type to[t] = BoundedMonoidal.to[B, T, U][t]
+  type from[t] = BoundedMonoidal.from[B, T, U][t]
 }
 
 object BoundedMonoidal {
@@ -139,8 +139,8 @@ object BoundedMonoidal {
 }
 
 trait UnitlessMonoidal[T[_, _]] extends Monoidal {
-  type to = UnitlessMonoidal.to[T]
-  type from = UnitlessMonoidal.from[T]
+  type to[t] = UnitlessMonoidal.to[T][t]
+  type from[t] = UnitlessMonoidal.from[T][t]
 }
 
 object UnitlessMonoidal {
@@ -161,8 +161,8 @@ object UnitlessMonoidal {
 }
 
 trait DirectMonoidal[T[_]] extends Monoidal {
-  type to = DirectMonoidal.to[T]
-  type from = DirectMonoidal.from[T]
+  type to[t] = DirectMonoidal.to[T][t]
+  type from[t] = DirectMonoidal.from[T][t]
 }
 
 object DirectMonoidal {
@@ -171,7 +171,7 @@ object DirectMonoidal {
     case T0[l] => l
   }
 
-  type from[T0[_]] = T0
+  type from[T0[_]] = [t] =>> T0[t]
 }
 
 object pairs extends UnboundedMonoidal[Tuple2, Unit] with Cartesian

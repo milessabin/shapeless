@@ -115,7 +115,7 @@ object K0 {
 }
 
 object K1 {
-  type Kind[C, O[_]] = C { type Kind = K1.type ; type MirroredType = O ; type MirroredElemTypes[_] }
+  type Kind[C, O[_]] = C { type Kind = K1.type ; type MirroredType[X] = O[X] ; type MirroredElemTypes[_] }
   type Generic[O[_]] = Kind[Mirror, O]
   type ProductGeneric[O[_]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_]] = Kind[Mirror.Sum, O]
@@ -201,7 +201,7 @@ object K1 {
 }
 
 object K11 {
-  type Kind[C, O[_[_]]] = C { type Kind = K11.type ; type MirroredType = O ; type MirroredElemTypes[_[_]] }
+  type Kind[C, O[_[_]]] = C { type Kind = K11.type ; type MirroredType[X[_]] = O[X] ; type MirroredElemTypes[_[_]] }
   type Generic[O[_[_]]] = Kind[Mirror, O]
   type ProductGeneric[O[_[_]]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_[_]]] = Kind[Mirror.Sum, O]
@@ -290,7 +290,7 @@ object K11 {
 }
 
 object K2 {
-  type Kind[C, O[_, _]] = C { type Kind = K2.type ; type MirroredType = O ; type MirroredElemTypes[_, _] }
+  type Kind[C, O[_, _]] = C { type Kind = K2.type ; type MirroredType[X, Y] = O[X, Y] ; type MirroredElemTypes[_, _] }
   type Generic[O[_, _]] = Kind[Mirror, O]
   type ProductGeneric[O[_, _]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_, _]] = Kind[Mirror.Sum, O]
