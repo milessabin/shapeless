@@ -165,14 +165,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
           case Right((state, inst)) =>
             val (tree, actualType) = if (root) mkInstances(state)(instTpe0) else (inst.ident, inst.actualTpe)
             current = if (root) None else Some(state)
-            if (root) {
-              val valNme = TermName(c.freshName("inst"))
-              q"""
-              val $valNme: $actualType = $tree
-              ${mkInst(q"$valNme", actualType)}
-              """
-            } else
-              mkInst(tree, actualType)
+            mkInst(tree, actualType)
           case Left(err) =>
             abort(err)
         }
