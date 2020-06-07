@@ -40,7 +40,7 @@ lazy val scoverageSettings = Seq(
   coverageExcludedFiles := ".*/src/test/.*"
 )
 
-val scalacOptionsAll = Seq(
+val scalacOptionsAll = List(
   "-feature",
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
@@ -48,7 +48,7 @@ val scalacOptionsAll = Seq(
   "-unchecked",
 )
 
-val scalacOptions212 = List(
+val scalacOptions212 = Seq(
   "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
   "-Ywarn-unused:-implicits"
 )
@@ -56,13 +56,15 @@ val scalacOptions212 = List(
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := scalacOptionsAll,
-
-  scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  scalacOptions := (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 13)) =>
       val pluginJar = (plugin / Compile / packageBin).value
-      s"-Xplugin:${pluginJar.getAbsolutePath}" :: s"-Jdummy=${pluginJar.lastModified}" :: scalacOptions212
-    case Some((2, 12)) => scalacOptions212
+      s"-Xplugin:${pluginJar.getAbsolutePath}" :: s"-Jdummy=${pluginJar.lastModified}" :: scalacOptionsAll
+    case _ => scalacOptionsAll
+  }),
+
+  scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, y)) if y >= 12 => scalacOptions212
     case _ => Nil
   }),
 

@@ -18,6 +18,14 @@ package shapeless
 
 import scala.reflect.macros.whitebox
 
+trait LazyInstances {
+  implicit def mkLazy[I](implicit i: => I): Lazy[I] = Lazy(i)
+}
+
+trait StrictInstances {
+  implicit def mkStrict[I](implicit i: I): Strict[I] = Strict(i)
+}
+
 trait ScalaVersionSpecifics {
   private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterable[Repr] { type C = Repr }
 

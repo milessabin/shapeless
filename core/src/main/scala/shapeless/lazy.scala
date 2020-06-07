@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.experimental.macros
-
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.whitebox
@@ -117,10 +115,10 @@ trait Lazy[+T] extends Serializable {
   def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
-object Lazy {
+object Lazy extends LazyInstances {
   implicit def apply[T](t: => T): Lazy[T] =
     new Lazy[T] {
-      lazy val value = t
+      lazy val value: T = t
     }
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
@@ -134,8 +132,6 @@ object Lazy {
   }
 
   def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
-
-  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
 }
 
 object lazily {
@@ -157,15 +153,13 @@ trait Strict[+T] extends Serializable {
   def flatMap[U](f: T => Strict[U]): Strict[U] = Strict { f(value).value }
 }
 
-object Strict {
+object Strict extends StrictInstances {
   implicit def apply[T](t: T): Strict[T] =
     new Strict[T] {
-      val value = t
+      val value: T = t
     }
 
   def unapply[T](lt: Strict[T]): Option[T] = Some(lt.value)
-
-  implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
 }
 
 trait OpenImplicitMacros {
@@ -192,7 +186,7 @@ trait OpenImplicitMacros {
     }
 }
 
-class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros with LowPriorityTypes {
+class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros {
   import c.universe._
   import c.internal._
   import decorators._
@@ -430,76 +424,11 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
       }
     }
 
-
-    def deriveLowPriority(
-      state0: State,
-      instTpe: Type
-    ): Option[Either[String, (State, Instance)]] = {
-
-      def helper(
-        state: State,
-        wrappedTpe: Type,
-        innerTpe: Type,
-        ignoring: String
-      ): (State, Instance) = {
-
-        val tmpState = state.copy(prevent = state.prevent :+ TypeWrapper(wrappedTpe))
-
-        val existingInstOpt = derive(tmpState)(innerTpe).toOption.flatMap {
-          case (state2, inst) =>
-            if (inst.inst.isEmpty)
-              resolve0(state2)(innerTpe).map { case (_, tree, _) => tree }
-            else
-              Some(inst.inst.get)
-        }
-
-        val existingInstAvailable = existingInstOpt.exists { actualTree =>
-          def ignored = actualTree match {
-            case TypeApply(method, other) => method.toString().endsWith(ignoring)
-            case _ => false
-          }
-
-          ignoring.isEmpty || !ignored
-        }
-
-        if (existingInstAvailable)
-          c.abort(c.enclosingPosition, s"$innerTpe available elsewhere")
-
-        val lowTpe =
-          if (ignoring.isEmpty)
-            appliedType(lowPriorityForTpe, List(innerTpe))
-          else
-            appliedType(lowPriorityForIgnoringTpe, List(internal.constantType(Constant(ignoring)), innerTpe))
-
-        val low = q"null: $lowTpe"
-
-        state.closeInst(wrappedTpe, low, lowTpe)
-      }
-
-      if (state0.prevent.contains(TypeWrapper(instTpe)))
-        Some(Left(s"Not deriving $instTpe"))
-      else
-        instTpe match {
-          case LowPriorityFor(ignored, tpe) =>
-            val res = state0.lookup(instTpe) match {
-              case Left(state) => helper(state, instTpe, tpe, ignored)
-              case Right(res) => res
-            }
-
-            Some(Right(res))
-
-          case _ => None
-        }
-    }
-
-    def derive(state: State)(tpe: Type): Either[String, (State, Instance)] = {
-      deriveLowPriority(state, tpe).getOrElse {
-        state.lookup(tpe).swap.flatMap { state0 =>
-          val inst = state0.dict(TypeWrapper(tpe))
-          resolve(state0)(inst).toLeft(s"Unable to derive $tpe")
-        }.swap
-      }
-    }
+    def derive(state: State)(tpe: Type): Either[String, (State, Instance)] =
+      state.lookup(tpe).swap.flatMap { state0 =>
+        val inst = state0.dict(TypeWrapper(tpe))
+        resolve(state0)(inst).toLeft(s"Unable to derive $tpe")
+      }.swap
 
     // Workaround for https://issues.scala-lang.org/browse/SI-5465
     class StripUnApplyNodes extends Transformer {
