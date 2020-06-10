@@ -38,14 +38,14 @@ object K0 {
   def CoproductInstances[F[_], T](using inst: CoproductInstances[F, T]): inst.type = inst
 
   type ToUnion[T] = T match {
-    case Unit => Nothing
+    case EmptyTuple => Nothing
     case a *: b => a | ToUnion[b]
   }
 
   type IndexOf[E, X] = IndexOf0[E, X, 0]
 
   type IndexOf0[E, X, I <: Int] <: Int = X match {
-    case Unit => -1
+    case EmptyTuple => -1
     case x *: xs => x match {
       case E => I
       case _ => IndexOf0[E, xs, S[I]]
@@ -53,7 +53,7 @@ object K0 {
   }
 
   type LiftP[F[_], T] <: Tuple = T match {
-    case Unit => Unit
+    case EmptyTuple => EmptyTuple
     case a *: b => F[a] *: LiftP[F, b]
   }
 
@@ -143,7 +143,7 @@ object K1 {
   type LiftP[F[_[_]], T[_]] = LiftP0[F, Apply[T]]
 
   type LiftP0[F[_[_]], T] <: Tuple = T match {
-    case Unit => Unit
+    case EmptyTuple => EmptyTuple
     case (a *:  b) => Unapply[F, Wrap[a]] *: LiftP0[F, b]
   }
 
@@ -232,7 +232,7 @@ object K11 {
   type LiftP[F[_[_[_]]], T[_[_]]] = LiftP0[F, Apply[T]]
 
   type LiftP0[F[_[_[_]]], T] <: Tuple = T match {
-    case Unit => Unit
+    case EmptyTuple => EmptyTuple
     case (a *:  b) => Unapply[F, Wrap[a]] *: LiftP0[F, b]
   }
 
@@ -324,7 +324,7 @@ object K2 {
   type LiftP[F[_[_, _]], T[_, _]] = LiftP0[F, Apply[T]]
 
   type LiftP0[F[_[_, _]], T] <: Tuple = T match {
-    case Unit => Unit
+    case EmptyTuple => EmptyTuple
     case (a *:  b) => Unapply[F, Wrap[a]] *: LiftP0[F, b]
   }
 
