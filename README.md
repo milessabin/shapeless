@@ -225,6 +225,7 @@ cross-builds for 2.11.12 and 2.12.11.
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
 + Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
++ Kazuki Moriyama <pharcydetip@gmail.com> [@kazchimo](https://twitter.com/Kazuki_Moriyama)
 + Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
