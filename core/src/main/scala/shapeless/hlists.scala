@@ -35,7 +35,7 @@ sealed trait HList extends Product with Serializable
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
-  override def toString = head match {
+  override def toString: String = head match {
     case _: ::[_, _] => s"($head) :: $tail"
     case _ => s"$head :: $tail"
   }
@@ -62,9 +62,9 @@ object HList extends Dynamic {
   import ops.hlist._
   import syntax.HListOps
 
-  def apply() = HNil
+  def apply(): HNil.type = HNil
 
-  def apply[T](t: T) = t :: HNil
+  def apply[T](t: T): T :: HNil = t :: HNil
 
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
 
