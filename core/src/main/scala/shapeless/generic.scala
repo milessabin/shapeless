@@ -288,6 +288,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     normalized <:< hlistTpe || normalized <:< coproductTpe
   }
 
+  /**
+   * Lower the order of type kind applying Any type if `tpe` takes type parameters.
+   * Note that it works properly only if `tpe` take only one parameter.
+   *
+   * {{{
+   *   lowerKind(typeOf[List[_]].typeConstructor) -> List[Any]
+   * }}}
+   */
   def lowerKind(tpe: Type): Type =
     if(tpe.takesTypeArgs)
       appliedType(tpe, List(typeOf[Any])).dealias
@@ -328,6 +336,10 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     nameStr.contains("$anon") || nameStr == "<refinement>"
   }
 
+  /**
+   * @return a List of name and type pairs for the fields of type `tpe`.
+   * @see [[isCaseAccessorLike]] for the definition of what is considered a field.
+   * */
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
     val clazz = tpe.typeSymbol.asClass
     val isCaseClass = clazz.isCaseClass
@@ -473,14 +485,27 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       case (elem, acc) => q"_root_.shapeless.::($elem, $acc)"
     }
 
+  /**
+   * Fold `items` into a type using `cons` as a type constructor.
+   *
+   * {{{
+   *   mkCompoundTpe(hnilTpe, hconsTpe, Seq(typeOf[String], typeOf[Int])) -> String :: Int :: HNil
+   * }}}
+   */
   def mkCompoundTpe(nil: Type, cons: Type, items: Seq[Type]): Type =
     items.foldRight(nil) { (tpe, acc) =>
       appliedType(cons, List(devarargify(tpe), acc))
     }
 
+  /**
+   * Convert `items` to corresponding HList type.
+   */
   def mkHListTpe(items: Seq[Type]): Type =
     mkCompoundTpe(hnilTpe, hconsTpe, items)
 
+  /**
+   * Convert `items` to corresponding Coproduct type.
+   */
   def mkCoproductTpe(items: Seq[Type]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, items)
 
@@ -698,6 +723,9 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     mkAttributedRef(pre, getter)
   }
 
+  /**
+   * Check if `sym` or any of its overrides are annotated by [[nonGeneric]].
+   */
   def isNonGeneric(sym: Symbol): Boolean = {
     def check(sym: Symbol): Boolean = {
       // See https://issues.scala-lang.org/browse/SI-7424
@@ -719,9 +747,16 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def isVararg(tpe: Type): Boolean =
     tpe.typeSymbol == c.universe.definitions.RepeatedParamClass
 
+  /**
+   * Convert a varargs type to corresponding Seq type.
+   *
+   * {{{
+   *   String* -> Seq[String]
+   * }}}
+   */
   def devarargify(tpe: Type): Type =
     tpe match {
-      case TypeRef(pre, _, args) if isVararg(tpe) =>
+      case TypeRef(_, _, args) if isVararg(tpe) =>
         appliedType(varargTC, args)
       case _ => tpe
     }
@@ -838,7 +873,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           narrow(tree, tpe)
 
       def mkCtorDtor0(elems0: List[(TermName, Type)]) = {
-        val elems = elems0.map { case (name, tpe) => (TermName(c.freshName("pat")), tpe) }
+        val elems = elems0.map { case (_, tpe) => (TermName(c.freshName("pat")), tpe) }
         val pattern = pq"${companionRef(tpe)}(..${elems.map { case (binder, tpe) => if(isVararg(tpe)) pq"$binder @ $repWCard" else pq"$binder"}})"
         val reprPattern =
           elems.foldRight(q"_root_.shapeless.HNil": Tree) {
@@ -883,7 +918,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
                 c.internal.gen.mkAttributedRef(pre, sym.asModule)
               case TypeRef(pre, sym, List()) if sym.isModuleClass =>
                 c.internal.gen.mkAttributedRef(pre, sym.asClass.module)
-              case other =>
+              case _ =>
                 abort(s"Bad case object-like type $tpe")
             }
           new CtorDtor {
