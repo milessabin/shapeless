@@ -747,7 +747,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
       apply = companion.member(TermName("apply"))
-      if apply.isTerm && !apply.asTerm.isOverloaded
       if apply.isMethod && !isNonGeneric(apply)
       if isAccessible(companion, apply)
       Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
@@ -760,7 +759,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     def unapply(tpe: Type): Option[List[Type]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
       unapply = companion.member(TermName("unapply"))
-      if unapply.isTerm && !unapply.asTerm.isOverloaded
       if unapply.isMethod && !isNonGeneric(unapply)
       if isAccessible(companion, unapply)
       returnTpe <- unapply.asMethod.typeSignatureIn(companion).finalResultType
