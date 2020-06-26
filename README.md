@@ -196,6 +196,7 @@ cross-builds for 2.11.12 and 2.12.11.
 + Dave Gurnell <d.j.gurnell@gmail.com> [@davegurnell](https://twitter.com/davegurnell)
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
++ Dmitry Kovalev <kdn.kovalev@gmail.com>
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Fabio Labella <fabio.labella2@gmail.com> [@SystemFw](https://twitter.com/SystemFw)
 + Filipe Nepomuceno <filinep@gmail.com>
