@@ -1108,7 +1108,7 @@ class RecordTests {
 
     val (x, y, z) = (Witness("x"), Witness("y"), Witness("z"))
 
-    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply
+    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply()
 
     assertEquals(fields.toList, List("x", "y", "z"))
   }

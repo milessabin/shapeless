@@ -743,6 +743,22 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     }
   } yield fields
 
+  def numNonCaseParamLists(tpe: Type): Int = {
+    val companion = patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature
+    val apply = companion.member(TermName("apply"))
+    if (apply.isMethod && !isNonGeneric(apply) && isAccessible(companion, apply)) {
+      val paramLists = apply.typeSignatureIn(companion).paramLists
+      val numParamLists = paramLists.length
+      if (numParamLists <= 1) 0
+      else {
+        if (paramLists.last.headOption.exists(_.isImplicit))
+          numParamLists-2
+        else
+          numParamLists-1
+      }
+    } else 0
+  }
+
   object HasApply {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
@@ -828,8 +844,9 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           elems.foldRight(q"_root_.shapeless.HNil": Tree) {
             case ((bound, _), acc) => pq"_root_.shapeless.::($bound, $acc)"
           }
+        val nonCaseParamLists: List[List[Tree]] = List.fill(numNonCaseParamLists(tpe))(Nil)
         new CtorDtor {
-          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}(..$args)"
+          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}(...${args :: nonCaseParamLists})"
           def binding: (Tree, List[Tree]) = (pattern, elems.map { case (binder, tpe) => narrow(q"$binder", tpe) })
           def reprBinding: (Tree, List[Tree]) = (reprPattern, elems.map { case (binder, tpe) => narrow1(q"$binder", tpe) })
         }

@@ -6,7 +6,7 @@ import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
 val Scala212 = "2.12.11"
-val Scala213 = "2.13.2"
+val Scala213 = "2.13.3"
 
 val isScalaNative = System.getenv("SCALA_NATIVE") != null
 val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
@@ -53,13 +53,19 @@ val scalacOptions212 = Seq(
   "-Ywarn-unused:-implicits"
 )
 
+val scalacOptions213 = Seq(
+  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
+  "-Ywarn-unused:-implicits"
+)
+
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
   scalacOptions := scalacOptionsAll,
 
   scalacOptions in compile in Compile ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y >= 12 => scalacOptions212
+    case Some((2, y)) if y == 12 => scalacOptions212
+    case Some((2, y)) if y >= 13 => scalacOptions213
     case _ => Nil
   }),
 
