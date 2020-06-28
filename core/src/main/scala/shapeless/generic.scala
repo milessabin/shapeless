@@ -751,7 +751,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       val numParamLists = paramLists.length
       if (numParamLists <= 1) 0
       else {
-        if (paramLists.last.headOption.map(_.isImplicit).getOrElse(false))
+        if (paramLists.last.headOption.exists(_.isImplicit))
           numParamLists-2
         else
           numParamLists-1

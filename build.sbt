@@ -168,7 +168,6 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossTy
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(commonNativeSettings:_*)
-  .jvmSettings(scalacOptions += "-Xprint:typer")
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
