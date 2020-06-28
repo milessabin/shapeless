@@ -813,7 +813,7 @@ class GenericTests {
   def testGenericDegenerate: Unit = {
     type Repr = Int :: HNil
     val gen = Generic[CCDegen]
-    val cc = CCDegen(313)
+    val cc = CCDegen(313)()
     val rep = 313 :: HNil
 
     assertTypedEquals[CCDegen](gen.from(rep), cc)

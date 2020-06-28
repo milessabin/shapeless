@@ -221,7 +221,7 @@ object ALaCacheDemo extends App {
   val Foo(i2, s2) = foo
 
   assert(s eq s2)
-  assert(Foo.aliveExtracted == 1)
+  assert(Foo.aliveExtracted() == 1)
 
   // log side effect
   foo.stuff

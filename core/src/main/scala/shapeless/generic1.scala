@@ -328,7 +328,7 @@ trait IsCons1Macros extends CaseClassMacros {
     val TypeRef(_, _, List(hd, tl)) = lDealiasedTpe
     val hdPoly = polyType(List(lParam), hd)
     val tlPoly = polyType(List(lParam), tl)
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName())
     val hdTpt = appliedTypTree1(hdPoly, lParamTpe, name)
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, name)
     val hdName = TypeName(c.freshName("H"))
@@ -371,7 +371,7 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
         }
       }
 
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName())
     val (oTpt, iTpt) = lDealiasedTpe match {
       case tpe @ TypeRef(_, _, args) if balanced(args) =>
         val pivot = args.find(_.contains(lParam)).get
