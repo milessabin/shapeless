@@ -8,12 +8,12 @@ jdk:
 scala:
   - 2.11.12
   - 2.12.11
-  - 2.13.2
+  - 2.13.3
 
 env:
   - {}
-  - SCALA_JS_VERSION=0.6.32
-  - SCALA_JS_VERSION=1.0.1
+  - SCALA_JS_VERSION=0.6.33
+  - SCALA_JS_VERSION=1.1.1
 
 stages:
   - name: test
@@ -47,4 +47,4 @@ jobs:
         - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
       script:
         - sbt ci-release
-        - SCALA_JS_VERSION=0.6.32 sbt clean sonatypeBundleClean ci-release
+        - SCALA_JS_VERSION=0.6.33 sbt clean sonatypeBundleClean ci-release

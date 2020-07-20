@@ -48,6 +48,11 @@ class HListTests {
 
   type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+  object incInt extends (Int >-> Int)(_ + 1)
+  object extendedChoose extends LiftU(choose)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -129,10 +134,6 @@ class HListTests {
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
 
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
-  object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends LiftU(choose)
 
   @Test
   def testBasics: Unit = {
@@ -3422,13 +3423,13 @@ class HListTests {
   def testReify: Unit = {
     import syntax.singleton._
 
-    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals(HNil, Reify[HNil].apply())
 
     val s1 = HList.`"a"`
-    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply)
+    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
 
     val s2 = HList.`"a", 1, "b", true`
-    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
 
     illTyped("Reify[String :: Int :: HNil]")
     illTyped("""Reify[String :: HList.`"a", 1, "b", true`.T]""")

@@ -54,13 +54,13 @@ sealed abstract class DataCollections extends DataGeneric {
   implicit def deriveIterable[F, I[_], T, R](
     implicit ev: I[T] <:< Iterable[T], cse: Lazy[Case1.Aux[F, T, R]]
   ): Data[F, I[T], R] = instance {
-    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result
+    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result()
   }
 
   implicit def deriveMap[F, M[_, _], K, V, R](
     implicit ev: M[K, V] <:< Map[K, V], cse: Lazy[Case1.Aux[F, (K, V), R]]
   ): Data[F, M[K, V], R] = instance {
-    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result
+    _.foldLeft(List.newBuilder[R])(_ += cse.value(_)).result()
   }
 }
 
@@ -119,7 +119,7 @@ sealed abstract class DataTCollections extends DataTGeneric {
   implicit def deriveIterable[F <: Poly, I[_], T, O](
     implicit ev: I[T] <:< Iterable[T], cse: Lazy[Case1.Aux[F, T, O]], factory: Factory[O, I[O]]
   ): Aux[F, I[T], I[O]] = instance {
-    _.foldLeft(factory.newBuilder)(_ += cse.value(_)).result
+    _.foldLeft(factory.newBuilder)(_ += cse.value(_)).result()
   }
 
   implicit def deriveMap[F <: Poly, M[_, _], K, V, O](
@@ -127,7 +127,7 @@ sealed abstract class DataTCollections extends DataTGeneric {
   ): Aux[F, M[K, V], M[K, O]] = instance {
     _.foldLeft(factory.newBuilder) {
       case (b, (k, v)) => b += k -> cse.value(v)
-    }.result
+    }.result()
   }
 }
 

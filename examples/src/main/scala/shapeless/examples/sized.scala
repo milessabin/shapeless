@@ -43,7 +43,7 @@ object SizedExamples extends App {
     val formatted = csv(hdrs, rows)
     formatted foreach println                               // Compiles
     
-    println
+    println()
     
     // extendedHdrs has the wrong number of columns for rows
     val extendedHdrs = Sized("Title", "Author", "ISBN")     // Sized[IndexedSeq[Int], _3]
@@ -73,7 +73,7 @@ object SizedExamples extends App {
       formatted foreach println
     }
     
-    println
+    println()
   
     // extendedHdrs has the wrong number of columns for rows
     val extendedHdrs = List("Title", "Author", "ISBN")
@@ -104,7 +104,7 @@ object SizedExamples extends App {
   println("Fully static: ")
   fullyStatic
   
-  println
+  println()
   
   println("Mixed dynamic/static")
   mixedDynamicStatic

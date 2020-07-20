@@ -44,6 +44,9 @@ class TupleTests {
 
   type BBBB = (Boolean, Boolean, Boolean, Boolean)
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -117,9 +120,6 @@ class TupleTests {
   val m2eim2esm2eim2eem2edList = List(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed = (m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
-
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
 
   trait incInt0 extends Poly1 {
     implicit def default[T] = at[T](t => ())

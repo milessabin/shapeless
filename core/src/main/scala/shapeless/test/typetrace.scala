@@ -32,7 +32,11 @@ class TypeTraceMacros(val c: blackbox.Context) {
 
   def applyImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
     val tTpe = weakTypeOf[T]
-    println(s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}")
+    c.info(
+      c.enclosingPosition,
+      s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}",
+      force = true
+    )
 
     q"""new _root_.shapeless.test.TypeTrace[$tTpe]"""
   }

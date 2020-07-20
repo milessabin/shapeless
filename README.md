@@ -196,6 +196,7 @@ cross-builds for 2.11.12 and 2.12.11.
 + Dave Gurnell <d.j.gurnell@gmail.com> [@davegurnell](https://twitter.com/davegurnell)
 + David Barri <japgolly@gmail.com> [@japgolly](https://twitter.com/japgolly)
 + Denis Mikhaylov <notxcain@gmail.com> [@notxcain](https://twitter.com/@notxcain)
++ Dmitry Kovalev <kdn.kovalev@gmail.com>
 + Eugene Burmako <xeno.by@gmail.com> [@xeno_by](https://twitter.com/xeno_by)
 + Fabio Labella <fabio.labella2@gmail.com> [@SystemFw](https://twitter.com/SystemFw)
 + Filipe Nepomuceno <filinep@gmail.com>
@@ -225,6 +226,7 @@ cross-builds for 2.11.12 and 2.12.11.
 + Julien Tournay <boudhevil@gmail.com> [@skaalf](https://twitter.com/skaalf)
 + Jules Gosnell <jules_gosnell@yahoo.com>
 + Kailuo Wang <kailuo.wang@gmail.com> [@kailuowang](https://twitter.com/kailuowang)
++ Kazuki Moriyama <pharcydetip@gmail.com> [@kazchimo](https://twitter.com/Kazuki_Moriyama)
 + Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
 + Kevin Wright <kev.lee.wright@gmail.com> [@thecoda](https://twitter.com/thecoda)
 + Lars Hupel <lars.hupel@mytum.de> [@larsr_h](https://twitter.com/larsr_h)
