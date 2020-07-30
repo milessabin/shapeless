@@ -283,23 +283,19 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def isReprType(tpe: Type): Boolean =
     tpe <:< hlistTpe || tpe <:< coproductTpe
 
-  def isReprType1(tpe: Type): Boolean = {
-    val normalized = appliedType(tpe, WildcardType).dealias
-    normalized <:< hlistTpe || normalized <:< coproductTpe
-  }
+  def isReprType1(tpe: Type): Boolean =
+    isReprType(lowerKind(tpe))
 
   /**
-   * Lower the order of type kind applying Any type if `tpe` takes type parameters.
-   * Note that it works properly only if `tpe` take only one parameter.
+   * Lower the order of `tpe`'s kind by applying `Any` in place of all type parameters (`Any` is poly-kinded).
+   * Note that the resulting type is dealiased before being returned.
    *
    * {{{
    *   lowerKind(typeOf[List[_]].typeConstructor) -> List[Any]
    * }}}
    */
   def lowerKind(tpe: Type): Type =
-    if(tpe.takesTypeArgs)
-      appliedType(tpe, List(typeOf[Any])).dealias
-    else tpe
+    appliedType(tpe, tpe.typeParams.map(_ => definitions.AnyTpe)).dealias
 
   def isProductAux(tpe: Type): Boolean =
     tpe.typeSymbol.isClass && {
@@ -308,19 +304,16 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     }
 
   def isProduct(tpe: Type): Boolean =
-    tpe =:= typeOf[Unit] || (!(tpe =:= typeOf[AnyRef]) && isProductAux(tpe))
+    tpe =:= definitions.UnitTpe || (!(tpe =:= definitions.AnyRefTpe) && isProductAux(tpe))
 
   def isProduct1(tpe: Type): Boolean =
-    lowerKind(tpe) =:= typeOf[Unit] || (!(lowerKind(tpe) =:= typeOf[AnyRef]) && isProductAux(tpe))
+    isProduct(lowerKind(tpe))
 
-  def isCoproduct(tpe: Type): Boolean = {
-    val sym = tpe.typeSymbol
-    if(!sym.isClass) false
-    else {
-      val sym = classSym(tpe)
-      (sym.isTrait || sym.isAbstract) && sym.isSealed
+  def isCoproduct(tpe: Type): Boolean =
+    tpe.typeSymbol.isClass && {
+      val cls = classSym(tpe)
+      (cls.isTrait || cls.isAbstract) && cls.isSealed
     }
-  }
 
   def ownerChain(sym: Symbol): List[Symbol] = {
     @tailrec
