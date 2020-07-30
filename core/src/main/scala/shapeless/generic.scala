@@ -941,7 +941,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     val (p, ts) = ctorDtor.binding
     val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
     val (rp, rts) = ctorDtor.reprBinding
-    val from = cq"$rp => ${ctorDtor.construct(rts)}"
+    val from = cq"$rp => ${ctorDtor.construct(rts)}.asInstanceOf[$tpe]"
     q"$generic.instance[$tpe, $repr]({ case $to }, { case $from })"
   }
 
