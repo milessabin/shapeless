@@ -288,14 +288,12 @@ object TypeableMacros {
         case tree: ValDef => tree.tpt.tpe
       }
       if (!sym.fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
-        Reporting.error(s"No Typeable for case class ${target.show} with non-case fields")
-        '{???}
+        report.throwError(s"No Typeable for case class ${target.show} with non-case fields")
       } else {
         val fieldTps = caseFields.map(f => target.memberType(f))
         summonAllTypeables(fieldTps) match {
           case None =>
-            Reporting.error(s"Missing Typeable for field of case class ${target.show}")
-            '{???}
+            report.throwError(s"Missing Typeable for field of case class ${target.show}")
           case Some(ftps) =>
             val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
             val name = Expr(simpleName(target))
@@ -314,8 +312,7 @@ object TypeableMacros {
           val elemTps = rm.MirroredElemTypes
           summonAllTypeables(elemTps) match {
             case None =>
-              Reporting.error(s"Missing Typeable for child of sum type ${target.show}")
-              '{???}
+              report.throwError(s"Missing Typeable for child of sum type ${target.show}")
             case Some(etps) =>
               val name = Expr(simpleName(target))
 
@@ -323,8 +320,7 @@ object TypeableMacros {
           }
 
         case None =>
-          Reporting.error(s"Typeable for sum type ${target.show} with no Mirror")
-          '{???}
+          report.throwError(s"Typeable for sum type ${target.show} with no Mirror")
       }
     }
 
@@ -371,8 +367,7 @@ object TypeableMacros {
             mkNamedSimpleTypeable
           case Some(_) if sym.flags.is(Flags.Sealed) => mkSumTypeable
           case _ =>
-            Reporting.error(s"No Typeable for type ${target.show} with a dependent prefix")
-            '{???}
+            report.throwError(s"No Typeable for type ${target.show} with a dependent prefix")
         }
 
       case tp: AppliedType =>
@@ -381,10 +376,8 @@ object TypeableMacros {
 
         if (tp.typeSymbol.flags.is(Flags.Case)) mkCaseClassTypeable
         else if (tp.typeSymbol.flags.is(Flags.Sealed)) mkSumTypeable
-        else {
-          Reporting.error(s"No Typeable for parametrized type ${target.show}")
-          '{???}
-        }
+        else report.throwError(s"No Typeable for parametrized type ${target.show}")
+
 
       case tp: AndType =>
         val conjuncts = collectConjuncts(tp)
@@ -392,8 +385,7 @@ object TypeableMacros {
           case Some(ctps) =>
             '{ intersectionTypeable($ctps) }
           case None =>
-            Reporting.error(s"No Typeable for & type ${target.show} with missing conjunct(s)")
-            '{???}
+            report.throwError(s"No Typeable for & type ${target.show} with missing conjunct(s)")
         }
 
       case tp: OrType =>
@@ -402,13 +394,11 @@ object TypeableMacros {
           case Some(dtps) =>
             '{ unionTypeable($dtps) }
           case None =>
-            Reporting.error(s"No Typeable for | type ${target.show} with missing disjunct(s)")
-            '{???}
+            report.throwError(s"No Typeable for | type ${target.show} with missing disjunct(s)")
         }
 
       case other =>
-        Reporting.error(s"No Typeable for type ${target.show}")
-        '{???}
+        report.throwError(s"No Typeable for type ${target.show}")
     }
   }
 }
