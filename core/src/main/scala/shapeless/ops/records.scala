@@ -60,8 +60,8 @@ package record {
         abort(s"$record is not a record type")
 
       findField(record, key) match {
-        case Some((v, i)) =>
-          q"new ${typeOf[UnsafeSelector]}($i).asInstanceOf[${reify(Selector)}.Aux[$record, $key, $v]]"
+        case Some((k, v, i)) =>
+          q"new ${typeOf[UnsafeSelector]}($i).asInstanceOf[${reify(Selector)}.Aux[$record, $k, $v]]"
         case _ =>
           abort(s"No field $key in record type $record")
       }
@@ -377,9 +377,9 @@ package record {
       val b = weakTypeOf[B]
       val fields = unpackHList(record)
       findField(fields, key) match {
-        case Some((v, i)) if v <:< a =>
-          val out = mkHListTpe(fields.updated(i, FieldType(key, b)))
-          q"new ${typeOf[UnsafeModifier]}($i).asInstanceOf[${reify(Modifier)}.Aux[$record, $key, $a, $b, $out]]"
+        case Some((k, v, i)) if v <:< a =>
+          val out = mkHListTpe(fields.updated(i, FieldType(k, b)))
+          q"new ${typeOf[UnsafeModifier]}($i).asInstanceOf[${reify(Modifier)}.Aux[$record, $k, $a, $b, $out]]"
         case _ =>
           abort(s"No field $key in record type $record")
       }
@@ -420,10 +420,10 @@ package record {
 
       val fields = unpackHList(record)
       findField(fields, key) match {
-        case Some((v, i)) =>
+        case Some((k, v, i)) =>
           val (prefix, suffix) = fields.splitAt(i)
           val out = mkHListTpe(prefix ++ suffix.tail)
-          q"new ${typeOf[UnsafeRemover]}($i).asInstanceOf[${reify(Remover)}.Aux[$record, $key, ($v, $out)]]"
+          q"new ${typeOf[UnsafeRemover]}($i).asInstanceOf[${reify(Remover)}.Aux[$record, $k, ($v, $out)]]"
         case _ =>
           abort(s"No field $key in record type $record")
       }
