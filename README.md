@@ -165,7 +165,7 @@ releases][olderusage] on the shapeless wiki.
 ## Building shapeless
 
 shapeless is built with SBT 1.3.10 or later, and its master branch is built with Scala 2.13.2 by default but also
-cross-builds for 2.11.12 and 2.12.11.
+cross-builds for 2.11.12 and 2.12.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 

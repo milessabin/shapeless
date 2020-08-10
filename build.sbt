@@ -5,7 +5,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
-val Scala212 = "2.12.11"
+val Scala212 = "2.12.12"
 val Scala213 = "2.13.3"
 
 val isScalaNative = System.getenv("SCALA_NATIVE") != null

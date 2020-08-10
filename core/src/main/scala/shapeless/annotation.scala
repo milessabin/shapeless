@@ -30,7 +30,7 @@ import scala.reflect.macros.whitebox
  *   case class First(i: Int)
  *
  *   @First(3) trait Something
- *   
+ *
  *
  *   val somethingFirst = Annotation[First, Something].apply()
  *   assert(somethingFirst == First(3))
@@ -179,7 +179,11 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   def someTpe: Type = typeOf[Some[_]].typeConstructor
   def noneTpe: Type = typeOf[None.type]
 
-  // FIXME Most of the content of this method is cut-n-pasted from generic.scala
+  /**
+   * FIXME Most of the content of this method is cut-n-pasted from generic.scala
+   *
+   * @return The AST of the `tpe` constructor.
+   */
   def construct(tpe: Type): List[Tree] => Tree = {
     // FIXME Cut-n-pasted from generic.scala
     val sym = tpe.typeSymbol

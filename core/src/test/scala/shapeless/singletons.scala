@@ -491,12 +491,12 @@ class SingletonTypesTests {
   def testWitnessThisType: Unit = {
     class ClassThis {
       val w1 = Witness(this)
-      val w2 = Witness[this.type]
+      val w2 = Witness.of[this.type]
     }
 
     object ObjectThis {
       val w1 = Witness(this)
-      val w2 = Witness[this.type]
+      val w2 = Witness.of[this.type]
     }
 
     val c = new ClassThis
