@@ -31,76 +31,44 @@ trait Witness extends Serializable {
   val value: T {}
 }
 
-object Witness extends Dynamic {
+object Witness extends Dynamic with WitnessInstances {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
-  implicit def apply[T]: Witness.Aux[T] = macro SingletonTypeMacros.materializeImpl[T]
-
-  implicit def apply[T](t: T): Witness.Lt[T] = macro SingletonTypeMacros.convertImpl
-
-  def mkWitness[T0](value0: T0): Aux[T0] =
-    new Witness {
-      type T = T0
-      val value = value0
-    }
+  def mkWitness[A](v: A): Aux[A] = new Witness {
+    type T = A
+    val value = v
+  }
 
   implicit val witness0: Witness.Aux[_0] =
-    new Witness {
-      type T = _0
-      val value = Nat._0
-    }
+    mkWitness(Nat._0)
 
   implicit def witnessN[P <: Nat]: Witness.Aux[Succ[P]] =
-    new Witness {
-      type T = Succ[P]
-      val value = new Succ[P]()
-    }
+    mkWitness(Succ[P]())
 
-  def selectDynamic(tpeSelector: String): Any = macro SingletonTypeMacros.witnessTypeImpl
+  def selectDynamic(tpeSelector: String): Any =
+    macro SingletonTypeMacros.witnessTypeImpl
 }
 
 trait WitnessWith[TC[_]] extends Witness {
   val instance: TC[T]
 }
 
-trait LowPriorityWitnessWith {
-  implicit def apply2[H, TC2[_ <: H, _], S <: H, T](t: T): WitnessWith.Lt[({ type λ[X] = TC2[S, X] })#λ, T] =
-    macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S]
-}
-
-object WitnessWith extends LowPriorityWitnessWith {
+object WitnessWith extends WitnessWithInstances {
   type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0 }
   type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
-
-  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] =
-    macro SingletonTypeMacros.convertInstanceImpl1[TC]
-
-  def depInstance[TC[_] <: AnyRef, T0](v: T0, tc: TC[T0]): Aux[TC, T0] { val instance: tc.type } =
-    new WitnessWith[TC] {
-      type T = T0
-      val value: T = v
-      val instance: tc.type = tc
-    }
-
-  def instance[TC[_], T0](v: T0, tc: TC[T0]): Aux[TC, T0] =
-    new WitnessWith[TC] {
-      type T = T0
-      val value: T = v
-      val instance: TC[T] = tc
-    }
 }
 
 trait NatWith[TC[_ <: Nat]] {
   type N <: Nat
-
   val instance: TC[N]
 }
 
 object NatWith {
   type Aux[TC[_ <: Nat], N0 <: Nat] = NatWith[TC] { type N = N0 }
 
-  implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] = macro SingletonTypeMacros.convertInstanceImplNat[TC]
+  implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] =
+    macro SingletonTypeMacros.convertInstanceImplNat[TC]
 
   implicit def apply2[B, T <: B, TC[_ <: B, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
     macro SingletonTypeMacros.convertInstanceImplNat1[B, T, TC]

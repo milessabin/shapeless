@@ -537,12 +537,12 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     }
   }
 
-  def findField(record: Type, key: Type): Option[(Type, Int)] =
+  def findField(record: Type, key: Type): Option[(Type, Type, Int)] =
     findField(unpackHList(record), key)
 
-  def findField(fields: Seq[Type], key: Type): Option[(Type, Int)] =
+  def findField(fields: Seq[Type], key: Type): Option[(Type, Type, Int)] =
     fields.iterator.zipWithIndex.collectFirst {
-      case (FieldType(k, v), i) if k =:= key => (v, i)
+      case (FieldType(k, v), i) if k =:= key => (k, v, i)
     }
 
   def appliedTypTree1(tpe: Type, param: Type, arg: TypeName): Tree = {
