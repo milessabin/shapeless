@@ -36,7 +36,6 @@ trait OrphanDeriver[F[_], D] {
   implicit def materialize[T]: F[T] = macro OrphanMacros.materializeImpl[F, D, T]
 }
 
-@macrocompat.bundle
 class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

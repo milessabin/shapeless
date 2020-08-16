@@ -381,7 +381,6 @@ object TypeCase {
   }
 }
 
-@macrocompat.bundle
 class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import definitions.NothingClass
@@ -404,9 +403,6 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
         if (normalizedTypeable.isEmpty)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         normalizedTypeable
-
-      case SingletonSymbolType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe](${mkSingletonSymbol(c)}, "Symbol")"""
 
       case RefinedType(parents, decls) =>
         if (decls.nonEmpty)

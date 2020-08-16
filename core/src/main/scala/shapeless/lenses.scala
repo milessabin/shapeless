@@ -22,7 +22,6 @@ import labelled.{ FieldType, field }
 import ops.coproduct.{ Inject, Selector => CSelector }
 import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
 import ops.record.{ Selector => RSelector, Updater }
-import tag.@@
 
 trait Lens[S, A] extends LPLens[S, A] { outer =>
   def get(s: S): A
@@ -43,8 +42,9 @@ trait Lens[S, A] extends LPLens[S, A] { outer =>
 
   def >>(k: Witness)(implicit mkLens: MkFieldLens[A, k.T]): Lens[S, mkLens.Elem] = mkLens() compose this
 
-  def selectDynamic(k: String)
-    (implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, Symbol @@ k.type, Nothing]): mkLens.Out = mkLens(this)
+  def selectDynamic(k: String)(
+    implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, k.type, Nothing]
+  ): mkLens.Out = mkLens(this)
 
   def apply[B](implicit mkPrism: MkCtorPrism[A, B]): Prism[S, B] = mkPrism() compose this
 
@@ -62,8 +62,9 @@ trait Lens[S, A] extends LPLens[S, A] { outer =>
 }
 
 trait LPLens[S, A] extends Dynamic with Serializable { self: Lens[S, A] =>
-  def selectDynamic[B](k: String)
-    (implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, Symbol @@ k.type, B], dummy: DummyImplicit): mkLens.Out = mkLens(this)
+  def selectDynamic[B](k: String)(
+    implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, k.type, B], dummy: DummyImplicit
+  ): mkLens.Out = mkLens(this)
 }
 
 trait Prism[S, A] extends LPPrism[S, A] { outer =>
@@ -81,8 +82,9 @@ trait Prism[S, A] extends LPPrism[S, A] { outer =>
     def set(t: T)(a: A): T = g.modify(t)(outer.set(_)(a))
   }
 
-  def selectDynamic(k: String)
-    (implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, Symbol @@ k.type, Nothing]): mkPrism.Out = mkPrism(this)
+  def selectDynamic(k: String)(
+    implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, k.type, Nothing]
+  ): mkPrism.Out = mkPrism(this)
 
   def apply[B](implicit mkPrism: MkCtorPrism[A, B]): Prism[S, B] = mkPrism() compose this
 
@@ -106,8 +108,9 @@ trait Prism[S, A] extends LPPrism[S, A] { outer =>
 }
 
 trait LPPrism[S, A] extends Dynamic with Serializable { self: Prism[S, A] =>
-  def selectDynamic[B](k: String)
-    (implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, Symbol @@ k.type, B], dummy: DummyImplicit): mkPrism.Out = mkPrism(this)
+  def selectDynamic[B](k: String)(
+    implicit mkPrism: MkSelectDynamicOptic[Prism[S, A], A, k.type, B], dummy: DummyImplicit
+  ): mkPrism.Out = mkPrism(this)
 }
 
 trait ProductLensBuilder[C, P <: Product] extends Lens[C, P] with Serializable {
@@ -538,14 +541,14 @@ trait Segment[P, S, T <: HList] {
 trait LowPrioritySegment {
   type Aux[P, S, T <: HList, Out0 <: HList] = Segment[P, S, T] { type Out = Out0 }
 
-  implicit def two[P, S, T <: HList]: Aux[P, S, T, Coselect[S] :: Select[Symbol @@ P] :: T] = new Segment[P, S, T] {
-    type Out = Coselect[S] :: Select[Symbol @@ P] :: T
+  implicit def two[P, S, T <: HList]: Aux[P, S, T, Coselect[S] :: Select[P] :: T] = new Segment[P, S, T] {
+    type Out = Coselect[S] :: Select[P] :: T
   }
 }
 
 object Segment extends LowPrioritySegment {
-  implicit def one[P, T <: HList]: Aux[P, Nothing, T, Select[Symbol @@ P] :: T] = new Segment[P, Nothing, T] {
-    type Out = Select[Symbol @@ P] :: T
+  implicit def one[P, T <: HList]: Aux[P, Nothing, T, Select[P] :: T] = new Segment[P, Nothing, T] {
+    type Out = Select[P] :: T
   }
 }
 

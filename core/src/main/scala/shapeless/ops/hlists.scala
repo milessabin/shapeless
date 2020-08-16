@@ -2057,11 +2057,6 @@ object hlist {
   }
 
   trait LowPriorityPrepend extends LowestPriorityPrepend {
-    /**
-     * Binary compatibility stub
-     * This one is for https://github.com/milessabin/shapeless/issues/406
-     */
-    override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
     implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
@@ -2371,28 +2366,32 @@ object hlist {
    *
    * @author Cody Allen
    */
-  trait ZipWithKeys[K <: HList, V <: HList] extends DepFn1[V] with Serializable { type Out <: HList }
+  sealed abstract class ZipWithKeys[K <: HList, V <: HList] extends DepFn1[V] with Serializable {
+    type Out <: HList
+  }
 
   object ZipWithKeys {
     import shapeless.labelled._
 
-    def apply[K <: HList, V <: HList]
-      (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
-
-    type Aux[K <: HList, V <: HList, Out0 <: HList] = ZipWithKeys[K, V] { type Out = Out0 }
-
-    implicit val hnilZipWithKeys: Aux[HNil, HNil, HNil] = new ZipWithKeys[HNil, HNil] {
-      type Out = HNil
-      def apply(v: HNil) = HNil
+    private val instance = new ZipWithKeys[HList, HList] {
+      type Out = HList
+      def apply(v: HList): HList = v
     }
 
-    implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList, ZwkOut <: HList] (implicit zipWithKeys: ZipWithKeys.Aux[KT, VT, ZwkOut], wkh: Witness.Aux[KH])
-        : Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: ZwkOut] =
-          new ZipWithKeys[KH :: KT, VH :: VT] {
-            type Out = FieldType[KH, VH] :: ZwkOut
-            def apply(v: VH :: VT): Out =
-              field[wkh.T](v.head) :: zipWithKeys(v.tail)
-          }
+    def apply[K <: HList, V <: HList](
+      implicit zipWithKeys: ZipWithKeys[K, V]
+    ): Aux[K, V, zipWithKeys.Out] = zipWithKeys
+
+    type Aux[K <: HList, V <: HList, Out0 <: HList] =
+      ZipWithKeys[K, V] { type Out = Out0 }
+
+    implicit def hnilZipWithKeys: Aux[HNil, HNil, HNil] =
+      instance.asInstanceOf[Aux[HNil, HNil, HNil]]
+
+    implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList, KVT <: HList](
+      implicit wkh: Witness.Aux[KH], zipWithKeys: ZipWithKeys.Aux[KT, VT, KVT]
+    ): Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT] =
+      instance.asInstanceOf[Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT]]
   }
 
   /**
@@ -2652,12 +2651,6 @@ object hlist {
 
         prepend(after, before)
       }
-    }
-
-    /** Binary compatibility stub */
-    def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
-      type Out = L
-      def apply(l: L): Out = l
     }
   }
 

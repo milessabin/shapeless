@@ -16,11 +16,43 @@
 
 package shapeless
 
-import scala.collection.{ GenTraversableLike, GenTraversableOnce }
-import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
+import scala.collection.{GenTraversableLike, GenTraversableOnce}
+import scala.collection.generic.{CanBuildFrom, IsTraversableLike}
 import scala.collection.mutable.Builder
-
+import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
+
+trait WitnessInstances {
+  implicit def of[T]: Witness.Aux[T] =
+    macro SingletonTypeMacros.materializeImpl[T]
+
+  implicit def apply[T](t: T): Witness.Lt[T] =
+    macro SingletonTypeMacros.convertImpl
+}
+
+trait WitnessWithInstances extends WitnessWithLowPriority {
+  implicit def apply[TC[_], T](t: T): WitnessWith.Lt[TC, T] =
+    macro SingletonTypeMacros.convertInstanceImpl1[TC]
+}
+
+trait WitnessWithLowPriority {
+  implicit def apply2[H, TC2[_ <: H, _], S <: H, T](t: T): WitnessWith.Lt[({ type λ[x] = TC2[S, x] })#λ, T] =
+    macro SingletonTypeMacros.convertInstanceImpl2[H, TC2, S]
+
+  def instance[TC[_], A](v: A, tc: TC[A]): WitnessWith.Aux[TC, A] =
+    new WitnessWith[TC] {
+      type T = A
+      val value: T = v
+      val instance: TC[T] = tc
+    }
+
+  def depInstance[TC[_] <: AnyRef, A](v: A, tc: TC[A]): WitnessWith.Aux[TC, A] { val instance: tc.type } =
+    new WitnessWith[TC] {
+      type T = A
+      val value: T = v
+      val instance: tc.type = tc
+    }
+}
 
 trait ScalaVersionSpecifics extends LP0 {
   private[shapeless] type BuildFrom[-F, -E, +T] = CanBuildFrom[F, E, T]
@@ -39,10 +71,6 @@ trait ScalaVersionSpecifics extends LP0 {
       case _ =>
         s"Implicit value of type $tpe not found"
     }
-  }
-
-  private[shapeless] object macrocompat {
-    class bundle extends annotation.Annotation
   }
 
   private[shapeless] implicit class GenTraversableLikeOps[T, Repr](gtl: GenTraversableLike[T, Repr]) {

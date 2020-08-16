@@ -596,8 +596,8 @@ class GenericTests {
     illTyped(" IsTuple[Single] ")
     illTyped(" IsTuple[Person] ")
     illTyped(" IsTuple[Fruit] ")
-    illTyped(" IsTuple[Record.`'i -> Int, 's -> String`.T] ")
-    illTyped(" IsTuple[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(""" IsTuple[Record.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" IsTuple[Union.`"i" -> Int, "s" -> String`.T] """)
     illTyped(" IsTuple[Int] ")
     illTyped(" IsTuple[String] ")
     illTyped(" IsTuple[Array[Int]] ")
@@ -621,8 +621,8 @@ class GenericTests {
     illTyped(" HasProductGeneric[CNil] ")
     illTyped(" HasProductGeneric[Int :+: String :+: CNil] ")
     illTyped(" HasProductGeneric[Fruit] ")
-    illTyped(" HasProductGeneric[Record.`'i -> Int, 's -> String`.T] ")
-    illTyped(" HasProductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(""" HasProductGeneric[Record.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" HasProductGeneric[Union.`"i" -> Int, "s" -> String`.T] """)
     illTyped(" HasProductGeneric[Int] ")
     illTyped(" HasProductGeneric[String] ")
     illTyped(" HasProductGeneric[Array[Int]] ")
@@ -644,8 +644,8 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[A.type] ")
     illTyped(" HasCoproductGeneric[Single] ")
     illTyped(" HasCoproductGeneric[Person] ")
-    illTyped(" HasCoproductGeneric[Record.`'i -> Int, 's -> String`.T] ")
-    illTyped(" HasCoproductGeneric[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(""" HasCoproductGeneric[Record.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" HasCoproductGeneric[Union.`"i" -> Int, "s" -> String`.T] """)
     illTyped(" HasCoproductGeneric[Int] ")
     illTyped(" HasCoproductGeneric[String] ")
     illTyped(" HasCoproductGeneric[Array[Int]] ")
@@ -663,8 +663,8 @@ class GenericTests {
     illTyped(" Generic[Int :: String :: HNil] ")
     illTyped(" Generic[CNil] ")
     illTyped(" Generic[Int :+: String :+: CNil] ")
-    illTyped(" Generic[Record.`'i -> Int, 's -> String`.T] ")
-    illTyped(" Generic[Union.`'i -> Int, 's -> String`.T] ")
+    illTyped(""" Generic[Record.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" Generic[Union.`"i" -> Int, "s" -> String`.T] """)
   }
 
   sealed trait Color
@@ -813,7 +813,7 @@ class GenericTests {
   def testGenericDegenerate: Unit = {
     type Repr = Int :: HNil
     val gen = Generic[CCDegen]
-    val cc = CCDegen(313)
+    val cc = CCDegen(313)()
     val rep = 313 :: HNil
 
     assertTypedEquals[CCDegen](gen.from(rep), cc)

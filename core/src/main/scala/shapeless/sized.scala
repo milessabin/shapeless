@@ -141,7 +141,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
     val builder = cbf.newBuilder(s.unsized)
     builder += elem
     builder ++= underlying.iterator
-    wrap[Repr, Succ[L]](builder.result)
+    wrap[Repr, Succ[L]](builder.result())
   }
   
   /**
@@ -152,7 +152,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
     val builder = cbf.newBuilder(s.unsized)
     builder ++= underlying.iterator
     builder += elem
-    wrap[Repr, Succ[L]](builder.result)
+    wrap[Repr, Succ[L]](builder.result())
   }
   
   /**
@@ -174,7 +174,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   def map[B, That](f : A0 => B)(implicit cbf : BuildFrom[Repr, B, That], ev : AdditiveCollection[That]) = {
     val builder = cbf.newBuilder(s.unsized)
     builder ++= underlying.iterator.map(f)
-    wrap[That, L](builder.result)
+    wrap[That, L](builder.result())
   }
 
   /**
@@ -201,7 +201,7 @@ object Sized extends LowPrioritySized {
   
   def apply[CC[_]]()
     (implicit dis: DefaultToIndexedSeq[CC], cbf : Factory[Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
-      new Sized[CC[Nothing], _0](cbf.newBuilder.result)
+      new Sized[CC[Nothing], _0](cbf.newBuilder.result())
   
   def wrap[Repr, L <: Nat](r : Repr)(implicit ev : AdditiveCollection[Repr]) = new Sized[Repr, L](r)
 

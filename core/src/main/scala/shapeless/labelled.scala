@@ -18,7 +18,6 @@ package shapeless
 
 import scala.language.experimental.macros
 import scala.reflect._
-
 import scala.reflect.macros.whitebox
 
 private[shapeless] trait LabelledTypes {
@@ -27,7 +26,7 @@ private[shapeless] trait LabelledTypes {
    * The type of fields with keys of singleton type `K` and value type `V`.
    */
   type FieldType[K, +V] <: V with KeyTag[K]
-  trait KeyTag[K]
+  trait KeyTag[K] extends Any
 }
 
 object labelled extends LabelledTypes {
@@ -45,21 +44,19 @@ object labelled extends LabelledTypes {
   }
 }
 
-trait DefaultSymbolicLabelling[T] extends DepFn0 with Serializable { type Out <: HList }
+trait Labelling[T] extends DepFn0 with Serializable { type Out <: HList }
 
-object DefaultSymbolicLabelling {
-  type Aux[T, Out0] = DefaultSymbolicLabelling[T] { type Out = Out0 }
+object Labelling {
+  type Aux[T, Out0] = Labelling[T] { type Out = Out0 }
+  def apply[T](implicit lab: Labelling[T]): Aux[T, lab.Out] = lab
 
-  def apply[T](implicit lab: DefaultSymbolicLabelling[T]): Aux[T, lab.Out] = lab
+  implicit def mkLabelling[T]: Labelling[T] =
+    macro LabelledMacros.mkLabelling[T]
 
-  implicit def mkDefaultSymbolicLabelling[T]: DefaultSymbolicLabelling[T] =
-    macro LabelledMacros.mkDefaultSymbolicLabellingImpl[T]
-
-  def instance[T, L <: HList](labels: L): Aux[T, L] =
-    new DefaultSymbolicLabelling[T] {
-      type Out = L
-      def apply(): L = labels
-    }
+  def instance[T, L <: HList](labels: L): Aux[T, L] = new Labelling[T] {
+    type Out = L
+    def apply(): L = labels
+  }
 }
 
 /**
@@ -71,15 +68,17 @@ object DefaultSymbolicLabelling {
 trait FieldPoly extends Poly1 {
   import labelled._
 
-  class FieldCaseBuilder[A, T] {
-    def apply[Res](fn: A => Res) = new Case[FieldType[T, A]] {
-      type Result = FieldType[T, Res]
-      val value: (A :: HNil) => FieldType[T, Res] =
-        (l: A :: HNil) => field[T](fn(l.head))
-    }
+  final class FieldCaseBuilder[A, T] {
+    def apply[Res](fn: A => Res): Case.Aux[FieldType[T, A], FieldType[T, Res]] =
+      new Case[FieldType[T, A]] {
+        type Result = FieldType[T, Res]
+        val value: (A :: HNil) => FieldType[T, Res] =
+          l => field[T](fn(l.head))
+      }
   }
 
-  def atField[A](w: Witness) = new FieldCaseBuilder[A, w.T]
+  def atField[A](w: Witness): FieldCaseBuilder[A, w.T] =
+    new FieldCaseBuilder
 }
 
 /**
@@ -94,92 +93,99 @@ trait FieldOf[V] {
   import labelled._
 
   type F = FieldType[this.type, V]
-
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-@macrocompat.bundle
-class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
+class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) with SingletonTypeUtils {
   import c.universe._
+  import internal.constantType
 
-  def mkDefaultSymbolicLabellingImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
-    val tTpe = weakTypeOf[T]
-    val labels: List[String] =
-      if (isProduct(tTpe)) fieldsOf(tTpe).map(f => nameAsString(f._1))
-      else if (isCoproduct(tTpe)) ctorsOf(tTpe).map(tpe => nameAsString(nameOf(tpe)))
-      else c.abort(c.enclosingPosition, s"$tTpe is not case class like or the root of a sealed family of types")
+  private def commaSeparated(str: String): List[String] = {
+    val builder = List.newBuilder[String]
+    var i, j, k = 0
+    while (j < str.length) {
+      str.charAt(j) match {
+        case ',' if k == 0 =>
+          builder += str.substring(i, j).trim
+          i = j + 1
+        case '(' | '[' =>
+          k += 1
+        case ')' | ']' =>
+          k = k - 1 max 0
+        case _ =>
+      }
 
-    val labelTpes = labels.map(SingletonSymbolType(_))
-    val labelValues = labels.map(mkSingletonSymbol)
+      j += 1
+    }
 
-    val labelsTpe = mkHListTpe(labelTpes)
-    val labelsValue = mkHListValue(labelValues)
-
-    val defaultSymbolicLabelling = objectRef[DefaultSymbolicLabelling.type]
-    q"$defaultSymbolicLabelling.instance[$tTpe, $labelsTpe]($labelsValue)"
+    val last = str.substring(i, j).trim
+    if (last.nonEmpty) builder += last
+    builder.result()
   }
 
-  def recordTypeImpl(tpeSelector: Tree): Tree =
-    labelledTypeImpl(tpeSelector, "record", hnilTpe, hconsTpe)
+  private def parseTypeOrFail(tpe: String): Type =
+    parseType(tpe).getOrElse(abort(s"Malformed literal or standard type $tpe"))
 
-  def unionTypeImpl(tpeSelector: Tree): Tree =
-    labelledTypeImpl(tpeSelector, "union", cnilTpe, cconsTpe)
+  private def parseLiteralTypeOrFail(tpe: String): Type =
+    parseLiteralType(tpe).getOrElse(abort(s"Malformed literal type $tpe"))
 
-  def labelledTypeImpl(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
-    def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
-      appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
+  private def labelsOf(tpe: Type): List[Constant] =
+    if (isProduct(tpe)) fieldsOf(tpe).map { case (f, _) => nameAsValue(f) }
+    else if (isCoproduct(tpe)) ctorsOf(tpe).map(c => nameAsValue(nameOf(c)))
+    else abort(s"$tpe is not case class like or the root of a sealed family of types")
 
+  def mkLabelledGeneric[T: WeakTypeTag, R]: Tree = {
+    val tpe = weakTypeOf[T]
+    val keys = labelsOf(tpe).map(constantType)
+    val generic @ q"$_.instance[$_, ${repr: Tree}]($_, $_)" = mkGeneric[T]
+    val isProduct = repr.tpe <:< hlistTpe
+    val values = if (isProduct) unpackHList(repr.tpe) else unpackCoproduct(repr.tpe)
+    val items = keys.zip(values).map((FieldType.apply _).tupled)
+    val labelled = if (isProduct) mkHListTpe(items) else mkCoproductTpe(items)
+    q"${reify(LabelledGeneric)}.unsafeInstance[$tpe, $labelled]($generic)"
+  }
+
+  def mkLabelling[T: WeakTypeTag]: Tree = {
+    val tpe = weakTypeOf[T]
+    val labels = labelsOf(tpe)
+    val labelsType = mkHListTpe(labels.map(constantType))
+    val labelsValue = mkHListValue(labels.map(Literal.apply))
+    q"${reify(Labelling)}.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
+  }
+
+  def recordType(tpeSelector: Tree): Tree =
+    labelledType(tpeSelector, "record", hnilTpe, hconsTpe)
+
+  def unionType(tpeSelector: Tree): Tree =
+    labelledType(tpeSelector, "union", cnilTpe, cconsTpe)
+
+  def labelledType(tpeSelector: Tree, variety: String, nil: Type, cons: Type): Tree = {
     val q"${tpeString: String}" = tpeSelector
-    val fields =
-      if (tpeString.trim.isEmpty)
-        Array.empty[(Type, Type)]
-      else
-        tpeString.split(",").map(_.trim).map(_.split("->").map(_.trim)).map {
-          case Array(key, value) =>
-            val keyTpe =
-              parseLiteralType(key)
-                .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal type $key"))
-
-            val valueTpe =
-              parseType(value)
-                .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $value"))
-
-            (keyTpe, valueTpe)
-
-          case _ =>
-            c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
-        }
-
-    val labelledTpe =
-      fields.foldRight(nilTpe) { case ((keyTpe, valueTpe), acc) =>
-        val fieldTpe = mkFieldTpe(keyTpe, valueTpe)
-        appliedType(consTpe, List(fieldTpe, acc))
+    val labelledTpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
+      element.split("->") match {
+        case Array(keyString, valueString) =>
+          val key = parseLiteralTypeOrFail(keyString.trim)
+          val value = parseTypeOrFail(valueString.trim)
+          appliedType(cons, FieldType(key, value), acc)
+        case _ =>
+          abort(s"Malformed $variety type $tpeString")
       }
+    }
 
     typeCarrier(labelledTpe)
   }
 
-  def hlistTypeImpl(tpeSelector: Tree): Tree =
-    nonLabelledTypeImpl(tpeSelector, "hlist", hnilTpe, hconsTpe)
+  def hlistType(tpeSelector: Tree): Tree =
+    nonLabelledType(tpeSelector, hnilTpe, hconsTpe)
 
-  def coproductTypeImpl(tpeSelector: Tree): Tree =
-    nonLabelledTypeImpl(tpeSelector, "coproduct", cnilTpe, cconsTpe)
+  def coproductType(tpeSelector: Tree): Tree =
+    nonLabelledType(tpeSelector, cnilTpe, cconsTpe)
 
-  def nonLabelledTypeImpl(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
+  def nonLabelledType(tpeSelector: Tree, nil: Type, cons: Type): Tree = {
     val q"${tpeString: String}" = tpeSelector
-    val elemTypes =
-      if (tpeString.trim.isEmpty)
-        Array.empty[Type]
-      else
-        tpeString.split(",").map(_.trim).map { elemTypeStr =>
-          parseType(elemTypeStr)
-            .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal or standard type $elemTypeStr"))
-        }
-
-    val tpe =
-      elemTypes.foldRight(nilTpe) { case (elemTpe, acc) =>
-        appliedType(consTpe, List(elemTpe, acc))
-      }
+    val tpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
+      appliedType(cons, parseTypeOrFail(element), acc)
+    }
 
     typeCarrier(tpe)
   }

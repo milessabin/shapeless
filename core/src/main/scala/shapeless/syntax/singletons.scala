@@ -17,15 +17,6 @@
 package shapeless
 package syntax
 
-import scala.language.experimental.macros
-
-object singleton {
-  implicit def mkSingletonOps(t: Any): SingletonOps = macro SingletonTypeMacros.mkSingletonOps
-
-  import tag._
-  implicit def narrowSymbol[S <: String](t: Symbol): Symbol @@ S = macro SingletonTypeMacros.narrowSymbol[S]
-}
-
 trait SingletonOps {
   import labelled._
 
@@ -48,10 +39,11 @@ trait SingletonOps {
 }
 
 object SingletonOps {
+  type Aux[A] = SingletonOps { type T = A }
 
-  def instance[T0](w: Witness.Aux[T0]): SingletonOps { type T = T0; val witness: w.type } =
+  def instance[A](w: Witness.Aux[A]): Aux[A] =
     new SingletonOps {
-      type T = T0
-      val witness: w.type = w
+      type T = A
+      val witness = w
     }
 }

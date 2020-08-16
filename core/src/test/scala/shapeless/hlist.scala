@@ -48,6 +48,11 @@ class HListTests {
 
   type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+  object incInt extends (Int >-> Int)(_ + 1)
+  object extendedChoose extends LiftU(choose)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -129,10 +134,6 @@ class HListTests {
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
 
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
-  object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends LiftU(choose)
 
   @Test
   def testBasics: Unit = {
@@ -3122,8 +3123,8 @@ class HListTests {
   def testSingletonProductArgs: Unit = {
     object Obj
 
-    val l = SFoo(23, "foo", Symbol("bar"), Obj, true)
-    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`'bar`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
+    val l = SFoo(23, "foo", "bar", Obj, true)
+    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`"bar"`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
     // widen the RHS to a non-singleton type.
@@ -3133,8 +3134,8 @@ class HListTests {
     val v2: Witness.`"foo"`.T = l.tail.head
     assertEquals("foo", v2)
 
-    val v3: Witness.`'bar`.T = l.tail.tail.head
-    assertEquals(Symbol("bar"), v3)
+    val v3: Witness.`"bar"`.T = l.tail.tail.head
+    assertEquals("bar", v3)
 
     val v4: Obj.type = l.tail.tail.tail.head
     assertEquals(Obj, v4)
@@ -3145,16 +3146,14 @@ class HListTests {
     val v6 = l.tail.tail.tail.tail.tail
     typed[HNil](v6)
 
-    illTyped("""
-      r.tail.tail.tail.tail.tail.tail.head
-    """)
+    illTyped("r.tail.tail.tail.tail.tail.tail.head")
 
     // Verify that we infer HNil rather than HNil.type at the end
     NonSingletonHNilTC(SFoo(23).tail)
     NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
-    val ib = selectAll(Symbol("i"), Symbol("b")).from(quux)
+    val ib = selectAll("i", "b").from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
   }
@@ -3312,42 +3311,42 @@ class HListTests {
       ) = mapper(range())
 
     // group HNil
-    assertEquals(HNil: HNil, (HNil: HNil) group(2, 1))
+    assertEquals(HNil: HNil, (HNil: HNil).group(2, 1))
     // group a HList of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // group a HList of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       (0, 1) ::(4, 5) :: HNil,
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       (0, 1) ::(1, 2) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: HNil)
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
   }
@@ -3424,16 +3423,16 @@ class HListTests {
   def testReify: Unit = {
     import syntax.singleton._
 
-    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals(HNil, Reify[HNil].apply())
 
-    val s1 = HList.`'a`
-    assertTypedEquals(Symbol("a").narrow :: HNil, Reify[s1.T].apply)
+    val s1 = HList.`"a"`
+    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
 
-    val s2 = HList.`'a, 1, "b", true`
-    assertTypedEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    val s2 = HList.`"a", 1, "b", true`
+    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
 
-    illTyped(""" Reify[String :: Int :: HNil] """)
-    illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
+    illTyped("Reify[String :: Int :: HNil]")
+    illTyped("""Reify[String :: HList.`"a", 1, "b", true`.T]""")
   }
 
   @Test

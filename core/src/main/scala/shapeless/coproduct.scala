@@ -156,7 +156,7 @@ object Coproduct extends Dynamic {
    * type TwoTrueStr = Coproduct.`2, true, "str"`.T
    * }}}
    */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductTypeImpl
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductType
 
   /** Allows to inject a runtime value of type `Any` in a `Coproduct` */
   def runtimeInject[C <: Coproduct](x: Any)(implicit rinj: RuntimeInject[C]): Option[C] = rinj(x)

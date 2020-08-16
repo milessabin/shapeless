@@ -33,7 +33,6 @@ object illTyped {
   def apply(code: String, expected: String): Unit = macro IllTypedMacros.applyImpl
 }
 
-@macrocompat.bundle
 class IllTypedMacros(val c: blackbox.Context) {
   import c.universe._
 
@@ -48,8 +47,8 @@ class IllTypedMacros(val c: blackbox.Context) {
     }
 
     try {
-      val dummy0 = TermName(c.freshName)
-      val dummy1 = TermName(c.freshName)
+      val dummy0 = TermName(c.freshName())
+      val dummy1 = TermName(c.freshName())
       c.typecheck(c.parse(s"object $dummy0 { val $dummy1 = { $codeStr } }"))
       c.error(c.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
     } catch {

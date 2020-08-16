@@ -591,28 +591,21 @@ object nat {
    * 
    * @author Miles Sabin
    */
-  trait ToInt[N <: Nat] extends Serializable {
-    def apply() : Int
+  sealed abstract class ToInt[N <: Nat] extends Serializable {
+    def apply(): Int
   }
 
   object ToInt {
     def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
 
-    class Inst[N <: Nat] (i: Int) extends ToInt[N]{
+    final class Inst[N <: Nat](i: Int) extends ToInt[N] {
       def apply(): Int = i
     }
 
     implicit val toInt0: ToInt[_0] = new Inst[_0](0)
-
-    //this method is used for backwards compatibility
-    def toIntSucc[N <: Nat](toIntN : ToInt[N]) = new ToInt[Succ[N]] {
-      def apply() = toIntN() + 1
-    }
-
     implicit def toIntSuccM[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
   }
 
-  @macrocompat.bundle
   class ToIntMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 

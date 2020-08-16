@@ -35,7 +35,7 @@ sealed trait HList extends Product with Serializable
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
-  override def toString = head match {
+  override def toString: String = head match {
     case _: ::[_, _] => s"($head) :: $tail"
     case _ => s"$head :: $tail"
   }
@@ -62,9 +62,9 @@ object HList extends Dynamic {
   import ops.hlist._
   import syntax.HListOps
 
-  def apply() = HNil
+  def apply(): HNil.type = HNil
 
-  def apply[T](t: T) = t :: HNil
+  def apply[T](t: T): T :: HNil = t :: HNil
 
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
 
@@ -113,7 +113,7 @@ object HList extends Dynamic {
    * type TwoTrueStr = HList.`2, true, "str"`.T
    * }}}
    */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistType
 
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =
@@ -158,10 +158,6 @@ object HList extends Dynamic {
       }
     loop(l, i, HNil)
   }
-
-  @deprecated("use unsafeUpdateAppend instead", "2.3.1")
-  def unsafeUpdate(l: HList, i: Int, e: Any): HList =
-    unsafeUpdateAppend(l, i, e)
 
   def unsafeUpdateWith(l: HList, i: Int, f: Any => Any): HList = {
     @tailrec
@@ -281,7 +277,6 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
-@macrocompat.bundle
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
 
