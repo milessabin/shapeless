@@ -237,19 +237,16 @@ object TypeableMacros {
       tp.typeSymbol.isAbstractType ||
         (tp match {
           case tp: AppliedType =>
-            isAbstract(tp.tycon) || tp.args.exists {
-              case tp: Type => isAbstract(tp)
-              case _ => false
-            }
+            isAbstract(tp.tycon) || tp.args.exists(isAbstract)
           case _ => false
         })
 
-    def normalize(tp: TypeOrBounds): Type = tp match {
-      case TypeBounds(lo, _) => lo
-      case tp: Type => tp
+    def normalize(tp: Type): Type = tp match {
+      case tp: TypeBounds => tp.low
+      case tp => tp
     }
 
-    def simpleName(tp: TypeOrBounds): String =
+    def simpleName(tp: Type): String =
       normalize(tp).dealias match {
         case tp: AppliedType =>
           simpleName(tp.tycon) + tp.args.map(simpleName).mkString("[", ", ", "]")
@@ -345,9 +342,9 @@ object TypeableMacros {
 
       case tp: TypeRef =>
         val qual = tp.qualifier match {
+          case NoPrefix() => None
           case tp: ThisType => Some(tp.tref)
-          case tp: Type => Some(tp)
-          case _ => None
+          case tp => Some(tp)
         }
 
         val sym = tp.typeSymbol
