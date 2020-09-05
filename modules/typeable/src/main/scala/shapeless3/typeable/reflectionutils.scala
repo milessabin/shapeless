@@ -69,9 +69,9 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
     loop(tp, Nil).reverse
   }
 
-  def low(tp: TypeOrBounds): Type = tp match {
-    case tp: Type => tp
+  def low(tp: Type): Type = tp match {
     case tp: TypeBounds => tp.low
+    case tp: Type => tp
   }
 
   def findMemberType(tp: Type, name: String): Option[Type] = tp match {

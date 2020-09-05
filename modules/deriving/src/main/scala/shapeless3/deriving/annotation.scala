@@ -129,14 +129,14 @@ object AnnotationMacros {
     val annotTpe = typeOf[A]
     val annotFlags = annotTpe.typeSymbol.flags
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
-      Reporting.error(s"Bad annotation type ${annotTpe.show} is abstract")
+      report.error(s"Bad annotation type ${annotTpe.show} is abstract")
       '{???}
     } else {
       val annoteeTpe = typeOf[T]
       annoteeTpe.typeSymbol.annots.find(_.tpe <:< annotTpe) match {
         case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.seal.cast[A]}) }
         case None =>
-          Reporting.error(s"No Annotation of type ${annotTpe.show} for type ${annoteeTpe.show}")
+          report.error(s"No Annotation of type ${annotTpe.show} for type ${annoteeTpe.show}")
           '{???}
       }
     }
@@ -148,7 +148,7 @@ object AnnotationMacros {
     val annotTpe = typeOf[A]
     val annotFlags = annotTpe.typeSymbol.flags
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
-      Reporting.error(s"Bad annotation type ${annotTpe.show} is abstract")
+      report.error(s"Bad annotation type ${annotTpe.show} is abstract")
       '{???}
     } else {
       val r = new ReflectionUtils(qctx)
@@ -176,11 +176,11 @@ object AnnotationMacros {
             case Some(rm) =>
               mkAnnotations(rm.MirroredElemTypes.map { child => findAnnotation[A](child.typeSymbol) })
             case None =>
-              Reporting.error(s"No Annotations for sum type ${annoteeTpe.show} with no Mirror")
+              report.error(s"No Annotations for sum type ${annoteeTpe.show} with no Mirror")
               '{???}
           }
         case None =>
-          Reporting.error(s"No Annotations for non-class ${annoteeTpe.show}")
+          report.error(s"No Annotations for non-class ${annoteeTpe.show}")
           '{???}
       }
     }
