@@ -29,6 +29,6 @@ package object test {
 
   def impl[T: Type](using qctx: QuoteContext): Expr[String] = {
     import qctx.tasty._
-    Expr(typeOf[T].show)
+    Expr(Type.of[T].show)
   }
 }

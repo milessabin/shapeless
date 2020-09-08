@@ -227,11 +227,11 @@ object TypeableMacros {
     import qctx.tasty._
     import util._
 
-    val TypeableType = typeOf[Typeable[_]] match {
+    val TypeableType = Type.of[Typeable[_]] match {
       case tp: AppliedType => tp.tycon
     }
 
-    val target = typeOf[T]
+    val target = Type.of[T]
 
     def isAbstract(tp: Type): Boolean =
       tp.typeSymbol.isAbstractType ||
