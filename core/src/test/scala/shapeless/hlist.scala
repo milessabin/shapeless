@@ -1906,6 +1906,7 @@ class HListTests {
 
     val is = l match {
       case i :: true :: s :: 2.0 :: HNil => (i, s)
+      case _ => sys.error("Not matched")
     }
 
     assertTypedEquals[Int](1, is._1)
