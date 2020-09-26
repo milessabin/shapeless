@@ -126,13 +126,13 @@ object AnnotationMacros {
   def mkAnnotation[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotation[A, T]] = {
     import qctx.tasty._
 
-    val annotTpe = typeOf[A]
+    val annotTpe = Type.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
       report.error(s"Bad annotation type ${annotTpe.show} is abstract")
       '{???}
     } else {
-      val annoteeTpe = typeOf[T]
+      val annoteeTpe = Type.of[T]
       annoteeTpe.typeSymbol.annots.find(_.tpe <:< annotTpe) match {
         case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.seal.cast[A]}) }
         case None =>
@@ -145,7 +145,7 @@ object AnnotationMacros {
   def mkAnnotations[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotations[A, T]] = {
     import qctx.tasty._
 
-    val annotTpe = typeOf[A]
+    val annotTpe = Type.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
       report.throwError(s"Bad annotation type ${annotTpe.show} is abstract")
@@ -159,12 +159,12 @@ object AnnotationMacros {
         }
 
       def findAnnotation[A: quoted.Type](annoteeSym: Symbol): Expr[Option[A]] =
-        annoteeSym.annots.find(_.tpe <:< typeOf[A]) match {
+        annoteeSym.annots.find(_.tpe <:< Type.of[A]) match {
           case Some(tree) => '{ Some(${tree.seal.cast[A]}) }
           case None       => '{ None }
         }
 
-      val annoteeTpe = typeOf[T]
+      val annoteeTpe = Type.of[T]
       annoteeTpe.classSymbol match {
         case Some(annoteeCls) if annoteeCls.flags.is(Flags.Case) =>
           val valueParams = annoteeCls.primaryConstructor.paramSymss
