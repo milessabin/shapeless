@@ -50,7 +50,7 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
     }
 
     def apply(tpe: Type): Option[Mirror] = {
-      val MirrorType = typeOf[scala.deriving.Mirror]
+      val MirrorType = Type.of[scala.deriving.Mirror]
 
       val mtpe = Refinement(MirrorType, "MirroredType", TypeBounds(tpe, tpe))
       val instance = searchImplicit(mtpe) match {
