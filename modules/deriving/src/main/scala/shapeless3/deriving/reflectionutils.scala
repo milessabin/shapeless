@@ -43,8 +43,8 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
         mels <- findMemberType(mirrorTpe, "MirroredElemLabels")
       } yield {
         val mets0 = tupleTypeElements(mets)
-        val ConstantType(Constant(ml0: String)) = ml
-        val mels0 = tupleTypeElements(mels).map { case ConstantType(Constant(l: String)) => l }
+        val ConstantType(Constant.String(ml0)) = ml
+        val mels0 = tupleTypeElements(mels).map { case ConstantType(Constant.String(l)) => l }
         Mirror(mt, mmt, mets0, ml0, mels0)
       }
     }

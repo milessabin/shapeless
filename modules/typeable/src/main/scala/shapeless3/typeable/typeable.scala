@@ -335,8 +335,8 @@ object TypeableMacros {
         val serializable = Expr(sym.flags.is(Flags.Object))
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
 
-      case ConstantType(Constant(c)) =>
-        val value = Literal(Constant(c)).seal.cast[T]
+      case ConstantType(c) =>
+        val value = Literal(c).seal.cast[T]
         val name = Expr(target.widen.typeSymbol.name.toString)
         '{ valueSingletonTypeable[T]($value, $name) }
 
