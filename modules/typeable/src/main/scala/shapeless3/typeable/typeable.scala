@@ -268,7 +268,7 @@ object TypeableMacros {
 
     def summonAllTypeables(tps: Seq[Type]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => TypeableType.appliedTo(tp))
-      val instances = ttps.flatMap(ttp => searchImplicit(ttp) match {
+      val instances = ttps.flatMap(ttp => Implicits.search(ttp) match {
         case iss: ImplicitSearchSuccess => List(iss.tree.seal.cast[Typeable[_]])
         case _: ImplicitSearchFailure => Nil
       })

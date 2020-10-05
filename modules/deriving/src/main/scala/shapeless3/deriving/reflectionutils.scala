@@ -53,7 +53,7 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
       val MirrorType = Type.of[scala.deriving.Mirror]
 
       val mtpe = Refinement(MirrorType, "MirroredType", TypeBounds(tpe, tpe))
-      val instance = searchImplicit(mtpe) match {
+      val instance = Implicits.search(mtpe) match {
         case iss: ImplicitSearchSuccess => Some(iss.tree.seal.cast[scala.deriving.Mirror])
         case _: ImplicitSearchFailure => None
       }
