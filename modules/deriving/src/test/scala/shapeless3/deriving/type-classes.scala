@@ -456,7 +456,7 @@ object Read {
     def read(s: String): Option[(T, String)] = {
       labelling.elemLabels.zipWithIndex.iterator.map((p: (String, Int)) => {
         val (label, i) = p
-        if(s.trim.startsWith(label)) {
+        if(s.trim.nn.startsWith(label)) {
           inst.project[String](i)(s)(
             [t] => (s: String, rt: Read[t]) =>
               rt.read(s) match {
