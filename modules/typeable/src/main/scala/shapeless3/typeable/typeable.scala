@@ -227,13 +227,13 @@ object TypeableMacros {
     import qctx.tasty._
     import util._
 
-    val TypeableType = Type.of[Typeable[_]] match {
+    val TypeableType = TypeRepr.of[Typeable[_]] match {
       case tp: AppliedType => tp.tycon
     }
 
-    val target = Type.of[T]
+    val target = TypeRepr.of[T]
 
-    def isAbstract(tp: Type): Boolean =
+    def isAbstract(tp: TypeRepr): Boolean =
       tp.typeSymbol.isAbstractType ||
         (tp match {
           case tp: AppliedType =>
@@ -241,12 +241,12 @@ object TypeableMacros {
           case _ => false
         })
 
-    def normalize(tp: Type): Type = tp match {
+    def normalize(tp: TypeRepr): TypeRepr = tp match {
       case tp: TypeBounds => tp.low
       case tp => tp
     }
 
-    def simpleName(tp: Type): String =
+    def simpleName(tp: TypeRepr): String =
       normalize(tp).dealias match {
         case tp: AppliedType =>
           simpleName(tp.tycon) + tp.args.map(simpleName).mkString("[", ", ", "]")
@@ -254,19 +254,19 @@ object TypeableMacros {
         case tp => tp.show
       }
 
-    def collectConjuncts(tp: Type): List[Type] = tp match {
+    def collectConjuncts(tp: TypeRepr): List[TypeRepr] = tp match {
       case tp: AndType =>
         collectConjuncts(tp.left) ++ collectConjuncts(tp.right)
       case tp => List(tp)
     }
 
-    def collectDisjuncts(tp: Type): List[Type] = tp match {
+    def collectDisjuncts(tp: TypeRepr): List[TypeRepr] = tp match {
       case tp: OrType =>
         collectDisjuncts(tp.left) ++ collectDisjuncts(tp.right)
       case tp => List(tp)
     }
 
-    def summonAllTypeables(tps: Seq[Type]): Option[Expr[Seq[Typeable[_]]]] = {
+    def summonAllTypeables(tps: Seq[TypeRepr]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => TypeableType.appliedTo(tp))
       val instances = ttps.flatMap(ttp => Implicits.search(ttp) match {
         case iss: ImplicitSearchSuccess => List(iss.tree.seal.cast[Typeable[_]])
