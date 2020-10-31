@@ -64,7 +64,7 @@ object syntax {
 object Typeable extends Typeable0 {
   import java.{ lang => jl }
   import scala.reflect.ClassTag
-  import syntax.typeable.{given _}
+  import syntax.typeable.given
 
   inline def apply[T](using tt: Typeable[T]): Typeable[T] = tt
 
@@ -224,7 +224,7 @@ object TypeableMacros {
   import Typeable._
 
   def impl[T: Type](using qctx: QuoteContext): Expr[Typeable[T]] = {
-    import qctx.tasty._
+    import qctx.reflect._
     import util._
 
     val TypeableType = TypeRepr.of[Typeable[_]] match {
@@ -412,7 +412,7 @@ trait TypeCase[T] extends Serializable {
 }
 
 object TypeCase {
-  import syntax.typeable.{given _}
+  import syntax.typeable.given
   def apply[T](using tt: Typeable[T]): TypeCase[T] =
     new TypeCase[T] {
       def unapply(t: Any): Option[T] = t.cast[T]
