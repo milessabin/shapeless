@@ -297,8 +297,8 @@ object EmptyK {
 
   inline def derived[A[_]](using gen: K1.Generic[A]): EmptyK[A] =
     inline gen match {
-      case given p: K1.ProductGeneric[A]   => emptyKGen
-      case given c: K1.CoproductGeneric[A] => emptyKGenC
+      case given K1.ProductGeneric[A]   => emptyKGen
+      case given K1.CoproductGeneric[A] => emptyKGenC
     }
 }
 
@@ -345,8 +345,8 @@ object Pure {
 
   inline def derived[A[_]](using gen: K1.Generic[A]): Pure[A] =
     inline gen match {
-      case given p: K1.ProductGeneric[A]   => pureGen
-      case given c: K1.CoproductGeneric[A] => pureGenC
+      case given K1.ProductGeneric[A]   => pureGen
+      case given K1.CoproductGeneric[A] => pureGenC
     }
 }
 
