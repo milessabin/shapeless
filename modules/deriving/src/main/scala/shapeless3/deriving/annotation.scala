@@ -155,7 +155,7 @@ object AnnotationMacros {
 
       def mkAnnotations(annotTrees: Seq[Expr[Any]]): Expr[Annotations[A, T]] =
         Expr.ofTupleFromSeq(annotTrees) match {
-          case '{ $t: $Tup } => '{ Annotations.mkAnnotations[A, T, Tup & Tuple]($t) }
+          case '{ $t: tup } => '{ Annotations.mkAnnotations[A, T, tup & Tuple]($t) }
         }
 
       def findAnnotation[A: Type](annoteeSym: Symbol): Expr[Option[A]] =
