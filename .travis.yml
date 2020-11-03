@@ -4,7 +4,7 @@ jdk:
 - openjdk8
 
 scala:
-- 3.0.0-M2-bin-20201030-300e9a2-NIGHTLY
+- 3.0.0-M1
 
 cache:
   directories:

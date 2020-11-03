@@ -1,7 +1,7 @@
 val dottyLatestNightly = dottyLatestNightlyBuild.get
 //val dottyVersion = dottyLatestNightly 
-val dottyVersion = "3.0.0-M2-bin-20201030-300e9a2-NIGHTLY"
-//val dottyVersion = "3.0.0-M1"
+//val dottyVersion = "3.0.0-M2-bin-20201030-300e9a2-NIGHTLY"
+val dottyVersion = "3.0.0-M1"
 
 inThisBuild(Seq(
   organization := "org.typelevel",
