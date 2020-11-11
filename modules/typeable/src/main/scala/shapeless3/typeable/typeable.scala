@@ -269,7 +269,7 @@ object TypeableMacros {
     def summonAllTypeables(tps: Seq[TypeRepr]): Option[Expr[Seq[Typeable[_]]]] = {
       val ttps = tps.map(tp => TypeableType.appliedTo(tp))
       val instances = ttps.flatMap(ttp => Implicits.search(ttp) match {
-        case iss: ImplicitSearchSuccess => List(iss.tree.seal.cast[Typeable[_]])
+        case iss: ImplicitSearchSuccess => List(iss.tree.asExprOf[Typeable[_]])
         case _: ImplicitSearchFailure => Nil
       })
 
@@ -292,7 +292,7 @@ object TypeableMacros {
           case None =>
             report.throwError(s"Missing Typeable for field of case class ${target.show}")
           case Some(ftps) =>
-            val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
+            val clazz = Ref(defn.Predef_classOf).appliedToType(target).asExprOf[Class[T]]
             val name = Expr(simpleName(target))
 
             '{ namedCaseClassTypeable($clazz, $ftps, $name) }
@@ -323,20 +323,20 @@ object TypeableMacros {
 
     def mkNamedSimpleTypeable = {
       val name = Expr(simpleName(target))
-      val clazz = Ref(defn.Predef_classOf).appliedToType(target).seal.cast[Class[T]]
+      val clazz = Ref(defn.Predef_classOf).appliedToType(target).asExprOf[Class[T]]
       '{ namedSimpleTypeable($clazz, $name) }
     }
 
     target.dealias match {
       case tp: TermRef =>
-        val ident = Ident(tp).seal.cast[T]
+        val ident = Ident(tp).asExprOf[T]
         val sym = tp.termSymbol
         val name = Expr(sym.name.toString)
         val serializable = Expr(sym.flags.is(Flags.Object))
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
 
       case ConstantType(c) =>
-        val value = Literal(c).seal.cast[T]
+        val value = Literal(c).asExprOf[T]
         val name = Expr(target.widen.typeSymbol.name.toString)
         '{ valueSingletonTypeable[T]($value, $name) }
 

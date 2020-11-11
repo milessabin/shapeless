@@ -134,7 +134,7 @@ object AnnotationMacros {
     } else {
       val annoteeTpe = TypeRepr.of[T]
       annoteeTpe.typeSymbol.annots.find(_.tpe <:< annotTpe) match {
-        case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.seal.cast[A]}) }
+        case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.asExprOf[A]}) }
         case None =>
           report.error(s"No Annotation of type ${annotTpe.show} for type ${annoteeTpe.show}")
           '{???}
@@ -155,12 +155,12 @@ object AnnotationMacros {
 
       def mkAnnotations(annotTrees: Seq[Expr[Any]]): Expr[Annotations[A, T]] =
         Expr.ofTupleFromSeq(annotTrees) match {
-          case '{ $t: $Tup } => '{ Annotations.mkAnnotations[A, T, Tup & Tuple]($t) }
+          case '{ $t: tup } => '{ Annotations.mkAnnotations[A, T, tup & Tuple]($t) }
         }
 
       def findAnnotation[A: Type](annoteeSym: Symbol): Expr[Option[A]] =
         annoteeSym.annots.find(_.tpe <:< TypeRepr.of[A]) match {
-          case Some(tree) => '{ Some(${tree.seal.cast[A]}) }
+          case Some(tree) => '{ Some(${tree.asExprOf[A]}) }
           case None       => '{ None }
         }
 
