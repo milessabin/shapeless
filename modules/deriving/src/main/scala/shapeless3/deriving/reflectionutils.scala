@@ -34,7 +34,7 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
 
   object Mirror {
     def apply(mirror: Expr[scala.deriving.Mirror]): Option[Mirror] = {
-      val mirrorTpe = mirror.unseal.tpe.widen
+      val mirrorTpe = Term.of(mirror).tpe.widen
       for {
         mt   <- findMemberType(mirrorTpe, "MirroredType")
         mmt  <- findMemberType(mirrorTpe, "MirroredMonoType")
