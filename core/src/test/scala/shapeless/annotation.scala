@@ -24,6 +24,7 @@ object AnnotationTestsDefinitions {
 
   case class First() extends saAnnotation
   case class Second(i: Int, s: String) extends saAnnotation
+  case class Third(c: Char) extends saAnnotation
 
   case class Other() extends saAnnotation
   case class Last(b: Boolean) extends saAnnotation
@@ -48,6 +49,18 @@ object AnnotationTestsDefinitions {
     i: Int @First,
     s: String,
     ob: Option[Boolean] @Second(2, "b")
+  )
+
+  case class CC3(
+    @First i: Int,
+    s: String,
+    @Second(2, "b") @Third('c') ob: Option[Boolean]
+  )
+  
+  case class CC4(
+    i: Int @First,
+    s: String,
+    ob: Option[Boolean] @Second(2, "b") @Third('c')
   )
 }
 
@@ -174,4 +187,30 @@ class AnnotationTests {
     illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
   }
 
+  @Test
+  def allAnnotations: Unit = {
+    {
+      val all: (First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil = AllAnnotations[CC3].apply()
+      assert(all == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    }
+
+    {
+      val first = AllAnnotations[CC3].apply()
+      assert(first == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    }
+  }
+  
+  @Test
+  def allTypeAnnotations: Unit = {
+    {
+      val all: (First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil = AllTypeAnnotations[CC4].apply()
+      assert(all == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    }
+
+    {
+      val first = AllTypeAnnotations[CC4].apply()
+      assert(first == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    }
+  }
+  
 }
