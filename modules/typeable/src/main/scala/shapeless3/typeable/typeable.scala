@@ -89,13 +89,13 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Boolean`. */
   given booleanTypeable as Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
   /** Typeable instance for `Unit`. */
-  given unitTypeable as Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
+  given unitTypeable as Typeable[Unit] = ValueTypeable[Unit, scala.runtime.BoxedUnit](classOf[scala.runtime.BoxedUnit], "Unit")
 
   def isAnyValClass[T](clazz: Class[T]) =
     (classOf[jl.Number] isAssignableFrom clazz) ||
     clazz == classOf[jl.Boolean] ||
     clazz == classOf[jl.Character] ||
-    clazz == classOf[runtime.BoxedUnit]
+    clazz == classOf[scala.runtime.BoxedUnit]
 
   /** Typeable instance for `Any`. */
   given anyTypeable as Typeable[Any] {
