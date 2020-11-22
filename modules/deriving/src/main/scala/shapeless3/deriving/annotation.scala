@@ -123,7 +123,7 @@ object Annotations {
 }
 
 object AnnotationMacros {
-  def mkAnnotation[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotation[A, T]] = {
+  def mkAnnotation[A: Type, T: Type](using qctx: Quotes): Expr[Annotation[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]
@@ -142,7 +142,7 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotations[A, T]] = {
+  def mkAnnotations[A: Type, T: Type](using qctx: Quotes): Expr[Annotations[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]

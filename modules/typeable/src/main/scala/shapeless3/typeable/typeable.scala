@@ -223,7 +223,7 @@ trait Typeable0 {
 object TypeableMacros {
   import Typeable._
 
-  def impl[T: Type](using qctx: QuoteContext): Expr[Typeable[T]] = {
+  def impl[T: Type](using Quotes): Expr[Typeable[T]] = {
     import qctx.reflect._
     import util._
 
