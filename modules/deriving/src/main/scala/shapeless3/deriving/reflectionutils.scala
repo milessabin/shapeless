@@ -20,7 +20,7 @@ import scala.annotation.tailrec
 import scala.deriving._
 import scala.quoted._
 
-class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
+class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
   implicit val qctx: Q = q
   import qctx.reflect._
 
