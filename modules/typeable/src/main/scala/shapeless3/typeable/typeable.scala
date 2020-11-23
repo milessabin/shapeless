@@ -224,7 +224,7 @@ object TypeableMacros {
   import Typeable._
 
   def impl[T: Type](using Quotes): Expr[Typeable[T]] = {
-    import qctx.reflect._
+    import quotes.reflect._
     import util._
 
     val TypeableType = TypeRepr.of[Typeable[_]] match {
@@ -301,7 +301,7 @@ object TypeableMacros {
     }
 
     def mkSumTypeable = {
-      val r = new ReflectionUtils(qctx)
+      val r = new ReflectionUtils(quotes)
       import r._
 
       Mirror(target) match {
