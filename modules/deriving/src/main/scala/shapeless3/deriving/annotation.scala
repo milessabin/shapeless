@@ -123,7 +123,7 @@ object Annotations {
 }
 
 object AnnotationMacros {
-  def mkAnnotation[A: Type, T: Type](using qctx: Quotes): Expr[Annotation[A, T]] = {
+  def mkAnnotation[A: Type, T: Type](using Quotes): Expr[Annotation[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]
@@ -142,7 +142,7 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](using qctx: Quotes): Expr[Annotations[A, T]] = {
+  def mkAnnotations[A: Type, T: Type](using q: Quotes): Expr[Annotations[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]
@@ -150,7 +150,7 @@ object AnnotationMacros {
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
       report.throwError(s"Bad annotation type ${annotTpe.show} is abstract")
     } else {
-      val r = new ReflectionUtils(qctx)
+      val r = new ReflectionUtils(q)
       import r._
 
       def mkAnnotations(annotTrees: Seq[Expr[Any]]): Expr[Annotations[A, T]] =
