@@ -124,7 +124,7 @@ object Annotations {
 
 object AnnotationMacros {
   def mkAnnotation[A: Type, T: Type](using Quotes): Expr[Annotation[A, T]] = {
-    import qctx.reflect._
+    import quotes.reflect._
 
     val annotTpe = TypeRepr.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
@@ -143,7 +143,7 @@ object AnnotationMacros {
   }
 
   def mkAnnotations[A: Type, T: Type](using q: Quotes): Expr[Annotations[A, T]] = {
-    import qctx.reflect._
+    import quotes.reflect._
 
     val annotTpe = TypeRepr.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
