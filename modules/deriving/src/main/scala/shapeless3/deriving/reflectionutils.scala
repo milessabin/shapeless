@@ -21,8 +21,8 @@ import scala.deriving._
 import scala.quoted._
 
 class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
-  implicit val qctx: Q = q
-  import qctx.reflect._
+  private given q.type = q
+  import q.reflect._
 
   case class Mirror(
     MirroredType: TypeRepr,
