@@ -122,13 +122,13 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. An explicit type argument
    * must be provided. Available only if there is evidence that this collection has at least ''m'' elements. The
-   * resulting collections will be statically know to have ''m'' and ''n-m'' elements respectively.
+   * resulting collections will be statically known to have ''m'' and ''n-m'' elements respectively.
    */
   def splitAt[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = (take[M], drop[M])
   
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. Available only if there
-   * is evidence that this collection has at least ''m'' elements. The resulting collections will be statically know to
+   * is evidence that this collection has at least ''m'' elements. The resulting collections will be statically known to
    * have ''m'' and ''n-m'' elements respectively.
    */
   def splitAt(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = (take[m.N], drop[m.N])
