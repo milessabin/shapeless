@@ -43,7 +43,7 @@ class IllTypedMacros(val c: blackbox.Context) {
     val (expPat, expMsg) = expected match {
       case null => (null, "Expected some error.")
       case Literal(Constant(s: String)) =>
-        (Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.DOTALL), "Expected error matching: "+s)
+        (Pattern.compile(Pattern.quote(s), Pattern.CASE_INSENSITIVE | Pattern.DOTALL), "Expected error matching: "+s)
     }
 
     try {
