@@ -73,23 +73,23 @@ object Typeable extends Typeable0 {
   }
 
   /** Typeable instance for `Byte`. */
-  given byteTypeable as Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte], "Byte")
+  given byteTypeable: Typeable[Byte] = ValueTypeable[Byte, jl.Byte](classOf[jl.Byte], "Byte")
   /** Typeable instance for `Short`. */
-  given shortTypeable as Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short], "Short")
+  given shortTypeable: Typeable[Short] = ValueTypeable[Short, jl.Short](classOf[jl.Short], "Short")
   /** Typeable instance for `Char`. */
-  given charTypeable as Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character], "Char")
+  given charTypeable: Typeable[Char] = ValueTypeable[Char, jl.Character](classOf[jl.Character], "Char")
   /** Typeable instance for `Int`. */
-  given intTypeable as Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer], "Int")
+  given intTypeable: Typeable[Int] = ValueTypeable[Int, jl.Integer](classOf[jl.Integer], "Int")
   /** Typeable instance for `Long`. */
-  given longTypeable as Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long], "Long")
+  given longTypeable: Typeable[Long] = ValueTypeable[Long, jl.Long](classOf[jl.Long], "Long")
   /** Typeable instance for `Float`. */
-  given floatTypeable as Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float], "Float")
+  given floatTypeable: Typeable[Float] = ValueTypeable[Float, jl.Float](classOf[jl.Float], "Float")
   /** Typeable instance for `Double`. */
-  given doubleTypeable as Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double], "Double")
+  given doubleTypeable: Typeable[Double] = ValueTypeable[Double, jl.Double](classOf[jl.Double], "Double")
   /** Typeable instance for `Boolean`. */
-  given booleanTypeable as Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
+  given booleanTypeable: Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
   /** Typeable instance for `Unit`. */
-  given unitTypeable as Typeable[Unit] = ValueTypeable[Unit, scala.runtime.BoxedUnit](classOf[scala.runtime.BoxedUnit], "Unit")
+  given unitTypeable: Typeable[Unit] = ValueTypeable[Unit, scala.runtime.BoxedUnit](classOf[scala.runtime.BoxedUnit], "Unit")
 
   def isAnyValClass[T](clazz: Class[T]) =
     (classOf[jl.Number] isAssignableFrom clazz) ||
@@ -98,19 +98,19 @@ object Typeable extends Typeable0 {
     clazz == classOf[scala.runtime.BoxedUnit]
 
   /** Typeable instance for `Any`. */
-  given anyTypeable as Typeable[Any] {
+  given anyTypeable: Typeable[Any] with {
     def castable(t: Any): Boolean = true
     def describe = "Any"
   }
 
   /** Typeable instance for `AnyVal`. */
-  given anyValTypeable as Typeable[AnyVal] {
+  given anyValTypeable: Typeable[AnyVal] with {
     def castable(t: Any): Boolean = t != null && isAnyValClass(t.getClass)
     def describe = "AnyVal"
   }
 
   /** Typeable instance for `AnyRef`. */
-  given anyRefTypeable as Typeable[AnyRef] {
+  given anyRefTypeable: Typeable[AnyRef] with {
     def castable(t: Any): Boolean = t != null && !isAnyValClass(t.getClass)
     def describe = "AnyRef"
   }
@@ -118,7 +118,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Iterable`. Note that the contents be will tested
    *  for conformance to the element type.
    */
-  given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]) as Typeable[CC[T]] {
+  given iterableTypeable[CC[t] <: Iterable[t], T](using CCTag: ClassTag[CC[Any]], tt: Typeable[T]): Typeable[CC[T]] with {
     def castable(t: Any): Boolean =
       t match {
         case (cc: CC[_] @unchecked) if CCTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -131,7 +131,7 @@ object Typeable extends Typeable0 {
   /** Typeable instance for `Map`. Note that the contents will be tested for
    *  conformance to the key/value types.
    */
-  given mapTypeable[M[k, v] <: Map[k, v], K, V](using MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]) as Typeable[M[K, V]] {
+  given mapTypeable[M[k, v] <: Map[k, v], K, V](using MTag: ClassTag[M[Any, Any]], tk: Typeable[K], tv: Typeable[V]): Typeable[M[K, V]] with {
     def castable(t: Any): Boolean =
       t match {
         case (m: Map[Any, Any] @unchecked) if MTag.runtimeClass.isAssignableFrom(t.getClass) =>
@@ -217,7 +217,7 @@ object Typeable extends Typeable0 {
 trait Typeable0 {
   inline def mkDefaultTypeable[T]: Typeable[T] = ${ TypeableMacros.impl[T] }
 
-  inline given [T] as Typeable[T] = mkDefaultTypeable[T]
+  inline given [T]: Typeable[T] = mkDefaultTypeable[T]
 }
 
 object TypeableMacros {

@@ -66,7 +66,7 @@ object K0 {
     }
   }
 
-  given Ops as Object { // TODO: We probably don't need the given anymore.
+  given Ops: AnyRef with { // TODO: We probably don't need the given anymore.
     extension [T](gen: ProductGeneric[T])
       inline def toRepr(o: T): gen.MirroredElemTypes = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes]
       inline def fromRepr(r: gen.MirroredElemTypes): T = gen.fromProduct(r.asInstanceOf).asInstanceOf[T]
@@ -110,16 +110,16 @@ object K0 {
         inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline given mkInstances[F[_], T](using gen: Generic[T]) as Instances[F, T] =
+  inline given mkInstances[F[_], T](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
       case p: ProductGeneric[T]   => mkProductInstances[F, T](using p)
       case c: CoproductGeneric[T] => mkCoproductInstances[F, T](using c)
     }
 
-  inline given mkProductInstances[F[_], T](using gen: ProductGeneric[T]) as ProductInstances[F, T] =
+  inline given mkProductInstances[F[_], T](using gen: ProductGeneric[T]): ProductInstances[F, T] =
     ErasedProductInstances[K0.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
-  inline given mkCoproductInstances[F[_], T](using gen: CoproductGeneric[T]) as CoproductInstances[F, T] =
+  inline given mkCoproductInstances[F[_], T](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
     ErasedCoproductInstances[K0.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
 
@@ -165,7 +165,7 @@ object K1 {
     }
   }
 
-  given Ops as Object {
+  given Ops: AnyRef with {
     extension [T[_], A] (gen: ProductGeneric[T])
       inline def toRepr(o: T[A]): gen.MirroredElemTypes[A] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A]]
       inline def fromRepr(r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
@@ -198,16 +198,16 @@ object K1 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline given mkInstances[F[_[_]], T[_]](using gen: Generic[T]) as Instances[F, T] =
+  inline given mkInstances[F[_[_]], T[_]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
       case p: ProductGeneric[T] => mkProductInstances[F, T](using p)
       case c: CoproductGeneric[T] => mkCoproductInstances[F, T](using c)
     }
 
-  inline given mkProductInstances[F[_[_]], T[_]](using gen: ProductGeneric[T]) as ProductInstances[F, T] =
+  inline given mkProductInstances[F[_[_]], T[_]](using gen: ProductGeneric[T]): ProductInstances[F, T] =
     ErasedProductInstances[K1.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
-  inline given mkCoproductInstances[F[_[_]], T[_]](using gen: CoproductGeneric[T]) as CoproductInstances[F, T] =
+  inline given mkCoproductInstances[F[_[_]], T[_]](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
     ErasedCoproductInstances[K1.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
 
@@ -256,7 +256,7 @@ object K11 {
     }
   }
 
-  given Ops as Object {
+  given Ops: AnyRef with {
     extension [T[_[_]], A[_]](gen: ProductGeneric[T])
       inline def toRepr(o: T[A]): gen.MirroredElemTypes[A] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A]]
       inline def fromRepr(r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
@@ -289,16 +289,16 @@ object K11 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline given mkInstances[F[_[_[_]]], T[_[_]]](using gen: Generic[T]) as Instances[F, T] =
+  inline given mkInstances[F[_[_[_]]], T[_[_]]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
       case p: ProductGeneric[T]   => mkProductInstances[F, T](using p)
       case c: CoproductGeneric[T] => mkCoproductInstances[F, T](using c)
     }
 
-  inline given mkProductInstances[F[_[_[_]]], T[_[_]]](using gen: ProductGeneric[T]) as ProductInstances[F, T] =
+  inline given mkProductInstances[F[_[_[_]]], T[_[_]]](using gen: ProductGeneric[T]): ProductInstances[F, T] =
     ErasedProductInstances[K11.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
-  inline given mkCoproductInstances[F[_[_[_]]], T[_[_]]](using gen: CoproductGeneric[T]) as CoproductInstances[F, T] =
+  inline given mkCoproductInstances[F[_[_[_]]], T[_[_]]](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
     ErasedCoproductInstances[K11.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
 
@@ -350,7 +350,7 @@ object K2 {
     }
   }
 
-  given Ops as Object {
+  given Ops: AnyRef with {
     extension [T[_, _], A, B](gen: ProductGeneric[T]) inline def toRepr(o: T[A, B]): gen.MirroredElemTypes[A, B] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A, B]]
     extension [T[_, _], A, B](gen: ProductGeneric[T]) inline def fromRepr(r: gen.MirroredElemTypes[A, B]): T[A, B] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A, B]]
 
@@ -381,15 +381,15 @@ object K2 {
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline given mkInstances[F[_[_, _]], T[_, _]](using gen: Generic[T]) as Instances[F, T] =
+  inline given mkInstances[F[_[_, _]], T[_, _]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
       case p: ProductGeneric[T]   => mkProductInstances[F, T](using p)
       case c: CoproductGeneric[T] => mkCoproductInstances[F, T](using c)
     }
 
-  inline given mkProductInstances[F[_[_, _]], T[_, _]](using gen: ProductGeneric[T]) as ProductInstances[F, T] =
+  inline given mkProductInstances[F[_[_, _]], T[_, _]](using gen: ProductGeneric[T]): ProductInstances[F, T] =
     ErasedProductInstances[K2.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
-  inline given mkCoproductInstances[F[_[_, _]], T[_, _]](using gen: CoproductGeneric[T]) as CoproductInstances[F, T] =
+  inline given mkCoproductInstances[F[_[_, _]], T[_, _]](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
     ErasedCoproductInstances[K2.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 }
