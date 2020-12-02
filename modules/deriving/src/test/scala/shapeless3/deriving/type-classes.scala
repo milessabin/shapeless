@@ -28,27 +28,25 @@ trait Monoid[A] {
 object Monoid {
   inline def apply[A](using ma: Monoid[A]): Monoid[A] = ma
 
-  given Monoid[Unit] {
+  given Monoid[Unit] with
     def empty: Unit = ()
     def combine(x: Unit, y: Unit): Unit = ()
-  }
-  given Monoid[Boolean] {
+
+  given Monoid[Boolean] with
     def empty: Boolean = false
     def combine(x: Boolean, y: Boolean): Boolean = x || y
-  }
-  given Monoid[Int] {
+
+  given Monoid[Int] with
     def empty: Int = 0
     def combine(x: Int, y: Int): Int = x+y
-  }
-  given Monoid[String] {
+
+  given Monoid[String] with
     def empty: String = ""
     def combine(x: String, y: String): String = x+y
-  }
 
-  given monoidGen[A](using inst: K0.ProductInstances[Monoid, A]): Monoid[A] with {
+  given monoidGen[A](using inst: K0.ProductInstances[Monoid, A]): Monoid[A] with
     def empty: A = inst.construct([t] => (ma: Monoid[t]) => ma.empty)
     def combine(x: A, y: A): A = inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0, t1))
-  }
 
   inline def derived[A](using gen: K0.ProductGeneric[A]): Monoid[A] = monoidGen
 }
@@ -60,30 +58,27 @@ trait Eq[A] {
 object Eq {
   inline def apply[A](using ea: Eq[A]): Eq[A] = ea
 
-  given Eq[Unit] {
+  given Eq[Unit] with
     def eqv(x: Unit, y: Unit): Boolean = true
-  }
-  given Eq[Boolean] {
-    def eqv(x: Boolean, y: Boolean): Boolean = x == y
-  }
-  given Eq[Int] {
-    def eqv(x: Int, y: Int): Boolean = x == y
-  }
-  given Eq[String] {
-    def eqv(x: String, y: String): Boolean = x == y
-  }
 
-  given eqGen[A](using inst: K0.ProductInstances[Eq, A]): Eq[A] with {
+  given Eq[Boolean] with
+    def eqv(x: Boolean, y: Boolean): Boolean = x == y
+
+  given Eq[Int] with
+    def eqv(x: Int, y: Int): Boolean = x == y
+
+  given Eq[String] with
+    def eqv(x: String, y: String): Boolean = x == y
+
+  given eqGen[A](using inst: K0.ProductInstances[Eq, A]): Eq[A] with
     def eqv(x: A, y: A): Boolean = inst.foldLeft2(x, y)(true: Boolean)(
       [t] => (acc: Boolean, eqt: Eq[t], t0: t, t1: t) => Complete(!eqt.eqv(t0, t1))(false)(true)
     )
-  }
 
-  given eqGenC[A](using inst: => K0.CoproductInstances[Eq, A]): Eq[A] with {
+  given eqGenC[A](using inst: => K0.CoproductInstances[Eq, A]): Eq[A] with
     def eqv(x: A, y: A): Boolean = inst.fold2(x, y)(false)(
       [t] => (eqt: Eq[t], t0: t, t1: t) => eqt.eqv(t0, t1)
     )
-  }
 
   inline def derived[A](using gen: K0.Generic[A]): Eq[A] =
     gen.derive(eqGen, eqGenC)
@@ -96,21 +91,17 @@ trait Functor[F[_]] {
 object Functor {
   inline def apply[F[_]](using ff: Functor[F]): Functor[F] = ff
 
-  given Functor[Id] with {
+  given Functor[Id] with
     def map[A, B](a: A)(f: A => B): B = f(a)
-  }
 
-  given [F[_], G[_]](using ff: Functor[F], fg: Functor[G]): Functor[[t] =>> F[G[t]]] with {
+  given [F[_], G[_]](using ff: Functor[F], fg: Functor[G]): Functor[[t] =>> F[G[t]]] with
     def map[A, B](fga: F[G[A]])(f: A => B): F[G[B]] = ff.map(fga)(ga => fg.map(ga)(f))
-  }
 
-  given functorGen[F[_]](using inst: => K1.Instances[Functor, F]): Functor[F] with {
+  given functorGen[F[_]](using inst: => K1.Instances[Functor, F]): Functor[F] with
     def map[A, B](fa: F[A])(f: A => B): F[B] = inst.map(fa)([t[_]] => (ft: Functor[t], ta: t[A]) => ft.map(ta)(f))
-  }
 
-  given [T]: Functor[Const[T]] with {
+  given [T]: Functor[Const[T]] with
     def map[A, B](t: T)(f: A => B): T = t
-  }
 
   inline def derived[F[_]](using gen: K1.Generic[F]): Functor[F] = functorGen
 }
@@ -122,18 +113,15 @@ trait FunctorK[H[_[_]]] {
 object FunctorK {
   inline def apply[H[_[_]]](using fh: FunctorK[H]): FunctorK[H] = fh
 
-  given [T]: FunctorK[K11.Id[T]] with {
+  given [T]: FunctorK[K11.Id[T]] with
     def mapK[A[_], B[_]](at: A[T])(f: A ~> B): B[T] = f(at)
-  }
 
-  given functorKGen[H[_[_]]](using inst: => K11.Instances[FunctorK, H]): FunctorK[H] with {
+  given functorKGen[H[_[_]]](using inst: => K11.Instances[FunctorK, H]): FunctorK[H] with
     def mapK[A[_], B[_]](ha: H[A])(f: A ~> B): H[B] =
       inst.map(ha)([t[_[_]]] => (ft: FunctorK[t], ta: t[A]) => ft.mapK(ta)(f))
-  }
 
-  given [T]: FunctorK[K11.Const[T]] with {
+  given [T]: FunctorK[K11.Const[T]] with
     def mapK[A[_], B[_]](t: T)(f: A ~> B): T = t
-  }
 
   inline def derived[F[_[_]]](using gen: K11.Generic[F]): FunctorK[F] = functorKGen
 }
@@ -155,30 +143,25 @@ object Bifunctor {
       (f(fab._1), g(fab._2))
   }
 
-  given Bifunctor[Either] with {
+  given Bifunctor[Either] with
     def bimap[A, B, C, D](fab: Either[A, B])(f: A => C, g: B => D): Either[C, D] =
       fab match {
         case Left(a) => Left(f(a))
         case Right(b) => Right(g(b))
       }
-  }
 
-  given bifunctorGen[F[_, _]](using inst: => K2.Instances[Bifunctor, F]): Bifunctor[F] with {
+  given bifunctorGen[F[_, _]](using inst: => K2.Instances[Bifunctor, F]): Bifunctor[F] with
     def bimap[A, B, C, D](fab: F[A, B])(f: A => C, g: B => D): F[C, D] =
       inst.map(fab)([t[_, _]] => (bft: Bifunctor[t], tab: t[A, B]) => bft.bimap(tab)(f, g))
-  }
 
-  given Bifunctor[K2.Id1] with {
+  given Bifunctor[K2.Id1] with
     def bimap[A, B, C, D](a: A)(f: A => C, g: B => D): C = f(a)
-  }
 
-  given Bifunctor[K2.Id2] with {
+  given Bifunctor[K2.Id2] with
     def bimap[A, B, C, D](b: B)(f: A => C, g: B => D): D = g(b)
-  }
 
-  given [T]: Bifunctor[K2.Const[T]] with {
+  given [T]: Bifunctor[K2.Const[T]] with
     def bimap[A, B, C, D](t: T)(f: A => C, g: B => D): T = t
-  }
 
   inline def derived[F[_, _]](using gen: K2.Generic[F]): Bifunctor[F] = bifunctorGen
 }
@@ -535,7 +518,7 @@ object Transform {
   inline given [T, U](using
     gent: K0.ProductGeneric[T] { type MirroredElemTypes <: NonEmptyTuple },
     genu: K0.ProductGeneric[U] { type MirroredElemTypes <: Tuple }
-  ) as Transform[T, U] = new Transform[T, U] {
+  ) : Transform[T, U] = new Transform[T, U] {
     def apply(t: T): U =
       genu.fromRepr(mkRecord[genu.MirroredElemLabels, genu.MirroredElemTypes, gent.MirroredElemLabels, gent.MirroredElemTypes](gent.toRepr(t)))
   }
