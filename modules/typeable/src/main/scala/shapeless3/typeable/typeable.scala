@@ -332,7 +332,7 @@ object TypeableMacros {
         val ident = Ident(tp).asExprOf[T]
         val sym = tp.termSymbol
         val name = Expr(sym.name.toString)
-        val serializable = Expr(sym.flags.is(Flags.Object))
+        val serializable = Expr(sym.flags.is(Flags.Module))
         '{ referenceSingletonTypeable[T]($ident, $name, $serializable) }
 
       case ConstantType(c) =>
@@ -350,7 +350,7 @@ object TypeableMacros {
         val sym = tp.typeSymbol
 
         def normalizeModuleClass(sym: Symbol): Symbol =
-          if (sym.flags.is(Flags.ModuleClass)) sym.companionModule else sym
+          if (sym.flags.is(Flags.Module)) sym.companionModule else sym
 
         val owner = normalizeModuleClass(sym.owner)
 
