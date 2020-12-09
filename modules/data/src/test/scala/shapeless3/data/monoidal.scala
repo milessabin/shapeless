@@ -47,6 +47,7 @@ object MonoidalTest {
   type pb = (Double, (Char, Unit))
   type pc = ("i", ("s", ("b", Unit)))
   type pd = ((Int, (String, Unit)), ((Boolean, Unit), (Unit, ((Double, (Char, Unit)), Unit))))
+  /*
   summon[pairs.length[p] =:= 3]
   summon[pairs.reverse[p] =:= (Boolean, (String, (Int, Unit)))]
   summon[pairs.map[p][Option] =:= (Option[Int], (Option[String], (Option[Boolean], Unit)))]
@@ -129,4 +130,5 @@ object MonoidalTest {
   summon[coproduct.flatten[cd] =:= Cp[T[Int, T[String, T[Boolean, T[Double, T[Char, U]]]]]]]
   summon[coproduct.flatMap[cb][orIntc] =:= Cp[T[Double, T[Int, T[Char, T[Int, U]]]]]]
   summon[coproduct.select[c, 1] =:= Cp[T[String, T[Int, T[Boolean, U]]]]]
+  */
 }

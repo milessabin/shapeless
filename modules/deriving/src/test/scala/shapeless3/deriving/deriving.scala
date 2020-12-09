@@ -78,6 +78,7 @@ class DerivationTests {
     assert(!v8.eqv(CCons(1, CCons(2, CCons(3, CNil))), CCons(1, CCons(4, CCons(3, CNil)))))
   }
 
+  /*
   @Test
   def functor: Unit = {
     val v0 = Functor[Box]
@@ -115,6 +116,7 @@ class DerivationTests {
     val v3: ListF.List[Int] = Fix(ConsF(3, Fix(ConsF(4, Fix(ConsF(6, Fix(NilF)))))))
     assert(Bifunctor.map((_: String).length)(v2) == v3)
   }
+  */
 
   @Test
   def data: Unit = {
@@ -144,6 +146,7 @@ class DerivationTests {
     assert(v0.empty == ISB(0, "", false))
   }
 
+  /*
   @Test
   def emptyk: Unit = {
     val v0 = EmptyK[Opt]
@@ -159,6 +162,7 @@ class DerivationTests {
     val v1 = Pure[CList]
     assert(v1.pure(23) == CCons(23, CNil))
   }
+  */
 
   @Test
   def labels: Unit = {
