@@ -279,12 +279,12 @@ object TypeableMacros {
 
     def mkCaseClassTypeable = {
       val sym = target.classSymbol.get
-      val fields = sym.fields
+      val fields = sym.declaredFields
       val caseFields = sym.caseFields.filter(f => fields.contains(f))
       def fieldTpe(f: Symbol) = f.tree match {
         case tree: ValDef => tree.tpt.tpe
       }
-      if (!sym.fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
+      if (!fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
         report.throwError(s"No Typeable for case class ${target.show} with non-case fields")
       } else {
         val fieldTps = caseFields.map(f => target.memberType(f))
