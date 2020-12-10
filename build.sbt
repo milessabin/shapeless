@@ -20,7 +20,8 @@ lazy val modules: List[ProjectReference] = List(
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
-    "-Yexplicit-nulls"
+    "-Yexplicit-nulls",
+    "-Yunsound-match-types"
   ),
   sources in (Compile,doc) := Nil,
 
