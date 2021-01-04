@@ -178,12 +178,12 @@ object Data extends Data0 {
   type DFR[F, R] = [t] =>> Data[F, t, R]
 
   given dataGen[F, T, R](using inst: K0.ProductInstances[DFR[F, R], T]): Data[F, T, R] =
-    mkData[F, T, R](t => inst.foldLeft[DFR[F, R], T, List[R]](t)(List.empty[R])(
+    mkData[F, T, R](t => inst.foldLeft[List[R]](t)(List.empty[R])(
       [t] => (acc: List[R], dt: Data[F, t, R], t: t) => Continue(dt.gmapQ(t) reverse_::: acc)
     ).reverse)
 
   given dataGenC[F, T, R](using inst: => K0.CoproductInstances[DFR[F, R], T]): Data[F, T, R] =
-    mkData[F, T, R](t => inst.fold[DFR[F, R], T, List[R]](t)(
+    mkData[F, T, R](t => inst.fold[List[R]](t)(
       [t] => (dt: Data[F, t, R], t: t) => dt.gmapQ(t)
     ))
 }
@@ -219,7 +219,7 @@ object DataT {
     }
 
   given dataTGen[F, T](using inst: => K0.Instances[DF[F], T]): Aux[F, T, T] =
-    mkDataT[F, T, T](t => inst.map[DF[F], T](t)(
+    mkDataT[F, T, T](t => inst.map(t)(
       [t] => (dt: Aux[F, t, t], t: t) => dt.gmapT(t)
     ))
 
@@ -412,14 +412,14 @@ object Read {
   given readGen[T](using inst: K0.ProductInstances[Read, T], labelling: Labelling[T]): Read[T] with {
     def read(s: String): Option[(T, String)] = {
       def readUnit(s: String): Option[(T, String)] = {
-        inst.unfold[Read, T, Unit](())(
+        inst.unfold[Unit](())(
           [t] => (u: Unit, rt: Read[t]) => ((), None)
         )._2.map(t => (t, s))
       }
 
       def readElems(s: String): Option[(T, String)] = {
         type Acc = (String, Seq[String], Boolean)
-        inst.unfold[Read, T, Acc]((s, labelling.elemLabels, true))(
+        inst.unfold[Acc]((s, labelling.elemLabels, true))(
           [t] => (acc: Acc, rt: Read[t]) => {
             val (s, labels, first) = acc
             (for {
@@ -457,7 +457,7 @@ object Read {
       labelling.elemLabels.zipWithIndex.iterator.map((p: (String, Int)) => {
         val (label, i) = p
         if(s.trim.startsWith(label)) {
-          inst.project[Read, T, String](i)(s)(
+          inst.project[String](i)(s)(
             [t] => (s: String, rt: Read[t]) =>
               rt.read(s) match {
                 case Some((t, tl)) => (tl, Some(t))

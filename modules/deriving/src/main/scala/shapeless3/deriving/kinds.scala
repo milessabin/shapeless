@@ -91,22 +91,22 @@ object K0 {
       inline def map2(x: T, y: T)(f: [t] => (F[t], t, t) => t): T =
         inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
 
-    extension [F[_], T, Acc](inst: ProductInstances[F, T])
-      inline def unfold(i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
+    extension [F[_], T](inst: ProductInstances[F, T])
+      inline def unfold[Acc](i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
         inst.erasedUnfold(i)(f.asInstanceOf).asInstanceOf
-      inline def foldLeft(x: T)(i: Acc)(f: [t] => (Acc, F[t], t) => CompleteOr[Acc]): Acc =
+      inline def foldLeft[Acc](x: T)(i: Acc)(f: [t] => (Acc, F[t], t) => CompleteOr[Acc]): Acc =
         inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
-      inline def foldLeft2(x: T, y: T)(i: Acc)(f: [t] => (Acc, F[t], t, t) => CompleteOr[Acc]): Acc =
+      inline def foldLeft2[Acc](x: T, y: T)(i: Acc)(f: [t] => (Acc, F[t], t, t) => CompleteOr[Acc]): Acc =
         inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
 
-    extension [F[_], T, Acc](inst: CoproductInstances[F, T])
-      inline def project(p: Int)(i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
+    extension [F[_], T](inst: CoproductInstances[F, T])
+      inline def project[Acc](p: Int)(i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
         inst.erasedProject(p)(i)(f.asInstanceOf).asInstanceOf
 
-    extension [F[_], T, R](inst: CoproductInstances[F, T])
-      inline def fold(x: T)(f: [t] => (F[t], t) => R): R =
+    extension [F[_], T](inst: CoproductInstances[F, T])
+      inline def fold[R](x: T)(f: [t] => (F[t], t) => R): R =
         inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
-      inline def fold2(x: T, y: T)(a: => R)(f: [t] => (F[t], t, t) => R): R =
+      inline def fold2[R](x: T, y: T)(a: => R)(f: [t] => (F[t], t, t) => R): R =
         inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
