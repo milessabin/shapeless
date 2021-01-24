@@ -16,8 +16,11 @@
 
 package shapeless3.data
 
-import Monoidal.{T, U}
+object Dummy
 
+// This is fine in the same source file/compilation run, but fails when
+// separately compiled as a test
+/*
 object MonoidalTest {
   trait Cp[L]
 
@@ -35,7 +38,7 @@ object MonoidalTest {
 
   type orInt[t] = Either[t, Either[Int, Nothing]]
   type orInt2[t] = Either[t, Int]
-  type orIntc[t] = Cp[T[t, T[Int, U]]]
+  type orIntc[t] = Cp[(t, Int)]
 
   type rotate[t] = t match {
     case Int => String
@@ -47,12 +50,12 @@ object MonoidalTest {
   type pb = (Double, (Char, Unit))
   type pc = ("i", ("s", ("b", Unit)))
   type pd = ((Int, (String, Unit)), ((Boolean, Unit), (Unit, ((Double, (Char, Unit)), Unit))))
-  /*
   summon[pairs.length[p] =:= 3]
   summon[pairs.reverse[p] =:= (Boolean, (String, (Int, Unit)))]
   summon[pairs.map[p][Option] =:= (Option[Int], (Option[String], (Option[Boolean], Unit)))]
   summon[pairs.map[p][rotate] =:= (String, (Boolean, (Int, Unit)))]
   summon[pairs.map[(Option[Int], (Option[String], (Option[Boolean], Unit)))][invOption] =:= p]
+  summon[pairs.reversePrepend[p, pb] =:= (Boolean, (String, (Int, (Double, (Char, Unit)))))]
   summon[pairs.concat[p, pb] =:= (Int, (String, (Boolean, (Double, (Char, Unit)))))]
   summon[pairs.zipWith[pc, p][Field] =:= (Field["i", Int], (Field["s", String], (Field["b", Boolean], Unit)))]
   summon[pairs.flatten[pd] =:= (Int, (String, (Boolean, (Double, (Char, Unit)))))]
@@ -94,7 +97,7 @@ object MonoidalTest {
 
   type e = Either[Int, Either[String, Either[Boolean, Nothing]]]
   type eb = Either[Double, Either[Char, Nothing]]
-  type ed = Either[Either[Int, Either[String, Nothing]], Either[Either[Boolean, Nothing], Either[Nothing, Either[Either[Double, Either[Char, Nothing]], Nothing]]]]
+  type ed = Either[Either[Int, Either[String, Nothing]], Either[Either[Boolean, Nothing], Either[Either[Double, Either[Char, Nothing]], Nothing]]]
   summon[eithers.length[e] =:= 3]
   summon[eithers.reverse[e] =:= Either[Boolean, Either[String, Either[Int, Nothing]]]]
   summon[eithers.map[e][Option] =:= Either[Option[Int], Either[Option[String], Either[Option[Boolean], Nothing]]]]
@@ -118,17 +121,17 @@ object MonoidalTest {
   summon[eithers2.flatMap[e2b][orInt2] =:= Either[Double, Either[Int, Either[Char, Int]]]]
   summon[eithers2.select[e2, 1] =:= Either[String, Either[Int, Boolean]]]
 
-  type c = Cp[T[Int, T[String, T[Boolean, U]]]]
-  type cb = Cp[T[Double, T[Char, U]]]
-  type cd = Cp[T[Cp[T[Int, T[String, U]]], T[Cp[T[Boolean, U]], T[Cp[U], T[Cp[T[Double, T[Char, U]]], U]]]]]
+  type c = Cp[(Int, String, Boolean)]
+  type cb = Cp[(Double, Char)]
+  type cd = Cp[(Cp[(Int, String)], Cp[Tuple1[Boolean]], Cp[EmptyTuple], Cp[(Double, Char)])]
   summon[coproduct.length[c] =:= 3]
-  summon[coproduct.reverse[c] =:= Cp[T[Boolean, T[String, T[Int, U]]]]]
-  summon[coproduct.map[c][Option] =:= Cp[T[Option[Int], T[Option[String], T[Option[Boolean], U]]]]]
-  summon[coproduct.map[c][rotate] =:= Cp[T[String, T[Boolean, T[Int, U]]]]]
-  summon[coproduct.map[Cp[T[Option[Int], T[Option[String], T[Option[Boolean], U]]]]][invOption] =:= c]
-  summon[coproduct.extend[c, cb] =:= Cp[T[Int, T[String, T[Boolean, T[Double, T[Char, U]]]]]]]
-  summon[coproduct.flatten[cd] =:= Cp[T[Int, T[String, T[Boolean, T[Double, T[Char, U]]]]]]]
-  summon[coproduct.flatMap[cb][orIntc] =:= Cp[T[Double, T[Int, T[Char, T[Int, U]]]]]]
-  summon[coproduct.select[c, 1] =:= Cp[T[String, T[Int, T[Boolean, U]]]]]
-  */
+  summon[coproduct.reverse[c] =:= Cp[(Boolean, String, Int)]]
+  summon[coproduct.map[c][Option] =:= Cp[(Option[Int], Option[String], Option[Boolean])]]
+  summon[coproduct.map[c][rotate] =:= Cp[(String, Boolean, Int)]]
+  summon[coproduct.map[Cp[(Option[Int], Option[String], Option[Boolean])]][invOption] =:= c]
+  summon[coproduct.extend[c, cb] =:= Cp[(Int, String, Boolean, Double, Char)]]
+  summon[coproduct.flatten[cd] =:= Cp[(Int, String, Boolean, Double, Char)]]
+  summon[coproduct.flatMap[cb][orIntc] =:= Cp[(Double, Int, Char, Int)]]
+  summon[coproduct.select[c, 1] =:= Cp[(String, Int, Boolean)]]
 }
+*/

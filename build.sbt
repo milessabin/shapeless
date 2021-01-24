@@ -1,7 +1,7 @@
 val dottyLatestNightly = dottyLatestNightlyBuild.get
 //val dottyVersion = dottyLatestNightly 
-val dottyVersion = "3.0.0-M2-bin-20201030-300e9a2-NIGHTLY"
-//val dottyVersion = "3.0.0-M1"
+val dottyVersion = "3.0.0-RC1-bin-20210123-b731573-NIGHTLY"
+//val dottyVersion = "3.0.0-RC1"
 
 inThisBuild(Seq(
   organization := "org.typelevel",
@@ -20,8 +20,7 @@ lazy val modules: List[ProjectReference] = List(
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
-    "-Yexplicit-nulls",
-    "-Yunsound-match-types"
+    "-Yexplicit-nulls"
   ),
   sources in (Compile,doc) := Nil,
 
