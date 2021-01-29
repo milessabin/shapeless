@@ -45,9 +45,10 @@ trait Cocartesian extends Monoidal {
 }
 
 object Monoidal {
-  import Tuple._
-
-  type length[m <: Tuple] = Size[m]
+  type length[m <: Tuple] = m match {
+    case EmptyTuple => 0
+    case hd *: tl => S[length[tl]]
+  }
 
   type reverse[m <: Tuple] = reverseAcc[m, EmptyTuple]
   type reverseAcc[m <: Tuple, acc <: Tuple] <: Tuple = m match {
@@ -55,7 +56,11 @@ object Monoidal {
     case EmptyTuple => acc
   }
 
-  type map[m <: Tuple] = [f[_]] =>> Map[m, f]
+  type map[m <: Tuple] = [f[_]] =>> map0[m, f]
+  type map0[m <: Tuple, f[_]] <: Tuple = m match {
+    case EmptyTuple => EmptyTuple
+    case hd *: tl => f[hd] *: map0[tl, f]
+  }
 
   type flatten[mm <: Tuple] = flattenAcc[mm, EmptyTuple]
   type flattenAcc[mm <: Tuple, acc <: Tuple] <: Tuple = mm match {
@@ -68,7 +73,7 @@ object Monoidal {
     case EmptyTuple => n
   }
 
-  type concat[m <: Tuple, n <: Tuple] = Concat[m, n]
+  type concat[m <: Tuple, n <: Tuple] = reversePrepend[reverse[m], n]
 
   type zipWith[m <: Tuple, n <: Tuple] = [f[_, _]] =>> zipWithAcc[m, n, EmptyTuple, f]
   type zipWithAcc[m <: Tuple, n <: Tuple, acc <: Tuple, f[_, _]] <: Tuple = (m, n) match {
@@ -76,7 +81,10 @@ object Monoidal {
     case (EmptyTuple, EmptyTuple) => reverse[acc]
   }
 
-  type at[m <: Tuple, n <: Int] = Elem[m, n]
+  type at[m <: Tuple, n <: Int] = (m, n) match {
+    case (hd *: _, 0) => hd
+    case (_ *: tl, S[p]) => at[tl, p]
+  }
 
   type select[m <: Tuple, n <: Int] = selectAcc[m, n, EmptyTuple]
   type selectAcc[m <: Tuple, n <: Int, acc <: Tuple] <: Tuple = (m, n) match {
