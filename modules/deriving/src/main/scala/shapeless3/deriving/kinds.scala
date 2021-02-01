@@ -110,17 +110,19 @@ object K0 {
         inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
   }
 
-  inline given mkInstances[F[_], T](using gen: Generic[T]): Instances[F, T] =
-    inline gen match {
+  // TODO remove transparent? Why is it needed?
+  transparent inline given mkInstances[F[_], T](using gen: Generic[T]): Instances[F, T] =
+    (inline gen match {
       case p: ProductGeneric[T]   => mkProductInstances[F, T](using p)
       case c: CoproductGeneric[T] => mkCoproductInstances[F, T](using c)
-    }
+    }) : Instances[F, T]
 
   inline given mkProductInstances[F[_], T](using gen: ProductGeneric[T]): ProductInstances[F, T] =
     ErasedProductInstances[K0.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
 
-  inline given mkCoproductInstances[F[_], T](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
-    ErasedCoproductInstances[K0.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen)
+  // TODO remove transparent? Why is it needed?
+  transparent inline given mkCoproductInstances[F[_], T](using gen: CoproductGeneric[T]): CoproductInstances[F, T] =
+    ErasedCoproductInstances[K0.type, F[T], LiftP[F, gen.MirroredElemTypes]](gen): CoproductInstances[F, T]
 }
 
 object K1 {
