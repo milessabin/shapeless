@@ -18,9 +18,6 @@ package shapeless3.data
 
 object Dummy
 
-// This is fine in the same source file/compilation run, but fails when
-// separately compiled as a test
-/*
 object MonoidalTest {
   trait Cp[L]
 
@@ -134,4 +131,3 @@ object MonoidalTest {
   summon[coproduct.flatMap[cb][orIntc] =:= Cp[(Double, Int, Char, Int)]]
   summon[coproduct.select[c, 1] =:= Cp[(String, Int, Boolean)]]
 }
-*/
