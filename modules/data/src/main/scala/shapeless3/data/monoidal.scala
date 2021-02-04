@@ -85,18 +85,6 @@ object Monoidal {
   }
 }
 
-trait UnboundedMonoidal[T0[_, _], U0] extends Monoidal{
-  type to[t] <: Tuple = t match {
-    case T0[hd, tl] => hd *: to[tl]
-    case U0 => EmptyTuple
-  }
-
-  type from[t <: Tuple] = t match {
-    case hd *: tl => T0[hd, from[tl]]
-    case EmptyTuple => U0
-  }
-}
-
 trait BoundedMonoidal[B, T0[_, _ <: B] <: B, U0 <: B] extends Monoidal {
   type to[t] <: Tuple = t match {
     case T0[hd, tl] => hd *: to[tl]
@@ -106,21 +94,6 @@ trait BoundedMonoidal[B, T0[_, _ <: B] <: B, U0 <: B] extends Monoidal {
   type from[t <: Tuple] = t match {
     case hd *: tl => T0[hd, from[tl]]
     case EmptyTuple => U0
-  }
-}
-
-trait UnitlessMonoidal[T0[_, _]] extends Monoidal {
-  type to[t] <: Tuple = t match {
-    case T0[hd, tl] => hd *: to[tl]
-    case _ => t *: EmptyTuple
-  }
-
-  type from[t <: Tuple] = t match {
-    case hd *: tl => from0[hd, tl]
-  }
-  type from0[p, t <: Tuple] = t match {
-    case hd *: tl => T0[p, from0[hd, tl]]
-    case EmptyTuple => p
   }
 }
 
@@ -136,7 +109,17 @@ object tuples extends Monoidal with Cartesian {
   type from[t <: Tuple] = t
 }
 
-object pairs extends UnboundedMonoidal[Tuple2, Unit] with Cartesian
+object pairs extends Cartesian {
+  type to[t] <: Tuple = t match {
+    case Tuple2[hd, tl] => hd *: to[tl]
+    case Unit => EmptyTuple
+  }
+
+  type from[t <: Tuple] = t match {
+    case hd *: tl => Tuple2[hd, from[tl]]
+    case EmptyTuple => Unit
+  }
+}
 
 object eithers extends Cocartesian {
   // Nothing needs special handling ... perhaps we should drop this
@@ -159,6 +142,32 @@ object eithers extends Cocartesian {
   }
 }
 
-object pairs2 extends UnitlessMonoidal[Tuple2] with Cartesian
+object pairs2 extends Cartesian {
+  type to[t] <: Tuple = t match {
+    case Tuple2[hd, tl] => hd *: to[tl]
+    case _ => t *: EmptyTuple
+  }
 
-object eithers2 extends UnitlessMonoidal[Either] with Cocartesian
+  type from[t <: Tuple] = t match {
+    case hd *: tl => from0[hd, tl]
+  }
+  type from0[p, t <: Tuple] = t match {
+    case hd *: tl => Tuple2[p, from0[hd, tl]]
+    case EmptyTuple => p
+  }
+}
+
+object eithers2 extends Cocartesian {
+  type to[t] <: Tuple = t match {
+    case Either[hd, tl] => hd *: to[tl]
+    case _ => t *: EmptyTuple
+  }
+
+  type from[t <: Tuple] = t match {
+    case hd *: tl => from0[hd, tl]
+  }
+  type from0[p, t <: Tuple] = t match {
+    case hd *: tl => Either[p, from0[hd, tl]]
+    case EmptyTuple => p
+  }
+}
