@@ -122,10 +122,10 @@ resolvers ++= Seq(
 
 
 Builds are available for Scala 2.11.x, 2.12.x and 2.13.x. The main line of development for
-shapeless 2.3.3 is Scala 2.13.2.
+shapeless 2.3.3 is Scala 2.13.4.
 
 ```scala
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
@@ -134,7 +134,7 @@ libraryDependencies ++= Seq(
 
 For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.4"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
@@ -164,8 +164,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 1.3.10 or later, and its master branch is built with Scala 2.13.2 by default but also
-cross-builds for 2.11.12 and 2.12.12.
+shapeless is built with SBT 1.3.10 or later, and its master branch is built with Scala 2.13.4 by default but also
+cross-builds for 2.11.12 and 2.12.13.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 

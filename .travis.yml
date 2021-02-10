@@ -1,14 +1,14 @@
 os: linux
-dist: trusty
+dist: bionic
 language: scala
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 scala:
   - 2.11.12
-  - 2.12.12
-  - 2.13.3
+  - 2.12.13
+  - 2.13.4
 
 env:
   - {}
@@ -39,12 +39,9 @@ jobs:
     - stage: test
       env:
         - SCALA_NATIVE=true
-      before_install:
-        - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
     - stage: release
       before_install:
         - git fetch --tags
-        - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
       script:
         - sbt ci-release
         - SCALA_JS_VERSION=0.6.33 sbt clean sonatypeBundleClean ci-release

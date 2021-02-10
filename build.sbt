@@ -5,8 +5,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
-val Scala212 = "2.12.12"
-val Scala213 = "2.13.3"
+val Scala212 = "2.12.13"
+val Scala213 = "2.13.4"
 
 val isScalaNative = System.getenv("SCALA_NATIVE") != null
 val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
@@ -107,8 +107,6 @@ lazy val commonJvmSettings = Seq(
 )
 
 lazy val commonNativeSettings = Seq(
-  scalaVersion := Scala211,
-  crossScalaVersions := Seq(Scala211)
 )
 
 lazy val coreSettings = commonSettings ++ publishSettings
