@@ -4,7 +4,7 @@ import GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 import sbtcrossproject.CrossProject
 
-val Scala211 = "2.11.12"
+val Scala211 = "2.13.5"
 val Scala212 = "2.12.12"
 val Scala213 = "2.13.3"
 
