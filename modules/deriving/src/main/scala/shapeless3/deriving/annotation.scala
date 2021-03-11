@@ -123,8 +123,8 @@ object Annotations {
 }
 
 object AnnotationMacros {
-  def mkAnnotation[A: Type, T: Type](using qctx: Quotes): Expr[Annotation[A, T]] = {
-    import qctx.reflect._
+  def mkAnnotation[A: Type, T: Type](using Quotes): Expr[Annotation[A, T]] = {
+    import quotes.reflect._
 
     val annotTpe = TypeRepr.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
@@ -133,6 +133,7 @@ object AnnotationMacros {
       '{???}
     } else {
       val annoteeTpe = TypeRepr.of[T]
+      // TODO try to use `getAnnotation` for performance
       annoteeTpe.typeSymbol.annotations.find(_.tpe <:< annotTpe) match {
         case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.asExprOf[A]}) }
         case None =>
@@ -142,15 +143,15 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](using qctx: Quotes): Expr[Annotations[A, T]] = {
-    import qctx.reflect._
+  def mkAnnotations[A: Type, T: Type](using q: Quotes): Expr[Annotations[A, T]] = {
+    import quotes.reflect._
 
     val annotTpe = TypeRepr.of[A]
     val annotFlags = annotTpe.typeSymbol.flags
     if (annotFlags.is(Flags.Abstract) || annotFlags.is(Flags.Trait)) {
       report.throwError(s"Bad annotation type ${annotTpe.show} is abstract")
     } else {
-      val r = new ReflectionUtils(qctx)
+      val r = new ReflectionUtils(q)
       import r._
 
       def mkAnnotations(annotTrees: Seq[Expr[Any]]): Expr[Annotations[A, T]] =
@@ -159,6 +160,7 @@ object AnnotationMacros {
         }
 
       def findAnnotation[A: Type](annoteeSym: Symbol): Expr[Option[A]] =
+        // TODO try to use `getAnnotation` for performance
         annoteeSym.annotations.find(_.tpe <:< TypeRepr.of[A]) match {
           case Some(tree) => '{ Some(${tree.asExprOf[A]}) }
           case None       => '{ None }

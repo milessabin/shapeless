@@ -223,8 +223,8 @@ trait Typeable0 {
 object TypeableMacros {
   import Typeable._
 
-  def impl[T: Type](using qctx: Quotes): Expr[Typeable[T]] = {
-    import qctx.reflect._
+  def impl[T: Type](using Quotes): Expr[Typeable[T]] = {
+    import quotes.reflect._
     import util._
 
     val TypeableType = TypeRepr.of[Typeable[_]] match {
@@ -284,7 +284,7 @@ object TypeableMacros {
       def fieldTpe(f: Symbol) = f.tree match {
         case tree: ValDef => tree.tpt.tpe
       }
-      if (!sym.declaredFields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
+      if (!fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
         report.throwError(s"No Typeable for case class ${target.show} with non-case fields")
       } else {
         val fieldTps = caseFields.map(f => target.memberType(f))
@@ -301,7 +301,7 @@ object TypeableMacros {
     }
 
     def mkSumTypeable = {
-      val r = new ReflectionUtils(qctx)
+      val r = new ReflectionUtils(quotes)
       import r._
 
       Mirror(target) match {

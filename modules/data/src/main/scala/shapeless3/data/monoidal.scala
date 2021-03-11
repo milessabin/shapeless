@@ -18,11 +18,9 @@ package shapeless3.data
 
 import scala.compiletime._
 
-import Monoidal._
-
 trait Monoidal {
-  type to[_]
-  type from[_]
+  type to[_] <: Tuple
+  type from[_ <: Tuple]
 
   type compose[f[_], g[_]] = [t] =>> g[f[t]]
 
@@ -31,14 +29,14 @@ trait Monoidal {
   type flatten[mm] = from[Monoidal.flatten[Monoidal.map[to[mm]][to]]]
   type map[m] = [f[_]] =>> from[Monoidal.map[to[m]][f]]
   type flatMap[m] = [f[_]] =>> from[Monoidal.flatten[Monoidal.map[to[m]][compose[f, to]]]]
-  type select[m, n] = from[Monoidal.select[to[m], n]]
+  type select[m, n <: Int] = from[Monoidal.select[to[m], n]]
 }
 
 trait Cartesian extends Monoidal {
   type reversePrepend[m, n] = from[Monoidal.reversePrepend[to[m], to[n]]]
   type concat[m, n] = from[Monoidal.concat[to[m], to[n]]]
   type zipWith[m, n] = [f[_, _]] =>> from[Monoidal.zipWith[to[m], to[n]][f]]
-  type at[m, n] = Monoidal.at[to[m], n]
+  type at[m, n <: Int] = Monoidal.at[to[m], n]
 }
 
 trait Cocartesian extends Monoidal {
@@ -47,139 +45,129 @@ trait Cocartesian extends Monoidal {
 }
 
 object Monoidal {
-  class T[hd, tl]
-  class U
+  import Tuple._
 
-  type length[m] = m match {
-    case U => 0
-    case T[hd, tl] => S[length[tl]]
+  type length[m <: Tuple] = Size[m]
+
+  type reverse[m <: Tuple] = reverseAcc[m, EmptyTuple]
+  type reverseAcc[m <: Tuple, acc <: Tuple] <: Tuple = m match {
+    case hd *: tl => reverseAcc[tl, hd *: acc]
+    case EmptyTuple => acc
   }
 
-  type reverse[m] = reverseAcc[m, U]
-  type reverseAcc[m, acc] = m match {
-    case U => acc
-    case T[hd, tl] => reverseAcc[tl, T[hd, acc]]
+  type map[m <: Tuple] = [f[_]] =>> Map[m, f]
+
+  type flatten[mm <: Tuple] = flattenAcc[mm, EmptyTuple]
+  type flattenAcc[mm <: Tuple, acc <: Tuple] <: Tuple = mm match {
+    case hd *: tl => flattenAcc[tl, reversePrepend[hd, acc]]
+    case EmptyTuple => reverse[acc]
   }
 
-  type map[m] = [f[_]] =>> map0[m, f]
-  type map0[m, f[_]] = m match {
-    case U => U
-    case T[hd, tl] => T[f[hd], map0[tl, f]]
+  type reversePrepend[m <: Tuple, n <: Tuple] <: Tuple = m match {
+    case hd *: tl => reversePrepend[tl, hd *: n]
+    case EmptyTuple => n
   }
 
-  type flatten[mm] = flattenAcc[mm, U]
-  type flattenAcc[mm, acc] = mm match {
-    case U => reverse[acc]
-    case T[hd, tl] => flattenAcc[tl, reversePrepend[hd, acc]]
+  type concat[m <: Tuple, n <: Tuple] = Concat[m, n]
+
+  type zipWith[m <: Tuple, n <: Tuple] = [f[_, _]] =>> zipWithAcc[m, n, EmptyTuple, f]
+  type zipWithAcc[m <: Tuple, n <: Tuple, acc <: Tuple, f[_, _]] <: Tuple = (m, n) match {
+    case (hm *: tm, hn *: tn) => zipWithAcc[tm, tn, f[hm, hn] *: acc, f]
+    case (EmptyTuple, EmptyTuple) => reverse[acc]
   }
 
-  type reversePrepend[m, n] = m match {
-    case U => n
-    case T[hd, tl] => reversePrepend[tl, T[hd, n]]
-  }
+  type at[m <: Tuple, n <: Int] = Elem[m, n]
 
-  type concat[m, n] = reversePrepend[reverse[m], n]
-
-  type zipWith[m, n] = [f[_, _]] =>> zipWithAcc[m, n, U, f]
-  type zipWithAcc[m, n, acc, f[_, _]] = (m, n) match {
-    case (U, U) => reverse[acc]
-    case (T[hm, tm], T[hn, tn]) => zipWithAcc[tm, tn, T[f[hm, hn], acc], f]
-  }
-
-  type at[m, n] = (m, n) match {
-    case (T[hd, _], 0) => hd
-    case (T[_, tl], S[p]) => at[tl, p]
-  }
-
-  type select[m, n] = selectAcc[m, n, U]
-  type selectAcc[m, n, acc] = (m, n) match {
-    case (T[hd, tl], 0) => T[hd, reversePrepend[acc, tl]]
-    case (T[hd, tl], S[p]) => selectAcc[tl, p, T[hd, acc]]
-  }
-
-  class Inv[t]
-}
-
-trait UnboundedMonoidal[T[_, _], U] extends Monoidal{
-  type to[t] = UnboundedMonoidal.to[T, U][t]
-  type from[t] = UnboundedMonoidal.from[T, U][t]
-}
-
-object UnboundedMonoidal {
-  type to[T0[_, _], U0] = [t] =>> to0[T0, U0, t]
-  type to0[T0[_, _], U0, t] = Inv[t] match {
-    case Inv[U0] => U
-    case Inv[T0[hd, tl]] => T[hd, to0[T0, U0, tl]]
-  }
-
-  type from[T0[_, _], U0] = [t] =>> from0[T0, U0, t]
-  type from0[T0[_, _], U0, t] = t match {
-    case U => U0
-    case T[hd, tl] => T0[hd, from0[T0, U0, tl]]
+  type select[m <: Tuple, n <: Int] = selectAcc[m, n, EmptyTuple]
+  type selectAcc[m <: Tuple, n <: Int, acc <: Tuple] <: Tuple = (m, n) match {
+    case (hd *: tl, 0) => hd *: reversePrepend[acc, tl]
+    case (hd *: tl, S[p]) => selectAcc[tl, p, hd *: acc]
   }
 }
 
-trait BoundedMonoidal[B, T[_, _ <: B] <: B, U <: B] extends Monoidal {
-  type to[t] = BoundedMonoidal.to[B, T, U][t]
-  type from[t] = BoundedMonoidal.from[B, T, U][t]
-}
-
-object BoundedMonoidal {
-  type to[B, T0[_, _ <: B] <: B, U0 <: B] = [t] =>> to0[B, T0, U0, t]
-  type to0[B, T0[_, _ <: B] <: B, U0 <: B, t] = Inv[t] match {
-    case Inv[U0] => U
-    case Inv[T0[hd, tl]] => T[hd, to0[B, T0, U0, tl]]
+trait BoundedMonoidal[B, T0[_, _ <: B] <: B, U0 <: B] extends Monoidal {
+  type to[t] <: Tuple = t match {
+    case T0[hd, tl] => hd *: to[tl]
+    case U0 => EmptyTuple
   }
 
-  type from[B, T0[_, _ <: B], U0 <: B] = [t] =>> from0[B, T0, U0, t]
-  type from0[B, T0[_, _ <: B], U0 <: B, t] = t match {
-    case U => U0
-    case T[hd, tl] => T0[hd, from0[B, T0, U0, tl]]
+  type from[t <: Tuple] = t match {
+    case hd *: tl => T0[hd, from[tl]]
+    case EmptyTuple => U0
   }
 }
 
-trait UnitlessMonoidal[T[_, _]] extends Monoidal {
-  type to[t] = UnitlessMonoidal.to[T][t]
-  type from[t] = UnitlessMonoidal.from[T][t]
-}
-
-object UnitlessMonoidal {
-  type to[T0[_, _]] = [t] =>> to0[T0, t]
-  type to0[T0[_, _], t] = Inv[t] match {
-    case Inv[T0[hd, tl]] => T[hd, to0[T0, tl]]
-    case Inv[l] => T[l, U]
-  }
-
-  type from[T0[_, _]] = [t] =>> from0[T0, t]
-  type from0[T0[_, _], t] = t match {
-    case T[hd, tl] => from1[T0, hd, tl]
-  }
-  type from1[T0[_, _], p, t] = t match {
-    case U => p
-    case T[hd, tl] => T0[p, from1[T0, hd, tl]]
-  }
-}
-
-trait DirectMonoidal[T[_]] extends Monoidal {
-  type to[t] = DirectMonoidal.to[T][t]
-  type from[t] = DirectMonoidal.from[T][t]
-}
-
-object DirectMonoidal {
-  type to[T0[_]] = [t] =>> to0[T0, t]
-  type to0[T0[_], t] = t match {
+trait DirectMonoidal[T0[_ <: Tuple]] extends Monoidal {
+  type to[t] <: Tuple = t match {
     case T0[l] => l
   }
-
-  type from[T0[_]] = [t] =>> T0[t]
+  type from[t <: Tuple] = T0[t]
 }
 
-object pairs extends UnboundedMonoidal[Tuple2, Unit] with Cartesian
+object tuples extends Monoidal with Cartesian {
+  type to[t] = t&Tuple
+  type from[t <: Tuple] = t
+}
 
-object tuples extends BoundedMonoidal[Tuple, *:, EmptyTuple] with Cartesian
+object pairs extends Cartesian {
+  type to[t] <: Tuple = t match {
+    case Tuple2[hd, tl] => hd *: to[tl]
+    case Unit => EmptyTuple
+  }
 
-object eithers extends UnboundedMonoidal[Either, Nothing] with Cocartesian
+  type from[t <: Tuple] = t match {
+    case hd *: tl => Tuple2[hd, from[tl]]
+    case EmptyTuple => Unit
+  }
+}
 
-object pairs2 extends UnitlessMonoidal[Tuple2] with Cartesian
+object eithers extends Cocartesian {
+  // Nothing needs special handling ... perhaps we should drop this
+  // encoding of coproducts altogether?
+  //
+  // The equivalent of CNil would be Nothing and no match type applied
+  // to Nothing will reduce, so bare CNil is more or less impossible to
+  // express. That being so, the unitless version is probably a better
+  // choice.
+  class Wrap[T]
 
-object eithers2 extends UnitlessMonoidal[Either] with Cocartesian
+  type to[t] <: Tuple = Wrap[t] match {
+    case Wrap[Either[hd, tl]] => hd *: to[tl]
+    case Wrap[Nothing] => EmptyTuple
+  }
+
+  type from[t <: Tuple] = t match {
+    case hd *: tl => Either[hd, from[tl]]
+    case EmptyTuple => Nothing
+  }
+}
+
+object pairs2 extends Cartesian {
+  type to[t] <: Tuple = t match {
+    case Tuple2[hd, tl] => hd *: to[tl]
+    case _ => t *: EmptyTuple
+  }
+
+  type from[t <: Tuple] = t match {
+    case hd *: tl => from0[hd, tl]
+  }
+  type from0[p, t <: Tuple] = t match {
+    case hd *: tl => Tuple2[p, from0[hd, tl]]
+    case EmptyTuple => p
+  }
+}
+
+object eithers2 extends Cocartesian {
+  type to[t] <: Tuple = t match {
+    case Either[hd, tl] => hd *: to[tl]
+    case _ => t *: EmptyTuple
+  }
+
+  type from[t <: Tuple] = t match {
+    case hd *: tl => from0[hd, tl]
+  }
+  type from0[p, t <: Tuple] = t match {
+    case hd *: tl => Either[p, from0[hd, tl]]
+    case EmptyTuple => p
+  }
+}
