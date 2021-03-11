@@ -55,7 +55,7 @@ object Annotation {
 
   inline def mkAnnotation[A, T]: Annotation[A, T] = ${ AnnotationMacros.mkAnnotation }
 
-  inline given [A, T] as Annotation[A, T] = mkAnnotation[A, T]
+  inline given [A, T]: Annotation[A, T] = mkAnnotation[A, T]
 }
 
 /**
@@ -123,7 +123,7 @@ object Annotations {
 }
 
 object AnnotationMacros {
-  def mkAnnotation[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotation[A, T]] = {
+  def mkAnnotation[A: Type, T: Type](using qctx: Quotes): Expr[Annotation[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]
@@ -133,7 +133,7 @@ object AnnotationMacros {
       '{???}
     } else {
       val annoteeTpe = TypeRepr.of[T]
-      annoteeTpe.typeSymbol.annots.find(_.tpe <:< annotTpe) match {
+      annoteeTpe.typeSymbol.annotations.find(_.tpe <:< annotTpe) match {
         case Some(tree) => '{ Annotation.mkAnnotation[A, T](${tree.asExprOf[A]}) }
         case None =>
           report.error(s"No Annotation of type ${annotTpe.show} for type ${annoteeTpe.show}")
@@ -142,7 +142,7 @@ object AnnotationMacros {
     }
   }
 
-  def mkAnnotations[A: Type, T: Type](using qctx: QuoteContext): Expr[Annotations[A, T]] = {
+  def mkAnnotations[A: Type, T: Type](using qctx: Quotes): Expr[Annotations[A, T]] = {
     import qctx.reflect._
 
     val annotTpe = TypeRepr.of[A]
@@ -159,7 +159,7 @@ object AnnotationMacros {
         }
 
       def findAnnotation[A: Type](annoteeSym: Symbol): Expr[Option[A]] =
-        annoteeSym.annots.find(_.tpe <:< TypeRepr.of[A]) match {
+        annoteeSym.annotations.find(_.tpe <:< TypeRepr.of[A]) match {
           case Some(tree) => '{ Some(${tree.asExprOf[A]}) }
           case None       => '{ None }
         }
