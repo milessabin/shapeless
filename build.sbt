@@ -1,6 +1,6 @@
 val dottyLatestNightly = dottyLatestNightlyBuild.get
 //val dottyVersion = dottyLatestNightly 
-val dottyVersion = "3.0.0-RC1"
+val dottyVersion = "3.0.0-RC2-bin-20210310-4af1386-NIGHTLY"
 //val dottyVersion = "3.0.0-M1"
 
 inThisBuild(Seq(
