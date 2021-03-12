@@ -16,8 +16,6 @@
 
 package shapeless3.data
 
-object Dummy
-
 object MonoidalTest {
   trait Cp[L]
 
