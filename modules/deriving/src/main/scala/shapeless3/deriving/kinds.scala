@@ -93,8 +93,6 @@ object K0 {
       inst.erasedConstruct(f.asInstanceOf).asInstanceOf
     inline def map2(x: T, y: T)(f: [t] => (F[t], t, t) => t): T =
       inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
-
-  extension [F[_], T](inst: ProductInstances[F, T])
     inline def unfold[Acc](i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
       inst.erasedUnfold(i)(f.asInstanceOf).asInstanceOf
     inline def foldLeft[Acc](x: T)(i: Acc)(f: [t] => (Acc, F[t], t) => CompleteOr[Acc]): Acc =
@@ -105,8 +103,6 @@ object K0 {
   extension [F[_], T](inst: CoproductInstances[F, T])
     inline def project[Acc](p: Int)(i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
       inst.erasedProject(p)(i)(f.asInstanceOf).asInstanceOf
-
-  extension [F[_], T](inst: CoproductInstances[F, T])
     inline def fold[R](x: T)(f: [t] => (F[t], t) => R): R =
       inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
     inline def fold2[R](x: T, y: T)(a: => R)(f: [t] => (F[t], t, t) => R): R =
@@ -177,22 +173,25 @@ object K1 {
       case c: CoproductGeneric[T] => g(using c.asInstanceOf)
     }
 
-  extension [F[_[_]], T[_], A, R](inst: Instances[F, T]) inline def map(x: T[A])(f: [t[_]] => (F[t], t[A]) => t[R]): T[R] =
+  extension [F[_[_]], T[_]](inst: Instances[F, T])
+    inline def map[A, R](x: T[A])(f: [t[_]] => (F[t], t[A]) => t[R]): T[R] =
       inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_]], T[_], R](inst: ProductInstances[F, T]) inline def construct(f: [t[_]] => F[t] => t[R]): T[R] =
-    inst.erasedConstruct(f.asInstanceOf).asInstanceOf
-  extension [F[_[_]], T[_], A, B, R](inst: ProductInstances[F, T]) inline def map2(x: T[A], y: T[B])(f: [t[_]] => (F[t], t[A], t[B]) => t[R]): T[R] =
-    inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_]], T[_], A, Acc](inst: ProductInstances[F, T]) inline def foldLeft(x: T[A])(i: Acc)(f: [t[_]] => (Acc, F[t], t[A]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_]], T[_], A, B, Acc](inst: ProductInstances[F, T]) inline def foldLeft2(x: T[A], y: T[B])(i: Acc)(f: [t[_]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_]], T[_]](inst: ProductInstances[F, T])
+    inline def construct[R](f: [t[_]] => F[t] => t[R]): T[R] =
+      inst.erasedConstruct(f.asInstanceOf).asInstanceOf
+    inline def map2[A, B, R](x: T[A], y: T[B])(f: [t[_]] => (F[t], t[A], t[B]) => t[R]): T[R] =
+      inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
+    inline def foldLeft[A, Acc](x: T[A])(i: Acc)(f: [t[_]] => (Acc, F[t], t[A]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldLeft2[A, B, Acc](x: T[A], y: T[B])(i: Acc)(f: [t[_]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_]], T[_], A, R](inst: CoproductInstances[F, T]) inline def fold(x: T[A])(f: [t[_]] => (F[t], t[A]) => R): R =
-    inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_]], T[_], A, B, R](inst: CoproductInstances[F, T]) inline def fold2(x: T[A], y: T[B])(a: => R)(f: [t[_]] => (F[t], t[A], t[B]) => R): R =
-    inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_]], T[_]](inst: CoproductInstances[F, T])
+    inline def fold[A, R](x: T[A])(f: [t[_]] => (F[t], t[A]) => R): R =
+      inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
+    inline def fold2[A, B, R](x: T[A], y: T[B])(a: => R)(f: [t[_]] => (F[t], t[A], t[B]) => R): R =
+      inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_]], T[_]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
@@ -260,22 +259,26 @@ object K11 {
       case c: CoproductGeneric[T] => g(using c.asInstanceOf)
     }
 
-  extension [F[_[_[_]]], T[_[_]], A[_], R[_]](inst: Instances[F, T]) inline def map(x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => t[R]): T[R] =
-    inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_[_]]], T[_[_]]](inst: Instances[F, T])
+    inline def map[A[_], R[_]](x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => t[R]): T[R] =
+      inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_[_]]], T[_[_]], R[_]](inst: ProductInstances[F, T]) inline def construct(f: [t[_[_]]] => F[t] => t[R]): T[R] =
-    inst.erasedConstruct(f.asInstanceOf).asInstanceOf
-  extension [F[_[_[_]]], T[_[_]], A[_], B[_], R[_]](inst: ProductInstances[F, T]) inline def map2(x: T[A], y: T[B])(f: [t[_[_]]] => (F[t], t[A], t[B]) => t[R]): T[R] =
-    inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_[_]]], T[_[_]], A[_], Acc](inst: ProductInstances[F, T]) inline def foldLeft(x: T[A])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_[_]]], T[_[_]], A[_], B[_], Acc](inst: ProductInstances[F, T]) inline def foldLeft2(x: T[A], y: T[B])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_[_]]], T[_[_]]](inst: ProductInstances[F, T])
+    inline def construct[R[_]](f: [t[_[_]]] => F[t] => t[R]): T[R] =
+      inst.erasedConstruct(f.asInstanceOf).asInstanceOf
+    inline def map2[A[_], B[_], R[_]](x: T[A], y: T[B])(f: [t[_[_]]] => (F[t], t[A], t[B]) => t[R]): T[R] =
+      inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
+    inline def foldLeft[A[_], Acc](x: T[A])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_[_]]], T[_[_]]](inst: ProductInstances[F, T])
+    inline def foldLeft2[A[_], B[_], Acc](x: T[A], y: T[B])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_[_]]], T[_[_]], A[_], R](inst: CoproductInstances[F, T]) inline def fold(x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => R): R =
-    inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_[_]]], T[_[_]], A[_], B[_], R](inst: CoproductInstances[F, T]) inline def fold2(x: T[A], y: T[B])(a: => R)(f: [t[_[_]]] => (F[t], t[A], t[B]) => R): R =
-    inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_[_]]], T[_[_]]](inst: CoproductInstances[F, T])
+    inline def fold[A[_], R](x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => R): R =
+      inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
+    inline def fold2[A[_], B[_], R](x: T[A], y: T[B])(a: => R)(f: [t[_[_]]] => (F[t], t[A], t[B]) => R): R =
+      inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_[_]]], T[_[_]]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
@@ -342,22 +345,25 @@ object K2 {
       case c: CoproductGeneric[T] => g(using c.asInstanceOf)
     }
 
-  extension [F[_[_, _]], T[_, _], A, B, R, S](inst: Instances[F, T]) inline def map(x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => t[R, S]): T[R, S] =
-    inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_, _]], T[_, _]](inst: Instances[F, T])
+    inline def map[A, B, R, S](x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => t[R, S]): T[R, S] =
+      inst.erasedMap(x)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_, _]], T[_, _], R, S](inst: ProductInstances[F, T]) inline def construct(f: [t[_, _]] => F[t] => t[R, S]): T[R, S] =
-    inst.erasedConstruct(f.asInstanceOf).asInstanceOf
-  extension [F[_[_, _]], T[_, _], A, B, C, D, R, S](inst: ProductInstances[F, T]) inline def map2(x: T[A, B], y: T[C, D])(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => t[R, S]): T[R, S] =
-    inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_, _]], T[_, _], A, B, Acc](inst: ProductInstances[F, T]) inline def foldLeft(x: T[A, B])(i: Acc)(f: [t[_, _]] => (Acc, F[t], t[A, B]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_, _]], T[_, _], A, B, C, D, Acc](inst: ProductInstances[F, T]) inline def foldLeft2(x: T[A, B], y: T[C, D])(i: Acc)(f: [t[_, _]] => (Acc, F[t], t[A, B], t[C, D]) => CompleteOr[Acc]): Acc =
-    inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_, _]], T[_, _]](inst: ProductInstances[F, T])
+    inline def construct[R, S](f: [t[_, _]] => F[t] => t[R, S]): T[R, S] =
+      inst.erasedConstruct(f.asInstanceOf).asInstanceOf
+    inline def map2[A, B, C, D, R, S](x: T[A, B], y: T[C, D])(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => t[R, S]): T[R, S] =
+      inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
+    inline def foldLeft[A, B, Acc](x: T[A, B])(i: Acc)(f: [t[_, _]] => (Acc, F[t], t[A, B]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldLeft2[A, B, C, D, Acc](x: T[A, B], y: T[C, D])(i: Acc)(f: [t[_, _]] => (Acc, F[t], t[A, B], t[C, D]) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
 
-  extension [F[_[_, _]], T[_, _], A, B, R](inst: CoproductInstances[F, T]) inline def fold(x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => R): R =
-    inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_, _]], T[_, _], A, B, C, D, R](inst: CoproductInstances[F, T]) inline def fold2(x: T[A, B], y: T[C, D])(a: => R)(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => R): R =
-    inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
+  extension [F[_[_, _]], T[_, _]](inst: CoproductInstances[F, T])
+    inline def fold[A, B, R](x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => R): R =
+      inst.erasedFold(x)(f.asInstanceOf).asInstanceOf
+    inline def fold2[A, B, C, D, R](x: T[A, B], y: T[C, D])(a: => R)(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => R): R =
+      inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_, _]], T[_, _]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
