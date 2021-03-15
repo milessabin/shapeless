@@ -17,6 +17,7 @@
 package shapeless3.deriving
 
 import scala.compiletime._
+import scala.compiletime.ops.int.S
 import scala.deriving._
 
 object K0 {

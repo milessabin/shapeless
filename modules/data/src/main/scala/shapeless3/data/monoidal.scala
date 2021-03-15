@@ -17,6 +17,7 @@
 package shapeless3.data
 
 import scala.compiletime._
+import scala.compiletime.ops.int.S
 
 trait Monoidal {
   type to[_] <: Tuple
