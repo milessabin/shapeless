@@ -315,7 +315,7 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
     extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
 
   def witnessTypeImpl(tpeSelector: Tree): Tree = {
-    val q"${tpeString: String}" = tpeSelector
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
     val tpe = parseLiteralType(tpeString)
       .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
 

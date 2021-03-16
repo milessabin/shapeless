@@ -142,6 +142,10 @@ package recursionschemes {
     type Alg[A] = F[A] => A
     type Coalg[A] = A => F[A]
 
+    object Alg {
+      def apply[A](pf: PartialFunction[F[A], A]): Alg[A] = pf
+    }
+
     /**
      * Performs one step of the conversion `Fix[F] => T`.
      * "Ties" the recursive knot of `T`.
@@ -395,7 +399,7 @@ package recursionschemes.examples {
     val morph = Morph[Expr]
     import morph._
 
-    def evalAlg(env: Map[String, Int]): Alg[Option[Int]] = {
+    def evalAlg(env: Map[String, Int]): Alg[Option[Int]] = Alg {
       case F.Num.as(num) => Some(num.const)
       case F.Var.as(x) => env.get(x.name)
       case F.Add.as(add) =>
@@ -411,7 +415,7 @@ package recursionschemes.examples {
     def eval(env: Map[String, Int], expr: Expr) =
       cata(expr)(evalAlg(env))
 
-    def pprint(expr: Expr) = cata[String](expr) {
+    def pprint(expr: Expr) = cata[String](expr)(Alg {
       case F.Num.as(num) => num.const.toString
       case F.Var.as(x) => x.name
       case F.Add.as(add) =>
@@ -422,7 +426,7 @@ package recursionschemes.examples {
         s"(${ifn.cond} < 0 ? ${ifn.a} : ${ifn.b})"
       case F.Sum.as(sum) =>
         s"Σ{${sum.xs.mkString(", ")}}"
-    }
+    })
 
     def freeVars(expr: Expr) = cata[Set[String]](expr) {
       case F.Var.as(x) => Set(x.name)

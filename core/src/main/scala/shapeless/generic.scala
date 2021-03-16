@@ -711,7 +711,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def mkAttributedRef(singleton: SingleType): Tree = {
-    val SingleType(pre, sym) = singleton
+    val SingleType(pre, sym) = (singleton: @unchecked)
     val getter = sym.asTerm.getter.orElse(sym)
     mkAttributedRef(pre, getter)
   }

@@ -37,9 +37,9 @@ object ScalaEnumDemo /*extends App*/ {
 
   // However ...
 
-  def isWeekend(d: WeekDay) = d match {
+  def isWeekend(d: WeekDay) = (d: @unchecked) match {
     case Sat | Sun => true
-    // Oops! Missing case ... still compiles
+    // Oops! Missing case ... still compiles (although as of 2.13.5 only with @unchecked)
   }
 
   assert(!isWeekend(Mon)) // MatchError at run time

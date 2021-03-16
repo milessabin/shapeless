@@ -15,6 +15,8 @@ commonSettings
 noPublishSettings
 crossScalaVersions := Nil
 
+Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
+
 inThisBuild(Seq(
   organization := "com.chuusai",
   scalaVersion := Scala213,
@@ -159,7 +161,7 @@ lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 lazy val coreNative = core.native
 
-lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
+lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "scratch")
@@ -185,7 +187,7 @@ def runAllIn(config: Configuration): Setting[Task[Unit]] = {
   }
 }
 
-lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Pure)
+lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
