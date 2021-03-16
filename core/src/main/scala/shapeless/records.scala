@@ -123,7 +123,7 @@ class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
   }
 
   def mkRecordNamedImpl(method: Tree)(rec: Tree*): Tree = {
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     if (methodString != "apply") abort(s"this method must be called as 'apply' not '$methodString'")
     mkRecordImpl(rec: _*)
   }
@@ -134,7 +134,7 @@ class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
   def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString + "Record")
     if (lhsTpe.member(methodName) == NoSymbol)
       abort(s"missing method '$methodName'")
@@ -146,7 +146,7 @@ class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
   def forwardFromRecordImpl[L <: HList](method: Tree)(rec: Expr[L]): Tree = {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     if (!methodString.matches(".*Record$"))
       abort(s"missing method '$methodString'")
 

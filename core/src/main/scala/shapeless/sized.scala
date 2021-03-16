@@ -31,7 +31,7 @@ final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
 
   override def equals(other: Any): Boolean =
     other match {
-      case o: Sized[_, _] => unsized.equals(o.unsized)
+      case o: Sized[_, _] => unsized == o.unsized
       case _ => false
     }
 

@@ -88,7 +88,7 @@ trait CachedFacet extends ProductISOFacet {
     // use this variant if you don't want auto-caching
     // and uncomment the method in CachedMethods
     //def apply(p: P): C = fromProduct(p)
-    def unapply(c: C): Option[P] = {
+    def unapply(c: C): Some[P] = {
       val found = uncache.synchronized {
         uncache.get(c)
       }
@@ -122,7 +122,7 @@ trait CachedFacet extends ProductISOFacet {
 
   trait CachedCompanion {
     @nonGeneric def apply(elems: ops.P): C = ops.apply(elems)
-    @nonGeneric def unapply(s: C): Option[ops.P] = ops.unapply(s)
+    @nonGeneric def unapply(s: C): Some[ops.P] = ops.unapply(s)
     @nonGeneric def alive(): Long = ops.alive()
     @nonGeneric def aliveExtracted(): Long = ops.aliveExtracted()
   }
