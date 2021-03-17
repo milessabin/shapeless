@@ -125,7 +125,7 @@ Builds are available for Scala 2.11.x, 2.12.x and 2.13.x. The main line of devel
 shapeless 2.3.3 is Scala 2.13.2.
 
 ```scala
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.5"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.3.3"
@@ -134,7 +134,7 @@ libraryDependencies ++= Seq(
 
 For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.13.2"
+scalaVersion := "2.13.5"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"

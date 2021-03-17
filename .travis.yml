@@ -57,7 +57,7 @@ jobs:
         - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
       script:
         - sbt ci-release
-        - SCALA_JS_VERSION=0.6.33 sbt clean sonatypeBundleClean ci-release
+        - [ "$TRAVIS_SCALA_VERSION" = "2.13.5" ] || (export SCALA_JS_VERSION=0.6.33 ; sbt clean sonatypeBundleClean ci-release)
   exclude:
     - scala: 2.13.5
       env: SCALA_JS_VERSION=0.6.33
