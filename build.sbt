@@ -26,6 +26,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 ThisBuild / githubWorkflowBuildMatrixAdditions +=
   "platform" -> List("jvm", "js", "native")
 
+ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
 
 val JvmCond = s"matrix.platform == 'jvm'"
