@@ -8,21 +8,56 @@ val Scala211 = "2.11.12"
 val Scala212 = "2.12.13"
 val Scala213 = "2.13.5"
 
-val isScalaNative = System.getenv("SCALA_NATIVE") != null
-val hasScalaJsVersion = System.getenv("SCALA_JS_VERSION") != null
-
 commonSettings
 noPublishSettings
 crossScalaVersions := Nil
 
-Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
+ThisBuild / organization := "com.chuusai"
+ThisBuild / scalaVersion := Scala213
+ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
+ThisBuild / mimaFailOnNoPrevious := false
 
-inThisBuild(Seq(
-  organization := "com.chuusai",
-  scalaVersion := Scala213,
-  crossScalaVersions := Seq(Scala211, Scala212, Scala213),
-  mimaFailOnNoPrevious := false
-))
+// GHA configuration
+
+ThisBuild / githubWorkflowBuildPreamble := Seq(
+  WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev"))
+)
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowBuildMatrixAdditions +=
+  "platform" -> List("jvm", "js", "native")
+
+ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
+
+val JvmCond = s"matrix.platform == 'jvm'"
+val JsCond = s"matrix.platform == 'js'"
+val NativeCond = s"matrix.platform == 'native'"
+
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("validateJVM"), name = Some("Validate JVM"), cond = Some(JvmCond)),
+  WorkflowStep.Sbt(List("validateJS"), name = Some("Validate JavaScript"), cond = Some(JsCond)),
+  WorkflowStep.Sbt(List("validateNative"), name = Some("Validate Scala Native"), cond = Some(NativeCond))
+)
+
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.StartsWith(Ref.Tag("v")))
+
+ThisBuild / githubWorkflowPublishPreamble +=
+  WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
+
+ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Sbt(
+    List("ci-release"),
+    env = Map(
+      "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+    )
+  )
+)
+
+Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
 
 addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
@@ -33,7 +68,6 @@ addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
-addCommandAlias("validateCI", if (isScalaNative) "validateNative" else if (hasScalaJsVersion) "validateJS" else "validateJVM")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
 lazy val scoverageSettings = Seq(
@@ -108,11 +142,6 @@ lazy val commonJvmSettings = Seq(
   coverageExcludedPackages := "shapeless.examples.*"
 )
 
-lazy val commonNativeSettings = Seq(
-  scalaVersion := Scala211,
-  crossScalaVersions := Seq(Scala211)
-)
-
 lazy val coreSettings = commonSettings ++ publishSettings
 
 lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
@@ -144,10 +173,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .jvmSettings(scoverageSettings:_*)
-  .jvmSettings(skip in publish := hasScalaJsVersion)
-  .nativeSettings(skip in publish := hasScalaJsVersion)
   .nativeSettings(
-    commonNativeSettings,
     // disable scaladoc generation on native
     // currently getting errors like
     //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
@@ -169,7 +195,6 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossTy
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
-  .nativeSettings(commonNativeSettings:_*)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
@@ -206,7 +231,6 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
-    commonNativeSettings,
     sources in Compile ~= (_.filterNot(_.getName == "sexp.scala")),
     sources in Test := Nil
   )
@@ -218,7 +242,6 @@ lazy val examplesNative = examples.native
 lazy val nativeTest = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
-    commonNativeSettings,
     noPublishSettings,
     sourceGenerators in Compile += Def.task {
       val exclude = List(
