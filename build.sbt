@@ -2,12 +2,41 @@ val dottyLatestNightly = dottyLatestNightlyBuild.get
 //val dottyVersion = dottyLatestNightly 
 val dottyVersion = "3.0.0-RC1"
 
-inThisBuild(Seq(
-  organization := "org.typelevel",
-  scalaVersion := dottyVersion,
-  crossScalaVersions := Seq(dottyVersion, dottyLatestNightly),
-  updateOptions := updateOptions.value.withLatestSnapshots(false),
-))
+ThisBuild / organization := "org.typelevel"
+ThisBuild / scalaVersion := dottyVersion
+ThisBuild / crossScalaVersions := Seq(dottyVersion)
+ThisBuild / updateOptions := updateOptions.value.withLatestSnapshots(false)
+
+// GHA configuration
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+
+ThisBuild / githubWorkflowArtifactUpload := false
+
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("validateJVM"), name = Some("Validate JVM"))
+)
+
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches :=
+  Seq(RefPredicate.Equals(Ref.Branch("shapeless-3")), RefPredicate.StartsWith(Ref.Tag("v")))
+
+ThisBuild / githubWorkflowPublishPreamble +=
+  WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
+
+ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Sbt(
+    List("ci-release"),
+    env = Map(
+      "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+    )
+  )
+)
+
+addCommandAlias("validateJVM", ";clean;compile;test")
 
 lazy val modules: List[ProjectReference] = List(
   data,
