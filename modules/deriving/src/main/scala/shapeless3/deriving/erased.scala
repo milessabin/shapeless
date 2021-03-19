@@ -83,7 +83,7 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         arr(i) = f(is(i))
         i = i+1
       }
-      mirror.fromProduct(ArrayProduct(arr))
+      mirror.fromProduct(new ArrayProduct(arr))
     }
   }
 
@@ -105,7 +105,7 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         }
         i = i+1
       }
-      (acc, Some(mirror.fromProduct(ArrayProduct(arr))))
+      (acc, Some(mirror.fromProduct(new ArrayProduct(arr))))
     }
   }
 
@@ -120,7 +120,7 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         arr(i) = f(is(i), x.productElement(i))
         i = i+1
       }
-      mirror.fromProduct(ArrayProduct(arr))
+      mirror.fromProduct(new ArrayProduct(arr))
     }
   }
 
@@ -136,7 +136,7 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         arr(i) = f(is(i), x.productElement(i), y.productElement(i))
         i = i+1
       }
-      mirror.fromProduct(ArrayProduct(arr))
+      mirror.fromProduct(new ArrayProduct(arr))
     }
   }
 

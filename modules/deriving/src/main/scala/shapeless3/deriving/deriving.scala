@@ -59,7 +59,7 @@ inline def summonValuesAsArray0[T, E](i: Int, arr: Array[E]): Array[E] = inline 
 
 case class Labelling[T](label: String, elemLabels: Seq[String])
 object Labelling {
-  inline given apply[T0](using mirror: Mirror { type MirroredType = T0 }) as Labelling[T0] =
+  inline given apply[T0](using mirror: Mirror { type MirroredType = T0 }): Labelling[T0] =
     Labelling[T0](
       constValue[mirror.MirroredLabel & String],
       ArraySeq.unsafeWrapArray(summonValuesAsArray[mirror.MirroredElemLabels, String])

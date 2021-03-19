@@ -20,9 +20,9 @@ import scala.annotation.tailrec
 import scala.deriving._
 import scala.quoted._
 
-class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
-  implicit val qctx: Q = q
-  import qctx.reflect._
+class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
+  private given q.type = q
+  import q.reflect._
 
   case class Mirror(
     MirroredType: TypeRepr,
@@ -34,7 +34,7 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
 
   object Mirror {
     def apply(mirror: Expr[scala.deriving.Mirror]): Option[Mirror] = {
-      val mirrorTpe = mirror.unseal.tpe.widen
+      val mirrorTpe = mirror.asTerm.tpe.widen
       for {
         mt   <- findMemberType(mirrorTpe, "MirroredType")
         mmt  <- findMemberType(mirrorTpe, "MirroredMonoType")
@@ -43,8 +43,8 @@ class ReflectionUtils[Q <: QuoteContext & Singleton](val q: Q) {
         mels <- findMemberType(mirrorTpe, "MirroredElemLabels")
       } yield {
         val mets0 = tupleTypeElements(mets)
-        val ConstantType(Constant.String(ml0)) = ml
-        val mels0 = tupleTypeElements(mels).map { case ConstantType(Constant.String(l)) => l }
+        val ConstantType(StringConstant(ml0)) = ml
+        val mels0 = tupleTypeElements(mels).map { case ConstantType(StringConstant(l)) => l }
         Mirror(mt, mmt, mets0, ml0, mels0)
       }
     }

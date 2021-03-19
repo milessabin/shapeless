@@ -27,8 +27,8 @@ package object test {
 
   inline def showType[T](t: => T): String = ${ impl[T] }
 
-  def impl[T: Type](using qctx: QuoteContext): Expr[String] = {
-    import qctx.reflect._
+  def impl[T: Type](using Quotes): Expr[String] = {
+    import quotes.reflect._
     Expr(TypeRepr.of[T].show)
   }
 }
