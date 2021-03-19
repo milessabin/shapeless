@@ -6,11 +6,10 @@ boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since the
 experimental project into a library which, while still testing the limits of what's possible in Scala, is being used
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped.
 
-[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
-[![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=master)](http://codecov.io/github/milessabin/shapeless?branch=master)
+[![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=main)](http://codecov.io/github/milessabin/shapeless?branch=main)
 
 ## Projects which use shapeless
 
@@ -75,7 +74,7 @@ being [good candidates to take on][goodfirstissue]. No contribution is too small
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
-Central. Snapshots of the master branch are built using [Travis CI][ci] and automatically published to the Sonatype
+Central. Snapshots of the main branch are built using GitHub actions and automatically published to the Sonatype
 OSS Snapshot repository.
 
 ### Try shapeless with an Ammonite instant REPL
@@ -86,7 +85,7 @@ downloads and installs [coursier][coursier] and uses it to fetch the [Ammonite][
 of shapeless. It then drops you immediately into a REPL session,
 
 ```text
-% curl -s https://raw.githubusercontent.com/milessabin/shapeless/master/scripts/try-shapeless.sh | bash
+% curl -s https://raw.githubusercontent.com/milessabin/shapeless/main/scripts/try-shapeless.sh | bash
 Loading...
 Compiling (synthetic)/ammonite/predef/interpBridge.sc
 Compiling (synthetic)/ammonite/predef/replBridge.sc
@@ -102,7 +101,7 @@ res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
 %
 ```
 
-[try-shapeless]: https://github.com/milessabin/shapeless/blob/master/scripts/try-shapeless.sh
+[try-shapeless]: https://github.com/milessabin/shapeless/blob/main/scripts/try-shapeless.sh
 [coursier]: https://github.com/alexarchambault/coursier
 [ammonite]: https://github.com/lihaoyi/Ammonite
 
@@ -164,7 +163,7 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 1.3.10 or later, and its master branch is built with Scala 2.13.2 by default but also
+shapeless is built with SBT 1.3.10 or later, and its main branch is built with Scala 2.13.2 by default but also
 cross-builds for 2.11.12 and 2.12.12.
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
