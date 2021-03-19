@@ -74,7 +74,7 @@ being [good candidates to take on][goodfirstissue]. No contribution is too small
 ## Using shapeless
 
 Binary release artefacts are published to the [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven
-Central. Snapshots of the main branch are built using [Travis CI][ci] and automatically published to the Sonatype
+Central. Snapshots of the main branch are built using GitHub actions and automatically published to the Sonatype
 OSS Snapshot repository.
 
 ### Try shapeless with an Ammonite instant REPL
