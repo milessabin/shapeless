@@ -11,7 +11,7 @@ ThisBuild / updateOptions := updateOptions.value.withLatestSnapshots(false)
 
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 
-ThisBuild / githubWorkflowArtifactUpload := true
+ThisBuild / githubWorkflowArtifactUpload := false
 
 ThisBuild / githubWorkflowBuild := Seq(
   WorkflowStep.Sbt(List("validateJVM"), name = Some("Validate JVM"))
