@@ -3,6 +3,8 @@ import org.scalajs.sbtplugin.ScalaJSCrossVersion
 import ReleaseTransformations._
 
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.core._
+import com.typesafe.tools.mima.core.ProblemFilters._
 
 import com.typesafe.sbt.SbtGit._
 import GitKeys._
@@ -297,8 +299,64 @@ lazy val noPublishSettings =
   skip in publish := true
 
 lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  mimaPreviousArtifacts := Set(),
-  mimaBinaryIssueFilters := Seq()
+  mimaPreviousArtifacts := {
+    val previousVersion = if(scalaVersion.value.startsWith("2.13.")) "2.3.3" else "2.3.2"
+    Set(organization.value %% moduleName.value % previousVersion)
+  },
+  mimaBinaryIssueFilters := Seq(
+    // Macro internals - ignore
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTC"),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTpt"),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTC_="),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTpt_="),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTC"),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTpt"),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTC_="),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTpt_="),
+    exclude[MissingClassProblem]("shapeless.CaseClassMacros$PatchedContext$2$PatchedLookupResult"),
+    exclude[MissingTypesProblem]("shapeless.LazyMacros$"),
+    exclude[MissingClassProblem]("shapeless.LazyMacrosCompat"),
+    exclude[MissingClassProblem]("shapeless.LazyMacrosRef"),
+
+    // 2.13.x collections related - to eliminate somehow
+    exclude[DirectMissingMethodProblem]("shapeless.AdditiveCollection.indexedSeqAdditiveCollection"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.SizedOps.++"),
+    exclude[DirectMissingMethodProblem]("shapeless.Sized.apply"),
+    exclude[DirectMissingMethodProblem]("shapeless.SizedBuilder.apply"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.SizedBuilder.apply"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.SizedConv.this"),
+    exclude[IncompatibleResultTypeProblem]("shapeless.syntax.HListOps.toCoproduct"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.sized.genTraversableSizedConv"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.std.traversable.traversableOps2"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.std.TraversableOps2.this"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.ops.hlist#Repeat.apply"),
+    exclude[InheritedNewAbstractMethodProblem]("shapeless.ops.hlist#Repeat.apply"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.instance"),
+    exclude[DirectMissingMethodProblem]("shapeless.ops.hlist#ToSized.hlistToSized"),
+    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#FromTraversable.apply"),
+    exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#FromTraversable.apply"),
+
+    // All the following were present in 2.6.2 ...
+
+    // Filtering the methods that were added since the checked version
+    // (these only break forward compatibility, not the backward one)
+    exclude[ReversedMissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
+
+    // Filtering removals
+    exclude[ReversedMissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons"),
+    exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
+    exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne"),
+    exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef"),
+    exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_="),
+
+    // Implicit reorderings
+    exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
+    exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
+
+    // Relaxed constraints
+    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.apply"),
+    exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#ToSizedHList.apply")
+  )
 )
 
 def buildInfoSetup(crossProject: CrossProject): CrossProject = {
