@@ -120,8 +120,8 @@ class TheMacros(val c: whitebox.Context) {
 
   def implicitlyImpl(tpeSelector: Tree): Tree = {
 
-    val q"${tpeString: String}" = tpeSelector
-    val dummyNme = c.freshName
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
+    val dummyNme = c.freshName()
 
     val tpe =
       (for {
@@ -129,7 +129,7 @@ class TheMacros(val c: whitebox.Context) {
         checked = c.typecheck(parsed, silent = true)
         if checked.nonEmpty
       } yield {
-        val q"{ type $dummyNme = $tpt }" = checked
+        val q"{ type $dummyNme = $tpt }" = (checked: @unchecked)
         tpt.tpe
       }).getOrElse(c.abort(c.enclosingPosition, s"Malformed type $tpeString"))
 
@@ -161,7 +161,7 @@ object TypeOf extends Dynamic {
 
     def selectDynamic(code: Tree): Tree = {
 
-      val q"${codeString: String}" = code
+      val q"${codeString: String}" = (code: @unchecked)
       val tpe = c.parse(codeString) match {
         case Typed(expr, tpt) =>
           val baseType = c.typecheck(tpt, mode = c.TYPEmode)

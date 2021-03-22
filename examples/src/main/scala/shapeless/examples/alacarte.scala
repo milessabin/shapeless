@@ -51,7 +51,7 @@ object ALaCarteDemo extends App {
   typed[Foo](foo)
 
   // Companion unapply
-  val Foo(i, s) = foo
+  val Foo(i, s) = (foo: @unchecked) // on main unapply is irrefutable
   typed[Int](i)
   typed[String](s)
 

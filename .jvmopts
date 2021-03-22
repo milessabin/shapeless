@@ -1,4 +1,5 @@
+-Dsbt.color=always
+-Dsbt.supershell=true
 -Xms2g
 -Xmx3g
--Xss2m
--XX:+UseG1GC
+-Xss4m

@@ -41,17 +41,17 @@ object LabelledGenericExamples extends App {
   // Read price field
   val currentPrice = rec(Symbol("price"))  // Static type is Double
   println("Current price is "+currentPrice)
-  println
+  println()
 
   // Update price field, relying on static type of currentPrice
   val updated = bookGen.from(rec.updateWith(Symbol("price"))(_+2.0))
   println(updated)
-  println
+  println()
 
   // Add a new field, map back into ExtendedBook
   val extended = bookExtGen.from(rec + (Symbol("inPrint") ->> true)) // Static type is ExtendedBook
   println(extended)
-  println
+  println()
 
   // internationalization Shapeless style?
   case class Libro(autor: String, `título`: String, id: Int, precio: Double)
@@ -61,7 +61,7 @@ object LabelledGenericExamples extends App {
   val libroRec = rec.values.zipWithKeys(libroKeys())
   val libro = libroGen.from(libroRec) // static type is Libro
   println(libro)
-  println
+  println()
 }
 
 /**
@@ -99,5 +99,5 @@ object OldWineNewBottles extends App {
 
   val to = toGen.from(align(Symbol("i") ->> 23 :: fromGen.to(from)))
   println(to)
-  println
+  println()
 }

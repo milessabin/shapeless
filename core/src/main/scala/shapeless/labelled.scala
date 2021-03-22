@@ -119,7 +119,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
     def mkFieldTpe(keyTpe: Type, valueTpe: Type): Type =
       appliedType(fieldTypeTpe, List(keyTpe, valueTpe))
 
-    val q"${tpeString: String}" = tpeSelector
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
     val fields =
       if (tpeString.trim.isEmpty)
         Array.empty[(Type, Type)]
@@ -156,7 +156,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
     nonLabelledTypeImpl(tpeSelector, "coproduct", cnilTpe, cconsTpe)
 
   def nonLabelledTypeImpl(tpeSelector: Tree, variety: String, nilTpe: Type, consTpe: Type): Tree = {
-    val q"${tpeString: String}" = tpeSelector
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
     val elemTypes =
       if (tpeString.trim.isEmpty)
         Array.empty[Type]

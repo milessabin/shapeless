@@ -177,9 +177,9 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val (rp, rts) = ctorDtor.reprBinding
     val from = cq""" $rp => ${ctorDtor.construct(rts)} """
 
-    val nme = TypeName(c.freshName)
+    val nme = TypeName(c.freshName())
     val reprTpt = reprTypTree1(tpe, nme)
-    val rnme = TypeName(c.freshName)
+    val rnme = TypeName(c.freshName())
 
     val clsName = TypeName(c.freshName("anon$"))
     q"""
@@ -210,13 +210,13 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
       cq"$name: $tpeTpt => $index"
     }
 
-    val nme = TypeName(c.freshName)
+    val nme = TypeName(c.freshName())
     val reprTpt = reprTypTree1(tpe, nme)
-    val rnme = TypeName(c.freshName)
+    val rnme = TypeName(c.freshName())
 
     val to = {
       val toCases = ctorsOf1(tpe).zipWithIndex map (mkCoproductCases _).tupled
-      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((ft: Any) match { case ..$toCases }, ft).asInstanceOf[R[$nme]]"""
+      q"""_root_.shapeless.Coproduct.unsafeMkCoproduct((ft: @_root_.scala.unchecked) match { case ..$toCases }, ft).asInstanceOf[R[$nme]]"""
     }
 
     val clsName = TypeName(c.freshName("anon$"))
@@ -312,13 +312,13 @@ trait IsCons1Macros extends CaseClassMacros {
     if(!(lDealiasedTpe.typeConstructor =:= consTpe))
       abort("Not H/CCons")
 
-    val TypeRef(_, _, List(hd, tl)) = lDealiasedTpe
+    val TypeRef(_, _, List(hd, tl)) = (lDealiasedTpe: @unchecked)
 
     val lPoly = c.internal.polyType(List(lParam), lDealiasedTpe)
     val hdPoly = c.internal.polyType(List(lParam), hd)
     val tlPoly = c.internal.polyType(List(lParam), tl)
 
-    val nme = TypeName(c.freshName)
+    val nme = TypeName(c.freshName())
     val lTpt = appliedTypTree1(lPoly, lParamTpe, nme)
     val hdTpt = appliedTypTree1(hdPoly, lParamTpe, nme)
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, nme)
@@ -365,7 +365,7 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val lParamTpe = lParam.asType.toType
     val lDealiasedTpe = appliedType(lTpe, lParamTpe).dealias
 
-    val nme = TypeName(c.freshName)
+    val nme = TypeName(c.freshName())
 
     def balanced(args: List[Type]): Boolean =
       args.find(_.contains(lParam)).map { pivot =>

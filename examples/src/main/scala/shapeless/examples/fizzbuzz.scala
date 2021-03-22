@@ -44,7 +44,7 @@ object FizzBuzzExample {
     implicit def other[N <: Nat]: Aux[N, Other[N]] =
       new NatToFizzBuzz[N] {
         type Out = Other[N]
-        def apply = new Other[N]
+        def apply() = new Other[N]
       }
   }
 
@@ -52,13 +52,13 @@ object FizzBuzzExample {
     implicit def fizz[N <: Nat](implicit ev: Mod.Aux[N, _3, _0]): Aux[N, Fizz.type] =
       new NatToFizzBuzz[N] {
         type Out = Fizz.type
-        def apply = Fizz
+        def apply() = Fizz
       }
 
     implicit def buzz[N <: Nat](implicit ev: Mod.Aux[N, _5, _0]): Aux[N, Buzz.type] =
       new NatToFizzBuzz[N] {
         type Out = Buzz.type
-        def apply = Buzz
+        def apply() = Buzz
       }
   }
 
@@ -71,7 +71,7 @@ object FizzBuzzExample {
     implicit def fizzAndBuzz[N <: Nat](implicit fizz: Aux[N, Fizz.type], buzz: Aux[N, Buzz.type]): Aux[N, FizzAndBuzz.type] =
       new NatToFizzBuzz[N] {
         type Out = FizzAndBuzz.type
-        def apply = FizzAndBuzz
+        def apply() = FizzAndBuzz
       }
   }
 
@@ -86,13 +86,13 @@ object FizzBuzzExample {
     implicit def revFizzBuzzOne: Aux[_1, Other[_1] :: HNil] =
       new RevFizzBuzz[_1] {
         type Out = Other[_1] :: HNil
-        def apply = new Other[_1] :: HNil
+        def apply() = new Other[_1] :: HNil
       }
 
     implicit def succRevFizzBuzz[N <: Nat](implicit f: RevFizzBuzz[N], n: NatToFizzBuzz[Succ[N]]): Aux[Succ[N], n.Out :: f.Out] =
       new RevFizzBuzz[Succ[N]] {
         type Out = n.Out :: f.Out
-        def apply = n.apply :: f.apply
+        def apply() = n() :: f()
       }
   }
 

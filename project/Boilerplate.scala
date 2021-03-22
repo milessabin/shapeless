@@ -498,7 +498,7 @@ object Boilerplate {
         |
         -  def apply[T](${`a:T..n:T`})
         -    (implicit dis: DefaultToIndexedSeq[CC], factory : Factory[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
-        -    wrap[CC[T], _${arity}]((factory.newBuilder ++= Seq(${`a..n`})).result)
+        -    wrap[CC[T], _${arity}]((factory.newBuilder ++= Seq(${`a..n`})).result())
         -
         |}
       """

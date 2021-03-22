@@ -54,7 +54,7 @@ class CompileTimeMacros(val c: blackbox.Context) {
       }
     }
 
-    val Literal(Constant(codeStr: String)) = code
+    val Literal(Constant(codeStr: String)) = (code: @unchecked)
     val elapsedTime = wallClock(codeStr)
 
     q"_root_.scala.concurrent.duration.Duration.fromNanos($elapsedTime)"

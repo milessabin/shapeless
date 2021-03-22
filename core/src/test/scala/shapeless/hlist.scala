@@ -1844,6 +1844,7 @@ class HListTests {
 
     val is = l match {
       case i :: true :: s :: 2.0 :: HNil => (i, s)
+      case _ => sys.error("Not matched")
     }
 
     assertTypedEquals[Int](1, is._1)
@@ -3342,13 +3343,13 @@ class HListTests {
   def testReify: Unit = {
     import syntax.singleton._
 
-    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals(HNil, Reify[HNil].apply())
 
     val s1 = HList.`'a`
-    assertTypedEquals(Symbol("a").narrow :: HNil, Reify[s1.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: HNil, Reify[s1.T].apply())
 
     val s2 = HList.`'a, 1, "b", true`
-    assertTypedEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    assertTypedEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
 
     illTyped(""" Reify[String :: Int :: HNil] """)
     illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)

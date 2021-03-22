@@ -107,7 +107,7 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
         inst
       }
     } else {
-      val derived = checkedProbe match {
+      val derived = (checkedProbe: @unchecked) match {
         case b: Block => b.expr
       }
 

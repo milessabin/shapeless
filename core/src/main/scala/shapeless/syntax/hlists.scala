@@ -572,7 +572,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
 
     loop(l)
 
-    builder.result
+    builder.result()
   }
 
   /**

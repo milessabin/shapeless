@@ -52,8 +52,10 @@ object LinearAlgebraExamples extends App {
         mapper : Mapper.Aux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
           (p : PN) =>
             new VectorOps[N, PN](p) {
-              def +(other : Self) : Self =
-                newtype(gen.from((gen.to(p) :: gen.to(other.tupled) :: HNil).transpose.map(sum)))
+              def +(other : Self) : Self = {
+                val other0 = newtype.newtypeOps(other)(pointOpsN)
+                newtype(gen.from((gen.to(p) :: gen.to(other0.tupled) :: HNil).transpose.map(sum)))
+              }
             }
   }
 

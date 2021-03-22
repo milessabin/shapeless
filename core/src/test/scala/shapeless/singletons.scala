@@ -427,11 +427,11 @@ class SingletonTypesTests {
     val sThree = showWitness(3)
     assertEquals("3", sThree)
 
-    val sFooSym = showWitness(Symbol("foo"))
-    assertEquals("'foo", sFooSym)
+    val sFooSym = showWitness("foo")
+    assertEquals("foo", sFooSym)
 
-    val sBarSym = showWitness(Symbol("bar"))
-    assertEquals("'bar", sBarSym)
+    val sBarSym = showWitness("bar")
+    assertEquals("bar", sBarSym)
   }
 
   def showWitnessWith(w: WitnessWith[Show]) = w.instance.show

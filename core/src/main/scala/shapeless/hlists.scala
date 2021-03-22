@@ -295,7 +295,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString+"NatProduct")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -316,7 +316,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString+"Product")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -331,7 +331,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
 
     if (!methodString.matches(".*Product$"))
       c.abort(c.enclosingPosition, s"missing method '$methodString'")

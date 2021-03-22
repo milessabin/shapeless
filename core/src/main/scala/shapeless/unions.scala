@@ -83,7 +83,7 @@ class UnionMacros(val c: whitebox.Context) {
         c.abort(c.enclosingPosition, s"$elem has the wrong shape for a record field")
     }
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     if(methodString != "apply")
       c.abort(c.enclosingPosition, s"this method must be called as 'apply' not '$methodString'")
 

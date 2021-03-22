@@ -5,6 +5,13 @@ scripts/travis-config.sh
 scratch/
 target/
 
+.metals
+.bloop
+.bsp
+metals.sbt
+
+lowered.hnir
+
 # Ignore project files for Eclipse
 .classpath
 .settings

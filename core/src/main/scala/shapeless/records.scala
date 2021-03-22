@@ -131,7 +131,7 @@ class RecordMacros(val c: whitebox.Context) {
   }
 
   def mkRecordNamedImpl(method: Tree)(rec: Tree*): Tree = {
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     if(methodString != "apply")
       c.abort(c.enclosingPosition, s"this method must be called as 'apply' not '$methodString'")
 
@@ -144,7 +144,7 @@ class RecordMacros(val c: whitebox.Context) {
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString+"Record")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -159,7 +159,7 @@ class RecordMacros(val c: whitebox.Context) {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
 
     if (!methodString.matches(".*Record$"))
       c.abort(c.enclosingPosition, s"missing method '$methodString'")

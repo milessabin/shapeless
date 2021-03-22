@@ -400,7 +400,7 @@ package record {
 
       findField(lTpe, kTpe) match {
         case Some((v, i)) if v <:< aTpe =>
-          val (prefix, List(_, suffix @ _*)) = unpackHListTpe(lTpe).splitAt(i)
+          val (prefix, List(_, suffix @ _*)) = (unpackHListTpe(lTpe).splitAt(i): @unchecked)
           val outTpe = mkHListTpe(prefix ++ (FieldType(kTpe, bTpe) :: suffix.toList))
           q"""
             new _root_.shapeless.ops.record.UnsafeModifier($i).
@@ -465,7 +465,7 @@ package record {
 
       findField(lTpe, kTpe) match {
         case Some((v, i)) =>
-          val (prefix, List(_, suffix @ _*)) = unpackHListTpe(lTpe).splitAt(i)
+          val (prefix, List(_, suffix @ _*)) = (unpackHListTpe(lTpe).splitAt(i): @unchecked)
           val outTpe = mkHListTpe(prefix ++ suffix)
           q"""
             new _root_.shapeless.ops.record.UnsafeRemover($i).
@@ -734,7 +734,7 @@ package record {
     type Keys <: HList
     type Values <: HList
 
-    def keys(): Keys
+    def keys: Keys
     def values(l: L): Values
   }
 
@@ -747,7 +747,7 @@ package record {
       new UnzipFields[L] {
         type Keys = HNil
         type Values = L
-        def keys() = HNil
+        def keys = HNil
         def values(l: L): L = l
       }
 
@@ -759,7 +759,7 @@ package record {
         type Keys = K :: tailUF.Keys
         type Values = V :: tailUF.Values
 
-        def keys() = key.value :: tailUF.keys()
+        def keys = key.value :: tailUF.keys
         def values(l: FieldType[K, V] :: T) = l.head :: tailUF.values(l.tail)
       }
   }

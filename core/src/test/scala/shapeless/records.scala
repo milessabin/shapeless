@@ -833,7 +833,7 @@ class RecordTests {
 
     typed[Record.`'i -> 2, 's -> "a", 'b -> true`.T](Symbol("i") ->> 2.narrow :: Symbol("s") ->> "a".narrow :: Symbol("b") ->> true.narrow :: HNil)
 
-    illTyped(""" typed[Record.`'i -> 2`.T]('i ->> 3.narrow :: HNil) """)
+    illTyped(""" typed[Record.`'i -> 2`.T](Symbol("i") ->> 3.narrow :: HNil) """)
 
     // Mix of standard and literal types
 
@@ -1095,7 +1095,7 @@ class RecordTests {
 
     val (x, y, z) = (Witness(Symbol("x")), Witness(Symbol("y")), Witness(Symbol("z")))
 
-    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply
+    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply()
 
     assertEquals(fields.toList, List(Symbol("x"), Symbol("y"), Symbol("z")))
   }

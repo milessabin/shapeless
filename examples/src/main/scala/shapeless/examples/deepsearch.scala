@@ -82,10 +82,10 @@ object DeepSearchExamples extends App {
   assert(("a", ("b", "c"), "d").deepFind(p) == None)
 
   // On tuples with non-string elements:
-  assert((1, "two", (Symbol("three"), '4')).deepFind(p) == Some("two"))
+  assert((1, "two", (3.0, '4')).deepFind(p) == Some("two"))
 
   // Search the same tuple for a specific character instead:
-  assert((1, "two", (Symbol("three"), '4')).deepFind((_: Char) == 52) == Some('4'))
+  assert((1, "two", (3.0, '4')).deepFind((_: Char) == 52) == Some('4'))
 
   // Our case class:
   case class Foo(a: String, b: String, c: List[String])
