@@ -1,5 +1,5 @@
 #!/bin/sh
-COURSIER_URL=https://git.io/vgvpD
+COURSIER_URL=https://get-coursier.io/coursier
 test -e ~/.coursier/coursier || \
   (mkdir -p ~/.coursier && curl -L -s --output ~/.coursier/coursier $COURSIER_URL && chmod +x ~/.coursier/coursier)
 ~/.coursier/coursier launch -q -P -M ammonite.Main \
