@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-18 Miles Sabin 
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,31 @@ package shapeless
 package syntax
 
 object sized {
-  implicit def genTraversableSizedConv[Repr](cc : Repr)
-    (implicit iil: IsRegularIterable[Repr], ev : AdditiveCollection[Repr]) =
-      new SizedConv[Repr](cc)
+
+  implicit def genTraversableSizedConv[Repr](cc : Repr)(
+    implicit iil: IsRegularIterable[Repr],
+    ev: AdditiveCollection[Repr]
+  ): SizedConv[Repr] =
+    new SizedConv[Repr](cc)
   
-  implicit def stringSizedConv(s : String) = new SizedConv[String](s)
+  implicit def stringSizedConv(s: String): SizedConv[String] =
+    new SizedConv[String](s)
 }
 
-final class SizedConv[Repr](r : Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr]) {
+final class SizedConv[Repr](r: Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr]) {
   import ops.nat._
-  import Sized._
 
   def checkSize[L <: Nat](implicit toInt: ToInt[L]): Boolean =
     iil(r).size == toInt()
 
-  def sized[L <: Nat](implicit toInt : ToInt[L]) =
-    if(checkSize) Some(wrap[Repr, L](r)) else None
+  def sized[L <: Nat](implicit toInt: ToInt[L]): Option[Sized[Repr, L]] =
+    Option.when(checkSize)(Sized.wrap(r))
+
+  def sized(l: Nat)(implicit toInt: ToInt[l.N]): Option[Sized[Repr, l.N]] =
+    Option.when(checkSize)(Sized.wrap(r))
     
-  def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
-    if(checkSize) Some(wrap[Repr, l.N](r)) else None
-    
-  def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
+  def ensureSized[L <: Nat](implicit toInt: ToInt[L]): Sized[Repr, L] = {
     assert(checkSize)
-    wrap[Repr, L](r)
+    Sized.wrap(r)
   }
 }
