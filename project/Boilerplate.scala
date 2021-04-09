@@ -55,13 +55,14 @@ object Boilerplate {
   )
 
   /** Returns a seq of the generated files.  As a side-effect, it actually generates them... */
-  def gen(dir : File) = for(t <- templates) yield {
-    val tgtFile = dir / "shapeless" / t.filename
-    IO.write(tgtFile, t.body)
-    tgtFile
-  }  
+  def gen(scalaBinaryVersion: String)(dir: File): Seq[File] =
+    for (template <- templates) yield {
+      val target = dir / "shapeless" / template.filename
+      IO.write(target, template.body(scalaBinaryVersion))
+      target
+    }
 
-  val header = """
+  val header: String = """
     |/*
     | * Copyright (c) 2011-18 Miles Sabin
     | *
@@ -82,33 +83,32 @@ object Boilerplate {
   """.stripMargin
 
   class TemplateVals(val arity: Int) {
-    val synTypes     = (0 until arity) map (n => (n+'A').toChar)
-    val synVals      = (0 until arity) map (n => (n+'a').toChar)
-    val synTypedVals = (synVals zip synTypes) map { case (v,t) => v + ":" + t}
+    val synTypes: Seq[Char]       = (0 until arity).map(n => (n + 'A').toChar)
+    val synVals: Seq[Char]        = (0 until arity).map(n => (n + 'a').toChar)
+    val synTypedVals: Seq[String] = (synVals, synTypes).zipped.map { case (v, t) => v + ":" + t }
 
-    val `A..N`       = synTypes.mkString(", ")
-    val `A..N,Res`   = (synTypes :+ "Res") mkString ", "
-    val `a..n`       = synVals.mkString(", ")
-    val `A::N`       = (synTypes :+ "HNil") mkString "::"
-    val `a::n`       = (synVals :+ "HNil") mkString "::"
-    val `_.._`       = Seq.fill(arity)("_").mkString(", ")
-    val `(A..N)`     = if (arity == 1) "Tuple1[A]" else synTypes.mkString("(", ", ", ")")
-    val `(_.._)`     = if (arity == 1) "Tuple1[_]" else Seq.fill(arity)("_").mkString("(", ", ", ")")
-    val `(a..n)`     = if (arity == 1) "Tuple1(a)" else synVals.mkString("(", ", ", ")")
-    val `a:A..n:N`   = synTypedVals mkString ", "    
+    val `A..N`: String     = synTypes.mkString(", ")
+    val `A..N,Res`: String = (synTypes :+ "Res").mkString(", ")
+    val `a..n`: String     = synVals.mkString(", ")
+    val `A::N`: String     = (synTypes :+ "HNil").mkString("::")
+    val `a::n`: String     = (synVals :+ "HNil").mkString("::")
+    val `_.._`: String     = Seq.fill(arity)("_").mkString(", ")
+    val `(A..N)`: String   = if (arity == 1) "Tuple1[A]" else synTypes.mkString("(", ", ", ")")
+    val `(_.._)`: String   = if (arity == 1) "Tuple1[_]" else Seq.fill(arity)("_").mkString("(", ", ", ")")
+    val `(a..n)`: String   = if (arity == 1) "Tuple1(a)" else synVals.mkString("(", ", ", ")")
+    val `a:A..n:N`: String = synTypedVals.mkString(", ")
   }
 
   trait Template {
     def filename: String
-    def content(tv: TemplateVals): String
-    def range = 1 to 22
-    def body: String = {
-      val headerLines = header split '\n'
-      val rawContents = range map { n => content(new TemplateVals(n)) split '\n' filterNot (_.isEmpty) }
-      val preBody = rawContents.head takeWhile (_ startsWith "|") map (_.tail)
-      val instances = rawContents flatMap {_ filter (_ startsWith "-") map (_.tail) }
-      val postBody = rawContents.head dropWhile (_ startsWith "|") dropWhile (_ startsWith "-") map (_.tail)
-      (headerLines ++ preBody ++ instances ++ postBody) mkString "\n"
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String
+    def range: Range = 1 to 22
+    def body(scalaBinaryVersion: String): String = {
+      val rawContents = range.map(n => content(new TemplateVals(n), scalaBinaryVersion).split('\n').filterNot(_.isEmpty))
+      val preBody = rawContents.head.takeWhile(_.startsWith("|"))
+      val instances = rawContents.flatMap(_.filter(_.startsWith("-")))
+      val postBody = rawContents.head.dropWhile(_.startsWith("|")).dropWhile(_.startsWith("-"))
+      header + (preBody ++ instances ++ postBody).map(_.tail).mkString("\n")
     }
   }
 
@@ -130,8 +130,10 @@ object Boilerplate {
   
   object GenTuplerInstances extends Template {
     val filename = "tupler.scala"
-    def content(tv: TemplateVals) = {
+
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       block"""
         |package ops
         |
@@ -140,7 +142,7 @@ object Boilerplate {
         |trait TuplerInstances {
         |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
         -
-        -  implicit def hlistTupler${arity}
+        -  implicit def hlistTupler$arity
         -    [${`A..N`}]
         -  : Aux[
         -    ${`A::N`},
@@ -157,11 +159,11 @@ object Boilerplate {
   
   object GenFnToProductInstances extends Template {
     val filename = "fntoproduct.scala"
+    override val range: Range = 0 to 22
 
-    override val range = 0 to 22
-
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
       val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
@@ -174,17 +176,17 @@ object Boilerplate {
         |trait FnToProductInstances {
         |  type Aux[F, Out0] = FnToProduct[F] { type Out = Out0 }
         -
-        -  implicit def fnToProduct${arity}
+        -  implicit def fnToProduct$arity
         -    [${`A..N,Res`}]
         -  : Aux[
-        -    (${fnType}),
-        -    ${hlistFnType}
+        -    ($fnType),
+        -    $hlistFnType
         -  ] =
-        -    new FnToProduct[${fnType}] {
-        -      type Out = ${hlistFnType}
-        -      def apply(fn: ${fnType}): Out
+        -    new FnToProduct[$fnType] {
+        -      type Out = $hlistFnType
+        -      def apply(fn: $fnType): Out
         -        = (l : ${`A::N`})
-        -          => ${fnBody}
+        -          => $fnBody
         -    }
         |}
       """
@@ -193,11 +195,11 @@ object Boilerplate {
   
   object GenFnFromProductInstances extends Template {
     val filename = "fnfromproduct.scala"
+    override val range: Range = 0 to 22
 
-    override val range = 0 to 22
-
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
 
@@ -209,15 +211,15 @@ object Boilerplate {
         |trait FnFromProductInstances {
         |  type Aux[F, Out0] = FnFromProduct[F] { type Out = Out0 }
         |
-        -  implicit def fnFromProduct${arity}
+        -  implicit def fnFromProduct$arity
         -    [${`A..N,Res`}]
         -  : Aux[
-        -    ${hlistFnType},
-        -    ${fnType}
+        -    $hlistFnType,
+        -    $fnType
         -  ] = 
-        -    new FnFromProduct[${hlistFnType}] {
-        -      type Out = ${fnType}
-        -      def apply(hf : ${hlistFnType}): Out
+        -    new FnFromProduct[$hlistFnType] {
+        -      type Out = $fnType
+        -      def apply(hf : $hlistFnType): Out
         -        = (${`a:A..n:N`})
         -          => hf(${`a::n`})
         -    }
@@ -231,14 +233,15 @@ object Boilerplate {
   object GenCaseInst extends Template {
     val filename = "caseinst.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       block"""
         |
         |trait CaseInst {
         |  import poly._
         |
-        -  implicit def inst${arity}
+        -  implicit def inst$arity
         -    [Fn <: Poly, ${`A..N`}, Res]
         -    (cse : Case[Fn, ${`A::N`}] { type Result = Res }) 
         -  : (${`A..N`}) => Res =
@@ -253,8 +256,9 @@ object Boilerplate {
   object GenPolyApply extends Template {
     val filename = "polyapply.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       block"""
         |
         |trait PolyApply {
@@ -276,13 +280,14 @@ object Boilerplate {
   object GenPolyInst extends Template {
     val filename = "polyinst.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       block"""
         |
         |trait PolyInst {
         |
-        -  implicit def inst${arity}
+        -  implicit def inst$arity
         -    [${`A..N`}]
         -    (fn : Poly)(implicit cse : fn.ProductCase[${`A::N`}])
         -  : (${`A..N`}) => cse.Result =
@@ -297,17 +302,18 @@ object Boilerplate {
   object GenCases extends Template {
     val filename = "cases.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       block"""
         |
         |trait Cases {
         |  import poly._
         |
-        -  type Case${arity}[Fn, ${`A..N`}]
+        -  type Case$arity[Fn, ${`A..N`}]
         -    = Case[Fn, ${`A::N`}]
         -
-        -  object Case${arity} {
+        -  object Case$arity {
         -    type Aux[Fn, ${`A..N`}, Result0]
         -      = Case[Fn, ${`A::N`}] { type Result = Result0 }
         -
@@ -334,14 +340,15 @@ object Boilerplate {
   object GenPolyNTraits extends Template {
     val filename = "polyntraits.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
 
       block"""
         |
         -
-        -trait Poly${arity} extends Poly { outer =>
+        -trait Poly$arity extends Poly { outer =>
         -  type Case[${`A..N`}]
         -    = poly.Case[this.type, ${`A::N`}]
         -
@@ -355,7 +362,7 @@ object Boilerplate {
         -      (fn: (${`A..N`}) => Res) = new Case[${`A..N`}] {
         -      type Result = Res
         -      val value = (l: ${`A::N`})
-        -        => ${fnBody}
+        -        => $fnBody
         -    }
         -  }
         -  
@@ -363,7 +370,7 @@ object Boilerplate {
         -    = new CaseBuilder[${`A..N`}]
         -}
         -
-        -object Poly${arity} extends PolyNBuilders.Poly${arity}Builder[HNil] {
+        -object Poly$arity extends PolyNBuilders.Poly${arity}Builder[HNil] {
         - val functions = HNil
         -}
         |
@@ -374,7 +381,7 @@ object Boilerplate {
   object GenPolyNBuilders extends Template {
     val filename = "polynbuilders.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
 
       block"""
@@ -399,7 +406,7 @@ object Boilerplate {
         -   }
         -   def at[${`A..N`}] = new AtAux[${`A..N`}]
         -
-        -   def build = new Poly${arity} {
+        -   def build = new Poly$arity {
         -     val functions = self.functions
         -
         -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]) = {
@@ -435,14 +442,15 @@ object Boilerplate {
   object GenNats extends Template {
     val filename = "nats.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       val n = tv.arity
+
       block"""
         |
         |trait Nats {
         -
-        -  type _${n} = Succ[_${n-1}]
-        -  val _${n}: _${n} = new _${n}
+        -  type _$n = Succ[_${n-1}]
+        -  val _$n: _$n = new _$n
         |}
       """
     }
@@ -451,11 +459,12 @@ object Boilerplate {
   object GenTupleTypeableInstances extends Template {
     val filename = "tupletypeables.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
-      val implicitArgs = (synTypes map(a => s"cast${a}:Typeable[${a}]")) mkString ", "
-      val enumerators = synTypes.zipWithIndex map { case (a,idx) => s"_ <- p._${idx+1}.cast[${a}]" } mkString "; "
-      val castVals = (synTypes map(a => s"$${cast${a}.describe}")) mkString ", "
+
+      val implicitArgs = (synTypes map(a => s"cast$a:Typeable[$a]")) mkString ", "
+      val enumerators = synTypes.zipWithIndex map { case (a,idx) => s"_ <- p._${idx+1}.cast[$a]" } mkString "; "
+      val castVals = (synTypes map(a => s"$${cast$a.describe}")) mkString ", "
 
       block"""
         |
@@ -464,13 +473,13 @@ object Boilerplate {
         |
         -  implicit def tuple${arity}Typeable
         -    [${`A..N`}]
-        -    (implicit ${implicitArgs})
+        -    (implicit $implicitArgs)
         -  = new Typeable[${`(A..N)`}] {
         -    def cast(t : Any) : Option[${`(A..N)`}] = {
         -      if(t == null) None
         -      else if(t.isInstanceOf[${`(_.._)`}]) {
         -        val p = t.asInstanceOf[${`(_.._)`}]
-        -        for(${enumerators})
+        -        for($enumerators)
         -        yield t.asInstanceOf[${`(A..N)`}]
         -      } else None
         -    }
@@ -485,9 +494,15 @@ object Boilerplate {
   object GenSizedBuilder extends Template {
     val filename = "sizedbuilder.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
-      val `a:T..n:T` = synVals map (_ + ":T") mkString ", "
+
+      val `a:T..n:T` = synVals.map(_ + ":T").mkString(", ")
+      val commonImplicits = "factory: Factory[T, CC[T]], ev: AdditiveCollection[CC[T]]"
+      val implicits = scalaBinaryVersion match {
+        case "2.11" | "2.12" => commonImplicits
+        case _ => s"dis: DefaultToIndexedSeq[CC], $commonImplicits"
+      }
 
       block"""
         |
@@ -497,8 +512,8 @@ object Boilerplate {
         |  import Sized.wrap
         |
         -  def apply[T](${`a:T..n:T`})
-        -    (implicit dis: DefaultToIndexedSeq[CC], factory : Factory[T, CC[T]], ev : AdditiveCollection[CC[T]]) =
-        -    wrap[CC[T], _${arity}]((factory.newBuilder ++= Seq(${`a..n`})).result())
+        -    (implicit $implicits) =
+        -    wrap[CC[T], _$arity]((factory.newBuilder ++= Seq(${`a..n`})).result())
         -
         |}
       """
@@ -508,11 +523,12 @@ object Boilerplate {
   object GenHMapBuilder extends Template {
     val filename = "hmapbuilder.scala"
 
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
-      val typeArgs  = (0 until arity) map (n => s"K${n}, V${n}") mkString ", "
-      val args      = (0 until arity) map (n => s"e${n}: (K${n}, V${n})") mkString ", "
-      val witnesses = (0 until arity) map (n => s"ev${n}: R[K${n}, V${n}]") mkString ", "
+
+      val typeArgs  = (0 until arity) map (n => s"K$n, V$n") mkString ", "
+      val args      = (0 until arity) map (n => s"e$n: (K$n, V$n)") mkString ", "
+      val witnesses = (0 until arity) map (n => s"ev$n: R[K$n, V$n]") mkString ", "
       val mapArgs   = (0 until arity) map (n => "e"+n) mkString ", "
 
       block"""
@@ -520,10 +536,10 @@ object Boilerplate {
         |class HMapBuilder[R[_, _]] {
         -
         -  def apply
-        -    [${typeArgs}]
-        -    (${args})
-        -    (implicit ${witnesses})
-        -    = new HMap[R](Map(${mapArgs}))
+        -    [$typeArgs]
+        -    ($args)
+        -    (implicit $witnesses)
+        -    = new HMap[R](Map($mapArgs))
         |}
       """
     }
@@ -531,11 +547,13 @@ object Boilerplate {
  
   object GenUnpackInstances extends Template {
     val filename = "unpack.scala"
-    def content(tv: TemplateVals) = {
+    def content(tv: TemplateVals, scalaBinaryVersion: String): String = {
       import tv._
+
       val typeblock = "FF[" + `A..N` + "], FF, " + `A..N`
       val hktypeblock = "FF[" + `_.._` + "], " + `A..N`
-      val traitname = s"Unpack${arity}"
+      val traitname = s"Unpack$arity"
+
       block"""
         |
         -

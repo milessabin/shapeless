@@ -46,7 +46,9 @@ final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
  * 
  * @author Miles Sabin
  */
-class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsRegularIterable[Repr] { type A = A0 }) { outer =>
+class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl: IsRegularIterable[Repr] { type A = A0 })
+  extends SizedOpsVersionSpecific[A0, Repr, L] {
+
   import nat._
   import ops.nat._
   import LT._
@@ -154,18 +156,6 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
     builder += elem
     wrap[Repr, Succ[L]](builder.result())
   }
-  
-  /**
-   * Append the argument collection to this collection. The resulting collection will be statically known to have
-   * ''m+n'' elements.
-   */
-  def ++[B >: A0, That, M <: Nat](that : Sized[That, M])
-    (implicit
-      sum : Sum[L, M],
-      convThat : IsRegularIterable[That] { type A = B },
-      cbf : Factory[B, That],
-      ev : AdditiveCollection[That]): Sized[That, sum.Out] =
-        wrap[That, sum.Out](cbf.fromSpecific(underlying.iterator ++ convThat(that.unsized).iterator))
 
   /**
    * Map across this collection. The resulting collection will be statically known to have the same number of elements
@@ -192,20 +182,21 @@ trait LowPrioritySized {
   implicit def sizedToRepr[Repr](s : Sized[Repr, _]) : Repr = s.unsized
 }
 
-object Sized extends LowPrioritySized {
-  implicit def sizedOps[Repr, L <: Nat](s : Sized[Repr, L])
-    (implicit itl: IsRegularIterable[Repr], ev: AdditiveCollection[Repr]): SizedOps[itl.A, Repr, L] =
-      new SizedOps[itl.A, Repr, L](s, itl)
+object Sized extends SizedVersionSpecific with LowPrioritySized {
+
+  implicit def sizedOps[Repr, L <: Nat](s: Sized[Repr, L])(
+    implicit itl: IsRegularIterable[Repr],
+    ev: AdditiveCollection[Repr]
+  ): SizedOps[itl.A, Repr, L] =
+    new SizedOps[itl.A, Repr, L](s, itl)
   
   def apply[CC[_]] = new SizedBuilder[CC]
   
-  def apply[CC[_]]()
-    (implicit dis: DefaultToIndexedSeq[CC], cbf : Factory[Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
-      new Sized[CC[Nothing], _0](cbf.newBuilder.result())
-  
-  def wrap[Repr, L <: Nat](r : Repr)(implicit ev : AdditiveCollection[Repr]) = new Sized[Repr, L](r)
+  def wrap[Repr, L <: Nat](r : Repr)(implicit ev: AdditiveCollection[Repr]): Sized[Repr, L] =
+    new Sized[Repr, L](r)
 
-  def unapplySeq[Repr, L <: Nat](x : Sized[Repr, L]) = Some(x.unsized)
+  def unapplySeq[Repr, L <: Nat](x: Sized[Repr, L]): Some[Repr] =
+    Some(x.unsized)
 }
 
 /**
@@ -217,7 +208,7 @@ object Sized extends LowPrioritySized {
  */
 trait AdditiveCollection[Repr] extends Serializable
 
-object AdditiveCollection {
+object AdditiveCollection extends AdditiveCollectionVersionSpecific {
   import scala.collection.immutable.Queue
   import scala.collection.LinearSeq
 

@@ -28,17 +28,17 @@ package std
  * @author Rob Norris
  */
 object traversable {
-  implicit def traversableOps[T](t : T)(implicit ev: T => Iterable[_]) = new TraversableOps(t)
-  implicit def traversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) = new TraversableOps2(as)
+  implicit def traversableOps[T](t: T)(implicit ev: T => GenTraversableOrIterable[_]): TraversableOps[T] = new TraversableOps(t)
+  implicit def traversableOps2[CC[T] <: GenTraversableOrIterable[T], A](as: CC[A]): TraversableOps2[CC, A] = new TraversableOps2(as)
 }
 
-final class TraversableOps[T](t : T)(implicit ev: T => Iterable[_]) {
+final class TraversableOps[T](t : T)(implicit ev: T => GenTraversableOrIterable[_]) {
   import ops.traversable._
 
-  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+  def toHList[L <: HList](implicit fl: FromTraversable[L]): Option[L] = fl(t)
 }
 
-final class TraversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) {
+final class TraversableOps2[CC[T] <: GenTraversableOrIterable[T], A](as: CC[A]) {
   import ops.traversable._
 
   def toSizedHList(n: Nat)(implicit ts: ToSizedHList[CC, A, n.N]): ts.Out = ts(as)

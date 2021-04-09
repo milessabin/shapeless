@@ -736,7 +736,7 @@ object hlist {
     def apply(l: L): Out
   }
 
-  object ToSized {
+  object ToSized extends ToSizedVersionSpecific {
     def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]): Aux[L, M, toSized.Lub, toSized.N] = toSized
 
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
@@ -761,23 +761,6 @@ object hlist {
         type N = Nat._1
         def apply(l : T :: HNil) = Sized[M](l.head)
       }
-
-    implicit def hlistToSized[H1, H2, T <: HList, LT, L, N0 <: Nat, M[_]]
-      (implicit
-       tts   : Aux[H2 :: T, M, LT, N0],
-       u     : Lub[H1, LT, L],
-       tvs2  : IsRegularIterable[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
-       tev   : AdditiveCollection[M[LT]],
-       f     : Factory[L, M[L]],
-       tcbf  : BuildFrom[M[L], L, M[L]],
-       tcbf2 : BuildFrom[M[LT], L, M[L]],
-       tvs   : IsRegularIterable[M[L]] { type A = L }, // tvs, tcbf2, and ev are required for the call to +: below
-       ev    : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
-        new ToSized[H1 :: H2 :: T, M] {
-          type Lub = L
-          type N = Succ[N0]
-          def apply(l : H1 :: H2 :: T) = u.left(l.head) +: tts(l.tail).map(u.right)
-        }
   }
 
   /**
@@ -2095,9 +2078,7 @@ object hlist {
     *
     * @author Jeremy Smith
     */
-  trait Repeat[L <: HList, N <: Nat] extends DepFn1[L] with Serializable {
-    type Out <: HList
-  }
+  trait Repeat[L <: HList, N <: Nat] extends RepeatVersionSpecific[L]
 
   object Repeat {
 

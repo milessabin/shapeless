@@ -1,11 +1,7 @@
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import com.typesafe.tools.mima.core._
+import com.typesafe.sbt.SbtGit.GitKeys._
 import com.typesafe.tools.mima.core.ProblemFilters._
-
-import com.typesafe.sbt.SbtGit._
-import GitKeys._
-
-import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
+import com.typesafe.tools.mima.core._
+import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
@@ -27,11 +23,10 @@ ThisBuild / githubWorkflowBuildPreamble := Seq(
   WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev"))
 )
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
-ThisBuild / githubWorkflowBuildMatrixAdditions +=
-  "platform" -> List("jvm", "js", "native")
-
 ThisBuild / githubWorkflowArtifactUpload := false
+ThisBuild / githubWorkflowBuildMatrixAdditions += "platform" -> List("jvm", "js", "native")
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
+ThisBuild / githubWorkflowTargetBranches := Seq("**") // match all branches, including slashes
 
 val JvmCond = s"matrix.platform == 'jvm'"
 val JsCond = s"matrix.platform == 'js'"
@@ -167,6 +162,10 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
 
+val boilerplate = Def.taskDyn {
+  (sourceManaged in Compile).map(Boilerplate.gen(scalaBinaryVersion.value))
+}
+
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
@@ -174,7 +173,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .configureCross(buildInfoSetup)
   .enablePlugins(SbtOsgi)
   .settings(coreOsgiSettings:_*)
-  .settings(sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue)
+  .settings(sourceGenerators in Compile += boilerplate.taskValue)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
@@ -312,68 +311,22 @@ lazy val noPublishSettings =
 
 enablePlugins(MimaPlugin)
 lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := {
-    val previousVersion = if(scalaVersion.value.startsWith("2.13.")) "2.3.3" else "2.3.2"
-    Set(organization.value %% moduleName.value % previousVersion)
-  },
-  mimaBinaryIssueFilters := Seq(
+  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.3"),
+  mimaBinaryIssueFilters := {
     // Macro internals - ignore
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTC"),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTpt"),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTC_="),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTpt_="),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTC"),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTpt"),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTC_="),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.shapeless$CaseClassMacrosVersionSpecifics$_setter_$varargTpt_="),
-    exclude[MissingClassProblem]("shapeless.CaseClassMacros$PatchedContext$2$PatchedLookupResult"),
-    exclude[MissingTypesProblem]("shapeless.LazyMacros$"),
-    exclude[MissingClassProblem]("shapeless.LazyMacrosCompat"),
-    exclude[MissingClassProblem]("shapeless.LazyMacrosRef"),
+    val macroFilters = List("CaseClassMacros", "IsCons1Macros", "LazyMacros")
+      .map(macros => exclude[Problem](s"shapeless.$macros*"))
 
-    // 2.13.x collections related - to eliminate somehow
-    exclude[DirectMissingMethodProblem]("shapeless.AdditiveCollection.indexedSeqAdditiveCollection"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.SizedOps.++"),
-    exclude[DirectMissingMethodProblem]("shapeless.Sized.apply"),
-    exclude[DirectMissingMethodProblem]("shapeless.SizedBuilder.apply"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.SizedBuilder.apply"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.SizedConv.this"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.sized.genTraversableSizedConv"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.std.traversable.traversableOps2"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.syntax.std.TraversableOps2.this"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.ops.hlist#Repeat.apply"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.instance"),
-    exclude[DirectMissingMethodProblem]("shapeless.ops.hlist#ToSized.hlistToSized"),
-    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#FromTraversable.apply"),
-    exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#FromTraversable.apply"),
-
-    // Other
-    exclude[IncompatibleResultTypeProblem]("shapeless.syntax.HListOps.toCoproduct"),
-    exclude[InheritedNewAbstractMethodProblem]("shapeless.ops.hlist#Repeat.apply"),
-    exclude[ReversedMissingMethodProblem]("shapeless.SingletonTypeUtils.isSymbolLiteral"),
-    exclude[ReversedMissingMethodProblem]("shapeless.CaseClassMacros.numNonCaseParamLists"),
-
-    // All the following were present in 2.3.2 ...
-
-    // Filtering the methods that were added since the checked version
-    // (these only break forward compatibility, not the backward one)
-    exclude[ReversedMissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
-
-    // Filtering removals
-    exclude[ReversedMissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons"),
-    exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne$"),
-    exclude[MissingClassProblem]("shapeless.ops.coproduct$ZipOne"),
-    exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef"),
-    exclude[DirectMissingMethodProblem]("shapeless.LazyMacros.dcRef_="),
-
-    // Implicit reorderings
-    exclude[DirectMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilConstUnaryTC"),
-    exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
-
-    // Relaxed constraints
-    exclude[IncompatibleMethTypeProblem]("shapeless.ops.traversable#ToSizedHList.apply"),
-    exclude[ReversedMissingMethodProblem]("shapeless.ops.traversable#ToSizedHList.apply")
-  )
+    scalaBinaryVersion.value match {
+      case "2.11" =>
+        // Adding methods to traits in 2.11 is not binary compatible, but those traits shouldn't be subclassed.
+        exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC") ::
+          exclude[ReversedMissingMethodProblem]("shapeless.SingletonTypeUtils.isSymbolLiteral") ::
+          macroFilters
+      case _ =>
+        macroFilters
+    }
+  }
 )
 
 def buildInfoSetup(crossProject: CrossProject): CrossProject = {

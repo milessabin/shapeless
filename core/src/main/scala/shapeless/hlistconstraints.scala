@@ -16,7 +16,7 @@
 
 package shapeless
 
-import ops.hlist.Selector
+import shapeless.ops.hlist.Selector
 
 import scala.annotation.implicitNotFound
 
@@ -26,14 +26,21 @@ import scala.annotation.implicitNotFound
 trait UnaryTCConstraint[L <: HList, TC[_]] extends Serializable
 
 trait LowPriorityUnaryTCConstraint0 {
-  implicit def hlistIdUnaryTC[L <: HList] = new UnaryTCConstraint[L, Id] {}
+  implicit def hlistIdUnaryTC[L <: HList]: UnaryTCConstraint[L, Id] =
+    new UnaryTCConstraint[L, Id] {}
 }
 
 trait LowPriorityUnaryTCConstraint extends LowPriorityUnaryTCConstraint0 {
 
-  implicit def hnilUnaryTC[TC[_]] = new UnaryTCConstraint[HNil, TC] {}
+  def hnilConstUnaryTC[H]: UnaryTCConstraint[HNil, Const[H]#λ] =
+    new UnaryTCConstraint[HNil, Const[H]#λ] {}
 
-  implicit def hlistConstUnaryTC[H, T <: HList](implicit utct : UnaryTCConstraint[T, Const[H]#λ]) =
+  implicit def hnilUnaryTC[TC[_]]: UnaryTCConstraint[HNil, TC] =
+    new UnaryTCConstraint[HNil, TC] {}
+
+  implicit def hlistConstUnaryTC[H, T <: HList](
+    implicit utct: UnaryTCConstraint[T, Const[H]#λ]
+  ): UnaryTCConstraint[H :: T, Const[H]#λ] =
     new UnaryTCConstraint[H :: T, Const[H]#λ] {}
 }
 
@@ -42,11 +49,14 @@ object UnaryTCConstraint extends LowPriorityUnaryTCConstraint {
 
   type *->*[TC[_]] = {
     type λ[L <: HList] = UnaryTCConstraint[L, TC] 
-  } 
+  }
 
-  implicit def hnilConstUnaryTC[H] = new UnaryTCConstraint[HNil, Const[H]#λ] {}
+  implicit override def hnilConstUnaryTC[H]: UnaryTCConstraint[HNil, Const[H]#λ] =
+    super.hnilConstUnaryTC[H]
   
-  implicit def hlistUnaryTC[H, T <: HList, TC[_]](implicit utct : UnaryTCConstraint[T, TC]) =
+  implicit def hlistUnaryTC[H, T <: HList, TC[_]](
+    implicit utct: UnaryTCConstraint[T, TC]
+  ): UnaryTCConstraint[TC[H] :: T, TC] =
     new UnaryTCConstraint[TC[H] :: T, TC] {}
 }
 
