@@ -16,6 +16,7 @@ ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala213
 ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
 ThisBuild / mimaFailOnNoPrevious := false
+ThisBuild / versionScheme := Some("pvp")
 
 // GHA configuration
 
