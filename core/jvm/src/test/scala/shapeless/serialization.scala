@@ -153,7 +153,7 @@ object SerializationTestDefns {
   class Bar extends Quux
   class Baz extends Quux
 
-  trait TC1[F[_]]
+  trait TC1[F[_]] extends Serializable
   object TC1 extends TC10 {
     implicit def tc1Id: TC1[Id] = new TC1[Id] {}
   }

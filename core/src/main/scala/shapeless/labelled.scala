@@ -28,7 +28,7 @@ object labelled {
   trait KeyTag[K, +V]
 
   /**
-   * Yields a result encoding the supplied value with the singleton type `K' of its key.
+   * Yields a result encoding the supplied value with the singleton type `K` of its key.
    */
   def field[K] = new FieldBuilder[K]
 
@@ -46,6 +46,12 @@ object DefaultSymbolicLabelling {
 
   implicit def mkDefaultSymbolicLabelling[T]: DefaultSymbolicLabelling[T] =
     macro LabelledMacros.mkDefaultSymbolicLabellingImpl[T]
+
+  def instance[T, L <: HList](labels: L): Aux[T, L] =
+    new DefaultSymbolicLabelling[T] {
+      type Out = L
+      def apply(): L = labels
+    }
 }
 
 /**
@@ -60,7 +66,7 @@ trait FieldPoly extends Poly1 {
   class FieldCaseBuilder[A, T] {
     def apply[Res](fn: A => Res) = new Case[FieldType[T, A]] {
       type Result = FieldType[T, Res]
-      val value: Function1[A :: HNil, FieldType[T, Res]] =
+      val value: (A :: HNil) => FieldType[T, Res] =
         (l: A :: HNil) => field[T](fn(l.head))
     }
   }
@@ -91,8 +97,8 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
   def mkDefaultSymbolicLabellingImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
     val tTpe = weakTypeOf[T]
     val labels: List[String] =
-      if(isProduct(tTpe)) fieldsOf(tTpe).map { f => nameAsString(f._1) }
-      else if(isCoproduct(tTpe)) ctorsOf(tTpe).map { tpe => nameAsString(nameOf(tpe)) }
+      if (isProduct(tTpe)) fieldsOf(tTpe).map(f => nameAsString(f._1))
+      else if (isCoproduct(tTpe)) ctorsOf(tTpe).map(tpe => nameAsString(nameOf(tpe)))
       else c.abort(c.enclosingPosition, s"$tTpe is not case class like or the root of a sealed family of types")
 
     val labelTpes = labels.map(SingletonSymbolType(_))
@@ -101,12 +107,8 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
     val labelsTpe = mkHListTpe(labelTpes)
     val labelsValue = mkHListValue(labelValues)
 
-    q"""
-      new _root_.shapeless.DefaultSymbolicLabelling[$tTpe] {
-        type Out = $labelsTpe
-        def apply(): $labelsTpe = $labelsValue
-      } : _root_.shapeless.DefaultSymbolicLabelling.Aux[$tTpe, $labelsTpe]
-    """
+    val defaultSymbolicLabelling = objectRef[DefaultSymbolicLabelling.type]
+    q"$defaultSymbolicLabelling.instance[$tTpe, $labelsTpe]($labelsValue)"
   }
 
   def recordTypeImpl(tpeSelector: Tree): Tree =
@@ -136,7 +138,7 @@ class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with Ca
 
             (keyTpe, valueTpe)
 
-          case other =>
+          case _ =>
             c.abort(c.enclosingPosition, s"Malformed $variety type $tpeString")
         }
 
