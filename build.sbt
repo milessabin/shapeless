@@ -71,12 +71,6 @@ addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNa
 addCommandAlias("runAll", ";examplesJVM/runAll")
 addCommandAlias("mima", ";coreJVM/mimaReportBinaryIssues")
 
-lazy val scoverageSettings = Seq(
-  coverageMinimum := 60,
-  coverageFailOnMinimum := false,
-  coverageExcludedFiles := ".*/src/test/.*"
-)
-
 val scalacOptionsAll = Seq(
   "-feature",
   "-language:higherKinds,implicitConversions",
@@ -135,13 +129,11 @@ def configureJUnit(crossProject: CrossProject) = {
 
 lazy val commonJsSettings = Seq(
   scalacOptions in (Compile, doc) -= "-Xfatal-warnings",
-  parallelExecution in Test := false,
-  coverageEnabled := false
+  parallelExecution in Test := false
 )
 
 lazy val commonJvmSettings = Seq(
-  parallelExecution in Test := false,
-  coverageExcludedPackages := "shapeless.examples.*"
+  parallelExecution in Test := false
 )
 
 lazy val coreSettings = commonSettings ++ publishSettings
@@ -178,7 +170,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
-  .jvmSettings(scoverageSettings:_*)
   .nativeSettings(
     // disable scaladoc generation on native
     // currently getting errors like
