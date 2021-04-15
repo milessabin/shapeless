@@ -79,6 +79,48 @@ class DerivationTests {
   }
 
   @Test
+  def order: Unit = {
+    val v0 = Ord[Unit]
+    assert(v0.compare((), ()) == 0)
+
+    val v1 = Ord[Box[Int]]
+    assert(v1.compare(Box(1), Box(1)) == 0)
+    assert(v1.compare(Box(1), Box(0)) == 1)
+    assert(v1.compare(Box(0), Box(1)) == -1)
+
+    val v2 = Ord[OptionInt]
+    assert(v2.compare(NoneInt, NoneInt) == 0)
+    assert(v2.compare(SomeInt(0), SomeInt(0)) == 0)
+    assert(v2.compare(SomeInt(0), SomeInt(1)) == -1)
+    assert(v2.compare(SomeInt(1), SomeInt(0)) == 1)
+    assert(v2.compare(SomeInt(0), NoneInt) == -1)
+
+    val v3 = Ord[NoneInt.type]
+    assert(v3.compare(NoneInt, NoneInt) == 0)
+
+    val v4 = Ord[SomeInt]
+    assert(v4.compare(SomeInt(0), SomeInt(0)) == 0)
+    assert(v4.compare(SomeInt(0), SomeInt(1)) == -1)
+    assert(v4.compare(SomeInt(1), SomeInt(0)) == 1)
+
+    val v5 = Ord[Opt[String]]
+    assert(v5.compare(Nn, Nn) == 0)
+    assert(v5.compare(Sm("foo"), Sm("foo")) == 0)
+    assert(v5.compare(Sm("foo"), Sm("goo")) == -1)
+    assert(v5.compare(Sm("foo"), Sm("eoo")) == 1)
+    assert(v5.compare(Sm("foo"), Nn) == -1)
+
+    val v6 = Ord[Nn.type]
+    assert(v6.compare(Nn, Nn) == 0)
+
+    val v7 = Ord[Sm[String]]
+    assert(v7.compare(Sm("foo"), Sm("foo")) == 0)
+    assert(v7.compare(Sm("foo"), Sm("goo")) == -1)
+    assert(v7.compare(Sm("foo"), Sm("eoo")) == 1)
+
+  }
+
+  @Test
   def functor: Unit = {
     val v0 = Functor[Box]
     assert(v0.map(Box("foo"))(_.length) == Box(3))

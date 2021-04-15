@@ -227,7 +227,7 @@ final class ErasedCoproductInstances[K, FT](mirror: Mirror.Sum, is0: => Array[An
     else a
   }
 
-  def erasedFold2(x: Any, y: Any)(g: (Int, Int) => Any)(f: (Any, Any, Any) => Any): Any = {
+  def erasedFold2f(x: Any, y: Any)(g: (Int, Int) => Any)(f: (Any, Any, Any) => Any): Any = {
     val i = mirror.ordinal(x.asInstanceOf)
     val j = mirror.ordinal(y.asInstanceOf)
     if(i == j) f(is(i), x, y)

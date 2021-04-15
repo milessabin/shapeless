@@ -84,50 +84,50 @@ object Eq {
     gen.derive(eqGen, eqGenC)
 }
 
-trait Order[A] extends Eq[A] {
+trait Ord[A] extends Eq[A] {
   def eqv(x: A, y: A): Boolean = compare(x,y) == 0
 
   def compare(x: A, y: A): Int
 }
 
-object Order {
-  inline def apply[A](using oa: Order[A]): oa.type = oa
+object Ord {
+  inline def apply[A](using oa: Ord[A]): oa.type = oa
 
-  given Order[Unit] with
+  given Ord[Unit] with
     override def eqv(x: Unit, y: Unit): Boolean = true
 
     def compare(x: Unit, y: Unit): Int = 0
 
-  given Order[Boolean] with
+  given Ord[Boolean] with
     override def eqv(x: Boolean, y: Boolean) = x == y
 
     def compare(x: Boolean, y: Boolean): Int =
       if (x == y) 0 else if (x) 1 else -1
 
-  given Order[Int] with
+  given Ord[Int] with
     override def eqv(x: Int, y: Int): Boolean = x == y
 
     def compare(x: Int, y: Int): Int = x - y
 
-  given Order[String] with
+  given Ord[String] with
     override def eqv(x: String, y: String): Boolean = x == y
 
     def compare(x: String, y: String): Int = x.compare(y)
 
-  given ordGen[A](using inst: => K0.ProductInstances[Order, A]): Order[A] with
+  given ordGen[A](using inst: => K0.ProductInstances[Ord, A]): Ord[A] with
     def compare(x: A, y: A): Int = inst.foldLeft2(x, y)(0: Int)(
-      [t] => (acc: Int, ord: Order[t], t0: t, t1: t) => {
+      [t] => (acc: Int, ord: Ord[t], t0: t, t1: t) => {
         val cmp = ord.compare(t0, t1)
         Complete(cmp != 0)(cmp)(acc)
       }
     )
 
-  given ordGenC[A](using inst: => K0.CoproductInstances[Order, A]): Order[A] with
+  given ordGenC[A](using inst: => K0.CoproductInstances[Ord, A]): Ord[A] with
     def compare(x: A, y: A): Int = inst.fold2(x, y)((x: Int, y: Int) => x - y)(
-      [t] => (ord: Order[t], t0: t, t1: t) => ord.compare(t0, t1)
+      [t] => (ord: Ord[t], t0: t, t1: t) => ord.compare(t0, t1)
     )
 
-  inline def derived[A](using gen: K0.Generic[A]): Order[A] =
+  inline def derived[A](using gen: K0.Generic[A]): Ord[A] =
     gen.derive(ordGen, ordGenC)
 }
 

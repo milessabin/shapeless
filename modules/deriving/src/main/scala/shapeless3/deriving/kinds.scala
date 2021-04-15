@@ -109,7 +109,7 @@ object K0 {
     inline def fold2[R](x: T, y: T)(a: => R)(f: [t] => (F[t], t, t) => R): R =
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
     inline def fold2[R](x: T, y: T)(g: (Int, Int) => R)(f: [t] => (F[t], t, t) => R): R =
-      inst.erasedFold2(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
+      inst.erasedFold2f(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_], T](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
@@ -194,7 +194,7 @@ object K1 {
     inline def fold2[A, B, R](x: T[A], y: T[B])(a: => R)(f: [t[_]] => (F[t], t[A], t[B]) => R): R =
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
     inline def fold2[A, B, R](x: T[A], y: T[B])(g: (Int, Int) => R)(f: [t[_]] => (F[t], t[A], t[B]) => R): R =
-      inst.erasedFold2(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
+      inst.erasedFold2f(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_]], T[_]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
@@ -283,7 +283,7 @@ object K11 {
     inline def fold2[A[_], B[_], R](x: T[A], y: T[B])(a: => R)(f: [t[_[_]]] => (F[t], t[A], t[B]) => R): R =
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
     inline def fold2[A[_], B[_], R](x: T[A], y: T[B])(g: (Int, Int) => R)(f: [t[_[_]]] => (F[t], t[A], t[B]) => R): R =
-      inst.erasedFold2(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
+      inst.erasedFold2f(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_[_]]], T[_[_]]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
@@ -370,7 +370,7 @@ object K2 {
     inline def fold2[A, B, C, D, R](x: T[A, B], y: T[C, D])(a: => R)(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => R): R =
       inst.erasedFold2(x, y)(a.asInstanceOf)(f.asInstanceOf).asInstanceOf
     inline def fold2[A, B, C, D, R](x: T[A, B], y: T[C, D])(g: (Int, Int) => R)(f: [t[_, _]] => (F[t], t[A, B], t[C, D]) => R): R =
-      inst.erasedFold2(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
+      inst.erasedFold2f(x, y)(g.asInstanceOf)(f.asInstanceOf).asInstanceOf
 
   inline given mkInstances[F[_[_, _]], T[_, _]](using gen: Generic[T]): Instances[F, T] =
     inline gen match {
