@@ -24,12 +24,12 @@ object adts {
   case class Box[A](x: A) derives Monoid, Eq, Show, Read, Functor, Pure, Ord
 
   sealed trait OptionInt derives Eq, Empty, Show, Read, Ord
-  case class SomeInt(value: Int) extends OptionInt
   case object NoneInt extends OptionInt
+  case class SomeInt(value: Int) extends OptionInt
 
   sealed trait Opt[+A] derives Eq, Show, Read, Functor, EmptyK, Pure, Ord
-  case class Sm[+A](value: A) extends Opt[A]
   case object Nn extends Opt[Nothing]
+  case class Sm[+A](value: A) extends Opt[A]
 
   sealed trait CList[+A] derives Eq, Show, Read, Functor, EmptyK
   case class CCons[+A](hd: A, tl: CList[A]) extends CList[A]

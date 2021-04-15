@@ -93,7 +93,7 @@ class DerivationTests {
     assert(v2.compare(SomeInt(0), SomeInt(0)) == 0)
     assert(v2.compare(SomeInt(0), SomeInt(1)) == -1)
     assert(v2.compare(SomeInt(1), SomeInt(0)) == 1)
-    assert(v2.compare(SomeInt(0), NoneInt) == -1)
+    assert(v2.compare(SomeInt(0), NoneInt) == 1)
 
     val v3 = Ord[NoneInt.type]
     assert(v3.compare(NoneInt, NoneInt) == 0)
@@ -108,7 +108,7 @@ class DerivationTests {
     assert(v5.compare(Sm("foo"), Sm("foo")) == 0)
     assert(v5.compare(Sm("foo"), Sm("goo")) == -1)
     assert(v5.compare(Sm("foo"), Sm("eoo")) == 1)
-    assert(v5.compare(Sm("foo"), Nn) == -1)
+    assert(v5.compare(Sm("foo"), Nn) == 1)
 
     val v6 = Ord[Nn.type]
     assert(v6.compare(Nn, Nn) == 0)
