@@ -9,7 +9,6 @@ widely in production systems wherever there are arities to be abstracted over an
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
-[![codecov.io](http://codecov.io/github/milessabin/shapeless/coverage.svg?branch=main)](http://codecov.io/github/milessabin/shapeless?branch=main)
 
 ## Projects which use shapeless
 
