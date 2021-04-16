@@ -260,7 +260,6 @@ trait Poly0 extends Poly {
   }
 }
 
-@macrocompat.bundle
 class PolyMacros(val c: whitebox.Context) {
   import c.universe._
 

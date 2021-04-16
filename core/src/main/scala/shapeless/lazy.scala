@@ -168,7 +168,6 @@ object Strict {
   implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
 }
 
-@macrocompat.bundle
 trait OpenImplicitMacros {
   val c: whitebox.Context
 
@@ -193,7 +192,6 @@ trait OpenImplicitMacros {
     }
 }
 
-@macrocompat.bundle
 class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImplicitMacros with LowPriorityTypes {
   import c.universe._
   import c.internal._

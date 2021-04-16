@@ -196,7 +196,6 @@ trait Split10 {
   implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = macro Split1Macros.mkSplit1Impl[L, FO, FI]
 }
 
-@macrocompat.bundle
 class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.universe._
@@ -259,7 +258,6 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   }
 }
 
-@macrocompat.bundle
 class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
@@ -276,7 +274,6 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   }
 }
 
-@macrocompat.bundle
 class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   import c.universe._
 
@@ -306,7 +303,6 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   }
 }
 
-@macrocompat.bundle
 trait IsCons1Macros extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.internal._
@@ -347,7 +343,6 @@ trait IsCons1Macros extends CaseClassMacros {
   }
 }
 
-@macrocompat.bundle
 class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
   import c.ImplicitCandidate
   import c.internal._
