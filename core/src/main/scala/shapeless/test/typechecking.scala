@@ -33,7 +33,6 @@ object illTyped {
   def apply(code: String, expected: String): Unit = macro IllTypedMacros.applyImpl
 }
 
-@macrocompat.bundle
 class IllTypedMacros(val c: whitebox.Context) {
   import c.universe._
 

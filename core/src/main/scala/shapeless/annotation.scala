@@ -117,7 +117,6 @@ object Annotations {
   implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeAnnotations[A, T, Out]
 }
 
-@macrocompat.bundle
 class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

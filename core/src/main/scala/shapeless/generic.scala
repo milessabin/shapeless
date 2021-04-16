@@ -275,7 +275,6 @@ object HasCoproductGeneric {
   implicit def apply[T]: HasCoproductGeneric[T] = macro GenericMacros.mkHasCoproductGeneric[T]
 }
 
-@macrocompat.bundle
 trait ReprTypes {
   val c: blackbox.Context
   import c.universe.{ Symbol => _, _ }
@@ -295,7 +294,6 @@ trait ReprTypes {
   def objectRef[O: TypeTag]: Tree = Ident(typeOf[O].termSymbol)
 }
 
-@macrocompat.bundle
 trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   val c: whitebox.Context
 
@@ -1005,7 +1003,6 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 }
 
-@macrocompat.bundle
 class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

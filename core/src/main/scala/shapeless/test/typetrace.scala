@@ -27,7 +27,6 @@ object TypeTrace {
   implicit def apply[T]: TypeTrace[T] = macro TypeTraceMacros.applyImpl[T]
 }
 
-@macrocompat.bundle
 class TypeTraceMacros(val c: blackbox.Context) {
   import c.universe._
 

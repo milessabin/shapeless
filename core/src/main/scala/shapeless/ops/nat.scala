@@ -612,7 +612,6 @@ object nat {
     implicit def toIntSuccM[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
   }
 
-  @macrocompat.bundle
   class ToIntMacros(val c: whitebox.Context) extends CaseClassMacros {
     import c.universe._
 

@@ -57,7 +57,6 @@ object union {
   }
 }
 
-@macrocompat.bundle
 class UnionMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType

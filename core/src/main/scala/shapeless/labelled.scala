@@ -90,7 +90,6 @@ trait FieldOf[V] {
   def ->>(v: V): FieldType[this.type, V] = field[this.type](v)
 }
 
-@macrocompat.bundle
 class LabelledMacros(val c: whitebox.Context) extends SingletonTypeUtils with CaseClassMacros {
   import c.universe._
 

@@ -111,7 +111,6 @@ trait FromRecordArgs extends Dynamic {
   def applyDynamic[L <: HList](method: String)(rec: L): Any = macro RecordMacros.forwardFromRecordImpl[L]
 }
 
-@macrocompat.bundle
 class RecordMacros(val c: whitebox.Context) {
   import c.universe._
   import internal.constantType
