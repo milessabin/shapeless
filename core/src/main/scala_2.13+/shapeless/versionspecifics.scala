@@ -36,10 +36,6 @@ trait ScalaVersionSpecifics {
         s"Implicit value of type $tpe not found"
     }
   }
-
-  private[shapeless] object macrocompat {
-    class bundle extends annotation.Annotation
-  }
 }
 
 trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>

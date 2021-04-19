@@ -303,7 +303,7 @@ lazy val noPublishSettings =
 
 enablePlugins(MimaPlugin)
 lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.3"),
+  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.4"),
   mimaBinaryIssueFilters := {
     // Macro internals - ignore
     val macroFilters = List(
@@ -316,15 +316,12 @@ lazy val mimaSettings = Seq(
       "SingletonTypeMacros"
     ).map(macros => exclude[Problem](s"shapeless.$macros*"))
 
-    scalaBinaryVersion.value match {
-      case "2.11" =>
-        // Adding methods to traits in 2.11 is not binary compatible, but those traits shouldn't be subclassed.
-        exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC") ::
-          exclude[ReversedMissingMethodProblem]("shapeless.SingletonTypeUtils.isSymbolLiteral") ::
-          macroFilters
-      case _ =>
-        macroFilters
-    }
+    macroFilters ::: List( // removed private classes and methods
+      ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$"),
+      ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$bundle"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.ScalaVersionSpecifics.macrocompat"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.package.macrocompat")
+    )
   }
 )
 
