@@ -927,25 +927,31 @@ object hlist {
   object SelectRange {
     def apply[L <: HList, A <: Nat, B <: Nat](implicit sel: SelectRange[L, A, B]): Aux[L, A, B, sel.Out] = sel
 
-    type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
+    type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {
+      type Out = Out0
+    }
+
+    @deprecated("Slower version of take and drop", "2.3.5")
+    def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList, SelOut <: HList](
+      implicit range: nat.Range.Aux[A, B, Ids], sel: SelectMany.Aux[L, Ids, SelOut]
+    ): Aux[L, A, B, SelOut] = new SelectRange[L, A, B] {
+      type Out = SelOut
+      def apply(l: L): Out = sel(l)
+    }
 
     implicit def take[L <: HList, T <: Nat](
       implicit take: Take[L, T]
-     ): Aux[L, _0, T, take.Out] =
-      new SelectRange[L, _0, T] {
-        type Out = take.Out
-
-        def apply(t: L): take.Out = take(t)
-      }
+    ): Aux[L, _0, T, take.Out] = new SelectRange[L, _0, T] {
+      type Out = take.Out
+      def apply(t: L): take.Out = take(t)
+    }
 
     implicit def drop[H, L <: HList, A <: Nat, B <: Nat](
       implicit select: SelectRange[L, A, B]
-    ): Aux[H :: L, Succ[A], Succ[B], select.Out] =
-      new SelectRange[H :: L, Succ[A], Succ[B]] {
-        type Out = select.Out
-
-        def apply(t: H :: L): select.Out = select(t.tail)
-      }
+    ): Aux[H :: L, Succ[A], Succ[B], select.Out] = new SelectRange[H :: L, Succ[A], Succ[B]] {
+      type Out = select.Out
+      def apply(t: H :: L): select.Out = select(t.tail)
+    }
   }
 
 
