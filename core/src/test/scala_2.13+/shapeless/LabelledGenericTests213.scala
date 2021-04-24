@@ -9,8 +9,8 @@ class LabelledGenericTests213 {
 
   @Test
   def testSelectorWithHkt(): Unit = {
-    assertEquals(0, new Func[Hkt[Option]].select("foo"))
-    assertEquals(0, new Func[Hkt[Id]].select("foo"))
+    assertEquals(0, new Func[Hkt[Option]].select(Symbol("foo")))
+    assertEquals(0, new Func[Hkt[Id]].select(Symbol("foo")))
   }
 }
 
