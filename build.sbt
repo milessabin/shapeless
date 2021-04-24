@@ -247,7 +247,7 @@ lazy val nativeTest = project
       |
       |object NativeMain {
       |  def main(args: Array[String]): Unit = {
-      |${classNames.map("    " + _ + ".main(args)").mkString("\n")}
+      |${classNames.flatMap(cn => List(s"""println("Running $cn")""", s"$cn.main(args)")).map("    " + _).mkString("\n")}
       |  }
       |}
       |""".stripMargin
