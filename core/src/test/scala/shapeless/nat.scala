@@ -25,10 +25,10 @@ class NatTests {
   import ops.nat._
   
   trait Check[N <: Nat]
-  def check(expected: Nat)(actually : => Check[expected.N]) {}
+  def check(expected: Nat)(actually : => Check[expected.N]): Unit = {}
   
   @Test
-  def testNat {
+  def testNat: Unit = {
     implicitly[Succ[_1] =:= _2]
     
     implicitly[Pred.Aux[_19, _18]]
@@ -187,7 +187,9 @@ class NatTests {
     implicitly[LCM.Aux[_1, _0, _0]]
     implicitly[LCM.Aux[_2, _3, _6]]
     implicitly[LCM.Aux[_4, _6, _12]]
-    
+
+    assertEquals(1, toInt[Succ[_0]])
+
     // Type level
     assertEquals(0, toInt[_0])
     assertEquals(1, toInt[_1])
@@ -263,4 +265,5 @@ class NatTests {
     assertEquals(21, _21.toInt)
     assertEquals(22, _22.toInt)
   }
+
 }

@@ -84,6 +84,43 @@ package TypeClassAux {
   }
 }
 
+package NewtypeTypeClassAux {
+  import shapeless.newtype.Newtype
+
+  trait MyTypeClass[T] {
+    def repr: String
+  }
+
+  object MyTypeClass extends LabelledProductTypeClassCompanion[MyTypeClass] {
+    def make[T](value: String): MyTypeClass[T] = new MyTypeClass[T] {
+      def repr: String = value
+    }
+
+    implicit val mtcString: MyTypeClass[String] = make("string")
+
+    object typeClass extends LabelledProductTypeClass[MyTypeClass] {
+      override def product[H, T <: HList](name: String, ch: MyTypeClass[H], ct: MyTypeClass[T]): MyTypeClass[H :: T] =
+        make(name + ":" + ch.repr + "," + ct.repr)
+
+      override def emptyProduct: MyTypeClass[HNil] =
+        make("emptyProduct")
+
+      override def project[F, G](instance: => MyTypeClass[G], to: F => G, from: G => F): MyTypeClass[F] =
+        make("project(" + instance.repr + ")")
+    }
+  }
+
+  object NewTypes {
+    type Special = Newtype[String, SpecialOps]
+    def Special(specialString: String): Special = newtype(specialString)
+    case class SpecialOps(urn: String)
+    implicit val specialTypeClass: MyTypeClass[Special] = MyTypeClass.make("special")
+  }
+
+  case class TwoStrings(a: String, b: String)
+  case class TwoSpecials(a: NewTypes.Special, b: NewTypes.Special)
+}
+
 class ProductTypeClassTests {
   import ProductTypeClassAux._
   import Image.Syntax
@@ -105,45 +142,45 @@ class ProductTypeClassTests {
   illTyped("""implicitly[Image[Cases[Int, String]]]""")
 
   @Test
-  def testManualSingle {
+  def testManualSingle: Unit = {
     assertEquals(fooResult, Image[Foo])
   }
 
   @Test
-  def testManualEmpty {
+  def testManualEmpty: Unit = {
     assertEquals(barResult, Image[Bar])
   }
 
   @Test
-  def testManualTuple {
+  def testManualTuple: Unit = {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
   @Test
-  def testManualUnit {
+  def testManualUnit: Unit = {
     assertEquals(unitResult, Image[Unit])
   }
 
   @Test
-  def testAutoSingle {
+  def testAutoSingle: Unit = {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
-  def testAutoEmpty {
+  def testAutoEmpty: Unit = {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
-  def testAutoTuple {
+  def testAutoTuple: Unit = {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
-  def testAutoUnit {
+  def testAutoUnit: Unit = {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
@@ -180,57 +217,79 @@ class TypeClassTests {
     )
 
   @Test
-  def testManualSingle {
+  def testManualSingle: Unit = {
     assertEquals(fooResult, Image[Foo])
   }
 
   @Test
-  def testManualEmpty {
+  def testManualEmpty: Unit = {
     assertEquals(barResult, Image[Bar])
   }
 
   @Test
-  def testManualMulti {
+  def testManualMulti: Unit = {
     assertEquals(casesResult, Image[Cases[Int, String]])
   }
 
   @Test
-  def testManualTuple {
+  def testManualTuple: Unit = {
     assertEquals(tupleResult, Image[(Int, String)])
   }
 
   @Test
-  def testManualUnit {
+  def testManualUnit: Unit = {
     assertEquals(unitResult, Image[Unit])
   }
 
   @Test
-  def testAutoSingle {
+  def testAutoSingle: Unit = {
     assertEquals(fooResult, implicitly[Image[Foo]])
     assertEquals(fooResult, Foo(23, "foo").image)
   }
 
   @Test
-  def testAutoEmpty {
+  def testAutoEmpty: Unit = {
     assertEquals(barResult, implicitly[Image[Bar]])
     assertEquals(barResult, Bar().image)
   }
 
   @Test
-  def testAutoMulti {
+  def testAutoMulti: Unit = {
     assertEquals(casesResult, Image[Cases[Int, String]])
     assertEquals(casesResult, (CaseA(23): Cases[Int, String]).image)
   }
 
   @Test
-  def testAutoTuple {
+  def testAutoTuple: Unit = {
     assertEquals(tupleResult, implicitly[Image[(Int, String)]])
     assertEquals(tupleResult, (23, "foo").image)
   }
 
   @Test
-  def testAutoUnit {
+  def testAutoUnit: Unit = {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
+}
+
+class NewtypeTypeClassTests {
+  import NewtypeTypeClassAux._
+
+  import NewTypes._
+
+  @Test
+  def testString: Unit =
+    assertEquals(MyTypeClass[String].repr, "string")
+
+  @Test
+  def testSpecial: Unit =
+    assertEquals(MyTypeClass[Special].repr, "special")
+
+  @Test
+  def testTwoStrings: Unit =
+    assertEquals(MyTypeClass[TwoStrings].repr, "project(a:string,b:string,emptyProduct)")
+
+  @Test
+  def testTwoSpecials: Unit =
+    assertEquals(MyTypeClass[TwoSpecials].repr, "project(a:special,b:special,emptyProduct)")
 }

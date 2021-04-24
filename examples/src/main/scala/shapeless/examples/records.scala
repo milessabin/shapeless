@@ -34,8 +34,8 @@ object RecordExamples extends App {
       values: Values.Aux[B, V],
       ktl: ToList[K, Any],
       vtl: ToList[V, Any]) = {
-    (b.keys.toList zip b.values.toList) foreach { case (field, value) => println(field+": "+value) }
-    println
+    (b.keys.toList zip b.values.toList) foreach { case (field, value) => println(s"$field: $value") }
+    println()
   }
 
   val book =
@@ -50,7 +50,7 @@ object RecordExamples extends App {
   // Read price field
   val currentPrice = book("price")  // Static type is Double
   println("Current price is "+currentPrice)
-  println
+  println()
 
   // Update price field, relying on static type of currentPrice
   val updated = book + ("price" ->> (currentPrice+2.0))

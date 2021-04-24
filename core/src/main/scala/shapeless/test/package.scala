@@ -20,16 +20,15 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 package object test {
-  def typed[T](t : => T) {}
+  def typed[T](t : => T): Unit = {}
 
-  def sameTyped[T](t1: => T)(t2: => T) {}
+  def sameTyped[T](t1: => T)(t2: => T): Unit = {}
 
   def showType[T]: String = macro TestMacros.showTypeNoValue[T]
 
   def showType[T](t: => T): String = macro TestMacros.showType[T]
 }
 
-@macrocompat.bundle
 class TestMacros(val c: blackbox.Context) {
   import c.universe._
 

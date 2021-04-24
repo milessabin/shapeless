@@ -35,14 +35,20 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testImplicitScopeForTaggedType {
+  def testImplicitScopeForTaggedType: Unit = {
     val x = tag[ATag](1)
     val s: String = x
     assertEquals(ATag.message, s)
   }
 
   @Test
-  def testNewtype {
+  def testTaggingValueClass: Unit = {
+    val x = tag[ATag](AValueClass(1L))
+    assertEquals(x.l, Array(x).apply(0))
+  }
+
+  @Test
+  def testNewtype: Unit = {
     type MyString = Newtype[String, MyStringOps]
 
     def MyString(s : String) : MyString = newtype(s)
@@ -100,8 +106,10 @@ class TypeOperatorTests {
     implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
   }
 
+  case class Baz(i: Int, s: String)
+
   @Test
-  def testTheValues {
+  def testTheValues: Unit = {
     val foo = the[Foo]
     typed[Foo](foo)
     typed[Int](foo.t)
@@ -116,7 +124,7 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testTheTypes {
+  def testTheTypes: Unit = {
     val t: the.Foo.T = 23
     typed[Int](t)
 
@@ -128,13 +136,18 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testTheQuantifiers {
+  def testTheErrors: Unit = {
+    illTyped("the.`Ordering[Set[Int]]`.Ops", "No implicit Ordering defined for Set\\[Int].")
+  }
+
+  @Test
+  def testTheQuantifiers: Unit = {
     def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
       val res = the[Bar[T]]
       res
     }
 
-    // Note: Slightly different method signature in TypeOperator211Tests
+    // Note: Slightly different method signature in testTheQuantifiers2
     def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[U0] = {
       val res: Option[the.`Bar[T]`.U] = None
       res
@@ -148,7 +161,54 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testRejectBogus {
+  def testTheQuantifiers2: Unit = {
+    def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
+      val res = the[Bar[T]]
+      res
+    }
+
+    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
+      val res: Option[the.`Bar[T]`.U] = None
+      res
+    }
+
+    val b0 = bar0[Boolean, Int]
+    typed[Bar[Boolean] { type U = Int }](b0)
+
+    val b1 = bar1[Boolean, Int]
+    typed[Option[Int]](b1)
+  }
+
+  @Test
+  def testTypeOf: Unit = {
+
+    val t1: TypeOf.`Foo.mkFoo`.T = 23
+    typed[Int](t1)
+
+    val t2: TypeOf.`Foo.mkFoo: Foo`.T = 23
+    typed[Int](t2)
+
+    val tu1: Either[Boolean, TypeOf.`Bar.mkBar1: Bar[Boolean]`.U] = Right(23)
+    typed[Either[Boolean, Int]](tu1)
+
+    val tu2: Either[String, TypeOf.`the.apply: Bar[String]`.U] = Right(23)
+    typed[Either[String, Double]](tu2)
+
+    val tu3: Either[String, TypeOf.`the[Bar[String]]`.U] = Right(23)
+    typed[Either[String, Double]](tu3)
+
+    val indexedHList: TypeOf.`Generic[(String, Boolean)].to(("foo", true)).zipWithIndex`.type = {
+      Generic[(String, Boolean)].to(("foo", true)).zipWithIndex
+    }
+    typed[(String, _0) :: (Boolean, Succ[_0]) :: HNil](indexedHList)
+
+    implicit val genBaz: TypeOf.`Generic[Baz]`.type = cachedImplicit
+    val reprBaz = genBaz.to(Baz(23, "foo"))
+    typed[Int :: String :: HNil](reprBaz)
+  }
+
+  @Test
+  def testRejectBogus: Unit = {
     try {
       the.Foo
       assert(false)
@@ -172,7 +232,7 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testValueClass {
+  def testValueClass: Unit = {
     implicit val one: AValueClass = AValueClass(1L)
 
     val x = the[AValueClass]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,12 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def selectRange(a : Nat, b : Nat)(implicit sel: SelectRange[L,a.N,b.N]): sel.Out = sel(l)
 
   /**
+   * Returns the first element of `S` in this `HList`.
+   * Available only if there is evidence that this `HList` contains at least one element of `S`.
+   */
+  def selectFirst[S <: HList](implicit sel: SelectFirst[L, S]): sel.Out = sel(l)
+
+  /**
    * Returns all elements of type `U` of this `HList`. An explicit type argument must be provided.
    */
   def filter[U](implicit partition : Partition[L, U]) : partition.Prefix  = partition.filter(l)
@@ -167,7 +173,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * types in `SL`.
    */
   def removeAll[SL <: HList](implicit removeAll : RemoveAll[L, SL]): removeAll.Out = removeAll(l)
-  
+
   /**
    * Returns the union between this `HList` and another `HList`. In case of duplicate types, this operation is a
    * order-preserving multi-set union. If type `T` appears n times in this `HList` and m > n times in `M`, the
@@ -175,7 +181,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * of type `T` in `M`.
    */
   def union[M <: HList](s: M)(implicit union: Union[L, M]): union.Out = union(l, s)
-  
+
   /**
    * Returns the intersection between this `HList` and another `HList`. In case of duplicate types, this operation is a
    * multiset intersection. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
@@ -183,7 +189,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Also available if `M` contains types absent in this `HList`.
    */
   def intersect[M <: HList](implicit intersection: Intersection[L, M]): intersection.Out = intersection(l)
-  
+
   /**
    * Returns the difference between this `HList` and another `HList`. In case of duplicate types, this operation is a
    * multiset difference. If type `T` appears n times in this `HList` and m < n times in `M`, the resulting `HList`
@@ -191,7 +197,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Also available if `M` contains types absent in this `HList`.
    */
   def diff[M <: HList](implicit diff: Diff[L, M]): diff.Out = diff(l)
-  
+
   /**
    * Reinserts an element `U` into this `HList` to return another `HList` `O`.
    */
@@ -450,6 +456,11 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def reduceRight(op : Poly)(implicit reducer : RightReducer[L, op.type]) : reducer.Out = reducer(l)
 
   /**
+    * Repeats this `HList` N times.
+    */
+  def repeat[N <: Nat](implicit repeat: Repeat[L, N]): repeat.Out = repeat(l)
+
+  /**
    * Zips this `HList` with its argument `HList` returning an `HList` of pairs.
    */
   def zip[R <: HList](r : R)(implicit zipper : Zip[L :: R :: HNil]) : zipper.Out = zipper(l :: r :: HNil)
@@ -468,24 +479,10 @@ final class HListOps[L <: HList](l : L) extends Serializable {
   def zip(implicit zipper : Zip[L]) : zipper.Out = zipper(l)
 
   /**
-   * Zips this `HList` of `HList`s returning an `HList` of tuples. Available only if there is evidence that this
-   * `HList` has `HList` elements.
-   */
-  @deprecated("Use zip instead", "2.0.0")
-  def zipped(implicit zipper : Zip[L]) : zipper.Out = zipper(l)
-
-  /**
    * Unzips this `HList` of tuples returning a tuple of `HList`s. Available only if there is evidence that this
    * `HList` has tuple elements.
    */
   def unzip(implicit unzipper : Unzip[L]) : unzipper.Out = unzipper(l)
-
-  /**
-   * Unzips this `HList` of tuples returning a tuple of `HList`s. Available only if there is evidence that this
-   * `HList` has tuple elements.
-   */
-  @deprecated("Use unzip instead", "2.0.0")
-  def unzipped(implicit unzipper : Unzip[L]) : unzipper.Out = unzipper(l)
 
   /**
    * Zips this `HList` with its argument `HList` of `HList`s, returning an `HList` of `HList`s with each element of
@@ -567,7 +564,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
 
     loop(l)
 
-    builder.result
+    builder.result()
   }
 
   /**
@@ -604,7 +601,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
     *
     * Note that the `M` container must extend `Traversable`, which means that `Array` cannot be used.
     */
-  def toCoproduct[M[_] <: Traversable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
+  def toCoproduct[M[_] <: Iterable[_]](implicit toCoproductTraversable: ToCoproductTraversable[L, M]): toCoproductTraversable.Out = toCoproductTraversable(l)
 
   /**
    * Converts this `HList` to a - sized - `M` of elements typed as the least upper bound of the types of the elements
@@ -614,9 +611,22 @@ final class HListOps[L <: HList](l : L) extends Serializable {
 
   /**
    * Displays all elements of this hlist in a string using start, end, and separator strings.
-   */
+    */
+  // TODO: Remove the toTraversable instance at the next major release.
   def mkString(start: String, sep: String, end: String)
-    (implicit toTraversable: ToTraversable.Aux[L, List, Any]): String = this.toList.mkString(start, sep, end)
+    (implicit toTraversable: ToTraversable[L, List] = null): String = {
+    import shapeless.{HList, HNil, :: => HCons}
+
+    @annotation.tailrec
+    def go(acc: String, sub: HList): String = sub match {
+      case _: HNil => ""
+      case HCons(head, _: HNil) => acc + head.toString
+      case HCons(head, tail) => go(acc + head.toString + sep, tail)
+    }
+
+    go(start, l) + end
+  }
+
 
   /**
    * Converts this `HList` of values into a record with the provided keys.
@@ -689,7 +699,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
 
   /**
    * Finds the first element of the HList for which the given Poly is defined, and applies the Poly to it.
-   */ 
+   */
   def collectFirst[P <: Poly](p: P)(implicit collect: CollectFirst[L, p.type]): collect.Out = collect(l)
 
   /**
@@ -720,4 +730,9 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    * Returns all combinations of exactly length `N` of elements from this `Hlist`
    */
   def combinations(n: Nat)(implicit combinations: Combinations[n.N, L]): combinations.Out = combinations(l)
+
+  /**
+   * Converts this `HList` into a nested pair
+   */
+  def toProduct(implicit hListToProduct: HListToProduct[L]): hListToProduct.Out = hListToProduct(l)
 }

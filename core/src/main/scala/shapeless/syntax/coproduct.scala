@@ -53,6 +53,10 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
   def at(n: Nat)(implicit at: At[C, n.N]): Option[at.A] = at(c)
 
   /**
+   * Returns index of A in this 'Coproduct'
+   */
+  def indexOf[A](implicit indexOf: IndexOf[C, A]): Nat = indexOf.apply()
+  /**
    * Returns the last element of this 'Coproduct'
    */
   def last(implicit il: InitLast[C]): Option[il.L] = il.last(c)
@@ -273,4 +277,9 @@ final class CoproductOps[C <: Coproduct](val c: C) extends AnyVal with Serializa
    * Adjoins the elements of this `Coproduct` by flattening any `Coproduct` elements.
    */
   def adjoined(implicit adjoin: Adjoin[C]): adjoin.Out = adjoin(c)
+
+  /**
+   *  Embeds this `Coproduct` into an `Either`
+   */
+  def toEither(implicit coproductToEither: CoproductToEither[C]): coproductToEither.Out = coproductToEither(c)
 }

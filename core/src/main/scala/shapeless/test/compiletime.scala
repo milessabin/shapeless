@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package shapeless.test
+package shapeless
+package test
 
 import scala.language.experimental.macros
 
@@ -37,7 +38,6 @@ object compileTime {
   def apply(code: String): FiniteDuration = macro CompileTimeMacros.applyImpl
 }
 
-@macrocompat.bundle
 class CompileTimeMacros(val c: blackbox.Context) {
   import c.universe._
 
@@ -53,7 +53,7 @@ class CompileTimeMacros(val c: blackbox.Context) {
       }
     }
 
-    val Literal(Constant(codeStr: String)) = code
+    val Literal(Constant(codeStr: String)) = (code: @unchecked)
     val elapsedTime = wallClock(codeStr)
 
     q"_root_.scala.concurrent.duration.Duration.fromNanos($elapsedTime)"

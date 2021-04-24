@@ -1,0 +1,112 @@
+This is the final release of [shapeless-2.3.3][shapeless]. These release notes provide a summary of changes since
+shapeless 2.3.2.
+
+53 pull requests have been merged and 53 issues have been closed and since 2.3.2 ... the complete list can be found in
+the 2.3.3 github milestone for [issues][233issues] and [PRs][233prs].
+
+### Important note for users of Scala 2.11.12 and 2.12.4
+
+Recent improvements in macro hygiene in the most recent Scala compiler releases interact badly with the implementation
+of shapeless's `Cached` pseudo type in shapeless releases prior to this one. If you are using these Scala compiler
+versions and are using `Cached` directly, or indirectly via a library dependency, then you might see compiler crashes
+similar to the one reported [here](https://gist.github.com/xuwei-k/7bde52e053d2e013bc23f68c5dafb667). If so then
+updating your shapeless dependency to 2.3.3 should resolve the issue.
+
+### Prominent changes
+
++ Added `OrElse` combinator, similar to `Option.orElse` but at the type level.
++ Added `UnzipFunctions` type class which unzips an HList of unary function types to a pair of HLists of corresponding
+  argument and result types.
++ Added `ZipWith` and `ZipConst` type classes for zipping a Coproduct with an HList or repeated constant.
++ Reimplemented `ToInt` type class via a macro materializer to improve compile time performance.
++ Added new syntax for creating Polys from functions,
+  ```scala
+  val myPoly = Poly1.at[Int](x => x).at[String](_.length).at[Boolean](if(_) 1 else 0).build
+  import myPoly._
+
+  myPoly(10)      // 10: Int
+  myPoly("hello") // 5: Int
+  myPoly(true)    // 1: Int
+  ```
++ Added a `TypeOf` pseudo operator which allows a type to be computed from a term in type position. This allows
+  non-trivial types to be computed without repetition, eg.
+  ```scala
+  implicit val genFoo: TypeOf.`Generic[Foo]`.type = cachedImplicit
+  ```
+  Here `genFoo` is ascribed the narrow type inferred for the term `Generic[Foo]` including the `type Repr` refinement
+  which would otherwise have to be written explicitly.
++ Added `CoproductToEither` and `EitherToCoproduct` type classes which support conversion between coproducts and
+  nested `Eithers`.
++ Added `MergeWith` type class which merges two records using a Poly2 to combine the values of fields which are
+  present in both.
++ Added `DeepMerge` and `Extractor` type classes for merging and extracting from nested records.
++ Added `Refute` type class witnessing that that no implicit instance of some type `T` is available.
++ The `description` field of `Typeables` for simple types and case classes is now computed at compile time rather than
+  via reflection at runtime.
++ Fixed `equals` and `hashCode` for `Sized`.
++ Added `Repeat` type class for repeatedly concatenating an HList some `Nat` number of times.
++ Added syntax for injection into coproducts,
+  ```scala
+  true.inject[String :+: Boolean :+: CNil] // Inr(Inl(true))
+  ```
++ Added `RuntimeInject` type class for injection into a coproduct via `Typeable`,
+  ```scala
+  Coproduct.runtimeInject[Int :+: String :+: CNil]("foo": Any) // Inr(Inl("foo"))
+  ```
++ Added `AlignByKeys` type class allowing records to be aligned by their key types only.
++ Aligned the semantics of `Witness` more closely with SIP-23's `ValueOf`.
++ Removed faulty implementation of coproduct `ZipOne`.
++ Added support in `Generic` for case-like classes with mutable fields.
++ Added support for Scala 2.13.0-M2.
++ Added support for Scala Native.
++ Bumped SBT to 0.13.16.
+
+### Source and binary compatibility
+
+shapless 2.3.3 is source and binary compatible with 2.3.0, 2.3.1 and 2.3.2.
+
+### Contributors
+
+Contributors for shapeless 2.3.3 are,
+
++ Alex Zorab <alec.zorab@gmail.com> [@aleczorab](https://twitter.com/aleczorab)
++ Alexandre Archambault <alexandre.archambault@gmail.com> [@alxarchambault](https://twitter.com/alxarchambault)
++ Allison H. <allisonhb@gmx.com>
++ Andreas Koestler <andreas.koestler@gmail.com> [@AndreasKostler](https://twitter.com/AndreasKostler)
++ Aristotelis Dossas <teldosas@gmail.com> [@teldosas](https://twitter.com/teldosas)
++ Arya Irani <arya.irani@gmail.com> [@aryairani](https://twitter.com/aryairani)
++ Dale Wijnand <dale.wijnand@gmail.com> [@dwijnand](https://twitter.com/dwijnand)
++ Daniel Urban <urban.dani@gmail.com>
++ Fabio Labella <fabio.labella2@gmail.com> [@SystemFw](https://twitter.com/SystemFw)
++ Georgi Krastev <joro.kr.21@gmail.com> [@Joro_Kr](https://twitter.com/joro_kr)
++ Hamish Dickenson <hamish.dickson@gmail.com> [@hamishdickson](https://twitter.com/hamishdickson)
++ Harrison Houghton <hhoughton@learningobjects.com>
++ Hywel Andrews <hywel.andrews@agoda.com>
++ Ievgen Garkusha <ievgen@riskident.com>
++ Jacob Barber <jacoby6000@gmail.com> [@jacoby6000](https://twitter.com/jacoby6000)
++ Jean-Baptiste Giraudeau <jb@giraudeau.info> [@jb9i](https://twitter.com/jb9i)
++ Jeff Martin <jmartin@homeaway.com>
++ Jeremy R. Smith <jeremyrsmith@gmail.com> [@jeremyrsmith](https://twitter.com/jeremyrsmith)
++ Juan José Vázquez Delgado <juanjo.vazquez.delgado@tecsisa.com> [@juanjovazquez](https://twitter.com/juanjovazquez)
++ Kenji Yoshida <6b656e6a69@gmail.com> [@xuwei_k](https://twitter.com/xuwei_k)
++ Lukasz Golebiewski <lukasz.golebiewski@gmail.com> [@LukaszGobiewsk1](https://twitter.com/LukaszGobiewsk1)
++ Michael Zuber <michaelg.zuber@gmail.com> [@mgzuber91](https://twitter.com/mgzuber91)
++ Mike Limansky <mike.limansky@gmail.com> [@mike_limansky](https://twitter.com/mike_limansky)
++ Miles Sabin <miles@milessabin.com> [@milessabin](https://twitter.com/milessabin)
++ n4to4 <n4to4k@gmail.com> [@n4to4](https://twitter.com/n4to4)
++ Ronan Michaux <ronan_michaux@yahoo.com> [@ronan_michaux](https://twitter.com/ronan_michaux)
++ Ryadh Khsib <ryadh.khsib@gmail.com>
++ Sarah Gerweck <sarah.a180@gmail.com> [@SGerweck](https://twitter.com/SGerweck)
++ Stanislav Savulchik <s.savulchik@gmail.com> [@savulchik](https://twitter.com/savulchik)
++ Tin Pavlinic <tin.pavlinic@gmail.com> [@triggerNZ](https://twitter.com/triggerNZ)
++ Travis Brown <travisrobertbrown@gmail.com> [@travisbrown](https://twitter.com/travisbrown)
++ Valy Diarrassouba <v.diarrassouba@gmail.com>
++ William Harvey <harveywi@cse.ohio-state.edu>
++ Yang Bo (杨博) <pop.atry@gmail.com> [@Atry](https://twitter.com/Atry)
++ Zainab Ali <zainab.ali.london@gmail.com> [@_zainabali_](https://twitter.com/_zainabali_)
+
+Many thanks to all of you and everyone else who has contributed ideas, enthusiasm and encouragement.
+
+[shapeless]: https://github.com/milessabin/shapeless
+[233issues]: https://github.com/milessabin/shapeless/issues?q=is%3Aissue+milestone%3Ashapeless-2.3.3+is%3Aclosed
+[233prs]: https://github.com/milessabin/shapeless/pulls?q=is%3Apr+milestone%3Ashapeless-2.3.3+is%3Aclosed

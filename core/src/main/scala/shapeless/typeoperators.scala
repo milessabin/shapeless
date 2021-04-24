@@ -20,17 +20,18 @@ import scala.language.dynamics
 import scala.language.experimental.macros
 
 import scala.reflect.macros.whitebox
-import scala.util.Try
+import scala.util.{ Try, Success, Failure }
 
 object tag {
-  def apply[U] = new Tagger[U]
+  def apply[U] = Tagger.asInstanceOf[Tagger[U]]
 
-  trait Tagged[U]
+  trait Tagged[U] extends Any
   type @@[+T, U] = T with Tagged[U]
 
   class Tagger[U] {
     def apply[T](t : T) : T @@ U = t.asInstanceOf[T @@ U]
   }
+  private object Tagger extends Tagger[Nothing]
 }
 
 object newtype {
@@ -111,7 +112,6 @@ object the extends Dynamic {
   def selectDynamic(tpeSelector: String): Any = macro TheMacros.implicitlyImpl
 }
 
-@macrocompat.bundle
 class TheMacros(val c: whitebox.Context) {
   import c.universe.{ Try => _, _ }
   import internal._, decorators._
@@ -120,8 +120,8 @@ class TheMacros(val c: whitebox.Context) {
 
   def implicitlyImpl(tpeSelector: Tree): Tree = {
 
-    val q"${tpeString: String}" = tpeSelector
-    val dummyNme = c.freshName
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
+    val dummyNme = c.freshName()
 
     val tpe =
       (for {
@@ -129,7 +129,7 @@ class TheMacros(val c: whitebox.Context) {
         checked = c.typecheck(parsed, silent = true)
         if checked.nonEmpty
       } yield {
-        val q"{ type $dummyNme = $tpt }" = checked
+        val q"{ type $dummyNme = $tpt }" = (checked: @unchecked)
         tpt.tpe
       }).getOrElse(c.abort(c.enclosingPosition, s"Malformed type $tpeString"))
 
@@ -138,14 +138,49 @@ class TheMacros(val c: whitebox.Context) {
     if(tpe.typeSymbol.asClass.isPrimitive)
       c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
 
-    val inferred = c.inferImplicitValue(tpe, silent = true)
-    if(inferred.isEmpty)
-      c.abort(c.enclosingPosition, s"Could not infer implicit value for $tpe")
 
-    // We can't yield a useful value here, so return Unit instead which is at least guaranteed
-    // to result in a runtime exception if the value is used in term position.
-    Literal(Constant(())).setType(inferred.tpe)
+    Try(c.typecheck(q"_root_.shapeless.the.apply[$tpe]")) match {
+      case Success(x) =>
+        // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+        // to result in a runtime exception if the value is used in term position.
+        Literal(Constant(())).setType(x.tpe)
+      case Failure(e) => c.abort(c.enclosingPosition, e.getMessage)
+    }
   }
+}
+
+
+object TypeOf extends Dynamic {
+
+  def selectDynamic(code: String): Any = macro Macros.selectDynamic
+
+  private[TypeOf] final class Macros(val c: whitebox.Context) {
+    import c.universe.{Try => _, _}
+    import internal._, decorators._
+
+    def selectDynamic(code: Tree): Tree = {
+
+      val q"${codeString: String}" = (code: @unchecked)
+      val tpe = c.parse(codeString) match {
+        case Typed(expr, tpt) =>
+          val baseType = c.typecheck(tpt, mode = c.TYPEmode)
+          c.typecheck(expr, pt = baseType.tpe).tpe
+        case expr =>
+          c.typecheck(expr).tpe
+      }
+
+      // Bail for primitives because the resulting trees with type set to Unit
+      // will crash the compiler
+      val symbol = tpe.typeSymbol
+      if (symbol.isClass && symbol.asClass.isPrimitive)
+        c.abort(c.enclosingPosition, s"Primitive type $tpe may not be used in this context")
+
+      // We can't yield a useful value here, so return Unit instead which is at least guaranteed
+      // to result in a runtime exception if the value is used in term position.
+      Literal(Constant(())).setType(tpe)
+    }
+  }
+
 }
 
 /**
@@ -165,4 +200,3 @@ object Lub {
     def right(b : T): T = b
   }
 }
-

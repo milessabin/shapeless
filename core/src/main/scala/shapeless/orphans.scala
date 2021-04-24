@@ -36,7 +36,6 @@ trait OrphanDeriver[F[_], D] {
   implicit def materialize[T]: F[T] = macro OrphanMacros.materializeImpl[F, D, T]
 }
 
-@macrocompat.bundle
 class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
@@ -73,12 +72,10 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
         c.abort(c.enclosingPosition, "Backtrack")
     }
 
-    val deriver =
-      dTpe match {
-        case SingleType(pre, sym) => mkAttributedRef(pre, sym)
-        case other =>
-          c.abort(c.enclosingPosition, "Deriver $dTpe not found")
-      }
+    val deriver = dTpe match {
+      case singleton: SingleType => mkAttributedRef(singleton)
+      case _ => c.abort(c.enclosingPosition, s"Deriver $dTpe not found")
+    }
 
     val inst = c.inferImplicitValue(appTpe, silent = true)
 
@@ -107,7 +104,7 @@ class OrphanMacros(val c: whitebox.Context) extends CaseClassMacros {
         inst
       }
     } else {
-      val derived = checkedProbe match {
+      val derived = (checkedProbe: @unchecked) match {
         case b: Block => b.expr
       }
 

@@ -90,7 +90,7 @@ class PolyTests {
   }
   
   @Test
-  def testHRFn {
+  def testHRFn: Unit = {
     implicitly[choose.Case[Set[Int]]]
     
     implicitly[size.Case[Int]]
@@ -227,7 +227,7 @@ class PolyTests {
   }
 
   @Test
-  def testCompose {
+  def testCompose: Unit = {
     val so = singleton compose option
     
     val sos = so("foo")
@@ -240,7 +240,7 @@ class PolyTests {
   }
 
   @Test
-  def testPolyVal {
+  def testPolyVal: Unit = {
     val i1 = zero[Int]
     typed[Int](i1)
     assertEquals(0, i1)
@@ -274,7 +274,7 @@ class PolyTests {
   }
 
   @Test
-  def testBinary {
+  def testBinary: Unit = {
     val bi = bidi(23)
     typed[String](bi)
     assertEquals("23", bi)
@@ -290,20 +290,30 @@ class PolyTests {
   }
 
   @Test
-  def testRotateLeft {
+  def testRotateLeft: Unit = {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
+      }
+
+      implicit val another = at[Long, Char, Boolean] {
+        case (l, c, b) => s"l: $l, c: $c, b: $b"
       }
     }
 
     val r1 = isd(1, "foo", 2.0)
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r1)
 
+    val r11 = isd(1L, 'f', true)
+    assertTypedEquals[String](s"l: 1, c: f, b: true", r11)
+
     val sdi = isd.rotateLeft[Nat._1]
 
     val r2 = sdi("foo", 2.0, 1)
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r2)
+
+    val r21 = sdi('f', true, 1L)
+    assertTypedEquals[String](s"l: 1, c: f, b: true", r21)
 
     val dis  = isd.rotateLeft[Nat._2]
 
@@ -331,7 +341,7 @@ class PolyTests {
   }
 
   @Test
-  def testRotateRight {
+  def testRotateRight: Unit = {
     object isd extends Poly3 {
       implicit val default = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
@@ -369,5 +379,88 @@ class PolyTests {
 
     val r6 = dcis(2.0, 'a', 1, "foo")
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}, c: a", r6)
+  }
+
+  @Test
+  def testPoly1Builder: Unit = {
+    val myPoly = Poly1.at[Int](x => x).at[String](_.length).at[Boolean](if(_) 1 else 0)
+
+    val r1 = myPoly(10)
+    assertTypedEquals[Int](10, r1)
+
+    val r2 = myPoly("hello")
+    assertTypedEquals[Int](5, r2)
+
+    val r3 = myPoly(true)
+    assertTypedEquals[Int](1, r3)
+  }
+
+  @Test
+  def testPoly2Builder: Unit = {
+    val myPoly = Poly2
+      .at[Int, Int]((acc, x) => acc + x)
+      .at[Int, String]((acc, s) => acc + s.length)
+      .at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0))
+
+    val r1 = myPoly(5, 10)
+    assertTypedEquals[Int](15, r1)
+
+    val r2 = myPoly(5, "hello")
+    assertTypedEquals[Int](10, r2)
+
+    val r3 = myPoly(5, true)
+    assertTypedEquals[Int](6, r3)
+  }
+
+  @Test
+  def testPoly1BuilderMap: Unit = {
+    val myPoly = Poly1.at[Int]( x => x.toString).at[String](_.length > 2).at[Boolean](if(_) 1 else 0)
+    val r = (10 :: "hello" :: true :: HNil).map(myPoly.build)
+    assertTypedEquals[String::Boolean::Int::HNil](("10"::true::1::HNil), r)
+  }
+
+  @Test
+  def testPoly2BuilderFoldLeft: Unit = {
+    val myPoly = Poly2
+      .at[Int, Int]((acc, x) => acc + x)
+      .at[Int, String]((acc, s) => acc + s.length)
+      .at[Int, Boolean]((acc, b) => acc + (if(b) 1 else 0))
+
+    val r = (10 :: "hello" :: true :: HNil).foldLeft(0)(myPoly.build)
+    assertTypedEquals[Int](16, r)
+  }
+
+  @Test
+  def testBindFirst: Unit = {
+    object p extends Poly3 {
+      implicit def x = at[Int, String, Double] { (i, s, d) =>
+        s"$i, $d, $s"
+      }
+    }
+
+    val bf = Poly.bindFirst(p, 2)
+    val r = bf("bar", 3.5)
+    assertTypedEquals[String]("2, 3.5, bar", r)
+
+    val l = 1.5 :: 2.5 :: 3.5 :: HNil
+    assertTypedEquals[String]("2, 3.5, 2, 2.5, 2, 1.5, x", l.foldLeft("x")(bf))
+  }
+
+  @Test
+  def testCurried: Unit = {
+    object p extends Poly3 {
+      implicit def x = at[Int, Double, String] { (i, d, s) =>
+        s"$i, $d, $s"
+      }
+    }
+
+    val c = Poly.curried(p)
+    val c1 = c(1)
+    val c2 = c1(42.5)
+    val r = c2("foo")
+    assertTypedEquals[String]("1, 42.5, foo", r)
+
+    val l = "x" :: "y" :: "z" :: HNil
+    assertEquals("1, 42.5, x" :: "1, 42.5, y" :: "1, 42.5, z" :: HNil, l.map(c2))
   }
 }

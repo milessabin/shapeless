@@ -45,14 +45,14 @@ trait ApplyUnapplyFacet extends ProductISOFacet {
   trait ApplyUnapplyOps extends ProductISOOps {
     def apply(p: P): C = fromProduct(p)
 
-    def unapply(c: C): Option[P] = Some(toProduct(c))
+    def unapply(c: C): Some[P] = Some(toProduct(c))
   }
 
   val ops: ApplyUnapplyOps
 
   trait ApplyUnapplyCompanion {
     @nonGeneric def apply(elems: ops.P): C = ops.apply(elems)
-    @nonGeneric def unapply(s: C): Option[ops.P] = ops.unapply(s)
+    @nonGeneric def unapply(s: C): Some[ops.P] = ops.unapply(s)
   }
 }
 
@@ -88,9 +88,9 @@ trait PolymorphicEqualityFacet extends ProductISOFacet {
 
     def equals(c: C, other: Any): Boolean =
       (c.asInstanceOf[AnyRef] eq other.asInstanceOf[AnyRef]) ||
-        typ.cast(other).map { that =>
+        typ.cast(other).exists { that =>
           (toProduct(c) == toProduct(that)) && canEqual(that, c)
-        }.getOrElse(false)
+        }
 
     def hashCode(c: C): Int = toProduct(c).hashCode
   }

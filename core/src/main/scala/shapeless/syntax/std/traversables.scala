@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011-18 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package shapeless
 package syntax
 package std
 
-import scala.collection.GenTraversable
-
 /**
  * Conversions between `Traversables` and `HLists`.
  * 
@@ -30,17 +28,17 @@ import scala.collection.GenTraversable
  * @author Rob Norris
  */
 object traversable {
-  implicit def traversableOps[T <% GenTraversable[_]](t : T) = new TraversableOps(t)
-  implicit def traversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) = new TraversableOps2(as)
+  implicit def traversableOps[T](t : T)(implicit ev: T => Iterable[_]) = new TraversableOps(t)
+  implicit def traversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) = new TraversableOps2(as)
 }
 
-final class TraversableOps[T <% GenTraversable[_]](t : T) {
+final class TraversableOps[T](t : T)(implicit ev: T => Iterable[_]) {
   import ops.traversable._
 
   def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
 }
 
-final class TraversableOps2[CC[T] <: GenTraversable[T], A](as: CC[A]) {
+final class TraversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) {
   import ops.traversable._
 
   def toSizedHList(n: Nat)(implicit ts: ToSizedHList[CC, A, n.N]): ts.Out = ts(as)

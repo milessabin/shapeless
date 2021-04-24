@@ -20,7 +20,7 @@ package ops
 import hlist.Length
 
 object product {
-  trait ProductLength[T] extends DepFn1[T]
+  trait ProductLength[T] extends DepFn1[T] { type Out <: Nat }
 
   object ProductLength {
     def apply[T](implicit length: ProductLength[T]): Aux[T, length.Out] = length

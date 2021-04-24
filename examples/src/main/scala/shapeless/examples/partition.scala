@@ -122,10 +122,10 @@ object ADTPartitionExample extends App {
   val basket = partitionRecord(fruits)
 
   // Confirm that expected record values are present (and not unexpected ones).
-  typed[List[Apple]](basket('Apple))
-  typed[List[Pear]](basket('Pear))
-  illTyped("basket('Burger)")
+  typed[List[Apple]](basket("Apple"))
+  typed[List[Pear]](basket("Pear"))
+  illTyped("""basket("Burger")""")
 
-  assert(basket('Apple) == expectedApples)
-  assert(basket('Pear) == expectedPears)
+  assert(basket("Apple") == expectedApples)
+  assert(basket("Pear") == expectedPears)
 }

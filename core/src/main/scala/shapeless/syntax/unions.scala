@@ -18,7 +18,6 @@ package shapeless
 package syntax
 
 import scala.language.dynamics
-import tag.@@
 
 /**
  * Discriminated union operations on `Coproducts`'s with field-like elements.
@@ -26,7 +25,6 @@ import tag.@@
  * @author Miles Sabin
  */
 final class UnionOps[C <: Coproduct](val c : C) extends AnyVal with Serializable {
-  import shapeless.union._
   import ops.union._
 
   /**
@@ -88,5 +86,5 @@ final case class DynamicUnionOps[C <: Coproduct](c : C) extends Dynamic {
   /**
    * Allows dynamic-style access to fields of the union whose keys are Symbols.
    */
-  def selectDynamic(key: String)(implicit selector: Selector[C, Symbol @@ key.type]): selector.Out = selector(c)
+  def selectDynamic(key: String)(implicit selector: Selector[C, key.type]): selector.Out = selector(c)
 }

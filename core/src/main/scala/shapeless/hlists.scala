@@ -35,9 +35,9 @@ sealed trait HList extends Product with Serializable
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
-  override def toString = head match {
-    case _: ::[_, _] => "("+head+") :: "+tail.toString
-    case _ => head+" :: "+tail.toString
+  override def toString: String = head match {
+    case _: ::[_, _] => s"($head) :: $tail"
+    case _ => s"$head :: $tail"
   }
 }
 
@@ -47,7 +47,7 @@ final case class ::[+H, +T <: HList](head : H, tail : T) extends HList {
  * @author Miles Sabin
  */
 sealed trait HNil extends HList {
-  def ::[H](h : H) = shapeless.::(h, this)
+  def ::[H](h: H): H :: HNil = new ::(h, this)
   override def toString = "HNil"
 }
 
@@ -62,9 +62,9 @@ object HList extends Dynamic {
   import ops.hlist._
   import syntax.HListOps
 
-  def apply() = HNil
+  def apply(): HNil.type = HNil
 
-  def apply[T](t: T) = t :: HNil
+  def apply[T](t: T): T :: HNil = t :: HNil
 
   def apply[P <: Product, L <: HList](p : P)(implicit gen: Generic.Aux[P, L]) : L = gen.to(p)
 
@@ -85,7 +85,7 @@ object HList extends Dynamic {
   /**
     * Produces a [[HList]] filled from a [[Poly0]].
     * 
-    * @usecase def fillWith[L <: HList](f: Poly): L = ???
+    * @example def fillWith[L <: HList](f: Poly): L = ???
     */
   def fillWith[L <: HList] = new FillWithOps[L]
 
@@ -113,11 +113,11 @@ object HList extends Dynamic {
    * type TwoTrueStr = HList.`2, true, "str"`.T
    * }}}
    */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistTypeImpl
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistType
 
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =
-    l match {
+    (l: @unchecked) match {
       case hd :: tl if i == 0 => hd
       case hd :: tl => unsafeGet(tl, i-1)
     }
@@ -141,7 +141,7 @@ object HList extends Dynamic {
   def unsafeUpdateAt(l: HList, i: Int, e: Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
@@ -159,14 +159,10 @@ object HList extends Dynamic {
     loop(l, i, HNil)
   }
 
-  @deprecated("use unsafeUpdateAppend instead", "2.3.1")
-  def unsafeUpdate(l: HList, i: Int, e: Any): HList =
-    unsafeUpdateAppend(l, i, e)
-
   def unsafeUpdateWith(l: HList, i: Int, f: Any => Any): HList = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, f(hd) :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
@@ -176,7 +172,7 @@ object HList extends Dynamic {
   def unsafeRemove(l: HList, i: Int): (Any, HList) = {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): (Any, HList) =
-      l match {
+      (l: @unchecked) match {
         case hd :: tl if i == 0 => (hd, unsafeReversePrepend(revPrefix, tl))
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
@@ -254,8 +250,8 @@ trait ProductArgs extends Dynamic {
  *
  */
 trait FromProductArgs extends Dynamic {
-  def applyDynamic[L <: HList](method: String)(product: L): Any =
-    macro ProductMacros.forwardFromProductImpl[L]
+  def applyDynamic(method: String)(hlist: HList): Any =
+    macro ProductMacros.forwardFromProductImpl
 }
 
 /**
@@ -281,10 +277,8 @@ trait SingletonProductArgs extends Dynamic {
   def applyDynamic(method: String)(args: Any*): Any = macro ProductMacros.forwardSingletonImpl
 }
 
-@macrocompat.bundle
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
-  import internal.constantType
 
   def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
 
@@ -296,7 +290,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString+"NatProduct")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -317,7 +311,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
     val methodName = TermName(methodString+"Product")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -328,11 +322,11 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     q""" $lhs.$methodName($argsTree) """
   }
 
-  def forwardFromProductImpl[L <: HList](method: Tree)(product: Expr[L]): Tree = {
+  def forwardFromProductImpl(method: Tree)(hlist: Tree): Tree = {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = method
+    val q"${methodString: String}" = (method: @unchecked)
 
     if (!methodString.matches(".*Product$"))
       c.abort(c.enclosingPosition, s"missing method '$methodString'")
@@ -342,8 +336,21 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     if(!lhsTpe.member(methodName).isMethod)
       c.abort(c.enclosingPosition, s"missing method '$methodName'")
 
-    val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, product)
-    q""" $lhs.$methodName(...$params) """
+    val methodSym = lhsTpe.member(methodName).asMethod
+    val paramss = methodSym.paramLists.filterNot(_.forall(_.isImplicit))
+    val argss = paramss.map(_.map(_ => TermName(c.freshName("pat"))))
+    val names = argss.flatten
+
+    val pattern =
+      names.foldRight(q"_root_.shapeless.HNil": Tree) {
+        case (nme, acc) => pq"_root_.shapeless.::($nme, $acc)"
+      }
+
+    q"""
+      $hlist match {
+        case $pattern => $lhs.$methodName(...$argss)
+      }
+    """
   }
 
   def mkProductImpl(args: Seq[Tree], narrow: Boolean): Tree = {
@@ -373,13 +380,5 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
        case (elem, _) =>
         c.abort(c.enclosingPosition, s"Expression $elem does not evaluate to a non-negative Int literal")
     }._2
-  }
-
-  def mkParamsImpl[L <: HList](method: MethodSymbol, product: Expr[L]): List[List[Tree]] = {
-    val slices = method.paramLists.filterNot(_.forall(x => x.isImplicit))
-      .foldLeft((List[List[Int]](), 0))((acc, e) =>
-        (acc._1 :+ (acc._2 to (acc._2 + (e.size - 1))).toList, acc._2 + e.size))._1
-
-    slices.map(_.map(i => q"${product}.apply(${i})"))
   }
 }

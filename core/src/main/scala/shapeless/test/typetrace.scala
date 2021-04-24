@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package shapeless.test
+package shapeless
+package test
 
 import scala.language.experimental.macros
 
@@ -26,13 +27,16 @@ object TypeTrace {
   implicit def apply[T]: TypeTrace[T] = macro TypeTraceMacros.applyImpl[T]
 }
 
-@macrocompat.bundle
 class TypeTraceMacros(val c: blackbox.Context) {
   import c.universe._
 
   def applyImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
     val tTpe = weakTypeOf[T]
-    println(s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}")
+    c.info(
+      c.enclosingPosition,
+      s"Trace: $tTpe ${tTpe.dealias} ${tTpe.getClass.getName} ${tTpe.dealias.getClass.getName}",
+      force = true
+    )
 
     q"""new _root_.shapeless.test.TypeTrace[$tTpe]"""
   }

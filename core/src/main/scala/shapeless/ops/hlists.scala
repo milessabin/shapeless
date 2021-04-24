@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-15 Miles Sabin
+ * Copyright (c) 2011-18 Miles Sabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 package shapeless
 package ops
 
-import scala.annotation.tailrec
 import scala.annotation.implicitNotFound
-import scala.collection.GenTraversableLike
-import scala.collection.generic.CanBuildFrom
+import scala.collection._
 import scala.collection.mutable
 
-import function._
 import poly._
 
 object hlist {
@@ -63,20 +60,29 @@ object hlist {
     type Out <: HList
   }
 
-  object Mapped {
-    def apply[L <: HList, F[_]](implicit mapped: Mapped[L, F]): Aux[L, F, mapped.Out] = mapped
+  trait LowPriorityMapped {
+    type Aux[L <: HList, F[_], Out0 <: HList] =
+      Mapped[L, F] { type Out = Out0 }
 
-    type Aux[L <: HList, F[_], Out0 <: HList] = Mapped[L, F] { type Out = Out0 }
+    implicit def hlistIdMapped[H, T <: HList]: Aux[H :: T, Id, H :: T] =
+      new Mapped[H :: T, Id] { type Out = H :: T }
+
+    implicit def hlistMapped2[H, T <: HList, F, OutM <: HList](
+      implicit mt: Mapped.Aux[T, Const[F]#λ, OutM]
+    ): Aux[H :: T, Const[F]#λ, F :: OutM] =
+      new Mapped[H :: T, Const[F]#λ] { type Out = F :: OutM }
+  }
+
+  object Mapped extends LowPriorityMapped {
+    def apply[L <: HList, F[_]](implicit mapped: Mapped[L, F]): Aux[L, F, mapped.Out] = mapped
 
     implicit def hnilMapped[F[_]]: Aux[HNil, F, HNil] = new Mapped[HNil, F] { type Out = HNil }
 
-    implicit def hlistIdMapped[L <: HList]: Aux[L, Id, L] = new Mapped[L, Id] { type Out = L }
+    implicit def hnilConstMapped[F]: Aux[HNil, Const[F]#λ, HNil] =
+      new Mapped[HNil, Const[F]#λ] { type Out = HNil }
 
     implicit def hlistMapped1[H, T <: HList, F[_], OutM <: HList](implicit mt : Mapped.Aux[T, F, OutM]): Aux[H :: T, F, F[H] :: OutM] =
       new Mapped[H :: T, F] { type Out = F[H] :: OutM }
-
-    implicit def hlistMapped2[H, T <: HList, F, OutM <: HList](implicit mt : Mapped.Aux[T, Const[F]#λ, OutM]): Aux[H :: T, Const[F]#λ, F :: OutM] =
-      new Mapped[H :: T, Const[F]#λ] { type Out = F :: OutM }
   }
 
   /**
@@ -205,14 +211,17 @@ object hlist {
   trait HKernelAux[L <: HList] extends DepFn0 { type Out <: HKernel }
 
   object HKernelAux {
+
+    type Aux[L <: HList, Out0 <: HKernel] = HKernelAux[L] { type Out = Out0 }
+
     implicit def mkHNilHKernel = new HKernelAux[HNil] {
       type Out = HNilHKernel
       def apply() = HNilHKernel
     }
 
-    implicit def mkHListHKernel[H, T <: HList](implicit ct: HKernelAux[T]) = new HKernelAux[H :: T] {
-      type Out = HConsHKernel[H, ct.Out]
-      def apply() = HConsHKernel[H, ct.Out](ct())
+    implicit def mkHListHKernel[H, T <: HList, CtOut <: HKernel](implicit ct: HKernelAux.Aux[T, CtOut]) = new HKernelAux[H :: T] {
+      type Out = HConsHKernel[H, CtOut]
+      def apply() = HConsHKernel[H, CtOut](ct())
     }
   }
 
@@ -233,9 +242,9 @@ object hlist {
         type Out = CNil
       }
 
-    implicit def hlistToCoproduct[H, T <: HList](implicit ut: ToCoproduct[T]): Aux[H :: T, H :+: ut.Out] =
+    implicit def hlistToCoproduct[H, T <: HList, UtOut <: Coproduct](implicit ut: ToCoproduct.Aux[T, UtOut]): Aux[H :: T, H :+: UtOut] =
       new ToCoproduct[H :: T] {
-        type Out = H :+: ut.Out
+        type Out = H :+: UtOut
       }
   }
 
@@ -244,9 +253,9 @@ object hlist {
    *
    */
   trait lowPriorityToSum {
-    implicit def hlistToSum[H, T <: HList](implicit ut: ToSum[T]): ToSum.Aux[H :: T, H :+: ut.Out] =
+    implicit def hlistToSum[H, T <: HList, UtOut <: Coproduct](implicit ut: ToSum.Aux[T, UtOut]): ToSum.Aux[H :: T, H :+: UtOut] =
       new ToSum[H :: T] {
-        type Out = H :+: ut.Out
+        type Out = H :+: UtOut
       }
   }
 
@@ -264,11 +273,11 @@ object hlist {
         type Out = CNil
       }
 
-    implicit def hlistToSum[H, T <: HList, OutL <: HList](implicit
+    implicit def hlistToSum[H, T <: HList, OutL <: HList, OutS <: Coproduct](implicit
                                                           fn: FilterNot.Aux[T, H, OutL],
-                                                          ut: ToSum[OutL]): Aux[H :: T, H :+: ut.Out] =
+                                                          ut: ToSum.Aux[OutL, OutS]): Aux[H :: T, H :+: OutS] =
       new ToSum[H :: T] {
-        type Out = H :+: ut.Out
+        type Out = H :+: OutS
       }
   }
 
@@ -419,11 +428,11 @@ object hlist {
         def apply(l : HNil, in : In): Out = in
       }
 
-    implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH]
-      (implicit f : Case2.Aux[HF, In, H, OutH], ft : LeftFolder[T, OutH, HF]): Aux[H :: T, In, HF, ft.Out] =
+    implicit def hlistLeftFolder[H, T <: HList, In, HF, OutH, FtOut]
+      (implicit f : Case2.Aux[HF, In, H, OutH], ft : Strict[LeftFolder.Aux[T, OutH, HF, FtOut]]): Aux[H :: T, In, HF, FtOut] =
         new LeftFolder[H :: T, In, HF] {
-          type Out = ft.Out
-          def apply(l : H :: T, in : In) : Out = ft(l.tail, f(in, l.head))
+          type Out = FtOut
+          def apply(l : H :: T, in : In) : Out = ft.value(l.tail, f(in, l.head))
         }
   }
 
@@ -446,10 +455,10 @@ object hlist {
       }
 
     implicit def hlistRightFolder[H, T <: HList, In, HF, OutT]
-      (implicit ft : RightFolder.Aux[T, In, HF, OutT], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
+      (implicit ft : Strict[RightFolder.Aux[T, In, HF, OutT]], f : Case2[HF, H, OutT]): Aux[H :: T, In, HF, f.Result] =
         new RightFolder[H :: T, In, HF] {
           type Out = f.Result
-          def apply(l : H :: T, in : In): Out = f(l.head, ft(l.tail, in))
+          def apply(l : H :: T, in : In): Out = f(l.head, ft.value(l.tail, in))
         }
   }
 
@@ -464,9 +473,9 @@ object hlist {
     def apply[L <: HList, F](implicit reducer: LeftReducer[L, F]): Aux[L, F, reducer.Out] = reducer
 
     type Aux[L <: HList, HF, Out0] = LeftReducer[L, HF] { type Out = Out0 }
-    implicit def leftReducer[H, T <: HList, HF](implicit folder : LeftFolder[T, H, HF]): Aux[H :: T, HF, folder.Out] =
+    implicit def leftReducer[H, T <: HList, HF, FolderOut](implicit folder : LeftFolder.Aux[T, H, HF, FolderOut]): Aux[H :: T, HF, FolderOut] =
       new LeftReducer[H :: T, HF] {
-        type Out = folder.Out
+        type Out = FolderOut
         def apply(l : H :: T) : Out = folder.apply(l.tail, l.head)
       }
   }
@@ -520,10 +529,10 @@ object hlist {
         def apply(l : T :: HNil): Out = l
       }
 
-    implicit def hlistUnifier[H1, H2, L, T <: HList]
-      (implicit u : Lub[H1, H2, L], lt : Unifier[L :: T]): Aux[H1 :: H2 :: T, L :: lt.Out] =
+    implicit def hlistUnifier[H1, H2, L, T <: HList, LtOut <: HList]
+      (implicit u : Lub[H1, H2, L], lt : Unifier.Aux[L :: T, LtOut]): Aux[H1 :: H2 :: T, L :: LtOut] =
         new Unifier[H1 :: H2 :: T] {
-          type Out = L :: lt.Out
+          type Out = L :: LtOut
           def apply(l : H1 :: H2 :: T): Out = u.left(l.head) :: lt(u.right(l.tail.head) :: l.tail.tail)
         }
   }
@@ -547,17 +556,17 @@ object hlist {
         def apply(l : HNil): Out = l
       }
 
-    implicit def hlistSubtypeUnifier1[H, T <: HList, B]
-      (implicit st : H <:< B, sut: SubtypeUnifier[T, B]): Aux[H :: T, B, B :: sut.Out] =
+    implicit def hlistSubtypeUnifier1[H, T <: HList, B, SutOut <: HList]
+      (implicit st : H <:< B, sut: SubtypeUnifier.Aux[T, B, SutOut]): Aux[H :: T, B, B :: SutOut] =
         new SubtypeUnifier[H :: T, B] {
-          type Out = B :: sut.Out
+          type Out = B :: SutOut
           def apply(l : H :: T): Out = st(l.head) :: sut(l.tail)
         }
 
-    implicit def hlistSubtypeUnifier2[H, T <: HList, B]
-      (implicit nst : H <:!< B, sut: SubtypeUnifier[T, B]): Aux[H :: T, B, H :: sut.Out] =
+    implicit def hlistSubtypeUnifier2[H, T <: HList, B, SutOut <: HList]
+      (implicit nst : H <:!< B, sut: SubtypeUnifier.Aux[T, B, SutOut]): Aux[H :: T, B, H :: SutOut] =
         new SubtypeUnifier[H :: T, B] {
-          type Out = H :: sut.Out
+          type Out = H :: SutOut
           def apply(l : H :: T): Out = l.head :: sut(l.tail)
         }
   }
@@ -566,10 +575,10 @@ object hlist {
    * Type class supporting conversion of this `HList` to a `M` with elements typed
    * as the least upper bound Lub of the types of the elements of this `HList`.
    *
-   * Serializable if the `CanBuildFrom`s it implicitly finds are too.
-   * Note that the `CanBuildFrom`s from the standard library are *not*
+   * Serializable if the `Factory`s it implicitly finds are too.
+   * Note that the `Factory`s from the standard library are *not*
    * serializable. See the tests for how to make your own serializable
-   * `CanBuildFrom` available to `ToTraversable`.
+   * `Factory` available to `ToTraversable`.
    *
    * @author Alexandre Archambault
    */
@@ -593,22 +602,22 @@ object hlist {
     type Aux[L <: HList, M[_], Lub0] = ToTraversable[L, M] { type Lub = Lub0 }
 
     implicit def hnilToTraversable[L <: HNil, M[_], T]
-      (implicit cbf : CanBuildFrom[M[T], T, M[T]]) : Aux[L, M, T] =
+      (implicit cbf : Factory[T, M[T]]) : Aux[L, M, T] =
         new ToTraversable[L, M] {
           type Lub = T
-          def builder() = cbf()
+          def builder() = cbf.newBuilder
           def append[LLub](l : L, b : mutable.Builder[LLub, M[LLub]], f : Lub => LLub) = {}
         }
 
     implicit def hnilToTraversableNothing[L <: HNil, M[_]]
-      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
+      (implicit cbf : Factory[Nothing, M[Nothing]]) : Aux[L, M, Nothing] =
         hnilToTraversable[L, M, Nothing]
 
     implicit def hsingleToTraversable[T, M[_], Lub0]
-      (implicit ev : T <:< Lub0, cbf : CanBuildFrom[Nothing, Lub0, M[Lub0]]) : Aux[T :: HNil, M, Lub0] =
+      (implicit ev : T <:< Lub0, cbf : Factory[Lub0, M[Lub0]]) : Aux[T :: HNil, M, Lub0] =
         new ToTraversable[T :: HNil, M] {
           type Lub = Lub0
-          def builder() = cbf()
+          def builder() = cbf.newBuilder
           def append[LLub](l : T :: HNil, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub) = {
             b += f(l.head)
           }
@@ -618,10 +627,10 @@ object hlist {
       (implicit
        tttvs  : Aux[H2 :: T, M, LubT],
        u      : Lub[H1, LubT, Lub0],
-       cbf    : CanBuildFrom[M[Lub0], Lub0, M[Lub0]]) : Aux[H1 :: H2 :: T, M, Lub0] =
+       cbf    : Factory[Lub0, M[Lub0]]) : Aux[H1 :: H2 :: T, M, Lub0] =
         new ToTraversable[H1 :: H2 :: T, M] {
           type Lub = Lub0
-          def builder() = cbf()
+          def builder() = cbf.newBuilder
           def append[LLub](l : H1 :: H2 :: T, b : mutable.Builder[LLub, M[LLub]], f : Lub0 => LLub): Unit = {
             b += f(u.left(l.head)); tttvs.append[LLub](l.tail, b, f compose u.right)
           }
@@ -659,13 +668,13 @@ object hlist {
     implicit def hconsToCoproductTraversable1[LH, LT <: HList, M[_], CT <: Coproduct]
       (implicit
        coproductOfT  : Aux[LT, M, CT],
-       cbf           : CanBuildFrom[M[CT], CT, M[CT]],
-       asTraversable : M[CT] <:< Traversable[CT],
+       cbf           : Factory[CT, M[CT]],
+       asTraversable : M[CT] <:< Iterable[CT],
        injectOut     : coproduct.Inject[CT, LH]): Aux[LH :: LT, M, CT] =
         new ToCoproductTraversable[LH :: LT, M] {
           type Cop = CT
           def apply(l : LH :: LT): Out = {
-            val builder = cbf()
+            val builder = cbf.newBuilder
             builder += injectOut(l.head)
             asTraversable(coproductOfT(l.tail)).foreach( builder += _)
             builder.result()
@@ -676,25 +685,25 @@ object hlist {
   object ToCoproductTraversable extends LowPriorityToCoproductTraversable{
 
     implicit def hnilToCoproductTraversable[L <: HNil, M[_]]
-    (implicit cbf: CanBuildFrom[M[CNil], CNil, M[CNil]]): Aux[L, M, CNil] =
+    (implicit cbf: Factory[CNil, M[CNil]]): Aux[L, M, CNil] =
       new ToCoproductTraversable[L, M] {
         type Cop = CNil
-        def apply(l: L) = cbf().result()
+        def apply(l: L) = cbf.newBuilder.result()
       }
 
 
     implicit def hconsToCoproductTraversable0[LH, LT <: HList, M[_], CT <: Coproduct]
       (implicit
        coproductOfT  : Aux[LT, M, CT],
-       cbf           : CanBuildFrom[M[CT], LH :+: CT, M[LH :+: CT]],
-       asTraversable : M[CT] <:< Traversable[CT],
+       cbf           : Factory[LH :+: CT, M[LH :+: CT]],
+       asTraversable : M[CT] <:< Iterable[CT],
        notIn         : NotIn[CT, LH],
        injectOut     : coproduct.Inject[LH :+: CT, LH],
        basisTail     : coproduct.Basis[LH :+: CT,CT]): Aux[LH :: LT, M, LH :+: CT] =
         new ToCoproductTraversable[LH :: LT, M] {
           type Cop = LH :+: CT
           def apply(l : LH :: LT): Out = {
-            val builder = cbf()
+            val builder = cbf.newBuilder
             builder += injectOut(l.head)
             val tail = coproductOfT(l.tail)
             asTraversable(tail).foreach(elem => builder += elem.embed[Cop])
@@ -733,20 +742,20 @@ object hlist {
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
 
     implicit def hnilToSized[L <: HNil, M[_], T]
-      (implicit cbf : CanBuildFrom[M[T], T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[L, M, T, Nat._0] =
+      (implicit cbf : Factory[T, M[T]], ev : AdditiveCollection[M[T]]) : Aux[L, M, T, Nat._0] =
         new ToSized[L, M] {
           type Lub = T
           type N = Nat._0
           /* Calling wrap here as Sized[M]() only returns a Sized[M[Nothing], _0] */
-          def apply(l : L) = Sized.wrap(cbf().result())
+          def apply(l : L) = Sized.wrap(cbf.newBuilder.result())
         }
 
     implicit def hnilToSizedNothing[L <: HNil, M[_]]
-      (implicit cbf : CanBuildFrom[M[Nothing], Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
+      (implicit cbf : Factory[Nothing, M[Nothing]], ev : AdditiveCollection[M[Nothing]]) : Aux[L, M, Nothing, Nat._0] =
         hnilToSized[L, M, Nothing]
 
     implicit def hsingleToSized[T, M[_], Lub0]
-     (implicit ub : T <:< Lub0, cbf : CanBuildFrom[Nothing, Lub0, M[Lub0]], ev : AdditiveCollection[M[Lub0]]) : Aux[T :: HNil, M, Lub0, Nat._1] =
+     (implicit ub : T <:< Lub0, cbf : Factory[Lub0, M[Lub0]], ev : AdditiveCollection[M[Lub0]]) : Aux[T :: HNil, M, Lub0, Nat._1] =
       new ToSized[T :: HNil, M] {
         type Lub = Lub0
         type N = Nat._1
@@ -755,14 +764,15 @@ object hlist {
 
     implicit def hlistToSized[H1, H2, T <: HList, LT, L, N0 <: Nat, M[_]]
       (implicit
-       tts  : Aux[H2 :: T, M, LT, N0],
-       u    : Lub[H1, LT, L],
-       tvs2 : M[LT] => GenTraversableLike[LT, M[LT]], // tvs2, tev, and tcbf are required for the call to map below
-       tev  : AdditiveCollection[M[LT]],
-       tcbf : CanBuildFrom[M[LT], L, M[L]],
-       tvs  : M[L] => GenTraversableLike[L, M[L]], // tvs, cbf, and ev are required for the call to +: below
-       cbf  : CanBuildFrom[M[L], L, M[L]],
-       ev   : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
+       tts   : Aux[H2 :: T, M, LT, N0],
+       u     : Lub[H1, LT, L],
+       tvs2  : IsRegularIterable[M[LT]] { type A = LT }, // tvs2, tev, and tcbf are required for the call to map below
+       tev   : AdditiveCollection[M[LT]],
+       f     : Factory[L, M[L]],
+       tcbf  : BuildFrom[M[L], L, M[L]],
+       tcbf2 : BuildFrom[M[LT], L, M[L]],
+       tvs   : IsRegularIterable[M[L]] { type A = L }, // tvs, tcbf2, and ev are required for the call to +: below
+       ev    : AdditiveCollection[M[L]]) : Aux[H1 :: H2 :: T, M, L, Succ[N0]] =
         new ToSized[H1 :: H2 :: T, M] {
           type Lub = L
           type N = Succ[N0]
@@ -880,6 +890,8 @@ object hlist {
 
   object SelectAll {
 
+    def apply[L <: HList, S <: HList](implicit select: SelectAll[L, S]): SelectAll[L, S] = select
+
     implicit def hnilSelectAll[L <: HList]: SelectAll[L, HNil] =
       new SelectAll[L, HNil] {
         def apply(l: L): Out = HNil
@@ -912,19 +924,19 @@ object hlist {
         def apply(l : L): Out = HNil
       }
 
-    implicit def SelectManyHList[L <:HList, H <: Nat, T <: HList]
-    (implicit sel : SelectMany[L, T], at: At[L,H]): Aux[L, H::T, at.Out :: sel.Out] =
+    implicit def SelectManyHList[L <:HList, H <: Nat, T <: HList, SelOut <: HList, AtOut]
+    (implicit sel : SelectMany.Aux[L, T, SelOut], at: At.Aux[L, H, AtOut]): Aux[L, H::T, AtOut :: SelOut] =
       new SelectMany[L, H::T] {
-        type Out = at.Out :: sel.Out
+        type Out = AtOut :: SelOut
         def apply(l: L): Out = at(l) :: sel(l)
       }
   }
 
   /**
-   * Type class supporting supporting access to the elements in range [a,b[ of this `HList`.
-   * Avaialable only if this `HList` contains all elements in range
+   * Type class supporting supporting access to the elements in range [a,b] of this `HList`.
+   * Available only if this `HList` contains all elements in range
    *
-   * @author Andreas Koestler
+   * @author Ivan Aristov
    */
   @implicitNotFound("Implicit not found: shapeless.Ops.SelectRange[${L}, ${A}, ${B}]. You requested the elements in range [${A},${B}[, but HList ${L} does not contain all of them.")
   trait SelectRange[L <: HList, A <: Nat, B <: Nat] extends DepFn1[L] { type Out <: HList }
@@ -934,16 +946,55 @@ object hlist {
 
     type Aux[L <: HList, A <: Nat, B <: Nat, Out0 <: HList] = SelectRange[L, A, B] {type Out = Out0}
 
-    implicit def SelectRangeAux[L <: HList, A <: Nat, B <: Nat, Ids <: HList]
-    (implicit range: shapeless.ops.nat.Range.Aux[A, B, Ids], sel: SelectMany[L, Ids]): Aux[L, A, B, sel.Out] =
-      new SelectRange[L, A, B] {
-        type Out = sel.Out
+    implicit def take[L <: HList, T <: Nat](
+      implicit take: Take[L, T]
+     ): Aux[L, _0, T, take.Out] =
+      new SelectRange[L, _0, T] {
+        type Out = take.Out
 
-        def apply(l: L): Out = sel(l)
+        def apply(t: L): take.Out = take(t)
+      }
+
+    implicit def drop[H, L <: HList, A <: Nat, B <: Nat](
+      implicit select: SelectRange[L, A, B]
+    ): Aux[H :: L, Succ[A], Succ[B], select.Out] =
+      new SelectRange[H :: L, Succ[A], Succ[B]] {
+        type Out = select.Out
+
+        def apply(t: H :: L): select.Out = select(t.tail)
       }
   }
 
+  /**
+   * Type class supporting access to the first element of `S` in this `HList`.
+   * Available only if this `HList` contains at least one element of `S`.
+   *
+   * @author Akiomi Kamakura
+   */
+  @implicitNotFound("Implicit not found: shapeless.Ops.SelectFirst[${L}, ${S}]. You requested an element of ${S}, but there is none in the HList ${L}.")
+  trait SelectFirst[L <: HList, S <: HList] extends DepFn1[L] with Serializable { type Out }
 
+  object SelectFirst {
+    def apply[L <: HList, S <: HList](implicit sel: SelectFirst[L, S]): Aux[L, S, sel.Out] = sel
+
+    type Aux[L <: HList, S <: HList, Out0] = SelectFirst[L, S] { type Out = Out0 }
+
+    implicit def selectAny[L <: HList, H, S <: HList](
+      implicit sel: Selector[L, H]
+    ): Aux[L, H :: S, H] =
+      new SelectFirst[L, H :: S] {
+        type Out = H
+        def apply(l: L): Out = sel(l)
+      }
+
+    implicit def recurse[L <: HList, H, S <: HList, SelOut](
+      implicit sel: Aux[L, S, SelOut]
+    ): Aux[L, H :: S, SelOut] =
+      new SelectFirst[L, H :: S] {
+        type Out = SelOut
+        def apply(l: L): Out = sel(l)
+      }
+  }
 
   /**
    * Type class supporting partitioning this `HList` into those elements of type `U` and the
@@ -990,7 +1041,7 @@ object hlist {
     }
 
     implicit def hlistPartition2[H, L <: HList, U, LPrefix <: HList, LSuffix <: HList](
-      implicit p: Aux[L, U, LPrefix, LSuffix], e: U =:!= H
+      implicit e: U =:!= H, p: Aux[L, U, LPrefix, LSuffix]
     ): Aux[H :: L, U, LPrefix, H :: LSuffix] = new Partition[H :: L, U] {
       type Prefix = LPrefix
       type Suffix = H :: LSuffix
@@ -1013,16 +1064,16 @@ object hlist {
 
   trait LowPriorityGrouper {
 
-    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat, LL <: Nat, M <: Nat]
+    implicit def hlistGrouper[L <: HList, N <: Nat, OutT <: HList, OutD <: HList, T, Step <: Nat, LL <: Nat, M <: Nat, OutG <: HList]
     (implicit
      len: Length.Aux[L, LL],
      min: ops.nat.Min.Aux[LL, Step, M],
      take: ops.hlist.Take.Aux[L, N, OutT],
      drop: ops.hlist.Drop.Aux[L, M, OutD],
      tup: ops.hlist.Tupler.Aux[OutT, T],
-     grouper: Grouper[OutD, N, Step]
-      ): Grouper.Aux[L, N, Step, tup.Out :: grouper.Out] = new Grouper[L, N, Step] {
-      type Out = tup.Out :: grouper.Out
+     grouper: Grouper.Aux[OutD, N, Step, OutG]
+    ): Grouper.Aux[L, N, Step, T :: OutG] = new Grouper[L, N, Step] {
+      type Out = T :: OutG
 
       def apply(l: L) = tup(take(l)) :: grouper(drop(l))
     }
@@ -1033,7 +1084,7 @@ object hlist {
                                                  grouper: Grouper[L, N, Step]
                                                   ): Aux[L, N, Step, grouper.Out] = grouper
 
-    type Aux[L <: HList, N <: Nat, Step <: Nat, Out0] = Grouper[L, N, Step] {
+    type Aux[L <: HList, N <: Nat, Step <: Nat, Out0 <: HList] = Grouper[L, N, Step] {
       type Out = Out0
     }
 
@@ -1074,7 +1125,8 @@ object hlist {
     MI <: Nat,
     T <: HList,
     M <: Nat,
-    LL <: Nat]
+    LL <: Nat,
+    Out0 <: HList]
     (implicit
      len1: Length.Aux[L, LL],
      prep: Prepend.Aux[L, Pad, PL],
@@ -1083,10 +1135,10 @@ object hlist {
      sum: ops.nat.Sum.Aux[LL, M, S],
      min: ops.nat.Min.Aux[LPL, S, MI],
      take: Take.Aux[PL, MI, T],
-     grouper: Grouper[T, N, Step]
-      ): PaddedGrouper.Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+     grouper: Grouper.Aux[T, N, Step, Out0]
+      ): PaddedGrouper.Aux[L, N, Step, Pad, Out0] = new PaddedGrouper[L, N, Step, Pad] {
 
-      type Out = grouper.Out
+      type Out = Out0
 
       def apply(l: L, pad: Pad): Out = grouper(take(prep(l, pad)))
     }
@@ -1106,13 +1158,13 @@ object hlist {
       type Out = Out0
     }
 
-    implicit def defaultPaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, A <: Nat, B <: Nat]
+    implicit def defaultPaddedGrouper[L <: HList, N <: Nat, Step <: Nat, Pad <: HList, A <: Nat, B <: Nat, Out0 <: HList]
     (implicit
      len: Length.Aux[L, A],
      mod: ops.nat.Mod.Aux[A, Step, B],
      eq: B =:= _0,
-     grouper: Grouper[L, N, Step]
-      ): Aux[L, N, Step, Pad, grouper.Out] = new PaddedGrouper[L, N, Step, Pad] {
+     grouper: Grouper.Aux[L, N, Step, Out0]
+      ): Aux[L, N, Step, Pad, Out0] = new PaddedGrouper[L, N, Step, Pad] {
 
       type Out = grouper.Out
 
@@ -1249,23 +1301,13 @@ object hlist {
    * of type `T` in this `HList`, followed by the last m - n element of type `T` in `M`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Union[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable { type Out <: HList }
 
-  trait LowPriorityUnion {
+  object Union {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Union[L, M] { type Out = Out0 }
 
-    // buggy version; let (H :: T) ∪ M  =  H :: (T ∪ M)
-    @deprecated("Incorrectly witnesses that {x} ∪ {x} = {x, x}", "2.3.1")
-    def hlistUnion1[H, T <: HList, M <: HList]
-      (implicit u: Union[T, M]): Aux[H :: T, M, H :: u.Out] =
-        new Union[H :: T, M] {
-          type Out = H :: u.Out
-          def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
-        }
-  }
-
-  object Union extends LowPriorityUnion {
     def apply[L <: HList, M <: HList](implicit union: Union[L, M]): Aux[L, M, union.Out] = union
 
     // let ∅ ∪ M = M
@@ -1276,24 +1318,24 @@ object hlist {
       }
 
     // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M
-    implicit def hlistUnion1[H, T <: HList, M <: HList]
+    implicit def hlistUnion1[H, T <: HList, M <: HList, U <: HList]
       (implicit
-       u: Union[T, M],
-       f: FilterNot.Aux[M, H, M]
-      ): Aux[H :: T, M, H :: u.Out] =
+       f: NotContainsConstraint[M, H],
+       u: Union.Aux[T, M, U]
+      ): Aux[H :: T, M, H :: U] =
         new Union[H :: T, M] {
-          type Out = H :: u.Out
+          type Out = H :: U
           def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, m)
         }
 
     // let (H :: T) ∪ M  =  H :: (T ∪ (M - H)) when H ∈ M
-    implicit def hlistUnion2[H, T <: HList, M <: HList, MR <: HList]
+    implicit def hlistUnion2[H, T <: HList, M <: HList, MR <: HList, U <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],
-        u: Union[T, MR]
-      ): Aux[H :: T, M, H :: u.Out] =
+        u: Union.Aux[T, MR, U]
+      ): Aux[H :: T, M, H :: U] =
         new Union[H :: T, M] {
-          type Out = H :: u.Out
+          type Out = H :: U
           def apply(l: H :: T, m: M): Out = l.head :: u(l.tail, r(m)._2)
         }
   }
@@ -1306,23 +1348,13 @@ object hlist {
    * Also available if `M` contains types absent in this `HList`.
    *
    * @author Olivier Blanvillain
+   * @author Arya Irani
    */
   trait Intersection[L <: HList, M <: HList] extends DepFn1[L] with Serializable { type Out <: HList }
 
-  trait LowPriorityIntersection {
+  object Intersection {
     type Aux[L <: HList, M <: HList, Out0 <: HList] = Intersection[L, M] { type Out = Out0 }
 
-    // buggy version;  let (H :: T) ∩ M  =  T ∩ M
-    @deprecated("Incorrectly witnesses that {x} ∩ M = ∅", "2.3.1")
-    def hlistIntersection1[H, T <: HList, M <: HList]
-      (implicit i: Intersection[T, M]): Aux[H :: T, M, i.Out] =
-        new Intersection[H :: T, M] {
-          type Out = i.Out
-          def apply(l: H :: T): Out = i(l.tail)
-        }
-  }
-
-  object Intersection extends LowPriorityIntersection {
     def apply[L <: HList, M <: HList](implicit intersection: Intersection[L, M]): Aux[L, M, intersection.Out] = intersection
 
     // let ∅ ∩ M = ∅
@@ -1333,24 +1365,24 @@ object hlist {
       }
 
     // let (H :: T) ∩ M  =  T ∩ M  when H ∉ M
-    implicit def hlistIntersection1[H, T <: HList, M <: HList]
+    implicit def hlistIntersection1[H, T <: HList, M <: HList, I <: HList]
       (implicit
-       i: Intersection[T, M],
-       f: FilterNot.Aux[M, H, M]
-      ): Aux[H :: T, M, i.Out] =
+       f: NotContainsConstraint[M, H],
+       i: Intersection.Aux[T, M, I]
+      ): Aux[H :: T, M, I] =
         new Intersection[H :: T, M] {
-          type Out = i.Out
+          type Out = I
           def apply(l: H :: T): Out = i(l.tail)
         }
 
     // let (H :: T) ∩ M  =  H :: (T ∩ (M - H)) when H ∈ M
-    implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList]
+    implicit def hlistIntersection2[H, T <: HList, M <: HList, MR <: HList, I <: HList]
       (implicit
         r: Remove.Aux[M, H, (H, MR)],
-        i: Intersection[T, MR]
-      ): Aux[H :: T, M, H :: i.Out] =
+        i: Intersection.Aux[T, MR, I]
+      ): Aux[H :: T, M, H :: I] =
         new Intersection[H :: T, M] {
-          type Out = H :: i.Out
+          type Out = H :: I
           def apply(l: H :: T): Out = l.head :: i(l.tail)
         }
   }
@@ -1369,10 +1401,10 @@ object hlist {
   trait LowPriorityDiff {
     type Aux[L <: HList, M <: HList, Out0] = Diff[L, M] { type Out = Out0 }
 
-    implicit def hconsDiff1[L <: HList, H, T <: HList]
-      (implicit d: Diff[L, T]): Aux[L, H :: T, d.Out] =
+    implicit def hconsDiff1[L <: HList, H, T <: HList, D <: HList]
+      (implicit d: Diff.Aux[L, T, D]): Aux[L, H :: T, D] =
         new Diff[L, H :: T] {
-          type Out = d.Out
+          type Out = D
           def apply(l: L): Out = d(l)
         }
   }
@@ -1386,13 +1418,13 @@ object hlist {
         def apply(l: L): Out = l
       }
 
-    implicit def hconsDiff2[L <: HList, LT <: HList, H, T <: HList]
+    implicit def hconsDiff2[L <: HList, LT <: HList, H, T <: HList, D <: HList]
       (implicit
         r: Remove.Aux[L, H, (H, LT)],
-        d: Diff[LT, T]
-      ): Aux[L, H :: T, d.Out] =
+        d: Diff.Aux[LT, T, D]
+      ): Aux[L, H :: T, D] =
         new Diff[L, H :: T] {
-          type Out = d.Out
+          type Out = D
           def apply(l: L): Out = d(r(l)._2)
         }
   }
@@ -1483,8 +1515,6 @@ object hlist {
       new ModifierAt[L, N, U, V] {
         type Out = (U, OutL)
 
-        import syntax.std.function._
-
         def apply(l: L, f: U => V): Out = {
           val (u, res) = replacer(l, f(at(l)))
           (u, res)
@@ -1543,10 +1573,10 @@ object hlist {
         def apply(l : H :: T): Out = l.head
       }
 
-    implicit def hlistAtN[H, T <: HList, N <: Nat]
-      (implicit att : At[T, N]): Aux[H :: T, Succ[N], att.Out] =
+    implicit def hlistAtN[H, T <: HList, N <: Nat, AtOut]
+      (implicit att : At.Aux[T, N, AtOut]): Aux[H :: T, Succ[N], AtOut] =
         new At[H :: T, Succ[N]] {
-          type Out = att.Out
+          type Out = AtOut
           def apply(l : H :: T) : Out = att(l.tail)
         }
   }
@@ -1571,10 +1601,10 @@ object hlist {
         def apply(l : L): Out = l
       }
 
-    implicit def hlistDrop2[H, T <: HList, N <: Nat]
-      (implicit dt : Drop[T, N]): Aux[H :: T, Succ[N], dt.Out] =
+    implicit def hlistDrop2[H, T <: HList, N <: Nat, Out0 <: HList]
+      (implicit dt : Drop.Aux[T, N, Out0]): Aux[H :: T, Succ[N], Out0] =
         new Drop[H :: T, Succ[N]] {
-          type Out = dt.Out
+          type Out = Out0
           def apply(l : H :: T): Out = dt(l.tail)
         }
   }
@@ -1599,10 +1629,10 @@ object hlist {
         def apply(l : L): Out = HNil
       }
 
-    implicit def hlistTake2[H, T <: HList, N <: Nat, Out <: HList]
-      (implicit tt : Take[T, N]): Aux[H :: T, Succ[N], H :: tt.Out] =
+    implicit def hlistTake2[H, T <: HList, N <: Nat, Out0 <: HList]
+      (implicit tt : Take.Aux[T, N, Out0]): Aux[H :: T, Succ[N], H :: Out0] =
         new Take[H :: T, Succ[N]] {
-          type Out = H :: tt.Out
+          type Out = H :: Out0
           def apply(l : H :: T): Out = l.head :: tt(l.tail)
         }
   }
@@ -1872,10 +1902,10 @@ object hlist {
     }
 
     object SplitRight0 extends LowPrioritySplitRight0 {
-      implicit def hlistSplitRight3[PH, PT <: HList, S <: HList]
-        (implicit reverse : Reverse[PH :: PT]): SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] =
-          new SplitRight0[HNil, PH :: PT, S, PH, reverse.Out, S] {
-            def apply(rev : HNil, accP : PH :: PT, accS : S): reverse.Out :: S :: HNil = accP.reverse :: accS :: HNil
+      implicit def hlistSplitRight3[PH, PT <: HList, S <: HList, Out0 <: HList]
+        (implicit reverse : Reverse.Aux[PH :: PT, Out0]): SplitRight0[HNil, PH :: PT, S, PH, Out0, S] =
+          new SplitRight0[HNil, PH :: PT, S, PH, Out0, S] {
+            def apply(rev : HNil, accP : PH :: PT, accS : S): Out0 :: S :: HNil = accP.reverse :: accS :: HNil
           }
     }
   }
@@ -2005,40 +2035,47 @@ object hlist {
    *
    * @author Miles Sabin
    */
-  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable { type Out <: HList }
+  trait Prepend[P <: HList, S <: HList] extends DepFn2[P, S] with Serializable {
+    type Out <: HList
+    def inverse(p: Out): (P, S)
+  }
 
   trait LowestPriorityPrepend {
     type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
-    implicit def hlistPrepend[PH, PT <: HList, S <: HList]
-     (implicit pt : Prepend[PT, S]): Prepend.Aux[PH :: PT, S, PH :: pt.Out] =
+    implicit def hlistPrepend[PH, PT <: HList, S <: HList, PtOut <: HList]
+     (implicit pt : Prepend.Aux[PT, S, PtOut]): Prepend.Aux[PH :: PT, S, PH :: PtOut] =
       new Prepend[PH :: PT, S] {
-        type Out = PH :: pt.Out
+        type Out = PH :: PtOut
         def apply(prefix : PH :: PT, suffix : S): Out = prefix.head :: pt(prefix.tail, suffix)
+
+        def inverse(p: PH :: PtOut): (PH :: PT, S) = {
+          val e = pt.inverse(p.tail)
+          (p.head :: e._1, e._2)
+        }
       }
   }
 
   trait LowPriorityPrepend extends LowestPriorityPrepend {
-    /**
-     * Binary compatibility stub
-     * This one is for https://github.com/milessabin/shapeless/issues/406
-     */
-    override type Aux[P <: HList, S <: HList, Out0 <: HList] = Prepend[P, S] { type Out = Out0 }
 
-    implicit def hnilPrepend0[P <: HList, S <: HNil]: Aux[P, S, P] =
+    implicit def hnilPrepend0[P <: HList, S >: HNil.type <: HNil]: Aux[P, S, P] =
       new Prepend[P, S] {
         type Out = P
         def apply(prefix : P, suffix : S): P = prefix
+
+        def inverse(p: P): (P, S) = (p, HNil)
       }
   }
 
   object Prepend extends LowPriorityPrepend {
     def apply[P <: HList, S <: HList](implicit prepend: Prepend[P, S]): Aux[P, S, prepend.Out] = prepend
 
-    implicit def hnilPrepend1[P <: HNil, S <: HList]: Aux[P, S, S] =
+    implicit def hnilPrepend1[P >: HNil.type <: HNil, S <: HList]: Aux[P, S, S] =
       new Prepend[P, S] {
         type Out = S
         def apply(prefix : P, suffix : S): S = suffix
+
+        def inverse(p: S): (P, S) = (HNil, p)
       }
   }
 
@@ -2078,6 +2115,38 @@ object hlist {
   }
 
   /**
+    * Typeclass supporting repeating L-typed HLists N times.
+    *
+    * Repeat[Int :: String :: HNil, Nat._2] => Int :: String :: Int :: String :: HNil
+    *
+    * @author Jeremy Smith
+    */
+  trait Repeat[L <: HList, N <: Nat] extends DepFn1[L] with Serializable {
+    type Out <: HList
+  }
+
+  object Repeat {
+
+    type Aux[L <: HList, N <: Nat, Out0 <: HList] = Repeat[L, N] { type Out = Out0 }
+
+    def apply[L <: HList, N <: Nat](implicit repeat: Repeat[L, N]): Aux[L, N, repeat.Out] = repeat
+
+    implicit def base[L <: HList]: Aux[L, Nat._1, L] = new Repeat[L, Nat._1] {
+      type Out = L
+      def apply(l: L): L = l
+    }
+
+    implicit def succ[L <: HList, Prev <: Nat, PrevOut <: HList, P <: HList](implicit
+      prev: Aux[L, Prev, PrevOut],
+      prepend: Prepend.Aux[L, PrevOut, P]
+    ): Aux[L, Succ[Prev], P] = new Repeat[L, Succ[Prev]] {
+      type Out = P
+      def apply(l: L): P = prepend(l, prev(l))
+    }
+
+  }
+
+  /**
    * Type class supporting zipping this `HList` with an `HList` of `HList`s returning an `HList` of `HList`s with each
    * element of this `HList` prepended to the corresponding `HList` element of the argument `HList`.
    *
@@ -2085,7 +2154,21 @@ object hlist {
    */
   trait ZipOne[H <: HList, T <: HList] extends DepFn2[H, T] with Serializable { type Out <: HList }
 
-  object ZipOne {
+  object ZipOne extends LowPriorityZipOne {
+    implicit def zipOne0: Aux[HNil, HNil, HNil] =
+      new ZipOne[HNil, HNil] {
+        type Out = HNil
+        def apply(h : HNil, t : HNil): Out = HNil
+      }
+
+    implicit def zipOne3[H, T <: HList]: Aux[H :: HNil, T :: HNil, (H :: T) :: HNil] =
+      new ZipOne[H :: HNil, T :: HNil] {
+        type Out = (H :: T) :: HNil
+        def apply(h : H :: HNil, t : T :: HNil): Out = (h.head :: t.head) :: HNil
+      }
+  }
+
+  trait LowPriorityZipOne {
     def apply[H <: HList, T <: HList](implicit zip: ZipOne[H, T]): Aux[H, T, zip.Out] = zip
 
     type Aux[H <: HList, T <: HList, Out0 <: HList] = ZipOne[H, T] { type Out = Out0 }
@@ -2102,16 +2185,10 @@ object hlist {
         def apply(h : HNil, t : T): Out = HNil
       }
 
-    implicit def zipOne3[H, T <: HList]: Aux[H :: HNil, T :: HNil, (H :: T) :: HNil] =
-      new ZipOne[H :: HNil, T :: HNil] {
-        type Out = (H :: T) :: HNil
-        def apply(h : H :: HNil, t : T :: HNil): Out = (h.head :: t.head) :: HNil
-      }
-
-    implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList]
-    (implicit zot : ZipOne[HT, TT]): Aux[HH :: HT, TH :: TT, (HH :: TH) :: zot.Out] =
+    implicit def zipOne4[HH, HT <: HList, TH <: HList, TT <: HList, ZotOut <: HList]
+    (implicit zot : ZipOne.Aux[HT, TT, ZotOut]): Aux[HH :: HT, TH :: TT, (HH :: TH) :: ZotOut] =
         new ZipOne[HH :: HT, TH :: TT] {
-          type Out = (HH :: TH) :: zot.Out
+          type Out = (HH :: TH) :: ZotOut
           def apply(h : HH :: HT, t : TH :: TT): Out = (h.head :: t.head) :: zot(h.tail, t.tail)
         }
   }
@@ -2161,12 +2238,12 @@ object hlist {
 
     type Aux[L <: HList, Out0 <: HList] = Zip[L] { type Out = Out0 }
 
-    implicit def zipper[L <: HList, OutT <: HList]
+    implicit def zipper[L <: HList, OutT <: HList, OutM <: HList]
       (implicit
         transposer : Transposer.Aux[L, OutT],
-        mapper : Mapper[tupled.type, OutT]): Aux[L, mapper.Out] =
+        mapper : Mapper.Aux[tupled.type, OutT, OutM]): Aux[L, OutM] =
         new Zip[L] {
-          type Out = mapper.Out
+          type Out = OutM
           def apply(l : L): Out = l.transpose map tupled
         }
   }
@@ -2183,13 +2260,13 @@ object hlist {
 
     type Aux[L <: HList, Out0] = Unzip[L] { type Out = Out0 }
 
-    implicit def unzipper[L <: HList, OutM <: HList, OutT <: HList]
+    implicit def unzipper[L <: HList, OutM <: HList, TransposerOut <: HList, TuplerOut]
       (implicit
         mapper : Mapper.Aux[productElements.type, L, OutM],
-        transposer : Transposer.Aux[OutM, OutT],
-        tupler : Tupler[OutT]): Aux[L, tupler.Out] =
+        transposer : Transposer.Aux[OutM, TransposerOut],
+        tupler : Tupler.Aux[TransposerOut, TuplerOut]): Aux[L, TuplerOut] =
         new Unzip[L] {
-          type Out = tupler.Out
+          type Out = TuplerOut
           def apply(l : L): Out = (l map productElements).transpose.tupled
         }
   }
@@ -2215,10 +2292,10 @@ object hlist {
         def apply(fl : HNil, al : HNil): Out = HNil
       }
 
-    implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList]
-      (implicit ztt : ZipApply[FLT, ALT]): Aux[(T => R) :: FLT, T :: ALT, R :: ztt.Out] =
+    implicit def hconsZipApply[T, R, FLT <: HList, ALT <: HList, ZttOut <: HList]
+      (implicit ztt : ZipApply.Aux[FLT, ALT, ZttOut]): Aux[(T => R) :: FLT, T :: ALT, R :: ZttOut] =
         new ZipApply[(T => R) :: FLT, T :: ALT] {
-          type Out = R :: ztt.Out
+          type Out = R :: ZttOut
           def apply(fl : (T => R) :: FLT, al : T :: ALT): Out = fl.head(al.head) :: ztt(fl.tail, al.tail)
         }
   }
@@ -2241,12 +2318,12 @@ object hlist {
       def apply(t: C, u: L) = HNil
     }
 
-    implicit def constZipper[C, L <: HList, M <: HList]
+    implicit def constZipper[C, L <: HList, M <: HList, ZipperOut <: HList]
       (implicit
         mapper: ConstMapper.Aux[C, L, M],
-        zipper: Zip[L :: M :: HNil]): Aux[C, L, zipper.Out] =
+        zipper: Zip.Aux[L :: M :: HNil, ZipperOut]): Aux[C, L, ZipperOut] =
         new ZipConst[C, L] {
-          type Out = zipper.Out
+          type Out = ZipperOut
           def apply(c: C, l: L) = zipper(l :: mapper(c, l) :: HNil)
         }
   }
@@ -2268,11 +2345,11 @@ object hlist {
     implicit def hnilZipWithHList[R <: HList, P <: Poly2]: Aux[HNil, R, P, HNil] = constZipWith[HNil, R, P]
     implicit def hlistZipWithHNil[L <: HList, P <: Poly2]: Aux[L, HNil, P, HNil] = constZipWith[L, HNil, P]
 
-    implicit def hlistZipWithHList[LH, RH, LT <: HList, RT <: HList, P <: Poly2]
-      (implicit zipWith: ZipWith[LT, RT, P], clr: Case2[P, LH, RH])
-        : Aux[LH :: LT, RH :: RT, P, clr.Result :: zipWith.Out] =
+    implicit def hlistZipWithHList[LH, RH, LT <: HList, RT <: HList, P <: Poly2, ZipWithOut <: HList, ClrResult]
+      (implicit zipWith: ZipWith.Aux[LT, RT, P, ZipWithOut], clr: Case2.Aux[P, LH, RH, ClrResult])
+        : Aux[LH :: LT, RH :: RT, P, ClrResult :: ZipWithOut] =
           new ZipWith[LH :: LT, RH :: RT, P] {
-            type Out = clr.Result :: zipWith.Out
+            type Out = ClrResult :: ZipWithOut
             def apply(l: LH :: LT, r: RH :: RT): Out =
               clr(l.head, r.head) :: zipWith(l.tail, r.tail)
           }
@@ -2289,28 +2366,32 @@ object hlist {
    *
    * @author Cody Allen
    */
-  trait ZipWithKeys[K <: HList, V <: HList] extends DepFn1[V] with Serializable { type Out <: HList }
+  sealed abstract class ZipWithKeys[K <: HList, V <: HList] extends DepFn1[V] with Serializable {
+    type Out <: HList
+  }
 
   object ZipWithKeys {
     import shapeless.labelled._
 
-    def apply[K <: HList, V <: HList]
-      (implicit zipWithKeys: ZipWithKeys[K, V]): Aux[K, V, zipWithKeys.Out] = zipWithKeys
-
-    type Aux[K <: HList, V <: HList, Out0 <: HList] = ZipWithKeys[K, V] { type Out = Out0 }
-
-    implicit val hnilZipWithKeys: Aux[HNil, HNil, HNil] = new ZipWithKeys[HNil, HNil] {
-      type Out = HNil
-      def apply(v: HNil) = HNil
+    private val instance = new ZipWithKeys[HList, HList] {
+      type Out = HList
+      def apply(v: HList): HList = v
     }
 
-    implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList] (implicit zipWithKeys: ZipWithKeys[KT, VT], wkh: Witness.Aux[KH])
-        : Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: zipWithKeys.Out] =
-          new ZipWithKeys[KH :: KT, VH :: VT] {
-            type Out = FieldType[KH, VH] :: zipWithKeys.Out
-            def apply(v: VH :: VT): Out =
-              field[wkh.T](v.head) :: zipWithKeys(v.tail)
-          }
+    def apply[K <: HList, V <: HList](
+      implicit zipWithKeys: ZipWithKeys[K, V]
+    ): Aux[K, V, zipWithKeys.Out] = zipWithKeys
+
+    type Aux[K <: HList, V <: HList, Out0 <: HList] =
+      ZipWithKeys[K, V] { type Out = Out0 }
+
+    implicit def hnilZipWithKeys: Aux[HNil, HNil, HNil] =
+      instance.asInstanceOf[Aux[HNil, HNil, HNil]]
+
+    implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList, KVT <: HList](
+      implicit wkh: Witness.Aux[KH], zipWithKeys: ZipWithKeys.Aux[KT, VT, KVT]
+    ): Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT] =
+      instance.asInstanceOf[Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT]]
   }
 
   /**
@@ -2384,21 +2465,21 @@ object hlist {
       def apply(l: HNil): Out = HNil
     }
 
-    implicit def hlistCollect[LH, LT <: HList, P <: Poly]
-      (implicit collect: Collect[LT, P], clr: Case1[P, LH])
-        : Aux[LH :: LT, P, clr.Result :: collect.Out] =
+    implicit def hlistCollect[LH, LT <: HList, P <: Poly, CollectOut <: HList, ClrResult]
+      (implicit collect: Collect.Aux[LT, P, CollectOut], clr: Case1.Aux[P, LH, ClrResult])
+        : Aux[LH :: LT, P, ClrResult :: CollectOut] =
           new Collect[LH :: LT, P] {
-            type Out = clr.Result :: collect.Out
+            type Out = ClrResult :: CollectOut
 
             def apply(l: LH :: LT): Out = clr(l.head) :: collect(l.tail)
           }
   }
 
   trait LowPriorityCollect {
-    implicit def hlistNoPolyCase[LH, LT <: HList, P <: Poly]
-      (implicit collect: Collect[LT, P]): Collect.Aux[LH :: LT, P, collect.Out] =
+    implicit def hlistNoPolyCase[LH, LT <: HList, P <: Poly, CollectOut <: HList]
+      (implicit collect: Collect.Aux[LT, P, CollectOut]): Collect.Aux[LH :: LT, P, CollectOut] =
         new Collect[LH :: LT, P] {
-          type Out = collect.Out
+          type Out = CollectOut
 
           def apply(l: LH :: LT): Out = collect(l.tail)
         }
@@ -2437,10 +2518,10 @@ object hlist {
         def apply(a: A, m: HNil): Out = HNil
       }
 
-    implicit def hlistMapCons[A, H <: HList, TM <: HList]
-      (implicit mapCons: MapCons[A, TM]): Aux[A, H :: TM, (A :: H) :: mapCons.Out] =
+    implicit def hlistMapCons[A, H <: HList, TM <: HList, MapConsOut <: HList]
+      (implicit mapCons: MapCons.Aux[A, TM, MapConsOut]): Aux[A, H :: TM, (A :: H) :: MapConsOut] =
         new MapCons[A, H :: TM] {
-          type Out = (A :: H) :: mapCons.Out
+          type Out = (A :: H) :: MapConsOut
 
           def apply(a: A, l: H :: TM): Out = (a :: l.head) :: mapCons(a, l.tail)
         }
@@ -2465,10 +2546,10 @@ object hlist {
         def apply(a: A, l: L): Out = (a :: HNil) :: HNil
       }
 
-    implicit def hlistInterleave[A, H, T <: HList, LI <: HList]
-      (implicit interleave: Interleave.Aux[A, T, LI], mapCons: MapCons[H, LI])
-        : Aux[A, H :: T, (A :: H :: T) :: mapCons.Out] = new Interleave[A, H :: T] {
-          type Out = (A :: H :: T) :: mapCons.Out
+    implicit def hlistInterleave[A, H, T <: HList, LI <: HList, MapConsOut <: HList]
+      (implicit interleave: Interleave.Aux[A, T, LI], mapCons: MapCons.Aux[H, LI, MapConsOut])
+        : Aux[A, H :: T, (A :: H :: T) :: MapConsOut] = new Interleave[A, H :: T] {
+          type Out = (A :: H :: T) :: MapConsOut
 
           def apply(a: A, l: H :: T): Out = (a :: l) :: mapCons(l.head, interleave(a, l.tail))
         }
@@ -2494,13 +2575,13 @@ object hlist {
         def apply(a: A, m: M): Out = HNil
       }
 
-    implicit def hlistFlatMapInterleave[A, H <: HList, TM <: HList, HO <: HList, TMO <: HList]
+    implicit def hlistFlatMapInterleave[A, H <: HList, TM <: HList, HO <: HList, TMO <: HList, PrependOut <: HList]
       (implicit interleave: Interleave.Aux[A, H, HO],
          flatMapInterleave: FlatMapInterleave.Aux[A, TM, TMO],
-         prepend: Prepend[HO, TMO]
-       ): Aux[A, H :: TM, prepend.Out] =
+         prepend: Prepend.Aux[HO, TMO, PrependOut]
+       ): Aux[A, H :: TM, PrependOut] =
           new FlatMapInterleave[A, H :: TM] {
-            type Out = prepend.Out
+            type Out = PrependOut
 
             def apply(a: A, m: H :: TM): Out =
               prepend(interleave(a, m.head), flatMapInterleave(a, m.tail))
@@ -2525,11 +2606,11 @@ object hlist {
       def apply(l: L): Out = HNil :: HNil
     }
 
-    implicit def hlistPermutations[H, T <: HList, TP <: HList]
-      (implicit permutations: Permutations.Aux[T, TP], flatMapInterleave: FlatMapInterleave[H, TP])
-        : Aux[H :: T, flatMapInterleave.Out] =
+    implicit def hlistPermutations[H, T <: HList, TP <: HList, FlatmapInterleaveOut <: HList]
+      (implicit permutations: Permutations.Aux[T, TP], flatMapInterleave: FlatMapInterleave.Aux[H, TP, FlatmapInterleaveOut])
+        : Aux[H :: T, FlatmapInterleaveOut] =
           new Permutations[H :: T] {
-            type Out = flatMapInterleave.Out
+            type Out = FlatmapInterleaveOut
 
             def apply(l: H :: T): Out = flatMapInterleave(l.head, permutations(l.tail))
           }
@@ -2556,26 +2637,20 @@ object hlist {
     type Aux[L <: HList, N <: Nat, Out0] = RotateLeft[L, N] { type Out = Out0 }
 
     implicit def hlistRotateLeft[
-    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Before <: HList, After <: HList
+    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Before <: HList, After <: HList, PrependOut <: HList
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
       split: Split.Aux[L, NModSize, Before, After],
-      prepend: Prepend[After, Before]
-       ): RotateLeft.Aux[L, N, prepend.Out] = new RotateLeft[L, N] {
-      type Out = prepend.Out
+      prepend: Prepend.Aux[After, Before, PrependOut]
+    ): RotateLeft.Aux[L, N, PrependOut] = new RotateLeft[L, N] {
+      type Out = PrependOut
 
       def apply(l: L): Out = {
         val (before, after) = split(l)
 
         prepend(after, before)
       }
-    }
-
-    /** Binary compatibility stub */
-    def noopRotateLeft[L <: HList, N <: Nat]: Aux[L, N, L] = new RotateLeft[L, N] {
-      type Out = L
-      def apply(l: L): Out = l
     }
   }
 
@@ -2600,14 +2675,14 @@ object hlist {
     type Aux[L <: HList, N <: Nat, Out0 <: HList] = RotateRight[L, N] { type Out = Out0 }
 
     implicit def hlistRotateRight[
-    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Size_Diff_NModSize <: Nat
+    L <: HList, N <: Nat, Size <: Nat, NModSize <: Nat, Size_Diff_NModSize <: Nat, RotateLeftOut <: HList
     ](implicit
       length: Length.Aux[L, Size],
       mod: nat.Mod.Aux[N, Size, NModSize],
       diff: nat.Diff.Aux[Size, NModSize, Size_Diff_NModSize],
-      rotateLeft: RotateLeft[L, Size_Diff_NModSize]
-       ): RotateRight.Aux[L, N, rotateLeft.Out] = new RotateRight[L, N] {
-      type Out = rotateLeft.Out
+      rotateLeft: RotateLeft.Aux[L, Size_Diff_NModSize, RotateLeftOut]
+       ): RotateRight.Aux[L, N, RotateLeftOut] = new RotateRight[L, N] {
+      type Out = RotateLeftOut
 
       def apply(l: L): Out = rotateLeft(l)
     }
@@ -2639,10 +2714,10 @@ object hlist {
         def apply(l: HNil, in: In) = in :: HNil
       }
 
-    implicit def hlistLeftScanner[H, T <: HList, In, P <: Poly, OutP]
-      (implicit ev: Case2.Aux[P, H, In, OutP], scan: LeftScanner[T, OutP, P]): Aux[H :: T, In, P, In :: scan.Out] =
+    implicit def hlistLeftScanner[H, T <: HList, In, P <: Poly, OutP, ScanOut <: HList]
+      (implicit ev: Case2.Aux[P, H, In, OutP], scan: LeftScanner.Aux[T, OutP, P, ScanOut]): Aux[H :: T, In, P, In :: ScanOut] =
         new LeftScanner[H :: T, In, P]{
-          type Out = In :: scan.Out
+          type Out = In :: ScanOut
 
           def apply(l: H :: T, in: In) = in :: scan(l.tail, ev(l.head, in)) // check it's (h, in) vs (in, h)
         }
@@ -2657,16 +2732,23 @@ object hlist {
     type Out <: HList
   }
 
-  object RightScanner{
-    def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]) = scanR
+  object RightScanner {
+
+    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = RightScanner[L, In, P] { type Out = Out0 }
+
+    def apply[L <: HList, In, P <: Poly](implicit scanR: RightScanner[L, In, P]): Aux[L, In, P, scanR.Out] = scanR
 
     trait RightScanner0[L <: HList, V, P <: Poly] extends DepFn2[L, V] with Serializable {
       type Out <: HList
     }
 
-    implicit def hlistRightScanner0[H, H0, T <: HList, P <: Poly](implicit ev: Case2[P, H0, H]) =
+    object RightScanner0 {
+      type Aux[L <: HList, V, P <: Poly, Out0 <: HList] = RightScanner0[L, V, P] { type Out = Out0 }
+    }
+
+    implicit def hlistRightScanner0[H, H0, T <: HList, P <: Poly, C2Result](implicit ev: Case2.Aux[P, H0, H, C2Result]) =
       new RightScanner0[H :: T, H0, P]{
-        type Out = ev.Result :: H :: T
+        type Out = C2Result :: H :: T
 
         def apply(l: H :: T, h: H0) = ev(h, l.head) :: l
       }
@@ -2678,12 +2760,10 @@ object hlist {
         def apply(l: HNil, in: In): Out = in :: HNil
       }
 
-    type Aux[L <: HList, In, P <: Poly, Out0 <: HList] = RightScanner[L, In, P]{ type Out = Out0 }
-
-    implicit def hlistRightScanner[H, T <: HList, In, P <: Poly, R <: HList]
-      (implicit scanR: Aux[T, In, P, R], scan0: RightScanner0[R, H, P]) =
+    implicit def hlistRightScanner[H, T <: HList, In, P <: Poly, R <: HList, Scan0Out <: HList]
+      (implicit scanR: Aux[T, In, P, R], scan0: RightScanner0.Aux[R, H, P, Scan0Out]): RightScanner.Aux[H :: T, In, P, Scan0Out] =
         new RightScanner[H :: T, In, P]{
-          type Out = scan0.Out
+          type Out = Scan0Out
 
           def apply(l: H :: T, in: In) = scan0(scanR(l.tail, in), l.head)
         }
@@ -2756,22 +2836,24 @@ object hlist {
   }
 
   object Patcher {
-    def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](implicit patch: Patcher[N, M, L, In]) = patch
+    def apply[N <: Nat, M <: Nat, L <: HList, In <: HList](
+      implicit patch: Patcher[N, M, L, In]
+    ): Aux[N, M, L, In, patch.Out] = patch
 
     type Aux[N <: Nat, M <: Nat, L <: HList, In <: HList, Out0 <: HList] = Patcher[N, M, L, In]{ type Out = Out0 }
 
-    implicit def hlistPatch1[N <: Nat, M <: Nat, H, T <: HList, In <: HList]
-      (implicit patch: Patcher[N, M, T, In]) =
+    implicit def hlistPatch1[N <: Nat, M <: Nat, H, T <: HList, In <: HList, PatchOut <: HList]
+      (implicit patch: Patcher.Aux[N, M, T, In, PatchOut]): Aux[Succ[N], M, H :: T, In, H :: PatchOut] =
         new Patcher[Succ[N], M, H :: T, In]{
-          type Out = H :: patch.Out
+          type Out = H :: PatchOut
 
           def apply(l: H :: T, in: In) = l.head :: patch(l.tail, in)
         }
 
-    implicit def hlistPatch2[M <: Nat, L <: HList, In <: HList, OutL <: HList]
-      (implicit drop: Drop.Aux[L, M, OutL], prepend: Prepend[In, OutL]) =
+    implicit def hlistPatch2[M <: Nat, L <: HList, In <: HList, OutL <: HList, OutP <: HList]
+      (implicit drop: Drop.Aux[L, M, OutL], prepend: Prepend.Aux[In, OutL, OutP]) =
         new Patcher[_0, M, L, In]{
-          type Out = prepend.Out
+          type Out = OutP
 
           def apply(l: L, in: In) = prepend(in, drop(l))
         }
@@ -2799,9 +2881,9 @@ object hlist {
   trait LowPriorityCollectFirst{
     type Aux[L <: HList, P <: Poly, Out0] = CollectFirst[L, P]{ type Out = Out0 }
 
-    implicit def hlistIterate[H, T <: HList, P <: Poly](implicit cf: CollectFirst[T, P]): Aux[H :: T, P, cf.Out] =
+    implicit def hlistIterate[H, T <: HList, P <: Poly, CfOut](implicit cf: CollectFirst.Aux[T, P, CfOut]): Aux[H :: T, P, CfOut] =
       new CollectFirst[H :: T, P]{
-        type Out = cf.Out
+        type Out = CfOut
 
         def apply(l: H :: T) = cf(l.tail)
       }
@@ -2822,11 +2904,15 @@ object hlist {
   }
 
   object LiftAll {
-    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
-    class Curried[F[_]] {def apply[In <: HList](in: In)(implicit ev: LiftAll[F, In]) = ev}
 
-    def apply[F[_]] = new Curried[F]
-    def apply[F[_], In <: HList](implicit ev: LiftAll[F, In]) = ev
+    type Aux[F[_], In0 <: HList, Out0 <: HList] = LiftAll[F, In0] { type Out = Out0 }
+
+    class Curried[F[_]] {
+      def apply[In <: HList](in: In)(implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
+    }
+
+    def apply[F[_]]: Curried[F] = new Curried[F]
+    def apply[F[_], In <: HList](implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
 
     implicit def hnil[F[_]]: LiftAll.Aux[F, HNil, HNil] = new LiftAll[F, HNil] {
       type Out = HNil
@@ -2859,15 +2945,15 @@ object hlist {
         def apply(a: A, l: HNil) = l
       }
 
-    implicit def padToHNil[N <: Nat, A](implicit padTo: PadTo[N, A, HNil]): Aux[Succ[N], A, HNil, A :: padTo.Out] =
+    implicit def padToHNil[N <: Nat, A, Out0 <: HList](implicit padTo: PadTo.Aux[N, A, HNil, Out0]): Aux[Succ[N], A, HNil, A :: Out0] =
       new PadTo[Succ[N], A, HNil] {
-        type Out = A :: padTo.Out
+        type Out = A :: Out0
         def apply(a: A, l: HNil) = a :: padTo(a, l)
       }
 
-    implicit def padTo1[N <: Nat, A, H, T <: HList](implicit padTo: PadTo[N, A, T]): Aux[Succ[N], A, H :: T, H :: padTo.Out] =
+    implicit def padTo1[N <: Nat, A, H, T <: HList, Out0 <: HList](implicit padTo: PadTo.Aux[N, A, T, Out0]): Aux[Succ[N], A, H :: T, H :: Out0] =
       new PadTo[Succ[N], A, H :: T] {
-        type Out = H :: padTo.Out
+        type Out = H :: Out0
         def apply(a: A, l: H :: T) = l.head :: padTo(a, l.tail)
       }
   }
@@ -2890,15 +2976,15 @@ object hlist {
         def apply(l: L) = HNil
       }
 
-    implicit def slice1[N <: Nat, U <: Nat, H, T <: HList]
-      (implicit slice: Slice[N, U, T]): Aux[Succ[N], Succ[U], H :: T, slice.Out] =
+    implicit def slice1[N <: Nat, U <: Nat, H, T <: HList, Out0 <: HList]
+      (implicit slice: Slice.Aux[N, U, T, Out0]): Aux[Succ[N], Succ[U], H :: T, Out0] =
         new Slice[Succ[N], Succ[U], H :: T] {
-          type Out = slice.Out
+          type Out = Out0
           def apply(l: H :: T): Out = slice(l.tail)
         }
 
-    implicit def slice2[U <: Nat, H, T <: HList]
-      (implicit slice: Slice[_0, U, T]): Aux[_0, Succ[U], H :: T, H :: slice.Out] =
+    implicit def slice2[U <: Nat, H, T <: HList, Out0 <: HList]
+      (implicit slice: Slice.Aux[_0, U, T, Out0]): Aux[_0, Succ[U], H :: T, H :: Out0] =
         new Slice[_0, Succ[U], H :: T] {
           type Out = H :: slice.Out
           def apply(l: H :: T): Out = l.head :: slice(l.tail)
@@ -2923,10 +3009,10 @@ object hlist {
         def apply(): Out = HNil
       }
 
-    implicit def hlistReify[H, T <: HList](implicit
+    implicit def hlistReify[H, T <: HList, Out0 <: HList](implicit
       wh: Witness.Aux[H],
-      rt: Reify[T]
-    ) : Aux[H :: T, H :: rt.Out] =
+      rt: Reify.Aux[T, Out0]
+    ) : Aux[H :: T, H :: Out0] =
       new Reify[H :: T] {
         type Out = H :: rt.Out
         def apply(): Out = wh.value :: rt()
@@ -2943,9 +3029,12 @@ object hlist {
   }
 
   object Combinations extends LowPriorityCombinations {
-    def apply[L <: HList](n: Nat, l: L)(implicit c: Combinations[n.N, L]): c.Out = c(l)
 
     type Aux[N <: Nat, L <: HList, Out0 <: HList] = Combinations[N, L] { type Out = Out0 }
+
+    def apply[N <: Nat, L <: HList](implicit c: Combinations[N, L]): Aux[N, L, c.Out] = c
+
+    def apply[L <: HList](n: Nat, l: L)(implicit c: Combinations[n.N, L]): c.Out = c(l)
 
     implicit def combination0[L <: HList]: Aux[_0, L, HNil :: HNil] =
       new Combinations[_0, L] {
@@ -2953,12 +3042,12 @@ object hlist {
         def apply(l: L): Out = HNil :: HNil
       }
 
-    implicit def combination1[N <: Nat, H, T <: HList, C1 <: HList, C2 <: HList, CM <: HList]
+    implicit def combination1[N <: Nat, H, T <: HList, C1 <: HList, C2 <: HList, CM <: HList, CpOut <: HList]
     (implicit
      c1: Aux[N, T, C1],
      c2: Aux[Succ[N], T, C2],
      cm: MapCons.Aux[H, C1, CM],
-     cp: Prepend[CM, C2]): Aux[Succ[N], H :: T, cp.Out] =
+     cp: Prepend.Aux[CM, C2, CpOut]): Aux[Succ[N], H :: T, CpOut] =
       new Combinations[Succ[N], H :: T] {
         type Out = cp.Out
         def apply(l: H :: T): Out = cp(cm(l.head, c1(l.tail)), c2(l.tail))
@@ -2971,5 +3060,58 @@ object hlist {
         type Out = HNil
         def apply(l: HNil): Out = HNil
       }
+  }
+
+  /**
+   * Type class supporting mappings from type `T` to an `HList`. Currently only supports mapping nested pairs to an `HList`
+   *
+   * @author Michael Zuber
+   */
+  sealed trait ProductToHList[-T] extends Serializable {
+    type Out <: HList
+    def apply(t: T): Out
+  }
+
+  object ProductToHList {
+    def apply[P](implicit ev: ProductToHList[P]): ProductToHList[P] = ev
+
+    type Aux[P, HL <: HList] = ProductToHList[P] { type Out = HL }
+
+    implicit def pairToHCons[H, T, HL <: HList](
+      implicit ev: ProductToHList.Aux[T, HL]
+    ): ProductToHList.Aux[Product2[H, T], H :: HL] = new ProductToHList[Product2[H, T]] {
+      type Out = H :: HL
+      def apply(p: Product2[H, T]): Out = p._1 :: ev(p._2)
+    }
+
+    implicit val unitToHNil: ProductToHList.Aux[Unit, HNil] = new ProductToHList[Unit] {
+      type Out = HNil
+      def apply(p: Unit): Out = HNil
+    }
+  }
+
+  /**
+   * Type class supporting mappings from an `HList` to a nested pair
+   *
+   * @author Michael Zuber
+   */
+  sealed trait HListToProduct[HL <: HList] extends DepFn1[HL] with Serializable
+
+  object HListToProduct {
+    def apply[HL <: HList](implicit ev: HListToProduct[HL]): HListToProduct[HL] = ev
+
+    type Aux[HL <: HList, P] = HListToProduct[HL] { type Out = P }
+
+    implicit val hnilToUnit: HListToProduct.Aux[HNil, Unit] = new HListToProduct[HNil] {
+      type Out = Unit
+      def apply(hl: HNil): Out = ()
+    }
+
+    implicit def hconsToPair[H, T <: HList, TP](
+      implicit ev: HListToProduct.Aux[T, TP]
+    ): HListToProduct.Aux[H :: T, (H, TP)] = new HListToProduct[H :: T] {
+      type Out = (H, TP)
+      def apply(hl: H :: T): Out = (hl.head, ev(hl.tail))
+    }
   }
 }

@@ -64,7 +64,7 @@ class LowPriorityTests {
   import LowPriorityTests._
 
   @Test
-  def simple {
+  def simple: Unit = {
     import Simple._
     import Extra._
 
@@ -83,7 +83,7 @@ class LowPriorityTests {
   }
 
   @Test
-  def withIgnoring {
+  def withIgnoring: Unit = {
     import WithIgnoring._
     import Extra._
 

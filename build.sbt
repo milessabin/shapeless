@@ -1,60 +1,110 @@
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
-import org.scalajs.sbtplugin.ScalaJSCrossVersion
-import org.scalajs.sbtplugin.cross.{ CrossProject, CrossType }
-import ReleaseTransformations._
+import com.typesafe.sbt.SbtGit.GitKeys._
+import sbtcrossproject.CrossPlugin.autoImport.crossProject
+import sbtcrossproject.CrossProject
 
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+val Scala211 = "2.11.12"
+val Scala212 = "2.12.13"
+val Scala213 = "2.13.5"
 
-import com.typesafe.sbt.osgi.SbtOsgi.{ osgiSettings => defaultOsgiSettings, _ }
+commonSettings
+noPublishSettings
+crossScalaVersions := Nil
 
-import com.typesafe.sbt.SbtGit._
-import GitKeys._
+ThisBuild / organization := "com.chuusai"
+ThisBuild / scalaVersion := Scala213
+ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
+ThisBuild / mimaFailOnNoPrevious := false
 
-lazy val scoverageSettings = Seq(
-  coverageMinimum := 60,
-  coverageFailOnMinimum := false,
-  coverageExcludedFiles := ".*/src/test/.*"
+// GHA configuration
+
+ThisBuild / githubWorkflowBuildPreamble := Seq(
+  WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev"))
+)
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowBuildMatrixAdditions +=
+  "platform" -> List("jvm", "js", "native")
+
+ThisBuild / githubWorkflowArtifactUpload := false
+ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
+
+val JvmCond = s"matrix.platform == 'jvm'"
+val JsCond = s"matrix.platform == 'js'"
+val NativeCond = s"matrix.platform == 'native'"
+
+ThisBuild / githubWorkflowBuild := Seq(
+  WorkflowStep.Sbt(List("validateJVM"), name = Some("Validate JVM"), cond = Some(JvmCond)),
+  WorkflowStep.Sbt(List("validateJS"), name = Some("Validate JavaScript"), cond = Some(JsCond)),
+  WorkflowStep.Sbt(List("validateNative"), name = Some("Validate Scala Native"), cond = Some(NativeCond))
 )
 
-lazy val buildSettings = Seq(
-  organization := "com.chuusai",
-  scalaVersion := "2.12.1",
-  crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
+ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
+ThisBuild / githubWorkflowPublishTargetBranches +=
+  RefPredicate.StartsWith(Ref.Tag("v"))
+
+ThisBuild / githubWorkflowPublishPreamble +=
+  WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
+
+ThisBuild / githubWorkflowPublish := Seq(
+  WorkflowStep.Sbt(
+    List("ci-release"),
+    env = Map(
+      "PGP_PASSPHRASE" -> "${{ secrets.PGP_PASSPHRASE }}",
+      "PGP_SECRET" -> "${{ secrets.PGP_SECRET }}",
+      "SONATYPE_PASSWORD" -> "${{ secrets.SONATYPE_PASSWORD }}",
+      "SONATYPE_USERNAME" -> "${{ secrets.SONATYPE_USERNAME }}"
+    )
+  )
 )
 
-addCommandAlias("root", ";project root")
+Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
+
+addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
-addCommandAlias("validate", ";root;validateJVM;validateJS")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;coreJS/doc")
-
+addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
+addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("runAll", ";examplesJVM/runAll")
-addCommandAlias("releaseAll", ";root;release skip-tests")
+
+val scalacOptionsAll = Seq(
+  "-feature",
+  "-language:higherKinds,implicitConversions",
+  "-Xfatal-warnings",
+  "-deprecation",
+  "-unchecked",
+)
+
+val scalacOptions212 = Seq(
+  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
+  "-Ywarn-unused:-implicits"
+)
+
+val scalacOptions213 = Seq(
+  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
+  "-Ywarn-unused:-implicits"
+)
 
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := Seq(
-    "-feature",
-    "-language:higherKinds",
-    "-language:implicitConversions",
-    "-Xfatal-warnings",
-    "-deprecation",
-    "-unchecked"
-  ),
+  scalacOptions := scalacOptionsAll,
+  Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, y)) if y == 12 => scalacOptions212
+    case Some((2, y)) if y >= 13 => scalacOptions213
+    case _ => Nil
+  }),
 
   resolvers ++= Seq(
     Resolver.sonatypeRepo("releases"),
     Resolver.sonatypeRepo("snapshots")
   ),
 
-  scalacOptions in console in Compile -= "-Xfatal-warnings",
-  scalacOptions in console in Test    -= "-Xfatal-warnings",
-
-  initialCommands in console := """import shapeless._""",
+  Compile / console / scalacOptions -= "-Xfatal-warnings",
+  Test / console / scalacOptions -= "-Xfatal-warnings",
+  console / initialCommands := """import shapeless._""",
 
   scmInfo :=
     Some(ScmInfo(
@@ -68,62 +118,64 @@ def configureJUnit(crossProject: CrossProject) = {
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
   .jvmSettings(
     libraryDependencies +=
-      "com.novocode" % "junit-interface" % "0.9" % "test"
+      "com.novocode" % "junit-interface" % "0.11" % "test"
   )
 }
 
 lazy val commonJsSettings = Seq(
-  scalacOptions += {
-    val tagOrHash =
-      if(isSnapshot.value) sys.process.Process("git rev-parse HEAD").lines_!.head
-      else tagName.value
-    val a = (baseDirectory in LocalRootProject).value.toURI.toString
-    val g = "https://raw.githubusercontent.com/milessabin/shapeless/" + tagOrHash
-    s"-P:scalajs:mapSourceURI:$a->$g/"
-  },
-  parallelExecution in Test := false,
-  coverageExcludedPackages := ".*"
+  Compile / doc / scalacOptions -= "-Xfatal-warnings",
+  Test / parallelExecution := false
 )
 
 lazy val commonJvmSettings = Seq(
-  parallelExecution in Test := false,
-  coverageExcludedPackages := "shapeless.examples.*"
+  Test / parallelExecution := false
 )
 
-lazy val coreSettings = buildSettings ++ commonSettings ++ publishSettings ++
-  releaseSettings ++ scoverageSettings
+lazy val coreSettings = commonSettings ++ publishSettings
 
-lazy val root = project.in(file("."))
-  .aggregate(coreJS, coreJVM)
-  .dependsOn(coreJS, coreJVM)
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings)
-
-lazy val CrossTypeMixed: CrossType = new CrossType {
+lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
   def projectDir(crossBase: File, projectType: String): File =
     crossBase / projectType
+
+  override def projectDir(crossBase: File, projectType: sbtcrossproject.Platform) = {
+    val dir = projectType match {
+      case JVMPlatform => "jvm"
+      case JSPlatform => "js"
+      case NativePlatform => "native"
+    }
+    crossBase / dir
+  }
 
   def sharedSrcDir(projectBase: File, conf: String): Option[File] =
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
 
-lazy val core = crossProject.crossType(CrossTypeMixed)
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
   .configureCross(buildInfoSetup)
-  .settings(osgiSettings:_*)
-  .settings(
-    sourceGenerators in Compile += (sourceManaged in Compile).map(Boilerplate.gen).taskValue
-  )
+  .enablePlugins(SbtOsgi)
+  .settings(coreOsgiSettings:_*)
+  .settings(Compile / sourceGenerators += (Compile / sourceManaged).map(Boilerplate.gen).taskValue)
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .nativeSettings(
+    // disable scaladoc generation on native
+    // currently getting errors like
+    //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
+    Compile / packageDoc / publishArtifact := false,
+    packageDoc / publishArtifact := false,
+    Compile / doc / sources := Nil,
+    Test / sources := Nil
+  )
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
+lazy val coreNative = core.native
 
-lazy val scratch = crossProject.crossType(CrossType.Pure)
+lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "scratch")
@@ -134,20 +186,21 @@ lazy val scratch = crossProject.crossType(CrossType.Pure)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
+lazy val scratchNative = scratch.native
 
 lazy val runAll = TaskKey[Unit]("runAll")
 
 def runAllIn(config: Configuration): Setting[Task[Unit]] = {
-  runAll in config := {
-    val classes = (discoveredMainClasses in config).value
-    val runner0 = (runner in run).value
-    val cp = (fullClasspath in config).value
+  config / runAll := {
+    val classes = (config / discoveredMainClasses).value
+    val runner0 = (run / runner).value
+    val cp = (config / fullClasspath).value
     val s = streams.value
-    classes.foreach(c => runner0.run(c, Attributed.data(cp), Seq(), s.log))
+    classes.foreach(c => runner0.run(c, Attributed.data(cp), Nil, s.log))
   }
 }
 
-lazy val examples = crossProject.crossType(CrossType.Pure)
+lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
@@ -155,8 +208,9 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
-        case _ => Seq()
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
+        case _ =>
+          Nil
       }
     }
   )
@@ -165,121 +219,84 @@ lazy val examples = crossProject.crossType(CrossType.Pure)
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  .nativeSettings(
+    Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")),
+    Test / sources := Nil
+  )
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
+lazy val examplesNative = examples.native
+
+lazy val nativeTest = project
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    noPublishSettings,
+    Compile / sourceGenerators += Def.task {
+      val exclude = List(
+        "StagedTypeClassExample", // scala-reflect
+        "CombinatorTesting", // scala-parser-combinators
+        "ALaCacheDemo" // java.util.WeakHashMap, java.util.logging.Logger
+      )
+      val classNames = (examplesNative / Compile / discoveredMainClasses).value.filterNot{
+        c => exclude.exists(c.contains)
+      }.sorted
+      val src = s"""package shapeless
+      |
+      |object NativeMain {
+      |  def main(args: Array[String]): Unit = {
+      |${classNames.map("    " + _ + ".main(args)").mkString("\n")}
+      |  }
+      |}
+      |""".stripMargin
+      val f = (Compile / sourceManaged).value / "shapeless" / "NativeMain.scala"
+      IO.write(f, src)
+      f :: Nil
+    }.taskValue
+  ).dependsOn(
+    examplesNative
+  )
 
 lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "macro-compat" % "1.1.1",
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
-    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided",
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
-  ),
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      // if scala 2.11+ is used, quasiquotes are merged into scala-reflect
-      case Some((2, scalaMajor)) if scalaMajor >= 11 => Seq()
-      // in Scala 2.10, quasiquotes are provided by macro paradise
-      case Some((2, 10)) =>
-        Seq("org.scalamacros" %% "quasiquotes" % "2.1.0" cross CrossVersion.binary)
-    }
-  }
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
+  )
 )
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
-    (unmanagedSourceDirectories in sc) ++= {
-      (unmanagedSourceDirectories in sc ).value.map { dir: File =>
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, y)) if y == 10 => new File(dir.getPath + "_2.10")
-          case Some((2, y)) if y >= 11 => new File(dir.getPath + "_2.11+")
-        }
+    (sc / unmanagedSourceDirectories) ++= {
+      (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
+        if(dir.getName != "scala") Seq(dir)
+        else
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
+            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.13-"))
+          }
       }
     }
   }
 
 lazy val publishSettings = Seq(
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
+  Test / publishArtifact := false,
+  pomIncludeRepository := (_ => false),
   homepage := Some(url("https://github.com/milessabin/shapeless")),
   licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   scmInfo := Some(ScmInfo(url("https://github.com/milessabin/shapeless"), "scm:git:git@github.com:milessabin/shapeless.git")),
-  pomExtra := (
-    <developers>
-      <developer>
-        <id>milessabin</id>
-        <name>Miles Sabin</name>
-        <url>http://milessabin.com/blog</url>
-      </developer>
-    </developers>
+  developers := List(
+    Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
+    Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
   )
 )
 
-lazy val noPublishSettings = Seq(
-  publish := (),
-  publishLocal := (),
-  publishArtifact := false
-)
+lazy val noPublishSettings =
+  publish / skip := true
 
-lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-  mimaPreviousArtifacts := {
-    if(scalaVersion.value == "2.12.1") Set()
-    else {
-      val previousVersion = "2.3.0"
-      val previousSJSVersion = "0.6.7"
-      val previousSJSBinaryVersion =
-        ScalaJSCrossVersion.binaryScalaJSVersion(previousSJSVersion)
-      val previousBinaryCrossVersion =
-        CrossVersion.binaryMapped(v => s"sjs${previousSJSBinaryVersion}_$v")
-      val scalaV = scalaVersion.value
-      val scalaBinaryV = scalaBinaryVersion.value
-      val thisProjectID = projectID.value
-      val previousCrossVersion = thisProjectID.crossVersion match {
-        case ScalaJSCrossVersion.binary => previousBinaryCrossVersion
-        case crossVersion               => crossVersion
-      }
-
-      // Filter out e:info.apiURL as it expects 0.6.7-SNAPSHOT, whereas the
-      // artifact we're looking for has 0.6.6 (for example).
-      val prevExtraAttributes =
-        thisProjectID.extraAttributes.filterKeys(_ != "e:info.apiURL")
-      val prevProjectID =
-        (thisProjectID.organization % thisProjectID.name % previousVersion)
-          .cross(previousCrossVersion)
-          .extra(prevExtraAttributes.toSeq: _*)
-
-      Set(CrossVersion(scalaV, scalaBinaryV)(prevProjectID).cross(CrossVersion.Disabled))
-    }
-  },
-
-  mimaBinaryIssueFilters ++= {
-    import com.typesafe.tools.mima.core._
-    import com.typesafe.tools.mima.core.ProblemFilters._
-
-    // Filtering the methods that were added since the checked version
-    // (these only break forward compatibility, not the backward one)
-    Seq(
-      exclude[MissingMethodProblem]("shapeless.:+:.eliminate"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$15"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$16"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.shapeless$CaseClassMacros$$$anonfun$17"),
-      exclude[MissingMethodProblem]("shapeless.UnwrappedInstances.tagUnwrapped"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.findField"),
-      exclude[MissingMethodProblem]("shapeless.CaseClassMacros.FieldType"),
-      exclude[MissingMethodProblem]("shapeless.SingletonTypeUtils.parseSingletonSymbolType"),
-      exclude[MissingMethodProblem]("shapeless.ops.hlist#IsHCons.cons"),
-      exclude[MissingMethodProblem]("shapeless.ops.coproduct#IsCCons.cons")
-    )
-  }
+enablePlugins(MimaPlugin)
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Set(),
+  mimaBinaryIssueFilters := Seq()
 )
 
 def buildInfoSetup(crossProject: CrossProject): CrossProject = {
@@ -289,41 +306,15 @@ def buildInfoSetup(crossProject: CrossProject): CrossProject = {
     buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
     buildInfoOptions += BuildInfoOption.BuildTime
   )
-  crossProject jvmConfigure transform jsConfigure transform
+  crossProject jvmConfigure transform jsConfigure transform nativeConfigure transform
 }
 
-lazy val osgiSettings = defaultOsgiSettings ++ Seq(
+lazy val coreOsgiSettings = osgiSettings ++ Seq(
   OsgiKeys.bundleSymbolicName := "shapeless",
   OsgiKeys.exportPackage := Seq("shapeless.*;version=${Bundle-Version}"),
-  OsgiKeys.importPackage := Seq("""!scala.quasiquotes,scala.*;version="$<range;[==,=+);$<@>>""""),
+  OsgiKeys.importPackage := {
+    val Some((major, minor)) = CrossVersion.partialVersion(scalaVersion.value)
+    Seq(s"""!scala.quasiquotes,scala.*;version="[$major.$minor,$major.${minor+1})"""")
+  },
   OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package")
 )
-
-lazy val tagName = Def.setting{
-  s"shapeless-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
-}
-
-lazy val releaseSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseTagName := tagName.value,
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    runClean,
-    runTest,
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    publishArtifacts,
-    setNextVersion,
-    commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges
-  )
-)
-
-credentials in ThisBuild ++= (for {
-  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq

@@ -27,7 +27,7 @@ class SizedTests {
   import syntax.sized._
   
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     val l0 = List.empty[Int]
     val l1 = List(1)
     val l2 = List(1, 2)
@@ -283,8 +283,8 @@ class SizedTests {
 
 
   @Test
-  def testToHList {
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+  def testToHList: Unit = {
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val hlApap = apapSized.toHList
     equalInferredTypes(Nat._4, hlApap.length)
@@ -369,7 +369,7 @@ class SizedTests {
   }
 
   @Test
-  def testAt {
+  def testAt: Unit = {
     val ss = Sized[List](0, 1, 2)
     typed[Int](ss(0))
     typed[Int](ss(1))
@@ -400,7 +400,7 @@ class SizedTests {
   }
 
   @Test
-  def testTupled {
+  def testTupled: Unit = {
     val ss = Sized[List](0, 1, 2)
     val r1 = ss.tupled
     assertTypedEquals[(Int, Int, Int)]((0, 1, 2), r1)
@@ -412,7 +412,7 @@ class SizedTests {
   }
 
   @Test
-  def testEquals {
+  def testEquals: Unit = {
     val s1 = Sized[List](1, 2, 3)
     val s2 = Sized[List](1, 2, 3)
     val s3 = Sized[List](1, 2, 4)

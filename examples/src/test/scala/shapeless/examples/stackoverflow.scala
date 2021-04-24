@@ -41,7 +41,7 @@ class StackOverflow1 {
   def foldCurry[L <: HList, F, Out](l : L, f : F)(implicit fc : FoldCurry[L, F, Out]) : Out = fc(l, f)
   
   @Test
-  def testFoldCurry {
+  def testFoldCurry: Unit = {
     val f1 = (i : Int, j : Int, k : Int, l : Int) => i+j+k+l
     val f1c = f1.curried
     

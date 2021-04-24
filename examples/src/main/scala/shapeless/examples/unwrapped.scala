@@ -43,52 +43,49 @@ object UnwrappedExamples {
   // doing with it is writing a system to automatically generate serialization
   // codecs. For example:
   trait Encode[-T] {
-    def toJson(t: T): String =
-      fields(t).map { case (k, v) => s""""$k":$v""" }.mkString("{", ",", "}")
+    def toJson(t: T): String = fields(t).map { case (k, v) => s""""$k":$v""" }.mkString("{", ",", "}")
     def fields(t: T): Map[String, String]
   }
+
   object Encode {
-    implicit def encodeHNil = new Encode[HNil] {
-      def fields(hnil: HNil) = Map.empty
+    def instance[T](f: T => Map[String, String]): Encode[T] = new Encode[T] {
+      def fields(value: T): Map[String, String] = f(value)
     }
-    implicit def encodeHCons[
-      K <: Symbol,
-      V,
-      Rest <: HList
-    ](implicit
-      key: Witness.Aux[K],
-      encodeV: Lazy[EncodeValue[V]],
-      encodeRest: Strict[Encode[Rest]]
-    ) = new Encode[FieldType[K, V] :: Rest] {
-      def fields(hl: FieldType[K, V] :: Rest) =
-        encodeRest.value.fields(hl.tail) +
-          (key.value.name -> encodeV.value.toJsonFragment(hl.head))
+
+    implicit val encodeHNil: Encode[HNil] =
+      instance(_ => Map.empty)
+
+    implicit def encodeHCons[K <: String, V, Rest <: HList](
+      implicit key: Witness.Aux[K], encodeV: Lazy[EncodeValue[V]], encodeRest: Encode[Rest]
+    ): Encode[FieldType[K, V] :: Rest] = instance { case h :: t =>
+      encodeRest.fields(t) + (key.value -> encodeV.value.toJsonFragment(h))
     }
+
     // the magic one!
-    implicit def encodeGeneric[T, Repr](implicit
-      gen: LabelledGeneric.Aux[T, Repr],
-      encodeRepr: Lazy[Encode[Repr]]
-    ) = new Encode[T] {
-      def fields(t: T) = encodeRepr.value.fields(gen.to(t))
+    implicit def encodeGeneric[T, Repr](
+      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: Lazy[Encode[Repr]]
+    ): Encode[T] = instance { value =>
+      encodeRepr.value.fields(gen.to(value))
     }
   }
 
   trait EncodeValue[-T] {
     def toJsonFragment(t: T): String
   }
+
   object EncodeValue {
-    implicit lazy val encodeString =
-      new EncodeValue[String] {
-        def toJsonFragment(s: String) = s""""$s""""
-      }
-    implicit lazy val encodeInt =
-      new EncodeValue[Int] {
-        def toJsonFragment(i: Int) = s"""$i"""
-      }
-    implicit def encodeRoot[T](implicit r: Lazy[Encode[T]]) =
-      new EncodeValue[T] {
-        def toJsonFragment(t: T) = r.value.toJson(t)
-      }
+    def instance[T](f: T => String): EncodeValue[T] = new EncodeValue[T] {
+      def toJsonFragment(value: T): String = f(value)
+    }
+
+    implicit val encodeString: EncodeValue[String] =
+      instance(str => s""""$str"""")
+
+    implicit val encodeInt: EncodeValue[Int] =
+      instance(_.toString)
+
+    implicit def encodeRoot[T](implicit r: Lazy[Encode[T]]): EncodeValue[T] =
+      instance(value => r.value.toJson(value))
   }
 
   // OK! Yay! Let's try it out!
@@ -104,36 +101,35 @@ object UnwrappedExamples {
   // through the wrapper types:
 
   trait Encode2[-T] {
-    def toJson(t: T): String =
-      fields(t).map { case (k, v) => s""""$k":$v""" }.mkString("{", ",", "}")
+    def toJson(t: T): String = fields(t).map { case (k, v) => s""""$k":$v""" }.mkString("{", ",", "}")
     def fields(t: T): Map[String, String]
   }
+
   object Encode2 {
-    implicit def encodeHNil = new Encode2[HNil] {
-      def fields(hnil: HNil) = Map.empty
+    def instance[T](f: T => Map[String, String]): Encode2[T] = new Encode2[T] {
+      def fields(value: T): Map[String, String] = f(value)
     }
-    implicit def encodeHCons[
-      K <: Symbol,
-      V,
-      U,
-      Rest <: HList
-    ](implicit
+
+    implicit val encodeHNil: Encode2[HNil] =
+      instance(_ => Map.empty)
+
+    implicit def encodeHCons[K <: String, V, U, Rest <: HList](
+      implicit
       key: Witness.Aux[K],
-      uw: Strict[Unwrapped.Aux[V, U]],
+      uw: Unwrapped.Aux[V, U],
       encodeV: Lazy[EncodeValue[U]],
-      encodeRest: Strict[Encode2[Rest]]
-    ) = new Encode2[FieldType[K, V] :: Rest] {
-      def fields(hl: FieldType[K, V] :: Rest) =
-        encodeRest.value.fields(hl.tail) +
-          (key.value.name -> encodeV.value.toJsonFragment(uw.value.unwrap(hl.head)))
+      encodeRest: Encode2[Rest]
+    ): Encode2[FieldType[K, V] :: Rest] = instance { case h :: t =>
+      encodeRest.fields(t) + (key.value -> encodeV.value.toJsonFragment(uw.unwrap(h)))
     }
-    implicit def encodeGeneric[T, Repr](implicit
-      gen: LabelledGeneric.Aux[T, Repr],
-      encodeRepr: Lazy[Encode2[Repr]]
-    ) = new Encode2[T] {
-      def fields(t: T) = encodeRepr.value.fields(gen.to(t))
+
+    implicit def encodeGeneric[T, Repr](
+      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: Lazy[Encode2[Repr]]
+    ): Encode2[T] = instance { value =>
+      encodeRepr.value.fields(gen.to(value))
     }
   }
+
   // OK! Let's try again
   val encoder2 = the[Encode2[User]]
   println(encoder2.toJson(user))
@@ -144,5 +140,4 @@ object UnwrappedExamples {
   // Note that there are a few more places you'd probably want to insert unwrapping
   // if this was a real codec generator (basically, you'd likely want to remove
   // wrappers on objects too, not just wrappers on their fields)
-
 }

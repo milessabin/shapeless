@@ -48,6 +48,11 @@ class HListTests {
 
   type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+  object incInt extends (Int >-> Int)(_ + 1)
+  object extendedChoose extends LiftU(choose)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -129,13 +134,9 @@ class HListTests {
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
 
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
-  object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends LiftU(choose)
 
   @Test
-  def testBasics {
+  def testBasics: Unit = {
     val l = 1 :: "foo" :: 2.0 :: HNil
 
     val r1 = l.head
@@ -160,7 +161,7 @@ class HListTests {
   }
 
   @Test
-  def testMap {
+  def testMap: Unit = {
     implicitly[Mapper.Aux[choose.type, HNil, HNil]]
     implicitly[choose.Case[Set[Int]]]
     implicitly[Mapper.Aux[choose.type, Set[Int] :: HNil, Option[Int] :: HNil]]
@@ -208,12 +209,24 @@ class HListTests {
     assertTypedEquals[String :: String :: String :: String :: HNil]("Apple()" :: "Pear()" :: "Banana()" :: "Pear()" :: HNil, l11)
   }
 
+  @Test
+  def testMapped: Unit = {
+    implicitly[Mapped.Aux[HNil, Option, HNil]]
+    implicitly[Mapped.Aux[Int :: String :: HNil, Option, Option[Int] :: Option[String] :: HNil]]
+
+    implicitly[Mapped.Aux[HNil, Id, HNil]]
+    implicitly[Mapped.Aux[Int :: String :: HNil, Id, Int :: String :: HNil]]
+
+    implicitly[Mapped.Aux[HNil, Const[Int]#λ, HNil]]
+    implicitly[Mapped.Aux[Double :: String :: HNil, Const[Int]#λ, Int :: Int :: HNil]]
+  }
+
   object dup extends Poly1 {
     implicit def default[T] = at[T](t => t :: t :: HNil)
   }
 
   @Test
-  def testFlatMap {
+  def testFlatMap: Unit = {
     val l1 = 1 :: "foo" :: true :: HNil
 
     val l2 = l1 flatMap dup
@@ -236,7 +249,7 @@ class HListTests {
   }
 
   @Test
-  def testConformance {
+  def testConformance: Unit = {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
     assertTypedEquals[Any :: AnyRef :: Any :: Any :: HNil](1 :: "foo" :: 2 :: 3 :: HNil, l1)
 
@@ -253,7 +266,7 @@ class HListTests {
   }
 
   @Test
-  def testLength {
+  def testLength: Unit = {
     val l0 = HNil
     typed[Nat._0](l0.length)
     assertEquals(0, Nat toInt l0.length)
@@ -284,21 +297,21 @@ class HListTests {
   }
 
   @Test
-  def testRuntimeLength {
+  def testRuntimeLength: Unit = {
     assertEquals(0, HNil.runtimeLength)
     assertEquals(1, (123 :: HNil).runtimeLength)
     assertEquals(2, ("abc" :: 123 :: HNil).runtimeLength)
   }
 
   @Test
-  def testRuntimeList {
+  def testRuntimeList: Unit = {
     assertEquals(Nil, HNil.runtimeList)
     assertEquals(123 :: Nil, (123 :: HNil).runtimeList)
     assertEquals("abc" :: 123 :: Nil, ("abc" :: 123 :: HNil).runtimeList)
   }
 
   @Test
-  def testInitLast {
+  def testInitLast: Unit = {
 
     val lp = apbp.last
     assertTypedEquals[Pear](p, lp)
@@ -308,7 +321,7 @@ class HListTests {
   }
 
   @Test
-  def testAlign {
+  def testAlign: Unit = {
     type M0 = Int :: String :: Boolean :: HNil
     type M1 = Int :: Boolean :: String :: HNil
     type M2 = String :: Int :: Boolean :: HNil
@@ -384,7 +397,7 @@ class HListTests {
   }
 
   @Test
-  def testReverse {
+  def testReverse: Unit = {
     val pbpa = apbp.reverse
     assertTypedEquals[PBPA](p :: b :: p :: a :: HNil, pbpa)
 
@@ -394,9 +407,12 @@ class HListTests {
   }
 
   @Test
-  def testPrepend {
+  def testPrepend: Unit = {
     val apbp2 = ap ::: bp
     assertTypedEquals[APBP](a :: p :: b :: p :: HNil, apbp2)
+    val apbp2inv = implicitly[Prepend.Aux[AP, BP, APBP]].inverse(apbp2)
+    assertTypedEquals[AP](ap, apbp2inv._1)
+    assertTypedEquals[BP](bp, apbp2inv._2)
 
     typed[Apple](apbp2.head)
     typed[Pear](apbp2.tail.head)
@@ -413,28 +429,60 @@ class HListTests {
 
       val r1 = prependWithHNil(ap)
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = prependToHNil(ap)
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
+
       val r3 = HNil ::: HNil
       assertTypedSame[HNil](HNil, r3)
+      val r3inv = implicitly[Prepend.Aux[HNil, HNil, HNil]].inverse(r3)
+      assertTypedSame[HNil](HNil, r3inv._1)
+      assertTypedSame[HNil](HNil, r3inv._2)
 
       val r4 = prependWithHNil(pabp)
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = prependToHNil(pabp)
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
       // must also pass with the default implicit
       val r1 = HNil ::: ap
       assertTypedSame[AP](ap, r1)
+      val r1inv = implicitly[Prepend.Aux[HNil, AP, AP]].inverse(r1)
+      assertTypedSame[HNil](HNil, r1inv._1)
+      assertTypedSame[AP](ap, r1inv._2)
+
       val r2 = ap ::: HNil
       assertTypedSame[AP](ap, r2)
+      val r2inv = implicitly[Prepend.Aux[AP, HNil, AP]].inverse(r2)
+      assertTypedSame[AP](ap, r2inv._1)
+      assertTypedSame[HNil](HNil, r2inv._2)
 
       val r4 = HNil ::: pabp
       assertTypedSame[PABP](pabp, r4)
+      val r4inv = implicitly[Prepend.Aux[HNil, PABP, PABP]].inverse(r4)
+      assertTypedSame[HNil](HNil, r4inv._1)
+      assertTypedSame[PABP](pabp, r4inv._2)
+
       val r5 = pabp ::: HNil
       assertTypedSame[PABP](pabp, r5)
+      val r5inv = implicitly[Prepend.Aux[PABP, HNil, PABP]].inverse(r5)
+      assertTypedSame[PABP](pabp, r5inv._1)
+      assertTypedSame[HNil](HNil, r5inv._2)
     }
 
     {
@@ -451,8 +499,34 @@ class HListTests {
   }
 
   @Test
-  def testToSizedList {
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+  def testRepeat: Unit = {
+    val ap2 = ap.repeat[Nat._2]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: HNil](ap2, a :: p :: a :: p :: HNil)
+
+    val ap4 = ap.repeat[Nat._4]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: HNil](
+      ap4, a :: p :: a :: p :: a :: p :: a :: p :: HNil
+    )
+
+    val ap2_2 = ap2.repeat[Nat._2]
+    assertTypedEquals[Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: Apple :: Pear :: HNil](ap2_2, ap4)
+
+    {
+      // repeating 1 times is identity
+      val ap1 = ap.repeat[Nat._1]
+      assertTypedEquals[AP](ap, ap1)
+    }
+
+    {
+      // can not repeat zero times
+      illTyped("""ap.repeat[Nat._0]""")
+    }
+
+  }
+
+  @Test
+  def testToSizedList: Unit = {
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val hnil = HNil
     val snil = hnil.toSized[List]
@@ -508,11 +582,11 @@ class HListTests {
   }
 
   @Test
-  def testToSizedArray {
+  def testToSizedArray: Unit = {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val hnil = HNil
     val snil = hnil.toSized[Array]
@@ -563,7 +637,7 @@ class HListTests {
   }
 
   @Test
-  def testUnifier {
+  def testUnifier: Unit = {
     def lub[X, Y, L](x : X, y : Y)(implicit lb : Lub[X, Y, L]) : (L, L) = (lb.left(x), lb.right(y))
 
     val u21 = lub(a, a)
@@ -657,7 +731,7 @@ class HListTests {
   }
 
   @Test
-  def testSubtypeUnifier {
+  def testSubtypeUnifier: Unit = {
     val fruits : Apple :: Pear :: Fruit :: HNil = a :: p :: f :: HNil
     typed[Fruit :: Fruit :: Fruit :: HNil](fruits.unifySubtypes[Fruit])
     typed[Apple :: Pear :: Fruit :: HNil](fruits.unifySubtypes[Apple])
@@ -670,7 +744,7 @@ class HListTests {
   }
 
   @Test
-  def testToTraversableList {
+  def testToTraversableList: Unit = {
     val r1 = HNil.to[List]
     assertTypedEquals[List[Nothing]](Nil, r1)
 
@@ -710,7 +784,7 @@ class HListTests {
     typed[List[Any]](moreStuff)
 
 
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val ctv = cicscicicd.to[List]
     equalInferredTypes(cicscicicdList, ctv)
@@ -734,7 +808,7 @@ class HListTests {
   }
 
   @Test
-  def testToPreciseList {
+  def testToPreciseList: Unit = {
     val r1 = HNil.toCoproduct[List]
     assertTypedEquals[List[CNil]](Nil, r1)
 
@@ -747,7 +821,7 @@ class HListTests {
     val r4 = apbp.toCoproduct[Vector]
     assertTypedEquals[Vector[ABPc]](Vector[ABPc](Coproduct[ABPc](a), Coproduct[ABPc](p), Coproduct[ABPc](b), Coproduct[ABPc](p)), r4)
 
-    def equalInferedCoproducts[A <: Coproduct, B <: Coproduct](a: A, b: B)(implicit bInA: ops.coproduct.Basis[A, B], aInB: ops.coproduct.Basis[B, A]){}
+    def equalInferedCoproducts[A <: Coproduct, B <: Coproduct](a: A, b: B)(implicit bInA: ops.coproduct.Basis[A, B], aInB: ops.coproduct.Basis[B, A]): Unit = {}
     val abpc = Coproduct[ABPc](a)
 
     val r5 = (a :: b :: a :: p :: b :: a :: HNil).toCoproduct[Set]
@@ -773,7 +847,7 @@ class HListTests {
   }
 
   @Test
-  def testToList {
+  def testToList: Unit = {
     val r1 = HNil.toList
     assertTypedEquals[List[Nothing]](Nil, r1)
 
@@ -818,7 +892,7 @@ class HListTests {
     typed[List[Any]](moreStuff)
 
 
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val ctv = cicscicicd.toList
     equalInferredTypes(cicscicicdList, ctv)
@@ -849,7 +923,7 @@ class HListTests {
   }
 
   @Test
-  def testToTraversableArray {
+  def testToTraversableArray: Unit = {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
@@ -900,7 +974,7 @@ class HListTests {
     assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
 
 
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val ctv = cicscicicd.to[Array]
     equalInferredTypes(cicscicicdArray, ctv)
@@ -929,7 +1003,7 @@ class HListTests {
   }
 
   @Test
-  def testToArray {
+  def testToArray: Unit = {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
@@ -989,7 +1063,7 @@ class HListTests {
     assertArrayEquals2(Array[AnyRef](a, "foo", p), moreStuff)
 
 
-    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B) {}
+    def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
 
     val ctv = cicscicicd.toArray
     equalInferredTypes(cicscicicdArray, ctv)
@@ -1018,7 +1092,7 @@ class HListTests {
   }
 
   @Test
-  def testFoldMap {
+  def testFoldMap: Unit = {
     implicitly[Mapper.Aux[isDefined.type, HNil, HNil]]
     implicitly[Mapper.Aux[isDefined.type, Option[Int] :: HNil, Boolean :: HNil]]
 
@@ -1037,7 +1111,7 @@ class HListTests {
   }
 
   @Test
-  def testAt {
+  def testAt: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val at0 = sn1(_0)
@@ -1072,7 +1146,7 @@ class HListTests {
   }
 
   @Test
-  def testAtLiteral {
+  def testAtLiteral: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val at0 = sn1(0)
@@ -1107,7 +1181,7 @@ class HListTests {
   }
 
   @Test
-  def testTakeDrop {
+  def testTakeDrop: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val r1 = sn1.take(_0)
@@ -1133,7 +1207,7 @@ class HListTests {
   }
 
   @Test
-  def testTakeDropLiteral {
+  def testTakeDropLiteral: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val r1 = sn1.take(0)
@@ -1159,7 +1233,7 @@ class HListTests {
   }
 
   @Test
-  def testSplit {
+  def testSplit: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.split(_0)
@@ -1198,7 +1272,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitLiteral {
+  def testSplitLiteral: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.split(0)
@@ -1237,7 +1311,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitP {
+  def testSplitP: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.splitP(_0)
@@ -1276,7 +1350,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitPLiteral {
+  def testSplitPLiteral: Unit = {
     val sn1 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val sni0 = sn1.splitP(0)
@@ -1315,7 +1389,7 @@ class HListTests {
   }
 
   @Test
-  def testSelect {
+  def testSelect: Unit = {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
     val si = sl.select[Int]
     assertTypedEquals[Int](1, si)
@@ -1330,7 +1404,7 @@ class HListTests {
     assertEquals(2.0, sd, Double.MinPositiveValue)
   }
   @Test
-  def testSelectMany {
+  def testSelectMany: Unit = {
     val si = 1 :: true :: "foo" :: 2.0 :: HNil
 
     val si1 = si.selectManyType[HNil]
@@ -1387,7 +1461,33 @@ class HListTests {
   }
 
   @Test
-  def testFilter {
+  def testSelectFirst: Unit = {
+    val sl = 1 :: true :: "foo" :: 2.0 :: HNil
+
+    val si = sl.selectFirst[Int::HNil]
+    assertTypedEquals[Int](1, si)
+
+    val sb = sl.selectFirst[Boolean::HNil]
+    assertTypedEquals[Boolean](true, sb)
+
+    val ss = sl.selectFirst[String::HNil]
+    assertTypedEquals[String]("foo", ss)
+
+    val sd = sl.selectFirst[Double::HNil]
+    assertEquals(2.0, sd, Double.MinPositiveValue)
+
+    val sib = sl.selectFirst[Int::Boolean::HNil]
+    assertTypedEquals[Int](1, sib)
+
+    val sulb = sl.selectFirst[Unit::Long::Boolean::HNil]
+    assertTypedEquals[Boolean](true, sulb)
+
+    val ssbi = sl.selectFirst[String::Boolean::Int::HNil]
+    assertTypedEquals[String]("foo", ssbi)
+  }
+
+  @Test
+  def testFilter: Unit = {
     val l1 = 1 :: 2 :: HNil
     val f1 = l1.filter[Int]
     assertTypedEquals[Int :: Int :: HNil](1 :: 2 :: HNil, f1)
@@ -1400,7 +1500,7 @@ class HListTests {
   }
 
   @Test
-  def testFilterNot {
+  def testFilterNot: Unit = {
     val l1 = 1 :: 2 :: HNil
     val f1 = l1.filterNot[String]
     assertTypedEquals[Int :: Int :: HNil](1 :: 2 :: HNil, f1)
@@ -1413,7 +1513,7 @@ class HListTests {
   }
 
   @Test
-  def testPartition {
+  def testPartition: Unit = {
     val l1 = 1 :: 2 :: HNil
     val l2 = 1 :: true :: "foo" :: 2 :: HNil
 
@@ -1433,7 +1533,7 @@ class HListTests {
   }
 
   @Test
-  def testReplace {
+  def testReplace: Unit = {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
 
     val (i, r1) = sl.replace(23)
@@ -1497,7 +1597,7 @@ class HListTests {
   }
 
   @Test
-  def testUpdate {
+  def testUpdate: Unit = {
     type SL = Int :: Boolean :: String :: Double :: HNil
     val sl: SL = 1 :: true :: "foo" :: 2.0 :: HNil
 
@@ -1568,7 +1668,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitLeft {
+  def testSplitLeft: Unit = {
     type SL  = Int :: Boolean :: String :: Double :: HNil
     type SL2 = Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
@@ -1596,7 +1696,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitLeftP {
+  def testSplitLeftP: Unit = {
     type SL  = Int :: Boolean :: String :: Double :: HNil
     type SL2 = Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
@@ -1624,7 +1724,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitRight {
+  def testSplitRight: Unit = {
     type SL  = Int :: Boolean :: String :: Double :: HNil
     type SL2 = Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
@@ -1652,7 +1752,7 @@ class HListTests {
   }
 
   @Test
-  def testSplitRightP {
+  def testSplitRightP: Unit = {
     type SL  = Int :: Boolean :: String :: Double :: HNil
     type SL2 = Int :: Double :: String :: Unit :: String :: Boolean :: Long :: HNil
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
@@ -1680,7 +1780,7 @@ class HListTests {
   }
 
   @Test
-  def testTranspose {
+  def testTranspose: Unit = {
     val l1 = 1 :: HNil
     val l2 = ("a" :: HNil) :: HNil
 
@@ -1723,10 +1823,24 @@ class HListTests {
 
     val r8 = t3.transpose
     assertTypedEquals[ISD :: ISD :: ISD :: HNil](z2, r8)
+
+    val nil: HNil = HNil
+
+    val r9 = nil zipOne nil
+    assertTypedEquals[HNil](HNil, r9)
+
+    val r10 = nil.transpose
+    assertTypedEquals[HNil](HNil, r10)
+
+    val r11 = (HNil :: HNil :: HNil : HNil :: HNil :: HNil).transpose
+    assertTypedEquals[HNil](HNil, r11)
+
+    val r12 = (1 :: HNil) zipOne ((2 :: HNil) :: HNil)
+    assertTypedEquals[(Int :: Int :: HNil) :: HNil]((1 :: 2 :: HNil) :: HNil, r12)
   }
 
   @Test
-  def testZipUnzip {
+  def testZipUnzip: Unit = {
     val l1 = 1 :: "a" :: 1.0 :: HNil
     val l2 = 2 :: "b" :: 2.0 :: HNil
 
@@ -1747,6 +1861,10 @@ class HListTests {
     val z3 = (l1 :: l2 :: HNil).zip
     assertTypedEquals[(Int, Int) :: (String, String) :: (Double, Double) :: HNil](
       (1, 2) :: ("a", "b") :: (1.0, 2.0) :: HNil, z3)
+
+    val nil : HNil = HNil
+    val z4 = (nil :: nil :: HNil).zip
+    assertTypedEquals[HNil](nil, z4)
 
     val t2 = z1.map(productElements).transpose
     val u1 = t2.tupled
@@ -1782,12 +1900,13 @@ class HListTests {
   }
 
   @Test
-  def testUnapply {
+  def testUnapply: Unit = {
     val l = 1 :: true :: "foo" :: 2.0 :: HNil
     val l2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
     val is = l match {
       case i :: true :: s :: 2.0 :: HNil => (i, s)
+      case _ => sys.error("Not matched")
     }
 
     assertTypedEquals[Int](1, is._1)
@@ -1844,7 +1963,7 @@ class HListTests {
   }
 
   @Test
-  def testRemove {
+  def testRemove: Unit = {
     val l = 1 :: true :: "foo" :: HNil
 
     val li = l.removeElem[Int]
@@ -1862,7 +1981,7 @@ class HListTests {
   }
 
   @Test
-  def testRemoveAll {
+  def testRemoveAll: Unit = {
     val l = 1 :: true :: "foo" :: HNil
 
     val lnil = l.removeAll[HNil]
@@ -1879,7 +1998,7 @@ class HListTests {
   }
 
   @Test
-  def testUnion {
+  def testUnion: Unit = {
     type L1 = String :: Long :: HNil
     val l1: L1 = "foo" :: 3L :: HNil
 
@@ -1915,7 +2034,7 @@ class HListTests {
   }
 
   @Test
-  def testIntersection {
+  def testIntersection: Unit = {
     type L1 = String :: Long :: Int :: HNil
     val l1: L1 = "foo" :: 1L :: 3 :: HNil
 
@@ -1950,7 +2069,7 @@ class HListTests {
   }
 
   @Test
-  def testDiff {
+  def testDiff: Unit = {
     type L1 = String :: Long :: Int :: HNil
     val l1: L1 = "foo" :: 1L :: 3 :: HNil
 
@@ -1983,7 +2102,7 @@ class HListTests {
   }
 
   @Test
-  def testReinsert {
+  def testReinsert: Unit = {
     type L = Int :: Boolean :: String :: HNil
 
     val l: L = 1 :: true :: "foo" :: HNil
@@ -1999,7 +2118,7 @@ class HListTests {
   }
 
   @Test
-  def testReinsertAll {
+  def testReinsertAll: Unit = {
     type L = Int :: Boolean :: String :: HNil
 
     val l = 1 :: true :: "foo" :: HNil
@@ -2022,8 +2141,13 @@ class HListTests {
     implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
+  object toMapL extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[T, Int, Map[List[Int], T]] =
+      at[T, Int]((end, t) => Map(List(t) -> end))
+  }
+
   @Test
-  def testFoldLeft {
+  def testFoldLeft: Unit = {
     val c1a = combine('o', "foo")
     val c1b = combine(c1a, true)
     assertTypedEquals[String]("pass", c1b)
@@ -2047,10 +2171,26 @@ class HListTests {
     val l2 = "bar" :: false :: HNil
     val f2 = l2.foldLeft('o')(combine)
     assertTypedEquals[String]("pass", f2)
+
+    val l3 = 1 :: 2 :: HNil
+    val f3 = l3.foldLeft(0)(toMapL)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(2) -> Map(List(1) -> 0)), f3)
+  }
+
+  object toMapR extends Poly2 {
+    implicit def wrapMap[T]: Case.Aux[Int, T, Map[List[Int], T]] =
+      at[Int, T]((t, end) => Map(List(t) -> end))
   }
 
   @Test
-  def testUpdatedAt {
+  def testFoldRight: Unit = {
+    val l1 = 1 :: 2 :: HNil
+    val f1 = l1.foldRight(0)(toMapR)
+    assertTypedEquals[Map[List[Int], Map[List[Int], Int]]](Map(List(1) -> Map(List(2) -> 0)), f1)
+  }
+
+  @Test
+  def testUpdatedAt: Unit = {
     type IBS = Int :: Boolean :: String :: HNil
     val l = 1 :: true :: "foo" :: HNil
 
@@ -2065,7 +2205,7 @@ class HListTests {
   }
 
   @Test
-  def testUpdatedAtLiteral {
+  def testUpdatedAtLiteral: Unit = {
     type IBS = Int :: Boolean :: String :: HNil
     val l = 1 :: true :: "foo" :: HNil
 
@@ -2080,7 +2220,7 @@ class HListTests {
   }
 
   @Test
-  def testNatTRel {
+  def testNatTRel: Unit = {
     type L1 = Int :: String :: Boolean :: HNil
     type L2 = List[Int] :: List[String] :: List[Boolean] :: HNil
     type L3 = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
@@ -2102,7 +2242,7 @@ class HListTests {
   }
 
   @Test
-  def testNatTRelMap {
+  def testNatTRelMap: Unit = {
     type L1 = Option[Int] :: Option[Boolean] :: Option[String] :: Option[Nothing] :: HNil
     type L2 = List[Int] :: List[Boolean] :: List[String] :: List[Nothing] :: HNil
     val nattrel = implicitly[NatTRel[L1, Option, L2, List]]
@@ -2115,7 +2255,7 @@ class HListTests {
   }
 
   @Test
-  def testZipConst {
+  def testZipConst: Unit = {
     type IBS = Int :: Boolean :: String :: HNil
     val c = 5
     type WithConst = (Int, Int) :: (Boolean, Int) :: (String, Int) :: HNil
@@ -2137,7 +2277,7 @@ class HListTests {
   }
 
   @Test
-  def testZipWith {
+  def testZipWith: Unit = {
     import poly._
 
     object empty extends Poly2
@@ -2215,7 +2355,7 @@ class HListTests {
   }
 
   @Test
-  def testWithKeys {
+  def testWithKeys: Unit = {
     import record._
     import syntax.singleton._
 
@@ -2255,7 +2395,7 @@ class HListTests {
   }
 
   @Test
-  def testCollect {
+  def testCollect: Unit = {
     import poly._
 
     object empty extends Poly1
@@ -2291,7 +2431,7 @@ class HListTests {
   }
 
   @Test
-  def testOrdering {
+  def testOrdering: Unit = {
     assertEquals(List(HNil: HNil, HNil), List(HNil: HNil, HNil).sorted)
 
     assertEquals(List(1 :: HNil, 2 :: HNil, 3 :: HNil), List(2 :: HNil, 1 :: HNil, 3 :: HNil).sorted)
@@ -2303,7 +2443,7 @@ class HListTests {
   }
 
   @Test
-  def testMapCons {
+  def testMapCons: Unit = {
     type C = Char; type S = String; type I = Int; type D = Double
 
     val r1 = (HNil: HNil).mapCons('a')
@@ -2320,7 +2460,7 @@ class HListTests {
   }
 
   @Test
-  def testInterleave {
+  def testInterleave: Unit = {
     type C = Char; type S = String; type I = Int; type D = Double
     def interleave[I, L <: HList](i: I, l: L)(implicit interleave: Interleave[I, L]): interleave.Out = interleave(i, l)
 
@@ -2351,7 +2491,7 @@ class HListTests {
   }
 
   @Test
-  def testFlatMapInterleave {
+  def testFlatMapInterleave: Unit = {
     type C = Char; type I = Int
 
     def flatMapInterleave[I, L <: HList](i: I, l: L)(implicit flatMapInterleave: FlatMapInterleave[I, L]) =
@@ -2374,7 +2514,7 @@ class HListTests {
   }
 
   @Test
-  def testPermutations {
+  def testPermutations: Unit = {
     type S = String; type I = Int; type D = Double
 
     val r1 = HNil.permutations
@@ -2406,12 +2546,12 @@ class HListTests {
   }
 
   @Test
-  def testMkString {
+  def testMkString: Unit = {
     assertEquals(s"⸨1, foo, ${2.0}⸩", (1 :: "foo" :: 2.0 :: HNil).mkString("⸨", ", ", "⸩"))
   }
 
   @Test
-  def testRotateLeft {
+  def testRotateLeft: Unit = {
     val in0 = HNil
     val in1 = 1 :: HNil
     val in2 = 1 :: "foo" :: HNil
@@ -2531,7 +2671,7 @@ class HListTests {
   }
 
   @Test
-  def testRotateRight {
+  def testRotateRight: Unit = {
     val in0 = HNil
     val in1 = 1 :: HNil
     val in2 = 1 :: "foo" :: HNil
@@ -2657,7 +2797,7 @@ class HListTests {
   }
 
   @Test
-  def testScanLeft {
+  def testScanLeft: Unit = {
     val in = 1 :: "2" :: HNil
     val out = in.scanLeft(1)(smear)
 
@@ -2666,7 +2806,7 @@ class HListTests {
   }
 
   @Test
-  def testScanRight{
+  def testScanRight: Unit = {
     val in = 1 :: "2" :: HNil
     val out = in.scanRight(1)(smear)
 
@@ -2675,7 +2815,7 @@ class HListTests {
   }
 
   @Test
-  def testFill {
+  def testFill: Unit = {
     {
       val empty = HList.fill(0)(true)
       typed[_0](empty.length)
@@ -2828,7 +2968,7 @@ class HListTests {
   }
 
   @Test
-  def testPatch {
+  def testPatch: Unit = {
     val basehl = 1 :: 2 :: "three" :: HNil
 
     { //patch an empty hlist
@@ -2880,7 +3020,7 @@ class HListTests {
   }
 
   @Test
-  def testToCoproduct {
+  def testToCoproduct: Unit = {
     type PISB = Int :: String :: Boolean :: HNil
     type CISBa = Int :+: String :+: Boolean :+: CNil
     type CISBb = the.`ToCoproduct[PISB]`.Out
@@ -2888,7 +3028,7 @@ class HListTests {
   }
 
   @Test
-  def testToSum {
+  def testToSum: Unit = {
     type PISB = Int :: String :: Boolean :: HNil
     type CISBa = Int :+: String :+: Boolean :+: CNil
     type SISBa = the.`ToSum[PISB]`.Out
@@ -2900,7 +3040,7 @@ class HListTests {
   }
 
   @Test
-  def testHListTypeSelector {
+  def testHListTypeSelector: Unit = {
     import syntax.singleton._
 
     typed[HList.` `.T](HNil)
@@ -2929,7 +3069,7 @@ class HListTests {
   }
 
   @Test
-  def testProductArgs {
+  def testProductArgs: Unit = {
     val l = Foo(23, "foo", true)
     typed[Int :: String :: Boolean :: HNil](l)
 
@@ -2981,11 +3121,11 @@ class HListTests {
   }
 
   @Test
-  def testSingletonProductArgs {
+  def testSingletonProductArgs: Unit = {
     object Obj
 
-    val l = SFoo(23, "foo", 'bar, Obj, true)
-    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`'bar`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
+    val l = SFoo(23, "foo", "bar", Obj, true)
+    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`"bar"`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
     // widen the RHS to a non-singleton type.
@@ -2995,8 +3135,8 @@ class HListTests {
     val v2: Witness.`"foo"`.T = l.tail.head
     assertEquals("foo", v2)
 
-    val v3: Witness.`'bar`.T = l.tail.tail.head
-    assertEquals('bar, v3)
+    val v3: Witness.`"bar"`.T = l.tail.tail.head
+    assertEquals("bar", v3)
 
     val v4: Obj.type = l.tail.tail.tail.head
     assertEquals(Obj, v4)
@@ -3007,16 +3147,14 @@ class HListTests {
     val v6 = l.tail.tail.tail.tail.tail
     typed[HNil](v6)
 
-    illTyped("""
-      r.tail.tail.tail.tail.tail.tail.head
-    """)
+    illTyped("r.tail.tail.tail.tail.tail.tail.head")
 
     // Verify that we infer HNil rather than HNil.type at the end
     NonSingletonHNilTC(SFoo(23).tail)
     NonSingletonHNilTC(SFoo())
 
     val quux = Quux(23, "foo", true)
-    val ib = selectAll('i, 'b).from(quux)
+    val ib = selectAll("i", "b").from(quux)
     typed[(Int, Boolean)](ib)
     assertEquals((23, true), ib)
   }
@@ -3028,7 +3166,7 @@ class HListTests {
   }
 
   @Test
-  def testFromProductArgs {
+  def testFromProductArgs: Unit = {
     val p = "foo" :: 1 :: 3 :: HNil
 
     val v1 = Bar.sumLabelProduct(p)
@@ -3091,7 +3229,7 @@ class HListTests {
   }
 
   @Test
-  def testNatProductArgs {
+  def testNatProductArgs: Unit = {
     val l = FooNat(1, 2, 3)
     typed[_1 :: _2 :: _3 :: HNil](l)
 
@@ -3126,7 +3264,7 @@ class HListTests {
   }
 
   @Test
-  def testStringInterpolator {
+  def testStringInterpolator: Unit = {
     val (i, s, b) = (23, "foo", true)
     val l = hlist"Int: $i, String: $s, Boolean: $b"
     typed[Int :: String :: Boolean :: HNil](l)
@@ -3152,7 +3290,7 @@ class HListTests {
   }
 
   @Test
-  def testCollectFirst {
+  def testCollectFirst: Unit = {
     object Foo extends Poly1{
       implicit def iinst = at[Int]{ _ + 1 }
     }
@@ -3164,7 +3302,7 @@ class HListTests {
   }
 
   @Test
-  def testGrouper {
+  def testGrouper: Unit = {
     object toInt extends Poly1 {
       implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
     }
@@ -3174,48 +3312,48 @@ class HListTests {
       ) = mapper(range())
 
     // group HNil
-    assertEquals(HNil: HNil, (HNil: HNil) group(2, 1))
+    assertEquals(HNil: HNil, (HNil: HNil).group(2, 1))
     // group a HList of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // group a HList of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       (0, 1) ::(4, 5) :: HNil,
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       (0, 1) ::(1, 2) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: HNil)
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
   }
 
   @Test
-  def testLiftAll {
+  def testLiftAll: Unit = {
     trait F[A]
     implicit object FInt extends F[Int]
     implicit object FString extends F[String]
@@ -3229,7 +3367,7 @@ class HListTests {
   }
 
   @Test
-  def testPadTo {
+  def testPadTo: Unit = {
     val p1 = (1 :: "a" :: HNil).padTo(3, 0)
     assertTypedEquals[Int :: String :: Int :: HNil](1 :: "a" :: 0 :: HNil, p1)
 
@@ -3246,7 +3384,7 @@ class HListTests {
   }
 
   @Test
-  def testSlice {
+  def testSlice: Unit = {
     val r1 = (1 :: "a" :: 3 :: HNil).slice(0, 2)
     assertTypedEquals[Int :: String :: HNil](1 :: "a" :: HNil, r1)
 
@@ -3264,14 +3402,14 @@ class HListTests {
   }
 
   @Test
-  def testToSizedHList {
+  def testToSizedHList: Unit = {
     val ns = List(1,2,3,4)
     assertTypedEquals[Option[III]](None, ns.toSizedHList(3))
     assertTypedEquals[Option[IIII]](Some(1 :: 2 :: 3 :: 4 :: HNil), ns.toSizedHList(4))
   }
 
   @Test
-  def testModifierAt {
+  def testModifierAt: Unit = {
     // first element
     assertEquals((1, 42 :: 2 :: 3 :: HNil), (1 :: 2 :: 3 :: HNil).updateAtWith(0)(_ => 42))
 
@@ -3283,23 +3421,23 @@ class HListTests {
   }
 
   @Test
-  def testReify {
+  def testReify: Unit = {
     import syntax.singleton._
 
-    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals(HNil, Reify[HNil].apply())
 
-    val s1 = HList.`'a`
-    assertTypedEquals('a.narrow :: HNil, Reify[s1.T].apply)
+    val s1 = HList.`"a"`
+    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
 
-    val s2 = HList.`'a, 1, "b", true`
-    assertTypedEquals('a.narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    val s2 = HList.`"a", 1, "b", true`
+    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
 
-    illTyped(""" Reify[String :: Int :: HNil] """)
-    illTyped(""" Reify[String :: HList.`'a, 1, "b", true`.T] """)
+    illTyped("Reify[String :: Int :: HNil]")
+    illTyped("""Reify[String :: HList.`"a", 1, "b", true`.T]""")
   }
 
   @Test
-  def testCombinations {
+  def testCombinations: Unit = {
     type I = Int; type S = String
 
     val r1 = (1 :: "2" :: 3 :: 4 :: HNil).combinations(2)
@@ -3345,4 +3483,25 @@ class HListTests {
 
   @Test
   def testIsHCons = assertTypedEquals[Int :: HNil](23 :: HNil, IsHCons[Int :: HNil].cons(23, HNil))
+
+  @Test
+  def testToProduct = {
+    val isbd = 2 :: "abc" :: true :: 3.0 :: HNil
+    val p = (2, ("abc", (true, (3.0, ()))))
+
+    import syntax.std.tuple._
+    assertEquals(isbd.toProduct, p)
+    assertEquals(p.toHList, isbd)
+    assertEquals(isbd.toProduct.toHList, isbd)
+    assertEquals(p.toHList.toProduct, p)
+    assertEquals((), (HNil: HNil).toProduct)
+    assertEquals(HNil, ().toHList)
+  }
+
+  @Test
+  def testAuxImplicits: Unit = {
+    the[SplitRight.Aux[String :: Int :: Boolean :: HNil, Int, String :: Int :: HNil, Boolean :: HNil]]
+    the[Grouper.Aux[Int :: String :: Boolean :: HNil, _2, _1, (Int, String) :: (String, Boolean) :: HNil]]
+    the[PaddedGrouper.Aux[Int :: String :: Boolean :: HNil, _2, _2, Long :: HNil, (Int, String) :: (Boolean, Long) :: HNil]]
+  }
 }

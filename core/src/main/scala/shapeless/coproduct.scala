@@ -115,11 +115,13 @@ final case class Inr[+H, +T <: Coproduct](tail : T) extends :+:[H, T] {
   * of `:+:` can not be constructed properly.
   */
 sealed trait CNil extends Coproduct {
+  /** Call this when you hit the CNil case in pattern matching to make the match exhaustive and safe. */
   def impossible: Nothing
 }
 
 object Coproduct extends Dynamic {
   import ops.coproduct.Inject
+  import ops.coproduct.RuntimeInject
   import syntax.CoproductOps
 
   class MkCoproduct[C <: Coproduct] {
@@ -154,5 +156,8 @@ object Coproduct extends Dynamic {
    * type TwoTrueStr = Coproduct.`2, true, "str"`.T
    * }}}
    */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductTypeImpl
+  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductType
+
+  /** Allows to inject a runtime value of type `Any` in a `Coproduct` */
+  def runtimeInject[C <: Coproduct](x: Any)(implicit rinj: RuntimeInject[C]): Option[C] = rinj(x)
 }

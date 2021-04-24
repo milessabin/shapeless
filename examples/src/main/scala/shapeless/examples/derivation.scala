@@ -17,7 +17,7 @@
 package shapeless
 package examples
 
-import labelled.FieldType, syntax.singleton._, test._
+import labelled.FieldType
 
 /*
  * Demo of type class derivation using Lazy for recursive and mutually
@@ -135,69 +135,50 @@ object TypeClassesDemoAux {
   }
 
   object Show {
-    def apply[T](implicit st: Lazy[Show[T]]): Show[T] = st.value
+    def apply[T](implicit show: Show[T]): Show[T] = show
 
-    implicit val showString: Show[String] = new Show[String] {
-      def show(t: String) = t
+    def instance[T](f: T => String): Show[T] = new Show[T] {
+      def show(value: T): String = f(value)
     }
 
-    implicit val showBoolean: Show[Boolean] = new Show[Boolean] {
-      def show(t: Boolean) = t.toString
-    }
+    implicit val showString: Show[String] = instance(identity)
+    implicit val showBoolean: Show[Boolean] = instance(_.toString)
 
     implicit def showList[A](implicit showA: Show[A]): Show[List[A]] = new Show[List[A]] {
-      def show(t: List[A]) = t.map(showA.show).mkString("List(", ", ", ")")
+      def show(t: List[A]): String = t.map(showA.show).mkString("List(", ", ", ")")
     }
 
-    implicit def deriveHNil: Show[HNil] =
-      new Show[HNil] {
-        def show(p: HNil): String = ""
+    implicit val deriveHNil: Show[HNil] = instance(_ => "")
+    implicit val deriveCNil: Show[CNil] = instance(_ => "")
+
+    implicit def deriveHCons[K <: String, V, T <: HList](
+      implicit key: Witness.Aux[K], sv: Lazy[Show[V]], st: Show[T]
+    ): Show[FieldType[K, V] :: T] = instance { case kv :: t =>
+      val head = s"${key.value} = ${sv.value.show(kv)}"
+      val tail = st.show(t)
+      if (tail.isEmpty) head else s"$head, $tail"
+    }
+
+    implicit def deriveCCons[K <: String, V, T <: Coproduct](
+      implicit key: Witness.Aux[K], sv: Lazy[Show[V]], st: Show[T]
+    ): Show[FieldType[K, V] :+: T] = instance { c =>
+      // Using match/case
+      c match {
+        case Inl(l) => s"${key.value}(${sv.value.show(l)})"
+        case Inr(r) => st.show(r)
       }
+      // Or using eliminate
+      c.eliminate(
+        l => s"${key.value}(${sv.value.show(l)})",
+        r => st.show(r)
+      )
+    }
 
-    implicit def deriveHCons[K <: Symbol, V, T <: HList]
-      (implicit
-        key: Witness.Aux[K],
-        sv: Lazy[Show[V]],
-        st: Lazy[Show[T]]
-      ): Show[FieldType[K, V] :: T] =
-        new Show[FieldType[K, V] :: T] {
-          def show(p: FieldType[K, V] :: T): String = {
-            val head = s"${key.value.name} = ${sv.value.show(p.head)}"
-            val tail = st.value.show(p.tail)
-            if(tail.isEmpty) head else s"$head, $tail"
-          }
-        }
-
-    implicit def deriveCNil: Show[CNil] =
-      new Show[CNil] {
-        def show(p: CNil): String = ""
-      }
-
-    implicit def deriveCCons[K <: Symbol, V, T <: Coproduct]
-      (implicit
-        key: Witness.Aux[K],
-        sv: Lazy[Show[V]],
-        st: Lazy[Show[T]]
-      ): Show[FieldType[K, V] :+: T] =
-        new Show[FieldType[K, V] :+: T] {
-          def show(c: FieldType[K, V] :+: T): String = {
-            //Using match/case
-            c match {
-              case Inl(l) => s"${key.value.name}(${sv.value.show(l)})"
-              case Inr(r) => st.value.show(r)
-            }
-            //Or using eliminate
-            c.eliminate(
-              l => s"${key.value.name}(${sv.value.show(l)})",
-              r => st.value.show(r)
-            )
-          }
-        }
-
-    implicit def deriveInstance[F, G](implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]): Show[F] =
-      new Show[F] {
-        def show(f: F) = sg.value.show(gen.to(f))
-      }
+    implicit def deriveInstance[F, G](
+      implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]
+    ): Show[F] = instance { f =>
+      sg.value.show(gen.to(f))
+    }
   }
 
   trait Show2[T] {
