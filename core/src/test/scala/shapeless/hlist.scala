@@ -3416,4 +3416,11 @@ class HListTests {
     assertEquals((), (HNil: HNil).toProduct)
     assertEquals(HNil, ().toHList)
   }
+
+  @Test
+  def testAuxImplicits: Unit = {
+    the[SplitRight.Aux[String :: Int :: Boolean :: HNil, Int, String :: Int :: HNil, Boolean :: HNil]]
+    the[Grouper.Aux[Int :: String :: Boolean :: HNil, _2, _1, (Int, String) :: (String, Boolean) :: HNil]]
+    the[PaddedGrouper.Aux[Int :: String :: Boolean :: HNil, _2, _2, Long :: HNil, (Int, String) :: (Boolean, Long) :: HNil]]
+  }
 }

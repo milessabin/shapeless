@@ -84,6 +84,43 @@ package TypeClassAux {
   }
 }
 
+package NewtypeTypeClassAux {
+  import shapeless.newtype.Newtype
+
+  trait MyTypeClass[T] {
+    def repr: String
+  }
+
+  object MyTypeClass extends LabelledProductTypeClassCompanion[MyTypeClass] {
+    def make[T](value: String): MyTypeClass[T] = new MyTypeClass[T] {
+      def repr: String = value
+    }
+
+    implicit val mtcString: MyTypeClass[String] = make("string")
+
+    object typeClass extends LabelledProductTypeClass[MyTypeClass] {
+      override def product[H, T <: HList](name: String, ch: MyTypeClass[H], ct: MyTypeClass[T]): MyTypeClass[H :: T] =
+        make(name + ":" + ch.repr + "," + ct.repr)
+
+      override def emptyProduct: MyTypeClass[HNil] =
+        make("emptyProduct")
+
+      override def project[F, G](instance: => MyTypeClass[G], to: F => G, from: G => F): MyTypeClass[F] =
+        make("project(" + instance.repr + ")")
+    }
+  }
+
+  object NewTypes {
+    type Special = Newtype[String, SpecialOps]
+    def Special(specialString: String): Special = newtype(specialString)
+    case class SpecialOps(urn: String)
+    implicit val specialTypeClass: MyTypeClass[Special] = MyTypeClass.make("special")
+  }
+
+  case class TwoStrings(a: String, b: String)
+  case class TwoSpecials(a: NewTypes.Special, b: NewTypes.Special)
+}
+
 class ProductTypeClassTests {
   import ProductTypeClassAux._
   import Image.Syntax
@@ -233,4 +270,26 @@ class TypeClassTests {
     assertEquals(unitResult, implicitly[Image[Unit]])
     assertEquals(unitResult, ().image)
   }
+}
+
+class NewtypeTypeClassTests {
+  import NewtypeTypeClassAux._
+
+  import NewTypes._
+
+  @Test
+  def testString: Unit =
+    assertEquals(MyTypeClass[String].repr, "string")
+
+  @Test
+  def testSpecial: Unit =
+    assertEquals(MyTypeClass[Special].repr, "special")
+
+  @Test
+  def testTwoStrings: Unit =
+    assertEquals(MyTypeClass[TwoStrings].repr, "project(a:string,b:string,emptyProduct)")
+
+  @Test
+  def testTwoSpecials: Unit =
+    assertEquals(MyTypeClass[TwoSpecials].repr, "project(a:special,b:special,emptyProduct)")
 }
