@@ -360,13 +360,13 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
-    val tSym = tpe.typeSymbol
-    if(tSym.isClass && isAnonOrRefinement(tSym)) Nil
-    else
-      tpe.decls.sorted collect {
-        case sym: TermSymbol if isCaseAccessorLike(sym) =>
-          (sym.name.toTermName, sym.typeSignatureIn(tpe).finalResultType)
-      }
+    val clazz = tpe.typeSymbol.asClass
+    val isCaseClass = clazz.isCaseClass
+    if (isAnonOrRefinement(clazz)) Nil
+    else tpe.decls.sorted.collect {
+      case sym: TermSymbol if isCaseAccessorLike(sym, isCaseClass) =>
+        (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+    }
   }
 
   def productCtorsOf(tpe: Type): List[Symbol] = tpe.decls.toList.filter(_.isConstructor)
@@ -657,9 +657,11 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
 
-  def isCaseAccessorLike(sym: TermSymbol): Boolean = {
-    def isGetter = if (sym.owner.asClass.isCaseClass) sym.isCaseAccessor else sym.isGetter
-    sym.isPublic && isGetter && !isNonGeneric(sym)
+  def isCaseAccessorLike(sym: TermSymbol, inCaseClass: Boolean): Boolean = {
+    val isGetter =
+      if (inCaseClass) sym.isCaseAccessor && !sym.isMethod
+      else sym.isGetter && sym.isPublic && (sym.isParamAccessor || sym.isLazy)
+    isGetter && !isNonGeneric(sym)
   }
 
   def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
