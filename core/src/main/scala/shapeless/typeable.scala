@@ -124,6 +124,14 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       def describe = name
     }
 
+  /** Typeable instance defined by a partial function and given an explicit name */
+  def partialFunctionTypeable[T](pf: PartialFunction[Any, T], name: => String): Typeable[T] =
+    new Typeable[T] {
+      val caster = pf.lift
+      def cast(t: Any) = caster(t)
+      def describe = name
+    }
+
   /** Typeable instance for singleton value types */
   def valueSingletonTypeable[T](value: T, name: String): Typeable[T] =
     new Typeable[T] {
@@ -458,8 +466,11 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
           } else {
             c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
           }
+        } else if (tsym.isStatic || tsym.isFinal || (tsym.isClass && tsym.asClass.isTrait)) {
+          // scala/bug#4440 Final inner classes and traits have no outer accessor.
+          q"_root_.shapeless.Typeable.namedSimpleTypeable(_root_.scala.Predef.classOf[$tpe], ${nameOf(tsym)})"
         } else {
-          q"""_root_.shapeless.Typeable.namedSimpleTypeable(classOf[$tpe], ${nameOf(tsym)})"""
+          q"_root_.shapeless.Typeable.partialFunctionTypeable({ case x: $tpe => x }, ${nameOf(tsym)})"
         }
     }
   }
