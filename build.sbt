@@ -69,12 +69,14 @@ addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;cor
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
-val scalacOptionsAll = List(
+def scalacOptionsAll(pluginJar: File) = List(
   "-feature",
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
   "-deprecation",
   "-unchecked",
+  s"-Xplugin:${pluginJar.getAbsolutePath}",
+  s"-Jdummy=${pluginJar.lastModified}"
 )
 
 val scalacOptions212 = Seq(
@@ -90,16 +92,11 @@ val scalacOptions213 = Seq(
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 13)) =>
-      val pluginJar = (plugin / Compile / packageBin).value
-      s"-Xplugin:${pluginJar.getAbsolutePath}" :: s"-Jdummy=${pluginJar.lastModified}" :: scalacOptionsAll
-    case _ => scalacOptionsAll
-  }),
+  scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
 
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y == 12 => scalacOptions212
-    case Some((2, y)) if y >= 13 => scalacOptions213
+    case Some((2, 12)) => scalacOptions212
+    case Some((2, 13)) => scalacOptions213
     case _ => Nil
   }),
 
@@ -157,10 +154,12 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
 }
 
 lazy val plugin = project.in(file("plugin"))
+  .settings(crossVersionSharedSources)
   .settings(
     name := "shapeless-plugin",
     sbtPlugin := true,
-    scalaVersion := Scala213
+    scalaVersion := Scala213,
+    crossScalaVersions := Seq(Scala213, Scala212)
   )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
