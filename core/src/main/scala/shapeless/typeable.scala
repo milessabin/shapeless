@@ -238,7 +238,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
           else None
         } else None
-      def describe = s"${mCC.runtimeClass.getSimpleName}[${castT.describe}]"
+      def describe = s"${safeSimpleName(mCC)}[${castT.describe}]"
     }
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
@@ -252,7 +252,7 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
           if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
           else None
         } else None
-      def describe = s"${mM.runtimeClass.getSimpleName}[${castK.describe}, ${castV.describe}]"
+      def describe = s"${safeSimpleName(mM)}[${castK.describe}, ${castV.describe}]"
     }
 
   /** Typeable instance for polymorphic case classes with typeable elements */
@@ -349,6 +349,9 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
       case _: InternalError =>
         erased.getName
     }
+
+  private def safeSimpleName(tag: ClassTag[_]): String =
+    safeSimpleName(tag.runtimeClass)
 }
 
 /**
@@ -379,41 +382,35 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]
-
     val dealiased = tpe.dealias
 
     dealiased match {
       case t: TypeRef if t.sym == NothingClass =>
         c.abort(c.enclosingPosition, "No Typeable for Nothing")
 
-      case ExistentialType(_, underlying) =>
+      case ExistentialType(_, _) =>
         val tArgs = dealiased.typeArgs
         val normalized = appliedType(dealiased.typeConstructor, tArgs)
-
         val normalizedTypeable = c.inferImplicitValue(appliedType(typeableTpe, List(normalized)))
-        if(normalizedTypeable == EmptyTree)
+        if (normalizedTypeable.isEmpty)
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         normalizedTypeable
 
       case SingletonSymbolType(c) =>
-        val sym = mkSingletonSymbol(c)
-        val name = sym.symbol.name.toString
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($sym, $name, serializable = true)"""
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe](${mkSingletonSymbol(c)}, "Symbol")"""
 
       case RefinedType(parents, decls) =>
-        if(decls.nonEmpty)
+        if (decls.nonEmpty)
           c.abort(c.enclosingPosition, "No Typeable for a refinement with non-empty decls")
         val parentTypeables = parents.filterNot(_ =:= typeOf[AnyRef]).map { parent =>
           c.inferImplicitValue(appliedType(typeableTpe, List(parent)))
         }
-        if(parentTypeables.exists(_ == EmptyTree))
+        if (parentTypeables.exists(_.isEmpty))
           c.abort(c.enclosingPosition, "Missing Typeable for parent of a refinement")
 
-        q"""
-          _root_.shapeless.Typeable.intersectionTypeable(
-            _root_.scala.Array[_root_.shapeless.Typeable[_]](..$parentTypeables)
-          )
-         """
+        q"""_root_.shapeless.Typeable.intersectionTypeable(
+          _root_.scala.Array[_root_.shapeless.Typeable[_]](..$parentTypeables)
+        )"""
 
       case pTpe if pTpe.typeArgs.nonEmpty =>
         val pSym = {
@@ -433,12 +430,12 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
           mkCaseClassTypeable(tpe)
 
       case SingleType(_, v) if !v.isParameter =>
-        val name = v.name.toString
-        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe]($v.asInstanceOf[$tpe], $name, serializable = ${v.isModule})"""
+        q"""_root_.shapeless.Typeable.referenceSingletonTypeable[$tpe](
+           $v.asInstanceOf[$tpe], ${nameOf(v)}, serializable = ${v.isModule}
+        )"""
 
       case ConstantType(c) =>
-        val name = c.tpe.typeSymbol.name.toString
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], $name)"""
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], ${nameOf(c.tpe)})"""
 
       case other =>
         /* There is potential unsoundness if we allow a simple cast between two
@@ -462,7 +459,7 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
             c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
           }
         } else {
-          q"""_root_.shapeless.Typeable.namedSimpleTypeable(classOf[$tpe], ${tsym.name.toString})"""
+          q"""_root_.shapeless.Typeable.namedSimpleTypeable(classOf[$tpe], ${nameOf(tsym)})"""
         }
     }
   }
@@ -490,12 +487,14 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
     if(fieldTypeables.contains(EmptyTree))
       c.abort(c.enclosingPosition, "Missing Typeable for field of a case class")
 
-    val name = tpe.typeSymbol.name.toString
-
-    q"""
-        _root_.shapeless.Typeable.namedCaseClassTypeable(
-          classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), $name
-        )
-       """
+    q""" _root_.shapeless.Typeable.namedCaseClassTypeable(
+      classOf[$tpe], _root_.scala.Array[_root_.shapeless.Typeable[_]](..$fieldTypeables), ${nameOf(tpe)}
+    )"""
   }
+
+  private def nameOf(sym: Symbol): String =
+    sym.name.decodedName.toString
+
+  private def nameOf(tpe: Type): String =
+    nameOf(tpe.typeSymbol)
 }
