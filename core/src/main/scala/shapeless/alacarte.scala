@@ -88,9 +88,9 @@ trait PolymorphicEqualityFacet extends ProductISOFacet {
 
     def equals(c: C, other: Any): Boolean =
       (c.asInstanceOf[AnyRef] eq other.asInstanceOf[AnyRef]) ||
-        typ.cast(other).map { that =>
+        typ.cast(other).exists { that =>
           (toProduct(c) == toProduct(that)) && canEqual(that, c)
-        }.getOrElse(false)
+        }
 
     def hashCode(c: C): Int = toProduct(c).hashCode
   }
