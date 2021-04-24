@@ -43,11 +43,11 @@ trait Delta[In] {
 
 trait Delta0 {
   implicit def generic[F, G, O](
-    implicit gen: Generic.Aux[F, G], genDelta: Lazy[Delta.Aux[G, O]]
+    implicit gen: Generic.Aux[F, G], genDelta: => Delta.Aux[G, O]
   ): Delta.Aux[F, O] = new Delta[F] {
     type Out = O
 
-    def apply(before: F, after: F): Out = genDelta.value.apply(gen.to(before), gen.to(after))
+    def apply(before: F, after: F): Out = genDelta.apply(gen.to(before), gen.to(after))
   }
 }
 
@@ -94,12 +94,12 @@ object Delta extends Delta0 {
   }
 
   implicit def deriveHCons[H, T <: HList, HO](
-    implicit deltaH: Lazy[Delta.Aux[H, HO]], deltaT: Strict[Delta[T] { type Out <: HList }]
+    implicit deltaH: => Delta.Aux[H, HO], deltaT: Strict[Delta[T] { type Out <: HList }]
   ): Delta.Aux[H :: T, HO :: deltaT.value.Out] = new Delta[H :: T] {
     type Out = HO :: deltaT.value.Out
 
     def apply(before: H :: T, after: H :: T): Out =
-      deltaH.value(before.head, after.head) :: deltaT.value(before.tail, after.tail)
+      deltaH(before.head, after.head) :: deltaT.value(before.tail, after.tail)
   }
 }
 

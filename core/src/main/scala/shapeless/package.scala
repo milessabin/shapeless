@@ -98,15 +98,15 @@ package object shapeless extends ScalaVersionSpecifics {
   type Everything[F <: Poly, K <: Poly, T] = Case1[EverythingAux[F, K], T]
 
   def everything[T, R](f: Poly)(k: Poly)(t: T)(
-    implicit cse: Lazy[Case1.Aux[EverythingAux[f.type, k.type], T, R]]
-  ): R = cse.value(t)
+    implicit cse: => Case1.Aux[EverythingAux[f.type, k.type], T, R]
+  ): R = cse(t)
 
   /** The SYB everywhere combinator */
   type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
   def everywhere[T, R](f: Poly)(t: T)(
-    implicit cse: Lazy[Case1.Aux[EverywhereAux[f.type], T, R]]
-  ): R = cse.value(t)
+    implicit cse: => Case1.Aux[EverywhereAux[f.type], T, R]
+  ): R = cse(t)
 
   def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
 }

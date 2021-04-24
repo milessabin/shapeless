@@ -83,7 +83,7 @@ trait Functor[F[_]] {
 }
 
 object Functor extends Functor0 {
-  def apply[F[_]](implicit f: Lazy[Functor[F]]): Functor[F] = f.value
+  def apply[F[_]](implicit f: => Functor[F]): Functor[F] = f
 
   implicit val idFunctor: Functor[Id] =
     new Functor[Id] {

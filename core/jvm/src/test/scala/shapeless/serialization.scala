@@ -189,7 +189,7 @@ object SerializationTestDefns {
   }
 
   object Functor extends Functor0 {
-    def apply[F[_]](implicit f: Lazy[Functor[F]]): Functor[F] = f.value
+    def apply[F[_]](implicit f: => Functor[F]): Functor[F] = f
 
     implicit val idFunctor: Functor[Id] =
       new Functor[Id] {
@@ -1026,17 +1026,6 @@ class SerializationTests {
     assertSerializable(HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13)))
     assertSerializable(new (Set ~?> Option))
     assertSerializable(implicitly[(Set ~?> Option)#λ[Set[Int], Option[Int]]])
-  }
-
-  @Test
-  def testLazy: Unit = {
-    assertSerializable(Lazy(23))
-
-    assertSerializableBeforeAfter(implicitly[Lazy[Generic[Wibble]]])(_.value)
-    assertSerializableBeforeAfter(implicitly[Lazy[Generic1[Box, TC1]]])(_.value)
-
-    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])(_.value)
-    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])(_.value)
   }
 
   @Test
