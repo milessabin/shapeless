@@ -39,16 +39,16 @@ class IllTypedMacros(val c: blackbox.Context) {
   def applyImplNoExp(code: Tree): Tree = applyImpl(code, null)
 
   def applyImpl(code: Tree, expected: Tree): Tree = {
-    val Literal(Constant(codeStr: String)) = code
-    val (expPat, expMsg) = expected match {
+    val Literal(Constant(codeStr: String)) = (code: @unchecked)
+    val (expPat, expMsg) = (expected: @unchecked) match {
       case null => (null, "Expected some error.")
       case Literal(Constant(s: String)) =>
         (Pattern.compile(s, Pattern.CASE_INSENSITIVE | Pattern.DOTALL), "Expected error matching: "+s)
     }
 
     try {
-      val dummy0 = TermName(c.freshName)
-      val dummy1 = TermName(c.freshName)
+      val dummy0 = TermName(c.freshName())
+      val dummy1 = TermName(c.freshName())
       c.typecheck(c.parse(s"object $dummy0 { val $dummy1 = { $codeStr } }"))
       c.error(c.enclosingPosition, "Type-checking succeeded unexpectedly.\n"+expMsg)
     } catch {

@@ -48,6 +48,11 @@ class HListTests {
 
   type BBBB = Boolean :: Boolean :: Boolean :: Boolean :: HNil
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+  object incInt extends (Int >-> Int)(_ + 1)
+  object extendedChoose extends LiftU(choose)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -129,10 +134,6 @@ class HListTests {
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
 
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
-  object incInt extends (Int >-> Int)(_ + 1)
-  object extendedChoose extends LiftU(choose)
 
   @Test
   def testBasics: Unit = {
@@ -1942,6 +1943,7 @@ class HListTests {
 
     val is = l match {
       case i :: true :: s :: 2.0 :: HNil => (i, s)
+      case _ => sys.error("Not matched")
     }
 
     assertTypedEquals[Int](1, is._1)
@@ -3347,42 +3349,42 @@ class HListTests {
       ) = mapper(range())
 
     // group HNil
-    assertEquals(HNil: HNil, (HNil: HNil) group(2, 1))
+    assertEquals(HNil: HNil, (HNil: HNil).group(2, 1))
     // group a HList of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // group a HList of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       (0, 1) ::(4, 5) :: HNil,
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       (0, 1) ::(1, 2) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: HNil)
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
   }
@@ -3459,13 +3461,13 @@ class HListTests {
   def testReify: Unit = {
     import syntax.singleton._
 
-    assertTypedEquals(HNil, Reify[HNil].apply)
+    assertTypedEquals(HNil, Reify[HNil].apply())
 
     val s1 = HList.`"a"`
-    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply)
+    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
 
     val s2 = HList.`"a", 1, "b", true`
-    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply)
+    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
 
     illTyped("Reify[String :: Int :: HNil]")
     illTyped("""Reify[String :: HList.`"a", 1, "b", true`.T]""")

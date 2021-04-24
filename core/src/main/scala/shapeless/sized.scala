@@ -31,7 +31,7 @@ final class Sized[+Repr, L <: Nat] private (val unsized : Repr) {
 
   override def equals(other: Any): Boolean =
     other match {
-      case o: Sized[_, _] => unsized.equals(o.unsized)
+      case o: Sized[_, _] => unsized == o.unsized
       case _ => false
     }
 
@@ -122,13 +122,13 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. An explicit type argument
    * must be provided. Available only if there is evidence that this collection has at least ''m'' elements. The
-   * resulting collections will be statically know to have ''m'' and ''n-m'' elements respectively.
+   * resulting collections will be statically known to have ''m'' and ''n-m'' elements respectively.
    */
   def splitAt[M <: Nat](implicit diff : Diff[L, M], ev : ToInt[M]) = (take[M], drop[M])
   
   /**
    * Splits this collection at the ''mth'' element, returning the prefix and suffix as a pair. Available only if there
-   * is evidence that this collection has at least ''m'' elements. The resulting collections will be statically know to
+   * is evidence that this collection has at least ''m'' elements. The resulting collections will be statically known to
    * have ''m'' and ''n-m'' elements respectively.
    */
   def splitAt(m : Nat)(implicit diff : Diff[L, m.N], ev : ToInt[m.N]) = (take[m.N], drop[m.N])
@@ -141,7 +141,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
     val builder = cbf.newBuilder(s.unsized)
     builder += elem
     builder ++= underlying.iterator
-    wrap[Repr, Succ[L]](builder.result)
+    wrap[Repr, Succ[L]](builder.result())
   }
   
   /**
@@ -152,7 +152,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
     val builder = cbf.newBuilder(s.unsized)
     builder ++= underlying.iterator
     builder += elem
-    wrap[Repr, Succ[L]](builder.result)
+    wrap[Repr, Succ[L]](builder.result())
   }
   
   /**
@@ -174,7 +174,7 @@ class SizedOps[A0, Repr : AdditiveCollection, L <: Nat](s : Sized[Repr, L], itl:
   def map[B, That](f : A0 => B)(implicit cbf : BuildFrom[Repr, B, That], ev : AdditiveCollection[That]) = {
     val builder = cbf.newBuilder(s.unsized)
     builder ++= underlying.iterator.map(f)
-    wrap[That, L](builder.result)
+    wrap[That, L](builder.result())
   }
 
   /**
@@ -201,7 +201,7 @@ object Sized extends LowPrioritySized {
   
   def apply[CC[_]]()
     (implicit dis: DefaultToIndexedSeq[CC], cbf : Factory[Nothing, CC[Nothing]], ev : AdditiveCollection[CC[Nothing]]) =
-      new Sized[CC[Nothing], _0](cbf.newBuilder.result)
+      new Sized[CC[Nothing], _0](cbf.newBuilder.result())
   
   def wrap[Repr, L <: Nat](r : Repr)(implicit ev : AdditiveCollection[Repr]) = new Sized[Repr, L](r)
 

@@ -92,7 +92,7 @@ object FizzBuzzExample {
     implicit def succRevFizzBuzz[N <: Nat](implicit f: RevFizzBuzz[N], n: NatToFizzBuzz[Succ[N]]): Aux[Succ[N], n.Out :: f.Out] =
       new RevFizzBuzz[Succ[N]] {
         type Out = n.Out :: f.Out
-        def apply() = n.apply :: f.apply
+        def apply() = n() :: f()
       }
   }
 

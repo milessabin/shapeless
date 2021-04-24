@@ -44,6 +44,9 @@ class TupleTests {
 
   type BBBB = (Boolean, Boolean, Boolean, Boolean)
 
+  object mkString extends (Any -> String)(_.toString)
+  object fruit extends (Fruit -> Fruit)(f => f)
+
   trait Fruit
   case class Apple() extends Fruit
   case class Pear() extends Fruit
@@ -117,9 +120,6 @@ class TupleTests {
   val m2eim2esm2eim2eem2edList = List(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed = (m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
-
-  object mkString extends (Any -> String)(_.toString)
-  object fruit extends (Fruit -> Fruit)(f => f)
 
   trait incInt0 extends Poly1 {
     implicit def default[T] = at[T](t => ())
@@ -1836,43 +1836,43 @@ class TupleTests {
     // Note: Slightly different method signature in testGrouper2
 
     // group Unit
-    assertEquals( (), () group (2,1) )
+    assertEquals( (), ().group (2,1) )
 
     // partition a Tuple of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       ((0, 1), (2, 3)),
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // partition a Tuple of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       ((0, 1), (2, 3)),
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       ((0, 1), (4, 5)),
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       ((0, 1), (1, 2), (2, 3)),
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       ((0, 1), (2, 3), (4, 'a')),
-      range(0, 5) group(2, 2, Tuple1('a'))
+      range(0, 5).group(2, 2, Tuple1('a'))
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       ((0, 1), (2, 3), (4, 'a')),
-      range(0, 5) group(2, 2, ('a', 'b', 'c'))
+      range(0, 5).group(2, 2, ('a', 'b', 'c'))
     )
   }
 
@@ -1889,43 +1889,43 @@ class TupleTests {
       ) = tupler(mapper(range()))
 
     // group Unit
-    assertEquals( (), () group (2,1) )
+    assertEquals( (), ().group (2,1) )
 
     // partition a Tuple of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       ((0, 1), (2, 3)),
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // partition a Tuple of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       ((0, 1), (2, 3)),
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       ((0, 1), (4, 5)),
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       ((0, 1), (1, 2), (2, 3)),
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       ((0, 1), (2, 3), (4, 'a')),
-      range(0, 5) group(2, 2, Tuple1('a'))
+      range(0, 5).group(2, 2, Tuple1('a'))
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       ((0, 1), (2, 3), (4, 'a')),
-      range(0, 5) group(2, 2, ('a', 'b', 'c'))
+      range(0, 5).group(2, 2, ('a', 'b', 'c'))
     )
 
   }

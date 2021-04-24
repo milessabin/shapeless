@@ -246,7 +246,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
     val reprName = TypeName(c.freshName("R"))
     val coproduct = objectRef[Coproduct.type]
     val toCases = ctorsOf1(tpe).zipWithIndex.map((mkCoproductCases _).tupled)
-    val to = q"$coproduct.unsafeMkCoproduct((ft: $AnyTpe) match { case ..$toCases }, ft).asInstanceOf[$reprName[$AnyTpe]]"
+    val to = q"$coproduct.unsafeMkCoproduct((ft: @_root_.scala.unchecked) match { case ..$toCases }, ft).asInstanceOf[$reprName[$AnyTpe]]"
     val from = q"$coproduct.unsafeGet(rt).asInstanceOf[${appliedType(tpe, AnyTpe)}]"
 
     q"""
@@ -325,10 +325,10 @@ trait IsCons1Macros extends CaseClassMacros {
     if (!(lDealiasedTpe.typeConstructor =:= consTpe))
       abort("Not H/CCons")
 
-    val TypeRef(_, _, List(hd, tl)) = lDealiasedTpe
+    val TypeRef(_, _, List(hd, tl)) = (lDealiasedTpe: @unchecked)
     val hdPoly = polyType(List(lParam), hd)
     val tlPoly = polyType(List(lParam), tl)
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName())
     val hdTpt = appliedTypTree1(hdPoly, lParamTpe, name)
     val tlTpt = appliedTypTree1(tlPoly, lParamTpe, name)
     val hdName = TypeName(c.freshName("H"))
@@ -371,7 +371,7 @@ class Split1Macros(val c: whitebox.Context) extends CaseClassMacros {
         }
       }
 
-    val name = TypeName(c.freshName)
+    val name = TypeName(c.freshName())
     val (oTpt, iTpt) = lDealiasedTpe match {
       case tpe @ TypeRef(_, _, args) if balanced(args) =>
         val pivot = args.find(_.contains(lParam)).get

@@ -1108,7 +1108,7 @@ class RecordTests {
 
     val (x, y, z) = (Witness("x"), Witness("y"), Witness("z"))
 
-    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply
+    val fields: (FieldType[Int, x.T] :: FieldType[String, y.T] :: FieldType[Boolean, z.T] :: HNil) = SwapRecord[TestRecord].apply()
 
     assertEquals(fields.toList, List("x", "y", "z"))
   }
@@ -1167,4 +1167,16 @@ class RecordTests {
 
     assertTypedEquals[Witness.`"a"`.T](swapped.head, select(swapped))
  }
+
+  @Test
+  def testFieldTypeOfValueClass: Unit = {
+    import RecordTests._
+    val x = aValueClassField ->> AValueClass(1L)
+    assertEquals(x.l, Array(x).apply(0))
+  }
+}
+
+object RecordTests {
+  case class AValueClass(l: Long) extends AnyVal
+  object aValueClassField extends FieldOf[AValueClass]
 }

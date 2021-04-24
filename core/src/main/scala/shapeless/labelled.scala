@@ -23,7 +23,7 @@ object labelled {
 
   /** The type of fields with keys of singleton type `K` and value type `V`. */
   type FieldType[K, +V] = V with KeyTag[K, V]
-  trait KeyTag[K, +V]
+  trait KeyTag[K, +V] extends Any
 
   /** Yields a result encoding the supplied value with the singleton type `K` of its key. */
   def field[K]: FieldBuilder[K] = new FieldBuilder(true)
@@ -125,7 +125,7 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
   def mkLabelledGeneric[T: WeakTypeTag, R]: Tree = {
     val tpe = weakTypeOf[T]
     val keys = labelsOf(tpe).map(constantType)
-    val generic @ q"$_.instance[$_, ${repr: Tree}]($_, $_)" = mkGeneric[T]
+    val generic @ q"$_.instance[$_, ${repr: Tree}]($_, $_)" = (mkGeneric[T]: @unchecked)
     val isProduct = repr.tpe <:< hlistTpe
     val values = if (isProduct) unpackHList(repr.tpe) else unpackCoproduct(repr.tpe)
     val items = keys.zip(values).map((FieldType.apply _).tupled)
@@ -148,7 +148,7 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
     labelledType(tpeSelector, "union", cnilTpe, cconsTpe)
 
   def labelledType(tpeSelector: Tree, variety: String, nil: Type, cons: Type): Tree = {
-    val q"${tpeString: String}" = tpeSelector
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
     val labelledTpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
       element.split("->") match {
         case Array(keyString, valueString) =>
@@ -170,7 +170,7 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
     nonLabelledType(tpeSelector, cnilTpe, cconsTpe)
 
   def nonLabelledType(tpeSelector: Tree, nil: Type, cons: Type): Tree = {
-    val q"${tpeString: String}" = tpeSelector
+    val q"${tpeString: String}" = (tpeSelector: @unchecked)
     val tpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
       appliedType(cons, parseTypeOrFail(element), acc)
     }

@@ -160,7 +160,7 @@ object union {
     type Keys <: HList
     type Values <: Coproduct
 
-    def keys(): Keys
+    def keys: Keys
     def values(u: L): Values
   }
 
@@ -173,7 +173,7 @@ object union {
       new UnzipFields[L] {
         type Keys = HNil
         type Values = L
-        def keys() = HNil
+        def keys = HNil
         def values(u: L): L = u
       }
 
@@ -185,7 +185,7 @@ object union {
         type Keys = K :: tailUF.Keys
         type Values = V :+: tailUF.Values
 
-        def keys() = key.value :: tailUF.keys()
+        def keys = key.value :: tailUF.keys
         def values(u: FieldType[K, V] :+: T) =
           u match {
             case Inl(v) => Inl(v)
