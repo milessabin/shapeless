@@ -312,7 +312,8 @@ lazy val mimaSettings = Seq(
       "IsCCons1Macros",
       "IsCons1Macros",
       "LazyMacros",
-      "SingletonTypeMacros"
+      "SingletonTypeMacros",
+      "AnnotationMacros"
     ).map(macros => exclude[Problem](s"shapeless.$macros*"))
 
     macroFilters ::: List( // removed private classes and methods
