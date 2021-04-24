@@ -47,6 +47,12 @@ class CoproductTests {
     implicit val caseBoolean = at[Boolean](_ => 1)
   }
 
+  trait Dog
+  trait Cat
+  type DogCat = Dog :+: Cat :+: CNil
+  case object Rex extends Dog
+  case object Felix extends Cat
+
   @Test
   def testInject: Unit = {
     implicitly[Inject[Int :+: CNil, Int]]
@@ -54,6 +60,8 @@ class CoproductTests {
     implicitly[Inject[Int :+: Int :+: Int :+: CNil, Int]]
     implicitly[Inject[String :+: Int :+: CNil, Int]]
     implicitly[Inject[Int :+: String :+: CNil, Int]]
+    implicitly[Inject[DogCat, Rex.type]]
+    implicitly[Inject[DogCat, Felix.type]]
 
     val foo1 = Coproduct[ISB](23)
     val foo2 = Coproduct[ISB]("foo")
@@ -1955,6 +1963,9 @@ class CoproductTests {
 
     val b = true.inject[ISBD]
     assertEquals(Inr(Inr(Inl(true))), b)
+
+    val dc = Rex.inject[DogCat]
+    assertEquals(Inl(Rex), dc)
 
     illTyped("1.inject[String :+: CNil]")
     typed[ISBD](1.inject[ISBD])

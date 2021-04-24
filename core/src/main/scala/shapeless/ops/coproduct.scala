@@ -33,8 +33,8 @@ object coproduct {
       def apply(i: I): H :+: T = Inr(tlInj(i))
     }
 
-    implicit def hdInject[H, T <: Coproduct]: Inject[H :+: T, H] = new Inject[H :+: T, H] {
-      def apply(i: H): H :+: T = Inl(i)
+    implicit def hdInject[H, HH <: H, T <: Coproduct]: Inject[H :+: T, HH] = new Inject[H :+: T, HH] {
+      def apply(i: HH): H :+: T = Inl(i)
     }
   }
 
@@ -512,7 +512,7 @@ object coproduct {
   /**
    * Type class supporting zipping a `Coproduct` with an `HList`, resulting in a `Coproduct` of tuples of the form
    * ({element from input `Coproduct`}, {element from input `HList`})
-   * 
+   *
    * @author William Harvey
    */
   trait ZipWith[H <: HList, V <: Coproduct] extends DepFn2[H, V] with Serializable { type Out <: Coproduct }
@@ -527,7 +527,7 @@ object coproduct {
       def apply(h: HNil, v: CNil) = v
     }
 
-    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]): 
+    implicit def cpZipWith[HH, HT <: HList, VH, VT <: Coproduct](implicit zipWith: ZipWith[HT, VT]):
         Aux[HH :: HT, VH :+: VT, (VH, HH) :+: zipWith.Out] = new ZipWith[HH :: HT, VH :+: VT] {
       type Out = (VH, HH) :+: zipWith.Out
       def apply(h: HH :: HT, v: VH :+: VT): Out = v match {
