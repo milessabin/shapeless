@@ -445,28 +445,14 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
       case ConstantType(c) =>
         q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], ${nameOf(c.tpe)})"""
 
-      case other =>
-        /* There is potential unsoundness if we allow a simple cast between two
-         * unparameterized types, if they contain values of an abstract type variable
-         * from outside of their definition. Therefore, check to see if any values
-         * have types that look different from the inside and outside of the type. */
-        val closesOverType = other.decls.exists {
-          case sym: TermSymbol if sym.isVal || sym.isVar || sym.isParamAccessor =>
-            val rtpe = sym.typeSignature
-            rtpe.asSeenFrom(tpe, tpe.typeSymbol) != rtpe.asSeenFrom(tpe, tpe.typeSymbol.owner)
-          case _ => false
-        }
+      // Outer#Inner is unsound in general since Inner can capture type members of Outer.
+      case TypeRef(TypeRef(_, outer, args), inner, _) if !outer.isFinal || args.nonEmpty =>
+        if (inner.isClass && inner.asClass.isCaseClass) mkCaseClassTypeable(tpe)
+        else c.abort(c.enclosingPosition, s"No default Typeable for type projection $tpe")
 
+      case _ =>
         val tsym = tpe.typeSymbol
-        if (closesOverType) {
-          if (tsym.isClass && tsym.asClass.isCaseClass) {
-            /* it appears to be sound to treat captured type variables as if they were
-             * simply case class parameters, as they'll be checked by their own Typeables later. */
-            mkCaseClassTypeable(tpe)
-          } else {
-            c.abort(c.enclosingPosition, s"No default Typeable for type $tpe capturing an outer type variable")
-          }
-        } else if (tsym.isStatic || tsym.isFinal || (tsym.isClass && tsym.asClass.isTrait)) {
+        if (tsym.isStatic || tsym.isFinal || (tsym.isClass && tsym.asClass.isTrait)) {
           // scala/bug#4440 Final inner classes and traits have no outer accessor.
           q"_root_.shapeless.Typeable.namedSimpleTypeable(_root_.scala.Predef.classOf[$tpe], ${nameOf(tsym)})"
         } else {
