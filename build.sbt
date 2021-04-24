@@ -2,7 +2,6 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
-val Scala211 = "2.11.12"
 val Scala212 = "2.12.13"
 val Scala213 = "2.13.5"
 
@@ -12,7 +11,7 @@ crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
 ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration
@@ -216,16 +215,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(
-    libraryDependencies ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
-        case _ =>
-          Nil
-      }
-    }
-  )
+  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
@@ -280,12 +270,11 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
     (sc / unmanagedSourceDirectories) ++= {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
-        if(dir.getName != "scala") Seq(dir)
-        else
-          CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
-            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.13-"))
-          }
+        if (dir.getName != "scala") Seq(dir)
+        else CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
+          case Some((2, y)) if y <  13 => Seq(new File(dir.getPath + "_2.13-"))
+        }
       }
     }
   }
