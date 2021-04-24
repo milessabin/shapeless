@@ -334,3 +334,27 @@ class LazyStrictTests {
     implicitly[Strict[Readable[Id]]]
   }
 }
+
+object TestLazyWithTypeParametersAndBounds {
+  trait Foo
+  case class BarFoo(i: Int) extends Foo
+
+  trait Fooer[Tpe, FooTpe] {
+    def makeFoo(obj: Tpe): FooTpe
+  }
+
+  object Fooer {
+    implicit val barFooer: Fooer[Int, BarFoo] = null
+  }
+
+  class Finder[Tpe] {
+    def find[F <: Foo](implicit fooer: Fooer[Tpe, F]) = fooer
+    def findLazy[F <: Foo](implicit fooer: Lazy[Fooer[Tpe, F]]) = fooer
+    def findNoBounds[F](implicit fooer: Lazy[Fooer[Tpe, F]]) = fooer
+  }
+
+  val intFinder = new Finder[Int]
+  intFinder.find
+  intFinder.findLazy
+  intFinder.findNoBounds
+}
