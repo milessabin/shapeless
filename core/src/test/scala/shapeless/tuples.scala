@@ -18,7 +18,7 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
-
+import shapeless.ops.tuple.IsComposite
 import shapeless.test._
 import testutil._
 
@@ -49,6 +49,7 @@ class TupleTests {
   case class Pear() extends Fruit
   case class Banana() extends Fruit
 
+  case class Foo(i: Int, s: String)
   type PWS = Product with Serializable with Fruit
 
   type YYYY = (Any, Any, Any, Any)
@@ -1462,8 +1463,7 @@ class TupleTests {
 
   @Test
   def testPropagation: Unit = {
-    def useHead[P <: Product](p: P)(implicit ic: ops.tuple.IsComposite[P]) = p.head
-
+    def useHead[P: IsTuple: IsComposite](p: P) = p.head
     val h = useHead((23, "foo", true))
     typed[Int](h)
   }
@@ -1972,5 +1972,12 @@ class TupleTests {
     illTyped("""
       (23, "foo").align[(String, String)]
     """)
+  }
+
+  @Test
+  def testCompatibilityWithProductSyntax: Unit = {
+    import syntax.std.product._
+    assertEquals(List(2, "a"), Foo(2, "a").to[List])
+    assertEquals(List(2, "a"), (2, "a").to[List])
   }
 }
