@@ -66,6 +66,10 @@ object AnnotationTestsDefinitions {
     s: String,
     ob: Option[Boolean] @Second(2, "b") @Third('c')
   )
+  
+  type PosInt = Int @First
+  type Email = String @Third('c')
+  case class User(age: PosInt, email: Email)
 }
 
 class AnnotationTests {
@@ -194,8 +198,8 @@ class AnnotationTests {
   @Test
   def allAnnotations: Unit = {
     val cc = AllAnnotations[CC3].apply()
-    typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
-    assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
 
     val st = AllAnnotations[Base].apply()
     typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
@@ -203,12 +207,16 @@ class AnnotationTests {
   
   @Test
   def allTypeAnnotations: Unit = {
-    val st = AllTypeAnnotations[Base2].apply()
-    typed[(First :: shapeless.HNil) :: (Second :: Third :: shapeless.HNil) :: shapeless.HNil](st) // there are no type annotations for sealed traits
+    val st = AllTypeAnnotations[Base2].apply() // sealed trait
+    typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
 
-    val cc = AllTypeAnnotations[CC4].apply()
-    typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
-    assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    val cc = AllTypeAnnotations[CC4].apply() // case class
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    
+    val user = AllTypeAnnotations[User].apply() // type refs
+    typed[(First :: HNil) :: (Third :: HNil) :: HNil](user)
+    assert(user == (First() :: HNil) :: (Third('c') :: HNil) :: HNil)
   }
   
 }
