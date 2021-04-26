@@ -8,7 +8,7 @@ class ShapelessPlugin(val global: Global) extends Plugin { self =>
   import global._
 
   val name = "shapeless-plugin"
-  val description = "Replaces by-name implicits with shapeless.Lazy on Scala 2.13"
+  val description = "Replaces by-name implicits with shapeless.Lazy on Scala 2.12"
   val components: List[PluginComponent] = ShapelessComponent :: Nil
 
   private object ShapelessComponent extends PluginComponent with Transform {

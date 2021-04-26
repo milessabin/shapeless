@@ -154,8 +154,10 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
 
 lazy val plugin = project.in(file("plugin"))
   .settings(crossVersionSharedSources)
+  .settings(publishSettings)
   .settings(
     name := "shapeless-plugin",
+    moduleName := "shapeless-plugin",
     sbtPlugin := true,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala213, Scala212)
