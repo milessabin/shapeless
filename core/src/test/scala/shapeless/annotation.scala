@@ -43,6 +43,10 @@ object AnnotationTestsDefinitions {
   @First case class BaseI(i: Int) extends Base
   @Second(3, "e") @Third('c') case class BaseS(s: String) extends Base
 
+  sealed trait Base2
+  case class BaseI2(i: Int) extends Base2 @First
+  case class BaseS2(s: String) extends Base2 @Second(3, "e") @Third('c')
+
   trait Dummy
 
   case class CC2(
@@ -184,7 +188,7 @@ class AnnotationTests {
   def invalidTypeAnnotations: Unit = {
     illTyped(" TypeAnnotations[Dummy, CC2] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" TypeAnnotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
-    illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
+  illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
   }
 
   @Test
@@ -192,16 +196,16 @@ class AnnotationTests {
     val cc = AllAnnotations[CC3].apply()
     typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
     assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
-    
+
     val st = AllAnnotations[Base].apply()
     typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
   }
   
   @Test
   def allTypeAnnotations: Unit = {
-    val st = AllTypeAnnotations[Base].apply()
-    typed[shapeless.HNil :: shapeless.HNil :: shapeless.HNil](st) // there are no type annotations for sealed traits
-    
+    val st = AllTypeAnnotations[Base2].apply()
+    typed[(First :: shapeless.HNil) :: (Second :: Third :: shapeless.HNil) :: shapeless.HNil](st) // there are no type annotations for sealed traits
+
     val cc = AllTypeAnnotations[CC4].apply()
     typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
     assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
