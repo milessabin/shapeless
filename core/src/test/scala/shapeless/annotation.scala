@@ -18,7 +18,7 @@ package shapeless
 
 import scala.annotation.{ Annotation => saAnnotation }
 import org.junit.Test
-import shapeless.test.illTyped
+import shapeless.test.{illTyped, typed}
 
 object AnnotationTestsDefinitions {
 
@@ -41,7 +41,7 @@ object AnnotationTestsDefinitions {
 
   sealed trait Base
   @First case class BaseI(i: Int) extends Base
-  @Second(3, "e") case class BaseS(s: String) extends Base
+  @Second(3, "e") @Third('c') case class BaseS(s: String) extends Base
 
   trait Dummy
 
@@ -189,28 +189,22 @@ class AnnotationTests {
 
   @Test
   def allAnnotations: Unit = {
-    {
-      val all: (First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil = AllAnnotations[CC3].apply()
-      assert(all == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
-    }
-
-    {
-      val first = AllAnnotations[CC3].apply()
-      assert(first == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
-    }
+    val cc = AllAnnotations[CC3].apply()
+    typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    
+    val st = AllAnnotations[Base].apply()
+    typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
   }
   
   @Test
   def allTypeAnnotations: Unit = {
-    {
-      val all: (First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil = AllTypeAnnotations[CC4].apply()
-      assert(all == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
-    }
-
-    {
-      val first = AllTypeAnnotations[CC4].apply()
-      assert(first == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
-    }
+    val st = AllTypeAnnotations[Base].apply()
+    typed[shapeless.HNil :: shapeless.HNil :: shapeless.HNil](st) // there are no type annotations for sealed traits
+    
+    val cc = AllTypeAnnotations[CC4].apply()
+    typed[(First :: HNil) :: shapeless.HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: shapeless.HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
   }
   
 }
