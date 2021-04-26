@@ -441,7 +441,13 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   def extract(tpe: Boolean, s: Symbol): List[c.universe.Annotation] = {
     if (tpe) {
       s.typeSignature match {
-        case a: AnnotatedType => a.annotations.reverse // compiler provides type annotations in reverse
+        case a: AnnotatedType => a.annotations.reverse
+        case c: ClassInfoType =>
+          val parents = c.parents         
+          parents.flatMap {
+            case a: AnnotatedType => a.annotations.reverse
+            case _ => Nil
+          }
         case _ => Nil
       }
     } else {
