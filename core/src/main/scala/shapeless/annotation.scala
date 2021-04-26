@@ -448,6 +448,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
             case a: AnnotatedType => a.annotations.reverse
             case _ => Nil
           }
+        case t: TypeRef => extract(tpe, t.sym)
         case _ => Nil
       }
     } else {
