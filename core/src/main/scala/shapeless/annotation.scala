@@ -410,7 +410,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     else q"_root_.shapeless.AllAnnotations.mkAnnotations[$tpe, $outTpe]($outTree)"
   }
 
-  def getAnnotationTreeOptions(tpe: Type, typeAnnotation: Boolean): List[List[(Type, Tree)]] = {
+  private def getAnnotationTreeOptions(tpe: Type, typeAnnotation: Boolean): List[List[(Type, Tree)]] = {
     if (isProduct(tpe)) {
       val constructorSyms = tpe
         .member(termNames.CONSTRUCTOR)
@@ -441,7 +441,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
   }
 
-  def extract(tpe: Boolean, s: Symbol): List[c.universe.Annotation] = {
+  private def extract(tpe: Boolean, s: Symbol): List[c.universe.Annotation] = {
     def fromType(t: Type): List[c.universe.Annotation] = t match {
       case AnnotatedType(annotations, _) => annotations.reverse
       case ClassInfoType(parents, _, _) => parents.flatMap(fromType)
