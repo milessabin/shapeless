@@ -153,6 +153,72 @@ object Functor {
   inline def derived[F[_]](using gen: K1.Generic[F]): Functor[F] = functorGen
 }
 
+trait Applicative[F[_]] extends Functor[F] {
+  def pure[A](a: A): F[A]
+
+  def ap[A, B](ff: F[A => B])(fa: F[A]): F[B]
+}
+
+object Applicative {
+  inline def apply[F[_]](using ff: Applicative[F]): ff.type = ff
+
+  given Applicative[Id] with
+    def map[A, B](fa: Id[A])(f: A => B): Id[B] = f(fa)
+
+    def pure[A](a: A): Id[A] = a
+
+    def ap[A, B](ff: Id[A => B])(fa: Id[A]): Id[B] = ff(fa)
+
+  given [X](using M: Monoid[X]): Applicative[Const[X]] with
+    def map[A, B](fa: Const[X][A])(f: A => B): Const[X][B] = fa
+
+    def pure[A](a: A): Const[X][A] = M.empty
+
+    def ap[A, B](ff: Const[X][A => B])(fa: Const[X][A]): Const[X][B] = M.combine(ff, fa)
+
+  given Applicative[List] with
+    def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
+
+    def pure[A](a: A): List[A] = List(a)
+
+    def ap[A, B](ff: List[A => B])(fa: List[A]): List[B] =
+      for {
+        f <- ff
+        a <- fa
+      } yield f(a)
+}
+
+trait Traverse[F[_]] extends Functor[F] {
+  def traverse[G[_] : Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
+}
+
+object Traverse {
+  inline def apply[F[_]](using ff: Traverse[F]): ff.type = ff
+
+  given Traverse[Id] with
+    def map[A, B](fa: Id[A])(f: A => B): Id[B] = f(fa)
+
+    def traverse[G[_] : Applicative, A, B](fa: Id[A])(f: A => G[B]): G[Id[B]] = f(fa)
+
+  given [X]: Traverse[Const[X]] with
+    def map[A, B](fa: Const[X][A])(f: A => B): Const[X][B] = fa
+
+    def traverse[G[_], A, B](fa: Const[X][A])(f: A => G[B])(using G: Applicative[G]): G[Const[X][B]] =
+      G.pure(fa)
+
+  given traverseGen[F[_]](using inst: => K1.Instances[Traverse, F], func: K1.Instances[Functor, F]): Traverse[F] with
+    import Functor.functorGen as delegate
+
+    def map[A, B](fa: F[A])(f: A => B): F[B] = delegate[F].map(fa)(f)
+
+    def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(using G: Applicative[G]): G[F[B]] =
+      inst.traverse[A, G, B](fa)([a,b] => (ga: G[a], f: a => b) => G.map(ga)(f))([a] => (x: a) => G.pure(x))([a,b] => (gf: G[a => b], ga: G[a]) => G.ap(gf)(ga))(
+        [t[_]] => (trav: Traverse[t], t0: t[A]) => trav.traverse[G, A, B](t0)(f)
+      )
+
+   inline def derived[F[_]](using gen: K1.Generic[F]): Traverse[F] = traverseGen
+}
+
 trait FunctorK[H[_[_]]] {
   def mapK[A[_], B[_]](af: H[A])(f: A ~> B): H[B]
 }

@@ -27,7 +27,7 @@ object adts {
   case object NoneInt extends OptionInt
   case class SomeInt(value: Int) extends OptionInt
 
-  sealed trait Opt[+A] derives Eq, Show, Read, Functor, EmptyK, Pure, Ord
+  sealed trait Opt[+A] derives Eq, Show, Read, Functor, EmptyK, Pure, Ord, Traverse
   case object Nn extends Opt[Nothing]
   case class Sm[+A](value: A) extends Opt[A]
 

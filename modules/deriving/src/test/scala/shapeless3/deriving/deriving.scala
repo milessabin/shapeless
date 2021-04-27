@@ -144,6 +144,13 @@ class DerivationTests {
   }
 
   @Test
+  def traverse: Unit = {
+    val v0 = Traverse[Opt]
+    assert(v0.traverse(Sm(1))((x: Int) => List(x + 1)) == List(Sm(2)))
+  }
+
+
+  @Test
   def functork: Unit = {
     val v0 = FunctorK[Order]
     assert(v0.mapK(Order[OptionD](Given("Epoisse"), Default(10)))(OptionD.fold) == Order[Id]("Epoisse", 10))
