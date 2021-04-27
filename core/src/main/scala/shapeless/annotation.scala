@@ -437,22 +437,17 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       abort(s"$tpe is not case class like or the root of a sealed family of types")
     }
   }
-  
+
   def extract(tpe: Boolean, s: Symbol): List[c.universe.Annotation] = {
-    if (tpe) {
-      s.typeSignature match {
-        case a: AnnotatedType => a.annotations.reverse
-        case c: ClassInfoType =>
-          val parents = c.parents         
-          parents.flatMap {
-            case a: AnnotatedType => a.annotations.reverse
-            case _ => Nil
-          }
-        case t: TypeRef => extract(tpe, t.sym)
-        case _ => Nil
-      }
-    } else {
-      s.annotations
+    def fromType(t: Type): List[c.universe.Annotation] = t match {
+      case AnnotatedType(annotations, _) => annotations.reverse
+      case ClassInfoType(parents, _, _) => parents.flatMap(fromType)
+      case TypeRef(_, sym, _) if sym.asType.isAliasType => extract(tpe, sym)
+      case _ => Nil
     }
+
+    if (tpe) fromType(s.typeSignature)
+    else s.annotations
   }
+
 }
