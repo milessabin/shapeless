@@ -31,7 +31,7 @@ object FlattenExample {
     implicit def default[T] = at[T](Tuple1(_))
   }
   object flatten extends LowPriorityFlatten {
-    implicit def caseTuple[P <: Product](implicit lfm: Lazy[FlatMapper[P, flatten.type]]) =
+    implicit def caseTuple[P <: Product, O](implicit lfm: Lazy[FlatMapper.Aux[P, flatten.type, O]]) =
       at[P](lfm.value(_))
   }
 

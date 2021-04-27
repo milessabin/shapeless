@@ -55,7 +55,7 @@ trait CSVConverter[T] {
 
 /** Instances of the CSVConverter trait */
 object CSVConverter {
-  def apply[T](implicit st: Lazy[CSVConverter[T]]): CSVConverter[T] = st.value
+  def apply[T](implicit st: => CSVConverter[T]): CSVConverter[T] = st
 
   def fail(s: String) = Failure(new CSVException(s))
 
@@ -100,44 +100,44 @@ object CSVConverter {
     }
   
   implicit def deriveHCons[V, T <: HList]
-    (implicit scv: Lazy[CSVConverter[V]], sct: Lazy[CSVConverter[T]])
+    (implicit scv: => CSVConverter[V], sct: => CSVConverter[T])
         : CSVConverter[V :: T] =
       new CSVConverter[V :: T] {
 
         def from(s: String): Try[V :: T] = s.span(_ != ',') match {
           case (before,after) =>
             for {
-              front <- scv.value.from(before)
-              back <- sct.value.from(if (after.isEmpty) after else after.tail)
+              front <- scv.from(before)
+              back <- sct.from(if (after.isEmpty) after else after.tail)
             } yield front :: back
 
           case _ => fail("Cannot convert '" ++ s ++ "' to HList")
         }
 
         def to(ft: V :: T): String = {
-          scv.value.to(ft.head) ++ "," ++ sct.value.to(ft.tail)
+          scv.to(ft.head) ++ "," ++ sct.to(ft.tail)
         }
       }
 
   implicit def deriveHConsOption[V, T <: HList]
-  (implicit scv: Lazy[CSVConverter[V]], sct: Lazy[CSVConverter[T]])
+  (implicit scv: => CSVConverter[V], sct: => CSVConverter[T])
   : CSVConverter[Option[V] :: T] =
     new CSVConverter[Option[V] :: T] {
 
       def from(s: String): Try[Option[V] :: T] = s.span(_ != ',') match {
         case (before,after) =>
           (for {
-            front <- scv.value.from(before)
-            back <- sct.value.from(if (after.isEmpty) after else after.tail)
+            front <- scv.from(before)
+            back <- sct.from(if (after.isEmpty) after else after.tail)
           } yield Some(front) :: back).orElse {
-            sct.value.from(if (s.isEmpty) s else s.tail).map(None :: _)
+            sct.from(if (s.isEmpty) s else s.tail).map(None :: _)
           }
 
         case _ => fail("Cannot convert '" ++ s ++ "' to HList")
       }
 
       def to(ft: Option[V] :: T): String = {
-        ft.head.map(scv.value.to(_) ++ ",").getOrElse("") ++ sct.value.to(ft.tail)
+        ft.head.map(scv.to(_) ++ ",").getOrElse("") ++ sct.to(ft.tail)
       }
     }
 
