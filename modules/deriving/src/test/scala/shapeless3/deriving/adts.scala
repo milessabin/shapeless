@@ -21,7 +21,7 @@ package shapeless3.deriving
 object adts {
   case class ISB(i: Int, s: String, b: Boolean) derives Monoid, Eq, Empty, Show, Read
 
-  case class Box[A](x: A) derives Monoid, Eq, Show, Read, Functor, Pure, Ord
+  case class Box[A](x: A) derives Monoid, Eq, Show, Read, Functor, Pure, Ord, Traverse
 
   sealed trait OptionInt derives Eq, Empty, Show, Read, Ord
   case object NoneInt extends OptionInt
