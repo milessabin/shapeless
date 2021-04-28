@@ -22,6 +22,8 @@ import scala.deriving._
 
 abstract class ErasedInstances[K, FT] {
   def erasedMap(x: Any)(f: (Any, Any) => Any): Any
+
+  def erasedTraverse(x0: Any)(map: (Any, Any) => Any)(pure: Any => Any)(ap: (Any, Any) => Any)(f: (Any, Any) => Any): Any
 }
 
 abstract class ErasedProductInstances[K, FT] extends ErasedInstances[K, FT] {
@@ -49,6 +51,9 @@ final class ErasedProductInstances1[K, FT](val mirror: Mirror.Product, i: Any) e
 
   final def erasedMap(x0: Any)(f: (Any, Any) => Any): Any =
     mirror.fromProduct(Tuple1(f(i, toProduct(x0).productElement(0))))
+
+  final def erasedTraverse(x0: Any)(map: (Any, Any) => Any)(pure: Any => Any)(ap: (Any, Any) => Any)(f: (Any, Any) => Any) =
+    map(f(i, toProduct(x0).productElement(0)), (x: Any) => mirror.fromProduct(Tuple1(x)))
 
   final def erasedMap2(x0: Any, y0: Any)(f: (Any, Any, Any) => Any): Any =
     mirror.fromProduct(Tuple1(f(i, toProduct(x0).productElement(0), toProduct(y0).productElement(0))))
@@ -121,6 +126,21 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         i = i+1
       }
       mirror.fromProduct(new ArrayProduct(arr))
+    }
+  }
+
+  final def erasedTraverse(x0: Any)(map: (Any, Any) => Any)(pure: Any => Any)(ap: (Any, Any) => Any)(f: (Any, Any) => Any) = {
+    val n = is.length
+    if (n == 0) x0
+    else {
+      val x = toProduct(x0)
+      var acc = pure(EmptyTuple)
+      var i = 0
+      while(i < n) {
+        acc = ap(map(acc, (x: Tuple) => (y: Any) => x ++ Tuple1(y)), f(is(i), x.productElement(i)))
+        i = i+1
+      }
+      ap(pure(x => mirror.fromProduct(x)), acc)
     }
   }
 
@@ -216,6 +236,11 @@ final class ErasedCoproductInstances[K, FT](mirror: Mirror.Sum, is0: => Array[An
     f(i, is(p))
 
   def erasedFold(x: Any)(f: (Any, Any) => Any): Any = {
+    val i = ordinal(x)
+    f(i, x)
+  }
+
+  def erasedTraverse(x: Any)(map: (Any, Any) => Any)(pure: Any => Any)(ap: (Any, Any) => Any)(f: (Any, Any) => Any): Any = {
     val i = ordinal(x)
     f(i, x)
   }

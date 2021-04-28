@@ -144,6 +144,29 @@ class DerivationTests {
   }
 
   @Test
+  def traverse: Unit = {
+    val v0 = Traverse[Box]
+    assert(v0.traverse(Box(1))((x: Int) => List(x + 1)) == List(Box(2)))
+
+    val v1 = Traverse[Sm]
+    assert(v1.traverse(Sm(1))((x: Int) => List(x + 1)) == List(Sm(2)))
+    val v2 = Traverse[Const[Nn.type]]
+    assert(v2.traverse(Nn)((x: Int) => List(x + 1)) == List(Nn))
+    val v3 = Traverse[Opt]
+    assert(v3.traverse(Sm(1))((x: Int) => List(x + 1)) == List(Sm(2)))
+    assert(v3.traverse(Nn)((x: Int) => List(x + 1)) == List(Nn))
+
+    val v4 = Traverse[Const[CNil.type]]
+    assert(v4.traverse(CNil)(Option(_)) == Some(CNil))
+    val v5 = Traverse[CCons]
+    assert(v5.traverse(CCons("foo", CCons("bar", CNil)))(Option(_)) == Some(CCons("foo", CCons("bar", CNil))))
+    val v6 = Traverse[CList]
+    assert(v6.traverse(CCons("foo", CCons("bar", CNil)))(Option(_)) == Some(CCons("foo", CCons("bar", CNil))))
+    assert(v6.traverse(CNil)(Option(_)) == Some(CNil))
+  }
+
+
+  @Test
   def functork: Unit = {
     val v0 = FunctorK[Order]
     assert(v0.mapK(Order[OptionD](Given("Epoisse"), Default(10)))(OptionD.fold) == Order[Id]("Epoisse", 10))

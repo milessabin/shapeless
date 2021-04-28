@@ -36,3 +36,8 @@ local.sbt
 
 # Dottydoc
 _site/
+
+# build tools
+.bloop/
+.metals/
+metals.sbt
