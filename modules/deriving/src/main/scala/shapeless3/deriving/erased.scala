@@ -141,19 +141,7 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
         i = i+1
       }
       ap(pure(x => mirror.fromProduct(x)), acc)
-
-        // toProduct(x0)
-        //   .productIterator
-        //   .foldLeft[Tuple](pure(EmptyTuple))((acc, x) => ap(pure(x => acc ++ Tuple(x)))())
-        // foldLeft(x0)(pure(EmptyTuple))(
-        //   [t[_]] => (acc: G[Tuple], trav: Traverse[t], ta: t[A]) =>
-        //     Continue(
-        //       G.ap(
-        //         G.map(acc)((t: Tuple) => (x: t[B]) => t ++ Tuple(x) : Tuple)
-        //       )(trav.traverse(ta)(f))
-        //     )
-        // )
-      }
+    }
   }
 
   final def erasedMap2(x0: Any, y0: Any)(f: (Any, Any, Any) => Any): Any = {
