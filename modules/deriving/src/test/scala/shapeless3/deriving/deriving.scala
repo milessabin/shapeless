@@ -147,6 +147,11 @@ class DerivationTests {
   def traverse: Unit = {
     val v0 = Traverse[Opt]
     assert(v0.traverse(Sm(1))((x: Int) => List(x + 1)) == List(Sm(2)))
+    assert(v0.traverse(Nn)((x: Int) => List(x + 1)) == List(Nn))
+
+    val v1 = Traverse[CList]
+    assert(v1.traverse(CCons("foo", CCons("bar", CNil)))(Option(_)) == Some(CCons("foo", CCons("bar", CNil))))
+    assert(v1.traverse(CNil)(Option(_)) == Some(CNil))
   }
 
 

@@ -151,6 +151,7 @@ object Functor {
     def map[A, B](t: T)(f: A => B): T = t
 
   inline def derived[F[_]](using gen: K1.Generic[F]): Functor[F] = functorGen
+
 }
 
 trait Applicative[F[_]] extends Functor[F] {
@@ -182,6 +183,17 @@ object Applicative {
     def pure[A](a: A): List[A] = List(a)
 
     def ap[A, B](ff: List[A => B])(fa: List[A]): List[B] =
+      for {
+        f <- ff
+        a <- fa
+      } yield f(a)
+
+  given Applicative[Option] with
+    def map[A, B](fa: Option[A])(f: A => B): Option[B] = fa.map(f)
+
+    def pure[A](a: A): Option[A] = Option(a)
+
+    def ap[A, B](ff: Option[A => B])(fa: Option[A]): Option[B] =
       for {
         f <- ff
         a <- fa

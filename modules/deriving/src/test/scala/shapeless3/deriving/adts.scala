@@ -31,7 +31,7 @@ object adts {
   case object Nn extends Opt[Nothing]
   case class Sm[+A](value: A) extends Opt[A]
 
-  sealed trait CList[+A] derives Eq, Show, Read, Functor, EmptyK
+  sealed trait CList[+A] derives Eq, Show, Read, Functor, EmptyK, Traverse
   case class CCons[+A](hd: A, tl: CList[A]) extends CList[A]
   case object CNil extends CList[Nothing]
 
