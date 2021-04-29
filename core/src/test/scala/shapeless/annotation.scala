@@ -18,12 +18,13 @@ package shapeless
 
 import scala.annotation.{ Annotation => saAnnotation }
 import org.junit.Test
-import shapeless.test.illTyped
+import shapeless.test.{illTyped, typed}
 
 object AnnotationTestsDefinitions {
 
   case class First() extends saAnnotation
   case class Second(i: Int, s: String) extends saAnnotation
+  case class Third(c: Char) extends saAnnotation
 
   case class Other() extends saAnnotation
   case class Last(b: Boolean) extends saAnnotation
@@ -40,7 +41,11 @@ object AnnotationTestsDefinitions {
 
   sealed trait Base
   @First case class BaseI(i: Int) extends Base
-  @Second(3, "e") case class BaseS(s: String) extends Base
+  @Second(3, "e") @Third('c') case class BaseS(s: String) extends Base
+
+  sealed trait Base2
+  case class BaseI2(i: Int) extends Base2 @First
+  case class BaseS2(s: String) extends Base2 @Second(3, "e") @Third('c')
 
   trait Dummy
 
@@ -49,6 +54,22 @@ object AnnotationTestsDefinitions {
     s: String,
     ob: Option[Boolean] @Second(2, "b")
   )
+
+  case class CC3(
+    @First i: Int,
+    s: String,
+    @Second(2, "b") @Third('c') ob: Option[Boolean]
+  )
+  
+  case class CC4(
+    i: Int @First,
+    s: String,
+    ob: Option[Boolean] @Second(2, "b") @Third('c')
+  )
+  
+  type PosInt = Int @First
+  type Email = String @Third('c')
+  case class User(age: PosInt, email: Email)
 }
 
 class AnnotationTests {
@@ -172,7 +193,31 @@ class AnnotationTests {
   def invalidTypeAnnotations: Unit = {
     illTyped(" TypeAnnotations[Dummy, CC2] ", "could not find implicit value for parameter annotations: .*")
     illTyped(" TypeAnnotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
-    illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
+  illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
   }
 
+  @Test
+  def allAnnotations: Unit = {
+    val cc = AllAnnotations[CC3].apply()
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+
+    val st = AllAnnotations[Base].apply()
+    typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
+  }
+  
+  @Test
+  def allTypeAnnotations: Unit = {
+    val st = AllTypeAnnotations[Base2].apply() // sealed trait
+    typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
+
+    val cc = AllTypeAnnotations[CC4].apply() // case class
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: HNil](cc)
+    assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)
+    
+    val user = AllTypeAnnotations[User].apply() // type refs
+    typed[(First :: HNil) :: (Third :: HNil) :: HNil](user)
+    assert(user == (First() :: HNil) :: (Third('c') :: HNil) :: HNil)
+  }
+  
 }

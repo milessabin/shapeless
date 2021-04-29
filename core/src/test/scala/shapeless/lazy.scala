@@ -29,9 +29,8 @@ class LazyStrictTests {
   def testEffectOrder: Unit = {
     val effects = ListBuffer[Int]()
 
-    implicit def lazyInt: Lazy[Int] = Lazy[Int]{ effects += 3 ; 23 }
-
-    implicit def strictInt: Strict[Int] = Strict[Int]{ effects += 6 ; 23 }
+    implicit def int: Int = { effects += 3; 23 }
+    implicit def long: Long = { effects += 6; 23 }
 
     def summonLazyInt(implicit li: Lazy[Int]): Int = {
       effects += 2
@@ -40,21 +39,21 @@ class LazyStrictTests {
       i
     }
 
-    def summonStrictInt(implicit li: Strict[Int]): Int = {
+    def summonStrictLong(implicit sl: Strict[Long]): Long = {
       effects += 7
-      val i = li.value
+      val i = sl.value
       effects += 8
       i
     }
 
     effects += 1
-    val il = summonLazyInt
+    val li = summonLazyInt
     effects += 5
-    val is = summonStrictInt
+    val sl = summonStrictLong
     effects += 9
 
-    assertEquals(23, il)
-    assertEquals(23, is)
+    assertEquals(23, li)
+    assertEquals(23, sl)
     assertEquals(1 to 9, effects.toList)
   }
 
@@ -305,15 +304,18 @@ class LazyStrictTests {
     trait W[X, Y]
 
     illTyped(
-      "lazily[U[String]]", "No U\\[String]"
+      "lazily[U[String]]",
+      "(No U\\[String])|(could not find implicit value for parameter lv: => U\\[String])"
     )
 
     illTyped(
-      "lazily[V]", "could not find Lazy implicit value of type V"
+      "lazily[V]",
+      "(could not find Lazy implicit value of type V)|(could not find implicit value for parameter lv: => V)"
     )
 
     illTyped(
-      "lazily[W[String, Int]]", "No W\\[String, Int]"
+      "lazily[W[String, Int]]",
+      "(No W\\[String, Int])|(could not find implicit value for parameter lv: => W\\[String,Int])"
     )
   }
 

@@ -22,6 +22,14 @@ import scala.collection.mutable.Builder
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
+trait LazyInstances {
+  implicit def mkLazy[I]: Lazy[I] = macro LazyMacros.mkLazyImpl[I]
+}
+
+trait StrictInstances {
+  implicit def mkStrict[I]: Strict[I] = macro LazyMacros.mkStrictImpl[I]
+}
+
 trait WitnessInstances {
   implicit def of[T]: Witness.Aux[T] =
     macro SingletonTypeMacros.materializeImpl[T]

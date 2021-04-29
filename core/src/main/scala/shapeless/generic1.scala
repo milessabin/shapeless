@@ -39,10 +39,10 @@ object Generic1 extends Generic10 {
   implicit def mkGeneric11[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[U, t] })#λ] =
     macro Generic1Macros.mkGeneric1Impl[T, ({ type λ[t[_]] = FR[U, t] })#λ]
 
-  def unsafeInstance[F[_], FR[_[_]], R0[_]](f: F[Any] => R0[Any], g: R0[Any] => F[Any])(implicit lazyFr: Lazy[FR[R0]]): Aux[F, FR, R0] = {
+  def unsafeInstance[F[_], FR[_[_]], R0[_]](f: F[Any] => R0[Any], g: R0[Any] => F[Any])(implicit lazyFr: => FR[R0]): Aux[F, FR, R0] = {
     new Generic1[F, FR] {
       type R[t] = R0[t]
-      def mkFrr: FR[R] = lazyFr.value
+      def mkFrr: FR[R] = lazyFr
       def to[T](ft: F[T]): R[T] = f(ft.asInstanceOf[F[Any]]).asInstanceOf[R[T]]
       def from[T](rt: R[T]): F[T] = g(rt.asInstanceOf[R[Any]]).asInstanceOf[F[T]]
     }
@@ -85,12 +85,12 @@ object IsHCons1 extends IsHCons10 {
   def unsafeInstance[L[_] <: HList, FH[_[_]], FT[_[_]], H0[_], T0[_] <: HList](
     f: (H0[Any], T0[Any]) => L[Any],
     g: L[Any] => (H0[Any], T0[Any])
-  )(implicit lazyFhh: Lazy[FH[H0]], lazyFtt: Lazy[FT[T0]]): Aux[L, FH, FT, H0, T0] =
+  )(implicit lazyFhh: => FH[H0], lazyFtt: => FT[T0]): Aux[L, FH, FT, H0, T0] =
     new IsHCons1[L, FH, FT] {
       type H[x] = H0[x]
       type T[x] = T0[x]
-      def mkFhh: FH[H] = lazyFhh.value
-      def mkFtt: FT[T] = lazyFtt.value
+      def mkFhh: FH[H] = lazyFhh
+      def mkFtt: FT[T] = lazyFtt
       def pack[A](u: (H[A], T[A])): L[A] =
         f(u._1.asInstanceOf[H[Any]], u._2.asInstanceOf[T[Any]]).asInstanceOf[L[A]]
       def unpack[A](p: L[A]): (H[A], T[A]) =
@@ -134,12 +134,12 @@ object IsCCons1 extends IsCCons10 {
   def unsafeInstance[L[_] <: Coproduct, FH[_[_]], FT[_[_]], H0[_], T0[_] <: Coproduct](
     f: Either[H0[Any], T0[Any]] => L[Any],
     g: L[Any] => Either[H0[Any], T0[Any]]
-  )(implicit lazyFhh: Lazy[FH[H0]], lazyFtt: Lazy[FT[T0]]): Aux[L, FH, FT, H0, T0] =
+  )(implicit lazyFhh: => FH[H0], lazyFtt: => FT[T0]): Aux[L, FH, FT, H0, T0] =
     new IsCCons1[L, FH, FT] {
       type H[x] = H0[x]
       type T[x] = T0[x]
-      def mkFhh: FH[H] = lazyFhh.value
-      def mkFtt: FT[T] = lazyFtt.value
+      def mkFhh: FH[H] = lazyFhh
+      def mkFtt: FT[T] = lazyFtt
       def pack[A](u: Either[H[A], T[A]]): L[A] =
         f(u.asInstanceOf[Either[H[Any], T[Any]]]).asInstanceOf[L[A]]
       def unpack[A](p: L[A]): Either[H[A], T[A]] =
@@ -180,12 +180,12 @@ object Split1 extends Split10 {
   implicit def mkSplit13[L[_], FO[_[_]], FI[_[_], _[_]], U[_]]: Split1[L, FO, ({ type λ[t[_]] = FI[U, t] })#λ] =
     macro Split1Macros.mkSplit1Impl[L, FO, ({ type λ[t[_]] = FI[U, t] })#λ]
 
-  def instance[FO[_[_]], FI[_[_]], O0[_], I0[_]](implicit lazyFoo: Lazy[FO[O0]], lazyFii: Lazy[FI[I0]]): Aux[({ type λ[x] = O0[I0[x]] })#λ, FO, FI, O0, I0] =
+  def instance[FO[_[_]], FI[_[_]], O0[_], I0[_]](implicit lazyFoo: => FO[O0], lazyFii: => FI[I0]): Aux[({ type λ[x] = O0[I0[x]] })#λ, FO, FI, O0, I0] =
     new Split1[({ type λ[x] = O0[I0[x]] })#λ, FO, FI] {
       type O[x] = O0[x]
       type I[x] = I0[x]
-      def mkFoo: FO[O] = lazyFoo.value
-      def mkFii: FI[I] = lazyFii.value
+      def mkFoo: FO[O] = lazyFoo
+      def mkFii: FI[I] = lazyFii
       def pack[T](u: O[I[T]]): O[I[T]] = u
       def unpack[T](p: O[I[T]]): O[I[T]] = p
     }

@@ -189,7 +189,7 @@ object SerializationTestDefns {
   }
 
   object Functor extends Functor0 {
-    def apply[F[_]](implicit f: Lazy[Functor[F]]): Functor[F] = f.value
+    def apply[F[_]](implicit f: => Functor[F]): Functor[F] = f
 
     implicit val idFunctor: Functor[Id] =
       new Functor[Id] {
@@ -211,14 +211,16 @@ object SerializationTestDefns {
       }
   }
 
-  trait Functor0 {
+  trait Functor0 extends Functor1 {
     // Induction step for coproducts
     implicit def ccons[F[_]](implicit icc: IsCCons1[F, Functor, Functor]): Functor[F] =
       new Functor[F] {
         def map[A, B](fa: F[A])(f: A => B): F[B] =
           icc.pack(icc.unpack(fa).fold(hd => Left(icc.fh.map(hd)(f)), tl => Right(icc.ft.map(tl)(f))))
       }
+  }
 
+  trait Functor1 {
     implicit def generic[F[_]](implicit gen: Generic1[F, Functor]): Functor[F] =
       new Functor[F] {
         def map[A, B](fa: F[A])(f: A => B): F[B] =
@@ -1024,17 +1026,6 @@ class SerializationTests {
     assertSerializable(HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13)))
     assertSerializable(new (Set ~?> Option))
     assertSerializable(implicitly[(Set ~?> Option)#λ[Set[Int], Option[Int]]])
-  }
-
-  @Test
-  def testLazy: Unit = {
-    assertSerializable(Lazy(23))
-
-    assertSerializableBeforeAfter(implicitly[Lazy[Generic[Wibble]]])(_.value)
-    assertSerializableBeforeAfter(implicitly[Lazy[Generic1[Box, TC1]]])(_.value)
-
-    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: HNil]]])(_.value)
-    assertSerializableBeforeAfter(implicitly[Lazy[Lazy.Values[Generic[Wibble] :: Generic1[Box, TC1] :: HNil]]])(_.value)
   }
 
   @Test

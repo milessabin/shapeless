@@ -41,6 +41,6 @@ object OrElse extends OrElse0 {
 }
 
 private[shapeless] abstract class OrElse0 {
-  implicit def secondary[A, B](implicit b: Lazy[B]): A OrElse B =
-    new Secondary(b.value)
+  implicit def secondary[A, B](implicit b: => B): A OrElse B =
+    new Secondary(b)
 }

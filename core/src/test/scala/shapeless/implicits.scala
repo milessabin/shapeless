@@ -48,11 +48,11 @@ object CachedTestDefns {
     implicit def eqGeneric[T, R]
       (implicit
         gen: Generic.Aux[T, R],
-        eqRepr: Lazy[Eq[R]]
+        eqRepr: => Eq[R]
       ): Eq[T] =
         new Eq[T] {
           def eqv(x: T, y: T): Boolean =
-            eqRepr.value.eqv(gen.to(x), gen.to(y))
+            eqRepr.eqv(gen.to(x), gen.to(y))
         }
 
     // Base case for products
@@ -63,12 +63,12 @@ object CachedTestDefns {
     // Induction step for products
     implicit def eqHCons[H, T <: HList]
       (implicit
-        eqH: Lazy[Eq[H]],
-        eqT: Lazy[Eq[T]]
+        eqH: => Eq[H],
+        eqT: => Eq[T]
       ): Eq[H :: T] =
         new Eq[H :: T] {
           def eqv(x: H :: T, y: H :: T): Boolean =
-            eqH.value.eqv(x.head, y.head) && eqT.value.eqv(x.tail, y.tail)
+            eqH.eqv(x.head, y.head) && eqT.eqv(x.tail, y.tail)
         }
   }
 

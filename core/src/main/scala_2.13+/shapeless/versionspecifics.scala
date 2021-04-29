@@ -18,6 +18,14 @@ package shapeless
 
 import scala.reflect.macros.whitebox
 
+trait LazyInstances {
+  implicit def mkLazy[I](implicit i: => I): Lazy[I] = Lazy(i)
+}
+
+trait StrictInstances {
+  implicit def mkStrict[I](implicit i: I): Strict[I] = Strict(i)
+}
+
 trait WitnessInstances {
   implicit def of[T: ValueOf]: Witness.Aux[T] =
     Witness.mkWitness(valueOf[T])

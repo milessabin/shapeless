@@ -2,7 +2,6 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
-val Scala211 = "2.11.12"
 val Scala212 = "2.12.13"
 val Scala213 = "2.13.5"
 
@@ -12,7 +11,7 @@ crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
 ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration
@@ -69,12 +68,14 @@ addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;cor
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
-val scalacOptionsAll = Seq(
+def scalacOptionsAll(pluginJar: File) = List(
   "-feature",
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
   "-deprecation",
   "-unchecked",
+  s"-Xplugin:${pluginJar.getAbsolutePath}",
+  s"-Jdummy=${pluginJar.lastModified}"
 )
 
 val scalacOptions212 = Seq(
@@ -90,10 +91,11 @@ val scalacOptions213 = Seq(
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := scalacOptionsAll,
+  scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
+
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y == 12 => scalacOptions212
-    case Some((2, y)) if y >= 13 => scalacOptions213
+    case Some((2, 12)) => scalacOptions212
+    case Some((2, 13)) => scalacOptions213
     case _ => Nil
   }),
 
@@ -150,6 +152,17 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
 
+lazy val plugin = project.in(file("plugin"))
+  .settings(crossVersionSharedSources)
+  .settings(publishSettings)
+  .settings(
+    name := "shapeless-plugin",
+    moduleName := "shapeless-plugin",
+    sbtPlugin := true,
+    scalaVersion := Scala213,
+    crossScalaVersions := Seq(Scala213, Scala212)
+  )
+
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
@@ -204,16 +217,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(
-    libraryDependencies ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
-        case _ =>
-          Nil
-      }
-    }
-  )
+  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
@@ -245,7 +249,7 @@ lazy val nativeTest = project
       |
       |object NativeMain {
       |  def main(args: Array[String]): Unit = {
-      |${classNames.map("    " + _ + ".main(args)").mkString("\n")}
+      |${classNames.flatMap(cn => List(s"""println("Running $cn")""", s"$cn.main(args)")).map("    " + _).mkString("\n")}
       |  }
       |}
       |""".stripMargin
@@ -268,12 +272,11 @@ lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
     (sc / unmanagedSourceDirectories) ++= {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
-        if(dir.getName != "scala") Seq(dir)
-        else
-          CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
-            case Some((2, y)) if y >= 11 => Seq(new File(dir.getPath + "_2.13-"))
-          }
+        if (dir.getName != "scala") Seq(dir)
+        else CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
+          case Some((2, y)) if y <  13 => Seq(new File(dir.getPath + "_2.13-"))
+        }
       }
     }
   }

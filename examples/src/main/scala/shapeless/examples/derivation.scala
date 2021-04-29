@@ -43,13 +43,11 @@ object TypeClassesDemo {
   case class RefMutual(m: Option[Mutual]) extends ADT
   case class Show2Dep(i: Int) extends ADT
 
-  implicit def showExtCtor: Show[ExtCtor] = new Show[ExtCtor] {
-    def show(t: ExtCtor) = s"ExtCtor!(${t.b})"
-  }
+  implicit def showExtCtor: Show[ExtCtor] =
+    t => s"ExtCtor!(${t.b})"
 
-  implicit def showShow2Dep: Show[Show2Dep] = new Show[Show2Dep] {
-    def show(t: Show2Dep) = "Show2Dep: >"+implicitly[Show2[Show2Dep]].show2(t)+"<"
-  }
+  implicit def showShow2Dep: Show[Show2Dep] =
+    t => "Show2Dep: >"+implicitly[Show2[Show2Dep]].show2(t)+"<"
 
   sealed trait ADT2
   case class Ctor2a(s: String) extends ADT2
@@ -119,9 +117,8 @@ object TypeClassesDemo {
 
 object TypeClassesDemoAux {
   object ExtInstances {
-    implicit def showOption[A](implicit showA: Show[A]): Show[Option[A]] = new Show[Option[A]] {
-      def show(t: Option[A]) = t.map(showA.show).getOrElse("<None>")
-    }
+    implicit def showOption[A](implicit showA: Show[A]): Show[Option[A]] =
+      _.map(showA.show).getOrElse("<None>")
   }
 
   object ShowSyntax {
@@ -134,51 +131,38 @@ object TypeClassesDemoAux {
     def show(t: T): String
   }
 
-  object Show {
+  object Show extends ShowLowPriority {
     def apply[T](implicit show: Show[T]): Show[T] = show
+    def instance[T](f: T => String): Show[T] = f(_)
 
-    def instance[T](f: T => String): Show[T] = new Show[T] {
-      def show(value: T): String = f(value)
-    }
+    implicit val showString: Show[String] = x => x
+    implicit val showBoolean: Show[Boolean] = _.toString
+    implicit def showList[A](implicit showA: => Show[A]): Show[List[A]] =
+      _.map(showA.show).mkString("List(", ", ", ")")
+  }
 
-    implicit val showString: Show[String] = instance(identity)
-    implicit val showBoolean: Show[Boolean] = instance(_.toString)
-
-    implicit def showList[A](implicit showA: Show[A]): Show[List[A]] = new Show[List[A]] {
-      def show(t: List[A]): String = t.map(showA.show).mkString("List(", ", ", ")")
-    }
-
-    implicit val deriveHNil: Show[HNil] = instance(_ => "")
-    implicit val deriveCNil: Show[CNil] = instance(_ => "")
+  trait ShowLowPriority {
+    implicit val deriveHNil: Show[HNil] = _ => ""
+    implicit val deriveCNil: Show[CNil] = _ => ""
 
     implicit def deriveHCons[K <: String, V, T <: HList](
-      implicit key: Witness.Aux[K], sv: Lazy[Show[V]], st: Show[T]
-    ): Show[FieldType[K, V] :: T] = instance { case kv :: t =>
-      val head = s"${key.value} = ${sv.value.show(kv)}"
+      implicit key: Witness.Aux[K], sv: => Show[V], st: Show[T]
+    ): Show[FieldType[K, V] :: T] = { case kv :: t =>
+      val head = s"${key.value} = ${sv.show(kv)}"
       val tail = st.show(t)
       if (tail.isEmpty) head else s"$head, $tail"
     }
 
     implicit def deriveCCons[K <: String, V, T <: Coproduct](
-      implicit key: Witness.Aux[K], sv: Lazy[Show[V]], st: Show[T]
-    ): Show[FieldType[K, V] :+: T] = instance { c =>
-      // Using match/case
-      c match {
-        case Inl(l) => s"${key.value}(${sv.value.show(l)})"
-        case Inr(r) => st.show(r)
-      }
-      // Or using eliminate
-      c.eliminate(
-        l => s"${key.value}(${sv.value.show(l)})",
-        r => st.show(r)
-      )
+      implicit key: Witness.Aux[K], sv: => Show[V], st: Show[T]
+    ): Show[FieldType[K, V] :+: T] =  {
+      case Inl(l) => s"${key.value}(${sv.show(l)})"
+      case Inr(r) => st.show(r)
     }
 
     implicit def deriveInstance[F, G](
-      implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[Show[G]]
-    ): Show[F] = instance { f =>
-      sg.value.show(gen.to(f))
-    }
+      implicit gen: LabelledGeneric.Aux[F, G], sg: => Show[G]
+    ): Show[F] = f => sg.show(gen.to(f))
   }
 
   trait Show2[T] {
@@ -186,31 +170,18 @@ object TypeClassesDemoAux {
   }
 
   object Show2 {
-    implicit val show2Int: Show2[Int] = new Show2[Int] {
-      def show2(i: Int) = i.toString
+    implicit val show2Int: Show2[Int] = _.toString
+    implicit val deriveHNil: Show2[HNil] = _ => ""
+
+    implicit def deriveHCons[H, T <: HList](
+      implicit sv: => Show2[H], st: Show2[T]
+    ): Show2[H :: T] = { p =>
+      val head = sv.show2(p.head)
+      val tail = st.show2(p.tail)
+      if(tail.isEmpty) head else s"$head, $tail"
     }
 
-    implicit def deriveHNil: Show2[HNil] =
-      new Show2[HNil] {
-        def show2(p: HNil): String = ""
-      }
-
-    implicit def deriveHCons[H, T <: HList]
-      (implicit
-        sv: Lazy[Show2[H]],
-        st: Lazy[Show2[T]]
-      ): Show2[H :: T] =
-        new Show2[H :: T] {
-          def show2(p: H :: T): String = {
-            val head = sv.value.show2(p.head)
-            val tail = st.value.show2(p.tail)
-            if(tail.isEmpty) head else s"$head, $tail"
-          }
-        }
-
-    implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], sg: Lazy[Show2[G]]): Show2[F] =
-      new Show2[F] {
-        def show2(f: F) = sg.value.show2(gen.to(f))
-      }
+    implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], sg: => Show2[G]): Show2[F] =
+      f => sg.show2(gen.to(f))
   }
 }
