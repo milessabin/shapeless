@@ -260,7 +260,7 @@ object tuple {
    *
    * @author Miles Sabin
    */
-  trait Replacer[T, U, V] extends DepFn2[T, U] with Serializable
+  trait Replacer[T, U, V] extends DepFn2[T, V] with Serializable
 
   object Replacer {
     def apply[T, U, V](implicit replacer: Replacer[T, U, V]): Aux[T, U, V, replacer.Out] = replacer
@@ -268,9 +268,9 @@ object tuple {
     type Aux[T, U, V, Out0] = Replacer[T, U, V] { type Out = Out0 }
 
     implicit def replaceTuple[T, L1 <: HList, U, V, L2 <: HList]
-      (implicit gen: Generic.Aux[T, L1], replace: hl.Replacer.Aux[L1, V, U, (V, L2)], tp: hl.Tupler[L2]): Aux[T, U, V, (V, tp.Out)] = new Replacer[T, U, V] {
-        type Out = (V, tp.Out)
-        def apply(t: T, u: U): Out = { val (v, rep) = replace(gen.to(t), u) ; (v, tp(rep)) }
+      (implicit gen: Generic.Aux[T, L1], replace: hl.Replacer.Aux[L1, U, V, (U, L2)], tp: hl.Tupler[L2]): Aux[T, U, V, (U, tp.Out)] = new Replacer[T, U, V] {
+        type Out = (U, tp.Out)
+        def apply(t: T, v: V): Out = { val (u, rep) = replace(gen.to(t), v) ; (u, tp(rep)) }
       }
   }
 
