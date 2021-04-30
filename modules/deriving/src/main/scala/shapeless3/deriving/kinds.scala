@@ -104,6 +104,8 @@ object K0 {
       inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
     inline def foldLeft2[Acc](x: T, y: T)(i: Acc)(f: [t] => (Acc, F[t], t, t) => CompleteOr[Acc]): Acc =
       inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldRight[Acc](x: T)(i: Acc)(f: [t] => (Acc, F[t], t) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldRight(x)(i)(f.asInstanceOf).asInstanceOf
 
   extension [F[_], T](inst: CoproductInstances[F, T])
     inline def project[Acc](p: Int)(i: Acc)(f: [t] => (Acc, F[t]) => (Acc, Option[t])): (Acc, Option[T]) =
@@ -195,6 +197,8 @@ object K1 {
       inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
     inline def foldLeft2[A, B, Acc](x: T[A], y: T[B])(i: Acc)(f: [t[_]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
       inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldRight[A, Acc](x: T[A])(i: Acc)(f: [t[_]] => (F[t], t[A], Acc) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldRight(x)(i)(f.asInstanceOf).asInstanceOf
 
   extension [F[_[_]], T[_]](inst: CoproductInstances[F, T])
     inline def fold[A, R](x: T[A])(f: [t[_]] => (F[t], t[A]) => R): R =
@@ -284,9 +288,10 @@ object K11 {
       inst.erasedMap2(x, y)(f.asInstanceOf).asInstanceOf
     inline def foldLeft[A[_], Acc](x: T[A])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A]) => CompleteOr[Acc]): Acc =
       inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
-  extension [F[_[_[_]]], T[_[_]]](inst: ProductInstances[F, T])
     inline def foldLeft2[A[_], B[_], Acc](x: T[A], y: T[B])(i: Acc)(f: [t[_[_]]] => (Acc, F[t], t[A], t[B]) => CompleteOr[Acc]): Acc =
       inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldRight[A[_], Acc](x: T[A])(i: Acc)(f: [t[_[_]]] => (F[t], t[A], Acc) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldRight(x)(i)(f.asInstanceOf).asInstanceOf
 
   extension [F[_[_[_]]], T[_[_]]](inst: CoproductInstances[F, T])
     inline def fold[A[_], R](x: T[A])(f: [t[_[_]]] => (F[t], t[A]) => R): R =
@@ -377,6 +382,8 @@ object K2 {
       inst.erasedFoldLeft(x)(i)(f.asInstanceOf).asInstanceOf
     inline def foldLeft2[A, B, C, D, Acc](x: T[A, B], y: T[C, D])(i: Acc)(f: [t[_, _]] => (Acc, F[t], t[A, B], t[C, D]) => CompleteOr[Acc]): Acc =
       inst.erasedFoldLeft2(x, y)(i)(f.asInstanceOf).asInstanceOf
+    inline def foldRight[A, B, Acc](x: T[A, B])(i: Acc)(f: [t[_, _]] => (F[t], t[A, B], Acc) => CompleteOr[Acc]): Acc =
+      inst.erasedFoldRight(x)(i)(f.asInstanceOf).asInstanceOf
 
   extension [F[_[_, _]], T[_, _]](inst: CoproductInstances[F, T])
     inline def fold[A, B, R](x: T[A, B])(f: [t[_, _]] => (F[t], t[A, B]) => R): R =
