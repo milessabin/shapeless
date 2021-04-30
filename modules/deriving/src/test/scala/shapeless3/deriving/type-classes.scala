@@ -16,6 +16,7 @@
 
 package shapeless3.deriving
 
+import scala.annotation.tailrec
 import scala.compiletime._
 
 // Type classes
@@ -229,6 +230,70 @@ object Traverse {
       )
 
    inline def derived[F[_]](using gen: K1.Generic[F]): Traverse[F] = traverseGen
+}
+
+//Encodes lazy evaluation for the sake of Foldable#foldRight
+sealed trait Eval[A] {
+  def flatMap[B](f: A => Eval[B]): Eval[B] = Bind(this, f)
+
+  //Simplistic, no error handling, etc, etc
+  def force: A = {
+    var stack: List[Any => Eval[Any]] = Nil
+
+    @tailrec
+    def go(e: Eval[Any]): Any =
+      e match {
+        case Now(a) => stack match {
+          case Nil => a
+          case k :: ks => {
+            stack = ks
+            go(k(a))
+          }
+        }
+        case Later(thunk) => stack match {
+          case Nil => thunk()
+          case k :: ks => {
+            stack = ks
+            go(k(thunk()))
+          }
+        }
+        case Bind(e, f) => {
+          stack = f.asInstanceOf :: stack
+          go(e.asInstanceOf)
+        }
+      }
+
+    go(this.asInstanceOf).asInstanceOf
+  }
+}
+case class Now[A](a: A) extends Eval[A]
+case class Later[A](thunk: () => A) extends Eval[A]
+case class Bind[X, A](ev: Eval[X], f: X => Eval[A]) extends Eval[A]
+
+object Eval {
+  def now[A](value: A): Eval[A] = Now(value)
+
+  def later[A](thunk: => A): Eval[A] = Later(() => thunk)
+}
+
+trait Foldable[F[_]] {
+  def foldLeft[A, B](fa: F[A])(b: B)(f: (B, A) => B): B
+
+  def foldRight[A, B](fa: F[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B]
+
+  given Foldable[Id] with
+    def foldLeft[A, B](fa: Id[A])(b: B)(f: (B, A) => B): B = f(b, fa)
+
+    def foldRight[A, B](fa: Id[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = f(fa, lb)
+
+  given [X]: Foldable[Const[X]] with
+    def foldLeft[A, B](fa: Const[X][A])(b: B)(f: (B, A) => B): B = b
+
+    def foldRight[A, B](fa: Const[X][A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = lb
+}
+
+object Foldable {
+  inline def apply[F[_]](using ff: Foldable[F]): ff.type = ff
 }
 
 trait FunctorK[H[_[_]]] {
