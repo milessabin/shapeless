@@ -234,6 +234,9 @@ object Traverse {
 
 //Encodes lazy evaluation for the sake of Foldable#foldRight
 sealed trait Eval[A] {
+
+  def map[B](f: A => B): Eval[B] = flatMap(f.andThen(Eval.now(_)))
+
   def flatMap[B](f: A => Eval[B]): Eval[B] = Bind(this, f)
 
   //Simplistic, no error handling, etc, etc
@@ -263,7 +266,7 @@ sealed trait Eval[A] {
         }
       }
 
-    go(this.asInstanceOf).asInstanceOf
+    go(this.asInstanceOf[Eval[Any]]).asInstanceOf[A]
   }
 }
 case class Now[A](a: A) extends Eval[A]
@@ -280,6 +283,11 @@ trait Foldable[F[_]] {
   def foldLeft[A, B](fa: F[A])(b: B)(f: (B, A) => B): B
 
   def foldRight[A, B](fa: F[A])(lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B]
+}
+
+object Foldable {
+
+  inline def apply[F[_]](using ff: Foldable[F]): ff.type = ff
 
   given Foldable[Id] with
     def foldLeft[A, B](fa: Id[A])(b: B)(f: (B, A) => B): B = f(b, fa)
@@ -313,13 +321,9 @@ trait Foldable[F[_]] {
         [t[_]] => (fd: Foldable[t], t0: t[A]) => fd.foldRight(t0)(lb)(f)
       )
 
-  inline def derived[F[_]](using gen: => K1.Generic[F]): Foldable[F] =
+  inline def derived[F[_]](using gen: K1.Generic[F]): Foldable[F] =
     gen.derive(foldableProduct, foldableCoproduct)
 
-}
-
-object Foldable {
-  inline def apply[F[_]](using ff: Foldable[F]): ff.type = ff
 }
 
 trait FunctorK[H[_[_]]] {

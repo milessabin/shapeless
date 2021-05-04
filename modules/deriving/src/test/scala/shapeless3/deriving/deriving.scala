@@ -18,6 +18,8 @@ package shapeless3.deriving
 
 import org.junit.Test
 
+import scala.annotation.tailrec
+
 import adts._
 
 // Tests
@@ -141,6 +143,51 @@ class DerivationTests {
     assert(v6.map(CCons("foo", CCons("quux", CCons("wibble", CNil))))(_.length) == CCons(3, CCons(4, CCons(6, CNil))))
     val v7 = Functor[[t] =>> CList[Opt[t]]]
     assert(v7.map(CCons(Sm("foo"), CCons(Nn, CCons(Sm("quux"), CNil))))(_.length) == CCons(Sm(3), CCons(Nn, CCons(Sm(4), CNil))))
+  }
+
+  //Sanity check our Eval implementation for making Foldable#foldRight lazy
+  @Test
+  def eval: Unit = {
+    assert(Eval.now("foo").force == "foo")
+    assert(Eval.later("foo").force == "foo")
+    assert(Eval.later("foo").map(_ ++ "!").force == "foo!")
+    assert(Eval.later("foo").flatMap(s => Eval.now(s ++ "!")).force == "foo!")
+
+    def loop(n: Int): Eval[Int] = if (n == 1) Eval.now(1) else loop(n - 1).flatMap(n => Eval.now(n + 1))
+
+    //Stacksafe construction and evaluation
+    assert(loop(20000).force == 20000)
+  }
+
+  @Test
+  def foldable: Unit = {
+    val v0 = Foldable[Box]
+    assert(v0.foldLeft(Box(1))(0)((acc: Int, x: Int) => acc + x) == 1)
+    assert(v0.foldRight(Box(1))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 1)
+
+    val v1 = Foldable[Sm]
+    assert(v1.foldLeft(Sm(1))(0)((acc: Int, x: Int) => acc + x) == 1)
+    assert(v1.foldRight(Sm(1))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 1)
+    val v2 = Foldable[Const[Nn.type]]
+    assert(v2.foldLeft(Nn)(0)((acc: Int, x: Int) => acc + x) == 0)
+    assert(v2.foldRight(Nn)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
+    val v3 = Foldable[Opt]
+    assert(v3.foldLeft(Sm(1))(0)((acc: Int, x: Int) => acc + x) == 1)
+    assert(v3.foldRight(Sm(1))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 1)
+    assert(v3.foldLeft(Nn)(0)((acc: Int, x: Int) => acc + x) == 0)
+    assert(v3.foldRight(Nn)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
+
+    val v4 = Foldable[Const[CNil.type]]
+    assert(v4.foldLeft(CNil)(0)((acc: Int, x: Int) => acc + x) == 0)
+    assert(v4.foldRight(CNil)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
+    val v5 = Foldable[CCons]
+    assert(v5.foldLeft(CCons(1, CCons(2, CNil)))(0)((acc: Int, x: Int) => acc + x) == 3)
+    assert(v5.foldRight(CCons(1, CCons(2, CNil)))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 3)
+    val v6 = Foldable[CList]
+    assert(v6.foldLeft(CNil)(0)((acc: Int, x: Int) => acc + x) == 0)
+    assert(v6.foldRight(CNil)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
+    assert(v6.foldLeft(CCons(1, CCons(2, CNil)))(0)((acc: Int, x: Int) => acc + x) == 3)
+    assert(v6.foldRight(CCons(1, CCons(2, CNil)))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 3)
   }
 
   @Test
