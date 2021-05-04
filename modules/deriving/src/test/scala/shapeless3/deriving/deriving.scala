@@ -18,8 +18,6 @@ package shapeless3.deriving
 
 import org.junit.Test
 
-import scala.annotation.tailrec
-
 import adts._
 
 // Tests
