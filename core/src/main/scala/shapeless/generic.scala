@@ -439,14 +439,15 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
       }
 
-      val ctorSyms = collectCtors(baseSym).sortWith(orderSyms)
-      val ctors =
-        ctorSyms flatMap { sym =>
-          import c.internal._
+      val ctors = collectCtors(baseSym).sortWith(orderSyms).flatMap { sym =>
+        import c.internal._
 
+        val owner = sym.owner
+        val isNamed = !isAnonOrRefinement(sym)
+
+        // Construct a stable prefix from the path.
+        val pre = if (sym.isStatic) prefix(sym.toType) else {
           // Look for a path from the macro call site to the subtype.
-          val owner = sym.owner
-          val isNamed = !isAnonOrRefinement(sym)
           val owners = ownerChain(if (isNamed) owner else owner.owner)
           val prePaths = for (pre <- Iterator.iterate(basePre)(prefix).takeWhile(_ != NoPrefix))
             yield (pre, owners.iterator.dropWhile(pre.baseType(_) == NoType))
@@ -458,44 +459,43 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
             (NoPrefix, if (common < 0) Iterator.empty else owners.iterator drop common - 1)
           }
 
-          // Construct a stable prefix from the path.
-          val pre = path.drop(1).foldLeft(pre0) { (pre1, part) =>
+          path.drop(1).foldLeft(pre0) { (pre1, part) =>
             if (part.isType) part.asType.toTypeIn(pre1)
             else abort(s"$tpe has a subtype $sym with unstable prefix")
           }
-
-          val ctor = if (isNamed) {
-            if (sym.isModuleClass) {
-              sym.toTypeIn(pre)
-            } else {
-              val subst = thisType(sym).baseType(baseSym).typeArgs
-              val params = sym.typeParams
-              val (args, free) = params.foldRight((List.empty[Type], false)) {
-                case (param, (args, free)) =>
-                  val i = subst.indexWhere(_.typeSymbol == param)
-                  val arg = if (i >= 0) baseArgs(i) else param.asType.toType
-                  (arg :: args, free || i < 0)
-              }
-
-              val ref = typeRef(pre, sym, args)
-              if (free) existentialAbstraction(params, ref) else ref
-            }
-          } else {
-            def ownerIsSubType = owner.typeSignatureIn(pre) <:< baseTpe
-            if (owner.isTerm && owner.asTerm.isVal && ownerIsSubType) singleType(pre, owner)
-            else abort(s"$tpe has a subtype $sym with unstable prefix")
-          }
-
-          if(!isAccessible(ctor))
-            abort(s"$tpe has an inaccessible subtype $ctor")
-          if(ctor <:< baseTpe) Some(ctor) else None
         }
-      if (ctors.isEmpty)
-        abort(s"Sealed trait $tpe has no case class subtypes")
-      ctors
-    }
-    else
+
+        val ctor = if (isNamed) {
+          if (sym.isModuleClass) {
+            sym.toTypeIn(pre)
+          } else {
+            val subst = thisType(sym).baseType(baseSym).typeArgs.map(_.typeSymbol)
+            val params = sym.typeParams
+            val free = params.exists(!subst.contains(_))
+            val args = for (param <- params) yield {
+              val i = subst.indexOf(param)
+              if (i >= 0) baseArgs(i) else param.asType.toType
+            }
+
+            val ref = typeRef(pre, sym, args)
+            if (free) existentialAbstraction(params, ref) else ref
+          }
+        } else {
+          def ownerIsSubType = owner.typeSignatureIn(pre) <:< baseTpe
+          if (owner.isTerm && owner.asTerm.isVal && ownerIsSubType) singleType(pre, owner)
+          else abort(s"$tpe has a subtype $sym with unstable prefix")
+        }
+
+        if (!isAccessible(ctor)) abort(s"$tpe has an inaccessible subtype $ctor")
+        else if (ctor <:< baseTpe) Some(ctor)
+        else None
+      }
+
+      if (ctors.isEmpty) abort(s"Sealed trait $tpe has no case class subtypes")
+      else ctors
+    } else {
       abort(s"$tpe is not a case class, case class-like, a sealed trait or Unit")
+    }
   }
 
   def nameAsString(name: Name): String = name.decodedName.toString.trim
