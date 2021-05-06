@@ -433,7 +433,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
         val ctor = if (isNamed) {
           if (sym.isModuleClass) {
-            sym.toTypeIn(pre)
+            singleType(pre, sym.module)
           } else {
             val subst = thisType(sym).baseType(baseSym).typeArgs.map(_.typeSymbol)
             val params = sym.typeParams
