@@ -339,6 +339,9 @@ class GenericTests {
 
     val c1 = gen.from(c0)
     typed[Enum](c1)
+
+    val abc = ops.coproduct.LiftAll[Witness.Aux, gen.Repr]
+    assertEquals(List(A, B, C), abc.instances.toList.map(_.value))
   }
 
   @Test
