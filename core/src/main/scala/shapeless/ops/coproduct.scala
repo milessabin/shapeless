@@ -1262,10 +1262,12 @@ object coproduct {
   object LiftAll {
     type Aux[F[_], In0 <: Coproduct, Out0 <: HList] = LiftAll[F, In0] {type Out = Out0}
 
-    class Curried[F[_]] {def apply[In <: Coproduct](in: In)(implicit ev: LiftAll[F, In]) = ev}
+    class Curried[F[_]] {
+      def apply[In <: Coproduct](in: In)(implicit ev: LiftAll[F, In]): Aux[F, In, ev.Out] = ev
+    }
 
-    def apply[F[_]] = new Curried[F]
-    def apply[F[_], In <: Coproduct](implicit ev: LiftAll[F, In]) = ev
+    def apply[F[_]]: Curried[F] = new Curried[F]
+    def apply[F[_], In <: Coproduct](implicit ev: LiftAll[F, In]): Aux[F, In, ev.Out] = ev
 
     implicit def liftAllCnil[F[_]]: LiftAll.Aux[F, CNil, HNil] = new LiftAll[F, CNil] {
       type Out = HNil
