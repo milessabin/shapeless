@@ -34,6 +34,7 @@ abstract class ErasedProductInstances[K, FT] extends ErasedInstances[K, FT] {
   def erasedFoldLeft(x0: Any)(a: Any)(f: (Any, Any, Any) => CompleteOr[Any]): Any
   def erasedFoldLeft2(x0: Any, y0: Any)(a: Any)(f: (Any, Any, Any, Any) => CompleteOr[Any]): Any
   def erasedFoldRight(x0: Any)(a: Any)(f: (Any, Any, Any) => CompleteOr[Any]): Any
+  def erasedFoldRight2(x0: Any, y0: Any)(a: Any)(f: (Any, Any, Any, Any) => CompleteOr[Any]): Any
 }
 
 final class ErasedProductInstances1[K, FT](val mirror: Mirror.Product, i: Any) extends ErasedProductInstances[K, FT] {
@@ -75,6 +76,13 @@ final class ErasedProductInstances1[K, FT](val mirror: Mirror.Product, i: Any) e
 
   final def erasedFoldRight(x0: Any)(a: Any)(f: (Any, Any, Any) => CompleteOr[Any]): Any = {
     f(i, toProduct(x0).productElement(0), a) match {
+      case Complete(r) => r
+      case acc => acc
+    }
+  }
+
+  final def erasedFoldRight2(x0: Any, y0: Any)(a: Any)(f: (Any, Any, Any, Any) => CompleteOr[Any]): Any = {
+    f(i, toProduct(x0).productElement(0), toProduct(y0).productElement(0), a) match {
       case Complete(r) => r
       case acc => acc
     }
@@ -225,6 +233,27 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
       loop(0, i)
     }
   }
+
+  final def erasedFoldRight2(x0: Any, y0: Any)(i: Any)(f: (Any, Any, Any, Any) => CompleteOr[Any]): Any = {
+    val n = is.length
+    if (n == 0) i
+    else {
+      val x = toProduct(x0)
+      val y = toProduct(y0)
+      @tailrec
+      def loop(i: Int, acc: Any): Any =
+        if(i < 0) acc
+        else
+          f(is(i), x.productElement(i), y.productElement(i), acc) match {
+            case Complete(r) => r
+            case acc =>
+              loop(i-1, acc)
+          }
+
+      loop(n-1, i)
+    }
+  }
+
 }
 
 object ErasedProductInstances {
