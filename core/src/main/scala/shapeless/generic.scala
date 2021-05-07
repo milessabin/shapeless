@@ -16,12 +16,11 @@
 
 package shapeless
 
+import shapeless.ops.{coproduct, hlist}
+
+import scala.annotation.{StaticAnnotation, tailrec}
 import scala.language.experimental.macros
-
-import scala.annotation.{ StaticAnnotation, tailrec }
-import scala.reflect.macros.{ blackbox, whitebox }
-
-import ops.{ hlist, coproduct }
+import scala.reflect.macros.{blackbox, whitebox}
 
  /** Represents the ability to convert from a concrete type (e.g. a case class)
   * to a generic ([[HList]] / [[Coproduct]]} based) representation of the type.
@@ -277,7 +276,7 @@ object HasCoproductGeneric {
 
 trait ReprTypes {
   val c: blackbox.Context
-  import c.universe.{ Symbol => _, _ }
+  import c.universe.{Symbol => _, _}
 
   def hlistTpe = typeOf[HList]
   def hnilTpe = typeOf[HNil]
@@ -295,7 +294,7 @@ trait ReprTypes {
 }
 
 trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
-  val c: blackbox.Context
+  val c: whitebox.Context
 
   import c.universe._
   import internal.constantType
@@ -369,10 +368,9 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
    * */
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
     val clazz = tpe.typeSymbol.asClass
-    val isCaseClass = clazz.isCaseClass
     if (isCaseObjectLike(clazz) || isAnonOrRefinement(clazz)) Nil
     else tpe.decls.sorted.collect {
-      case sym: TermSymbol if isCaseAccessorLike(sym, isCaseClass) =>
+      case sym: TermSymbol if isCaseAccessorLike(sym) =>
         (sym.name, sym.typeSignatureIn(tpe).finalResultType)
     }
   }
@@ -516,7 +514,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
    *   mkCompoundTpe(hnilTpe, hconsTpe, Seq(typeOf[String], typeOf[Int])) -> String :: Int :: HNil
    * }}}
    */
-  def mkCompoundTpe(nil: Type, cons: Type, items: Seq[Type]): Type =
+  def mkCompoundTpe(nil: Type, cons: Type, items: List[Type]): Type =
     items.foldRight(nil) { (tpe, acc) =>
       appliedType(cons, List(devarargify(tpe), acc))
     }
@@ -530,18 +528,12 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   /**
    * Convert `items` to corresponding HList type.
    */
-  def mkHListTpe(items: Seq[Type]): Type =
+  def mkHListTpe(items: List[Type]): Type =
     mkCompoundTpe(hnilTpe, hconsTpe, items)
 
   /**
    * Convert `items` to corresponding Coproduct type.
    */
-  def mkCoproductTpe(items: Seq[Type]): Type =
-    mkCompoundTpe(cnilTpe, cconsTpe, items)
-
-  def mkHListTpe(items: List[Type]): Type =
-    mkCompoundTpe(hnilTpe, hconsTpe, items)
-
   def mkCoproductTpe(items: List[Type]): Type =
     mkCompoundTpe(cnilTpe, cconsTpe, items)
 
@@ -690,9 +682,9 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
 
-  def isCaseAccessorLike(sym: TermSymbol, inCaseClass: Boolean): Boolean = {
+  def isCaseAccessorLike(sym: TermSymbol): Boolean = {
     val isGetter =
-      if (inCaseClass) sym.isCaseAccessor && !sym.isMethod
+      if (sym.owner.asClass.isCaseClass) sym.isCaseAccessor && !sym.isMethod
       else sym.isGetter && sym.isPublic && (sym.isParamAccessor || sym.isLazy)
     isGetter && !isNonGeneric(sym)
   }
@@ -759,7 +751,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     import global.analyzer.Context
 
     original.companion.orElse {
-      import global.{ abort => aabort, _ }
+      import global.{abort => aabort, _}
       implicit class PatchedContext(ctx: Context) {
         trait PatchedLookupResult { def suchThat(criterion: Symbol => Boolean): Symbol }
         def patchedLookup(name: Name, expectedOwner: Symbol) = new PatchedLookupResult {

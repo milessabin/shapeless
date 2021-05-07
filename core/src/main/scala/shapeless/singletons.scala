@@ -283,6 +283,10 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
     else q"$witnessWith.instance[$tcTpe, $sTpe]($s, $i)"
   }
 
+  @deprecated("Kept for binary compatibility", "2.3.6")
+  def mkWitnessNat(parent: Type, sTpe: Type, s: Tree, i: Tree): Tree =
+    mkWitnessNat(i.tpe.finalResultType, sTpe, i)
+
   def mkWitnessNat(tcTpe: Type, nTpe: Type, tc: Tree): Tree = {
     val natWith = objectRef[NatWith.type]
     if (appliedType(tcTpe, AnyValTpe) <:< AnyRefTpe) q"$natWith.depInstance[$tcTpe, $nTpe]($tc)"

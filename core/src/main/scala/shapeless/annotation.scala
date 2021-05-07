@@ -46,18 +46,18 @@ trait Annotation[A, T] extends Serializable {
 }
 
 object Annotation extends Annotation0 {
-  implicit def materialize[A, T]: Annotation[A, T] = macro AnnotationMacros.materializeAnnotationRequired[A, T]
+  implicit def materialize[A, T]: Annotation[A, T] =
+    macro AnnotationMacros.materializeAnnotation[A, T]
 }
 
 private[shapeless] trait Annotation0 {
   def apply[A,T](implicit annotation: Annotation[A, T]): Annotation[A, T] = annotation
+  def mkAnnotation[A, T](annotation: => A): Annotation[A, T] = new Annotation[A, T] {
+    def apply() = annotation
+  }
 
-  def mkAnnotation[A, T](annotation: => A): Annotation[A, T] =
-    new Annotation[A, T] {
-      def apply() = annotation
-    }
-
-  implicit def materializeOption[A, T]: Annotation[Option[A], T] = macro AnnotationMacros.materializeAnnotationOptional[A, T]
+  implicit def materializeOption[A, T]: Annotation[Option[A], T] =
+    macro AnnotationMacros.materializeAnnotationOptional[A, T]
 }
 
 /**
@@ -286,9 +286,13 @@ object AllTypeAnnotations {
 class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 
-  def optionTpe = typeOf[Option[_]].typeConstructor
-  def someTpe   = typeOf[Some[_]].typeConstructor
-  def noneTpe   = typeOf[None.type]
+  def optionTpe: Type = typeOf[Option[_]].typeConstructor
+  def someTpe: Type = typeOf[Some[_]].typeConstructor
+  def noneTpe: Type = typeOf[None.type]
+
+  private def annotation = objectRef[shapeless.Annotation.type]
+  private def some = objectRef[Some.type]
+  private def none = objectRef[None.type]
 
   /**
    * FIXME Most of the content of this method is cut-n-pasted from generic.scala
@@ -310,7 +314,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
       args => q"new $tpe(..$args)"
   }
 
-  def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Option[Tree] = {
+  private def getAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Option[Tree] = {
     val annTpe = weakTypeOf[A]
 
     if (!isProduct(annTpe))
@@ -325,15 +329,13 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     }
   }
 
-  def materializeAnnotationRequired[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
+  def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
     val annTpe = weakTypeOf[A]
     val tpe = weakTypeOf[T]
 
-    materializeAnnotation[A, T] match {
-      case Some(annTree) =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$annTpe, $tpe]($annTree)"
-      case None =>
-        abort(s"No $annTpe annotation found on $tpe")
+    getAnnotation[A, T] match {
+      case Some(annTree) => q"$annotation.mkAnnotation[$annTpe, $tpe]($annTree)"
+      case None => abort(s"No $annTpe annotation found on $tpe")
     }
   }
 
@@ -341,11 +343,9 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     val optAnnTpe = appliedType(optionTpe, weakTypeOf[A])
     val tpe = weakTypeOf[T]
 
-    materializeAnnotation[A, T] match {
-      case Some(annTree) =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.Some($annTree))"
-      case None =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.None)"
+    getAnnotation[A, T] match {
+      case Some(annTree) => q"$annotation.mkAnnotation[$optAnnTpe, $tpe]($some($annTree))"
+      case None => q"$annotation.mkAnnotation[$optAnnTpe, $tpe]($none)"
     }
   }
 
@@ -360,6 +360,10 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   def materializeAllTypeAnnotations[T: WeakTypeTag, Out: WeakTypeTag]: Tree =
     materializeAllAnnotations[T, Out](typeAnnotation = true)
+
+  @deprecated("Use materializeVariableAnnotations instead", "2.3.6")
+  def materializeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag]: Tree =
+    materializeVariableAnnotations[A, T, Out]
     
   def materializeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag](typeAnnotation: Boolean): Tree = {
     val annTpe = weakTypeOf[A]
