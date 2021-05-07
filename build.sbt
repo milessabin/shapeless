@@ -40,8 +40,10 @@ ThisBuild / githubWorkflowBuild := Seq(
 )
 
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
-ThisBuild / githubWorkflowPublishTargetBranches +=
+ThisBuild / githubWorkflowPublishTargetBranches ++= Seq(
+  RefPredicate.Equals(Ref.Branch("series/2.3")),
   RefPredicate.StartsWith(Ref.Tag("v"))
+)
 
 ThisBuild / githubWorkflowPublishPreamble +=
   WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
