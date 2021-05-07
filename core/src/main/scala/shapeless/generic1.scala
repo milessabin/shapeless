@@ -268,10 +268,16 @@ class IsHCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   val isCons1TC: Tree = objectRef[IsHCons1.type]
   val consTpe: Type = hconsTpe
 
-  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) = {
-    val cons = objectRef[::.type]
+  private[this] val cons = objectRef[::.type]
+
+  override def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) =
     (q"$cons(_, _)", q"{ case $cons(hd, tl) => (hd, tl) }")
-  }
+
+  @deprecated("Kept for binary compatibility", "2.3.6")
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree) = (
+    q"def pack[$nme](u: ($hdTpt, $tlTpt)): $lTpt = $cons(u._1, u._2)",
+    q"def unpack[$nme](p: $lTpt): ($hdTpt, $tlTpt) = (p.head, p.tail)"
+  )
 }
 
 class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
@@ -285,20 +291,34 @@ class IsCCons1Macros(val c: whitebox.Context) extends IsCons1Macros {
   val isCons1TC: Tree = objectRef[IsCCons1.type]
   val consTpe: Type = cconsTpe
 
-  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) = {
-    val left = objectRef[Left.type]
-    val right = objectRef[Right.type]
-    val inl = objectRef[Inl.type]
-    val inr = objectRef[Inr.type]
+  private[this] val left = objectRef[Left.type]
+  private[this] val right = objectRef[Right.type]
+  private[this] val inl = objectRef[Inl.type]
+  private[this] val inr = objectRef[Inr.type]
+
+  override def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) = (
+    q"""{
+      case $left(hd) => $inl(hd: $hdName[$AnyTpe])
+      case $right(tl) => $inr(tl: $tlName[$AnyTpe])
+    }""",
+    q"""{
+      case $inl(hd) => $left(hd: $hdName[$AnyTpe])
+      case $inr(tl) => $right(tl: $tlName[$AnyTpe])
+    }"""
+  )
+
+  @deprecated("Kept for binary compatibility", "2.3.6")
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree) = {
+    val Either = typeOf[Either[Any, Any]].typeConstructor
 
     (
-      q"""{
-        case $left(hd) => $inl(hd: $hdName[$AnyTpe])
-        case $right(tl) => $inr(tl: $tlName[$AnyTpe])
+      q"""def pack[$nme](u: $Either[$hdTpt, $tlTpt]): $lTpt = u match {
+        case $left(hd) => $inl[$hdTpt, $tlTpt](hd)
+        case $right(tl) => $inr[$hdTpt, $tlTpt](tl)
       }""",
-      q"""{
-        case $inl(hd) => $left(hd: $hdName[$AnyTpe])
-        case $inr(tl) => $right(tl: $tlName[$AnyTpe])
+      q"""def unpack[$nme](p: $lTpt): $Either[$hdTpt, $tlTpt] = p match {
+        case $inl(hd) => $left[$hdTpt, $tlTpt](hd)
+        case $inr(tl) => $right[$hdTpt, $tlTpt](tl)
       }"""
     )
   }
@@ -312,7 +332,12 @@ trait IsCons1Macros extends CaseClassMacros {
 
   def isCons1TC: Tree
   def consTpe: Type
-  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree)
+
+  @deprecated("Kept for binary compatibility", "2.3.6")
+  def mkPackUnpack(nme: TypeName, lTpt: Tree, hdTpt: Tree, tlTpt: Tree): (Tree, Tree)
+
+  def mkPackUnpack(hdName: TypeName, tlName: TypeName): (Tree, Tree) =
+    (EmptyTree, EmptyTree)
 
   def mkIsCons1(lTpe: Type, fhTpe0: Type, ftTpe0: Type): Tree = {
     val lParam = lTpe.typeParams.head

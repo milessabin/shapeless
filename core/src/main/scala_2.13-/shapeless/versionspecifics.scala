@@ -107,8 +107,8 @@ trait LP1 {
 trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>
   import c.universe._
 
-  val varargTpt = tq"_root_.scala.collection.Seq"
-  val varargTC = typeOf[scala.collection.Seq[_]].typeConstructor
+  def varargTpt = tq"_root_.scala.collection.Seq"
+  def varargTC = typeOf[scala.collection.Seq[_]].typeConstructor
 }
 
 private[shapeless] trait AdditiveCollectionVersionSpecific {

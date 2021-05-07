@@ -302,39 +302,31 @@ lazy val noPublishSettings =
 
 enablePlugins(MimaPlugin)
 lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.4"),
-  mimaBinaryIssueFilters := {
-    // Macro internals - ignore
-    val macroFilters = List(
-      "ReprTypes",
-      "CaseClassMacros",
-      "IsHCons1Macros",
-      "IsCCons1Macros",
-      "IsCons1Macros",
-      "LazyMacros",
-      "SingletonTypeMacros",
-      "AnnotationMacros",
-      "GenericMacros",
-      "Generic1Macros",
-      "LabelledMacros",
-      "DefaultMacros",
-      "Split1Macros",
-      "OrphanMacros",
-      "ToIntMacros",
-      "LacksKeyMacros",
-      "RemoverMacros",
-      "UpdaterMacros",
-      "SelectorMacros",
-      "ModifierMacros"
-    ).map(macros => exclude[Problem](s"shapeless.*$macros*"))
-
-    macroFilters ::: List( // removed private classes and methods
-      ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$"),
-      ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$bundle"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.ScalaVersionSpecifics.macrocompat"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.package.macrocompat")
-    )
-  }
+  mimaPreviousArtifacts := Set(organization.value %% moduleName.value % "2.3.3"),
+  mimaBinaryIssueFilters := List(
+    // removed internal macro classes
+    ProblemFilters.exclude[MissingTypesProblem]("shapeless.LazyMacros$"),
+    ProblemFilters.exclude[MissingClassProblem]("shapeless.LazyMacrosRef"),
+    ProblemFilters.exclude[MissingClassProblem]("shapeless.LazyMacrosCompat"),
+    // removed private classes and methods
+    ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$"),
+    ProblemFilters.exclude[MissingClassProblem]("shapeless.ScalaVersionSpecifics$macrocompat$bundle"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.ScalaVersionSpecifics.macrocompat"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.package.macrocompat"),
+    // inaccessible interface change
+    ProblemFilters.exclude[MissingClassProblem]("shapeless.CaseClassMacros$PatchedContext$2$PatchedLookupResult"),
+    // methods added to traits (not binary compatible on Scala 2.11)
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.SingletonTypeUtils.isSymbolLiteral"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.CaseClassMacros.mkAttributedRef"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.CaseClassMacros.numNonCaseParamLists"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.ReprTypes.objectRef"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.IsCons1Macros.mkPackUnpack"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTpt"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTC"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTpt"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTC")
+  )
 )
 
 def buildInfoSetup(crossProject: CrossProject): CrossProject = {
