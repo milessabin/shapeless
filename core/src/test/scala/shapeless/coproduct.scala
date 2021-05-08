@@ -1862,6 +1862,7 @@ class CoproductTests {
 
   @Test
   def testReify: Unit = {
+    import GenericTestsAux._
     import syntax.singleton._
 
     assertTypedEquals(HNil, Reify[CNil].apply())
@@ -1871,6 +1872,9 @@ class CoproductTests {
 
     val s2 = Coproduct.`'a, 1, "b", true`
     assertEquals(Symbol("a").narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
+
+    val gen = Generic[Enum]
+    assertEquals(A :: B :: C :: HNil, Reify[gen.Repr].apply())
 
     illTyped(""" Reify[String :+: Int :+: CNil] """)
     illTyped(""" Reify[String :+: Coproduct.`'a, 1, "b", true`.T] """)
