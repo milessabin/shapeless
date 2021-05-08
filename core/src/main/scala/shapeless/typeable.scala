@@ -44,15 +44,18 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   import scala.reflect.ClassTag
   import syntax.typeable._
 
-  def apply[T](implicit castT: Typeable[T]) = castT
+  def apply[T](implicit castT: Typeable[T]): Typeable[T] = castT
 
   // This is supported by type arguments on patterns, available in Typelevel Scala 4+
   def unapply[T: Typeable](t: Any): Option[T] = t.cast[T]
 
+  private[shapeless] def instance[T](description: => String)(f: Any => Option[T]): Typeable[T] = new Typeable[T] {
+    def describe = description
+    def cast(t: Any) = f(t)
+  }
+
   case class ValueTypeable[T, B](cB: Class[B], describe: String) extends Typeable[T] {
-    def cast(t: Any): Option[T] = {
-      if(t != null && cB.isInstance(t)) Some(t.asInstanceOf[T]) else None
-    }
+    def cast(t: Any): Option[T] = if (t != null && cB.isInstance(t)) Some(t.asInstanceOf[T]) else None
   }
 
   /** Typeable instance for `Byte`. */
@@ -87,58 +90,34 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for `Any`. */
   implicit val anyTypeable: Typeable[Any] =
-    new Typeable[Any] {
-      def cast(t: Any): Option[Any] = Some(t)
-      def describe = "Any"
-    }
+    instance("Any")(Some.apply)
 
   /** Typeable instance for `AnyVal`. */
-  implicit val anyValTypeable: Typeable[AnyVal] =
-    new Typeable[AnyVal] {
-      def cast(t: Any): Option[AnyVal] = {
-        if(t != null && isValClass(t.getClass)) Some(t.asInstanceOf[AnyVal]) else None
-      }
-      def describe = "AnyVal"
-    }
-
-  /** Typeable instance for `AnyRef`. */
-  implicit val anyRefTypeable: Typeable[AnyRef] =
-    new Typeable[AnyRef] {
-      def cast(t: Any): Option[AnyRef] = {
-        if(t == null || isValClass(t.getClass)) None else Some(t.asInstanceOf[AnyRef])
-      }
-      def describe = "AnyRef"
-    }
-
-  /** Typeable instance for simple monomorphic types */
-  def simpleTypeable[T](erased: Class[T]): Typeable[T] = {
-    namedSimpleTypeable(erased, safeSimpleName(erased))
+  implicit val anyValTypeable: Typeable[AnyVal] = instance("AnyVal") { t =>
+    if (t != null && isValClass(t.getClass)) Some(t.asInstanceOf[AnyVal]) else None
   }
 
+  /** Typeable instance for `AnyRef`. */
+  implicit val anyRefTypeable: Typeable[AnyRef] = instance("AnyRef") { t =>
+    if (t == null || isValClass(t.getClass)) None else Some(t.asInstanceOf[AnyRef])
+  }
+
+  /** Typeable instance for simple monomorphic types */
+  def simpleTypeable[T](erased: Class[T]): Typeable[T] =
+    namedSimpleTypeable(erased, safeSimpleName(erased))
+
   /** Typeable instance for simple monomorphic types, specifying the name explicitly */
-  def namedSimpleTypeable[T](erased: Class[T], name: => String): Typeable[T] =
-    new Typeable[T] {
-      def cast(t: Any): Option[T] = {
-        if(t != null && erased.isInstance(t)) Some(t.asInstanceOf[T]) else None
-      }
-      def describe = name
-    }
+  def namedSimpleTypeable[T](erased: Class[T], name: => String): Typeable[T] = instance(name) { t =>
+    if (t != null && erased.isInstance(t)) Some(t.asInstanceOf[T]) else None
+  }
 
   /** Typeable instance defined by a partial function and given an explicit name */
   def partialFunctionTypeable[T](pf: PartialFunction[Any, T], name: => String): Typeable[T] =
-    new Typeable[T] {
-      val caster = pf.lift
-      def cast(t: Any) = caster(t)
-      def describe = name
-    }
+    instance(name)(pf.lift)
 
   /** Typeable instance for singleton value types */
   def valueSingletonTypeable[T](value: T, name: String): Typeable[T] =
-    new Typeable[T] {
-      def cast(t: Any): Option[T] =
-        if(t == value) Some(value) else None
-      def describe = s"$name($value)"
-    }
+    instance(s"$name($value)")(t => if (t == value) Some(value) else None)
 
   /** Typeable instance for singleton reference types (not serializable by default) */
   def referenceSingletonTypeable[T <: AnyRef](value: T, name: String): Typeable[T] =
@@ -160,108 +139,83 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
    */
   def referenceSingletonTypeable[T <: AnyRef](value: T, name: String, serializable: Boolean): Typeable[T] =
     new Typeable[T] {
-
-      def cast(t: Any): Option[T] =
-        if(t.asInstanceOf[AnyRef] eq value) Some(value) else None
-
       def describe = s"$name.type"
 
+      def cast(t: Any): Option[T] =
+        if (t.asInstanceOf[AnyRef] eq value) Some(value) else None
+
       @throws(classOf[java.io.IOException])
-      private def writeObject(out: java.io.ObjectOutputStream): Unit = {
+      private def writeObject(out: java.io.ObjectOutputStream): Unit =
         if (serializable) out.defaultWriteObject()
         else throw new java.io.NotSerializableException("referenceSingletonTypeable")
-      }
     }
 
   /** Typeable instance for intersection types with typeable parents */
   def intersectionTypeable[T](parents: Array[Typeable[_]]): Typeable[T] =
-    new Typeable[T] {
-      def cast(t: Any): Option[T] = {
-        if(t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
-      }
-      def describe = parents map(_.describe) mkString " with "
+    instance(parents.map(_.describe).mkString(" with ")) { t =>
+      if (t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
     }
   
   /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT: Typeable[T]): Typeable[Option[T]] =
-    new Typeable[Option[T]]{
-      def cast(t: Any): Option[Option[T]] = {
-        if(t == null) None
-        else if(t.isInstanceOf[Option[_]]) {
-          val o = t.asInstanceOf[Option[_]]
-          if(o.isEmpty) Some(t.asInstanceOf[Option[T]])
-          else for(e <- o; _ <- e.cast[T]) yield t.asInstanceOf[Option[T]]
-        } else None
-      }
-      def describe = s"Option[${castT.describe}]"
+    instance(s"Option[${castT.describe}]") {
+      case o: Option[_] =>
+        if (o.isEmpty) Some(o.asInstanceOf[Option[T]])
+        else for (e <- o; _ <- e.cast[T]) yield o.asInstanceOf[Option[T]]
+      case _ =>
+        None
     }
 
   /** Typeable instance for `Either`. */
-  implicit def eitherTypeable[A, B]
-    (implicit castA: Typeable[A], castB: Typeable[B]): Typeable[Either[A, B]] =
-      new Typeable[Either[A, B]] {
-        def cast(t: Any): Option[Either[A, B]] = {
-          t.cast[Left[A, B]] orElse t.cast[Right[A, B]]
-        }
-        def describe = s"Either[${castA.describe}, ${castB.describe}]"
-      }
+  implicit def eitherTypeable[A, B](
+    implicit castA: Typeable[A], castB: Typeable[B]
+  ): Typeable[Either[A, B]] = instance(s"Either[${castA.describe}, ${castB.describe}]") { t =>
+    t.cast[Left[A, B]] orElse t.cast[Right[A, B]]
+  }
 
   /** Typeable instance for `Left`. */
   implicit def leftTypeable[A, B](implicit castA: Typeable[A]): Typeable[Left[A, B]] =
-    new Typeable[Left[A, B]] {
-      def cast(t: Any): Option[Left[A, B]] = {
-        if(t == null) None
-        else if(t.isInstanceOf[Left[_, _]]) {
-          val l = t.asInstanceOf[Left[_, _]]
-          for(a <- l.value.cast[A]) yield t.asInstanceOf[Left[A, B]]
-        } else None
-      }
-      def describe = s"Left[${castA.describe}]"
+    instance(s"Left[${castA.describe}]") {
+      case l: Left[_, _] =>
+        for (_ <- l.value.cast[A]) yield l.asInstanceOf[Left[A, B]]
+      case _ =>
+        None
     }
 
   /** Typeable instance for `Right`. */
   implicit def rightTypeable[A, B](implicit castB: Typeable[B]): Typeable[Right[A, B]] =
-    new Typeable[Right[A, B]] {
-      def cast(t: Any): Option[Right[A, B]] = {
-        if(t == null) None
-        else if(t.isInstanceOf[Right[_, _]]) {
-          val r = t.asInstanceOf[Right[_, _]]
-          for(b <- r.value.cast[B]) yield t.asInstanceOf[Right[A, B]]
-        } else None
-      }
-      def describe = s"Right[${castB.describe}]"
+    instance(s"Right[${castB.describe}]") {
+      case r: Right[_, _] =>
+        for (_ <- r.value.cast[B]) yield r.asInstanceOf[Right[A, B]]
+      case _ =>
+        None
     }
 
   /** Typeable instance for `Traversable`.
-   *  Note that the contents be will tested for conformance to the element type. */
-  implicit def genTraversableTypeable[CC[X] <: Iterable[X], T]
-    (implicit mCC: ClassTag[CC[_]], castT: Typeable[T]): Typeable[CC[T] with Iterable[T]] =
-    // Nb. the apparently redundant `with Iterable[T]` is a workaround for a
-    // Scala 2.10.x bug which causes conflicts between this instance and `anyTypeable`.
-    new Typeable[CC[T]] {
-      def cast(t: Any): Option[CC[T]] =
-        if(t == null) None
-        else if(mCC.runtimeClass isInstance t) {
-          val cc = t.asInstanceOf[CC[Any]]
-          if(cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]])
-          else None
-        } else None
-      def describe = s"${safeSimpleName(mCC)}[${castT.describe}]"
-    }
+   *  Note that the contents be will tested for conformance to the element type.
+   */
+  // Nb. the apparently redundant `with Iterable[T]` is a workaround for a
+  // Scala bug which causes conflicts between this instance and `anyTypeable`.
+  implicit def genTraversableTypeable[CC[X] <: Iterable[X], T](
+    implicit mCC: ClassTag[CC[_]], castT: Typeable[T]
+  ): Typeable[CC[T] with Iterable[T]] = instance(s"${safeSimpleName(mCC)}[${castT.describe}]") { t =>
+    if (t == null) None
+    else if (mCC.runtimeClass isInstance t) {
+      val cc = t.asInstanceOf[CC[Any]]
+      if (cc.forall(_.cast[T].isDefined)) Some(t.asInstanceOf[CC[T]]) else None
+    } else None
+  }
 
   /** Typeable instance for `Map`. Note that the contents will be tested for conformance to the key/value types. */
-  implicit def genMapTypeable[M[X, Y], K, V]
-    (implicit ev: M[K, V] <:< Map[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]): Typeable[M[K, V]] =
-    new Typeable[M[K, V]] {
-      def cast(t: Any): Option[M[K, V]] =
-        if(t == null) None
-        else if(mM.runtimeClass isInstance t) {
-          val m = t.asInstanceOf[Map[Any, Any]]
-          if(m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]])
-          else None
-        } else None
-      def describe = s"${safeSimpleName(mM)}[${castK.describe}, ${castV.describe}]"
-    }
+  implicit def genMapTypeable[M[X, Y], K, V](
+    implicit ev: M[K, V] <:< Map[K, V], mM: ClassTag[M[_, _]], castK: Typeable[K], castV: Typeable[V]
+  ): Typeable[M[K, V]] = instance(s"${safeSimpleName(mM)}[${castK.describe}, ${castV.describe}]") { t =>
+    if (t == null) None
+    else if (mM.runtimeClass isInstance t) {
+      val m = t.asInstanceOf[Map[Any, Any]]
+      if (m.forall(_.cast[(K, V)].isDefined)) Some(t.asInstanceOf[M[K, V]]) else None
+    } else None
+  }
 
   /** Typeable instance for polymorphic case classes with typeable elements */
   def caseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]]): Typeable[T] =
@@ -269,94 +223,65 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
 
   /** Typeable instance for polymorphic case classes with typeable elements, specifying the name explicitly. */
   def namedCaseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]], name: => String): Typeable[T] =
-    new Typeable[T] {
-      def cast(t: Any): Option[T] =
-        if(classOf[Product].isAssignableFrom(erased) && erased.isInstance(t)) {
-          val c = t.asInstanceOf[Product with T]
-          val f = c.productIterator.toList
-          if((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(c)
-          else None
-        } else None
-      def describe = {
-        val typeParams = fields map(_.describe) mkString(",")
-        s"$name[$typeParams]"
-      }
+    instance(s"$name[${fields.map(_.describe).mkString(",")}]") { t =>
+      if (classOf[Product].isAssignableFrom(erased) && erased.isInstance(t)) {
+        val c = t.asInstanceOf[Product with T]
+        val f = c.productIterator.toList
+        if ((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(c) else None
+      } else None
     }
 
   /** Typeable instance for `HNil`. */
-  implicit val hnilTypeable: Typeable[HNil] =
-    new Typeable[HNil] {
-      def cast(t: Any): Option[HNil] = if(t != null && t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
-      def describe = "HNil"
-    }
+  implicit val hnilTypeable: Typeable[HNil] = instance("HNil") { t =>
+    if (t != null && t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
+  }
 
   /** Typeable instance for `HList`s. Note that the contents will be tested for conformance to the element types. */
-  implicit def hlistTypeable[H, T <: HList](implicit castH: Typeable[H], castT: Typeable[T]): Typeable[H :: T] =
-    new Typeable[H :: T] {
-      def cast(t: Any): Option[H :: T] = {
-        if(t == null) None
-        else if(t.isInstanceOf[::[_, _ <: HList]]) {
-          val l = t.asInstanceOf[::[_, _ <: HList]]
-          for(hd <- l.head.cast[H]; tl <- (l.tail: Any).cast[T]) yield t.asInstanceOf[H :: T]
-        } else None
-      }
-      def describe = s"${castH.describe} :: ${castT.describe}"
-    }
+  implicit def hlistTypeable[H, T <: HList](
+    implicit castH: Typeable[H], castT: Typeable[T]
+  ): Typeable[H :: T] = instance(s"${castH.describe} :: ${castT.describe}") {
+    case l: ::[_, _] =>
+      for (_ <- l.head.cast[H]; _ <- (l.tail: Any).cast[T]) yield l.asInstanceOf[H :: T]
+    case _ =>
+      None
+  }
 
   /** Typeable instance for `CNil`. */
   implicit val cnilTypeable: Typeable[CNil] =
-    new Typeable[CNil] {
-      def cast(t: Any): Option[CNil] = None
-      def describe = "CNil"
-    }
+    instance("CNil")(_ => None)
 
   /**
    * Typeable instance for `Coproduct`s.
    * Note that the contents will be tested for conformance to one of the element types.
    */
-  implicit def coproductTypeable[H, T <: Coproduct]
-    (implicit castH: Typeable[H], castT: Typeable[T]): Typeable[H :+: T] =
-    new Typeable[H :+: T] {
-      def cast(t: Any): Option[H :+: T] = {
-        t.cast[Inl[H, T]] orElse t.cast[Inr[H, T]]
-      }
-      def describe = s"${castH.describe} :+: ${castT.describe}"
-    }
+  implicit def coproductTypeable[H, T <: Coproduct](
+    implicit castH: Typeable[H], castT: Typeable[T]
+  ): Typeable[H :+: T] = instance(s"${castH.describe} :+: ${castT.describe}") { t =>
+    t.cast[Inl[H, T]] orElse t.cast[Inr[H, T]]
+  }
 
   /** Typeable instance for `Inl`. */
   implicit def inlTypeable[H, T <: Coproduct](implicit castH: Typeable[H]): Typeable[Inl[H, T]] =
-    new Typeable[Inl[H, T]] {
-      def cast(t: Any): Option[Inl[H, T]] = {
-        if(t == null) None
-        else if(t.isInstanceOf[Inl[_, _ <: Coproduct]]) {
-          val l = t.asInstanceOf[Inl[_, _ <: Coproduct]]
-          for(hd <- l.head.cast[H]) yield t.asInstanceOf[Inl[H, T]]
-        } else None
-      }
-      def describe = s"Inl[${castH.describe}}]"
+    instance(s"Inl[${castH.describe}}]") {
+      case l: Inl[_, _] =>
+        for (_ <- l.head.cast[H]) yield l.asInstanceOf[Inl[H, T]]
+      case _ =>
+        None
     }
 
   /** Typeable instance for `Inr`. */
   implicit def inrTypeable[H, T <: Coproduct](implicit castT: Typeable[T]): Typeable[Inr[H, T]] =
-    new Typeable[Inr[H, T]] {
-      def cast(t: Any): Option[Inr[H, T]] = {
-        if(t == null) None
-        else if(t.isInstanceOf[Inr[_, _ <: Coproduct]]) {
-          val r = t.asInstanceOf[Inr[_, _ <: Coproduct]]
-          for(tl <- r.tail.cast[T]) yield t.asInstanceOf[Inr[H, T]]
-        } else None
-      }
-      def describe = s"Inr[${castT.describe}}]"
+    instance(s"Inr[${castT.describe}}]") {
+      case r: Inr[_, _] =>
+        for (_ <- r.tail.cast[T]) yield r.asInstanceOf[Inr[H, T]]
+      case _ =>
+        None
     }
 
   // Workaround for https://issues.scala-lang.org/browse/SI-5425
   private def safeSimpleName(erased: Class[_]): String =
-    try {
-      erased.getSimpleName
-    } catch {
-      case _: InternalError =>
-        erased.getName
-    }
+    try erased.getSimpleName
+    catch { case _: InternalError => erased.getName }
 
   private def safeSimpleName(tag: ClassTag[_]): String =
     safeSimpleName(tag.runtimeClass)
@@ -385,8 +310,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
   import c.universe._
   import definitions.NothingClass
 
-  val typeableTpe = typeOf[Typeable[_]].typeConstructor
-  val genericTpe = typeOf[Generic[_]].typeConstructor
+  val typeableTpe: Type = typeOf[Typeable[_]].typeConstructor
+  val genericTpe: Type = typeOf[Generic[_]].typeConstructor
 
   def dfltTypeableImpl[T: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T]

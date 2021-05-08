@@ -30,7 +30,13 @@ object function {
   }
 
   object FnToProduct extends FnToProductInstances {
+    type Aux[F, P] = FnToProduct[F] { type Out = P }
     def apply[F <: AnyRef](implicit fntop: FnToProduct[F]): Aux[F, fntop.Out] = fntop
+
+    private[shapeless] def instance[F, P](toProduct: F => P): Aux[F, P] = new FnToProduct[F] {
+      type Out = P
+      def apply(f: F) = toProduct(f)
+    }
   }
 
   /**
@@ -41,6 +47,12 @@ object function {
   trait FnFromProduct[F] extends DepFn1[F] with Serializable
     
   object FnFromProduct extends FnFromProductInstances {
+    type Aux[F, O] = FnFromProduct[F] { type Out = O }
     def apply[F](implicit fnfromp: FnFromProduct[F]): Aux[F, fnfromp.Out] = fnfromp
+
+    private[shapeless] def instance[P, F](fromProduct: P => F): Aux[P, F] = new FnFromProduct[P] {
+      type Out = F
+      def apply(f: P) = fromProduct(f)
+    }
   }
 }
