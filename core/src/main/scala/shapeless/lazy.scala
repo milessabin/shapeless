@@ -344,7 +344,7 @@ class LazyMacros(val c: whitebox.Context) extends CaseClassMacros with OpenImpli
       name: String,
       dict: ListMap[TypeWrapper, Instance],
       open: List[Instance],
-      /** Types whose derivation must fail no matter what */
+      // Types whose derivation must fail no matter what
       prevent: List[TypeWrapper]
     ) {
       def addDependency(tpe: Type): State = {

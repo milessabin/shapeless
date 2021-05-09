@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
-import com.typesafe.tools.mima.core.ProblemFilters._
 import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
@@ -97,8 +96,8 @@ lazy val commonSettings = Seq(
 
   scalacOptions := scalacOptionsAll,
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y == 12 => scalacOptions212
-    case Some((2, y)) if y >= 13 => scalacOptions213
+    case Some((2, 12)) => scalacOptions212
+    case Some((2, 13)) => scalacOptions213
     case _ => Nil
   }),
 

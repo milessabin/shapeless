@@ -212,29 +212,32 @@ object AdditiveCollection extends AdditiveCollectionVersionSpecific {
   import scala.collection.immutable.Queue
   import scala.collection.LinearSeq
 
+  private[this] val instance =
+    new AdditiveCollection[Any] {}
+
   implicit def linearSeqAdditiveCollection[T]: AdditiveCollection[LinearSeq[T]] =
-    new AdditiveCollection[LinearSeq[T]] {}
+    instance.asInstanceOf[AdditiveCollection[LinearSeq[T]]]
 
   implicit def vectorAdditiveCollection[T]: AdditiveCollection[Vector[T]] =
-    new AdditiveCollection[Vector[T]] {}
+    instance.asInstanceOf[AdditiveCollection[Vector[T]]]
 
   implicit def arrayAdditiveCollection[T]: AdditiveCollection[Array[T]] =
-    new AdditiveCollection[Array[T]] {}
+    instance.asInstanceOf[AdditiveCollection[Array[T]]]
 
   implicit def stringAdditiveCollection: AdditiveCollection[String] =
-    new AdditiveCollection[String] {}
+    instance.asInstanceOf[AdditiveCollection[String]]
 
   implicit def listAdditiveCollection[T]: AdditiveCollection[List[T]] =
-    new AdditiveCollection[List[T]] {}
+    instance.asInstanceOf[AdditiveCollection[List[T]]]
 
   implicit def streamAdditiveCollection[T]: AdditiveCollection[LazyList[T]] =
-    new AdditiveCollection[LazyList[T]] {}
+    instance.asInstanceOf[AdditiveCollection[LazyList[T]]]
 
   implicit def queueAdditiveCollection[T]: AdditiveCollection[Queue[T]] =
-    new AdditiveCollection[Queue[T]] {}
+    instance.asInstanceOf[AdditiveCollection[Queue[T]]]
 
   implicit def defaultAdditiveCollection[T]: AdditiveCollection[collection.immutable.IndexedSeq[T]] =
-    new AdditiveCollection[collection.immutable.IndexedSeq[T]] {}
+    instance.asInstanceOf[AdditiveCollection[collection.immutable.IndexedSeq[T]]]
 }
 
 class DefaultToIndexedSeq[CC[_]]
