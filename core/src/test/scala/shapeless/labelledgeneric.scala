@@ -112,28 +112,27 @@ object ScalazTaggedAux {
     implicit val hnilTC: TC[HNil] = instance("HNil")
 
     implicit def hconsTC[K <: String, H, T <: HList](
-      implicit key: Witness.Aux[K], headTC: Lazy[TC[H]], tailTC: TC[T]
+      implicit key: Witness.Aux[K], headTC: => TC[H], tailTC: TC[T]
     ): TC[FieldType[K, H] :: T] = instance {
-      s"${key.value}: ${headTC.value()} :: ${tailTC()}"
+      s"${key.value}: ${headTC()} :: ${tailTC()}"
     }
 
     implicit def projectTC[F, G](
-      implicit lgen: LabelledGeneric.Aux[F, G], tc: Lazy[TC[G]]
+      implicit lgen: LabelledGeneric.Aux[F, G], tc: => TC[G]
     ): TC[F] = instance {
-      s"Proj(${tc.value()})"
+      s"Proj(${tc()})"
     }
   }
 
   abstract class TCLowPriority {
-    def instance[T](display: String): TC[T] = new TC[T] {
-      def apply(): String = display
-    }
+    def instance[T](display: String): TC[T] =
+      () => display
 
     // FIXME: Workaround #309
     implicit def hconsTCTagged[K <: String, H, HT, T <: HList](
-      implicit key: Witness.Aux[K], headTC: Lazy[TC[H @@ HT]], tailTC: TC[T]
+      implicit key: Witness.Aux[K], headTC: => TC[H @@ HT], tailTC: TC[T]
     ): TC[FieldType[K, H @@ HT] :: T] = instance {
-      s"${key.value}: ${headTC.value()} :: ${tailTC()}"
+      s"${key.value}: ${headTC()} :: ${tailTC()}"
     }
   }
 }

@@ -76,8 +76,8 @@ package GenericTestsAux {
   object star extends starLP {
     implicit def caseString = at[String](_+"*")
 
-    implicit def caseIso[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: Lazy[hl.Mapper.Aux[this.type, L, L]]) =
-      at[T](t => gen.from(mapper.value(gen.to(t))))
+    implicit def caseIso[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: => hl.Mapper.Aux[this.type, L, L]) =
+      at[T](t => gen.from(mapper(gen.to(t))))
   }
 
   trait incLP extends Poly1 {
@@ -694,12 +694,12 @@ class GenericTests {
     def apply[T](implicit tc: TC[T]): TC[T] = tc
 
     implicit def hnilTC: TC[HNil] = new TC[HNil] {}
-    implicit def hconsTC[H, T <: HList](implicit hd: Lazy[TC[H]], tl: Lazy[TC[T]]): TC[H :: T] = new TC[H :: T] {}
+    implicit def hconsTC[H, T <: HList](implicit hd: => TC[H], tl: => TC[T]): TC[H :: T] = new TC[H :: T] {}
 
     implicit def cnilTC: TC[CNil] = new TC[CNil] {}
-    implicit def cconsTC[H, T <: Coproduct](implicit hd: Lazy[TC[H]], tl: Lazy[TC[T]]): TC[H :+: T] = new TC[H :+: T] {}
+    implicit def cconsTC[H, T <: Coproduct](implicit hd: => TC[H], tl: => TC[T]): TC[H :+: T] = new TC[H :+: T] {}
 
-    implicit def projectTC[F, G](implicit gen: Generic.Aux[F, G], tc: Lazy[TC[G]]): TC[F] = new TC[F] {}
+    implicit def projectTC[F, G](implicit gen: Generic.Aux[F, G], tc: => TC[G]): TC[F] = new TC[F] {}
   }
 
   @Test

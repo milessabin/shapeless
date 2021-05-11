@@ -125,15 +125,15 @@ object Lazy extends LazyInstances {
   class Values[T <: HList](val values: T) extends Serializable
   object Values {
     implicit val hnilValues: Values[HNil] = new Values(HNil)
-    implicit def hconsValues[H, T <: HList](implicit lh: Lazy[H], t: Values[T]): Values[H :: T] =
-      new Values(lh.value :: t.values)
+    implicit def hconsValues[H, T <: HList](implicit lh: => H, t: Values[T]): Values[H :: T] =
+      new Values(lh :: t.values)
   }
 
-  def values[T <: HList](implicit lv: Lazy[Values[T]]): T = lv.value.values
+  def values[T <: HList](implicit lv: => Values[T]): T = lv.values
 }
 
 object lazily {
-  def apply[T](implicit lv: Lazy[T]): T = lv.value
+  def apply[T](implicit lv: => T): T = lv
 }
 
 /**
