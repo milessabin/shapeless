@@ -140,10 +140,11 @@ object Boilerplate {
         |import hlist.Tupler
         |
         |trait TuplerInstances {
+        |  type Aux[L <: HList, T] = Tupler[L] { type Out = T }
         -
         -  implicit def hlistTupler$arity[
         -    ${`A..N`}
-        -  ]: Tupler.Aux[
+        -  ]: Aux[
         -    ${`A::N`},
         -    ${`(A..N)`}
         -  ] = Tupler.instance { case ${`a::n`} =>
@@ -173,10 +174,11 @@ object Boilerplate {
         |import function.FnToProduct
         |
         |trait FnToProductInstances {
+        |  type Aux[F, P] = FnToProduct[F] { type Out = P }
         -
         -  implicit def fnToProduct$arity[
         -    ${`A..N,Res`}
-        -  ]: FnToProduct.Aux[
+        -  ]: Aux[
         -    ($fnType),
         -    $hlistFnType
         -  ] = FnToProduct.instance(fn => $fnBody)
@@ -201,10 +203,11 @@ object Boilerplate {
         |import function.FnFromProduct
         |
         |trait FnFromProductInstances {
+        |  type Aux[F, O] = FnFromProduct[F] { type Out = O }
         -
         -  implicit def fnFromProduct$arity[
         -    ${`A..N,Res`}
-        -  ]: FnFromProduct.Aux[
+        -  ]: Aux[
         -    $hlistFnType,
         -    $fnType
         -  ] = FnFromProduct.instance { hf =>
