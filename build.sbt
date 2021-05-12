@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
-import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.13"

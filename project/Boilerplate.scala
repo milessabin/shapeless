@@ -138,18 +138,15 @@ object Boilerplate {
         |import hlist.Tupler
         |
         |trait TuplerInstances {
-        |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
         -
-        -  implicit def hlistTupler${arity}
-        -    [${`A..N`}]
-        -  : Aux[
+        -  implicit def hlistTupler$arity[
+        -    ${`A..N`}
+        -  ]: Tupler.Aux[
         -    ${`A::N`},
         -    ${`(A..N)`}
-        -  ] =
-        -    new Tupler[${`A::N`}] {
-        -      type Out = ${`(A..N)`}
-        -      def apply(l : ${`A::N`}): Out = l match { case ${`a::n`} => ${`(a..n)`} }
-        -    }        
+        -  ] = Tupler.instance { case ${`a::n`} =>
+        -    ${`(a..n)`}
+        -  }
         |}
       """
     }      
@@ -164,7 +161,9 @@ object Boilerplate {
       import tv._
       val fnType = s"(${`A..N`}) => Res"
       val hlistFnType = s"(${`A::N`}) => Res"
-      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
+      val fnBody =
+        if (arity == 0) "_ => fn()"
+        else s"{ case ${`a::n`} => fn(${`a..n`}) }"
       
       block"""
         |package ops
@@ -172,20 +171,13 @@ object Boilerplate {
         |import function.FnToProduct
         |
         |trait FnToProductInstances {
-        |  type Aux[F, Out0] = FnToProduct[F] { type Out = Out0 }
         -
-        -  implicit def fnToProduct${arity}
-        -    [${`A..N,Res`}]
-        -  : Aux[
-        -    (${fnType}),
-        -    ${hlistFnType}
-        -  ] =
-        -    new FnToProduct[${fnType}] {
-        -      type Out = ${hlistFnType}
-        -      def apply(fn: ${fnType}): Out
-        -        = (l : ${`A::N`})
-        -          => ${fnBody}
-        -    }
+        -  implicit def fnToProduct$arity[
+        -    ${`A..N,Res`}
+        -  ]: FnToProduct.Aux[
+        -    ($fnType),
+        -    $hlistFnType
+        -  ] = FnToProduct.instance(fn => $fnBody)
         |}
       """
     }
@@ -207,21 +199,16 @@ object Boilerplate {
         |import function.FnFromProduct
         |
         |trait FnFromProductInstances {
-        |  type Aux[F, Out0] = FnFromProduct[F] { type Out = Out0 }
-        |
-        -  implicit def fnFromProduct${arity}
-        -    [${`A..N,Res`}]
-        -  : Aux[
-        -    ${hlistFnType},
-        -    ${fnType}
-        -  ] = 
-        -    new FnFromProduct[${hlistFnType}] {
-        -      type Out = ${fnType}
-        -      def apply(hf : ${hlistFnType}): Out
-        -        = (${`a:A..n:N`})
-        -          => hf(${`a::n`})
-        -    }
         -
+        -  implicit def fnFromProduct$arity[
+        -    ${`A..N,Res`}
+        -  ]: FnFromProduct.Aux[
+        -    $hlistFnType,
+        -    $fnType
+        -  ] = FnFromProduct.instance { hf =>
+        -    (${`a:A..n:N`}) =>
+        -      hf(${`a::n`})
+        -  }
         |}
       """
     }
@@ -305,24 +292,20 @@ object Boilerplate {
         |trait Cases {
         |  import poly._
         |
-        -  type Case${arity}[Fn, ${`A..N`}]
-        -    = Case[Fn, ${`A::N`}]
+        -  type Case$arity[Fn, ${`A..N`}] =
+        -    Case[Fn, ${`A::N`}]
         -
-        -  object Case${arity} {
-        -    type Aux[Fn, ${`A..N`}, Result0]
-        -      = Case[Fn, ${`A::N`}] { type Result = Result0 }
+        -  object Case$arity {
+        -    type Aux[Fn, ${`A..N`}, Result0] =
+        -      Case[Fn, ${`A::N`}] { type Result = Result0 }
         -
-        -    def apply
-        -      [Fn, ${`A..N`}, Result0]
-        -      (fn: (${`A..N`}) => Result0)
-        -    : Aux[Fn, ${`A..N`}, Result0] =
-        -      new Case[Fn, ${`A::N`}] {
-        -        type Result = Result0
-        -        val value = (l: ${`A::N`})
-        -          => l match {
-        -            case ${`a::n`} =>
-        -              fn(${`a..n`})
-        -          }
+        -    def apply[
+        -      Fn, ${`A..N`}, Result0
+        -    ](
+        -      fn: (${`A..N`}) => Result0
+        -    ): Aux[Fn, ${`A..N`}, Result0] =
+        -      Case { case ${`a::n`} =>
+        -        fn(${`a..n`})
         -      }
         -  }
         -
@@ -337,35 +320,36 @@ object Boilerplate {
 
     def content(tv: TemplateVals) = {
       import tv._
-      val fnBody = if (arity == 0) "fn()" else s"l match { case ${`a::n`} => fn(${`a..n`}) }" 
+
+      val fnBody =
+        if (arity == 0) "_ => fn()"
+        else s"{ case ${`a::n`} => fn(${`a..n`}) }"
 
       block"""
         |
         -
-        -trait Poly${arity} extends Poly { outer =>
-        -  type Case[${`A..N`}]
-        -    = poly.Case[this.type, ${`A::N`}]
+        -trait Poly$arity extends Poly { outer =>
+        -  type Case[${`A..N`}] =
+        -    poly.Case[this.type, ${`A::N`}]
         -
         -  object Case {
-        -    type Aux[${`A..N`}, Result0]
-        -      = poly.Case[outer.type, ${`A::N`}] { type Result = Result0 }
+        -    type Aux[${`A..N`}, Result0] =
+        -      poly.Case[outer.type, ${`A::N`}] { type Result = Result0 }
         -  }
         -
-        -  class CaseBuilder${arity}[${`A..N`}] {
-        -    def apply[Res]
-        -      (fn: (${`A..N`}) => Res) = new Case[${`A..N`}] {
-        -      type Result = Res
-        -      val value = (l: ${`A::N`})
-        -        => ${fnBody}
-        -    }
+        -  class CaseBuilder$arity[${`A..N`}] {
+        -    def apply[Res](
+        -      fn: (${`A..N`}) => Res
+        -    ): Case.Aux[${`A..N`}, Res] =
+        -      poly.Case($fnBody)
         -  }
         -  
-        -  def at[${`A..N`}]
-        -    = new CaseBuilder${arity}[${`A..N`}]
+        -  def at[${`A..N`}] =
+        -    new CaseBuilder$arity[${`A..N`}]
         -}
         -
-        -object Poly${arity} extends PolyNBuilders.Poly${arity}Builder[HNil] {
-        - val functions = HNil
+        -object Poly$arity extends PolyNBuilders.Poly${arity}Builder[HNil] {
+        -  val functions = HNil
         -}
         |
       """
@@ -414,15 +398,18 @@ object Boilerplate {
         - }
         -
         - object Function${arity}TypeAt {
-        -   implicit def at0[${`A..N`}, Out, Tail <: HList]: Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] =
-        -     new Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out)::Tail] {
-        -       def apply(l: ((${`A..N`}) => Out)::Tail): (${`A..N`}) => Out = l.head
-        -     }
         -
-        -   implicit def atOther[${`A..N`}, Out, Tail <: HList, Head](implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]): Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] =
-        -     new Function${arity}TypeAt[${`A..N`}, Out, Head::Tail] {
-        -       def apply(l: Head::Tail): (${`A..N`}) => Out = tprev(l.tail)
-        -     }
+        -   implicit def at0[
+        -     ${`A..N`}, Out, Tail <: HList
+        -   ]: Function${arity}TypeAt[${`A..N`}, Out, ((${`A..N`}) => Out) :: Tail] =
+        -     _.head
+        -
+        -   implicit def atOther[
+        -     ${`A..N`}, Out, Tail <: HList, Head
+        -   ](
+        -     implicit tprev: Function${arity}TypeAt[${`A..N`}, Out, Tail]
+        -   ): Function${arity}TypeAt[${`A..N`}, Out, Head :: Tail] =
+        -     l => tprev(l.tail)
         - }
         |}
       """
@@ -450,30 +437,28 @@ object Boilerplate {
 
     def content(tv: TemplateVals) = {
       import tv._
-      val implicitArgs = (synTypes map(a => s"cast${a}:Typeable[${a}]")) mkString ", "
-      val enumerators = synTypes.zipWithIndex map { case (a,idx) => s"_ <- p._${idx+1}.cast[${a}]" } mkString "; "
-      val castVals = (synTypes map(a => s"$${cast${a}.describe}")) mkString ", "
+
+      val implicitArgs = synTypes.map(a => s"cast$a:Typeable[$a]").mkString(", ")
+      val enumerators = synTypes.zipWithIndex.map { case (a, i) => s"_ <- p._${i+1}.cast[$a]" }.mkString("; ")
+      val castVals = synTypes.map(a => s"$${cast$a.describe}").mkString(", ")
 
       block"""
         |
         |trait TupleTypeableInstances {
         |  import syntax.typeable._
-        |
-        -  implicit def tuple${arity}Typeable
-        -    [${`A..N`}]
-        -    (implicit ${implicitArgs})
-        -  = new Typeable[${`(A..N)`}] {
-        -    def cast(t : Any) : Option[${`(A..N)`}] = {
-        -      if(t == null) None
-        -      else if(t.isInstanceOf[${`(_.._)`}]) {
-        -        val p = t.asInstanceOf[${`(_.._)`}]
-        -        for(${enumerators})
-        -        yield t.asInstanceOf[${`(A..N)`}]
-        -      } else None
-        -    }
-        -    override def describe = s"($castVals)"
-        -  }
         -
+        -  implicit def tuple${arity}Typeable[
+        -    ${`A..N`}
+        -  ](
+        -    implicit $implicitArgs
+        -  ): Typeable[${`(A..N)`}] =
+        -    Typeable.instance(s"($castVals)") {
+        -      case p: ${`(_.._)`} =>
+        -        for ($enumerators)
+        -          yield p.asInstanceOf[${`(A..N)`}]
+        -      case _ =>
+        -        None
+        -    }
         |}
       """
     }        
@@ -548,6 +533,6 @@ object Boilerplate {
         -}
         |
       """
-    }      
+    }
   }
 }

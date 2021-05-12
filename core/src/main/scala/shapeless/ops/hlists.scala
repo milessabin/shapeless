@@ -788,13 +788,16 @@ object hlist {
   trait Tupler[L <: HList] extends DepFn1[L] with Serializable
 
   object Tupler extends TuplerInstances {
+    type Aux[L <: HList, T] = Tupler[L] { type Out = T }
     def apply[L <: HList](implicit tupler: Tupler[L]): Aux[L, tupler.Out] = tupler
 
+    private[shapeless] def instance[L <: HList, T](tuple: L => T): Aux[L, T] = new Tupler[L] {
+      type Out = T
+      def apply(l: L) = tuple(l)
+    }
+
     implicit val hnilTupler: Aux[HNil, Unit] =
-      new Tupler[HNil] {
-        type Out = Unit
-        def apply(l: HNil): Out = ()
-      }
+      instance(_ => ())
   }
 
   /**
