@@ -6,6 +6,7 @@ boilerplate][syb] and [higher rank polymorphism][higherrank] in Scala. Since the
 experimental project into a library which, while still testing the limits of what's possible in Scala, is being used
 widely in production systems wherever there are arities to be abstracted over and boilerplate to be scrapped.
 
+[![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/bSQBZA3Ced)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-0.6.8.svg)](https://www.scala-js.org)
