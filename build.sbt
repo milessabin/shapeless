@@ -216,7 +216,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2")
+  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.0.0")
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
