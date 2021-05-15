@@ -23,7 +23,6 @@ class TypeableTests {
   import org.junit.Assert._
 
   import syntax.typeable.given
-  import shapeless3.data._
   import shapeless3.test._
 
   @Test
@@ -155,50 +154,6 @@ class TypeableTests {
   }
 
   @Test
-  def testHList: Unit = {
-    val lisdb: Any = 23 :*: "foo" :*: false :*: HNil
-    val clisdb = lisdb.cast[Int :*: String :*: Boolean :*: HNil]
-    assertTrue(clisdb.isDefined)
-
-    val clisdb2 = lisdb.cast[Int :*: String :*: Double :*: HNil]
-    assertTrue(clisdb2.isEmpty)
-  }
-
-  @Test
-  def testCoproduct: Unit = {
-    type CP = Int :+: String :+: Double :+: Boolean :+: CNil
-    type CP2 = Char :+: Long :+: Unit :+: CNil
-
-    val cpi: Any = Coproduct[CP](23)
-    val ccpi = cpi.cast[CP]
-    assertTrue(ccpi.isDefined)
-
-    val cps: Any = Coproduct[CP]("foo")
-    val ccps = cps.cast[CP]
-    assertTrue(ccps.isDefined)
-
-    val cpd: Any = Coproduct[CP](2.0)
-    val ccpd = cpd.cast[CP]
-    assertTrue(ccpd.isDefined)
-
-    val cpb: Any = Coproduct[CP](true)
-    val ccpb = cpb.cast[CP]
-    assertTrue(ccpb.isDefined)
-
-    val cpc: Any = Coproduct[CP2]('c')
-    val ccpc = cpc.cast[CP]
-    assertTrue(ccpc.isEmpty)
-
-    val cpl: Any = Coproduct[CP2](13L)
-    val ccpl = cpl.cast[CP]
-    assertTrue(ccpl.isEmpty)
-
-    val cpu: Any = Coproduct[CP2](())
-    val ccpu = cpu.cast[CP]
-    assertTrue(ccpu.isEmpty)
-  }
-
-  @Test
   def testAnys: Unit = {
     val v: Any = 23
     val cv = v.cast[AnyVal]
@@ -232,12 +187,6 @@ class TypeableTests {
 
     val cn4 = n.cast[List[Int]]
     assertTrue(!cn4.isDefined)
-
-    val cn5 = n.cast[HNil]
-    assertTrue(!cn5.isDefined)
-
-    val cn6 = n.cast[Int :*: String :*: Boolean :*: HNil]
-    assertTrue(!cn6.isDefined)
 
     val cn7 = n.cast[(Int, String)]
     assertTrue(!cn7.isDefined)
@@ -578,14 +527,6 @@ class TypeableTests {
 
     val m: Map[Int, String] = Map(1 -> "one", 2 -> "two")
     assertEquals("Typeable[Map[Int, String]]", typeableString(m))
-
-    assertEquals("Typeable[HNil.type]", typeableString[HNil.type](HNil))
-    val hl = 1 :*: "" :*: HNil
-    assertEquals("Typeable[:*:[Int, :*:[String, HNil]]]", typeableString(hl))
-
-    type CP = Double :+: Boolean :+: CNil
-    val cpd: CP = Coproduct[CP](2.0)
-    assertEquals("Typeable[:+:[Double, :+:[Boolean, CNil]]]", typeableString(cpd))
 
     val one: 1 = 1
     assertEquals("Typeable[Int(1)]", typeableString[1](one))

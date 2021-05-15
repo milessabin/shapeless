@@ -37,7 +37,6 @@ ThisBuild / githubWorkflowPublish := Seq(
 addCommandAlias("validateJVM", ";clean;compile;test")
 
 lazy val modules: List[ProjectReference] = List(
-  data,
   deriving,
   test,
   typeable
@@ -58,14 +57,6 @@ lazy val root = project.in(file("."))
   .settings(commonSettings:_*)
   .settings(noPublishSettings)
 
-lazy val data = project
-  .in(file("modules/data"))
-  .settings(
-    moduleName := "shapeless3-data"
-  )
-  .settings(commonSettings: _*)
-  .settings(publishSettings)
-
 lazy val deriving = project
   .in(file("modules/deriving"))
   .dependsOn(test % "test")
@@ -85,7 +76,7 @@ lazy val test = project
 
 lazy val typeable = project
   .in(file("modules/typeable"))
-  .dependsOn(test % "test", data % "test")
+  .dependsOn(test % "test")
   .settings(
     moduleName := "shapeless3-typeable"
   )
@@ -94,7 +85,7 @@ lazy val typeable = project
 
 lazy val local = project
   .in(file("local"))
-  .dependsOn(data, deriving, test, typeable)
+  .dependsOn(deriving, test, typeable)
   .settings(
     moduleName := "shapeless3-local",
     scalacOptions ++= List("-Xmax-inlines", "1000"),
