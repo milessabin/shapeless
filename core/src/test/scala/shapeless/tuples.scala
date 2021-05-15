@@ -1463,7 +1463,7 @@ class TupleTests {
 
   @Test
   def testPropagation: Unit = {
-    def useHead[P: IsTuple: IsComposite](p: P) = p.head
+    def useHead[P <: Product: IsComposite](p: P) = p.head
     val h = useHead((23, "foo", true))
     typed[Int](h)
   }
@@ -1972,12 +1972,5 @@ class TupleTests {
     illTyped("""
       (23, "foo").align[(String, String)]
     """)
-  }
-
-  @Test
-  def testCompatibilityWithProductSyntax: Unit = {
-    import syntax.std.product._
-    assertEquals(List(2, "a"), Foo(2, "a").to[List])
-    assertEquals(List(2, "a"), (2, "a").to[List])
   }
 }
