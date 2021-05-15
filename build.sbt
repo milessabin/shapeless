@@ -1,4 +1,4 @@
-val dottyVersion = "3.0.0-RC3"
+val dottyVersion = "3.0.0"
 
 ThisBuild / organization := "org.typelevel"
 ThisBuild / scalaVersion := dottyVersion
