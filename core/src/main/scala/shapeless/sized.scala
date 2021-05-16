@@ -247,6 +247,9 @@ object AdditiveCollection {
 
   implicit def defaultAdditiveCollection[T]: AdditiveCollection[collection.immutable.IndexedSeq[T]] =
     instance.asInstanceOf[AdditiveCollection[collection.immutable.IndexedSeq[T]]]
+
+  implicit def seqAdditiveCollection[T]: AdditiveCollection[Seq[T]] =
+    instance.asInstanceOf[AdditiveCollection[Seq[T]]]
 }
 
 class DefaultToIndexedSeq[CC[_]]
