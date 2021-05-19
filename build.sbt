@@ -2,7 +2,7 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.13"
-val Scala213 = "2.13.5"
+val Scala213 = "2.13.6"
 
 commonSettings
 noPublishSettings
