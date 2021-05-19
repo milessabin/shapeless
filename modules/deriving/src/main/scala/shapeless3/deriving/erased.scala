@@ -150,13 +150,14 @@ final class ErasedProductInstancesN[K, FT](val mirror: Mirror.Product, is: Array
     if (n == 0) x0
     else {
       val x = toProduct(x0)
-      var acc = pure(EmptyTuple)
+      val arr = new Array[Any](n)
+      var acc = pure(())
       var i = 0
       while(i < n) {
-        acc = ap(map(acc, (x: Tuple) => (y: Any) => x ++ Tuple1(y)), f(is(i), x.productElement(i)))
+        acc = ap(map(acc, (_: Unit) => arr.update(i, _)), f(is(i), x.productElement(i)))
         i = i+1
       }
-      map(acc, x => mirror.fromProduct(x))
+      map(acc, (_: Unit) => mirror.fromProduct(new ArrayProduct(arr)))
     }
   }
 
