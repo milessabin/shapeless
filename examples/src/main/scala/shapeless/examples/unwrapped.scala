@@ -48,24 +48,22 @@ object UnwrappedExamples {
   }
 
   object Encode {
-    def instance[T](f: T => Map[String, String]): Encode[T] = new Encode[T] {
-      def fields(value: T): Map[String, String] = f(value)
-    }
+    def instance[T](f: T => Map[String, String]): Encode[T] = f(_)
 
     implicit val encodeHNil: Encode[HNil] =
       instance(_ => Map.empty)
 
     implicit def encodeHCons[K <: String, V, Rest <: HList](
-      implicit key: Witness.Aux[K], encodeV: Lazy[EncodeValue[V]], encodeRest: Encode[Rest]
+      implicit key: Witness.Aux[K], encodeV: => EncodeValue[V], encodeRest: Encode[Rest]
     ): Encode[FieldType[K, V] :: Rest] = instance { case h :: t =>
-      encodeRest.fields(t) + (key.value -> encodeV.value.toJsonFragment(h))
+      encodeRest.fields(t) + (key.value -> encodeV.toJsonFragment(h))
     }
 
     // the magic one!
     implicit def encodeGeneric[T, Repr](
-      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: Lazy[Encode[Repr]]
+      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: => Encode[Repr]
     ): Encode[T] = instance { value =>
-      encodeRepr.value.fields(gen.to(value))
+      encodeRepr.fields(gen.to(value))
     }
   }
 
@@ -74,9 +72,7 @@ object UnwrappedExamples {
   }
 
   object EncodeValue {
-    def instance[T](f: T => String): EncodeValue[T] = new EncodeValue[T] {
-      def toJsonFragment(value: T): String = f(value)
-    }
+    def instance[T](f: T => String): EncodeValue[T] = f(_)
 
     implicit val encodeString: EncodeValue[String] =
       instance(str => s""""$str"""")
@@ -84,8 +80,8 @@ object UnwrappedExamples {
     implicit val encodeInt: EncodeValue[Int] =
       instance(_.toString)
 
-    implicit def encodeRoot[T](implicit r: Lazy[Encode[T]]): EncodeValue[T] =
-      instance(value => r.value.toJson(value))
+    implicit def encodeRoot[T](implicit r: => Encode[T]): EncodeValue[T] =
+      instance(r.toJson)
   }
 
   // OK! Yay! Let's try it out!
@@ -106,9 +102,7 @@ object UnwrappedExamples {
   }
 
   object Encode2 {
-    def instance[T](f: T => Map[String, String]): Encode2[T] = new Encode2[T] {
-      def fields(value: T): Map[String, String] = f(value)
-    }
+    def instance[T](f: T => Map[String, String]): Encode2[T] = f(_)
 
     implicit val encodeHNil: Encode2[HNil] =
       instance(_ => Map.empty)
@@ -117,16 +111,16 @@ object UnwrappedExamples {
       implicit
       key: Witness.Aux[K],
       uw: Unwrapped.Aux[V, U],
-      encodeV: Lazy[EncodeValue[U]],
+      encodeV: => EncodeValue[U],
       encodeRest: Encode2[Rest]
     ): Encode2[FieldType[K, V] :: Rest] = instance { case h :: t =>
-      encodeRest.fields(t) + (key.value -> encodeV.value.toJsonFragment(uw.unwrap(h)))
+      encodeRest.fields(t) + (key.value -> encodeV.toJsonFragment(uw.unwrap(h)))
     }
 
     implicit def encodeGeneric[T, Repr](
-      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: Lazy[Encode2[Repr]]
+      implicit gen: LabelledGeneric.Aux[T, Repr], encodeRepr: => Encode2[Repr]
     ): Encode2[T] = instance { value =>
-      encodeRepr.value.fields(gen.to(value))
+      encodeRepr.fields(gen.to(value))
     }
   }
 

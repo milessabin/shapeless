@@ -130,46 +130,35 @@ trait UpdateRepr[T, R <: HList] {
 object UpdateRepr {
   import ops.record._
 
-  implicit def mergeUpdateRepr[T <: HList, R <: HList]
-    (implicit merger: Merger.Aux[T, R, T]): UpdateRepr[T, R] =
-    new UpdateRepr[T, R] {
-      def apply(t: T, r: R): T = merger(t, r)
-    }
+  implicit def mergeUpdateRepr[T <: HList, R <: HList](
+    implicit merger: Merger.Aux[T, R, T]
+  ): UpdateRepr[T, R] = merger(_, _)
 
   implicit def cnilUpdateRepr[R <: HList]: UpdateRepr[CNil, R] =
-    new UpdateRepr[CNil, R] {
-      def apply(t: CNil, r: R): CNil = t
-    }
+    (t, _) => t
 
-  implicit def cconsUpdateRepr[H, T <: Coproduct, R <: HList]
-    (implicit
-      uh: Lazy[UpdateRepr[H, R]],
-      ut: Lazy[UpdateRepr[T, R]]
-    ): UpdateRepr[H :+: T, R] =
-    new UpdateRepr[H :+: T, R] {
-      def apply(t: H :+: T, r: R): H :+: T = t match {
-        case Inl(h) => Inl(uh.value(h, r))
-        case Inr(t) => Inr(ut.value(t, r))
-      }
-    }
+  implicit def cconsUpdateRepr[H, T <: Coproduct, R <: HList](
+    implicit
+    uh: => UpdateRepr[H, R],
+    ut: => UpdateRepr[T, R]
+  ): UpdateRepr[H :+: T, R] = {
+    case (Inl(h), r) => Inl(uh(h, r))
+    case (Inr(t), r) => Inr(ut(t, r))
+  }
 
-  implicit def genProdUpdateRepr[T, R <: HList, Repr <: HList]
-    (implicit
-      prod: HasProductGeneric[T],
-      gen: LabelledGeneric.Aux[T, Repr],
-      update: Lazy[UpdateRepr[Repr, R]]
-    ): UpdateRepr[T, R] =
-    new UpdateRepr[T, R] {
-      def apply(t: T, r: R): T = gen.from(update.value(gen.to(t), r))
-    }
+  implicit def genProdUpdateRepr[T, R <: HList, Repr <: HList](
+    implicit
+    prod: HasProductGeneric[T],
+    gen: LabelledGeneric.Aux[T, Repr],
+    update: => UpdateRepr[Repr, R]
+  ): UpdateRepr[T, R] =
+    (t, r) => gen.from(update(gen.to(t), r))
 
-  implicit def genCoprodUpdateRepr[T, R <: HList, Repr <: Coproduct]
-    (implicit
-      coprod: HasCoproductGeneric[T],
-      gen: Generic.Aux[T, Repr],
-      update: Lazy[UpdateRepr[Repr, R]]
-    ): UpdateRepr[T, R] =
-    new UpdateRepr[T, R] {
-      def apply(t: T, r: R): T = gen.from(update.value(gen.to(t), r))
-    }
+  implicit def genCoprodUpdateRepr[T, R <: HList, Repr <: Coproduct](
+    implicit
+    coprod: HasCoproductGeneric[T],
+    gen: Generic.Aux[T, Repr],
+    update: => UpdateRepr[Repr, R]
+  ): UpdateRepr[T, R] =
+    (t, r) => gen.from(update(gen.to(t), r))
 }

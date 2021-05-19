@@ -42,17 +42,17 @@ trait ProductTypeClass[C[_]] extends Serializable {
 }
 
 trait ProductTypeClassCompanion[C[_]] extends Serializable {
-  def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
+  def apply[T](implicit ct: => C[T]): C[T] = ct
 
   val typeClass: ProductTypeClass[C]
 
   implicit def deriveHNil: C[HNil] = typeClass.emptyProduct
 
-  implicit def deriveHCons[H, T <: HList](implicit ch: Lazy[C[H]], ct: C[T]): C[H :: T] =
-    typeClass.product(ch.value, ct)
+  implicit def deriveHCons[H, T <: HList](implicit ch: => C[H], ct: C[T]): C[H :: T] =
+    typeClass.product(ch, ct)
 
-  implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[C[G]]): C[F] =
-    typeClass.project(cg.value, gen.to _, gen.from _)
+  implicit def deriveInstance[F, G](implicit gen: Generic.Aux[F, G], cg: => C[G]): C[F] =
+    typeClass.project(cg, gen.to, gen.from)
 }
 
 
@@ -82,7 +82,7 @@ trait LabelledProductTypeClass[C[_]] extends Serializable {
 }
 
 trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
-  def apply[T](implicit ct: Lazy[C[T]]): C[T] = ct.value
+  def apply[T](implicit ct: => C[T]): C[T] = ct
 
   val typeClass: LabelledProductTypeClass[C]
 
@@ -107,18 +107,18 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
     new Instance(typeClass.emptyProduct)
 
   implicit def deriveHCons[HK <: String, HV, TKV <: HList, TV <: HList](
-    implicit key: Witness.Aux[HK], ch: Lazy[C[HV]], ct: Wrap.Aux[TKV, TV]
+    implicit key: Witness.Aux[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
   ): Wrap.Aux[FieldType[HK, HV] :: TKV, HV :: TV] =
     new Instance[FieldType[HK, HV] :: TKV, HV :: TV](
-      typeClass.product(key.value, ch.value, ct.unwrap)
+      typeClass.product(key.value, ch, ct.unwrap)
     )
 
   implicit def deriveInstance[T, LKV, V](
-    implicit lgen: LabelledGeneric.Aux[T, LKV], wrap: Lazy[Wrap.Aux[LKV, V]]
+    implicit lgen: LabelledGeneric.Aux[T, LKV], wrap: => Wrap.Aux[LKV, V]
   ): C[T] = {
-    val to = (t: T) => wrap.value.unlabel(lgen.to(t))
-    val from = (v: V) => lgen.from(wrap.value.label(v))
-    typeClass.project(wrap.value.unwrap, to, from)
+    val to = (t: T) => wrap.unlabel(lgen.to(t))
+    val from = (v: V) => lgen.from(wrap.label(v))
+    typeClass.project(wrap.unwrap, to, from)
   }
 }
 
@@ -144,8 +144,8 @@ trait TypeClassCompanion[C[_]] extends ProductTypeClassCompanion[C] {
 
   implicit def deriveCNil: C[CNil] = typeClass.emptyCoproduct
 
-  implicit def deriveCCons[H, T <: Coproduct](implicit ch: Lazy[C[H]], ct: C[T]): C[H :+: T] =
-    typeClass.coproduct(ch.value, ct)
+  implicit def deriveCCons[H, T <: Coproduct](implicit ch: => C[H], ct: C[T]): C[H :+: T] =
+    typeClass.coproduct(ch, ct)
 }
 
 /**
@@ -174,9 +174,9 @@ trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion
     new Instance(typeClass.emptyCoproduct)
 
   implicit def deriveCCons[HK <: String, HV, TKV <: Coproduct, TV <: Coproduct](
-    implicit key: Witness.Aux[HK], ch: Lazy[C[HV]], ct: Wrap.Aux[TKV, TV]
+    implicit key: Witness.Aux[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
   ): Wrap.Aux[FieldType[HK, HV] :+: TKV, HV :+: TV] =
     new Instance[FieldType[HK, HV] :+: TKV, HV :+: TV](
-      typeClass.coproduct(key.value, ch.value, ct.unwrap)
+      typeClass.coproduct(key.value, ch, ct.unwrap)
     )
 }

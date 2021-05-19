@@ -32,9 +32,9 @@ class LazyStrictTests {
     implicit def int: Int = { effects += 3; 23 }
     implicit def long: Long = { effects += 6; 23 }
 
-    def summonLazyInt(implicit li: Lazy[Int]): Int = {
+    def summonLazyInt(implicit li: => Int): Int = {
       effects += 2
-      val i = li.value
+      val i = li
       effects += 4
       i
     }
@@ -63,9 +63,9 @@ class LazyStrictTests {
 
     def effectfulLazyInt: Int = { effects += 3 ; 23 }
 
-    def useEffectfulLazyInt(li: Lazy[Int]): Int = {
+    def useEffectfulLazyInt(li: => Int): Int = {
       effects += 2
-      val i = li.value
+      val i = li
       effects += 4
       i
     }
@@ -97,9 +97,9 @@ class LazyStrictTests {
     lazy val effectfulLazyInt: Int = { effects += 3 ; 23 }
     lazy val effectfulStrictInt: Int = { effects += 6 ; 23 }
 
-    def useEffectfulLazyInt(li: Lazy[Int]): Int = {
+    def useEffectfulLazyInt(li: => Int): Int = {
       effects += 2
-      val i = li.value
+      val i = li
       effects += 4
       i
     }
@@ -163,38 +163,27 @@ class LazyStrictTests {
   def show[T](t: T)(implicit s: Show[T]) = s(t)
 
   trait CommonShows {
-    implicit def showInt: Show[Int] = new Show[Int] {
-      def apply(t: Int) = t.toString
-    }
-
-    implicit def showNil: Show[Nil] = new Show[Nil] {
-      def apply(t: Nil) = "Nil"
-    }
+    implicit def showInt: Show[Int] = _.toString
+    implicit def showNil: Show[Nil] = _ => "Nil"
   }
 
   object LazyShows extends CommonShows {
-    implicit def showCons[T](implicit st: Lazy[Show[T]], sl: Lazy[Show[List[T]]]): Show[Cons[T]] = new Show[Cons[T]] {
-      def apply(t: Cons[T]) = s"Cons(${show(t.hd)(st.value)}, ${show(t.tl)(sl.value)})"
-    }
+    implicit def showCons[T](implicit st: => Show[T], sl: => Show[List[T]]): Show[Cons[T]] =
+      t => s"Cons(${show(t.hd)(st)}, ${show(t.tl)(sl)})"
 
-    implicit def showList[T](implicit sc: Lazy[Show[Cons[T]]]): Show[List[T]] = new Show[List[T]] {
-      def apply(t: List[T]) = t match {
-        case n: Nil => show(n)
-        case c: Cons[T] => show(c)(sc.value)
-      }
+    implicit def showList[T](implicit sc: => Show[Cons[T]]): Show[List[T]] = {
+      case n: Nil => show(n)
+      case c: Cons[T] => show(c)(sc)
     }
   }
 
   object LazyStrictMixShows extends CommonShows {
-    implicit def showCons[T](implicit st: Strict[Show[T]], sl: Strict[Show[List[T]]]): Show[Cons[T]] = new Show[Cons[T]] {
-      def apply(t: Cons[T]) = s"Cons(${show(t.hd)(st.value)}, ${show(t.tl)(sl.value)})"
-    }
+    implicit def showCons[T](implicit st: => Show[T], sl: => Show[List[T]]): Show[Cons[T]] =
+      t => s"Cons(${show(t.hd)(st)}, ${show(t.tl)(sl)})"
 
-    implicit def showList[T](implicit sc: Lazy[Show[Cons[T]]]): Show[List[T]] = new Show[List[T]] {
-      def apply(t: List[T]) = t match {
-        case n: Nil => show(n)
-        case c: Cons[T] => show(c)(sc.value)
-      }
+    implicit def showList[T](implicit sc: => Show[Cons[T]]): Show[List[T]] = {
+      case n: Nil => show(n)
+      case c: Cons[T] => show(c)(sc)
     }
   }
 

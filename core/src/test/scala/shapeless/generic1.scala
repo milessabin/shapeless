@@ -91,7 +91,7 @@ package Generic1TestsAux {
   }
 
   object Functor extends Functor0 {
-    def apply[F[_]](implicit f: Lazy[Functor[F]]): Functor[F] = f.value
+    def apply[F[_]](implicit f: => Functor[F]): Functor[F] = f
 
     implicit val idFunctor: Functor[Id] =
       new Functor[Id] {
@@ -144,7 +144,7 @@ package Generic1TestsAux {
   trait Pointed[F[_]] { def point[A](a: A): F[A] }
 
   object Pointed extends Pointed0 {
-    def apply[F[_]](implicit f: Lazy[Pointed[F]]): Pointed[F] = f.value
+    def apply[F[_]](implicit f: => Pointed[F]): Pointed[F] = f
 
     implicit val idPointed: Pointed[Id] =
       new Pointed[Id] {
@@ -158,17 +158,17 @@ package Generic1TestsAux {
       }
 
     implicit def isCPointedSingleSingleton[C](
-      implicit w: Witness.Aux[C], pf: Lazy[Pointed[Const[C]#λ]]
+      implicit w: Witness.Aux[C], pf: => Pointed[Const[C]#λ]
     ): Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] =
       new Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] {
-        def point[A](a: A): Const[C]#λ[A] :+: Const[CNil]#λ[A] = Inl(pf.value.point(a))
+        def point[A](a: A): Const[C]#λ[A] :+: Const[CNil]#λ[A] = Inl(pf.point(a))
       }
 
     implicit def isCPointedSingle[F[_]](
-      implicit pf: Lazy[Pointed[F]]
+      implicit pf: => Pointed[F]
     ): Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] =
       new Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] {
-        def point[A](a: A): F[A] :+: Const[CNil]#λ[A] = Inl(pf.value.point(a))
+        def point[A](a: A): F[A] :+: Const[CNil]#λ[A] = Inl(pf.point(a))
       }
 
   }

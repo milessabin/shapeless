@@ -272,20 +272,20 @@ object SexpUserConvert {
     }
     def ser(b: Boolean) = if (b) SexpAtom("t") else SexpNil
   }
-  implicit def optSexpConvert[T](c: Lazy[SexpConvert[T]]): SexpConvert[Option[T]] = new SexpConvert[Option[T]] {
+  implicit def optSexpConvert[T](c: => SexpConvert[T]): SexpConvert[Option[T]] = new SexpConvert[Option[T]] {
     def deser(s: Sexp) = s match {
       case SexpNil => None
-      case other => Some(c.value.deser(other))
+      case other => Some(c.deser(other))
     }
     def ser(o: Option[T]) = o match {
       case None => SexpNil
-      case Some(t) => c.value.ser(t)
+      case Some(t) => c.ser(t)
     }
   }
 }
 
 object SexpConvert {
-  def apply[T](implicit st: Lazy[SexpConvert[T]]): SexpConvert[T] = st.value
+  def apply[T](implicit st: => SexpConvert[T]): SexpConvert[T] = st
 
   implicit val deriveHNil: SexpConvert[HNil] = new SexpConvert[HNil] {
     def deser(s: Sexp) = if (s == SexpNil) Some(HNil) else None
@@ -293,12 +293,12 @@ object SexpConvert {
   }
 
   implicit def deriveHCons[K <: String, V, T <: HList](
-    implicit key: Witness.Aux[K], scv: Lazy[SexpConvert[V]], sct: SexpConvert[T]
+    implicit key: Witness.Aux[K], scv: => SexpConvert[V], sct: SexpConvert[T]
   ): SexpConvert[FieldType[K, V] :: T] = new SexpConvert[FieldType[K, V] :: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :: T] = s match {
       case SexpProp((label, car), cdr) if label == key.value =>
         for {
-          front <- scv.value.deser(car)
+          front <- scv.deser(car)
           back <- sct.deser(cdr)
         } yield field[K](front) :: back
 
@@ -308,7 +308,7 @@ object SexpConvert {
     }
 
     def ser(ft: FieldType[K, V] :: T): Sexp = {
-      val car = SexpProp(key.value, scv.value.ser(ft.head))
+      val car = SexpProp(key.value, scv.ser(ft.head))
       sct.ser(ft.tail) match {
         case SexpNil => car
         case cdr => SexpCons(car, cdr)
@@ -322,11 +322,11 @@ object SexpConvert {
   }
 
   implicit def deriveCCons[K <: String, V, T <: Coproduct](
-    implicit key: Witness.Aux[K], scv: Lazy[SexpConvert[V]], sct: SexpConvert[T]
+    implicit key: Witness.Aux[K], scv: => SexpConvert[V], sct: SexpConvert[T]
   ): SexpConvert[FieldType[K, V] :+: T] = new SexpConvert[FieldType[K, V] :+: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :+: T] = s match {
       case SexpCons(SexpAtom(impl), cdr) if impl == key.value =>
-        scv.value.deser(cdr).map(v => Inl(field[K](v)))
+        scv.deser(cdr).map(v => Inl(field[K](v)))
       case SexpCons(SexpAtom(impl), cdr) =>
         sct.deser(s).map(Inr(_))
       case _ =>
@@ -335,15 +335,15 @@ object SexpConvert {
     }
 
     def ser(lr: FieldType[K, V] :+: T): Sexp = lr match {
-      case Inl(l) => SexpCons(SexpAtom(key.value), scv.value.ser(l))
+      case Inl(l) => SexpCons(SexpAtom(key.value), scv.ser(l))
       case Inr(r) => sct.ser(r)
     }
   }
 
   implicit def deriveInstance[F, G](
-    implicit gen: LabelledGeneric.Aux[F, G], sg: Lazy[SexpConvert[G]]
+    implicit gen: LabelledGeneric.Aux[F, G], sg: => SexpConvert[G]
   ): SexpConvert[F] = new SexpConvert[F] {
-    def deser(s: Sexp): Option[F] = sg.value.deser(s).map(gen.from)
-    def ser(t: F): Sexp = sg.value.ser(gen.to(t))
+    def deser(s: Sexp): Option[F] = sg.deser(s).map(gen.from)
+    def ser(t: F): Sexp = sg.ser(gen.to(t))
   }
 }
