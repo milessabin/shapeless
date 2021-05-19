@@ -107,11 +107,11 @@ class UnwrappedTests {
     }
     def value[T](t: Tagged[T, _]): T = t.asInstanceOf[T]
 
-    implicit def taggedUnwrapped[UI, T, UF](implicit chain: Lazy[Unwrapped.Aux[UI, UF]]) =
+    implicit def taggedUnwrapped[UI, T, UF](implicit chain: => Unwrapped.Aux[UI, UF]) =
       new Unwrapped[UI @@ T] {
         type U = UF
-        def unwrap(w: UI @@ T) = chain.value.unwrap(value(w))
-        def wrap(u: UF) = tag[T](chain.value.wrap(u))
+        def unwrap(w: UI @@ T) = chain.unwrap(value(w))
+        def wrap(u: UF) = tag[T](chain.wrap(u))
       }
 
     val pass = the[Pass[String @@ TestTag]]
