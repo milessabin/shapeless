@@ -57,7 +57,7 @@ inline def summonValuesAsArray0[T, E](i: Int, arr: Array[E]): Array[E] = inline 
     summonValuesAsArray0[b, E](i+1, arr)
 }
 
-case class Labelling[T](label: String, elemLabels: Seq[String])
+case class Labelling[T](label: String, elemLabels: IndexedSeq[String])
 object Labelling {
   inline given apply[T0](using mirror: Mirror { type MirroredType = T0 }): Labelling[T0] =
     Labelling[T0](
