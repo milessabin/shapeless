@@ -121,7 +121,7 @@ shapeless 3 is available for Scala 3.0.0. To include the deriving module in
 your project add the following to your build,
 
 ```
-libraryDependencies ++= Seq("org.typelevel" % "shapeless3-deriving" % "3.0.0")
+libraryDependencies += "org.typelevel" %% "shapeless3-deriving" % "3.0.0"
 ```
 
 ## Finding out more about the project
