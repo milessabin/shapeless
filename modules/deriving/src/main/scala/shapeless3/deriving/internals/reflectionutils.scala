@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package shapeless3.deriving
+package shapeless3.deriving.internals
 
 import scala.annotation.tailrec
 import scala.deriving._
 import scala.quoted._
 
-class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
+private[shapeless3] class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
   private given q.type = q
   import q.reflect._
 

@@ -16,10 +16,12 @@
 
 package shapeless3.deriving
 
-import scala.compiletime._
+import scala.compiletime.*
 import scala.compiletime.ops.int.S
-import scala.deriving._
+import scala.deriving.*
 import scala.Tuple.Union
+
+import shapeless3.deriving.internals.*
 
 object K0 {
   type Kind[C, O] = C { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes <: Tuple }

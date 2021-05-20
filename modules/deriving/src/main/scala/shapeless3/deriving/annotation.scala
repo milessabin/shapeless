@@ -16,8 +16,10 @@
 
 package shapeless3.deriving
 
-import scala.deriving._
-import scala.quoted._
+import scala.deriving.*
+import scala.quoted.*
+
+import shapeless3.deriving.internals.*
 
 /**
  * Evidence that type `T` has annotation `A`, and provides an instance of the annotation.

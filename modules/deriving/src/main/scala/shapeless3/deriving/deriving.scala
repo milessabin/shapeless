@@ -17,8 +17,8 @@
 package shapeless3.deriving
 
 import scala.collection.immutable.ArraySeq
-import scala.compiletime._
-import scala.deriving._
+import scala.compiletime.*
+import scala.deriving.*
 import scala.reflect.ClassTag
 
 type Id[t] = t
