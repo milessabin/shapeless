@@ -89,9 +89,9 @@ lazy val local = project
   .settings(
     moduleName := "shapeless3-local",
     scalacOptions ++= List("-Xmax-inlines", "1000"),
-    //scalacOptions += "-Xprint:posttyper",
-    Compile / console / scalacOptions -= "-Xprint:posttyper",
-    console / initialCommands := """import shapeless._ ; import scala.deriving._"""
+    scalacOptions += "-Xprint:postInlining",
+    Compile / console / scalacOptions -= "-Xprint:postInlining",
+    console / initialCommands := """import shapeless3.deriving.* ; import scala.deriving.*"""
   )
   .settings(commonSettings: _*)
   .settings(noPublishSettings)

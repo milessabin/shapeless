@@ -23,14 +23,8 @@ import scala.reflect.ClassTag
 
 type Id[t] = t
 type Const[c] = [t] =>> c
-case class Wrap[T](t: T)
-
 
 type ~>[A[_], B[_]] = [t] => A[t] => B[t]
-
-inline def summon[T] = summonFrom {
-  case t: T => t
-}
 
 inline def summonAsArray[T <: Tuple]: Array[Any] =
   summonAsArray0[T](0, new Array[Any](constValue[Tuple.Size[T]]))
@@ -38,13 +32,8 @@ inline def summonAsArray[T <: Tuple]: Array[Any] =
 inline def summonAsArray0[T](i: Int, arr: Array[Any]): Array[Any] = inline erasedValue[T] match {
   case _: EmptyTuple => arr
   case _: (a *: b) =>
-    arr(i) = summon[a]
+    arr(i) = summonInline[a]
     summonAsArray0[b](i+1, arr)
-}
-
-transparent inline def summonValues[T]: Tuple = inline erasedValue[T] match {
-  case _: EmptyTuple => Tuple()
-  case _: (a *: b) => constValue[a] *: summonValues[b]
 }
 
 inline def summonValuesAsArray[T <: Tuple, E: ClassTag]: Array[E] =

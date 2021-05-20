@@ -600,14 +600,6 @@ object Read {
   import scala.util.Try
 
   def head(s: String, r: Regex): Option[(String, String)] = {
-    /*
-    // The following trips up -Yexplicit-nulls
-    // See https://github.com/lampepfl/dotty/issues/7883
-    s.trim match {
-      case r(hd, tl) => Some((hd, tl))
-      case _ => None
-    }
-    */
     val st = s.trim
     if (st == null) None
     else
@@ -706,7 +698,7 @@ object Transform {
 
   inline def mkField[K, KT, RT <: NonEmptyTuple, V](rt: RT): Object =
     (inline constValue[K0.IndexOf[K, KT]] match {
-      case -1 => summon[Monoid[V]].empty
+      case -1 => summonInline[Monoid[V]].empty
       case i => rt(i)
     }).asInstanceOf
 

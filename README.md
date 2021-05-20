@@ -1,6 +1,6 @@
 # shapeless: generic programming for Scala
 
-[![Build Status](https://api.travis-ci.org/milessabin/shapeless.png?branch=master)](https://travis-ci.org/milessabin/shapeless)
+[![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/bSQBZA3Ced)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/milessabin/shapeless)
 [![Maven Central](https://img.shields.io/maven-central/v/com.chuusai/shapeless_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/com.chuusai/shapeless_2.13)
 
@@ -16,9 +16,11 @@ Build][communitybuild].
 
 ## Current status
 
-Included so far is a full implementation of poly-kinded type class derivation
-with the generality of shapeless, the compile time performance of Magnolia and
-a significantly reduced binary footprint.
+Included so far is a full implementation of type class derivation as flexible
+as that of shapeless 2, but generalized across kinds. For derivation of regular
+ADTs and type classes compile- and runtime performance are dramatically
+improved over shapeless 2. This comes with a significantly reduced binary
+footprint in client code.
 
 Support is provided for deriving type classes indexed by types of kinds `*`
 (eg.  `Monoid`, `Eq`, `Show`), `* -> *` (eg. `Functor`, `Traverse`, `Monad`)
@@ -33,62 +35,57 @@ library for [Cats][cats]). The remainder go considerably beyond.
 Using shapeless 3 the derivation of a monoid for a Scala ADT is as simple as,
 
 ```scala
+import shapeless3.deriving.*
+
 // Type class definition, eg. from Cats
-trait Monoid[A] {
+trait Monoid[A]:
   def empty: A
-  def combine(x: A, y: A): A
-}
+  extension (x: A)
+    @alpha("combine") def |+| (y: A): A
 
-object Monoid {
-  inline def apply[A](implicit ma: Monoid[A]): Monoid[A] = ma
+object Monoid:
+  inline def apply[A](using ma: Monoid[A]): Monoid[A] = ma
 
-  // Standard instance for Boolean
-  implicit val monoidBoolean: Monoid[Boolean] = new Monoid[Boolean] {
+  given Monoid[Unit] with
+    def empty: Unit = ()
+    def combine(x: Unit, y: Unit): Unit = ()
+
+  given Monoid[Boolean] with
     def empty: Boolean = false
     def combine(x: Boolean, y: Boolean): Boolean = x || y
-  }
-  // Standard instance for Int
-  implicit val monoidInt: Monoid[Int] = new Monoid[Int] {
+
+  given Monoid[Int] with
     def empty: Int = 0
     def combine(x: Int, y: Int): Int = x+y
-  }
-  // Standard instance for String
-  implicit val monoidString: Monoid[String] = new Monoid[String] {
+
+  given Monoid[String] with
     def empty: String = ""
     def combine(x: String, y: String): String = x+y
-  }
 
-  // Generic instance
-  implicit def monoidGen[A](implicit inst: K0.ProductInstances[Monoid, A]): Monoid[A] =
-    new Monoid[A] {
-      def empty: A = inst.construct([t] => (ma: Monoid[t]) => ma.empty)
-      def combine(x: A, y: A): A =
-        inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0, t1))
-    }
+  given monoidGen[A](using inst: K0.ProductInstances[Monoid, A]): Monoid[A] with
+    def empty: A =
+      inst.construct([t] => (ma: Monoid[t]) => ma.empty)
+    def combine(x: A, y: A): A =
+      inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0, t1))
 
-  // Hook for Dotty derives clause
-  inline def derived[A](implicit gen: K0.ProductGeneric[A]): Monoid[A] =
-    monoidGen(K0.mkProductInstances[Monoid, A](gen))
-}
+  inline def derived[A](using gen: K0.ProductGeneric[A]): Monoid[A] = monoidGen
 
 // ADT definition
 case class ISB(i: Int, s: String, b: Boolean) derives Monoid
 val a = ISB(23, "foo", true)
 val b = ISB(13, "bar", false)
 
-Monoid[ISB].combine(a, b) // == ISB(36, "foobar", true)
+a |+| b // == ISB(36, "foobar", true)
 ```
 
 A similar derivation for [`Functor`][functor] allows the following,
 
 ```scala
-sealed trait Opt[+A] derives Functor
-object Opt {
-  case class Sm[+A](value: A) extends Opt[A]
-  case object Nn extends Opt[Nothing]
-}
+enum Opt[+A] derives Functor: 
+  case Sm[+A](value: A)
+  case Nn
 
-Functor[Opt].map(Sm("foo")).map(_.length) // == Sm(3)
+Sm("foo").map(_.length) // == Sm(3)
 ```
 
 We can even derive [higher order functors][functork] in almost exactly the same
@@ -96,18 +93,17 @@ way,
 
 ```scala
 // An Option like type, with a default
-sealed trait OptionD[T] {
+enum OptionD[T]:
+  case Given(value: T)
+  case Default(value: T)
+
   def fold: T = this match {
     case Given(t) => t
     case Default(t) => t
   }
-}
-object OptionD {
-  case class Given[T](value: T) extends OptionD[T]
-  case class Default[T](value: T) extends OptionD[T]
 
+object OptionD:
   val fold: OptionD ~> Id = [t] => (ot: OptionD[t]) => ot.fold
-}
 
 // A data type parameterized with an effect
 case class OrderF[F[_]](
@@ -119,12 +115,14 @@ val incompleteOrder = OrderF(Given("Epoisse"), Default(1))
 val completeOrder = FunctorK[OrderF].mapK(incompleteOrder)(OptionD.fold)
 // == OrderF[Id]("Epoisse", 1)
 ```
+## Getting started
 
-## Roadmap
+shapeless 3 is available for Scala 3.0.0. To include the deriving module in
+your project add the following to your build,
 
-A backport to Scala 2 and an adaptation layer to ease migration from shapeless
-2.x to shapeless 3.x are in progress. Other components of shapeless 2 will be
-migrated to shapeless 3 as it evolves.
+```
+libraryDependencies ++= Seq("org.typelevel" %% "shapeless3-deriving" % "3.0.0")
+```
 
 ## Finding out more about the project
 
@@ -134,7 +132,7 @@ Binary artefacts are published to the [Sonatype OSS Repository Hosting
 service][sonatype] and synced to Maven Central.
 
 Most discussion of shapeless and generic programming in Scala happens on the
-shapeless [Gitter channel][gitter].
+shapeless channel of the [Typelevel Discord][discord].
 
 ## Participation
 
@@ -147,9 +145,10 @@ for everyone.
 [source]: https://github.com/milessabin/shapeless
 [sonatype]: https://oss.sonatype.org/index.html#nexus-search;quick~shapeless
 [gitter]: https://gitter.im/milessabin/shapeless
-[mirror]: https://github.com/lampepfl/dotty/pull/6531
-[communitybuild]: https://github.com/lampepfl/dotty/pull/6645
+[discord]: https://discord.gg/bSQBZA3Ced
+[mirror]: https://dotty.epfl.ch/docs/reference/contextual/derivation.html
+[communitybuild]: https://github.com/lampepfl/dotty/tree/master/community-build/community-projects
 [kittens]: https://github.com/typelevel/kittens
 [cats]: https://github.com/typelevel/cats
-[functor]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/type-classes.scala#L95-L122
-[functork]: https://github.com/milessabin/shapeless/blob/shapeless-3/core/src/test/scala/shapeless/type-classes.scala#L124-L150
+[functor]: https://github.com/milessabin/shapeless/blob/shapeless-3/modules/deriving/src/test/scala/shapeless3/deriving/type-classes.scala#L135-L156 
+[functork]:https://github.com/milessabin/shapeless/blob/shapeless-3/modules/deriving/src/test/scala/shapeless3/deriving/type-classes.scala#L329-L347 

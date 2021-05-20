@@ -18,7 +18,10 @@ package shapeless3.deriving
 
 import org.junit.Test
 
+import scala.compiletime.constValueTuple
+
 import adts._
+import OptE.{SmE, NnE}
 
 // Tests
 
@@ -76,6 +79,11 @@ class DerivationTests {
     val v8 = Eq[CList[Int]]
     assert(v8.eqv(CCons(1, CCons(2, CCons(3, CNil))), CCons(1, CCons(2, CCons(3, CNil)))))
     assert(!v8.eqv(CCons(1, CCons(2, CCons(3, CNil))), CCons(1, CCons(4, CCons(3, CNil)))))
+
+    val v9 = Eq[OptE[Int]]
+    assert(v9.eqv(SmE(23), SmE(23)))
+    assert(!v9.eqv(SmE(23), SmE(13)))
+    assert(!v9.eqv(SmE(23), NnE))
   }
 
   @Test
@@ -118,6 +126,13 @@ class DerivationTests {
     assert(v7.compare(Sm("foo"), Sm("goo")) == -1)
     assert(v7.compare(Sm("foo"), Sm("eoo")) == 1)
 
+    val v8 = Ord[OptE[String]]
+    assert(v8.compare(NnE, NnE) == 0)
+    assert(v8.compare(SmE("foo"), SmE("foo")) == 0)
+    assert(v8.compare(SmE("foo"), SmE("goo")) == -1)
+    assert(v8.compare(SmE("foo"), SmE("eoo")) == 1)
+    assert(v8.compare(SmE("foo"), NnE) == 1)
+
   }
 
   @Test
@@ -141,6 +156,10 @@ class DerivationTests {
     assert(v6.map(CCons("foo", CCons("quux", CCons("wibble", CNil))))(_.length) == CCons(3, CCons(4, CCons(6, CNil))))
     val v7 = Functor[[t] =>> CList[Opt[t]]]
     assert(v7.map(CCons(Sm("foo"), CCons(Nn, CCons(Sm("quux"), CNil))))(_.length) == CCons(Sm(3), CCons(Nn, CCons(Sm(4), CNil))))
+
+    val v8 = Functor[OptE]
+    assert(v8.map(SmE("foo"))(_.length) == SmE(3))
+    assert(v8.map(NnE)(identity) == NnE)
   }
 
   //Sanity check our Eval implementation for making Foldable#foldRight lazy
@@ -186,6 +205,12 @@ class DerivationTests {
     assert(v6.foldRight(CNil)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
     assert(v6.foldLeft(CCons(1, CCons(2, CNil)))(0)((acc: Int, x: Int) => acc + x) == 3)
     assert(v6.foldRight(CCons(1, CCons(2, CNil)))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 3)
+
+    val v7 = Foldable[OptE]
+    assert(v7.foldLeft(SmE(1))(0)((acc: Int, x: Int) => acc + x) == 1)
+    assert(v7.foldRight(SmE(1))(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 1)
+    assert(v7.foldLeft(NnE)(0)((acc: Int, x: Int) => acc + x) == 0)
+    assert(v7.foldRight(NnE)(Eval.now(0))((x: Int, acc: Eval[Int]) => acc.map(_ + x)).force == 0)
   }
 
   @Test
@@ -208,6 +233,10 @@ class DerivationTests {
     val v6 = Traverse[CList]
     assert(v6.traverse(CCons("foo", CCons("bar", CNil)))(Option(_)) == Some(CCons("foo", CCons("bar", CNil))))
     assert(v6.traverse(CNil)(Option(_)) == Some(CNil))
+
+    val v7 = Traverse[OptE]
+    assert(v7.traverse(SmE(1))((x: Int) => List(x + 1)) == List(SmE(2)))
+    assert(v7.traverse(NnE)((x: Int) => List(x + 1)) == List(NnE))
   }
 
 
@@ -273,7 +302,7 @@ class DerivationTests {
   @Test
   def labels: Unit = {
     val v0 = K0.Generic[ISB]
-    val v1 = summonValues[v0.MirroredElemLabels]
+    val v1 = constValueTuple[v0.MirroredElemLabels]
     assert(v1 == ("i", "s", "b"))
   }
 
@@ -298,6 +327,10 @@ class DerivationTests {
 
     val v5 = Show[Order[Id]]
     assert(v5.show(Order[Id]("Epoisse", 10)) == """Order(item: "Epoisse", quantity: 10)""")
+
+    val v6 = Show[OptE[Int]]
+    assert(v6.show(SmE(23)) == "SmE(value: 23)")
+    assert(v6.show(NnE) == "NnE")
   }
 
   @Test
@@ -321,6 +354,10 @@ class DerivationTests {
 
     val v5 = Read[Order[Id]]
     assert(v5.read("""Order(item: "Epoisse", quantity: 10)""") == Some((Order[Id]("Epoisse", 10), "")))
+
+    val v6 = Read[OptE[Int]]
+    assert(v6.read("SmE(value: 23)") == Some((SmE(23), "")))
+    assert(v6.read("NnE") == Some((NnE, "")))
   }
 
   @Test

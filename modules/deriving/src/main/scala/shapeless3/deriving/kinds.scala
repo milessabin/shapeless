@@ -19,9 +19,10 @@ package shapeless3.deriving
 import scala.compiletime._
 import scala.compiletime.ops.int.S
 import scala.deriving._
+import scala.Tuple.Union
 
 object K0 {
-  type Kind[C, O] = C { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes }
+  type Kind[C, O] = C { type Kind = K0.type ; type MirroredType = O ; type MirroredElemTypes <: Tuple }
   type Generic[O] = Kind[Mirror, O]
   type ProductGeneric[O] = Kind[Mirror.Product, O]
   type CoproductGeneric[O] = Kind[Mirror.Sum, O]
@@ -37,11 +38,6 @@ object K0 {
   def Instances[F[_], T](using inst: Instances[F, T]): inst.type = inst
   def ProductInstances[F[_], T](using inst: ProductInstances[F, T]): inst.type = inst
   def CoproductInstances[F[_], T](using inst: CoproductInstances[F, T]): inst.type = inst
-
-  type ToUnion[T] = T match {
-    case EmptyTuple => Nothing
-    case a *: b => a | ToUnion[b]
-  }
 
   type IndexOf[E, X] = IndexOf0[E, X, 0]
 
@@ -76,8 +72,8 @@ object K0 {
     inline def fromRepr(r: gen.MirroredElemTypes): T = gen.fromProduct(r.asInstanceOf).asInstanceOf[T]
 
   extension [T](gen: CoproductGeneric[T])
-    inline def toRepr(o: T): ToUnion[gen.MirroredElemTypes] = o.asInstanceOf
-    inline def fromRepr(r: ToUnion[gen.MirroredElemTypes]): T = r.asInstanceOf
+    inline def toRepr(o: T): Union[gen.MirroredElemTypes] = o.asInstanceOf
+    inline def fromRepr(r: Union[gen.MirroredElemTypes]): T = r.asInstanceOf
 
   extension [F[_], T](gen: Generic[T])
     inline def derive(f: => (ProductGeneric[T] & gen.type) ?=> F[T], g: => (CoproductGeneric[T] & gen.type) ?=> F[T]): F[T] =
@@ -133,7 +129,7 @@ object K0 {
 }
 
 object K1 {
-  type Kind[C, O[_]] = C { type Kind = K1.type ; type MirroredType[X] = O[X] ; type MirroredElemTypes[_] }
+  type Kind[C, O[_]] = C { type Kind = K1.type ; type MirroredType[X] = O[X] ; type MirroredElemTypes[_] <: Tuple }
   type Generic[O[_]] = Kind[Mirror, O]
   type ProductGeneric[O[_]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_]] = Kind[Mirror.Sum, O]
@@ -173,8 +169,8 @@ object K1 {
     inline def fromRepr(r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
 
   extension [T[_], A](gen: CoproductGeneric[T])
-    inline def toRepr(o: T[A]): K0.ToUnion[gen.MirroredElemTypes[A]] = o.asInstanceOf
-    inline def fromRepr(r: K0.ToUnion[gen.MirroredElemTypes[A]]): T[A] = r.asInstanceOf
+    inline def toRepr(o: T[A]): Union[gen.MirroredElemTypes[A]] = o.asInstanceOf
+    inline def fromRepr(r: Union[gen.MirroredElemTypes[A]]): T[A] = r.asInstanceOf
 
   extension [F[_[_]], T[_]](gen: Generic[T]) inline def derive(f: => (ProductGeneric[T] & gen.type) ?=> F[T], g: => (CoproductGeneric[T] & gen.type) ?=> F[T]): F[T] =
     inline gen match {
@@ -226,7 +222,7 @@ object K1 {
 }
 
 object K11 {
-  type Kind[C, O[_[_]]] = C { type Kind = K11.type ; type MirroredType[X[_]] = O[X] ; type MirroredElemTypes[_[_]] }
+  type Kind[C, O[_[_]]] = C { type Kind = K11.type ; type MirroredType[X[_]] = O[X] ; type MirroredElemTypes[_[_]] <: Tuple }
   type Generic[O[_[_]]] = Kind[Mirror, O]
   type ProductGeneric[O[_[_]]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_[_]]] = Kind[Mirror.Sum, O]
@@ -269,8 +265,8 @@ object K11 {
     inline def fromRepr(r: gen.MirroredElemTypes[A]): T[A] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A]]
 
   extension [T[_[_]], A[_]](gen: CoproductGeneric[T])
-    inline def toRepr(o: T[A]): K0.ToUnion[gen.MirroredElemTypes[A]] = o.asInstanceOf
-    inline def fromRepr(r: K0.ToUnion[gen.MirroredElemTypes[A]]): T[A] = r.asInstanceOf
+    inline def toRepr(o: T[A]): Union[gen.MirroredElemTypes[A]] = o.asInstanceOf
+    inline def fromRepr(r: Union[gen.MirroredElemTypes[A]]): T[A] = r.asInstanceOf
 
   extension [F[_[_[_]]], T[_[_]]](gen: Generic[T]) inline def derive(f: => (ProductGeneric[T] & gen.type) ?=> F[T], g: => (CoproductGeneric[T] & gen.type) ?=> F[T]): F[T] =
     inline gen match {
@@ -321,7 +317,7 @@ object K11 {
 }
 
 object K2 {
-  type Kind[C, O[_, _]] = C { type Kind = K2.type ; type MirroredType[X, Y] = O[X, Y] ; type MirroredElemTypes[_, _] }
+  type Kind[C, O[_, _]] = C { type Kind = K2.type ; type MirroredType[X, Y] = O[X, Y] ; type MirroredElemTypes[_, _] <: Tuple }
   type Generic[O[_, _]] = Kind[Mirror, O]
   type ProductGeneric[O[_, _]] = Kind[Mirror.Product, O]
   type CoproductGeneric[O[_, _]] = Kind[Mirror.Sum, O]
@@ -363,8 +359,8 @@ object K2 {
   extension [T[_, _], A, B](gen: ProductGeneric[T]) inline def toRepr(o: T[A, B]): gen.MirroredElemTypes[A, B] = Tuple.fromProduct(o.asInstanceOf).asInstanceOf[gen.MirroredElemTypes[A, B]]
   extension [T[_, _], A, B](gen: ProductGeneric[T]) inline def fromRepr(r: gen.MirroredElemTypes[A, B]): T[A, B] = gen.fromProduct(r.asInstanceOf).asInstanceOf[T[A, B]]
 
-  extension [T[_, _], A, B](gen: CoproductGeneric[T]) inline def toRepr(o: T[A, B]): K0.ToUnion[gen.MirroredElemTypes[A, B]] = o.asInstanceOf
-  extension [T[_, _], A, B](gen: CoproductGeneric[T]) inline def fromRepr(r: K0.ToUnion[gen.MirroredElemTypes[A, B]]): T[A, B] = r.asInstanceOf
+  extension [T[_, _], A, B](gen: CoproductGeneric[T]) inline def toRepr(o: T[A, B]): Union[gen.MirroredElemTypes[A, B]] = o.asInstanceOf
+  extension [T[_, _], A, B](gen: CoproductGeneric[T]) inline def fromRepr(r: Union[gen.MirroredElemTypes[A, B]]): T[A, B] = r.asInstanceOf
 
   extension [F[_[_, _]], T[_, _]](gen: Generic[T]) inline def derive(f: => (ProductGeneric[T] & gen.type) ?=> F[T], g: => (CoproductGeneric[T] & gen.type) ?=> F[T]): F[T] =
     inline gen match {

@@ -266,7 +266,7 @@ object ErasedProductInstances {
   }
 
   inline def summonOne[T] = inline erasedValue[T] match {
-    case _: Tuple1[a] => summon[a]
+    case _: Tuple1[a] => summonInline[a]
   }
 
   val emptyArray: Array[Any] = new Array(0)
