@@ -42,7 +42,7 @@ import scala.annotation.targetName
 trait Monoid[A]:
   def empty: A
   extension (x: A)
-    @targetName("combine") def |+| (y: A): A
+    def combine(y: A): A
 
 object Monoid:
   inline def apply[A](using ma: Monoid[A]): Monoid[A] = ma
@@ -50,29 +50,29 @@ object Monoid:
   given Monoid[Unit] with
     def empty: Unit = ()
     extension (x: Unit)
-      @targetName("combine") def |+|(y: Unit): Unit = ()
+      def combine(y: Unit): Unit = ()
 
   given Monoid[Boolean] with
     def empty: Boolean = false
     extension (x: Boolean)
-      @targetName("combine") def |+|(y: Boolean): Boolean = x || y
+      def combine(y: Boolean): Boolean = x || y
 
   given Monoid[Int] with
     def empty: Int = 0
     extension (x: Int)
-      @targetName("combine") def |+|(y: Int): Int = x + y
+      def combine(y: Int): Int = x + y
 
   given Monoid[String] with
     def empty: String = ""
     extension (x: String)
-      @targetName("combine") def |+|(y: String): String = x + y
+      def combine(y: String): String = x + y
 
   given monoidGen[A](using inst: K0.ProductInstances[Monoid, A]): Monoid[A] with
     def empty: A =
       inst.construct([t] => (ma: Monoid[t]) => ma.empty)
     extension (x: A)
-      @targetName("combine") def |+|(y: A): A =
-        inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.|+|(t0)(t1))
+      def combine(y: A): A =
+        inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0)(t1))
 
   inline def derived[A](using gen: K0.ProductGeneric[A]): Monoid[A] = monoidGen
 
@@ -81,7 +81,7 @@ case class ISB(i: Int, s: String, b: Boolean) derives Monoid
 val a = ISB(23, "foo", true)
 val b = ISB(13, "bar", false)
 
-a |+| b // == ISB(36, "foobar", true)
+a combine b // == ISB(36, "foobar", true)
 ```
 
 A similar derivation for [`Functor`][functor] allows the following,
