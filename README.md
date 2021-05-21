@@ -36,37 +36,43 @@ Using shapeless 3 the derivation of a monoid for a Scala ADT is as simple as,
 
 ```scala
 import shapeless3.deriving.*
+import scala.annotation.targetName
 
 // Type class definition, eg. from Cats
 trait Monoid[A]:
   def empty: A
   extension (x: A)
-    @alpha("combine") def |+| (y: A): A
+    @targetName("combine") def |+| (y: A): A
 
 object Monoid:
   inline def apply[A](using ma: Monoid[A]): Monoid[A] = ma
 
   given Monoid[Unit] with
     def empty: Unit = ()
-    def combine(x: Unit, y: Unit): Unit = ()
+    extension (x: Unit)
+      @targetName("combine") def |+|(y: Unit): Unit = ()
 
   given Monoid[Boolean] with
     def empty: Boolean = false
-    def combine(x: Boolean, y: Boolean): Boolean = x || y
+    extension (x: Boolean)
+      @targetName("combine") def |+|(y: Boolean): Boolean = x || y
 
   given Monoid[Int] with
     def empty: Int = 0
-    def combine(x: Int, y: Int): Int = x+y
+    extension (x: Int)
+      @targetName("combine") def |+|(y: Int): Int = x + y
 
   given Monoid[String] with
     def empty: String = ""
-    def combine(x: String, y: String): String = x+y
+    extension (x: String)
+      @targetName("combine") def |+|(y: String): String = x + y
 
   given monoidGen[A](using inst: K0.ProductInstances[Monoid, A]): Monoid[A] with
     def empty: A =
       inst.construct([t] => (ma: Monoid[t]) => ma.empty)
-    def combine(x: A, y: A): A =
-      inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.combine(t0, t1))
+    extension (x: A)
+      @targetName("combine") def |+|(y: A): A =
+        inst.map2(x, y)([t] => (mt: Monoid[t], t0: t, t1: t) => mt.|+|(t0)(t1))
 
   inline def derived[A](using gen: K0.ProductGeneric[A]): Monoid[A] = monoidGen
 
