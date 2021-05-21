@@ -40,12 +40,10 @@ import shapeless3.deriving.*
 // Type class definition, eg. from Cats
 trait Monoid[A]:
   def empty: A
-  extension (x: A)
-    @alpha("combine") def |+| (y: A): A
+  def combine(x: A, y: A): A
+  extension (x: A) def |+| (y: A): A = combine(x, y)
 
 object Monoid:
-  inline def apply[A](using ma: Monoid[A]): Monoid[A] = ma
-
   given Monoid[Unit] with
     def empty: Unit = ()
     def combine(x: Unit, y: Unit): Unit = ()
@@ -75,7 +73,7 @@ case class ISB(i: Int, s: String, b: Boolean) derives Monoid
 val a = ISB(23, "foo", true)
 val b = ISB(13, "bar", false)
 
-a |+| b // == ISB(36, "foobar", true)
+val c = a |+| b // == ISB(36, "foobar", true)
 ```
 
 A similar derivation for [`Functor`][functor] allows the following,
