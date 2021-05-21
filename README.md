@@ -36,7 +36,6 @@ Using shapeless 3 the derivation of a monoid for a Scala ADT is as simple as,
 
 ```scala
 import shapeless3.deriving.*
-import scala.annotation.targetName
 
 // Type class definition, eg. from Cats
 trait Monoid[A]:
