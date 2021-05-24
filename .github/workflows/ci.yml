@@ -9,9 +9,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['*']
+    branches: ['**']
   push:
-    branches: ['*']
+    branches: ['**']
     tags: [v*]
 
 env:
@@ -54,19 +54,19 @@ jobs:
       - run: sudo apt install clang libunwind-dev libgc-dev libre2-dev
 
       - name: Check that workflows are up to date
-        run: sbt ++${{ matrix.scala }} githubWorkflowCheck
+        run: sbt --client '++${{ matrix.scala }}; githubWorkflowCheck'
 
       - name: Validate JVM
         if: matrix.platform == 'jvm'
-        run: sbt ++${{ matrix.scala }} validateJVM
+        run: sbt --client '++${{ matrix.scala }}; validateJVM'
 
       - name: Validate JavaScript
         if: matrix.platform == 'js'
-        run: sbt ++${{ matrix.scala }} validateJS
+        run: sbt --client '++${{ matrix.scala }}; validateJS'
 
       - name: Validate Scala Native
         if: matrix.platform == 'native'
-        run: sbt ++${{ matrix.scala }} validateNative
+        run: sbt --client '++${{ matrix.scala }}; validateNative'
 
   publish:
     name: Publish Artifacts
@@ -108,4 +108,4 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ++${{ matrix.scala }} ci-release
+        run: sbt --client '++${{ matrix.scala }}; ci-release'
