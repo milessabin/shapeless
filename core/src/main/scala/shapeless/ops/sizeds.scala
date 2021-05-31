@@ -17,6 +17,8 @@
 package shapeless
 package ops
 
+import shapeless.ops.hlist.Fill
+
 object sized {
   /**
    * Type class supporting conversion of this `Sized` to an `HList` whose elements have the same type as in `Repr`.
@@ -29,19 +31,34 @@ object sized {
   }
 
   object ToHList {
-    type Aux[Repr, L <: Nat, Out0 <: HList] = ToHList[Repr, L] { type Out = Out0 }
+    type Aux[-Repr, L <: Nat, O <: HList] = ToHList[Repr, L] {
+      type Out = O
+    }
 
-    implicit val emptySizedToHList: Aux[Any, Nat._0, HNil] =
+    @deprecated("Use instance instead", "2.3.8")
+    val emptySizedToHList: Aux[Any, Nat._0, HNil] =
       new ToHList[Any, Nat._0] {
         type Out = HNil
-        def apply(s: Sized[Any, Nat._0]) = HNil
+        def apply(s: Sized[Any, Nat._0]): HNil = HNil
       }
 
-    implicit def nonEmptySizedToHList[Repr, L <: Nat]
-      (implicit itl: IsRegularIterable[Repr], ev: AdditiveCollection[Repr], ts: ToHList[Repr, L]): Aux[Repr, Succ[L], itl.A :: ts.Out] =
-        new ToHList[Repr, Succ[L]] {
-          type Out = itl.A :: ts.Out
-          def apply(s: Sized[Repr, Succ[L]]) = s.head :: ts(s.tail)
-        }
+    @deprecated("Use instance instead", "2.3.8")
+    def nonEmptySizedToHList[Repr, L <: Nat](
+      implicit itl: IsRegularIterable[Repr],
+      ev: AdditiveCollection[Repr],
+      ts: ToHList[Repr, L]
+    ): Aux[Repr, Succ[L], itl.A :: ts.Out] = new ToHList[Repr, Succ[L]] {
+      type Out = itl.A :: ts.Out
+      def apply(s: Sized[Repr, Succ[L]]): Out = s.head :: ts(s.tail)
+    }
+
+    implicit def instance[Repr, T, N <: Nat, O <: HList](
+      implicit itl: IsRegularIterable[Repr] { type A = T },
+      fill: Fill.Aux[N, T, O]
+    ): Aux[Repr, N, O] = new ToHList[Repr, N] {
+      type Out = O
+      def apply(s: Sized[Repr, N]): O =
+        itl(s.unsized).foldRight[HList](HNil)(_ :: _).asInstanceOf[O]
+    }
   }
 }

@@ -18,7 +18,6 @@ package shapeless
 
 import org.junit.Test
 import org.junit.Assert._
-
 import test._
 import testutil._
 

@@ -79,16 +79,14 @@ object traversable {
         type Out = Out0
       }
 
-    implicit def instance[CC[T] <: Iterable[T], A, N <: Nat](
+    implicit def instance[CC[T] <: Iterable[T], A, N <: Nat, O <: HList](
       implicit gt: IsRegularIterable[CC[A]],
       ac: AdditiveCollection[CC[A]],
       ti: ToInt[N],
-      th: ToHList[CC[A], N]
-    ): Aux[CC, A, N, Option[th.Out]] =
-      new ToSizedHList[CC, A, N] {
-        type Out = Option[th.Out]
-        def apply(as: CC[A]): Out =
-          as.sized[N].map(_.toHList)
-      }
+      th: ToHList.Aux[CC[A], N, O]
+    ): Aux[CC, A, N, Option[O]] = new ToSizedHList[CC, A, N] {
+      type Out = Option[O]
+      def apply(as: CC[A]): Out = as.sized[N].map(th.apply)
+    }
   }
 }
