@@ -16,6 +16,7 @@
 
 package shapeless
 
+import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 trait LazyInstances {
@@ -59,6 +60,8 @@ trait ScalaVersionSpecifics {
         s"Implicit value of type $tpe not found"
     }
   }
+
+  def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
 }
 
 trait CaseClassMacrosVersionSpecifics { self: CaseClassMacros =>

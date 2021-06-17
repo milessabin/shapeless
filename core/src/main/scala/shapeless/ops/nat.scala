@@ -17,10 +17,6 @@
 package shapeless
 package ops
 
-import scala.annotation.tailrec
-import scala.reflect.macros.whitebox
-import scala.language.experimental.macros
-
 object nat {
 
   /**
@@ -140,14 +136,14 @@ object nat {
   object LT extends LT0 {
     def apply[A <: Nat, B <: Nat](implicit lt: A < B): LT[A, B] = lt
 
-    implicit def lt1[B <: Nat] = new <[_0, Succ[B]] {}
-    implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B) = new <[Succ[A], Succ[B]] {}
+    implicit def lt1[B <: Nat]: <[_0, Succ[B]] = new <[_0, Succ[B]] {}
+    implicit def lt2[A <: Nat, B <: Nat](implicit lt : A < B): <[Succ[A], Succ[B]] = new <[Succ[A], Succ[B]] {}
   }
 
   trait LT0 {
     type <[A <: Nat, B <: Nat] = LT[A, B]
 
-    implicit def lt3[A <: Nat] = new <[A, Succ[A]] {}
+    implicit def lt3[A <: Nat]: <[A, Succ[A]] = new <[A, Succ[A]] {}
   }
 
   /**
@@ -160,15 +156,15 @@ object nat {
   object LTEq extends LTEq0 {
     def apply[A <: Nat, B <: Nat](implicit lteq: A <= B): LTEq[A, B] = lteq
 
-    implicit def ltEq1[A <: Nat] = new <=[A, A] {}
-    implicit def ltEq2[A <: Nat] = new <=[A, Succ[A]] {}
+    implicit def ltEq1[A <: Nat]: <=[A, A] = new <=[A, A] {}
+    implicit def ltEq2[A <: Nat]: <=[A, Succ[A]] = new <=[A, Succ[A]] {}
   }
 
   trait LTEq0 {
     type <=[A <: Nat, B <: Nat] = LTEq[A, B]
 
-    implicit def ltEq3[B <: Nat] = new <=[_0, B] {}
-    implicit def ltEq4[A <: Nat, B <: Nat](implicit lteq : A <= B) = new <=[Succ[A], Succ[B]] {}
+    implicit def ltEq3[B <: Nat]: <=[_0, B] = new <=[_0, B] {}
+    implicit def ltEq4[A <: Nat, B <: Nat](implicit lteq : A <= B): <=[Succ[A], Succ[B]] = new <=[Succ[A], Succ[B]] {}
   }
 
   /**
@@ -595,7 +591,7 @@ object nat {
     def apply(): Int
   }
 
-  object ToInt {
+  object ToInt extends ToIntScalaCompat {
     def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
 
     final class Inst[N <: Nat](i: Int) extends ToInt[N] {
@@ -603,35 +599,5 @@ object nat {
     }
 
     implicit val toInt0: ToInt[_0] = new Inst[_0](0)
-    implicit def toIntSuccM[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
   }
-
-  class ToIntMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    val _0Tpe = typeOf[_0]
-    val succTpe = typeOf[Succ[_]].typeConstructor
-    val succSym = succTpe.typeSymbol
-    val succPre = prefix(succTpe)
-
-
-    def applyImpl[N <: Nat](implicit nTag: WeakTypeTag[N]): Tree = {
-      val tpe = nTag.tpe.dealias
-
-      @tailrec
-      def count(u: Type, acc: Int): Int = {
-        if(u <:< _0Tpe) acc
-        else (u baseType succSym) match {
-          case TypeRef(pre, _, List(n)) if pre =:= succPre => count(n, acc + 1)
-          case _ => abort(s"$tpe is not a Nat type")
-        }
-      }
-
-      q"""
-            new _root_.shapeless.ops.nat.ToInt.Inst(${count(tpe, 0)}).
-              asInstanceOf[ _root_.shapeless.ops.nat.ToInt[$tpe]]
-          """
-    }
-  }
-
 }

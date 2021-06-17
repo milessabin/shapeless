@@ -17,11 +17,10 @@
 package shapeless
 
 import scala.language.dynamics
-
-import labelled.{ FieldType, field }
-import ops.coproduct.{ Inject, Selector => CSelector }
-import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
-import ops.record.{ Selector => RSelector, Updater }
+import labelled.{FieldType, field}
+import ops.coproduct.{Inject, Selector => CSelector}
+import ops.hlist.{At, Init, Last, Prepend, ReplaceAt, Replacer, Selector, Tupler}
+import ops.record.{Updater, Selector => RSelector}
 
 trait Lens[S, A] extends LPLens[S, A] { outer =>
   def get(s: S): A
@@ -162,7 +161,7 @@ object OpticDefns {
   def apply[C] = id[C]
 
   object compose extends Poly2 {
-    implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
+    implicit def default[A, B, C]: Case.Aux[Lens[B, C], Lens[A, B], Lens[A, C]] = at[Lens[B, C], Lens[A, B]](_ compose _)
   }
 
   class RootLens[C] extends Lens[C, C] {

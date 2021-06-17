@@ -115,6 +115,8 @@ trait ScalaVersionSpecifics extends LP0 {
   private[shapeless] implicit class NewIsIterable0[A0, Repr](itl: IsRegularIterable[Repr] { type A = A0 }) {
     def apply(r: Repr): GenTraversableLike[A0, Repr] = itl.conversion(r)
   }
+
+  def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
 }
 
 trait LP0 extends LP1 {

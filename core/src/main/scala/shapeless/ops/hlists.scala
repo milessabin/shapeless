@@ -121,35 +121,35 @@ object hlist {
   object NatTRel {
     def apply[L1 <: HList, F1[_], L2 <: HList, F2[_]](implicit natTRel: NatTRel[L1, F1, L2, F2]) = natTRel
 
-    implicit def hnilNatTRel1[F1[_], F2[_]] = new NatTRel[HNil, F1, HNil, F2] {
+    implicit def hnilNatTRel1[F1[_], F2[_]]: NatTRel[HNil, F1, HNil, F2] = new NatTRel[HNil, F1, HNil, F2] {
       def map(f: F1 ~> F2, fa: HNil): HNil = HNil
     }
 
-    implicit def hnilNatTRel2[F1[_], H2] = new NatTRel[HNil, F1, HNil, Const[H2]#λ] {
+    implicit def hnilNatTRel2[F1[_], H2]: NatTRel[HNil, F1, HNil, Const[H2]#λ] = new NatTRel[HNil, F1, HNil, Const[H2]#λ] {
       def map(f: F1 ~> Const[H2]#λ, fa: HNil): HNil = HNil
     }
 
-    implicit def hlistNatTRel1[H, F1[_], F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, F2]) =
+    implicit def hlistNatTRel1[H, F1[_], F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, F2]): NatTRel[F1[H] :: T1, F1, F2[H] :: T2, F2] =
       new NatTRel[F1[H] :: T1, F1, F2[H] :: T2, F2] {
         def map(f: F1 ~> F2, fa: F1[H] :: T1): F2[H] :: T2 = f(fa.head) :: nt.map(f, fa.tail)
       }
 
-    implicit def hlistNatTRel2[H, F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, F2]) =
+    implicit def hlistNatTRel2[H, F2[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, F2]): NatTRel[H :: T1, Id, F2[H] :: T2, F2] =
       new NatTRel[H :: T1, Id, F2[H] :: T2, F2] {
         def map(f: Id ~> F2, fa: H :: T1): F2[H] :: T2 = f(fa.head) :: nt.map(f, fa.tail)
       }
 
-    implicit def hlistNatTRel3[H, F1[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Id]) =
+    implicit def hlistNatTRel3[H, F1[_], T1 <: HList, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Id]): NatTRel[F1[H] :: T1, F1, H :: T2, Id] =
       new NatTRel[F1[H] :: T1, F1, H :: T2, Id] {
         def map(f: F1 ~> Id, fa: F1[H] :: T1): H :: T2 = f(fa.head) :: nt.map(f, fa.tail)
       }
 
-    implicit def hlistNatTRel4[H1, F1[_], T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Const[H2]#λ]) =
+    implicit def hlistNatTRel4[H1, F1[_], T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, F1, T2, Const[H2]#λ]): NatTRel[F1[H1] :: T1, F1, H2 :: T2, Const[H2]#λ] =
       new NatTRel[F1[H1] :: T1, F1, H2 :: T2, Const[H2]#λ] {
         def map(f: F1 ~> Const[H2]#λ, fa: F1[H1] :: T1): H2 :: T2 = f(fa.head) :: nt.map(f, fa.tail)
       }
 
-    implicit def hlistNatTRel5[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, Const[H2]#λ]) =
+    implicit def hlistNatTRel5[H1, T1 <: HList, H2, T2 <: HList](implicit nt : NatTRel[T1, Id, T2, Const[H2]#λ]): NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] =
       new NatTRel[H1 :: T1, Id, H2 :: T2, Const[H2]#λ] {
         def map(f: Id ~> Const[H2]#λ, fa: H1 :: T1): H2 :: T2 = f(fa.head) :: nt.map(f, fa.tail)
       }
@@ -214,12 +214,12 @@ object hlist {
 
     type Aux[L <: HList, Out0 <: HKernel] = HKernelAux[L] { type Out = Out0 }
 
-    implicit def mkHNilHKernel = new HKernelAux[HNil] {
+    implicit def mkHNilHKernel: HKernelAux.Aux[HNil, HNilHKernel] = new HKernelAux[HNil] {
       type Out = HNilHKernel
       def apply() = HNilHKernel
     }
 
-    implicit def mkHListHKernel[H, T <: HList, CtOut <: HKernel](implicit ct: HKernelAux.Aux[T, CtOut]) = new HKernelAux[H :: T] {
+    implicit def mkHListHKernel[H, T <: HList, CtOut <: HKernel](implicit ct: HKernelAux.Aux[T, CtOut]): HKernelAux.Aux[H :: T, HConsHKernel[H, CtOut]] = new HKernelAux[H :: T] {
       type Out = HConsHKernel[H, CtOut]
       def apply() = HConsHKernel[H, CtOut](ct())
     }
@@ -1061,7 +1061,7 @@ object hlist {
   *
   * @author Andreas Koestler
   */
- trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
+  trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
     type Out <: HList
   }
 
@@ -2749,7 +2749,7 @@ object hlist {
       type Aux[L <: HList, V, P <: Poly, Out0 <: HList] = RightScanner0[L, V, P] { type Out = Out0 }
     }
 
-    implicit def hlistRightScanner0[H, H0, T <: HList, P <: Poly, C2Result](implicit ev: Case2.Aux[P, H0, H, C2Result]) =
+    implicit def hlistRightScanner0[H, H0, T <: HList, P <: Poly, C2Result](implicit ev: Case2.Aux[P, H0, H, C2Result]): RightScanner0.Aux[H :: T, H0, P, C2Result :: H :: T] =
       new RightScanner0[H :: T, H0, P]{
         type Out = C2Result :: H :: T
 
@@ -2854,7 +2854,7 @@ object hlist {
         }
 
     implicit def hlistPatch2[M <: Nat, L <: HList, In <: HList, OutL <: HList, OutP <: HList]
-      (implicit drop: Drop.Aux[L, M, OutL], prepend: Prepend.Aux[In, OutL, OutP]) =
+      (implicit drop: Drop.Aux[L, M, OutL], prepend: Prepend.Aux[In, OutL, OutP]): Patcher.Aux[_0, M, L, In, OutP] =
         new Patcher[_0, M, L, In]{
           type Out = OutP
 
@@ -3058,7 +3058,7 @@ object hlist {
   }
 
   trait LowPriorityCombinations {
-    implicit def combinationHNil[N <: Nat] =
+    implicit def combinationHNil[N <: Nat]: Combinations.Aux[N, HNil, HNil] =
       new Combinations[N, HNil] {
         type Out = HNil
         def apply(l: HNil): Out = HNil

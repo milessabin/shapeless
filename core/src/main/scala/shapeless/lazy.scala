@@ -106,9 +106,7 @@ import scala.annotation.implicitNotFound
  *
  */
 @implicitNotFound("could not find Lazy implicit value of type ${T}")
-trait Lazy[+T] extends Serializable {
-  val value: T
-
+trait Lazy[+T] extends Serializable with LazyScalaCompat[T] {
   def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
   def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }

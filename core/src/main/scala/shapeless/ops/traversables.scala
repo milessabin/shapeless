@@ -37,13 +37,13 @@ object traversable {
 
     import syntax.typeable._
 
-    implicit def hnilFromTraversable[T] = new FromTraversable[HNil] {
+    implicit def hnilFromTraversable[T]: FromTraversable[HNil] = new FromTraversable[HNil] {
       def apply(l : Iterable[_]) =
         if(l.isEmpty) Some(HNil) else None 
     }
     
     implicit def hlistFromTraversable[OutH, OutT <: HList]
-      (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]) = new FromTraversable[OutH :: OutT] {
+      (implicit flt : FromTraversable[OutT], oc : Typeable[OutH]): FromTraversable[OutH :: OutT] = new FromTraversable[OutH :: OutT] {
         def apply(l : Iterable[_]) : Option[OutH :: OutT] =
           if(l.isEmpty) None
           else for(h <- l.head.cast[OutH]; t <- flt(l.tail)) yield h :: t

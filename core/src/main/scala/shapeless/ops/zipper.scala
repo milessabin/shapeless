@@ -200,7 +200,7 @@ object zipper {
 
   trait Root[Z] extends DepFn1[Z] with Serializable
 
-  object Root extends {
+  object Root {
     def apply[Z](implicit root: Root[Z]): Aux[Z, root.Out] = root
 
     type Aux[Z, Out0] = Root[Z] { type Out = Out0 }
