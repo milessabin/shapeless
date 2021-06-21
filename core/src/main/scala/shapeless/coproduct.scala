@@ -135,10 +135,9 @@ object Coproduct extends Dynamic with CoproductScalaCompat {
     (0 until length).foldLeft[Coproduct](Inl(value))((accum, _) => Inr(accum))
 
   @tailrec
-  def unsafeGet(c: Coproduct): Any = c match {
+  def unsafeGet(c: Coproduct): Any = (c: @unchecked) match {
     case Inl(h) => h
     case Inr(c) => unsafeGet(c)
-    case nil: CNil => nil.impossible
   }
 
   /** Allows to inject a runtime value of type `Any` in a `Coproduct` */

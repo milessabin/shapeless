@@ -16,36 +16,6 @@
 
 package shapeless
 
-trait LazyInstances {
-  implicit def mkLazy[I](implicit i: => I): Lazy[I] = Lazy(i)
-}
-
-trait StrictInstances {
-  implicit def mkStrict[I](implicit i: I): Strict[I] = Strict(i)
-}
-
-trait WitnessInstances {
-  implicit def of[T: ValueOf]: Witness.Aux[T] =
-    Witness.mkWitness(valueOf[T])
-
-  implicit def apply[T](t: T): Witness.Aux[t.type] =
-    Witness.mkWitness[t.type](t)
-}
-
-trait WitnessWithInstances {
-  implicit def apply[TC[_], T](t: T)(implicit tc: TC[t.type]): WitnessWith.Aux[TC, t.type] { val instance: tc.type } =
-    instance[TC, t.type](t, tc)
-
-  def instance[TC[_], A](v: A, tc: TC[A]): WitnessWith.Aux[TC, A] { val instance: tc.type } =
-    new WitnessWith[TC] {
-      type T = A
-      val value: T = v
-      val instance: tc.type = tc
-    }
-}
-
 trait ScalaVersionSpecifics {
-  private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterable[Repr] { type C = Repr }
-
   def cachedImplicit[T]: T = ???
 }

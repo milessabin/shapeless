@@ -103,4 +103,6 @@ package object shapeless extends ScalaVersionSpecifics {
   def everywhere[T, R](f: Poly)(t: T)(
     implicit cse: => Case1.Aux[EverywhereAux[f.type], T, R]
   ): R = cse(t)
+
+  private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterable[Repr] { type C = Repr }
 }

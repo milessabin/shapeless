@@ -1,4 +1,0 @@
-<plugin>
-    <name>shapeless-plugin</name>
-    <classname>shapeless.ShapelessPlugin</classname>
-</plugin>

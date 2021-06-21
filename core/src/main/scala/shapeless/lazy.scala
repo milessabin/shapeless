@@ -111,11 +111,13 @@ trait Lazy[+T] extends Serializable with LazyScalaCompat[T] {
   def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
-object Lazy extends LazyInstances {
+object Lazy {
   implicit def apply[T](t: => T): Lazy[T] =
     new Lazy[T] {
       lazy val value: T = t
     }
+
+  implicit def mkLazy[I](implicit i: => I): Lazy[I] = Lazy(i)
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 
@@ -150,11 +152,13 @@ trait Strict[+T] extends Serializable {
   def flatMap[U](f: T => Strict[U]): Strict[U] = Strict { f(value).value }
 }
 
-object Strict extends StrictInstances {
+object Strict {
   implicit def apply[T](t: T): Strict[T] =
     new Strict[T] {
       val value: T = t
     }
+
+  implicit def mkStrict[I](implicit i: I): Strict[I] = Strict(i)
 
   def unapply[T](lt: Strict[T]): Option[T] = Some(lt.value)
 }

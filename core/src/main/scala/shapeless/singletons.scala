@@ -27,7 +27,7 @@ trait Witness extends Serializable {
   val value: T {}
 }
 
-object Witness extends Dynamic with WitnessInstances with WitnessScalaCompat {
+object Witness extends Dynamic with WitnessScalaCompat {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 
@@ -35,6 +35,12 @@ object Witness extends Dynamic with WitnessInstances with WitnessScalaCompat {
     type T = A
     val value = v
   }
+
+  implicit def of[T: ValueOf]: Witness.Aux[T] =
+    Witness.mkWitness(valueOf[T])
+
+  implicit def apply[T](t: T): Witness.Aux[t.type] =
+    Witness.mkWitness[t.type](t)
 
   implicit val witness0: Witness.Aux[_0] =
     mkWitness(Nat._0)
@@ -47,9 +53,19 @@ trait WitnessWith[TC[_]] extends Witness {
   val instance: TC[T]
 }
 
-object WitnessWith extends WitnessWithInstances {
+object WitnessWith {
   type Aux[TC[_], T0] = WitnessWith[TC] { type T = T0 }
   type Lt[TC[_], Lub] = WitnessWith[TC] { type T <: Lub }
+
+  implicit def apply[TC[_], T](t: T)(implicit tc: TC[t.type]): WitnessWith.Aux[TC, t.type] { val instance: tc.type } =
+    instance[TC, t.type](t, tc)
+
+  def instance[TC[_], A](v: A, tc: TC[A]): WitnessWith.Aux[TC, A] { val instance: tc.type } =
+    new WitnessWith[TC] {
+      type T = A
+      val value: T = v
+      val instance: tc.type = tc
+    }
 }
 
 trait NatWith[TC[_ <: Nat]] {

@@ -1,7 +1,6 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
-val Scala212 = "2.12.14"
 val Scala213 = "2.13.6"
 val scala3 = "3.0.0"
 
@@ -11,7 +10,7 @@ crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala212, Scala213, scala3)
+ThisBuild / crossScalaVersions := Seq(Scala213, scala3)
 ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration
@@ -76,24 +75,14 @@ val scalacOptionsAll = List(
   "-unchecked"
 )
 
-def scalacOptions2(pluginJar: File) = List(
-  s"-Xplugin:${pluginJar.getAbsolutePath}",
-  s"-Jdummy=${pluginJar.lastModified}"
-)
-
 val scalacOptions3 = Seq(
   "-language:dynamics",
 )
 
-def scalacOptions212(pluginJar: File) = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
-  "-Ywarn-unused:-implicits"
-) ++ scalacOptions2(pluginJar)
-
-def scalacOptions213(pluginJar: File) = Seq(
+val scalacOptions213 = Seq(
   "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
   "-Ywarn-unused:-implicits"
-) ++ scalacOptions2(pluginJar)
+)
 
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
@@ -101,8 +90,7 @@ lazy val commonSettings = Seq(
   scalacOptions := scalacOptionsAll,
 
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212((plugin / Compile / packageBin).value)
-    case Some((2, 13)) => scalacOptions213((plugin / Compile / packageBin).value)
+    case Some((2, 13)) => scalacOptions213
     case Some((3, _)) => scalacOptions3
     case _ => Nil
   }),
@@ -163,17 +151,6 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
   def sharedSrcDir(projectBase: File, conf: String): Option[File] =
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
-
-lazy val plugin = project.in(file("plugin"))
-  .settings(crossVersionSharedSources)
-  .settings(publishSettings)
-  .settings(
-    name := "shapeless-plugin",
-    moduleName := "shapeless-plugin",
-    sbtPlugin := true,
-    scalaVersion := Scala213,
-    crossScalaVersions := Seq(Scala213, Scala212)
-  )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform/* TODO, NativePlatform*/).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
@@ -290,18 +267,17 @@ lazy val scalaMacroDependencies: Def.Initialize[Seq[ModuleID]] = Def.setting {
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
-    (sc / unmanagedSourceDirectories) ++= {
+    (sc / unmanagedSourceDirectories) := {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
         //Seems like cross projects don't get this source folder as well TODO: Make an issue for it
-        val scala2Folder = new File(dir.getPath + "-2")
+        val scala2Folder = file(dir.getPath + "-2")
 
         if (dir.getName != "scala") Seq(dir)
         else CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"), scala2Folder)
-          case Some((2, y)) if y <  13 => Seq(new File(dir.getPath + "_2.13-"), scala2Folder)
+          case Some((2, _)) => Seq(dir, scala2Folder)
           case _ => Seq(dir)
         }
-      }
+      }.distinct
     }
   }
 
