@@ -24,15 +24,6 @@ trait RecordScalaCompat {
   def applyDynamicNamed(method: String)(rec: Any*): HList = macro RecordMacros.mkRecordNamedImpl
 }
 
-trait RecordArgsScalaCompat {
-  def applyDynamic(method: String)(): Any = macro RecordMacros.forwardImpl
-  def applyDynamicNamed(method: String)(rec: Any*): Any = macro RecordMacros.forwardNamedImpl
-}
-
-trait FromRecordArgsScalaCompat {
-  def applyDynamic[L <: HList](method: String)(rec: L): Any = macro RecordMacros.forwardFromRecordImpl[L]
-}
-
 class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
   import internal.constantType
@@ -51,36 +42,6 @@ class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
     mkRecordImpl(rec: _*)
   }
 
-  def forwardImpl(method: Tree)(): Tree =
-    forwardNamedImpl(method)()
-
-  def forwardNamedImpl(method: Tree)(rec: Tree*): Tree = {
-    val lhs = c.prefix.tree
-    val lhsTpe = lhs.tpe
-    val q"${methodString: String}" = (method: @unchecked)
-    val methodName = TermName(methodString + "Record")
-    if (lhsTpe.member(methodName) == NoSymbol)
-      abort(s"missing method '$methodName'")
-
-    val recTree = mkRecordImpl(rec: _*)
-    q"$lhs.$methodName($recTree)"
-  }
-
-  def forwardFromRecordImpl[L <: HList](method: Tree)(rec: Expr[L]): Tree = {
-    val lhs = c.prefix.tree
-    val lhsTpe = lhs.tpe
-    val q"${methodString: String}" = (method: @unchecked)
-    if (!methodString.matches(".*Record$"))
-      abort(s"missing method '$methodString'")
-
-    val methodName = TermName(methodString.replaceAll("Record$", ""))
-    if (!lhsTpe.member(methodName).isMethod)
-      abort(s"missing method '$methodName'")
-
-    val params = mkParamsImpl(lhsTpe.member(methodName).asMethod, rec)
-    q"$lhs.$methodName(...$params)"
-  }
-
   def mkRecordImpl(rec: Tree*): Tree = {
     def mkElem(key: Type, value: Tree): Tree =
       q"$value.asInstanceOf[${FieldType(key, value.tpe.widen)}]"
@@ -93,15 +54,5 @@ class RecordMacros(val c: whitebox.Context) extends CaseClassMacros {
     rec.foldRight(hnilValueTree) { (elem, acc) =>
       q"$hconsValueTree(${promoteElem(elem)}, $acc)"
     }
-  }
-
-  def mkParamsImpl[L <: HList](method: MethodSymbol, rec: Expr[L]): List[List[Tree]] = {
-    val selector = reify(ops.hlist.Selector)
-    def mkElem(key: Type, value: Tree): Tree =
-      q"$selector[${rec.actualType}, ${FieldType(key, value.tpe.widen)}].apply($rec)"
-
-    method.paramLists.filterNot(_.forall(_.isImplicit)).map(_.map { p =>
-      mkElem(constantType(nameAsValue(p.name)), q"${p.typeSignature}")
-    })
   }
 }

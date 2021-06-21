@@ -117,9 +117,12 @@ trait CopyFacet extends CaseClassFacet {
 
   val ops: CopyOps
 
+  /*
+  TODO RecordArgs gone
   trait CopyMethods extends RecordArgs { self: C =>
     def copyRecord[R <: HList](rec: R)(implicit merger: ops.CopyMerger[R]): C = ops.copy(this, rec)
   }
+   */
 }
 
 trait ToStringFacet extends ProductFacet {
@@ -154,7 +157,7 @@ trait DefaultCaseClassDefns
   trait CaseClass
     extends ProductMethods
     with PolymorphicEqualityMethods
-    with CopyMethods
+    // TODO Gone with CopyMethods
     with ToStringMethods { self: C => }
 
   val ops: CaseClassOps

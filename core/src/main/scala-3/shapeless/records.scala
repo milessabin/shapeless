@@ -20,12 +20,3 @@ trait RecordScalaCompat {
   def applyDynamic(method: String)(rec: Any*): HList = ???
   def applyDynamicNamed(method: String)(rec: Any*): HList = ???
 }
-
-trait RecordArgsScalaCompat {
-  def applyDynamic(method: String)(): Any = ???
-  def applyDynamicNamed(method: String)(rec: Any*): Any = ???
-}
-
-trait FromRecordArgsScalaCompat {
-  def applyDynamic[L <: HList](method: String)(rec: L): Any = ???
-}

@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.dynamics
-
 import scala.annotation.tailrec
 
 /**
@@ -161,91 +159,3 @@ object HList {
     loop(l, i, HNil)
   }
 }
-
-/**
- * Trait supporting mapping dynamic argument lists of Ints to HList of Nat arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(1, 2, 3)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(_1 :: _2 :: _3)
- * }}}
- *
- * ie. the arguments are rewritten as HList elements of Nat and the application is
- * rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList of Int argument.
- *
- * @author Andreas Koestler
- */
-
-trait NatProductArgs extends Dynamic with NatProductArgsScalaCompat
-/**
- * Trait supporting mapping dynamic argument lists to HList arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(23, "foo", true)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(23 :: "foo" :: true)
- * }}}
- *
- * ie. the arguments are rewritten as HList elements and the application is
- * rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList argument.
- *
- */
-trait ProductArgs extends Dynamic with ProductArgsScalaCompat
-
-/**
- * Trait supporting mapping HList arguments to argument lists, inverse of ProductArgs.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.methodProduct(23 :: "foo" :: true)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.method(23, "foo", true)
- * }}}
- *
- * ie. the HList argument is used to obtain arguments for a target method
- * (the called method named minus the "Product" suffix) in sequence  and the application
- * is rewritten to an application of the target method
- *
- */
-trait FromProductArgs extends Dynamic with FromProductArgsScalaCompat
-
-/**
- * Trait supporting mapping dynamic argument lists to singleton-typed HList arguments.
- *
- * Mixing in this trait enables method applications of the form,
- *
- * {{{
- * lhs.method(23, "foo", true)
- * }}}
- *
- * to be rewritten as,
- *
- * {{{
- * lhs.methodProduct(23.narrow :: "foo".narrow :: true.narrow)
- * }}}
- *
- * ie. the arguments are rewritten as singleton-typed HList elements and the
- * application is rewritten to an application of an implementing method (identified by the
- * "Product" suffix) which accepts a single HList argument.
- */
-trait SingletonProductArgs extends Dynamic with SingletonProductArgsScalaCompat
