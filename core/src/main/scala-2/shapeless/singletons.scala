@@ -21,11 +21,6 @@ import shapeless.syntax.SingletonOps
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-trait WitnessScalaCompat {
-  def selectDynamic(tpeSelector: String): Any =
-    macro SingletonTypeMacros.witnessTypeImpl
-}
-
 trait NatWithScalaCompat {
 
   implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] =
@@ -232,14 +227,6 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
 
   def mkSingletonOps(t: Tree): Tree =
     extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
-
-  def witnessTypeImpl(tpeSelector: Tree): Tree = {
-    val q"${tpeString: String}" = (tpeSelector: @unchecked)
-    val tpe = parseLiteralType(tpeString)
-      .getOrElse(c.abort(c.enclosingPosition, s"Malformed literal $tpeString"))
-
-    fieldTypeCarrier(tpe)
-  }
 
   def materializeWiden[T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].dealias

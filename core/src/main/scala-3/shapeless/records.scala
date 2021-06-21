@@ -19,7 +19,6 @@ package shapeless
 trait RecordScalaCompat {
   def applyDynamic(method: String)(rec: Any*): HList = ???
   def applyDynamicNamed(method: String)(rec: Any*): HList = ???
-  def selectDynamic(tpeSelector: String): Any = ???
 }
 
 trait RecordArgsScalaCompat {

@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.dynamics
-
 import scala.annotation.tailrec
 
 /** Encodes a coproduct type, such as a sealed family of case classes.
@@ -118,7 +116,7 @@ sealed trait CNil extends Coproduct {
   def impossible: Nothing
 }
 
-object Coproduct extends Dynamic with CoproductScalaCompat {
+object Coproduct {
   import ops.coproduct.Inject
   import ops.coproduct.RuntimeInject
   import syntax.CoproductOps

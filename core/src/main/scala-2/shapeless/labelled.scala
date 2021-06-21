@@ -55,9 +55,6 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
   private def parseTypeOrFail(tpe: String): Type =
     parseType(tpe).getOrElse(abort(s"Malformed literal or standard type $tpe"))
 
-  private def parseLiteralTypeOrFail(tpe: String): Type =
-    parseLiteralType(tpe).getOrElse(abort(s"Malformed literal type $tpe"))
-
   private def labelsOf(tpe: Type): List[Constant] =
     if (isProduct(tpe)) fieldsOf(tpe).map { case (f, _) => nameAsValue(f) }
     else if (isCoproduct(tpe)) ctorsOf(tpe).map(c => nameAsValue(nameOf(c)))
@@ -81,34 +78,6 @@ class LabelledMacros(override val c: whitebox.Context) extends GenericMacros(c) 
     val labelsValue = mkHListValue(labels.map(Literal.apply))
     q"${reify(Labelling)}.instance[$tpe, $labelsType]($labelsValue.asInstanceOf[$labelsType])"
   }
-
-  def recordType(tpeSelector: Tree): Tree =
-    labelledType(tpeSelector, "record", hnilTpe, hconsTpe)
-
-  def unionType(tpeSelector: Tree): Tree =
-    labelledType(tpeSelector, "union", cnilTpe, cconsTpe)
-
-  def labelledType(tpeSelector: Tree, variety: String, nil: Type, cons: Type): Tree = {
-    val q"${tpeString: String}" = (tpeSelector: @unchecked)
-    val labelledTpe = commaSeparated(tpeString).foldRight(nil) { (element, acc) =>
-      element.split("->") match {
-        case Array(keyString, valueString) =>
-          val key = parseLiteralTypeOrFail(keyString.trim)
-          val value = parseTypeOrFail(valueString.trim)
-          appliedType(cons, FieldType(key, value), acc)
-        case _ =>
-          abort(s"Malformed $variety type $tpeString")
-      }
-    }
-
-    typeCarrier(labelledTpe)
-  }
-
-  def hlistType(tpeSelector: Tree): Tree =
-    nonLabelledType(tpeSelector, hnilTpe, hconsTpe)
-
-  def coproductType(tpeSelector: Tree): Tree =
-    nonLabelledType(tpeSelector, cnilTpe, cconsTpe)
 
   def nonLabelledType(tpeSelector: Tree, nil: Type, cons: Type): Tree = {
     val q"${tpeString: String}" = (tpeSelector: @unchecked)

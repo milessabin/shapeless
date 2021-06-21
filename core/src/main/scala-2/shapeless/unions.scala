@@ -21,7 +21,6 @@ import scala.reflect.macros.whitebox
 
 trait UnionScalaCompat {
   def applyDynamicNamed[U <: Coproduct](method: String)(elems: Any*): U = macro UnionMacros.mkUnionNamedImpl[U]
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.unionType
 }
 
 class UnionMacros(val c: whitebox.Context) {

@@ -18,5 +18,4 @@ package shapeless
 
 trait UnionScalaCompat {
   def applyDynamicNamed[U <: Coproduct](method: String)(elems: Any*): U = ???
-  def selectDynamic(tpeSelector: String): Any = ???
 }

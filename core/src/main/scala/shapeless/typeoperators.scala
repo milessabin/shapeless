@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.dynamics
-
 object tag {
   def apply[U] = Tagger.asInstanceOf[Tagger[U]]
 
@@ -102,9 +100,7 @@ object newtype {
  * i: Int = 23
  * }}}
  */
-object the extends Dynamic with theScalaCompat
-
-object TypeOf extends Dynamic with TypeOfScalaCompat
+object the extends theScalaCompat
 
 /**
  * Type class witnessing the least upper bound of a pair of types and providing conversions from each to their common

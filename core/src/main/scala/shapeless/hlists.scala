@@ -56,7 +56,7 @@ sealed trait HNil extends HList {
  */
 case object HNil extends HNil
 
-object HList extends Dynamic with HListScalaCompat {
+object HList {
   import ops.hlist._
   import syntax.HListOps
 

@@ -1,11 +1,5 @@
 package shapeless
 
 trait theScalaCompat {
-  def apply[T](implicit t: T): T = ???
-
-  def selectDynamic(tpeSelector: String): Any = ???
-}
-
-trait TypeOfScalaCompat {
-  def selectDynamic(code: String): Any = ???
+  transparent inline def summon[T](using inline x: T): x.type = x
 }

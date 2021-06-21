@@ -16,10 +16,6 @@
 
 package shapeless
 
-trait WitnessScalaCompat {
-  def selectDynamic(tpeSelector: String): Any = ???
-}
-
 trait NatWithScalaCompat {
 
   implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] = ???

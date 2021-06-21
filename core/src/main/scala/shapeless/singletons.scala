@@ -16,8 +16,6 @@
 
 package shapeless
 
-import scala.language.dynamics
-
 /** Provides the value corresponding to a singleton type.
  *
  * See SIP-23 for a related proposed language change.
@@ -27,7 +25,7 @@ trait Witness extends Serializable {
   val value: T {}
 }
 
-object Witness extends Dynamic with WitnessScalaCompat {
+object Witness {
   type Aux[T0] = Witness { type T = T0 }
   type Lt[Lub] = Witness { type T <: Lub }
 

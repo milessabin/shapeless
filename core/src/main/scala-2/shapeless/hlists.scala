@@ -19,25 +19,6 @@ package shapeless
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-trait HListScalaCompat {
-
-  /**
-   * Allows to specify an `HList` type with a syntax similar to `Record` and `Union`, as follows,
-   *
-   * {{{
-   * type ISB = HList.`Int, String, Boolean`.T
-   * }}}
-   *
-   * Literal types are allowed, so that the following is valid,
-   *
-   * {{{
-   * type ABC = HList.`'a, 'b, 'c`.T
-   * type TwoTrueStr = HList.`2, true, "str"`.T
-   * }}}
-   */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.hlistType
-}
-
 trait NatProductArgsScalaCompat {
   def applyDynamic(method: String)(args: Int*): Any = macro ProductMacros.forwardNatImpl
 }
