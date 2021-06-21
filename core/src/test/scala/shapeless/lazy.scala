@@ -39,9 +39,9 @@ class LazyStrictTests {
       i
     }
 
-    def summonStrictLong(implicit sl: Strict[Long]): Long = {
+    def summonStrictLong(implicit sl: Long): Long = {
       effects += 7
-      val i = sl.value
+      val i = sl
       effects += 8
       i
     }
@@ -72,9 +72,9 @@ class LazyStrictTests {
 
     def effectfulStrictInt: Int = { effects += 6 ; 23 }
 
-    def useEffectfulStrictInt(li: Strict[Int]): Int = {
+    def useEffectfulStrictInt(li: Int): Int = {
       effects += 7
-      val i = li.value
+      val i = li
       effects += 8
       i
     }
@@ -104,9 +104,9 @@ class LazyStrictTests {
       i
     }
 
-    def useEffectfulStrictInt(li: Strict[Int]): Int = {
+    def useEffectfulStrictInt(li: Int): Int = {
       effects += 7
-      val i = li.value
+      val i = li
       effects += 8
       i
     }
@@ -126,16 +126,16 @@ class LazyStrictTests {
   def testInlineConversion: Unit = {
     val effects = ListBuffer[Int]()
 
-    def useEffectfulLazyInt(li: Lazy[Int]): Int = {
+    def useEffectfulLazyInt(li: => Int): Int = {
       effects += 3
-      val i = li.value
+      val i = li
       effects += 4
       i
     }
 
-    def useEffectfulStrictInt(si: Strict[Int]): Int = {
+    def useEffectfulStrictInt(si: Int): Int = {
       effects += 7
-      val i = si.value
+      val i = si
       effects += 8
       i
     }
@@ -237,8 +237,8 @@ class LazyStrictTests {
 
   @Test
   def testEta: Unit = {
-    implicitly[Lazy[Bar[Int]]].value.foo _
-    implicitly[Strict[Bar[Int]]].value.foo _
+    //implicitly[=> Bar[Int]].value.foo _
+    implicitly[Bar[Int]].foo _
     ()
   }
 
@@ -247,8 +247,8 @@ class LazyStrictTests {
   }
 
   object Baz {
-    def lazyBaz[T, U](t: T)(implicit bt: Lazy[Aux[T, U]]): Aux[T, U] = bt.value
-    def strictBaz[T, U](t: T)(implicit bt: Strict[Aux[T, U]]): Aux[T, U] = bt.value
+    def lazyBaz[T, U](t: T)(implicit bt: => Aux[T, U]): Aux[T, U] = bt
+    def strictBaz[T, U](t: T)(implicit bt: Aux[T, U]): Aux[T, U] = bt
 
     type Aux[T, U0] = Baz[T] { type U = U0 }
 
@@ -271,13 +271,13 @@ class LazyStrictTests {
 
   @Test
   def testExtractors: Unit = {
-    implicitly[Lazy[Generic[Symbol]]]
-    implicitly[Strict[Generic[Symbol]]]
+    //implicitly[=> Generic[Symbol]]
+    implicitly[Generic[Symbol]]
 
     val x = {
       case class Leaf[A](value: A)
-      implicitly[Lazy[Generic[Leaf[Int]]]]
-      implicitly[Strict[Generic[Leaf[Int]]]]
+      //implicitly[=> Generic[Leaf[Int]]]
+      implicitly[Generic[Leaf[Int]]]
       ()
     }
   }
@@ -321,7 +321,7 @@ class LazyStrictTests {
     ): Readable[M[String, T]] = new Readable
 
     implicitly[Readable[Id]]
-    implicitly[Lazy[Readable[Id]]]
-    implicitly[Strict[Readable[Id]]]
+    //implicitly[=> Readable[Id]]
+    implicitly[Readable[Id]]
   }
 }
