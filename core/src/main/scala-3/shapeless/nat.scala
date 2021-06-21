@@ -16,6 +16,22 @@
 
 package shapeless
 
+import scala.compiletime.ops.int.S
+
 trait NatScalaCompat {
-  implicit def apply(i: Int): Nat = ???
+  type NatToInt[N <: Nat] <: Int = N match {
+    case _0      => 0
+    case Succ[n] => scala.compiletime.ops.int.S[NatToInt[n]]
+  }
+
+  type IntToNat[N <: Int] <: Nat = N match {
+    case 0 => _0
+    case S[n] => Succ[IntToNat[n]]
+  }
+
+  //Transparent gives better types here
+  transparent inline implicit def apply(inline i: Int): Nat =
+    if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
+    else if i == 0 then (new _0).asInstanceOf[IntToNat[i.type]]
+    else (new Succ).asInstanceOf[IntToNat[i.type]]
 }

@@ -20,10 +20,5 @@ package ops
 import scala.compiletime
 
 trait ToIntScalaCompat {
-  type NatToInt[N <: Nat] <: Int = N match {
-    case _0      => 0
-    case Succ[n] => scala.compiletime.ops.int.S[NatToInt[n]]
-  }
-
-  given toIntSuccM[N <: Nat](using v: ValueOf[NatToInt[N]]): nat.ToInt[N] = new nat.ToInt.Inst[N](v.value)
+  given toIntSuccM[N <: Nat](using v: ValueOf[Nat.NatToInt[N]]): nat.ToInt[N] = new nat.ToInt.Inst[N](v.value)
 }
