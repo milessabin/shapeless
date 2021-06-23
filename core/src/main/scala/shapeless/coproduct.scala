@@ -116,7 +116,7 @@ sealed trait CNil extends Coproduct {
   def impossible: Nothing
 }
 
-object Coproduct {
+object Coproduct extends CoproductScalaCompat {
   import ops.coproduct.Inject
   import ops.coproduct.RuntimeInject
   import syntax.CoproductOps

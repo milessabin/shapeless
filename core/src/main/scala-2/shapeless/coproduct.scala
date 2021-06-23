@@ -1,0 +1,3 @@
+package shapeless
+
+trait CoproductScalaCompat

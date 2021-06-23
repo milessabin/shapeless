@@ -16,7 +16,17 @@
 
 package shapeless
 
+import scala.deriving._
+
 trait LabellingScalaCompat {
 
-  implicit def mkLabelling[T]: Labelling[T] = ???
+  inline given [T](using m: Mirror.Of[T]): Labelling.Aux[T, HList.TupleToHList[m.MirroredElemLabels]] = {
+    val tuple = scala.compiletime.package$package.constValueTuple[m.MirroredElemLabels]
+    val res = HList.tupleToHList(tuple)
+
+    new Labelling[T] {
+      override type Out = HList.TupleToHList[m.MirroredElemLabels]
+      override def apply(): Out = res
+    }
+  }
 }

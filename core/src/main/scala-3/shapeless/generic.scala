@@ -16,24 +16,66 @@
 
 package shapeless
 
+import scala.deriving._
+
 trait GenericScalaCompat {
 
-  implicit def materialize[T, R]: Generic.Aux[T, R] = ???
+  given materializeProduct[T <: Product](
+    using m: scala.deriving.Mirror.ProductOf[T]
+  ): Generic.Aux[T, HList.TupleToHList[m.MirroredElemTypes]] =
+    new Generic[T] {
+      override type Repr = HList.TupleToHList[m.MirroredElemTypes]
+
+      override def to(t: T): Repr = HList.tupleToHList(scala.Tuple.fromProductTyped(t))
+
+      override def from(r: Repr): T = m.fromProduct(HList.hListToTuple(r))
+    }
+
+  given materializeSum[T](
+    using m: scala.deriving.Mirror.SumOf[T],
+    ev: scala.Tuple.Union[Coproduct.CoproductToTuple[Coproduct.TupleToCoproduct[m.MirroredElemTypes]]] <:< T,
+  ): Generic.Aux[T, Coproduct.TupleToCoproduct[m.MirroredElemTypes]] =
+    new Generic[T] {
+      override type Repr = Coproduct.TupleToCoproduct[m.MirroredElemTypes]
+
+      override def to(t: T): Repr = Coproduct.coproductFromOrdinal(t.asInstanceOf[scala.Tuple.Union[m.MirroredElemTypes]], m.ordinal(t))
+
+      override def from(r: Repr): T = ev(Coproduct.extractCoproduct(r))
+    }
 }
 
 trait LabelledGenericScalaCompat {
 
-  implicit def materialize[T, R]: LabelledGeneric.Aux[T, R] = ???
+  type MakeFieldsProduct[Types <: scala.Tuple, Labels <: scala.Tuple] <: HList = (Types, Labels) match {
+    case (EmptyTuple, EmptyTuple)        => HNil
+    case (tpe *: types, label *: labels) => labelled.FieldType[label, tpe] :: MakeFieldsProduct[types, labels]
+  }
+  
+  type MakeFieldsCoproduct[Types <: scala.Tuple, Labels <: scala.Tuple] <: Coproduct = (Types, Labels) match {
+    case (EmptyTuple, EmptyTuple)        => CNil
+    case (tpe *: types, label *: labels) => labelled.FieldType[label, tpe] :+: MakeFieldsCoproduct[types, labels]
+  }
+
+  given materializeProduct[T <: Product](
+    using m: scala.deriving.Mirror.ProductOf[T]
+  ): LabelledGeneric.Aux[T, MakeFieldsProduct[m.MirroredElemTypes, m.MirroredElemLabels]] =
+    LabelledGeneric.unsafeInstance(Generic.materializeProduct)
+
+  given materializeSum[T](
+    using m: scala.deriving.Mirror.SumOf[T],
+    ev: scala.Tuple.Union[Coproduct.CoproductToTuple[Coproduct.TupleToCoproduct[m.MirroredElemTypes]]] <:< T,
+  ): LabelledGeneric.Aux[T, MakeFieldsCoproduct[m.MirroredElemTypes, m.MirroredElemLabels]] =
+    LabelledGeneric.unsafeInstance(Generic.materializeSum)
 }
 
 trait IsTupleScalaCompat {
-  implicit def apply[T]: IsTuple[T] = ???
+  given[T <: scala.Tuple]: IsTuple[T] = new IsTuple[T]
 }
 
 trait HasProductGenericScalaCompat {
-  implicit def apply[T]: HasProductGeneric[T] = ???
+  given [T](using Mirror.ProductOf[T]): HasProductGeneric[T] = new HasProductGeneric[T]
 }
 
 trait HasCoproductGenericScalaCompat {
-  implicit def apply[T]: HasCoproductGeneric[T] = ???
+  given [T](using Mirror.SumOf[T]): HasCoproductGeneric[T] = new HasCoproductGeneric[T]
 }

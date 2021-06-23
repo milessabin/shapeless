@@ -2,15 +2,15 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
 val Scala213 = "2.13.6"
-val scala3 = "3.0.0"
+val Scala3 = "3.0.0"
 
 commonSettings
 noPublishSettings
 crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
-ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala213, scala3)
+ThisBuild / scalaVersion := Scala3
+ThisBuild / crossScalaVersions := Seq(Scala213, Scala3)
 ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration

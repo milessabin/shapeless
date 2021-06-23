@@ -54,7 +54,7 @@ sealed trait HNil extends HList {
  */
 case object HNil extends HNil
 
-object HList {
+object HList extends HListScalaCompat {
   import ops.hlist._
   import syntax.HListOps
 
