@@ -18,9 +18,9 @@ package shapeless
 
 trait Generic1ScalaCompat {
 
-  implicit def mkGeneric10[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[t, U] })#λ] = ???
+  implicit def mkGeneric10[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, [t[_]] =>> FR[t, U]] = ???
 
-  implicit def mkGeneric11[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[U, t] })#λ] = ???
+  implicit def mkGeneric11[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, [t[_]] =>> FR[U, t]] = ???
 }
 
 trait Generic10ScalaCompat {
@@ -29,13 +29,13 @@ trait Generic10ScalaCompat {
 
 trait IsHCons1ScalaCompat {
 
-  implicit def mkIsHCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] = ???
+  implicit def mkIsHCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, [t[_]] =>> FH[t, U], FT] = ???
 
-  implicit def mkIsHCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, ({ type λ[t[_]] = FH[U, t] })#λ, FT] = ???
+  implicit def mkIsHCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, [t[_]] =>> FH[U, t], FT] = ???
 
-  implicit def mkIsHCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsHCons1[L, FH, ({ type λ[t[_]] = FT[t, U] })#λ] = ???
+  implicit def mkIsHCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsHCons1[L, FH, [t[_]] =>> FT[t, U]] = ???
 
-  implicit def mkIsHCons13[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsHCons1[L, FH, ({ type λ[t[_]] = FT[U, t] })#λ] = ???
+  implicit def mkIsHCons13[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsHCons1[L, FH, [t[_]] =>> FT[U, t]] = ???
 }
 
 trait IsHCons10ScalaCompat {
@@ -44,13 +44,13 @@ trait IsHCons10ScalaCompat {
 
 trait IsCCons1ScalaCompat {
 
-  implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] = ???
+  implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, [t[_]] =>> FH[t, U], FT] = ???
 
-  implicit def mkIsCCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, ({ type λ[t[_]] = FH[U, t] })#λ, FT] = ???
+  implicit def mkIsCCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, [t[_]] =>> FT[U, t], FT] = ???
 
-  implicit def mkIsCCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsCCons1[L, FH, ({ type λ[t[_]] = FT[t, U] })#λ] = ???
+  implicit def mkIsCCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsCCons1[L, FH, [t[_]] =>> FT[t, U]] = ???
 
-  implicit def mkIsCCons13[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsCCons1[L, FH, ({ type λ[t[_]] = FT[U, t] })#λ] = ???
+  implicit def mkIsCCons13[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsCCons1[L, FH, [t[_]] =>> FT[U, t]] = ???
 }
 
 trait IsCCons10ScalaCompat {
@@ -59,13 +59,13 @@ trait IsCCons10ScalaCompat {
 
 trait Split1ScalaCompat {
 
-  implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI] = ???
+  implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, [t[_]] =>> FO[t, U], FI] = ???
 
-  implicit def mkSplit11[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, ({ type λ[t[_]] = FO[U, t] })#λ, FI] = ???
+  implicit def mkSplit11[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, [t[_]] =>> FO[U, t], FI] = ???
 
-  implicit def mkSplit12[L[_], FO[_[_]], FI[_[_], _[_]], U[_]]: Split1[L, FO, ({ type λ[t[_]] = FI[t, U] })#λ] = ???
+  implicit def mkSplit12[L[_], FO[_[_]], FI[_[_], _[_]], U[_]]: Split1[L, FO, [t[_]] =>> FI[t, U]] = ???
 
-  implicit def mkSplit13[L[_], FO[_[_]], FI[_[_], _[_]], U[_]]: Split1[L, FO, ({ type λ[t[_]] = FI[U, t] })#λ] = ???
+  implicit def mkSplit13[L[_], FO[_[_]], FI[_[_], _[_]], U[_]]: Split1[L, FO, [t[_]] =>> FI[U, t]] = ???
 }
 
 trait Split10ScalaCompat {
