@@ -46,7 +46,7 @@ trait IsCCons1ScalaCompat {
 
   implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, [t[_]] =>> FH[t, U], FT] = ???
 
-  implicit def mkIsCCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, [t[_]] =>> FT[U, t], FT] = ???
+  implicit def mkIsCCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, [t[_]] =>> FH[U, t], FT] = ???
 
   implicit def mkIsCCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]]: IsCCons1[L, FH, [t[_]] =>> FT[t, U]] = ???
 
