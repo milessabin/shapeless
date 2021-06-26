@@ -22,6 +22,8 @@ object labelled {
   type FieldType[K, +V] = V with KeyTag[K, V]
   type KeyTag[K, +V]
 
+  type ->>[K, +V] = FieldType[K, V]
+
   /** Yields a result encoding the supplied value with the singleton type `K` of its key. */
   def field[K]: FieldBuilder[K] = new FieldBuilder(true)
   class FieldBuilder[K](private val dummy: Boolean) extends AnyVal {
