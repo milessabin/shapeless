@@ -16,7 +16,51 @@
 
 package shapeless
 
+import shapeless.labelled.FieldType
+
+import scala.compiletime._
+import scala.quoted._
+
 trait RecordScalaCompat {
-  def applyDynamic(method: String)(rec: Any*): HList = ???
-  def applyDynamicNamed(method: String)(rec: Any*): HList = ???
+  inline def applyDynamic(inline method: String)(inline rec: (String, Any)*): HNil =
+    //inline if method != "apply" then ??? //error(s"this method must be called as 'apply' not $method")
+    //else inline if rec.nonEmpty then ??? //error("this method must be called with named arguments")
+    /*else*/ HNil
+
+  transparent inline def applyDynamicNamed(inline method: String)(inline rec: (String, Any)*): HList =
+    ${ RecordScalaCompat.applyDynamicNamedImpl('method)('rec) }
+}
+object RecordScalaCompat {
+  def applyDynamicNamedImpl(method: Expr[String])(rec: Expr[Seq[(String, Any)]])(using Quotes): Expr[HList] = {
+    import quotes.reflect.report
+    val methodString = method.valueOrError
+    if methodString != "apply" then
+      report.error(s"this method must be called as 'apply' not '$methodString'")
+      '{???}
+
+    rec match {
+      case Varargs(values) =>
+        def transform[Acc <: HList: Type](acc: Expr[Acc], rest: Seq[Expr[(String, Any)]]): Expr[HList] =
+          rest match {
+            case Nil => acc
+            case Seq('{($keyExpr: String, $value: tp)}, tail*) =>
+              import quotes.reflect._
+              keyExpr.asTerm match {
+                case Literal(const) => ConstantType(const).asType
+              } match {
+                case '[keyTpe] => transform('{$value.asInstanceOf[FieldType[keyTpe, tp]] :: $acc}, tail)
+              }
+
+            case _ =>
+              report.error("Got invalid arguments in varargs")
+              '{???}
+          }
+
+        transform('{HNil}, values.reverse)
+
+      case _ =>
+        report.error("this method must be called with vararg arguments")
+        '{???}
+    }
+  }
 }

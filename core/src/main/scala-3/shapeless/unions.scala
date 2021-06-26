@@ -16,6 +16,45 @@
 
 package shapeless
 
+import shapeless.labelled.FieldType
+
+import scala.quoted._
+
 trait UnionScalaCompat {
-  def applyDynamicNamed[U <: Coproduct](method: String)(elems: Any*): U = ???
+  transparent inline def applyDynamicNamed[U <: Coproduct](inline method: String)(inline rec: (String, Any)*): U =
+    ${ UnionScalaCompat.applyDynamicNamedImpl[U]('method)('rec) }
+}
+object UnionScalaCompat {
+  def applyDynamicNamedImpl[U <: Coproduct: Type](method: Expr[String])(rec: Expr[Seq[(String, Any)]])(using Quotes): Expr[U] = {
+    import quotes.reflect.report
+    val methodString = method.valueOrError
+    if methodString != "apply" then
+      report.error(s"this method must be called as 'apply' not '$methodString'")
+      '{???}
+
+    rec match {
+      case Varargs(Seq('{($keyExpr: String, $value: tp)})) =>
+        import quotes.reflect._
+
+        keyExpr.asTerm match {
+          case Literal(const) => ConstantType(const).asType
+        } match {
+          case '[keyTpe] =>
+            Expr.summon[ops.coproduct.Inject[U, FieldType[keyTpe, tp]]] match {
+              case Some(injectExpr) => '{$injectExpr($value.asInstanceOf[FieldType[keyTpe, tp]])}
+              case None =>
+                report.error("Can not inject into coproduct")
+                '{???}
+            }
+        }
+
+      case Varargs(_) =>
+        report.error("only one branch of a union may be inhabited")
+        '{???}
+
+      case _ =>
+        report.error("this method must be called with vararg arguments")
+        '{???}
+    }
+  }
 }
