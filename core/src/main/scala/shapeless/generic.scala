@@ -874,7 +874,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           }
         val nonCaseParamLists: List[List[Tree]] = List.fill(numNonCaseParamLists(tpe))(Nil)
         new CtorDtor {
-          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}(...${args :: nonCaseParamLists})"
+          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}[..${tpe.typeArgs}](...${args :: nonCaseParamLists})"
           def binding: (Tree, List[Tree]) = (pattern, elems.map { case (binder, tpe) => narrow(q"$binder", tpe) })
           def reprBinding: (Tree, List[Tree]) = (reprPattern, elems.map { case (binder, tpe) => narrow1(q"$binder", tpe) })
         }

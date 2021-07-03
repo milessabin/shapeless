@@ -1354,3 +1354,16 @@ object HigherKinded {
 
   Generic[Pipo[Id]]
 }
+
+object CaseClassWithImplicits {
+  // https://github.com/milessabin/shapeless/issues/1189
+  trait ATypeClass[T]
+
+  case class AnUnrelatedCaseClass[T](v: T)
+
+  case class ACaseClassWithContextBound[T: ATypeClass]()
+  implicit def instance[T: ATypeClass]: ATypeClass[AnUnrelatedCaseClass[T]] = new ATypeClass[AnUnrelatedCaseClass[T]] {}
+
+  def shouldCompile[T: ATypeClass]
+  : Generic.Aux[ACaseClassWithContextBound[T], HNil] = Generic[ACaseClassWithContextBound[T]]
+}
