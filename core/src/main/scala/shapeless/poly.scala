@@ -35,7 +35,7 @@ object PolyDefns extends Cases {
     def apply[T, U](t: T, u: U)(implicit ev: (T :: U :: HNil) =:= L) = value(t :: u :: HNil)
   }
 
-  object Case extends CaseInst with CaseScalaCompat {
+  object Case extends CaseInst {
     type Aux[P, L <: HList, Result0] = Case[P, L] { type Result = Result0 }
     type Hom[P, T] = Aux[P, T :: HNil, T]
 
