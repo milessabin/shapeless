@@ -488,17 +488,10 @@ class TypeableTests {
 
   @Test
   def testSingletons: Unit = {
-    val wOne = Witness(1)
-    type One = wOne.T
-
-    val wTrue = Witness(true)
-    type True = wTrue.T
-
-    val wFoo = Witness("foo")
-    type Foo = wFoo.T
-
-    val wSym = Witness("Foo")
-    type Sym = wSym.T
+    type One = 1
+    type True = true
+    type Foo = "foo"
+    type Sym = "Foo"
 
     object ObjA
     object ObjB
@@ -599,14 +592,11 @@ class TypeableTests {
     val cpd: CP = Coproduct[CP](2.0)
     assertEquals("Typeable[Double :+: Boolean :+: CNil]", typeableString(cpd))
 
-    val wOne = Witness(1)
-    type One = wOne.T
+    type One = 1
     val one: One = 1
     assertEquals("Typeable[Int(1)]", typeableString(one))
 
-    object FooBar
-    val wFB = Witness(FooBar)
-    type FooBarT = wFB.T
+    type FooBarT = FooBar.type 
     val foobar: FooBarT = FooBar
     assertEquals("Typeable[FooBar.type]", typeableString(foobar))
 
@@ -685,7 +675,6 @@ class TypeableTests {
     object ***
     final case class <+>[A](left: A, right: A)
     val |+| = "Tie-fighter"
-    val witness = Witness("witness")
 
     // `Typeable.genTraversableTypeable` is not a macro.
     // Appart from that there is a difference in the encoded name between JVM and JS.
@@ -694,7 +683,7 @@ class TypeableTests {
     assertEquals("***.type", Typeable[***.type].describe)
     assertEquals("<+>[String,String]", Typeable[<+>[String]].describe)
     assertEquals("|+|.type", Typeable[|+|.type].describe)
-    assertEquals("String(witness)", Typeable[witness.T].describe)
+    assertEquals("String(witness)", Typeable["witness"].describe)
   }
 
   @Test

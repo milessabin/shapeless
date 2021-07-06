@@ -122,7 +122,7 @@ object coproduct {
     implicit def notMatched[C <: Coproduct, A, H, Next <: Nat](
       implicit ev: A =:!= H,
       next: Aux[C, A, Next],
-      n: Witness.Aux[Succ[Next]]
+      n: ValueOf[Succ[Next]]
     ): Aux[H :+: C, A, Succ[Next]] = new IndexOf[H :+: C, A] {
       type Out = Succ[Next]
       def apply(): Out = n.value
@@ -529,7 +529,7 @@ object coproduct {
       instance.asInstanceOf[Aux[HNil, CNil, CNil]]
 
     implicit def cconsZipWithKeys[KH, VH, KT <: HList, VT <: Coproduct](
-      implicit wkh: Witness.Aux[KH], zipWithKeys: ZipWithKeys[KT, VT]
+      implicit wkh: ValueOf[KH], zipWithKeys: ZipWithKeys[KT, VT]
     ): Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out] =
       instance.asInstanceOf[Aux[KH :: KT, VH :+: VT, FieldType[KH, VH] :+: zipWithKeys.Out]]
   }
@@ -567,7 +567,7 @@ object coproduct {
       type Aux[C <: Coproduct, N <: Nat, Out0 <: Coproduct] = Impl[C, N] {type Out = Out0}
 
       implicit def singleZipWithIndexImpl[CH, N <: Nat]
-      (implicit w: Witness.Aux[N]): Aux[CH :+: CNil, N, (CH, N) :+: CNil] = new Impl[CH :+: CNil, N] {
+      (implicit w: ValueOf[N]): Aux[CH :+: CNil, N, (CH, N) :+: CNil] = new Impl[CH :+: CNil, N] {
         type Out = (CH, N) :+: CNil
 
         def apply(c: CH :+: CNil): Out = Coproduct[Out]((c.head.get, w.value))
@@ -576,7 +576,7 @@ object coproduct {
       implicit def cpZipWithIndexImpl[CH, CT <: Coproduct, N <: Nat, OutC <: Coproduct]
       (implicit
        impl: Impl[CT, Succ[N]],
-       w: Witness.Aux[N]
+       w: ValueOf[N]
         ): Aux[CH :+: CT, N, (CH, N) :+: impl.Out] =
         new Impl[CH :+: CT, N] {
           type Out = (CH, N) :+: impl.Out
@@ -637,7 +637,7 @@ object coproduct {
     }
 
     implicit def coproductLength[H, T <: Coproduct, N <: Nat]
-      (implicit lt: Aux[T, N], sn: Witness.Aux[Succ[N]]): Aux[H :+: T, Succ[N]] = new Length[H :+: T] {
+      (implicit lt: Aux[T, N], sn: ValueOf[Succ[N]]): Aux[H :+: T, Succ[N]] = new Length[H :+: T] {
         type Out = Succ[N]
 
         def apply(): Out = sn.value
@@ -1257,7 +1257,7 @@ object coproduct {
       }
 
     implicit def coproductReify[H, T <: Coproduct](implicit
-      wh: Witness.Aux[H],
+      wh: ValueOf[H],
       rt: Reify[T]
     ): Aux[H :+: T, H :: rt.Out] =
       new Reify[H :+: T] {

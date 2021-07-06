@@ -269,7 +269,7 @@ object nat {
     }
 
     implicit def range2[A <: Nat, B <: Nat, L <: HList, LO <: HList](implicit
-                                                                     w: Witness.Aux[B],
+                                                                     w: ValueOf[B],
                                                                      r: Range.Aux[A, B, L],
                                                                      prep: Prepend.Aux[L, B :: HNil, LO]
                                                                       ): Aux[A, Succ[B], LO] =
@@ -386,7 +386,7 @@ object nat {
     // nil ranges (both nil starting and recursive terminators)
 
     implicit def nilClosed[A <: Nat]
-    (implicit w: Witness.Aux[A])
+    (implicit w: ValueOf[A])
     : AuxF[Inclusive[A], Inclusive[A], A :: HNil] =
       new BoundedRange[Inclusive[A], Inclusive[A]] {
         type Out = A :: HNil
@@ -395,7 +395,7 @@ object nat {
       }
 
     implicit def nilOpen[A <: Nat]
-    (implicit w: Witness.Aux[A])
+    (implicit w: ValueOf[A])
     : AuxF[Exclusive[A], Exclusive[A], HNil] =
       new BoundedRange[Exclusive[A], Exclusive[A]] {
         type Out = HNil
@@ -404,7 +404,7 @@ object nat {
       }
 
     implicit def nilLeftOpenRightClosed[A <: Nat]
-    (implicit w: Witness.Aux[A])
+    (implicit w: ValueOf[A])
     : AuxF[Exclusive[A], Inclusive[A], A :: HNil] =
       new BoundedRange[Exclusive[A], Inclusive[A]] {
         type Out = A :: HNil
@@ -413,7 +413,7 @@ object nat {
       }
 
     implicit def nilLeftClosedRightOpen[A <: Nat]
-    (implicit w: Witness.Aux[A])
+    (implicit w: ValueOf[A])
     : AuxF[Inclusive[A], Exclusive[A], A :: HNil] =
       new BoundedRange[Inclusive[A], Exclusive[A]] {
         type Out = A :: HNil
@@ -433,7 +433,7 @@ object nat {
       }
 
     implicit def nilLeftClosedRightSoft[A <: Nat]
-    (implicit w: Witness.Aux[A])
+    (implicit w: ValueOf[A])
     : AuxF[Inclusive[A], SoftInclusive[A], A :: HNil] =
       new BoundedRange[Inclusive[A], SoftInclusive[A]] {
         type Out = A :: HNil
@@ -446,7 +446,7 @@ object nat {
 
     implicit def leftOpenRightSoft[A <: Nat, B <: Nat, Sub <: HList]
     (implicit
-      w: Witness.Aux[Succ[B]],
+      w: ValueOf[Succ[B]],
       subRange: AuxF[Exclusive[A], SoftInclusive[B], Sub])
     : AuxF[Exclusive[A], SoftInclusive[Succ[B]], Succ[B] :: Sub] =
       new BoundedRange[Exclusive[A], SoftInclusive[Succ[B]]] {
@@ -457,7 +457,7 @@ object nat {
 
     implicit def leftClosedRightSoft[A <: Nat, B <: Nat, Sub <: HList]
     (implicit
-      w: Witness.Aux[Succ[B]],
+      w: ValueOf[Succ[B]],
       subRange: AuxF[Inclusive[A], SoftInclusive[B], Sub])
     : AuxF[Inclusive[A], SoftInclusive[Succ[B]], Succ[B] :: Sub] =
       new BoundedRange[Inclusive[A], SoftInclusive[Succ[B]]] {
@@ -471,7 +471,7 @@ object nat {
 
     implicit def closed[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
     (implicit
-      w: Witness.Aux[Succ[B]],
+      w: ValueOf[Succ[B]],
       subRange: AuxF[Inclusive[A], SoftInclusive[B], Sub],
       reverse: ReversePrepend.Aux[Sub, Succ[B] :: HNil, Rev])
     : AuxF[Inclusive[A], Inclusive[Succ[B]], Rev] =
@@ -494,7 +494,7 @@ object nat {
 
     implicit def leftOpenRightClosed[A <: Nat, B <: Nat, Sub <: HList, Rev <: HList]
     (implicit
-      w: Witness.Aux[Succ[B]],
+      w: ValueOf[Succ[B]],
       subRange: AuxF[Exclusive[A], SoftInclusive[B], Sub],
       reverse: ReversePrepend.Aux[Sub, Succ[B] :: HNil, Rev])
     : AuxF[Exclusive[A], Inclusive[Succ[B]], Rev] =
@@ -529,7 +529,7 @@ object nat {
 
     implicit def leftClosedRightOpenReverse[A <: Nat, B <: Nat, Sub <: HList]
     (implicit
-      wA: Witness.Aux[Succ[A]],
+      wA: ValueOf[Succ[A]],
       subRange: AuxF[Exclusive[B], SoftInclusive[A], Sub])
     : AuxF[Inclusive[Succ[A]], Exclusive[B], Succ[A] :: Sub] =
       new BoundedRange[Inclusive[Succ[A]], Exclusive[B]] {
@@ -549,7 +549,7 @@ object nat {
 
     implicit def closedReverse[A <: Nat, B <: Nat, Sub <: HList]
     (implicit
-      wA: Witness.Aux[Succ[A]],
+      wA: ValueOf[Succ[A]],
       subRange: AuxF[Inclusive[B], SoftInclusive[A], Sub])
     : AuxF[Inclusive[Succ[A]], Inclusive[B], Succ[A] :: Sub] =
       new BoundedRange[Inclusive[Succ[A]], Inclusive[B]] {
@@ -561,7 +561,7 @@ object nat {
     object Bound {
 
       implicit def inclusive[A <: Nat]
-      (implicit w: Witness.Aux[A])
+      (implicit w: ValueOf[A])
       : Inclusive[A] =
         new Inclusive[A] {
           type Out = A
@@ -570,7 +570,7 @@ object nat {
         }
 
       implicit def exclusive[A <: Nat]
-      (implicit w: Witness.Aux[A])
+      (implicit w: ValueOf[A])
       : Exclusive[A] =
         new Exclusive[A] {
           type Out = A

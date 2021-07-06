@@ -16,16 +16,7 @@
 
 package shapeless
 
-trait NatWithScalaCompat {
-
-  implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] = ???
-
-  implicit def apply2[B, T <: B, TC[_ <: B, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] = ???
-}
-
 trait WidenScalaCompat {
-
-  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = ???
 
   implicit def materialize[T, Out >: T]: Widen.Aux[T, Out] = ???
 }

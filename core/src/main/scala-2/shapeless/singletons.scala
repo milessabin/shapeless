@@ -21,18 +21,7 @@ import shapeless.syntax.SingletonOps
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-trait NatWithScalaCompat {
-
-  implicit def apply[TC[_ <: Nat]](i: Any): NatWith[TC] =
-    macro SingletonTypeMacros.convertInstanceImplNat[TC]
-
-  implicit def apply2[B, T <: B, TC[_ <: B, _ <: Nat]](i: Int): NatWith[({ type λ[t <: Nat] = TC[T, t] })#λ] =
-    macro SingletonTypeMacros.convertInstanceImplNat1[B, T, TC]
-}
-
 trait WidenScalaCompat {
-
-  implicit def apply1[TC[_], T](t: T): WitnessWith.Lt[TC, T] = macro SingletonTypeMacros.convertInstanceImpl1[TC]
 
   implicit def materialize[T, Out]: Widen.Aux[T, Out] = macro SingletonTypeMacros.materializeWiden[T, Out]
 }
@@ -104,23 +93,7 @@ trait SingletonTypeUtils extends ReprTypes {
 
 class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
-  import definitions._
   import internal._
-
-  def mkWitness(sTpe: Type, s: Tree): Tree =
-    q"${reify(Witness)}.mkWitness[$sTpe]($s.asInstanceOf[$sTpe])"
-
-  def mkWitnessWith(tcTpe: Type, sTpe: Type, s: Tree, i: Tree): Tree = {
-    val witnessWith = reify(WitnessWith)
-    if (appliedType(tcTpe, AnyValTpe) <:< AnyRefTpe) q"$witnessWith.depInstance[$tcTpe, $sTpe]($s, $i)"
-    else q"$witnessWith.instance[$tcTpe, $sTpe]($s, $i)"
-  }
-
-  def mkWitnessNat(tcTpe: Type, nTpe: Type, tc: Tree): Tree = {
-    val natWith = reify(NatWith)
-    if (appliedType(tcTpe, AnyValTpe) <:< AnyRefTpe) q"$natWith.depInstance[$tcTpe, $nTpe]($tc)"
-    else q"$natWith.instance[$tcTpe, $nTpe]($tc)"
-  }
 
   def mkOps(sTpe: Type, w: Tree): Tree =
     q"${reify(SingletonOps)}.instance[$sTpe]($w)"
@@ -145,11 +118,6 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
     case _ => c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
   }
 
-  def materializeImpl[T: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T].dealias
-    mkWitness(tpe, extractSingletonValue(tpe))
-  }
-
   def extractResult(value: Tree)(mkResult: (Type, Tree) => Tree): Tree =
     (value.tpe, value) match {
       case (tpe @ ConstantType(const), _) =>
@@ -171,62 +139,12 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
         c.abort(c.enclosingPosition, s"Expression $value does not evaluate to a constant or a stable reference value")
     }
 
-  def convertImpl(t: Tree): Tree = extractResult(t)(mkWitness)
-
   def inferInstance(tci: Type): Tree = {
     val inferred = c.inferImplicitValue(tci)
     if (inferred == EmptyTree)
       c.abort(c.enclosingPosition, s"Unable to resolve implicit value of type $tci")
     inferred
   }
-
-  def convertInstanceImplNat[TC[_ <: Nat]](i: Tree)(
-    implicit tcTag: WeakTypeTag[TC[Nothing]]
-  ): Tree = convertInstanceImplNatAux(i, tcTag.tpe)
-
-  def convertInstanceImplNat1[B, T <: B, TC[_ <: B, _ <: Nat]](i: Tree)(
-    implicit tTag: WeakTypeTag[T], tcTag: WeakTypeTag[TC[Nothing, Nothing]]
-  ): Tree = {
-    val tTpe = tTag.tpe
-    val tc = tcTag.tpe.typeConstructor
-    val tcParam = tc.typeParams(1)
-    val tcTpe = polyType(List(tcParam), appliedType(tc, tTpe, tcParam.asType.toType))
-    convertInstanceImplNatAux(i, tcTpe)
-  }
-
-  def convertInstanceImplNatAux(i: Tree, tcTpe: Type): Tree = {
-    val nTpe = i match {
-      case NatLiteral(n) => mkNatTpe(n)
-      case _ => c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
-    }
-
-    val instTpe = appliedType(tcTpe, nTpe)
-    val iInst = inferInstance(instTpe)
-    mkWitnessNat(tcTpe, nTpe, iInst)
-  }
-
-  def convertInstanceImpl1[TC[_]](t: Tree)(
-    implicit tcTag: WeakTypeTag[TC[_]]
-  ): Tree = extractResult(t) { (sTpe, value) =>
-    val tc = tcTag.tpe.typeConstructor
-    val tci = appliedType(tc, sTpe)
-    val i = inferInstance(tci)
-    mkWitnessWith(tc, sTpe, value, i)
-  }
-
-  def convertInstanceImpl2[H, TC2[_ <: H, _], S <: H](t: Tree)(
-    implicit tc2Tag: WeakTypeTag[TC2[_, _]], sTag: WeakTypeTag[S]
-  ): Tree = extractResult(t) { (sTpe, value) =>
-    val tc2 = tc2Tag.tpe.typeConstructor
-    val tparam = tc2.typeParams.last.asType
-    val tc = polyType(tparam :: Nil, appliedType(tc2, sTag.tpe, tparam.toType))
-    val tci = appliedType(tc2, sTag.tpe, sTpe)
-    val i = inferInstance(tci)
-    mkWitnessWith(tc, sTpe, value, i)
-  }
-
-  def mkSingletonOps(t: Tree): Tree =
-    extractResult(t) { (tpe, tree) => mkOps(tpe, mkWitness(tpe, tree)) }
 
   def materializeWiden[T: WeakTypeTag, Out: WeakTypeTag]: Tree = {
     val tpe = weakTypeOf[T].dealias

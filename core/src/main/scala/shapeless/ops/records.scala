@@ -473,7 +473,7 @@ package record {
     }
 
     implicit def hlistKeys[K, V, T <: HList](
-      implicit wk: Witness.Aux[K], kt: Keys[T]
+      implicit wk: ValueOf[K], kt: Keys[T]
     ): Aux[FieldType[K, V] :: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :: T] {
         type Out = K :: kt.Out
@@ -524,7 +524,7 @@ package record {
         def apply(): Out = HNil
       }
 
-    implicit def hlistSwapRecord[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
+    implicit def hlistSwapRecord[K, V, T <: HList](implicit wk: ValueOf[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
       new SwapRecord[FieldType[K, V] :: T] {
         type Out = FieldType[V, K] :: kt.Out
         def apply(): Out = field[V](wk.value) :: kt()
@@ -552,7 +552,7 @@ package record {
       }
 
     implicit def hconsFields[K, V, T <: HList](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailFields: Fields[T]
     ): Aux[FieldType[K, V] :: T, (K, V) :: tailFields.Out] =
       new Fields[FieldType[K, V] :: T] {
@@ -589,7 +589,7 @@ package record {
       }
 
     implicit def hconsUnzipFields[K, V, T <: HList](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailUF: UnzipFields[T]
     ): Aux[FieldType[K, V] :: T, K :: tailUF.Keys, V :: tailUF.Values] =
       new UnzipFields[FieldType[K, V] :: T] {
@@ -628,7 +628,7 @@ package record {
     implicit def hnilToMapAnyNothing[L <: HNil]: Aux[L, Any, Nothing] = hnilToMap[Any, Nothing, L]
 
     implicit def hsingleToMap[K, V](implicit
-      wk: Witness.Aux[K]
+      wk: ValueOf[K]
     ): Aux[FieldType[K, V] :: HNil, K, V] =
       new ToMap[FieldType[K, V] :: HNil] {
         type Key = K
@@ -640,7 +640,7 @@ package record {
       tailToMap: ToMap.Aux[TH :: TT, TK, TV],
       keyLub: Lub[HK, TK, K],
       valueLub: Lub[HV, TV, V],
-      wk: Witness.Aux[HK]
+      wk: ValueOf[HK]
     ): Aux[FieldType[HK, HV] :: TH :: TT, K, V] =
       new ToMap[FieldType[HK, HV] :: TH :: TT] {
         type Key = K

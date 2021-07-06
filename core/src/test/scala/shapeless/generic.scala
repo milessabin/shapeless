@@ -340,7 +340,7 @@ class GenericTests {
     val c1 = gen.from(c0)
     typed[Enum](c1)
 
-    val abc = ops.coproduct.LiftAll[Witness.Aux, gen.Repr]
+    val abc = ops.coproduct.LiftAll[ValueOf, gen.Repr]
     assertEquals(List(A, B, C), abc.instances.toList.map(_.value))
   }
 
@@ -1251,7 +1251,7 @@ package TestPrefixes1 {
 }
 
 package TestSingletonMembers {
-  case class CC(i: Int, s: Witness.`"msg"`.T)
+  case class CC(i: Int, s: "msg")
 
   object Derivations2 {
     Generic[CC]

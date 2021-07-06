@@ -3125,23 +3125,23 @@ class HListTests {
     object Obj
 
     val l = SFoo(23, "foo", "bar", Obj, true)
-    typed[Witness.`23`.T :: Witness.`"foo"`.T :: Witness.`"bar"`.T :: Obj.type :: Witness.`true`.T :: HNil](l)
+    typed[23 :: "foo" :: "bar" :: Obj.type :: true :: HNil](l)
 
     // Annotations on the LHS here and subsequently, otherwise scalac will
     // widen the RHS to a non-singleton type.
-    val v1: Witness.`23`.T = l.head
+    val v1: 23 = l.head
     assertEquals(23, v1)
 
-    val v2: Witness.`"foo"`.T = l.tail.head
+    val v2: "foo" = l.tail.head
     assertEquals("foo", v2)
 
-    val v3: Witness.`"bar"`.T = l.tail.tail.head
+    val v3: "bar" = l.tail.tail.head
     assertEquals("bar", v3)
 
     val v4: Obj.type = l.tail.tail.tail.head
     assertEquals(Obj, v4)
 
-    val v5: Witness.`true`.T = l.tail.tail.tail.tail.head
+    val v5: true = l.tail.tail.tail.tail.head
     assertEquals(true, v5)
 
     val v6 = l.tail.tail.tail.tail.tail

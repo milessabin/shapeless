@@ -30,16 +30,11 @@ import ops.union.UnzipFields
 
 class UnionTests {
 
-  val wI = Witness("i")
-  type i = wI.T
+  type i = "i"
+  type s = "s"
+  type b = "b"
 
-  val wS = Witness("s")
-  type s = wS.T
-
-  val sB = Witness("b")
-  type b = sB.T
-
-  type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
+  type U = "i" ->> Int :+: "s" ->> String :+: "b" ->> Boolean :+: CNil
 
   @Test
   def testGetLiterals: Unit = {
@@ -216,7 +211,7 @@ class UnionTests {
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
 
-    type UF = (Witness.`"i"`.T, Int) :+: (Witness.`"s"`.T, String) :+: (Witness.`"b"`.T, Boolean) :+: CNil
+    type UF = ("i", Int) :+: ("s", String) :+: ("b", Boolean) :+: CNil
 
     {
       val f1 = u1.fields
@@ -233,7 +228,7 @@ class UnionTests {
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
 
-    type USF = (Witness.`"first"`.T, Option[Int]) :+: (Witness.`"second"`.T, Option[Boolean]) :+: (Witness.`"third"`.T, Option[String]) :+: CNil
+    type USF = ("first", Option[Int]) :+: ("second", Option[Boolean]) :+: ("third", Option[String]) :+: CNil
 
     {
       val f1 = us1.fields
@@ -376,19 +371,5 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
-  }
-
-  @Test
-  def testAltSyntax: Unit = {
-    type U0 =
-    Witness.`"foo"`.->>[String] :+:
-      Witness.`"bar"`.->>[Boolean] :+:
-      Witness.`"baz"`.->>[Double] :+:
-      CNil
-
-    type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
-
-    implicitly[U =:= U0]
-
   }
 }

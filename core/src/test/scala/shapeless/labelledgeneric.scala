@@ -112,7 +112,7 @@ object ScalazTaggedAux {
     implicit val hnilTC: TC[HNil] = instance("HNil")
 
     implicit def hconsTC[K <: String, H, T <: HList](
-      implicit key: Witness.Aux[K], headTC: => TC[H], tailTC: TC[T]
+      implicit key: ValueOf[K], headTC: => TC[H], tailTC: TC[T]
     ): TC[FieldType[K, H] :: T] = instance {
       s"${key.value}: ${headTC()} :: ${tailTC()}"
     }
@@ -130,7 +130,7 @@ object ScalazTaggedAux {
 
     // FIXME: Workaround #309
     implicit def hconsTCTagged[K <: String, H, HT, T <: HList](
-      implicit key: Witness.Aux[K], headTC: => TC[H @@ HT], tailTC: TC[T]
+      implicit key: ValueOf[K], headTC: => TC[H @@ HT], tailTC: TC[T]
     ): TC[FieldType[K, H @@ HT] :: T] = instance {
       s"${key.value}: ${headTC()} :: ${tailTC()}"
     }

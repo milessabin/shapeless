@@ -39,7 +39,7 @@ trait Lens[S, A] extends LPLens[S, A] { outer =>
 
   def >>(n: Nat)(implicit mkLens: MkNthFieldLens[A, n.N]): Lens[S, mkLens.Elem] = mkLens() compose this
 
-  def >>(k: Witness)(implicit mkLens: MkFieldLens[A, k.T]): Lens[S, mkLens.Elem] = mkLens() compose this
+  def >>[K <: Singleton](k: K)(implicit mkLens: MkFieldLens[A, K]): Lens[S, mkLens.Elem] = mkLens() compose this
 
   def selectDynamic(k: String)(
     implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, k.type, Nothing]
@@ -200,7 +200,7 @@ object OpticDefns {
 
   def hlistNthLens[L <: HList, N <: Nat](implicit mkLens: MkHListNthLens[L, N]) = mkLens()
 
-  def recordLens[R <: HList](k: Witness)(implicit mkLens: MkRecordSelectLens[R, k.T]) = mkLens()
+  def recordLens[R <: HList, K <: Singleton](k: K)(implicit mkLens: MkRecordSelectLens[R, K]) = mkLens()
 }
 
 trait OpticComposer[L, R] extends Serializable {

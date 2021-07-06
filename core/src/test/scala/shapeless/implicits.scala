@@ -182,8 +182,8 @@ class CachedTest {
     val h: Int = gen.to(q).head
     val th: String = gen.to(q).tail.head
 
-    val lh: FieldType[Witness.`"i"`.T, Int] = lgen.to(q).head
-    val lth: FieldType[Witness.`"s"`.T, String] = lgen.to(q).tail.head
+    val lh: FieldType["i", Int] = lgen.to(q).head
+    val lth: FieldType["s", String] = lgen.to(q).tail.head
   }
 
   @Test

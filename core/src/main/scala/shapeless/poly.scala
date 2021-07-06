@@ -110,7 +110,7 @@ object PolyDefns extends Cases {
     implicit def bindFirstCase[BF, F, Head, Tail <: HList, Result0](
         implicit
         unpack2: BF <:< BindFirst[F, Head],
-        witnessBF: Witness.Aux[BF],
+        witnessBF: ValueOf[BF],
         finalCall: Case.Aux[F, Head :: Tail, Result0]
     ): Case.Aux[BF, Tail, Result0] = new Case[BF, Tail] {
       type Result = Result0
@@ -133,7 +133,7 @@ object PolyDefns extends Cases {
       CurrentLength <: Nat
     ](implicit
       constraint: Self <:< Curried[F, ParameterAccumulator],
-      witnessSelf: Witness.Aux[Self],
+      witnessSelf: ValueOf[Self],
       finalCall: Case[F, AllParameters],
       length: ops.hlist.Length.Aux[CurrentParameter :: ParameterAccumulator, CurrentLength],
       reverseSplit: ops.hlist.ReverseSplit.Aux[AllParameters, CurrentLength, CurrentParameter :: ParameterAccumulator, RestParameters],
@@ -148,7 +148,7 @@ object PolyDefns extends Cases {
     implicit def lastParameter[Self, F, LastParameter, ParameterAccumulator <: HList, AllParameters <: HList, Result0](
         implicit
         constraint: Self <:< Curried[F, ParameterAccumulator],
-        witnessSelf: Witness.Aux[Self],
+        witnessSelf: ValueOf[Self],
         reverse: ops.hlist.Reverse.Aux[LastParameter :: ParameterAccumulator, AllParameters],
         finalCall: Case.Aux[F, AllParameters, Result0]
     ): Case1.Aux[Self, LastParameter, Result0] = Case1 {

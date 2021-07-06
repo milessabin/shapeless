@@ -61,4 +61,7 @@ object Nat extends Nats with NatScalaCompat {
   def toInt(n : Nat)(implicit toIntN : ToInt[n.N]) = toIntN()
 
   implicit def natOps[N <: Nat](n : N) : NatOps[N] = new NatOps(n)
+
+  implicit def valueOfZero: ValueOf[_0] = new ValueOf(_0)
+  implicit def valueOfSucc[N <: Nat]: ValueOf[Succ[N]] = new ValueOf(Succ[N]())
 }

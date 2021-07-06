@@ -298,7 +298,7 @@ object hlist {
       def apply(): Out = _0
     }
 
-    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : Witness.Aux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
+    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : ValueOf[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
       type Out = Succ[N]
       def apply(): Out = sn.value
     }
@@ -2392,7 +2392,7 @@ object hlist {
       instance.asInstanceOf[Aux[HNil, HNil, HNil]]
 
     implicit def hconsZipWithKeys[KH, VH, KT <: HList, VT <: HList, KVT <: HList](
-      implicit wkh: Witness.Aux[KH], zipWithKeys: ZipWithKeys.Aux[KT, VT, KVT]
+      implicit wkh: ValueOf[KH], zipWithKeys: ZipWithKeys.Aux[KT, VT, KVT]
     ): Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT] =
       instance.asInstanceOf[Aux[KH :: KT, VH :: VT, FieldType[KH, VH] :: KVT]]
   }
@@ -3013,7 +3013,7 @@ object hlist {
       }
 
     implicit def hlistReify[H, T <: HList, Out0 <: HList](implicit
-      wh: Witness.Aux[H],
+      wh: ValueOf[H],
       rt: Reify.Aux[T, Out0]
     ) : Aux[H :: T, H :: Out0] =
       new Reify[H :: T] {

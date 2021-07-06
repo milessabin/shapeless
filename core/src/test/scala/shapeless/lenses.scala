@@ -210,8 +210,7 @@ trait LensTests {
   def testRecords: Unit = {
     import labelled.FieldType, syntax.singleton._
 
-    val (fooT, barT) = (Witness("foo"), Witness("bar"))
-    type LT = (fooT.T FieldType Int) :: (barT.T FieldType String) :: HNil
+    type LT = ("foo" FieldType Int) :: ("bar" FieldType String) :: HNil
     val l = ("foo" ->> 42) :: ("bar" ->> "hi") :: HNil
     typed[LT](l)
 

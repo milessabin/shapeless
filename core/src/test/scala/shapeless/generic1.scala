@@ -152,13 +152,13 @@ package Generic1TestsAux {
       }
 
     // Pointed can be built for Singleton types
-    implicit def constSingletonPointed[T](implicit w: Witness.Aux[T]): Pointed[Const[T]#λ] =
+    implicit def constSingletonPointed[T](implicit w: ValueOf[T]): Pointed[Const[T]#λ] =
       new Pointed[Const[T]#λ] {
         def point[A](a: A): T = w.value
       }
 
     implicit def isCPointedSingleSingleton[C](
-      implicit w: Witness.Aux[C], pf: => Pointed[Const[C]#λ]
+      implicit w: ValueOf[C], pf: => Pointed[Const[C]#λ]
     ): Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] =
       new Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] {
         def point[A](a: A): Const[C]#λ[A] :+: Const[CNil]#λ[A] = Inl(pf.point(a))

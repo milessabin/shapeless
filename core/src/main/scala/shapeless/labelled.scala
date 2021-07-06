@@ -61,7 +61,7 @@ trait FieldPoly extends Poly1 {
       }
   }
 
-  def atField[A](w: Witness): FieldCaseBuilder[A, w.T] =
+  def atField[A, K <: Singleton](w: K): FieldCaseBuilder[A, K] =
     new FieldCaseBuilder
 }
 

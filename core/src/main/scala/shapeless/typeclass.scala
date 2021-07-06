@@ -107,7 +107,7 @@ trait LabelledProductTypeClassCompanion[C[_]] extends Serializable {
     new Instance(typeClass.emptyProduct)
 
   implicit def deriveHCons[HK <: String, HV, TKV <: HList, TV <: HList](
-    implicit key: Witness.Aux[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
+    implicit key: ValueOf[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
   ): Wrap.Aux[FieldType[HK, HV] :: TKV, HV :: TV] =
     new Instance[FieldType[HK, HV] :: TKV, HV :: TV](
       typeClass.product(key.value, ch, ct.unwrap)
@@ -174,7 +174,7 @@ trait LabelledTypeClassCompanion[C[_]] extends LabelledProductTypeClassCompanion
     new Instance(typeClass.emptyCoproduct)
 
   implicit def deriveCCons[HK <: String, HV, TKV <: Coproduct, TV <: Coproduct](
-    implicit key: Witness.Aux[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
+    implicit key: ValueOf[HK], ch: => C[HV], ct: Wrap.Aux[TKV, TV]
   ): Wrap.Aux[FieldType[HK, HV] :+: TKV, HV :+: TV] =
     new Instance[FieldType[HK, HV] :+: TKV, HV :+: TV](
       typeClass.coproduct(key.value, ch, ct.unwrap)
