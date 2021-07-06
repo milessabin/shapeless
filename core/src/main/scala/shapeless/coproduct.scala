@@ -16,6 +16,8 @@
 
 package shapeless
 
+import shapeless.labelled.{FieldType, field}
+
 import scala.annotation.tailrec
 
 /** Encodes a coproduct type, such as a sealed family of case classes.
@@ -124,8 +126,14 @@ object Coproduct extends CoproductScalaCompat {
   class MkCoproduct[C <: Coproduct] {
     def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t) 
   }
+
+  class MkUnionCoproduct[C <: Coproduct] {
+    def apply[K <: Singleton, T](k: K, t: T)(implicit inj: Inject[C, FieldType[K, T]]): C = inj(field[K](t))
+  }
   
   def apply[C <: Coproduct] = new MkCoproduct[C]
+
+  def fromUnion[C <: Coproduct] = new MkUnionCoproduct[C]
 
   implicit def cpOps[C <: Coproduct](c: C): CoproductOps[C] = new CoproductOps(c)
 
