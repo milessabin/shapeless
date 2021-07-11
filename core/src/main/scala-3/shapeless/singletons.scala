@@ -16,7 +16,19 @@
 
 package shapeless
 
+import scala.quoted._
+
 trait WidenScalaCompat {
 
-  implicit def materialize[T, Out >: T]: Widen.Aux[T, Out] = ???
+  transparent inline given [T <: Singleton]: Widen[T] = ${WidenScalaCompat.widenImpl[T]}
+}
+object WidenScalaCompat {
+
+  def widenImpl[T](using Quotes)(using tTpe: Type[T]): Expr[Widen[T]] = {
+    import quotes.reflect.*
+    val widenType = TypeRepr.of[T].dealias.widenTermRefByName.widen.asType
+    widenType.asInstanceOf[Type[_ >: T]] match {
+      case '[out] => '{Widen.instance[T, out](t => t.asInstanceOf[out])}
+    }
+  }
 }
