@@ -1290,14 +1290,18 @@ object PrivateCtorDefns {
   sealed trait PublicFamily
   case class PublicChild() extends PublicFamily
   private case class PrivateChild() extends PublicFamily
+
+  case class WrongApplySignature private(value: String)
+  object WrongApplySignature {
+    def apply(v: String): Either[String, WrongApplySignature] = Left("No ways")
+  }
 }
 
 object PrivateCtor {
   import PrivateCtorDefns._
 
-  illTyped("""
-  Generic[Access.PublicFamily]
-  """)
+  illTyped("Generic[Access.PublicFamily]")
+  illTyped("Generic[WrongApplySignature]")
 }
 
 object Thrift {
