@@ -201,6 +201,7 @@ trait IsCCons1ScalaCompat {
 }
 
 trait IsCCons10ScalaCompat {
+
   given fromSum[L[_], FH[_[_]], FT[_[_]]](
     using m: MirrorOf1Sum[L],
     fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
@@ -209,10 +210,10 @@ trait IsCCons10ScalaCompat {
     override type H[Z] = Head[m.MirroredElemTypes[Z]]
     override type T[Z] = Coproduct.TupleToCoproduct[Tail[m.MirroredElemTypes[Z]]]
 
-    override def pack[Z](u: Either[H[Z], T[Z]]): L[Z] = u match {
-      case Left(hz) => hz.asInstanceOf[L[Z]]
-      case Right(tz) => Coproduct.extractCoproduct(tz).asInstanceOf[L[Z]]
-    }
+    override def pack[Z](u: Either[H[Z], T[Z]]): L[Z] = ??? /*u match {
+      case Left(hz) => ??? //hz.asInstanceOf[L[Z]]
+      case Right(tz) => ??? //Coproduct.extractCoproduct(tz).asInstanceOf[L[Z]]
+    }*/
 
     override def unpack[Z](p: L[Z]): Either[H[Z], T[Z]] = {
       //TODO: Make sure this is correct

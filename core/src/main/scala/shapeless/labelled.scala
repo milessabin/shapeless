@@ -16,21 +16,6 @@
 
 package shapeless
 
-object labelled {
-
-  /** The type of fields with keys of singleton type `K` and value type `V`. */
-  type FieldType[K, +V] = V with KeyTag[K, V]
-  type KeyTag[K, +V]
-
-  type ->>[K, +V] = FieldType[K, V]
-
-  /** Yields a result encoding the supplied value with the singleton type `K` of its key. */
-  def field[K]: FieldBuilder[K] = new FieldBuilder(true)
-  class FieldBuilder[K](private val dummy: Boolean) extends AnyVal {
-    def apply[V](v: V): FieldType[K, V] = v.asInstanceOf[FieldType[K, V]]
-  }
-}
-
 trait Labelling[T] extends DepFn0 with Serializable { type Out <: HList }
 
 object Labelling extends LabellingScalaCompat {
