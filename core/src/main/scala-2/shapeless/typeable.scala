@@ -16,8 +16,61 @@
 
 package shapeless
 
+import shapeless.Typeable.{instance, safeSimpleName}
+
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+
+trait TypeableScalaCompat {
+
+  /**
+   * Typeable instance for singleton reference types
+   *
+   * @param value The singleton value
+   *
+   * @param name The name of the singleton
+   *
+   * @param serializable Whether the instance should be
+   * serializable. For singleton types of object definitions
+   * and symbols, this should be true, since they preserve
+   * their identity after serialization/deserialization.
+   * For other cases, it should be false, since the deserialized
+   * instance wouldn't work correctly.
+   */
+  def referenceSingletonTypeable[T <: AnyRef](value: T, name: String, serializable: Boolean): Typeable[T] =
+    new Typeable[T] {
+      def describe = s"$name.type"
+
+      def cast(t: Any): Option[T] =
+        if (t.asInstanceOf[AnyRef] eq value) Some(value) else None
+
+      @throws(classOf[java.io.IOException])
+      private def writeObject(out: java.io.ObjectOutputStream): Unit =
+        if (serializable) out.defaultWriteObject()
+        else throw new java.io.NotSerializableException("referenceSingletonTypeable")
+    }
+
+  /** Typeable instance for intersection types with typeable parents */
+  def intersectionTypeable[T](parents: Array[Typeable[_]]): Typeable[T] =
+    instance(parents.map(_.describe).mkString(" with ")) { t =>
+      if (t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
+    }
+
+  /** Typeable instance for polymorphic case classes with typeable elements */
+  def caseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]]): Typeable[T] =
+    namedCaseClassTypeable(erased, fields, safeSimpleName(erased))
+
+  /** Typeable instance for polymorphic case classes with typeable elements, specifying the name explicitly. */
+  def namedCaseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]], name: => String): Typeable[T] =
+    instance(s"$name[${fields.map(_.describe).mkString(",")}]") { t =>
+      if (classOf[Product].isAssignableFrom(erased) && erased.isInstance(t)) {
+        val cp = t.asInstanceOf[Product]
+        val ct = t.asInstanceOf[T]
+        val f = cp.productIterator.toList
+        if ((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(ct) else None
+      } else None
+    }
+}
 
 trait LowPriorityTypeableScalaCompat {
   implicit def dfltTypeable[T]: Typeable[T] = macro TypeableMacros.dfltTypeableImpl[T]

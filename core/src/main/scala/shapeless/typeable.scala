@@ -33,7 +33,7 @@ trait LowPriorityTypeable extends LowPriorityTypeableScalaCompat
  * Provides instances of `Typeable`. Also provides an implicit conversion which enhances arbitrary values with a
  * `cast[T]` method.
  */
-object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
+object Typeable extends TupleTypeableInstances with TypeableScalaCompat with LowPriorityTypeable {
   import java.{ lang => jl }
   import scala.reflect.ClassTag
   import syntax.typeable._
@@ -70,6 +70,25 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   implicit val booleanTypeable: Typeable[Boolean] = ValueTypeable[Boolean, jl.Boolean](classOf[jl.Boolean], "Boolean")
   /** Typeable instance for `Unit`. */
   implicit val unitTypeable: Typeable[Unit] = ValueTypeable[Unit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "Unit")
+
+  /** Typeable instance for `java.lang.Byte`. */
+  implicit val jlByteTypeable: Typeable[jl.Byte] = ValueTypeable[jl.Byte, jl.Byte](classOf[jl.Byte], "java.lang.Byte")
+  /** Typeable instance for `java.lang.Short`. */
+  implicit val jlShortTypeable: Typeable[jl.Short] = ValueTypeable[jl.Short, jl.Short](classOf[jl.Short], "java.lang.Short")
+  /** Typeable instance for `java.lang.Character`. */
+  implicit val jlCharacterTypeable: Typeable[jl.Character] = ValueTypeable[jl.Character, jl.Character](classOf[jl.Character], "java.lang.Character")
+  /** Typeable instance for `java.lang.Integer`. */
+  implicit val jlIntegerTypeable: Typeable[jl.Integer] = ValueTypeable[jl.Integer, jl.Integer](classOf[jl.Integer], "java.lang.Integer")
+  /** Typeable instance for `java.lang.Long`. */
+  implicit val jlLongTypeable: Typeable[jl.Long] = ValueTypeable[jl.Long, jl.Long](classOf[jl.Long], "java.lang.Long")
+  /** Typeable instance for `java.lang.Float`. */
+  implicit val jlFloatTypeable: Typeable[jl.Float] = ValueTypeable[jl.Float, jl.Float](classOf[jl.Float], "java.lang.Float")
+  /** Typeable instance for `java.lang.Double`. */
+  implicit val jlDoubleTypeable: Typeable[jl.Double] = ValueTypeable[jl.Double, jl.Double](classOf[jl.Double], "java.lang.Double")
+  /** Typeable instance for `java.lang.Boolean`. */
+  implicit val jlBooleanTypeable: Typeable[jl.Boolean] = ValueTypeable[jl.Boolean, jl.Boolean](classOf[jl.Boolean], "java.lang.Boolean")
+  /** Typeable instance for `scala.runtime.BoxedUnit`. */
+  implicit val srBoxedUnitTypeable: Typeable[runtime.BoxedUnit] = ValueTypeable[runtime.BoxedUnit, runtime.BoxedUnit](classOf[runtime.BoxedUnit], "scala.runtime.BoxedUnit")
 
   def isValClass[T](clazz: Class[T]) =
     clazz == classOf[jl.Byte] ||
@@ -116,39 +135,6 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
   /** Typeable instance for singleton reference types (not serializable by default) */
   def referenceSingletonTypeable[T <: AnyRef](value: T, name: String): Typeable[T] =
     referenceSingletonTypeable(value, name, serializable = false)
-
-  /**
-   * Typeable instance for singleton reference types
-   *
-   * @param value The singleton value
-   *
-   * @param name The name of the singleton
-   *
-   * @param serializable Whether the instance should be
-   * serializable. For singleton types of object definitions
-   * and symbols, this should be true, since they preserve
-   * their identity after serialization/deserialization.
-   * For other cases, it should be false, since the deserialized
-   * instance wouldn't work correctly.
-   */
-  def referenceSingletonTypeable[T <: AnyRef](value: T, name: String, serializable: Boolean): Typeable[T] =
-    new Typeable[T] {
-      def describe = s"$name.type"
-
-      def cast(t: Any): Option[T] =
-        if (t.asInstanceOf[AnyRef] eq value) Some(value) else None
-
-      @throws(classOf[java.io.IOException])
-      private def writeObject(out: java.io.ObjectOutputStream): Unit =
-        if (serializable) out.defaultWriteObject()
-        else throw new java.io.NotSerializableException("referenceSingletonTypeable")
-    }
-
-  /** Typeable instance for intersection types with typeable parents */
-  def intersectionTypeable[T](parents: Array[Typeable[_]]): Typeable[T] =
-    instance(parents.map(_.describe).mkString(" with ")) { t =>
-      if (t != null && parents.forall(_.cast(t).isDefined)) Some(t.asInstanceOf[T]) else None
-    }
   
   /** Typeable instance for `Option`. */
   implicit def optionTypeable[T](implicit castT: Typeable[T]): Typeable[Option[T]] =
@@ -211,21 +197,6 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     } else None
   }
 
-  /** Typeable instance for polymorphic case classes with typeable elements */
-  def caseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]]): Typeable[T] =
-    namedCaseClassTypeable(erased, fields, safeSimpleName(erased))
-
-  /** Typeable instance for polymorphic case classes with typeable elements, specifying the name explicitly. */
-  def namedCaseClassTypeable[T](erased: Class[T], fields: Array[Typeable[_]], name: => String): Typeable[T] =
-    instance(s"$name[${fields.map(_.describe).mkString(",")}]") { t =>
-      if (classOf[Product].isAssignableFrom(erased) && erased.isInstance(t)) {
-        val cp = t.asInstanceOf[Product]
-        val ct = t.asInstanceOf[T]
-        val f = cp.productIterator.toList
-        if ((f zip fields).forall { case (f, castF) => castF.cast(f).isDefined }) Some(ct) else None
-      } else None
-    }
-
   /** Typeable instance for `HNil`. */
   implicit val hnilTypeable: Typeable[HNil] = instance("HNil") { t =>
     if (t != null && t.isInstanceOf[HNil]) Some(t.asInstanceOf[HNil]) else None
@@ -274,11 +245,11 @@ object Typeable extends TupleTypeableInstances with LowPriorityTypeable {
     }
 
   // Workaround for https://issues.scala-lang.org/browse/SI-5425
-  private def safeSimpleName(erased: Class[_]): String =
+  private[shapeless] def safeSimpleName(erased: Class[_]): String =
     try erased.getSimpleName
     catch { case _: InternalError => erased.getName }
 
-  private def safeSimpleName(tag: ClassTag[_]): String =
+  private[shapeless] def safeSimpleName(tag: ClassTag[_]): String =
     safeSimpleName(tag.runtimeClass)
 }
 
