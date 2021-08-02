@@ -35,8 +35,7 @@ object RecordScalaCompat {
     import quotes.reflect.report
     val methodString = method.valueOrError
     if methodString != "apply" then
-      report.error(s"this method must be called as 'apply' not '$methodString'")
-      '{???}
+      report.throwError(s"this method must be called as 'apply' not '$methodString'")
 
     rec match {
       case Varargs(values) =>
@@ -52,15 +51,13 @@ object RecordScalaCompat {
               }
 
             case _ =>
-              report.error("Got invalid arguments in varargs")
-              '{???}
+              report.throwError("Got invalid arguments in varargs")
           }
 
         transform('{HNil}, values.reverse)
 
       case _ =>
-        report.error("this method must be called with vararg arguments")
-        '{???}
+        report.throwError("this method must be called with vararg arguments")
     }
   }
 }

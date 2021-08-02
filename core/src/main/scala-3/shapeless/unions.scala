@@ -29,8 +29,7 @@ object UnionScalaCompat {
     import quotes.reflect.report
     val methodString = method.valueOrError
     if methodString != "apply" then
-      report.error(s"this method must be called as 'apply' not '$methodString'")
-      '{???}
+      report.throwError(s"this method must be called as 'apply' not '$methodString'")
 
     rec match {
       case Varargs(Seq('{($keyExpr: String, $value: tp)})) =>
@@ -43,18 +42,15 @@ object UnionScalaCompat {
             Expr.summon[ops.coproduct.Inject[U, FieldType[keyTpe, tp]]] match {
               case Some(injectExpr) => '{$injectExpr($value.asInstanceOf[FieldType[keyTpe, tp]])}
               case None =>
-                report.error("Can not inject into coproduct")
-                '{???}
+                report.throwError("Can not inject into coproduct")
             }
         }
 
       case Varargs(_) =>
-        report.error("only one branch of a union may be inhabited")
-        '{???}
+        report.throwError("only one branch of a union may be inhabited")
 
       case _ =>
-        report.error("this method must be called with vararg arguments")
-        '{???}
+        report.throwError("this method must be called with vararg arguments")
     }
   }
 }

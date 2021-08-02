@@ -39,8 +39,6 @@ object DefaultScalaCompat {
                 defaultExpr.asTerm.tpe.widen.asType match {
                   case '[t2] => '{Some($defaultExpr.asInstanceOf[t2])}
                 }
-
-                //'{Some($defaultExpr)}
             }
 
           case None => '{None}
