@@ -16,6 +16,20 @@
 
 package shapeless
 
+import scala.quoted.*
+
 trait ScalaVersionSpecifics {
   def cachedImplicit[T]: T = ???
 }
+
+private[shapeless] def listExprToResult[Acc <: HList: Type, Out](acc: Expr[Acc], rest: Seq[Expr[Any]])(
+  makeResult: [Acc <: HList] => Type[Acc] ?=> Expr[Acc] => Expr[Out]
+)(using Quotes): Expr[Out] =
+  rest match {
+    case Nil => makeResult(acc)
+    case Seq('{$head: tpe}, tail*) =>
+      listExprToResult('{new ::($head, $acc)}, tail)(makeResult)
+  }
+
+private[shapeless] def listExprToHList(list: Seq[Expr[Any]])(using Quotes): Expr[HList] =
+  listExprToResult[HNil, HList]('{HNil: HNil}, list)([Acc <: HList] => (tpe: Type[Acc]) ?=> (expr: Expr[Acc]) => expr)

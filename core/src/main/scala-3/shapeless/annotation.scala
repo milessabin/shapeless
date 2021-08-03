@@ -16,23 +16,144 @@
 
 package shapeless
 
+import scala.compiletime.*
+import scala.deriving.*
+import scala.quoted.*
+
 trait AnnotationScalaCompat {
-  implicit def materialize[A, T]: Annotation[A, T] = ???
-  implicit def materializeOption[A, T]: Annotation[Option[A], T] = ???
+  inline given[A, T]: Annotation[A, T] = ${AnnotationMacros.singleAnnotationForType[A, T]}
+  inline given[A, T]: Annotation[Option[A], T] = ${AnnotationMacros.singleOptAnnotationForType[A, T]}
 }
 
 trait AnnotationsScalaCompat {
-  implicit def materialize[A, T, Out <: HList]: Annotations.Aux[A, T, Out] = ???
+  inline transparent given[A, T]: Annotations[A, T] = ${AnnotationMacros.allAnnotations[A, T]}
 }
 
 trait TypeAnnotationsScalaCompat {
-  implicit def materialize[A, T, Out <: HList]: TypeAnnotations.Aux[A, T, Out] = ???
+  inline transparent given[A, T]: TypeAnnotations[A, T] = ${AnnotationMacros.allTypeAnnotations[A, T]}
 }
 
 trait AllAnnotationsScalaCompat {
-  implicit def materialize[T, Out <: HList]: AllAnnotations.Aux[T, Out] = ???
+  inline transparent given[T]: AllAnnotations[T] = ${AnnotationMacros.allAnnotationsForType[T]}
 }
 
 trait AllTypeAnnotationsScalaCompat {
-  implicit def materialize[T, Out <: HList]: AllTypeAnnotations.Aux[T, Out] = ???
+  inline transparent given[T]: AllTypeAnnotations[T] = ${AnnotationMacros.allTypeAnnotationsForType[T]}
+}
+
+object AnnotationMacros {
+
+  private def errorIfInvalidAnnotation[A: Type](using quotes: Quotes): Unit = {
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[A]
+    val flags = tpe.typeSymbol.flags
+    if (flags.is(Flags.Abstract) || flags.is(Flags.Trait)) {
+      report.throwError(s"Bad annotation type ${tpe.show} is abstract")
+    }
+  }
+
+  private def findAnnotation[A: Type](using quotes: Quotes)(symbol: quotes.reflect.Symbol): Option[Expr[A]] = {
+    import quotes.reflect.*
+    val annotationType = TypeRepr.of[A]
+    symbol.annotations.find(_.tpe <:< annotationType).map(_.asExprOf[A])
+  }
+
+  private def singleAnnotationForTypeCommon[A: Type, T: Type](using quotes: Quotes): Option[Expr[A]] = {
+    import quotes.reflect.*
+    errorIfInvalidAnnotation[A]
+    findAnnotation[A](TypeRepr.of[T].typeSymbol)
+  }
+
+  def singleAnnotationForType[A: Type, T: Type](using quotes: Quotes): Expr[Annotation[A, T]] = {
+    import quotes.reflect.*
+    singleAnnotationForTypeCommon[A, T] match {
+      case Some(expr) => '{Annotation.mkAnnotation($expr)}
+      case None => report.throwError(s"No ${Type.show[A]} annotation found on ${Type.show[T]}")
+    }
+  }
+
+  def singleOptAnnotationForType[A: Type, T: Type](using quotes: Quotes): Expr[Annotation[Option[A], T]] = {
+    import quotes.reflect.*
+    singleAnnotationForTypeCommon[A, T] match {
+      case Some(expr) => '{Annotation.mkAnnotation(Some($expr))}
+      case None => '{Annotation.mkAnnotation(None)}
+    }
+  }
+
+  private def productOrSumSymbols[T: Type](using quotes: Quotes): Seq[quotes.reflect.Symbol] = {
+    import quotes.reflect.*
+    val tpe = TypeRepr.of[T]
+
+    tpe.classSymbol match {
+      case Some(clazzSym) if clazzSym.flags.is(Flags.Case) =>
+        clazzSym.primaryConstructor.paramSymss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
+
+      case Some(maybeSum) =>
+        Expr.summon[Mirror.Of[T]] match {
+          case Some('{$m: mt { type MirroredElemTypes = met}}) =>
+
+            def extractTupleTypes(tpe: TypeRepr, acc: List[TypeRepr]): List[TypeRepr] = tpe match {
+              case AppliedType(_, List(x: TypeRepr, xs: TypeRepr)) => extractTupleTypes(xs, x :: acc)
+              case _ => acc.reverse
+            }
+
+            extractTupleTypes(TypeRepr.of[met], Nil).map(_.typeSymbol)
+
+          case _ =>
+            report.errorAndAbort(s"No Mirror found for ${tpe.show}")
+        }
+
+      case None =>
+        report.errorAndAbort(s"${tpe.show} is not case class or the root of a sealed family of types")
+    }
+  }
+
+  def allAnnotations[A: Type, T: Type](using quotes: Quotes): Expr[Annotations[A, T]] = {
+    import quotes.reflect.*
+    errorIfInvalidAnnotation[A]
+
+    val annotations = productOrSumSymbols[T].map { symbol =>
+      findAnnotation[A](symbol) match {
+        case Some(expr) =>'{Some($expr)}
+        case None       => '{None}
+      }
+    }
+
+    listExprToResult[HNil, Annotations[A, T]]('{HNil: HNil}, annotations.reverse) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+      '{
+      new Annotations[A, T] {
+        override type Out = Acc
+        override def apply(): Acc = $acc
+      }
+      }
+    }
+  }
+
+  def allTypeAnnotations[A: Type, T: Type](using quotes: Quotes): Expr[TypeAnnotations[A, T]] = {
+    import quotes.reflect.*
+    errorIfInvalidAnnotation[A]
+    ???
+  }
+
+  def allAnnotationsForType[T: Type](using quotes: Quotes): Expr[AllAnnotations[T]] = {
+    import quotes.reflect.*
+
+    val annotationLists = productOrSumSymbols[T].map { symbol =>
+      listExprToHList(symbol.annotations.map(_.asExpr))
+    }
+    listExprToResult[HNil, AllAnnotations[T]]('{HNil: HNil}, annotationLists.reverse) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+      '{
+        new AllAnnotations[T] {
+          override type Out = Acc
+          override def apply(): Out = $acc
+        }
+      }
+    }
+  }
+
+  def allTypeAnnotationsForType[T: Type](using quotes: Quotes): Expr[AllTypeAnnotations[T]] = {
+    import quotes.reflect.*
+    ???
+  }
 }
