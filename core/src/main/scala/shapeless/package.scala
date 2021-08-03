@@ -36,16 +36,8 @@ package object shapeless extends ScalaVersionSpecifics {
   // Type inequalities
   trait =:!=[A, B] extends Serializable
 
-  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
-  implicit def neqAmbig1[A] : A =:!= A = unexpected
-  implicit def neqAmbig2[A] : A =:!= A = unexpected
-
   @scala.annotation.implicitNotFound("${A} must not be a subtype of ${B}")
   trait <:!<[A, B] extends Serializable
-
-  implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
-  implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
-  implicit def nsubAmbig2[A, B >: A] : A <:!< B = unexpected
 
   // Type-lambda for context bound
   type |¬|[T] = {

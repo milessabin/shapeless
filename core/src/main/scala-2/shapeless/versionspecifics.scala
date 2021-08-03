@@ -20,6 +20,14 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
 trait ScalaVersionSpecifics {
+  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
+  implicit def neqAmbig1[A] : A =:!= A = unexpected
+  implicit def neqAmbig2[A] : A =:!= A = unexpected
+
+  implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
+  implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
+  implicit def nsubAmbig2[A, B >: A] : A <:!< B = unexpected
+
   private[shapeless] def implicitNotFoundMessage(c: whitebox.Context)(tpe: c.Type): String = {
     val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
     val gTpe = tpe.asInstanceOf[global.Type]
