@@ -122,17 +122,17 @@ class TupleTests {
   val m2eim2esm2eim2eem2ed = (m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
 
   trait incInt0 extends Poly1 {
-    implicit def default[T] = at[T](t => ())
+    implicit def default[T]: Case.Aux[T, Unit] = at[T](t => ())
   }
   object incInt extends incInt0 {
-    implicit val caseInt = at[Int](i => Tuple1(i+1))
+    implicit val caseInt: Case.Aux[Int, Tuple1[Int]] = at[Int](i => Tuple1(i+1))
   }
 
   trait extendedChoose0 extends Poly1 {
-    implicit def default[T] = at[T](t => ())
+    implicit def default[T]: Case.Aux[T, Unit] = at[T](t => ())
   }
   object extendedChoose extends extendedChoose0 {
-    implicit def caseSet[T] = at[Set[T]](s => Tuple1(s.headOption))
+    implicit def caseSet[T]: Case.Aux[Set[T], Tuple1[Option[T]]] = at[Set[T]](s => Tuple1(s.headOption))
   }
 
   @Test
@@ -217,7 +217,7 @@ class TupleTests {
   }
 
   object dup extends Poly1 {
-    implicit def default[T] = at[T](t => (t, t))
+    implicit def default[T]: Case.Aux[T, (T, T)] = at[T](t => (t, t))
   }
 
   @Test
@@ -535,9 +535,6 @@ class TupleTests {
     type CISBa = Int :+: String :+: Boolean :+: CNil
     val CISBb = ToCoproduct[PISB]
     implicitly[CISBa =:= CISBb.Out]
-
-    type CISBc = the.`ToCoproduct[PISB]`.Out
-    implicitly[CISBa =:= CISBc]
   }
 
   @Test
@@ -552,12 +549,6 @@ class TupleTests {
     type PIISSB = (Int, Int, String, String, Boolean)
     val SISBb = ToSum[PIISSB]
     implicitly[CISBa =:= SISBb.Out]
-
-    type SISBc = the.`ToSum[PISB]`.Out
-    implicitly[CISBa =:= SISBc]
-
-    type SISBd = the.`ToSum[PIISSB]`.Out
-    implicitly[CISBa =:= SISBd]
   }
 
   @Test
@@ -1357,8 +1348,8 @@ class TupleTests {
   }
 
   object combine extends Poly {
-    implicit def caseCharString = use((c : Char, s : String) => s.indexOf(c))
-    implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
+    implicit def caseCharString: ProductCase.Aux[Char :: String :: HNil, Int] = use((c : Char, s : String) => s.indexOf(c))
+    implicit def caseIntBoolean: ProductCase.Aux[Int :: Boolean :: HNil, String] = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
   @Test
@@ -1475,8 +1466,8 @@ class TupleTests {
     object empty extends Poly1
 
     object complex extends Poly1 {
-      implicit val caseInt    = at[Int](_.toDouble)
-      implicit val caseString = at[String](_ => 1)
+      implicit val caseInt: Case.Aux[Int, Double]    = at[Int](_.toDouble)
+      implicit val caseString: Case.Aux[String, Int] = at[String](_ => 1)
     }
 
     { // () collect p
@@ -1628,9 +1619,9 @@ class TupleTests {
   }
 
   object smear extends Poly {
-    implicit val caseIntInt    = use((x: Int, y: Int) => x + y)
-    implicit val caseStringInt = use((x: String, y: Int) => x.toInt + y)
-    implicit val caseIntString = use((x: Int, y: String) => x + y.toInt)
+    implicit val caseIntInt: ProductCase.Aux[Int :: Int :: HNil, Int] = use((x: Int, y: Int) => x + y)
+    implicit val caseStringInt: ProductCase.Aux[String :: Int :: HNil, Int] = use((x: String, y: Int) => x.toInt + y)
+    implicit val caseIntString: ProductCase.Aux[Int :: String :: HNil, Int] = use((x: Int, y: String) => x + y.toInt)
   }
 
   @Test
@@ -1787,7 +1778,7 @@ class TupleTests {
   @Test
   def testGrouper: Unit = {
     object toInt extends Poly1 {
-      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]): Case.Aux[N, Int] = at[N](_ => toi())
     }
 
     def range[R <: HList, OutL <: HList](a: Nat, b: Nat)(implicit
@@ -1842,7 +1833,7 @@ class TupleTests {
   @Test
   def testGrouper2: Unit = {
     object toInt extends Poly1 {
-      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]): Case.Aux[N, Int] = at[N](_ => toi())
     }
 
     def range[R <: HList, T, OutL <: HList](a: Nat, b: Nat)(implicit

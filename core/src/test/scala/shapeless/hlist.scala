@@ -222,7 +222,7 @@ class HListTests {
   }
 
   object dup extends Poly1 {
-    implicit def default[T] = at[T](t => t :: t :: HNil)
+    implicit def default[T]: Case.Aux[T, T :: T :: HNil] = at[T](t => t :: t :: HNil)
   }
 
   @Test
@@ -1404,32 +1404,6 @@ class HListTests {
     assertEquals(2.0, sd, Double.MinPositiveValue)
   }
   @Test
-  def testSelectMany: Unit = {
-    val si = 1 :: true :: "foo" :: 2.0 :: HNil
-
-    val si1 = si.selectManyType[HNil]
-    assertTypedEquals[HNil](HNil, si1)
-
-    val si2 = si.selectManyType[_0::HNil]
-    assertTypedEquals[Int::HNil](1::HNil, si2)
-
-    val si3 = si.selectManyType[_2::HNil]
-    assertTypedEquals[String::HNil]("foo"::HNil, si3)
-
-    val si4 = si.selectManyType[_0::_1::_2::_3::HNil]
-    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si4)
-
-    val si5 = si.selectMany(0)
-    assertTypedEquals[Int::HNil](1::HNil, si5)
-
-    val si6 = si.selectMany(2)
-    assertTypedEquals[String::HNil]("foo"::HNil, si6)
-
-    val si7 = si.selectMany(0,1,2,3)
-    assertTypedEquals[Int::Boolean::String::Double::HNil](1 :: true :: "foo" :: 2.0 :: HNil, si7)
-
-  }
-  @Test
   def testSelectRange: Unit = {
     val sl = 1 :: true :: "foo" :: 2.0 :: HNil
 
@@ -2137,8 +2111,8 @@ class HListTests {
   }
 
   object combine extends Poly {
-    implicit def caseCharString = use((c : Char, s : String) => s.indexOf(c))
-    implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
+    implicit def caseCharString: ProductCase.Aux[Char :: String :: HNil, Int] = use((c : Char, s : String) => s.indexOf(c))
+    implicit def caseIntBoolean: ProductCase.Aux[Int :: Boolean :: HNil, String] = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
   object toMapL extends Poly2 {
@@ -2283,7 +2257,7 @@ class HListTests {
     object empty extends Poly2
 
     object add extends Poly2 {
-      implicit val caseIntInt = at[Int, Int](_ + _)
+      implicit val caseIntInt: Case.Aux[Int, Int, Int] = at[Int, Int](_ + _)
     }
 
     // HNil zipWith HNil (emptyFn)
@@ -2310,9 +2284,9 @@ class HListTests {
       val right: Right = 2 :: 2.3 :: "3.4" :: true :: HNil
 
       object zipFn extends Poly2 {
-        implicit val caseIntInt       = at[Int, Int](_ + _)
-        implicit val caseStringDouble = at[String, Double](_ + " -> " + _.toString)
-        implicit val caseDoubleString = at[Double, String](_ + _.toDouble)
+        implicit val caseIntInt: Case.Aux[Int, Int, Int]                = at[Int, Int](_ + _)
+        implicit val caseStringDouble: Case.Aux[String, Double, String] = at[String, Double](_ + " -> " + _.toString)
+        implicit val caseDoubleString: Case.Aux[Double, String, Double] = at[Double, String](_ + _.toDouble)
       }
 
       val r5 = left.zipWith(right)(zipFn)
@@ -2341,7 +2315,7 @@ class HListTests {
       """)
 
       object noIntFn extends Poly2 {
-        implicit val caseDoubleDouble = at[Double, Double](_ + _)
+        implicit val caseDoubleDouble: Case.Aux[Double, Double, Double] = at[Double, Double](_ + _)
       }
 
       illTyped("""
@@ -2379,7 +2353,7 @@ class HListTests {
 
     // Explicit type argument
     {
-      val result = orig.values.zipWithKeys[HList.`"intField", "boolField"`.T]
+      val result = orig.values.zipWithKeys["intField" :: "boolField" :: HNil]
       sameTyped(orig)(result)
       assertEquals(orig, result)
       val int = result.get("intField")
@@ -2389,8 +2363,8 @@ class HListTests {
       illTyped("""result.get("otherField")""")
 
       // key/value lengths must match up
-      illTyped(""" orig.tail.values.zipWithKeys[HList.`"intField", "boolField"`.T] """)
-      illTyped(""" orig.values.zipWithKeys[HList.`"boolField"`.T] """)
+      illTyped(""" orig.tail.values.zipWithKeys["intField" :: "boolField" :: HNil] """)
+      illTyped(""" orig.values.zipWithKeys["boolField" :: HNil] """)
     }
   }
 
@@ -2401,8 +2375,8 @@ class HListTests {
     object empty extends Poly1
 
     object complex extends Poly1 {
-      implicit val caseInt    = at[Int](_.toDouble)
-      implicit val caseString = at[String](_ => 1)
+      implicit val caseInt: Case.Aux[Int, Double]    = at[Int](_.toDouble)
+      implicit val caseString: Case.Aux[String, Int] = at[String](_ => 1)
     }
 
     val in: Int :: String :: Double :: HNil = 1 :: "foo" :: 2.2 :: HNil
@@ -2791,9 +2765,9 @@ class HListTests {
   }
 
   object smear extends Poly {
-    implicit val caseIntInt    = use((x: Int, y: Int) => x + y)
-    implicit val caseStringInt = use((x: String, y: Int) => x.toInt + y)
-    implicit val caseIntString = use((x: Int, y: String) => x + y.toInt)
+    implicit val caseIntInt: ProductCase.Aux[Int :: Int :: HNil, Int] = use((x: Int, y: Int) => x + y)
+    implicit val caseStringInt: ProductCase.Aux[String :: Int :: HNil, Int] = use((x: String, y: Int) => x.toInt + y)
+    implicit val caseIntString: ProductCase.Aux[Int :: String :: HNil, Int] = use((x: Int, y: String) => x + y.toInt)
   }
 
   @Test
@@ -2958,10 +2932,10 @@ class HListTests {
   @Test
   def testPolyFill = {
     object zero extends Poly0 {
-      implicit val zeroInt = at[Int](0)
+      implicit val zeroInt: Case0[Int] = at[Int](0)
     }
 
-    implicit val emptyString = zero.at[String]("")
+    implicit val emptyString: zero.Case0[String] = zero.at[String]("")
 
     val out = HList.fillWith[Int :: String :: Int :: HNil](zero)
     assertEquals(out, 0 :: "" :: 0 :: HNil)
@@ -3023,7 +2997,8 @@ class HListTests {
   def testToCoproduct: Unit = {
     type PISB = Int :: String :: Boolean :: HNil
     type CISBa = Int :+: String :+: Boolean :+: CNil
-    type CISBb = the.`ToCoproduct[PISB]`.Out
+    val toCoproduct = ToCoproduct[PISB]
+    type CISBb = toCoproduct.Out
     implicitly[CISBa =:= CISBb]
   }
 
@@ -3031,11 +3006,13 @@ class HListTests {
   def testToSum: Unit = {
     type PISB = Int :: String :: Boolean :: HNil
     type CISBa = Int :+: String :+: Boolean :+: CNil
-    type SISBa = the.`ToSum[PISB]`.Out
+    val toSum1 = ToSum[PISB]
+    type SISBa = toSum1.Out
     implicitly[CISBa =:= SISBa]
 
     type PIISSB = Int :: Int :: String :: String :: Boolean :: HNil
-    type SISBb = the.`ToSum[PIISSB]`.Out
+    val toSum2 = ToSum[PIISSB]
+    type SISBb = toSum2.Out
     implicitly[CISBa =:= SISBb]
   }
 
@@ -3043,157 +3020,25 @@ class HListTests {
   def testHListTypeSelector: Unit = {
     import syntax.singleton._
 
-    typed[HList.` `.T](HNil)
+    typed[HNil](HNil)
 
-    typed[HList.`Int`.T](23 :: HNil)
+    typed[Int :: HNil](23 :: HNil)
 
-    typed[HList.`Int, String`.T](23 :: "foo" :: HNil)
+    typed[Int :: String :: HNil](23 :: "foo" :: HNil)
 
-    typed[HList.`Int, String, Boolean`.T](23 :: "foo" :: true :: HNil)
+    typed[Int :: String :: Boolean :: HNil](23 :: "foo" :: true :: HNil)
 
     // Literal types
 
-    typed[HList.`2`.T](2.narrow :: HNil)
+    typed[2 :: HNil](2.narrow :: HNil)
 
-    typed[HList.`2, "a", true`.T](2.narrow :: "a".narrow :: true.narrow :: HNil)
+    typed[2 :: "a" :: true :: HNil](2.narrow :: "a".narrow :: true.narrow :: HNil)
 
-    illTyped(""" typed[HList.`2`.T](3.narrow :: HNil) """)
+    illTyped(""" typed[2 :: HNil](3.narrow :: HNil) """)
 
     // Mix of standard and literal types
 
-    typed[HList.`2, String, true`.T](2.narrow :: "a" :: true.narrow :: HNil)
-  }
-
-  object Foo extends ProductArgs {
-    def applyProduct[L <: HList](args: L): L = args
-  }
-
-  @Test
-  def testProductArgs: Unit = {
-    val l = Foo(23, "foo", true)
-    typed[Int :: String :: Boolean :: HNil](l)
-
-    val v1 = l.head
-    typed[Int](v1)
-    assertEquals(23, v1)
-
-    val v2 = l.tail.head
-    typed[String](v2)
-    assertEquals("foo", v2)
-
-    val v3 = l.tail.tail.head
-    typed[Boolean](v3)
-    assertEquals(true, v3)
-
-    val v4 = l.tail.tail.tail
-    typed[HNil](v4)
-
-    illTyped("""
-      r.tail.tail.tail.head
-    """)
-  }
-
-  object SFoo extends SingletonProductArgs {
-    def applyProduct[L <: HList](args: L): L = args
-  }
-
-  case class Quux(i: Int, s: String, b: Boolean)
-
-  object selectAll extends SingletonProductArgs {
-    class Apply[K <: HList] {
-      def from[T, R <: HList, S <: HList, Out](t: T)
-        (implicit
-          gen: LabelledGeneric.Aux[T, R],
-          sel: SelectAll.Aux[R, K, S],
-          tp: Tupler.Aux[S, Out]
-        ): Out =
-        tp(sel(gen.to(t)))
-    }
-
-    def applyProduct[K <: HList](keys: K) = new Apply[K]
-  }
-
-  trait NonSingletonHNilTC[T]
-  object NonSingletonHNilTC {
-    def apply[T](t: T)(implicit i: NonSingletonHNilTC[T]): NonSingletonHNilTC[T] = i
-
-    implicit val nsHNilTC: NonSingletonHNilTC[HNil] = new NonSingletonHNilTC[HNil] {}
-  }
-
-  @Test
-  def testSingletonProductArgs: Unit = {
-    object Obj
-
-    val l = SFoo(23, "foo", "bar", Obj, true)
-    typed[23 :: "foo" :: "bar" :: Obj.type :: true :: HNil](l)
-
-    // Annotations on the LHS here and subsequently, otherwise scalac will
-    // widen the RHS to a non-singleton type.
-    val v1: 23 = l.head
-    assertEquals(23, v1)
-
-    val v2: "foo" = l.tail.head
-    assertEquals("foo", v2)
-
-    val v3: "bar" = l.tail.tail.head
-    assertEquals("bar", v3)
-
-    val v4: Obj.type = l.tail.tail.tail.head
-    assertEquals(Obj, v4)
-
-    val v5: true = l.tail.tail.tail.tail.head
-    assertEquals(true, v5)
-
-    val v6 = l.tail.tail.tail.tail.tail
-    typed[HNil](v6)
-
-    illTyped("r.tail.tail.tail.tail.tail.tail.head")
-
-    // Verify that we infer HNil rather than HNil.type at the end
-    NonSingletonHNilTC(SFoo(23).tail)
-    NonSingletonHNilTC(SFoo())
-
-    val quux = Quux(23, "foo", true)
-    val ib = selectAll("i", "b").from(quux)
-    typed[(Int, Boolean)](ib)
-    assertEquals((23, true), ib)
-  }
-
-  object Bar extends FromProductArgs {
-    def sumLabel(k: String, i1: Int, i2: Int) = (k, i1 + i2)
-    def sumImplicitLabel(k: String, i1: Int)(implicit i2: Int) = (k, i1 + i2)
-    def sumMultipleParamListLabel(k: String, i1: Int)(i2: Int) = (k, i1 + i2)
-  }
-
-  @Test
-  def testFromProductArgs: Unit = {
-    val p = "foo" :: 1 :: 3 :: HNil
-
-    val v1 = Bar.sumLabelProduct(p)
-    typed[(String, Int)](v1)
-    assertEquals(("foo", 4), v1)
-
-    val p2 = "bar" :: 1 :: 2 :: HNil
-    val v2 = Bar.sumMultipleParamListLabelProduct(p2)
-    typed[(String, Int)](v2)
-    assertEquals(("bar", 3), v2)
-
-    illTyped("""
-      Bar.sumImplicitLabelProduct("foo" :: 1 :: 3 :: HNil)
-    """)
-
-    implicit val i2 = 7
-    val v3 = Bar.sumImplicitLabelProduct("foo" :: 1 :: HNil)
-    typed[(String, Int)](v3)
-    assertEquals(("foo", 8), v3)
-
-    illTyped("""
-      Bar.sumLabelProduct("foo" :: "bar" :: 1 :: 2 :: HNil)
-    """)
-
-    illTyped("""
-      Bar.sumMultipleParamListLabelProduct("foo" :: "1" :: 2 :: 3 :: HNil)
-    """)
+    typed[2 :: String :: true :: HNil](2.narrow :: "a" :: true.narrow :: HNil)
   }
 
   @Test
@@ -3221,78 +3066,10 @@ class HListTests {
 
   }
 
-  object FooNat extends NatProductArgs {
-    def applyNatProduct[L <: HList](args: L): L = args
-  }
-  object FooNatTypeParams extends NatProductArgs {
-    def applyNatProduct[L <: HList](implicit len: Length[L]) = len()
-  }
-
-  @Test
-  def testNatProductArgs: Unit = {
-    val l = FooNat(1, 2, 3)
-    typed[_1 :: _2 :: _3 :: HNil](l)
-
-    val v1 = l.head
-    typed[_1](v1)
-    assertEquals(_1, v1)
-
-    val v2 = l.tail.head
-    typed[_2](v2)
-    assertEquals(_2, v2)
-
-    val v3 = l.tail.tail.head
-    typed[_3](v3)
-    assertEquals(_3, v3)
-
-    val v4 = l.tail.tail.tail
-    typed[HNil](v4)
-
-    illTyped("""
-      r.tail.tail.tail.head
-             """)
-    val res = FooNatTypeParams(1,2,3,4)
-    assertEquals(_4,res)
-  }
-
-  implicit class Interpolator(val sc: StringContext) {
-    class Args extends ProductArgs {
-      def applyProduct[L <: HList](l: L): L = l
-    }
-
-    val hlist: Args = new Args
-  }
-
-  @Test
-  def testStringInterpolator: Unit = {
-    val (i, s, b) = (23, "foo", true)
-    val l = hlist"Int: $i, String: $s, Boolean: $b"
-    typed[Int :: String :: Boolean :: HNil](l)
-
-    val v1 = l.head
-    typed[Int](v1)
-    assertEquals(23, v1)
-
-    val v2 = l.tail.head
-    typed[String](v2)
-    assertEquals("foo", v2)
-
-    val v3 = l.tail.tail.head
-    typed[Boolean](v3)
-    assertEquals(true, v3)
-
-    val v4 = l.tail.tail.tail
-    typed[HNil](v4)
-
-    illTyped("""
-      r.tail.tail.tail.head
-    """)
-  }
-
   @Test
   def testCollectFirst: Unit = {
     object Foo extends Poly1{
-      implicit def iinst = at[Int]{ _ + 1 }
+      implicit def iinst: Case.Aux[Int, Int] = at[Int]{ _ + 1 }
     }
     val hlist1 = "foo" :: 2.0 :: 1 :: HNil
     assertTypedEquals[Int](hlist1.collectFirst(Foo), 2)
@@ -3304,7 +3081,7 @@ class HListTests {
   @Test
   def testGrouper: Unit = {
     object toInt extends Poly1 {
-      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]) = at[N](_ => toi())
+      implicit def default[N <: Nat](implicit toi: ops.nat.ToInt[N]): Case.Aux[N, Int] = at[N](_ => toi())
     }
     def range[R <: HList](a: Nat, b: Nat)(implicit
                                           range: ops.nat.Range.Aux[a.N, b.N, R],
@@ -3426,14 +3203,12 @@ class HListTests {
 
     assertTypedEquals(HNil, Reify[HNil].apply())
 
-    val s1 = HList.`"a"`
-    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
+    assertTypedEquals("a".narrow :: HNil, Reify["a" :: HNil].apply())
 
-    val s2 = HList.`"a", 1, "b", true`
-    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
+    assertTypedEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify["a" :: 1 :: "b" :: true :: HNil].apply())
 
     illTyped("Reify[String :: Int :: HNil]")
-    illTyped("""Reify[String :: HList.`"a", 1, "b", true`.T]""")
+    illTyped("""Reify[String :: ("a" :: 1 :: "b" :: true :: HNil)]""")
   }
 
   @Test

@@ -214,11 +214,11 @@ trait LensTests {
     val l = ("foo" ->> 42) :: ("bar" ->> "hi") :: HNil
     typed[LT](l)
 
-    val li = recordLens[LT]("foo")
+    val li = recordLens[LT, "foo"]("foo")
     assertEquals(42, li.get(l))
     assertEquals(("foo" ->> 84) :: ("bar" ->> "hi") :: HNil, li.set(l)(84))
 
-    val ls = recordLens[LT]("bar")
+    val ls = recordLens[LT, "bar"]("bar")
     assertEquals("hi", ls.get(l))
     assertEquals(("foo" ->> 42) :: ("bar" ->> "bye") :: HNil, ls.set(l)("bye"))
   }

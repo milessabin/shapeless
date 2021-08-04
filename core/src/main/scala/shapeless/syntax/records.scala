@@ -66,15 +66,14 @@ final class RecordOps[L <: HList](val l : L) extends AnyVal with Serializable {
   /**
    * Updates a field having a value with type A by given function.
    */
-  def updateWith[K <: Singleton, W, FSLOut](k: K)(f: FSLOut => W)
-    (implicit fsl: FSL[K, FSLOut], modifier: Modifier[L, K, FSLOut, W]): modifier.Out = modifier(l, f)
-  type FSL[K, Out] = Selector.Aux[L, K, Out]
+  def updateWith[K <: Singleton, FSLOut, W](k: SingletonWithTypeAtField.Aux[L, K, FSLOut])(f: FSLOut => W)(implicit modifier: Modifier[L, K, FSLOut, W]): modifier.Out =
+    modifier(l, f)
 
   /**
    * Remove the field associated with the singleton typed key k, returning both the corresponding value and the updated
    * record. Only available if this record has a field with keyType equal to the singleton type K.
    */
-  def remove[K](k: ValueOf[K])(implicit remover: Remover[L, K]): remover.Out = remover(l)
+  def remove[K <: Singleton](k: K)(implicit remover: Remover[L, K]): remover.Out = remover(l)
   
   /**
    * Updates or adds to this record a field of type F.
@@ -163,5 +162,21 @@ final case class DynamicRecordOps[L <: HList](l : L) extends Dynamic {
   /**
    * Allows dynamic-style access to fields of the record whose keys are Symbols.
    */
-  def selectDynamic(key: String)(implicit selector: Selector[L, key.type]): selector.Out = selector(l)
+  def selectDynamic[K <: String with Singleton](key: K)(implicit selector: Selector[L, K]): selector.Out = selector(l)
+}
+
+trait SingletonWithTypeAtField[L <: HList] {
+  type K <: Singleton
+  type Tpe
+  val value: K
+}
+object SingletonWithTypeAtField {
+  type Aux[L <: HList, K0 <: Singleton, Tpe0] = SingletonWithTypeAtField[L] { type K = K0; type Tpe = Tpe0 }
+
+  implicit def fromKey[L <: HList, K0 <: Singleton, Out](k: K0)(implicit sel: ops.record.Selector.Aux[L, K0, Out]): SingletonWithTypeAtField.Aux[L, K0, Out] =
+    new SingletonWithTypeAtField[L] {
+      type K = K0
+      type Tpe = Out
+      val value: K0 = k
+    }
 }

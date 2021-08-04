@@ -19,7 +19,7 @@ package shapeless
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-trait Generic1ScalaCompat {
+trait Generic1ScalaCompat extends Generic10 {
 
   implicit def mkGeneric10[T[_], U[_], FR[_[_], _[_]]]: Generic1[T, ({ type λ[t[_]] = FR[t, U] })#λ] =
     macro Generic1Macros.mkGeneric1Impl[T, ({ type λ[t[_]] = FR[t, U] })#λ]
@@ -32,7 +32,7 @@ trait Generic10ScalaCompat {
   implicit def apply[T[_], FR[_[_]]]: Generic1[T, FR] = macro Generic1Macros.mkGeneric1Impl[T, FR]
 }
 
-trait IsHCons1ScalaCompat {
+trait IsHCons1ScalaCompat extends IsHCons10 {
 
   implicit def mkIsHCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsHCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsHCons1Macros.mkIsHCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
@@ -51,7 +51,7 @@ trait IsHCons10ScalaCompat {
   implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsHCons1[L, FH, FT] = macro IsHCons1Macros.mkIsHCons1Impl[L, FH, FT]
 }
 
-trait IsCCons1ScalaCompat {
+trait IsCCons1ScalaCompat extends IsCCons10 {
 
   implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]]: IsCCons1[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT] =
     macro IsCCons1Macros.mkIsCCons1Impl[L, ({ type λ[t[_]] = FH[t, U] })#λ, FT]
@@ -70,7 +70,7 @@ trait IsCCons10ScalaCompat {
   implicit def apply[L[_], FH[_[_]], FT[_[_]]]: IsCCons1[L, FH, FT] = macro IsCCons1Macros.mkIsCCons1Impl[L, FH, FT]
 }
 
-trait Split1ScalaCompat {
+trait Split1ScalaCompat extends Split10 {
 
   implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI] =
     macro Split1Macros.mkSplit1Impl[L, ({ type λ[t[_]] = FO[t, U] })#λ, FI]

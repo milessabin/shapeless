@@ -596,6 +596,7 @@ class TypeableTests {
     val one: One = 1
     assertEquals("Typeable[Int(1)]", typeableString(one))
 
+    object FooBar
     type FooBarT = FooBar.type 
     val foobar: FooBarT = FooBar
     assertEquals("Typeable[FooBar.type]", typeableString(foobar))

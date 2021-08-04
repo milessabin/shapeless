@@ -35,3 +35,34 @@ trait NatScalaCompat {
     else if i == 0 then (new _0).asInstanceOf[IntToNat[i.type]]
     else (new Succ).asInstanceOf[IntToNat[i.type]]
 }
+
+trait NatWithTypeAtPosScalaCompat {
+
+  //Transparent gives better types here
+  transparent inline implicit def fromIntList[L <: HList, Out](inline i: Int)(implicit at: ops.hlist.At.Aux[L, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[L] =
+    if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
+    else {
+      type N0 = Nat.IntToNat[i.type]
+      val n = Nat(i)
+
+      new NatWithTypeAtPos[L] {
+        type N = N0
+        type Tpe = Out
+        val value: N = n.asInstanceOf[N]
+      }
+    }
+
+  //Transparent gives better types here
+  transparent inline implicit def fromIntTuple[T <: scala.Tuple, Out](inline i: Int)(implicit at: ops.tuple.At.Aux[T, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[T] =
+    if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
+    else {
+      type N0 = Nat.IntToNat[i.type]
+      val n = Nat(i)
+
+      new NatWithTypeAtPos[T] {
+        type N = N0
+        type Tpe = Out
+        val value: N = n.asInstanceOf[N]
+      }
+    }
+}

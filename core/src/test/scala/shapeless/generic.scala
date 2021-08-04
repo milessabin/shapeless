@@ -31,10 +31,10 @@ package GenericTestsAux {
   case class Orange() extends Fruit
 
   object showFruit extends Poly1 {
-    implicit def caseApple  = at[Apple](_ => "Pomme")
-    implicit def casePear   = at[Pear](_ => "Poire")
-    implicit def caseBanana = at[Banana](_ => "Banane")
-    implicit def caseOrange = at[Orange](_ => "Orange")
+    implicit def caseApple: Case.Aux[Apple, String]   = at[Apple](_ => "Pomme")
+    implicit def casePear: Case.Aux[Pear, String]     = at[Pear](_ => "Poire")
+    implicit def caseBanana: Case.Aux[Banana, String] = at[Banana](_ => "Banane")
+    implicit def caseOrange: Case.Aux[Orange, String] = at[Orange](_ => "Orange")
   }
 
   sealed trait AbstractSingle
@@ -50,9 +50,9 @@ package GenericTestsAux {
   case object C extends Enum
 
   object pickFruit extends Poly1 {
-    implicit def caseA = at[A.type](_ => Apple())
-    implicit def caseB = at[B.type](_ => Banana())
-    implicit def caseC = at[C.type](_ => Pear())
+    implicit def caseA: Case.Aux[A.type, Apple] = at[A.type](_ => Apple())
+    implicit def caseB: Case.Aux[B.type, Banana] = at[B.type](_ => Banana())
+    implicit def caseC: Case.Aux[C.type, Pear] = at[C.type](_ => Pear())
   }
 
   sealed trait L
@@ -70,27 +70,27 @@ package GenericTestsAux {
   case class PersonWithPseudonims(name: String, nicks: String*)
 
   trait starLP extends Poly1 {
-    implicit def default[T] = at[T](identity)
+    implicit def default[T]: Case.Aux[T, T] = at[T](identity)
   }
 
   object star extends starLP {
-    implicit def caseString = at[String](_+"*")
+    implicit def caseString: Case.Aux[String, String] = at[String](_+"*")
 
-    implicit def caseIso[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: => hl.Mapper.Aux[this.type, L, L]) =
+    implicit def caseIso[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: => hl.Mapper.Aux[this.type, L, L]): Case.Aux[T, T] =
       at[T](t => gen.from(mapper(gen.to(t))))
   }
 
   trait incLP extends Poly1 {
-    implicit def default[T] = at[T](identity)
+    implicit def default[T]: Case.Aux[T, T] = at[T](identity)
   }
 
   object inc extends incLP {
-    implicit val caseInt = at[Int](_+1)
+    implicit val caseInt: Case.Aux[Int, Int] = at[Int](_+1)
 
-    implicit def caseProduct[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: hl.Mapper.Aux[this.type, L, L]) =
+    implicit def caseProduct[T, L <: HList](implicit gen: Generic.Aux[T, L], mapper: hl.Mapper.Aux[this.type, L, L]): Case.Aux[T, T] =
       at[T](t => gen.from(gen.to(t).map(inc)))
 
-    implicit def caseCoproduct[T, L <: Coproduct](implicit gen: Generic.Aux[T, L], mapper: cp.Mapper.Aux[this.type, L, L]) =
+    implicit def caseCoproduct[T, L <: Coproduct](implicit gen: Generic.Aux[T, L], mapper: cp.Mapper.Aux[this.type, L, L]): Case.Aux[T, T] =
       at[T](t => gen.from(gen.to(t).map(inc)))
   }
 
@@ -128,13 +128,8 @@ package GenericTestsAux {
   case class OAB(i: Int) extends OA with OB
 
   object SemiAuto {
-    case object CObj {
-      implicit val gen = Generic[CObj.type]
-    }
-
-    object NonCObj {
-      implicit val gen = Generic[NonCObj.type]
-    }
+    case object CObj
+    object NonCObj
   }
 
   case class CCOrdered[A: Ordering](value: A)
@@ -599,8 +594,8 @@ class GenericTests {
     illTyped(" IsTuple[Single] ")
     illTyped(" IsTuple[Person] ")
     illTyped(" IsTuple[Fruit] ")
-    illTyped(""" IsTuple[Record.`"i" -> Int, "s" -> String`.T] """)
-    illTyped(""" IsTuple[Union.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" IsTuple[("i" ->> Int) :: ("s" ->> String) :: HNil] """)
+    illTyped(""" IsTuple[("i" ->> Int) :+: ("s" ->> String) :: CNil] """)
     illTyped(" IsTuple[Int] ")
     illTyped(" IsTuple[String] ")
     illTyped(" IsTuple[Array[Int]] ")
@@ -624,8 +619,8 @@ class GenericTests {
     illTyped(" HasProductGeneric[CNil] ")
     illTyped(" HasProductGeneric[Int :+: String :+: CNil] ")
     illTyped(" HasProductGeneric[Fruit] ")
-    illTyped(""" HasProductGeneric[Record.`"i" -> Int, "s" -> String`.T] """)
-    illTyped(""" HasProductGeneric[Union.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" HasProductGeneric[("i" ->> Int) :: ("s" ->> String) :: HNil] """)
+    illTyped(""" HasProductGeneric[("i" ->> Int) :+: ("s" ->> String) :: CNil] """)
     illTyped(" HasProductGeneric[Int] ")
     illTyped(" HasProductGeneric[String] ")
     illTyped(" HasProductGeneric[Array[Int]] ")
@@ -647,8 +642,8 @@ class GenericTests {
     illTyped(" HasCoproductGeneric[A.type] ")
     illTyped(" HasCoproductGeneric[Single] ")
     illTyped(" HasCoproductGeneric[Person] ")
-    illTyped(""" HasCoproductGeneric[Record.`"i" -> Int, "s" -> String`.T] """)
-    illTyped(""" HasCoproductGeneric[Union.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" HasCoproductGeneric[("i" ->> Int) :: ("s" ->> String) :: HNil] """)
+    illTyped(""" HasCoproductGeneric[("i" ->> Int) :+: ("s" ->> String) :: CNil] """)
     illTyped(" HasCoproductGeneric[Int] ")
     illTyped(" HasCoproductGeneric[String] ")
     illTyped(" HasCoproductGeneric[Array[Int]] ")
@@ -666,8 +661,8 @@ class GenericTests {
     illTyped(" Generic[Int :: String :: HNil] ")
     illTyped(" Generic[CNil] ")
     illTyped(" Generic[Int :+: String :+: CNil] ")
-    illTyped(""" Generic[Record.`"i" -> Int, "s" -> String`.T] """)
-    illTyped(""" Generic[Union.`"i" -> Int, "s" -> String`.T] """)
+    illTyped(""" Generic[("i" ->> Int) :: ("s" ->> String) :: HNil] """)
+    illTyped(""" Generic[("i" ->> Int) :+: ("s" ->> String) :: CNil] """)
   }
 
   sealed trait Color
@@ -712,9 +707,6 @@ class GenericTests {
     import SemiAuto._
     val gen1 = Generic[CObj.type]
     val gen2 = Generic[NonCObj.type]
-
-    assertSame(gen1, CObj.gen)
-    assertSame(gen2, NonCObj.gen)
 
     assertTypedEquals[HNil](HNil, gen1.to(CObj))
     assertTypedEquals[CObj.type](CObj, gen1.from(HNil))

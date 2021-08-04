@@ -25,11 +25,11 @@ object StagedTypeClassExample extends App {
   }
 
   object TupleConsumer {
-    implicit val intString = new TupleConsumer[Int, String] {
+    implicit val intString: TupleConsumer[Int, String] = new TupleConsumer[Int, String] {
       def apply(t: (Int, String)) = s"${t._1}${t._2}"
     }
 
-    implicit val booleanDouble = new TupleConsumer[Boolean, Double] {
+    implicit val booleanDouble: TupleConsumer[Boolean, Double] = new TupleConsumer[Boolean, Double] {
       def apply(t: (Boolean, Double)) = (if(t._1) "+" else "-")+t._2
     }
   }

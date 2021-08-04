@@ -28,10 +28,10 @@ object FlattenExample {
   import test._
   
   trait LowPriorityFlatten extends Poly1 {
-    implicit def default[T] = at[T](Tuple1(_))
+    implicit def default[T]: Case.Aux[T, Tuple1[T]] = at[T](Tuple1(_))
   }
   object flatten extends LowPriorityFlatten {
-    implicit def caseTuple[P <: Product, O](implicit lfm: => FlatMapper.Aux[P, flatten.type, O]) =
+    implicit def caseTuple[P <: Product, O](implicit lfm: => FlatMapper.Aux[P, flatten.type, O]): Case.Aux[P, O] =
       at[P](lfm(_))
   }
 
@@ -41,8 +41,8 @@ object FlattenExample {
   typed[List[Int]](l1)
   
   object toDouble extends Poly1 {
-    implicit def caseInt = at[Int](_.toDouble)
-    implicit def caseDouble = at[Double](identity)
+    implicit def caseInt: Case.Aux[Int, Double] = at[Int](_.toDouble)
+    implicit def caseDouble: Case.Aux[Double, Double] = at[Double](identity)
   }
   
   val t2 = (1, ((2, 3.0), 4))

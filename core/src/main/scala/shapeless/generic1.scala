@@ -27,8 +27,10 @@ trait Generic1[F[_], +FR[_[_]]] extends Serializable {
   def mkFrr: FR[R]
 }
 
-object Generic1 extends Generic10 with Generic1ScalaCompat {
+object Generic1 extends Generic1ScalaCompat {
   type Aux[F[_], +FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
+
+  def apply[T[_], FR[_[_]]](implicit gen: Generic1[T, FR]): Generic1.Aux[T, FR, gen.R] = gen
 
   def unsafeInstance[F[_], FR[_[_]], R0[_]](f: F[Any] => R0[Any], g: R0[Any] => F[Any])(implicit lazyFr: => FR[R0]): Aux[F, FR, R0] = {
     new Generic1[F, FR] {
@@ -56,7 +58,7 @@ trait IsHCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   def mkFtt: FT[T]
 }
 
-object IsHCons1 extends IsHCons10 with IsHCons1ScalaCompat {
+object IsHCons1 extends IsHCons1ScalaCompat {
   type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: HList] = IsHCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
   def unsafeInstance[L[_] <: HList, FH[_[_]], FT[_[_]], H0[_], T0[_] <: HList](
@@ -91,7 +93,7 @@ trait IsCCons1[L[_], +FH[_[_]], +FT[_[_]]] extends Serializable {
   def mkFtt: FT[T]
 }
 
-object IsCCons1 extends IsCCons10 with IsCCons1ScalaCompat {
+object IsCCons1 extends IsCCons1ScalaCompat {
   type Aux[L[_], +FH[_[_]], +FT[_[_]], H0[_], T0[_] <: Coproduct] = IsCCons1[L, FH, FT] { type H[t] = H0[t] ; type T[t] = T0[t] }
 
   def unsafeInstance[L[_] <: Coproduct, FH[_[_]], FT[_[_]], H0[_], T0[_] <: Coproduct](
@@ -126,7 +128,7 @@ trait Split1[L[_], +FO[_[_]], +FI[_[_]]] extends Serializable {
   def mkFii: FI[I]
 }
 
-object Split1 extends Split10 with Split1ScalaCompat {
+object Split1 extends Split1ScalaCompat {
   type Aux[L[_], +FO[_[_]], +FI[_[_]], O0[_], I0[_]] = Split1[L, FO, FI] { type O[T] = O0[T] ; type I[T] = I0[T] }
 
   def instance[FO[_[_]], FI[_[_]], O0[_], I0[_]](implicit lazyFoo: => FO[O0], lazyFii: => FI[I0]): Aux[({ type λ[x] = O0[I0[x]] })#λ, FO, FI, O0, I0] =

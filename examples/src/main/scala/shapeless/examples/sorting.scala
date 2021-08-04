@@ -33,10 +33,10 @@ object Sorting {
    * Witness that an HList of Nats is in non-decreasing order at both type and value level.
    */
   trait NonDecreasing[L <: HList]
-  implicit def hnilNonDecreasing = new NonDecreasing[HNil] {}
-  implicit def hlistNonDecreasing1[H] = new NonDecreasing[H :: HNil] {}
+  implicit def hnilNonDecreasing: NonDecreasing[HNil] = new NonDecreasing[HNil] {}
+  implicit def hlistNonDecreasing1[H]: NonDecreasing[H :: HNil] = new NonDecreasing[H :: HNil] {}
   implicit def hlistNonDecreasing2[H1 <: Nat, H2 <: Nat, T <: HList]
-    (implicit ltEq : H1 <= H2, ndt : NonDecreasing[H2 :: T]) = new NonDecreasing[H1 :: H2 :: T] {}
+    (implicit ltEq : H1 <= H2, ndt : NonDecreasing[H2 :: T]): NonDecreasing[H1 :: H2 :: T] = new NonDecreasing[H1 :: H2 :: T] {}
       
   def acceptNonDecreasing[L <: HList](l : L)(implicit ni : NonDecreasing[L]) = l
   
@@ -57,14 +57,14 @@ object Sorting {
   }
   
   trait LowPrioritySelectLeast {
-    implicit def hlistSelectLeast1[H <: Nat, T <: HList] = new SelectLeast[H :: T, H, T] {
+    implicit def hlistSelectLeast1[H <: Nat, T <: HList]: SelectLeast[H :: T, H, T] = new SelectLeast[H :: T, H, T] {
       def apply(l : H :: T) : (H, T) = (l.head, l.tail)
     }
   }
   
   object SelectLeast extends LowPrioritySelectLeast {
     implicit def hlistSelectLeast3[H <: Nat, T <: HList, TM <: Nat, TRem <: HList]
-      (implicit tsl : SelectLeast[T, TM, TRem], ev : TM < H) = new SelectLeast[H :: T, TM, H :: TRem] {
+      (implicit tsl : SelectLeast[T, TM, TRem], ev : TM < H): SelectLeast[H :: T, TM, H :: TRem] = new SelectLeast[H :: T, TM, H :: TRem] {
       def apply(l : H :: T) : (TM, H :: TRem) = {
         val (tm, rem) = tsl(l.tail) 
         (tm, l.head :: rem)
@@ -90,14 +90,14 @@ object Sorting {
   }
   
   trait LowPrioritySelectionSort {
-    implicit def hlistSelectionSort1[S <: HList] = new SelectionSort[S, S] {
+    implicit def hlistSelectionSort1[S <: HList]: SelectionSort[S, S] = new SelectionSort[S, S] {
       def apply(l : S) : S = l
     }
   }
   
   object SelectionSort extends LowPrioritySelectionSort {
     implicit def hlistSelectionSort2[L <: HList, M <: Nat, Rem <: HList, ST <: HList]
-      (implicit sl : SelectLeast[L, M, Rem], sr : SelectionSort[Rem, ST]) = new SelectionSort[L, M :: ST] {
+      (implicit sl : SelectLeast[L, M, Rem], sr : SelectionSort[Rem, ST]): SelectionSort[L, M :: ST] = new SelectionSort[L, M :: ST] {
       def apply(l : L) = {
         val (m, rem) = sl(l)
         m :: sr(rem)

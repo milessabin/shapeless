@@ -65,3 +65,26 @@ object Nat extends Nats with NatScalaCompat {
   implicit def valueOfZero: ValueOf[_0] = new ValueOf(_0)
   implicit def valueOfSucc[N <: Nat]: ValueOf[Succ[N]] = new ValueOf(Succ[N]())
 }
+
+trait NatWithTypeAtPos[L] {
+  type N <: Nat
+  type Tpe
+  val value: N
+}
+object NatWithTypeAtPos extends NatWithTypeAtPosScalaCompat {
+  type Aux[L, N0 <: Nat, Tpe0] = NatWithTypeAtPos[L] { type N = N0; type Tpe = Tpe0 }
+
+  implicit def fromNatList[L <: HList, Out](n: Nat)(implicit at: ops.hlist.At.Aux[L, n.N, Out]): NatWithTypeAtPos.Aux[L, n.N, Out] =
+    new NatWithTypeAtPos[L] {
+      type N = n.N
+      type Tpe = Out
+      val value: N = n.asInstanceOf[N]
+    }
+
+  implicit def fromNatTuple[T, Out](n: Nat)(implicit at: ops.tuple.At.Aux[T, n.N, Out]): NatWithTypeAtPos.Aux[T, n.N, Out] =
+    new NatWithTypeAtPos[T] {
+      type N = n.N
+      type Tpe = Out
+      val value: N = n.asInstanceOf[N]
+    }
+}

@@ -97,8 +97,8 @@ object Values {
       implicit def cnilAux[A]: Aux[A, CNil] =
         new Aux[A, CNil] { def values = Nil }
 
-      implicit def cconsAux[T, L <: T, R <: Coproduct]
-        (implicit l: Witness.Aux[L], r: Aux[T, R]): Aux[T, L :+: R] =
+      implicit def cconsAux[T, L <: T with Singleton, R <: Coproduct]
+        (implicit l: ValueOf[L], r: Aux[T, R]): Aux[T, L :+: R] =
         new Aux[T, L :+: R] { def values = l.value :: r.values }
     }
   }

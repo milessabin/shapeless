@@ -24,8 +24,8 @@ import shapeless.test._
 class HMapTests {
 
   class BiMapIS[K, V]
-  implicit val intToString = new BiMapIS[Int, String]
-  implicit val stringToInt = new BiMapIS[String, Int]
+  implicit val intToString: BiMapIS[Int, String] = new BiMapIS[Int, String]
+  implicit val stringToInt: BiMapIS[String, Int] = new BiMapIS[String, Int]
   
   @Test
   def testBasics: Unit = {
@@ -166,7 +166,7 @@ class HMapTests {
   trait M[A]
 
   class Mapping[K, V]
-  implicit def mappingFromM[A, B <: M[A]] = new Mapping[A,B]
+  implicit def mappingFromM[A, B <: M[A]]: Mapping[A, B] = new Mapping[A,B]
 
   case class X(x: Int) extends M[X.type]
   object X

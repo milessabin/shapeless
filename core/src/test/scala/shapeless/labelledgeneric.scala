@@ -25,6 +25,7 @@ import syntax.singleton._
 import test._
 import testutil._
 import union._
+import labelled.->>
 
 object LabelledGenericTestsAux {
   case class Book(author: String, title: String, id: Int, price: Double)
@@ -57,11 +58,11 @@ object LabelledGenericTestsAux {
     ("authors" ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
     HNil
 
-  type BookRec = Record.`"author" -> String, "title" -> String, "id" -> Int, "price" -> Double`.T
+  type BookRec = ("author" ->> String) :: ("title" ->> String) :: ("id" ->> Int) :: ("price" ->> Double) :: HNil
   type BookKeys = Keys[BookRec]
   type BookValues = Values[BookRec]
 
-  type BookWithMultipleAuthorsRec = Record.`"title" -> String, "id" -> Int, "authors" -> Seq[String]`.T
+  type BookWithMultipleAuthorsRec = ("title" ->> String) :: ("id" ->> Int) :: ("authors" ->> Seq[String]) :: HNil
 
 
   sealed trait Tree
@@ -320,7 +321,7 @@ class LabelledGenericTests {
 
   @Test
   def testCoproductBasics: Unit = {
-    type TreeUnion = Union.`"Leaf" -> Leaf, "Node" -> Node`.T
+    type TreeUnion = ("Leaf" ->> Leaf) :+: ("Node" ->> Node) :+: CNil
 
     val gen = LabelledGeneric[Tree]
 
@@ -335,9 +336,9 @@ class LabelledGenericTests {
     val nccb = new NonCCB(true, 2.0)
     val ancc: AbstractNonCC = ncca
 
-    type NonCCARec = Record.`"i" -> Int, "s" -> String`.T
-    type NonCCBRec = Record.`"b" -> Boolean, "d" -> Double`.T
-    type AbsUnion = Union.`"NonCCA" -> NonCCA, "NonCCB" -> NonCCB`.T
+    type NonCCARec = ("i" ->> Int) :: ("s" ->> String) :: HNil
+    type NonCCBRec = ("b" ->> Boolean) :: ("d" ->> Double) :: HNil
+    type AbsUnion = ("NonCCA" ->> NonCCA) :+: ("NonCCB" ->> NonCCB) :+: CNil
 
     val genA = LabelledGeneric[NonCCA]
     val genB = LabelledGeneric[NonCCB]
@@ -376,7 +377,7 @@ class LabelledGenericTests {
     val nccc = NonCCWithCompanion(23, "foo")
 
     val rec = ("i" ->> 23) :: ("s" ->> "foo") :: HNil
-    type NonCCRec = Record.`"i" -> Int, "s" -> String`.T
+    type NonCCRec = ("i" ->> Int) :: ("s" ->> String) :: HNil
 
     val gen = LabelledGeneric[NonCCWithCompanion]
 
@@ -395,7 +396,7 @@ class LabelledGenericTests {
       (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
 
     val rec = "prev" ->> a :: "next" ->> c :: HNil
-    type LazyRec = Record.`"prev" -> NonCCLazy, "next" -> NonCCLazy`.T
+    type LazyRec = ("prev" ->> NonCCLazy) :: ("next" ->> NonCCLazy) :: HNil
 
     val gen = LabelledGeneric[NonCCLazy]
 
@@ -432,12 +433,12 @@ class LabelledGenericTests {
 
     implicitly[TC[DummyTagged]]
 
-    type R = Record.`"i" -> Int @@ CustomTag`.T
+    type R = ("i" ->> (Int @@ CustomTag)) :: HNil
     val lgen = LabelledGeneric[Dummy]
     implicitly[lgen.Repr =:= R]
     implicitly[TC[R]]
 
-    type RT = Record.`"b" -> Boolean, "i" -> Int @@ CustomTag`.T
+    type RT = ("b" ->> Boolean) :: ("i" ->> (Int @@ CustomTag)) :: HNil
     val lgent = LabelledGeneric[DummyTagged]
     implicitly[lgent.Repr =:= RT]
     implicitly[TC[RT]]

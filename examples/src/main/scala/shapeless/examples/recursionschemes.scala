@@ -74,7 +74,7 @@ package recursionschemes {
         for (a <- oa; f <- of) yield f(a)
     }
 
-    implicit def constApp[T](implicit T: Monoid[T]) =
+    implicit def constApp[T](implicit T: Monoid[T]): Applicative[({ type F[x] = ConstF[T, x] })#F] =
       new Applicative[({ type F[x] = ConstF[T, x] })#F] {
         def pure[A](a: A): ConstF[T, A] = ConstF(T.empty)
         def app[A, B](ca: ConstF[T, A])(cf: ConstF[T, A => B]): ConstF[T, B] =

@@ -94,9 +94,9 @@ object PackExamples extends App {
   val b = new B {}
   val c = new C {}
 
-  implicit val sa = new Show[A] { def show = "A" }
-  implicit val sb = new Show[B] { def show = "B" }
-  implicit val sc = new Show[C] { def show = "C" }
+  implicit val sa: Show[A] = new Show[A] { def show = "A" }
+  implicit val sb: Show[B] = new Show[B] { def show = "B" }
+  implicit val sc: Show[C] = new Show[C] { def show = "C" }
 
   def use3[T, U, V](t : T, u : U, v : V)(implicit pack : Pack[Show, T :: U :: V :: HNil]) = {
     // Instances automatically unpacked here

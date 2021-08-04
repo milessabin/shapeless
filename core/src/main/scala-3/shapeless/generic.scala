@@ -20,7 +20,15 @@ import scala.deriving._
 
 trait GenericScalaCompat {
 
-  given materializeProduct[T <: Product](
+  given Generic.Aux[Unit, Unit :: HNil] = new Generic[Unit] {
+    override type Repr = Unit :: HNil
+
+    override def to(t: Unit): Repr = t :: HNil
+
+    override def from(r: Repr): Unit = r.head
+  }
+
+  transparent inline given materializeProduct[T <: Product](
     using m: scala.deriving.Mirror.ProductOf[T]
   ): Generic.Aux[T, HList.TupleToHList[m.MirroredElemTypes]] =
     new Generic[T] {
@@ -31,7 +39,7 @@ trait GenericScalaCompat {
       override def from(r: Repr): T = m.fromProduct(HList.hListToTuple(r))
     }
 
-  given materializeSum[T](
+  transparent inline given materializeSum[T](
     using m: scala.deriving.Mirror.SumOf[T],
     ev: scala.Tuple.Union[Coproduct.CoproductToTuple[Coproduct.TupleToCoproduct[m.MirroredElemTypes]]] <:< T,
   ): Generic.Aux[T, Coproduct.TupleToCoproduct[m.MirroredElemTypes]] =

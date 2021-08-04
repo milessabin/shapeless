@@ -23,37 +23,37 @@ import shapeless.test._
 class SybClassTests {
 
   trait gsizeAll0 extends Poly1 {
-    implicit def default[T](implicit data: Data[this.type, T, Int]) =
+    implicit def default[T](implicit data: Data[this.type, T, Int]): Case.Aux[T, Int] =
       at[T](data.gmapQ(_).sum + 1)
   }
 
   object gsizeAll extends gsizeAll0 {
-    implicit def caseString = at[String](_.length)
+    implicit def caseString: Case.Aux[String, Int] = at[String](_.length)
   }
 
   trait gsize0 extends Poly1 {
-    implicit def default[T] = at[T](_ => 1)
+    implicit def default[T]: Case.Aux[T, Int] = at[T](_ => 1)
   }
   object gsize extends gsize0 {
-    implicit def caseInt = at[Int](_ => 1)
-    implicit def caseString = at[String](_.length)
+    implicit def caseInt: Case.Aux[Int, Int] = at[Int](_ => 1)
+    implicit def caseString: Case.Aux[String, Int] = at[String](_.length)
   }
 
   def gsizeAll2[T](t: T)(implicit everything: Everything[gsize.type, plus.type, T]) = everything(t)
 
   trait incAll0 extends Poly1 {
-    implicit def default[T](implicit data: DataT.Aux[this.type, T, T]) =
+    implicit def default[T](implicit data: DataT.Aux[this.type, T, T]): Case.Aux[T, T] =
       at[T](data.gmapT)
   }
 
   object incAll extends incAll0 {
-    implicit def caseInt = at[Int](_+1)
-    implicit def caseString = at[String](_+"*")
+    implicit def caseInt: Case.Aux[Int, Int] = at[Int](_+1)
+    implicit def caseString: Case.Aux[String, String] = at[String](_+"*")
   }
 
   object inc extends Poly1 {
-    implicit def caseInt = at[Int](_+1)
-    implicit def caseString = at[String](_+"*")
+    implicit def caseInt: Case.Aux[Int, Int] = at[Int](_+1)
+    implicit def caseString: Case.Aux[String, String] = at[String](_+"*")
   }
 
   def incAll2[T](t: T)(implicit everywhere: Everywhere[inc.type, T]) = everywhere(t)
@@ -65,17 +65,17 @@ class SybClassTests {
   case class Orange(i: Int) extends Fruit
 
   object showFruit extends Poly1 {
-    implicit def caseApple  = at[Apple] (_ => "Pomme")
-    implicit def casePear   = at[Pear]  (_ => "Poire")
-    implicit def caseBanana = at[Banana](_ => "Banane")
-    implicit def caseOrange = at[Orange](_ => "Orange")
+    implicit def caseApple: Case.Aux[Apple, String]   = at[Apple] (_ => "Pomme")
+    implicit def casePear: Case.Aux[Pear, String]     = at[Pear]  (_ => "Poire")
+    implicit def caseBanana: Case.Aux[Banana, String] = at[Banana](_ => "Banane")
+    implicit def caseOrange: Case.Aux[Orange, String] = at[Orange](_ => "Orange")
   }
 
   object cycleFruit extends Poly1 {
-    implicit def caseApple  = at[Apple] { case Apple(i)  => Pear(i) }
-    implicit def casePear   = at[Pear]  { case Pear(i)   => Banana(i) }
-    implicit def caseBanana = at[Banana]{ case Banana(i) => Orange(i) }
-    implicit def caseOrange = at[Orange]{ case Orange(i) => Apple(i) }
+    implicit def caseApple: Case.Aux[Apple, Pear]     = at[Apple] { case Apple(i)  => Pear(i) }
+    implicit def casePear: Case.Aux[Pear, Banana]     = at[Pear]  { case Pear(i)   => Banana(i) }
+    implicit def caseBanana: Case.Aux[Banana, Orange] = at[Banana]{ case Banana(i) => Orange(i) }
+    implicit def caseOrange: Case.Aux[Orange, Apple]  = at[Orange]{ case Orange(i) => Apple(i) }
   }
 
   sealed trait Tree[T]
@@ -364,8 +364,8 @@ class SybClassTests {
   case class A(x: Int, y: Boolean, z: Int)
 
   object flip extends Poly1 {
-    implicit def apply[T] = at[T](identity)
-    implicit def caseBoolean = at[Boolean](!_)
+    implicit def apply[T]: Case.Aux[T, T] = at[T](identity)
+    implicit def caseBoolean: Case.Aux[Boolean, Boolean] = at[Boolean](!_)
   }
 
   @Test

@@ -3,6 +3,7 @@ package shapeless.examples
 import shapeless._
 import shapeless.poly._
 import record._
+import labelled.->>
 import shapeless.ops.record.DeepMerger
 import shapeless.ops.record.Extractor
 import shapeless.ops.record.MapValues
@@ -26,19 +27,19 @@ object recordsubtyping extends App{
   val employee2 = employee1.updated("company", "Bar Inc.")
   val employee3 = employee1.updated("city", new PopulatedCity("Chernobyl", 1) )
 
-  type PersonId = Record.`"firstName" -> String, "lastName" -> String`.T
-  type Person = Record.`"id" -> PersonId, "city" -> City`.T
+  type PersonId = ("firstName" ->> String) :: ("lastName" ->> String) :: HNil
+  type Person = ("id" ->> PersonId) :: ("city" ->> City) :: HNil
 
   val somePerson: Person = Record(id = Record(firstName = "Jane", lastName = "Doe"), city = new City("San Francisco"))
 
 
   trait default extends Poly1 {
-    implicit def id[T] = at[T](identity)
+    implicit def id[T]: Case.Aux[T, T] = at[T](identity)
   }
   object toUpper extends default {
-    implicit def toUpStr = at[String](_.toUpperCase)
-    implicit def toUpCity = at[City](c => new City(c.name.toUpperCase))
-    implicit def toUpHl[L <: HList](implicit mv: MapValues[this.type, L]) = at[L](mv(_))
+    implicit def toUpStr: Case.Aux[String, String] = at[String](_.toUpperCase)
+    implicit def toUpCity: Case.Aux[City, City] = at[City](c => new City(c.name.toUpperCase))
+    implicit def toUpHl[L <: HList](implicit mv: MapValues[this.type, L]): Case.Aux[L, mv.Out] = at[L](mv(_))
   }
 
   //isSamePerson

@@ -73,10 +73,10 @@ object UnfoldExamples extends App {
   import Unfold.unfold
 
   object unfoldMisc extends Poly1 {
-    implicit def case0 = at[_0](_ => (23, _1))
-    implicit def case1 = at[_1](_ => ("foo", _2))
-    implicit def case2 = at[_2](_ => (true, _3))
-    implicit def case3 = at[_3](_ => (1.0, _4))
+    implicit def case0: Case.Aux[_0, (Int, _1)] = at[_0](_ => (23, _1))
+    implicit def case1: Case.Aux[_1, (String, _2)] = at[_1](_ => ("foo", _2))
+    implicit def case2: Case.Aux[_2, (Boolean, _3)] = at[_2](_ => (true, _3))
+    implicit def case3: Case.Aux[_3, (Double, _4)] = at[_3](_ => (1.0, _4))
   }
 
   val l1 = unfold(Nat(3))(unfoldMisc)(Nat(0))
@@ -84,19 +84,19 @@ object UnfoldExamples extends App {
   println(l1)
 
   object unfoldFibs extends Poly1 {
-    implicit def case0 = at[_0](_ => (_0, _1))
-    implicit def case1 = at[_1](_ => (_1, _2))
+    implicit def case0: Case.Aux[_0, (_0, _1)] = at[_0](_ => (_0, _1))
+    implicit def case1: Case.Aux[_1, (_1, _2)] = at[_1](_ => (_1, _2))
     implicit def caseN[N <: Nat, FN <: Nat, FSN <: Nat, FSSN <: Nat]
       (implicit
         fn : Case.Aux[N, (FN, Succ[N])],
         fsn : Case.Aux[Succ[N], (FSN, Succ[Succ[N]])],
         sum : Sum.Aux[FN, FSN, FSSN],
-        fssn : Witness.Aux[FSSN]) =
+        fssn : ValueOf[FSSN]): Case.Aux[Succ[Succ[N]], (FSSN, Succ[Succ[Succ[N]]])] =
       at[Succ[Succ[N]]](_ => ((fssn.value: FSSN), Succ[Succ[Succ[N]]]()))
   }
 
   object toInt extends Poly1 {
-    implicit def default[N <: Nat](implicit toInt : ToInt[N]) = at[N](_ => toInt())
+    implicit def default[N <: Nat](implicit toInt : ToInt[N]): Case.Aux[N, Int] = at[N](_ => toInt())
   }
   
   val l2 = unfold(_6)(unfoldFibs)(Nat(0))

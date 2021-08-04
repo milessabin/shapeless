@@ -61,18 +61,18 @@ object get extends (Option ~> Id) {
 
 /** Polymorphic addition with type specific cases. */
 object plus extends Poly2 {
-  implicit val caseInt = at[Int, Int](_ + _)
-  implicit val caseDouble = at[Double, Double](_ + _)
-  implicit val caseString = at[String, String](_ + _)
-  implicit def caseList[T] = at[List[T], List[T]](_ ::: _)
+  implicit val caseInt: Case.Aux[Int, Int, Int] = at[Int, Int](_ + _)
+  implicit val caseDouble: Case.Aux[Double, Double, Double] = at[Double, Double](_ + _)
+  implicit val caseString: Case.Aux[String, String, String] = at[String, String](_ + _)
+  implicit def caseList[T]: Case.Aux[List[T], List[T], List[T]] = at[List[T], List[T]](_ ::: _)
 }
 
 /** Polymorphic zero with type specific cases. */
 object zero extends Poly0 {
-  implicit val zeroInt = at(0)
-  implicit val zeroDouble = at(0.0)
-  implicit val zeroString = at("")
-  implicit def zeroList[T] = at[List[T]](Nil)
+  implicit val zeroInt: Case0[Int] = at(0)
+  implicit val zeroDouble: Case0[Double] = at(0.0)
+  implicit val zeroString: Case0[String] = at("")
+  implicit def zeroList[T]: Case0[List[T]] = at[List[T]](Nil)
 }
 
 class PolyTests {
@@ -81,12 +81,12 @@ class PolyTests {
   }
   
   object size extends Poly1 {
-    implicit def default[T] = at[T](_ => 1)
-    implicit def caseInt = at[Int](_ => 1)
-    implicit def caseString = at[String](_.length)
-    implicit def caseList[T] = at[List[T]](_.length)
-    implicit def caseOption[T](implicit st : Case.Aux[T, Int]) = at[Option[T]](t => 1+(t map size).getOrElse(0))
-    implicit def caseTuple[T, U](implicit st : Case.Aux[T, Int], su : Case.Aux[U, Int]) = at[(T, U)]{ case (t, u) => size(t)+size(u) }
+    implicit def default[T]: Case.Aux[T, Int] = at[T](_ => 1)
+    implicit def caseInt: Case.Aux[Int, Int] = at[Int](_ => 1)
+    implicit def caseString: Case.Aux[String, Int] = at[String](_.length)
+    implicit def caseList[T]: Case.Aux[List[T], Int] = at[List[T]](_.length)
+    implicit def caseOption[T](implicit st : Case.Aux[T, Int]): Case.Aux[Option[T], Int] = at[Option[T]](t => 1+(t map size).getOrElse(0))
+    implicit def caseTuple[T, U](implicit st : Case.Aux[T, Int], su : Case.Aux[U, Int]): Case.Aux[(T, U), Int] = at[(T, U)]{ case (t, u) => size(t)+size(u) }
   }
   
   @Test
@@ -269,8 +269,8 @@ class PolyTests {
   // Polymophic function value with type-specific cases for two
   // argument types. Result type is dependent on argument type
   object bidi extends Poly1 {
-    implicit val caseInt = at[Int](_.toString)
-    implicit val caseString = at[String](_.toInt)
+    implicit val caseInt: Case.Aux[Int, String] = at[Int](_.toString)
+    implicit val caseString: Case.Aux[String, Int] = at[String](_.toInt)
   }
 
   @Test
@@ -292,11 +292,11 @@ class PolyTests {
   @Test
   def testRotateLeft: Unit = {
     object isd extends Poly3 {
-      implicit val default = at[Int, String, Double] {
+      implicit val default: Case.Aux[Int, String, Double, String] = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
       }
 
-      implicit val another = at[Long, Char, Boolean] {
+      implicit val another: Case.Aux[Long, Char, Boolean, String] = at[Long, Char, Boolean] {
         case (l, c, b) => s"l: $l, c: $c, b: $b"
       }
     }
@@ -321,7 +321,7 @@ class PolyTests {
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r3)
 
     object isdc extends Poly4 {
-      implicit val default = at[Int, String, Double, Char] {
+      implicit val default: Case.Aux[Int, String, Double, Char, String] = at[Int, String, Double, Char] {
         case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
       }
     }
@@ -343,7 +343,7 @@ class PolyTests {
   @Test
   def testRotateRight: Unit = {
     object isd extends Poly3 {
-      implicit val default = at[Int, String, Double] {
+      implicit val default: Case.Aux[Int, String, Double, String] = at[Int, String, Double] {
         case (i, s, d) => s"i: $i, s: $s, d: $d"
       }
     }
@@ -362,7 +362,7 @@ class PolyTests {
     assertTypedEquals[String](s"i: 1, s: foo, d: ${2.0}", r3)
 
     object isdc extends Poly4 {
-      implicit val default = at[Int, String, Double, Char] {
+      implicit val default: Case.Aux[Int, String, Double, Char, String] = at[Int, String, Double, Char] {
         case (i, s, d, c) => s"i: $i, s: $s, d: $d, c: $c"
       }
     }
@@ -433,7 +433,7 @@ class PolyTests {
   @Test
   def testBindFirst: Unit = {
     object p extends Poly3 {
-      implicit def x = at[Int, String, Double] { (i, s, d) =>
+      implicit def x: Case.Aux[Int, String, Double, String] = at[Int, String, Double] { (i, s, d) =>
         s"$i, $d, $s"
       }
     }
@@ -449,7 +449,7 @@ class PolyTests {
   @Test
   def testCurried: Unit = {
     object p extends Poly3 {
-      implicit def x = at[Int, Double, String] { (i, d, s) =>
+      implicit def x: Case.Aux[Int, Double, String, String] = at[Int, Double, String] { (i, d, s) =>
         s"$i, $d, $s"
       }
     }

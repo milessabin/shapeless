@@ -21,10 +21,8 @@ import test._
 
 import scala.reflect.ClassTag
 
-import record._
 import ops.hlist.{ Length, Tupler }
 import ops.nat.ToInt
-import ops.record.Merger
 
 trait CaseClassFacet {
   type C
@@ -226,18 +224,6 @@ object ALaCarteDemo extends App {
   assert(foo == foo2)
   assert(foo.hashCode == foo2.hashCode)
   assert(foo != foo3)
-
-  // copy
-  val fooCopy = foo.copy()
-  assert(fooCopy ne foo)
-  assert(foo == fooCopy)
-  assert(foo.hashCode == fooCopy.hashCode)
-
-  val mod = Foo(13, "foo")
-  val fooMod = foo.copy(i = 13)
-  assert(fooMod ne foo)
-  assert(mod == fooMod)
-  assert(mod.hashCode == fooMod.hashCode)
 
   // toString
   val fooStr = foo.toString

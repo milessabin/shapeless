@@ -39,7 +39,7 @@ trait Lens[S, A] extends LPLens[S, A] { outer =>
 
   def >>(n: Nat)(implicit mkLens: MkNthFieldLens[A, n.N]): Lens[S, mkLens.Elem] = mkLens() compose this
 
-  def >>[K <: Singleton](k: K)(implicit mkLens: MkFieldLens[A, K]): Lens[S, mkLens.Elem] = mkLens() compose this
+  def >>[K <: String with Singleton](k: K)(implicit mkLens: MkFieldLens[A, K]): Lens[S, mkLens.Elem] = mkLens() compose this
 
   def selectDynamic(k: String)(
     implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, k.type, Nothing]
@@ -458,7 +458,7 @@ trait MkRecordSelectLens[R <: HList, K] extends Serializable {
 object MkRecordSelectLens {
   type Aux[R <: HList, K, Elem0] = MkRecordSelectLens[R, K] { type Elem = Elem0 }
 
-  implicit def mkRecordSelectLens[R <: HList, K, E]
+  implicit def mkRecordSelectLens[R <: HList, K <: Singleton, E]
     (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R]): Aux[R, K, E] =
       new MkRecordSelectLens[R, K] {
         type Elem = E

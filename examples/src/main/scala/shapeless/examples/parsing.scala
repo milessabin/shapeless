@@ -44,21 +44,21 @@ object CombinatorTesting extends App {
   /**
    * Type class instance for `String`.
    */
-  implicit def flattenString = new Flatten[String] {
+  implicit def flattenString: Flatten[String] = new Flatten[String] {
     def apply(m : String) = List(m) 
   }
   
   /**
    * Flatten instance for `A ~ B`. Requires Flatten instances for `A` and `B`. 
    */
-  implicit def flattenPattern[A, B](implicit flattenA : Flatten[A], flattenB : Flatten[B]) = new Flatten[A ~ B] {
+  implicit def flattenPattern[A, B](implicit flattenA : Flatten[A], flattenB : Flatten[B]): Flatten[A ~ B] = new Flatten[A ~ B] {
     def apply(m : A ~ B) = m match { case a ~ b => flattenA(a) ::: flattenB(b) } 
   }
   
   /**
    * Flatten instance for ParseResult[T]. Requires a Flatten instance for T.
    */
-  implicit def flattenParseResult[T](implicit flattenP : Flatten[T]) = new Flatten[ParseResult[T]] {
+  implicit def flattenParseResult[T](implicit flattenP : Flatten[T]): Flatten[ParseResult[T]] = new Flatten[ParseResult[T]] {
     def apply(p : ParseResult[T]) = (p map flattenP) getOrElse Nil 
   }
   

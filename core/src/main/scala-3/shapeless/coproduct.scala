@@ -17,12 +17,12 @@ trait CoproductScalaCompat {
   }
 
   def extractCoproduct[C <: Coproduct](coproduct: C): scala.Tuple.Union[CoproductToTuple[C]] = coproduct match {
-    case Inl(head) => head.asInstanceOf
-    case Inr(tail) => extractCoproduct(tail.asInstanceOf)
+    case Inl(head) => head.asInstanceOf[scala.Tuple.Union[CoproductToTuple[C]]]
+    case Inr(tail) => extractCoproduct(tail.asInstanceOf[C])
     case err: CNil => err.impossible
   }
 
   def coproductFromOrdinal[T <: scala.Tuple](a: scala.Tuple.Union[T], ordinal: Int): TupleToCoproduct[T] =
-    if ordinal == 0 then Inl(a).asInstanceOf
-    else Inr(coproductFromOrdinal(a, ordinal - 1)).asInstanceOf
+    if ordinal == 0 then Inl(a).asInstanceOf[TupleToCoproduct[T]]
+    else Inr(coproductFromOrdinal(a, ordinal - 1)).asInstanceOf[TupleToCoproduct[T]]
 }

@@ -292,8 +292,8 @@ object SexpConvert {
     def ser(n: HNil) = SexpNil
   }
 
-  implicit def deriveHCons[K <: String, V, T <: HList](
-    implicit key: Witness.Aux[K], scv: => SexpConvert[V], sct: SexpConvert[T]
+  implicit def deriveHCons[K <: String with Singleton, V, T <: HList](
+    implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
   ): SexpConvert[FieldType[K, V] :: T] = new SexpConvert[FieldType[K, V] :: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :: T] = s match {
       case SexpProp((label, car), cdr) if label == key.value =>
@@ -321,8 +321,8 @@ object SexpConvert {
     def ser(t: CNil) = SexpNil
   }
 
-  implicit def deriveCCons[K <: String, V, T <: Coproduct](
-    implicit key: Witness.Aux[K], scv: => SexpConvert[V], sct: SexpConvert[T]
+  implicit def deriveCCons[K <: String with Singleton, V, T <: Coproduct](
+    implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
   ): SexpConvert[FieldType[K, V] :+: T] = new SexpConvert[FieldType[K, V] :+: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :+: T] = s match {
       case SexpCons(SexpAtom(impl), cdr) if impl == key.value =>

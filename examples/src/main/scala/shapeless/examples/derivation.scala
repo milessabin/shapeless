@@ -145,16 +145,16 @@ object TypeClassesDemoAux {
     implicit val deriveHNil: Show[HNil] = _ => ""
     implicit val deriveCNil: Show[CNil] = _ => ""
 
-    implicit def deriveHCons[K <: String, V, T <: HList](
-      implicit key: Witness.Aux[K], sv: => Show[V], st: Show[T]
+    implicit def deriveHCons[K <: String with Singleton, V, T <: HList](
+      implicit key: ValueOf[K], sv: => Show[V], st: Show[T]
     ): Show[FieldType[K, V] :: T] = { case kv :: t =>
       val head = s"${key.value} = ${sv.show(kv)}"
       val tail = st.show(t)
       if (tail.isEmpty) head else s"$head, $tail"
     }
 
-    implicit def deriveCCons[K <: String, V, T <: Coproduct](
-      implicit key: Witness.Aux[K], sv: => Show[V], st: Show[T]
+    implicit def deriveCCons[K <: String with Singleton, V, T <: Coproduct](
+      implicit key: ValueOf[K], sv: => Show[V], st: Show[T]
     ): Show[FieldType[K, V] :+: T] =  {
       case Inl(l) => s"${key.value}(${sv.show(l)})"
       case Inr(r) => st.show(r)

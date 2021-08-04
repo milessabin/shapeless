@@ -65,7 +65,7 @@ class UnwrappedTests {
     }
     type MyString = Newtype[String, MyStringOps]
     def MyString(s : String) : MyString = newtype(s)
-    implicit val mkOps = MyStringOps
+    implicit val mkOps: MyStringOps.type = MyStringOps
 
     val pass = the[Pass[MyString]]
     the[pass.U =:= String]
@@ -107,7 +107,7 @@ class UnwrappedTests {
     }
     def value[T](t: Tagged[T, _]): T = t.asInstanceOf[T]
 
-    implicit def taggedUnwrapped[UI, T, UF](implicit chain: => Unwrapped.Aux[UI, UF]) =
+    implicit def taggedUnwrapped[UI, T, UF](implicit chain: => Unwrapped.Aux[UI, UF]): Unwrapped.Aux[UI @@ T, UF] =
       new Unwrapped[UI @@ T] {
         type U = UF
         def unwrap(w: UI @@ T) = chain.unwrap(value(w))
@@ -149,7 +149,7 @@ class UnwrappedTests {
     }
     type MyString = Newtype[AvWrapper, MyStringOps]
     def MyString(a: AvWrapper): MyString = newtype(a)
-    implicit val mkOps = MyStringOps
+    implicit val mkOps: MyStringOps.type = MyStringOps
 
 
     val ms = MyString(AvWrapper("testing"))

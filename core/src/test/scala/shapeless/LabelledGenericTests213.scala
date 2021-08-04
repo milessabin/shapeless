@@ -17,6 +17,6 @@ class LabelledGenericTests213 {
 object LabelledGenericTests213 {
   case class Hkt[F[_]](foo: F[String])
   class Func[T] {
-    def select[R <: HList](k: Witness)(implicit gen: LabelledGeneric.Aux[T, R], selector: Selector[R, k.T]) = 0
+    def select[R <: HList, K <: Singleton](k: K)(implicit gen: LabelledGeneric.Aux[T, R], selector: Selector[R, K]) = 0
   }
 }

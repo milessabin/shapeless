@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.Assert._
 import shapeless.test.illTyped
 import shapeless.testutil.assertTypedEquals
+import labelled.->>
 
 // Intentionally defined as a top-level class - (compile time) reflection API not behaving
 // the same way compared to definitions in a singleton, like CC below.
@@ -43,21 +44,13 @@ object DefaultTestDefinitions {
 
   object SemiAuto {
     case class CCl1(i: Int = 0)
-    object CCl1 {
-      implicit val default = Default[CCl1]
-    }
+    object CCl1
 
     case class CCl2(i: Int)
-    trait CCl2Companion {
-      def default: Default[CCl2]
-    }
-    object CCl2 extends CCl2Companion {
-      implicit val default = Default[CCl2]
-    }
+    trait CCl2Companion
+    object CCl2 extends CCl2Companion
 
-    case object CObj {
-      implicit val default = Default[CObj.type]
-    }
+    case object CObj
   }
 
   class DefaultRun extends Exception("Default value was run")
@@ -109,7 +102,7 @@ class DefaultTests {
   @Test
   def simpleAsRecord: Unit = {
     val default = Default.AsRecord[CC].apply()
-    assertTypedEquals[Record.`"s" -> String, "flagOpt" -> Option[Boolean]`.T](
+    assertTypedEquals[("s" ->> String) :: ("flagOpt" ->> Option[Boolean]) :: HNil](
       Record(s = "b", flagOpt = Some(true)),
       default
     )
@@ -118,7 +111,7 @@ class DefaultTests {
   @Test
   def simpleFromPathAsRecord: Unit = {
     val default = Default.AsRecord[definitions.CC].apply()
-    assertTypedEquals[Record.`"s" -> String, "flagOpt" -> Option[Boolean]`.T](
+    assertTypedEquals[("s" ->> String) :: ("flagOpt" ->> Option[Boolean]) :: HNil](
       Record(s = "b", flagOpt = Some(true)),
       default
     )
@@ -218,10 +211,6 @@ class DefaultTests {
     val default1 = Default[CCl1]
     val default2 = Default[CCl2]
     val default3 = Default[CObj.type]
-
-    assertSame(CCl1.default, default1)
-    assertSame(CCl2.default, default2)
-    assertSame(CObj.default, default3)
 
     assertTypedEquals[Some[Int] :: HNil](Some(0) :: HNil, default1())
     assertTypedEquals[None.type :: HNil](None :: HNil, default2())

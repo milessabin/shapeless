@@ -114,10 +114,10 @@ object FizzBuzzExample {
 
   /** Converts subtypes of FizzBuzz into string representations */
   object FizzBuzzToString extends Poly1 {
-    implicit val fizz = at[Fizz.type](_ => "fizz")
-    implicit val buzz = at[Buzz.type](_ => "buzz")
-    implicit val fizzAndBuzz = at[FizzAndBuzz.type](_ => "fizzbuzz")
-    implicit def other[N <: Nat](implicit t: ToInt[N]) = at[Other[N]](n => t().toString)
+    implicit val fizz: Case.Aux[Fizz.type, String] = at[Fizz.type](_ => "fizz")
+    implicit val buzz: Case.Aux[Buzz.type, String] = at[Buzz.type](_ => "buzz")
+    implicit val fizzAndBuzz: Case.Aux[FizzAndBuzz.type, String] = at[FizzAndBuzz.type](_ => "fizzbuzz")
+    implicit def other[N <: Nat](implicit t: ToInt[N]): Case.Aux[Other[N], String] = at[Other[N]](n => t().toString)
   }
 
   /**

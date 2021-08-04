@@ -77,7 +77,7 @@ trait Field {
 }
 
 object Field {
-  def apply[K0, V0](sample: FieldType[K0, V0]) = new Field { type K = K0; type V = V0 }
+  def apply[K0 <: Singleton, V0](sample: FieldType[K0, V0]) = new Field { type K = K0; type V = V0 }
 }
 
 object OldWineNewBottles extends App {
@@ -93,7 +93,8 @@ object OldWineNewBottles extends App {
   val toGen = LabelledGeneric[To]
 
   // Define the type of the i field by example
-  val iField = Field("i" ->> 0)
+  val fieldType = "i" ->> 0
+  val iField = Field(fieldType)
 
   val align = Align[iField.F :: fromGen.Repr, toGen.Repr]
 

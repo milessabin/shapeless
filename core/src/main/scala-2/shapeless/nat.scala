@@ -24,7 +24,11 @@ trait NatScalaCompat {
   implicit def apply(i: Int): Nat = macro NatMacros.materializeWidened
 }
 
-class NatMacros(val c: whitebox.Context) extends NatMacroDefns {
+trait NatWithTypeAtPosScalaCompat {
+  implicit def fromInt[L](i: Int): NatWithTypeAtPos[L] = macro NatMacros.makeNatWithTypeAtPos[L]
+}
+
+class NatMacros(val c: whitebox.Context) extends NatMacroDefns with CaseClassMacros {
   import c.universe._
 
   def materializeWidened(i: Tree): Tree =
@@ -33,6 +37,36 @@ class NatMacros(val c: whitebox.Context) extends NatMacroDefns {
       case _ =>
         c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
     }
+
+  def makeNatWithTypeAtPos[L: WeakTypeTag](i: Tree): Tree = {
+    i match {
+      case NatLiteral(n) =>
+        val L = weakTypeOf[L].dealias
+        val N = mkNatTpt(n)
+
+        val elements = if(L <:< hlistTpe) {
+          unpackHList(L)
+        } else if (isTuple(L)) {
+          fieldsOf(L).map(_._2)
+        } else {
+          c.abort(c.enclosingPosition, s"The list $L must be either an HList or a tuple")
+        }
+
+        if (n >= elements.length) {
+          c.abort(c.enclosingPosition, s"The list $L is too short to have an element at index $n")
+        }
+
+        val Out = elements(n)
+
+        q"""new _root_.shapeless.NatWithTypeAtPos[$L] {
+              type N = $N
+              type Tpe = $Out
+              val value: $N = ${mkNatValue(n)}
+            }"""
+      case _ =>
+        c.abort(c.enclosingPosition, s"Expression $i does not evaluate to a non-negative Int literal")
+    }
+  }
 }
 
 trait NatMacroDefns {

@@ -524,7 +524,7 @@ package record {
         def apply(): Out = HNil
       }
 
-    implicit def hlistSwapRecord[K, V, T <: HList](implicit wk: ValueOf[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
+    implicit def hlistSwapRecord[K <: Singleton, V, T <: HList](implicit wk: ValueOf[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
       new SwapRecord[FieldType[K, V] :: T] {
         type Out = FieldType[V, K] :: kt.Out
         def apply(): Out = field[V](wk.value) :: kt()

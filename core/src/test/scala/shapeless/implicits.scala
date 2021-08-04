@@ -25,7 +25,7 @@ import test.illTyped
 object CachedTestDefns {
   trait CachedTC[T]
   object CachedTC {
-    implicit def mkTC[T] = new CachedTC[T] {}
+    implicit def mkTC[T]: CachedTC[T] = new CachedTC[T] {}
     implicit val cached: CachedTC[String] = cachedImplicit
   }
 
@@ -193,8 +193,8 @@ class CachedTest {
 
   @Test
   def testAmbiguous: Unit = {
-    implicit val a = new Foo[String] { }
-    implicit val b = new Foo[String] { }
+    implicit val a: Foo[String] = new Foo[String] { }
+    implicit val b: Foo[String] = new Foo[String] { }
     illTyped(
       "cachedImplicit[Foo[String]]"
     )

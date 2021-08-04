@@ -31,7 +31,7 @@ object NewtypeExamples extends App {
   case class MyStringOps(s : String) {
     def mySize = s.size
   }
-  implicit val mkOps = MyStringOps
+  implicit val mkOps: MyStringOps.type = MyStringOps
   
   val ms = MyString("foo")
   

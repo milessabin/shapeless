@@ -27,7 +27,7 @@ object ShowExamples extends App {
   case class BarRec(i: Int, rec: Super) extends Super
 
   object Super {
-    implicit val instance = Show[Super]
+    implicit val instance: Show[Super] = Show.deriveInstance
   }
 
   sealed trait MutualA
@@ -39,11 +39,11 @@ object ShowExamples extends App {
   case class MutualB2(b: MutualA) extends MutualB
 
   object MutualA {
-    implicit val aInstance = Show[MutualA]
+    implicit val aInstance: Show[MutualA] = Show.deriveInstance
   }
 
   object MutualB {
-    implicit val bInstance = Show[MutualB]
+    implicit val bInstance: Show[MutualB] = Show.deriveInstance
   }
 
   val bar: Super = Bar(0)

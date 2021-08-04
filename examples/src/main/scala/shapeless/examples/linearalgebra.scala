@@ -38,7 +38,7 @@ object LinearAlgebraExamples extends App {
   object VectorOps {
     type HomPair[T] = (T, T)
     object sum extends Poly1 {
-      implicit def caseDouble = at[Double :: Double :: HNil]{ case a :: b :: HNil => a+b }
+      implicit def caseDouble: Case.Aux[Double :: Double :: HNil, Double] = at[Double :: Double :: HNil]{ case a :: b :: HNil => a+b }
     }
     
     implicit def pointOps1(p : Tuple1[Double]) : VectorOps[_1, Tuple1[Double]] = new VectorOps[_1, Tuple1[Double]](p) {

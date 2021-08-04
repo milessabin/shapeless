@@ -23,7 +23,7 @@ import shapeless.ops.hlist._
 
 // Spoiler alert - don't look!
 object compose extends Poly1 {
-  implicit def cases[A, B, C] = at[(A => B, B => C)] {
+  implicit def cases[A, B, C]: Case.Aux[(A => B, B => C), A => C] = at[(A => B, B => C)] {
     case (f1, f2) => f1 andThen f2
   }
 }

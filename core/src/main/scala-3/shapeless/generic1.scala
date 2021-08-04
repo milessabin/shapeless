@@ -39,7 +39,7 @@ type MirrorOf1Sum[A[_]] = Mirror.Sum {
   type MirroredElemTypes[Z] <: scala.Tuple
 }
 
-trait Generic1ScalaCompat {
+trait Generic1ScalaCompat extends Generic10{
 
   given mkGeneric10Product[T[_] <: Product, U[_], FR[_[_], _[_]]](
     using m: MirrorOf1Product[T],
@@ -111,7 +111,7 @@ type HeadElemTypes[ElemTypes[_] <: scala.Tuple] = [Z] =>> Head[ElemTypes[Z]]
 
 type TailElemTypesHCons[ElemTypes[_] <: scala.Tuple] = [Z] =>> HList.TupleToHList[Tail[ElemTypes[Z]]]
 
-trait IsHCons1ScalaCompat {
+trait IsHCons1ScalaCompat extends IsHCons10 {
 
   given mkIsHCons10[L[_] <: Product, FH[_[_], _[_]], U[_], FT[_[_]]](
     using m: MirrorOf1Product[L],
@@ -169,7 +169,7 @@ trait IsHCons10ScalaCompat {
 
 type TailElemTypesCCons[ElemTypes[_] <: scala.Tuple] = [Z] =>> Coproduct.TupleToCoproduct[Tail[ElemTypes[Z]]]
 
-trait IsCCons1ScalaCompat {
+trait IsCCons1ScalaCompat extends IsCCons10 {
 
   implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]](
     using m: MirrorOf1Sum[L],
@@ -227,7 +227,7 @@ trait IsCCons10ScalaCompat {
   }
 }
 
-trait Split1ScalaCompat {
+trait Split1ScalaCompat extends Split10 {
 
   implicit def mkSplit10[L[_], FO[_[_], _[_]], U[_], FI[_[_]]]: Split1[L, Apply10[FO, U], FI] = ???
 

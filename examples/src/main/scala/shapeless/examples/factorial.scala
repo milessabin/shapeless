@@ -30,7 +30,7 @@ object FactorialExamples {
   trait Factorial[I <: Nat] { type Out <: Nat }
 
   object Factorial {
-    def factorial[N <: Nat](i : Nat)(implicit fact : Factorial.Aux[i.N, N], wn : Witness.Aux[N]): N = wn.value
+    def factorial[N <: Nat](i : Nat)(implicit fact : Factorial.Aux[i.N, N], wn : ValueOf[N]): N = wn.value
 
     type Aux[I <: Nat, Out0 <: Nat] = Factorial[I] { type Out = Out0 }
 
