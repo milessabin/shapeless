@@ -68,7 +68,7 @@ object ShapelessEnumDemo extends App {
     case _ => false // compile time non-exhaustive match warning/error without this case
   }
 
-  assert(!isWeekend(Mon)) // 
+  assert(!isWeekend(Mon)) //
 }
 
 // Infrastructure for the above. Original version due to Travis Brown,
@@ -86,8 +86,8 @@ object Values {
 
   object MkValues {
     implicit def values[T, Repr <: Coproduct]
-      (implicit gen: Generic.Aux[T, Repr], v: Aux[T, Repr]): MkValues[T] =
-        new MkValues[T] { def values = v.values }
+    (implicit gen: Generic.Aux[T, Repr], v: Aux[T, Repr]): MkValues[T] =
+      new MkValues[T] { def values = v.values }
 
     trait Aux[T, Repr] {
       def values: List[T]
@@ -98,7 +98,7 @@ object Values {
         new Aux[A, CNil] { def values = Nil }
 
       implicit def cconsAux[T, L <: T with Singleton, R <: Coproduct]
-        (implicit l: ValueOf[L], r: Aux[T, R]): Aux[T, L :+: R] =
+      (implicit l: ValueOf[L], r: Aux[T, R]): Aux[T, L :+: R] =
         new Aux[T, L :+: R] { def values = l.value :: r.values }
     }
   }

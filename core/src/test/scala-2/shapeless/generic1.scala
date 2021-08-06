@@ -158,15 +158,15 @@ package Generic1TestsAux {
       }
 
     implicit def isCPointedSingleSingleton[C](
-      implicit w: ValueOf[C], pf: => Pointed[Const[C]#λ]
-    ): Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] =
+                                               implicit w: ValueOf[C], pf: => Pointed[Const[C]#λ]
+                                             ): Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] =
       new Pointed[({type λ[A] = Const[C]#λ[A] :+: Const[CNil]#λ[A] })#λ] {
         def point[A](a: A): Const[C]#λ[A] :+: Const[CNil]#λ[A] = Inl(pf.point(a))
       }
 
     implicit def isCPointedSingle[F[_]](
-      implicit pf: => Pointed[F]
-    ): Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] =
+                                         implicit pf: => Pointed[F]
+                                       ): Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] =
       new Pointed[({type λ[A] = F[A] :+: Const[CNil]#λ[A] })#λ] {
         def point[A](a: A): F[A] :+: Const[CNil]#λ[A] = Inl(pf.point(a))
       }
@@ -291,7 +291,7 @@ class Generic1Tests {
     val gen = Generic1[Overlapping1, TC1]
     val o: Overlapping1[Int] = OAB1(1)
     val o0 = gen.to(o)
-    typed[OAB1[Int] :+: OAC1[Int] :+: OBC1[Int] :+: CNil](o0)
+    typed[OAC1[Int] :+: OAB1[Int] :+: OBC1[Int] :+: CNil](o0)
 
     val s1 = gen.from(o0)
     typed[Overlapping1[Int]](s1)

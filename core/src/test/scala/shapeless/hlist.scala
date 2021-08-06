@@ -22,7 +22,7 @@ import org.junit.Assert._
 import test._
 import testutil._
 
-class HListTests {
+class HListTests extends HListsTestScalaCompat {
   import nat._
   import poly._
   import syntax.std.traversable._
@@ -57,8 +57,6 @@ class HListTests {
   case class Apple() extends Fruit
   case class Pear() extends Fruit
   case class Banana() extends Fruit
-
-  type PWS = Product with Serializable with Fruit
 
   type YYYY = Any :: Any :: Any :: Any :: HNil
   type FF = Fruit :: Fruit :: HNil
@@ -577,7 +575,7 @@ class HListTests {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
-    assertTypedEquals[List[M2[_ >: Double with Int with String, _]]](
+    assertTypedEquals[List[M2[IntStringDoubleBound, _]]](
       m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
   }
 
@@ -632,7 +630,7 @@ class HListTests {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[Array]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, sizedM2eim2esm2eim2eem2ed.unsized)
-    typed[Array[M2[_ >: Double with Int with String, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[Array[M2[IntStringDoubleBound, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x: Any), sizedM2eim2esm2eim2eem2ed.unsized.map(x => x: Any))
   }
 
@@ -983,7 +981,7 @@ class HListTests {
 
     val m = mimsmimimd.to[Array]
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double]]](m)
+    typed[Array[M[IntStringDoubleBound]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.to[Array]
@@ -993,12 +991,12 @@ class HListTests {
 
     val m2 = m2im2sm2im2im2d.to[Array]
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
+    typed[Array[M2[IntStringDoubleBound, Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
+    typed[Array[M2[IntStringDoubleBound, _]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
@@ -1039,12 +1037,12 @@ class HListTests {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
 
     val stuff = l1.toArray
-    typed[Array[Any]](stuff)
+    typed[Array[AnyOrMatchable]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
     val ssl = "foo" :: "bar" :: 1L :: HNil
     val ssla = ssl.toArray
-    typed[Array[Any]](ssla)
+    typed[Array[AnyOrMatchable]](ssla)
     assertArrayEquals2(Array("foo", "bar", 1L), ssla)
 
     val stuff2 = stuff.toHList[ISII]
@@ -1072,7 +1070,7 @@ class HListTests {
 
     val m = mimsmimimd.toArray
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double]]](m)
+    typed[Array[M[IntStringDoubleBound]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.toArray[M[_]]
@@ -1082,12 +1080,12 @@ class HListTests {
 
     val m2 = m2im2sm2im2im2d.toArray
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
+    typed[Array[M2[IntStringDoubleBound]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.toArray
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
+    typed[Array[M2[IntStringDoubleBound, _]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 

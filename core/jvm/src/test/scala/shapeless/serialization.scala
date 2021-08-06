@@ -1146,14 +1146,6 @@ class SerializationTests {
   }
 
   @Test
-  def testFunctor: Unit = {
-    assertSerializableBeforeAfter(Functor[Some])(_.map(Some(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[Option])(_.map(Option(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[Tree])(_.map(Leaf(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[List])(_.map(List(2))(_.toString))
-  }
-
-  @Test
   def testShow: Unit = {
     // I had to disable the first two during https://github.com/milessabin/shapeless/pull/435, with scala 2.12.0-M2.
     // Don't know why they keep capturing their outer class, and the next two don't.

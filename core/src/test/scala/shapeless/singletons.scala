@@ -230,20 +230,20 @@ class SingletonTypesTests {
   def primitiveWiden: Unit = {
     {
       val w = Widen[2]
-      illTyped("w(3)", "type mismatch;.*")
+      illTyped("w(3)")
       val n = w(2)
       val n0: Int = n
-      illTyped("val n1: 2 = n", "type mismatch;.*")
+      illTyped("val n1: 2 = n")
 
       assertTypedEquals[Int](2, n)
     }
 
     {
       val w = Widen[true]
-      illTyped("w(false)", "type mismatch;.*")
+      illTyped("w(false)")
       val b = w(true)
       val b0: Boolean = b
-      illTyped("val b1: true = b", "type mismatch;.*")
+      illTyped("val b1: true = b")
 
       assertTypedEquals[Boolean](true, b)
     }
@@ -278,10 +278,10 @@ class SingletonTypesTests {
   def aliasWiden: Unit = {
     type T = 2
     val w = Widen[T]
-    illTyped("w(3)", "type mismatch;.*")
+    illTyped("w(3)")
     val n = w(2)
     val n0: Int = n
-    illTyped("val n1: 2 = n", "type mismatch;.*")
+    illTyped("val n1: 2 = n")
 
     assertTypedEquals[Int](2, n)
   }
@@ -291,7 +291,7 @@ class SingletonTypesTests {
 
   @Test
   def singletonWiden: Unit = {
-    illTyped("Widen[A.type]", "could not find implicit value for parameter widen:.*")
+    illTyped("Widen[A.type]")
   }
 
   @Test

@@ -18,15 +18,26 @@ package shapeless
 
 import scala.deriving._
 
-trait GenericScalaCompat {
+trait GenericScalaCompat extends GenericScalaCompatLowPriority {
 
-  given Generic.Aux[Unit, Unit :: HNil] = new Generic[Unit] {
-    override type Repr = Unit :: HNil
+  given Generic.Aux[Unit, HNil] = new Generic[Unit] {
+    override type Repr = HNil
 
-    override def to(t: Unit): Repr = t :: HNil
+    override def to(t: Unit): Repr = HNil
 
-    override def from(r: Repr): Unit = r.head
+    override def from(r: Repr): Unit = ()
   }
+
+  given[A <: AnyRef & Singleton](using v: ValueOf[A]): Generic.Aux[A, HNil] = new Generic[A] {
+    override type Repr = HNil
+
+    override def to(t: A): Repr = HNil
+
+    override def from(r: Repr): A = v.value
+  }
+}
+
+trait GenericScalaCompatLowPriority {
 
   transparent inline given materializeProduct[T <: Product](
     using m: scala.deriving.Mirror.ProductOf[T]
@@ -64,12 +75,12 @@ trait LabelledGenericScalaCompat {
     case (tpe *: types, label *: labels) => labelled.FieldType[label, tpe] :+: MakeFieldsCoproduct[types, labels]
   }
 
-  given materializeProduct[T <: Product](
+  transparent inline given materializeProduct[T <: Product](
     using m: scala.deriving.Mirror.ProductOf[T]
   ): LabelledGeneric.Aux[T, MakeFieldsProduct[m.MirroredElemTypes, m.MirroredElemLabels]] =
     LabelledGeneric.unsafeInstance(Generic.materializeProduct)
 
-  given materializeSum[T](
+  transparent inline given materializeSum[T](
     using m: scala.deriving.Mirror.SumOf[T],
     ev: scala.Tuple.Union[Coproduct.CoproductToTuple[Coproduct.TupleToCoproduct[m.MirroredElemTypes]]] <:< T,
   ): LabelledGeneric.Aux[T, MakeFieldsCoproduct[m.MirroredElemTypes, m.MirroredElemLabels]] =

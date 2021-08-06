@@ -53,16 +53,35 @@ object AnnotationMacros {
     }
   }
 
-  private def findAnnotation[A: Type](using quotes: Quotes)(symbol: quotes.reflect.Symbol): Option[Expr[A]] = {
+  private def annotationsFromType(using quotes: Quotes)(enclosing: quotes.reflect.TypeRepr, tpe: quotes.reflect.TypeRepr): List[quotes.reflect.Term] = {
+    import quotes.reflect.*
+    tpe match {
+      case AnnotatedType(rest, term) =>
+        term :: annotationsFromType(enclosing, rest)
+      //case ClassInfo(_, _, parents) => parents.flatMap(fromType(enclosing, _))
+      case ref @ TypeRef(_, _) if ref.typeSymbol.isAliasType => annotationsFromType(enclosing, enclosing.memberType(ref.typeSymbol))
+      case TypeBounds(low, hi) if low == hi => annotationsFromType(enclosing, low)
+      case _ =>
+        Nil
+    }
+  }
+
+  private def findAnnotation[A: Type](using quotes: Quotes)(tpe: quotes.reflect.TypeRepr, symbol: quotes.reflect.Symbol, typeAnnotations: Boolean = false): Option[Expr[A]] = {
     import quotes.reflect.*
     val annotationType = TypeRepr.of[A]
-    symbol.annotations.find(_.tpe <:< annotationType).map(_.asExprOf[A])
+
+    val annotations = if (typeAnnotations)
+      annotationsFromType(tpe, tpe.memberType(symbol))
+    else
+      symbol.annotations
+
+    annotations.find(_.tpe <:< annotationType).map(_.asExprOf[A])
   }
 
   private def singleAnnotationForTypeCommon[A: Type, T: Type](using quotes: Quotes): Option[Expr[A]] = {
     import quotes.reflect.*
     errorIfInvalidAnnotation[A]
-    findAnnotation[A](TypeRepr.of[T].typeSymbol)
+    findAnnotation[A](TypeRepr.of[T], TypeRepr.of[T].typeSymbol)
   }
 
   def singleAnnotationForType[A: Type, T: Type](using quotes: Quotes): Expr[Annotation[A, T]] = {
@@ -109,18 +128,24 @@ object AnnotationMacros {
     }
   }
 
-  def allAnnotations[A: Type, T: Type](using quotes: Quotes): Expr[Annotations[A, T]] = {
+  def allAnnotationsCommon[A: Type, T: Type, Out](typeAnnotations: Boolean)(
+    makeResult: [Acc <: HList] => Type[Acc] ?=> Expr[Acc] => Expr[Out]
+  )(using quotes: Quotes): Expr[Out] = {
     import quotes.reflect.*
     errorIfInvalidAnnotation[A]
-
+    val tpe = TypeRepr.of[T]
     val annotations = productOrSumSymbols[T].map { symbol =>
-      findAnnotation[A](symbol) match {
+      findAnnotation[A](tpe, symbol, typeAnnotations) match {
         case Some(expr) =>'{Some($expr)}
         case None       => '{None}
       }
     }
 
-    listExprToResult[HNil, Annotations[A, T]]('{HNil: HNil}, annotations.reverse) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+    listExprToResult[HNil, Out]('{HNil: HNil}, annotations.reverse)(makeResult)
+  }
+
+  def allAnnotations[A: Type, T: Type](using quotes: Quotes): Expr[Annotations[A, T]] = {
+    allAnnotationsCommon[A, T, Annotations[A, T]](false) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
       '{
       new Annotations[A, T] {
         override type Out = Acc
@@ -131,29 +156,50 @@ object AnnotationMacros {
   }
 
   def allTypeAnnotations[A: Type, T: Type](using quotes: Quotes): Expr[TypeAnnotations[A, T]] = {
+    allAnnotationsCommon[A, T, TypeAnnotations[A, T]](true) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+      '{
+      new TypeAnnotations[A, T] {
+        override type Out = Acc
+        override def apply(): Acc = $acc
+      }
+      }
+    }
+  }
+
+  def allAnnotationsForTypeCommon[T: Type, Out](typeAnnotations: Boolean)(
+    makeResult: [Acc <: HList] => Type[Acc] ?=> Expr[Acc] => Expr[Out]
+  )(using quotes: Quotes): Expr[Out] = {
     import quotes.reflect.*
-    errorIfInvalidAnnotation[A]
-    ???
+    val tpe = TypeRepr.of[T]
+    val annotationLists = productOrSumSymbols[T].map { symbol =>
+      val annotations = if(typeAnnotations)
+        annotationsFromType(tpe, tpe.memberType(symbol))
+      else
+        symbol.annotations
+      listExprToHList(annotations.map(_.asExpr))
+    }
+    listExprToResult[HNil, Out]('{HNil: HNil}, annotationLists.reverse)(makeResult)
   }
 
   def allAnnotationsForType[T: Type](using quotes: Quotes): Expr[AllAnnotations[T]] = {
-    import quotes.reflect.*
-
-    val annotationLists = productOrSumSymbols[T].map { symbol =>
-      listExprToHList(symbol.annotations.map(_.asExpr))
-    }
-    listExprToResult[HNil, AllAnnotations[T]]('{HNil: HNil}, annotationLists.reverse) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+    allAnnotationsForTypeCommon[T, AllAnnotations[T]](false) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
       '{
-        new AllAnnotations[T] {
-          override type Out = Acc
-          override def apply(): Out = $acc
-        }
+      new AllAnnotations[T] {
+        override type Out = Acc
+        override def apply(): Out = $acc
+      }
       }
     }
   }
 
   def allTypeAnnotationsForType[T: Type](using quotes: Quotes): Expr[AllTypeAnnotations[T]] = {
-    import quotes.reflect.*
-    ???
+    allAnnotationsForTypeCommon[T, AllTypeAnnotations[T]](true) { [Acc <: HList] => (tpe: Type[Acc]) ?=> (acc: Expr[Acc]) =>
+      '{
+      new AllTypeAnnotations[T] {
+        override type Out = Acc
+        override def apply(): Out = $acc
+      }
+      }
+    }
   }
 }

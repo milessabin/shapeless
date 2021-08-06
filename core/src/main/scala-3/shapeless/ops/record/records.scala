@@ -30,7 +30,7 @@ type FindField0[R <: HList, K, I <: Int] <: (Any, Int) = R match {
 
 trait SelectorScalaCompat {
 
-  given[R <: HList, K](
+  transparent inline given[R <: HList, K](
     using idx: ValueOf[scala.Tuple.Elem[FindField[R, K], 1]]
   ): Selector.Aux[R, K, scala.Tuple.Head[FindField[R, K]]] =
     new UnsafeSelector(idx.value).asInstanceOf[Selector.Aux[R, K, scala.Tuple.Head[FindField[R, K]]]]
@@ -55,7 +55,7 @@ type IfEq[A, B, IfTrue, IfFalse] <: IfTrue | IfFalse = A match {
 
 trait UpdaterScalaCompat {
 
-  given [L <: HList, F](
+  transparent inline given [L <: HList, F](
     using idx: ValueOf[IndexOf[L, F]]
   ): Updater.Aux[L, F, IfEq[IndexOf[L, F], -1, Append[L, F], L]] =
     new UnsafeUpdater(idx.value).asInstanceOf[Updater.Aux[L, F, IfEq[IndexOf[L, F], -1, Append[L, F], L]]]
@@ -68,7 +68,7 @@ type ReplaceField[R <: HList, K, B] <: HList = R match {
 }
 
 trait ModifierScalaCompat {
-  given [R <: HList, K, A, B](
+  transparent inline given [R <: HList, K, A, B](
     using ev: scala.Tuple.Head[FindField[R, K]] <:< A,
     idx: ValueOf[scala.Tuple.Elem[FindField[R, K], 1]]
   ): Modifier.Aux[R, K, A, B, ReplaceField[R, K, B]] =
@@ -87,7 +87,7 @@ type RemoveField0[R <: HList, K, I <: Int, Acc <: HList] <: (Int, Any, HList) = 
 }
 
 trait RemoverScalaCompat {
-  given [R <: HList, K](
+  transparent inline given [R <: HList, K](
     using idx: ValueOf[scala.Tuple.Head[RemoveField[R, K]]]
   ): Remover.Aux[R, K, scala.Tuple.Tail[RemoveField[R, K]]] =
     new UnsafeRemover(idx.value).asInstanceOf[Remover.Aux[R, K, scala.Tuple.Tail[RemoveField[R, K]]]]
@@ -100,5 +100,5 @@ type HasNoKey[R <: HList, K] <: Boolean = R match {
 }
 
 trait LacksKeyScalaCompat {
-  given [R <: HList, K](using HasNoKey[R, K] =:= true): LacksKey[R, K] = new LacksKey[R, K]
+  transparent inline given [R <: HList, K](using HasNoKey[R, K] =:= true): LacksKey[R, K] = new LacksKey[R, K]
 }

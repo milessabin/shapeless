@@ -39,10 +39,10 @@ trait NatScalaCompat {
 trait NatWithTypeAtPosScalaCompat {
 
   //Transparent gives better types here
-  transparent inline implicit def fromIntList[L <: HList, Out](inline i: Int)(implicit at: ops.hlist.At.Aux[L, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[L] =
+  transparent inline implicit def fromIntList[L <: HList, I <: Int with Singleton, Out](inline i: I)(implicit at: ops.hlist.At.Aux[L, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[L] =
     if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
     else {
-      type N0 = Nat.IntToNat[i.type]
+      type N0 = Nat.IntToNat[I]
       val n = Nat(i)
 
       new NatWithTypeAtPos[L] {
@@ -53,10 +53,10 @@ trait NatWithTypeAtPosScalaCompat {
     }
 
   //Transparent gives better types here
-  transparent inline implicit def fromIntTuple[T <: scala.Tuple, Out](inline i: Int)(implicit at: ops.tuple.At.Aux[T, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[T] =
+  transparent inline implicit def fromIntTuple[T <: scala.Tuple, I <: Int with Singleton, Out](inline i: I)(implicit at: ops.tuple.At.Aux[T, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[T] =
     if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
     else {
-      type N0 = Nat.IntToNat[i.type]
+      type N0 = Nat.IntToNat[I]
       val n = Nat(i)
 
       new NatWithTypeAtPos[T] {

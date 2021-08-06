@@ -46,14 +46,14 @@ object CachedTestDefns {
       }
 
     implicit def eqGeneric[T, R]
-      (implicit
-        gen: Generic.Aux[T, R],
-        eqRepr: => Eq[R]
-      ): Eq[T] =
-        new Eq[T] {
-          def eqv(x: T, y: T): Boolean =
-            eqRepr.eqv(gen.to(x), gen.to(y))
-        }
+    (implicit
+     gen: Generic.Aux[T, R],
+     eqRepr: => Eq[R]
+    ): Eq[T] =
+      new Eq[T] {
+        def eqv(x: T, y: T): Boolean =
+          eqRepr.eqv(gen.to(x), gen.to(y))
+      }
 
     // Base case for products
     implicit val eqHNil: Eq[HNil] = new Eq[HNil] {
@@ -62,14 +62,14 @@ object CachedTestDefns {
 
     // Induction step for products
     implicit def eqHCons[H, T <: HList]
-      (implicit
-        eqH: => Eq[H],
-        eqT: => Eq[T]
-      ): Eq[H :: T] =
-        new Eq[H :: T] {
-          def eqv(x: H :: T, y: H :: T): Boolean =
-            eqH.eqv(x.head, y.head) && eqT.eqv(x.tail, y.tail)
-        }
+    (implicit
+     eqH: => Eq[H],
+     eqT: => Eq[T]
+    ): Eq[H :: T] =
+      new Eq[H :: T] {
+        def eqv(x: H :: T, y: H :: T): Boolean =
+          eqH.eqv(x.head, y.head) && eqT.eqv(x.tail, y.tail)
+      }
   }
 
   implicit class EqOps[T](x: T)(implicit eqT: Eq[T]) {

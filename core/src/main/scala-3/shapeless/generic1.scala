@@ -66,7 +66,34 @@ trait Generic1ScalaCompat extends Generic10{
     Generic1.fromSum[T, Apply11[FR, U]]
 }
 
-trait Generic10ScalaCompat {
+trait Generic10ScalaCompat extends Generic10ScalaCompatLowPriority {
+
+  given[FR[_[_]]](using frr: => FR[Const[HNil]#λ]): Generic1.Aux[Const[Unit]#λ, FR, Const[HNil]#λ] =
+    new Generic1[Const[Unit]#λ, FR] {
+      override type R[Z] = HNil
+
+      override def to[T](ft: Unit): HNil = HNil
+
+      override def from[T](rt: HNil): Unit = ()
+
+      override def mkFrr: FR[Const[HNil]#λ] = frr
+    }
+
+  given[A <: AnyRef & Singleton, FR[_[_]]](
+    using v: ValueOf[A], 
+    frr: => FR[Const[HNil]#λ]
+  ): Generic1.Aux[Const[A]#λ, FR, Const[HNil]#λ] = new Generic1[Const[A]#λ, FR] {
+    override type R[Z] = HNil
+
+    override def to[T](ft: A): HNil = HNil
+
+    override def from[T](rt: HNil): A = v.value
+
+    override def mkFrr: FR[Const[HNil]#λ] = frr
+  }
+}
+
+trait Generic10ScalaCompatLowPriority {
 
   given fromProduct[A[_] <: Product, FR[_[_]]](
     using m: MirrorOf1Product[A],
@@ -99,127 +126,117 @@ trait Generic10ScalaCompat {
   }
 }
 
-type Head[T <: scala.Tuple] = T match {
-  case h *: _ => h
-}
-
-type Tail[T <: scala.Tuple] <: scala.Tuple = T match {
-  case _ *: t => t
-}
-
-type HeadElemTypes[ElemTypes[_] <: scala.Tuple] = [Z] =>> Head[ElemTypes[Z]]
-
-type TailElemTypesHCons[ElemTypes[_] <: scala.Tuple] = [Z] =>> HList.TupleToHList[Tail[ElemTypes[Z]]]
-
 trait IsHCons1ScalaCompat extends IsHCons10 {
 
-  given mkIsHCons10[L[_] <: Product, FH[_[_], _[_]], U[_], FT[_[_]]](
-    using m: MirrorOf1Product[L],
-    fhh: => ApplyF[Apply10[FH, U], HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesHCons[m.MirroredElemTypes]],
-  ): IsHCons1.Aux[L, Apply10[FH, U], FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesHCons[m.MirroredElemTypes]] =
-    IsHCons1.fromProduct[L, Apply10[FH, U], FT]
+  given mkIsHCons10[L[_], H[_], T[_] <: HList, FH[_[_], _[_]], U[_], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[Apply10[FH, U], H],
+    ftt: => ApplyF[FT, T],
+  ): IsHCons1.Aux[L, Apply10[FH, U], FT, H, T] =
+    IsHCons1.fromProduct[L, H, T, Apply10[FH, U], FT]
 
-  given mkIsHCons11[L[_] <: Product, FH[_[_], _[_]], U[_], FT[_[_]]](
-    using m: MirrorOf1Product[L],
-    fhh: => ApplyF[Apply11[FH, U], HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesHCons[m.MirroredElemTypes]],
-  ): IsHCons1.Aux[L, Apply11[FH, U], FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesHCons[m.MirroredElemTypes]] =
-    IsHCons1.fromProduct[L, Apply11[FH, U], FT]
+  given mkIsHCons11[L[_], H[_], T[_] <: HList, FH[_[_], _[_]], U[_], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[Apply11[FH, U], H],
+    ftt: => ApplyF[FT, T],
+  ): IsHCons1.Aux[L, Apply11[FH, U], FT, H, T] =
+    IsHCons1.fromProduct[L, H, T, Apply11[FH, U], FT]
 
-  given mkIsHCons12[L[_] <: Product, FH[_[_]], FT[_[_], _[_]], U[_]](
-    using m: MirrorOf1Product[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[Apply10[FT, U], TailElemTypesHCons[m.MirroredElemTypes]],
-  ): IsHCons1.Aux[L, FH, Apply10[FT, U], HeadElemTypes[m.MirroredElemTypes], TailElemTypesHCons[m.MirroredElemTypes]] =
-    IsHCons1.fromProduct[L, FH, Apply10[FT, U]]
+  given mkIsHCons12[L[_], H[_], T[_] <: HList, FH[_[_]], FT[_[_], _[_]], U[_]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[FH, H],
+    ftt: => ApplyF[Apply10[FT, U], T],
+  ): IsHCons1.Aux[L, FH, Apply10[FT, U], H, T] =
+    IsHCons1.fromProduct[L, H, T, FH, Apply10[FT, U]]
 
-  given mkIsHCons13[L[_] <: Product, FH[_[_]], FT[_[_], _[_]], U[_]](
-    using m: MirrorOf1Product[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[Apply11[FT, U], TailElemTypesHCons[m.MirroredElemTypes]],
-  ): IsHCons1.Aux[L, FH, Apply11[FT, U], HeadElemTypes[m.MirroredElemTypes], TailElemTypesHCons[m.MirroredElemTypes]] =
-    IsHCons1.fromProduct[L, FH, Apply11[FT, U]]
+  given mkIsHCons13[L[_], H[_], T[_] <: HList, FH[_[_]], FT[_[_], _[_]], U[_]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[FH, H],
+    ftt: => ApplyF[Apply11[FT, U], T],
+  ): IsHCons1.Aux[L, FH, Apply11[FT, U], H, T] =
+    IsHCons1.fromProduct[L, H, T, FH, Apply11[FT, U]]
 }
 
 trait IsHCons10ScalaCompat {
-  given fromProduct[L[_] <: Product, FH[_[_]], FT[_[_]]](
-    using m: MirrorOf1Product[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesHCons[m.MirroredElemTypes]],
-  ): IsHCons1.Aux[L, FH, FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesHCons[m.MirroredElemTypes]] = new IsHCons1[L, FH, FT] {
-    override type H[Z] = Head[m.MirroredElemTypes[Z]]
-    override type T[Z] = HList.TupleToHList[Tail[m.MirroredElemTypes[Z]]]
+  def apply[L[_], FH[_[_]], FT[_[_]]](using ev: IsHCons1[L, FH, FT]): IsHCons1.Aux[L, FH, FT, ev.H, ev.T] =
+    ev
 
-    override def pack[A](u: (H[A], T[A])): L[A] = {
-      val t = u._1 *: HList.hListToTuple(u._2)
-      m.fromProduct(t).asInstanceOf[L[A]]
+  given fromProduct[L[_], H0[_], T0[_] <: HList, FH[_[_]], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H0, T0],
+    fhh: => ApplyF[FH, H0],
+    ftt: => ApplyF[FT, T0],
+  ): IsHCons1.Aux[L, FH, FT, H0, T0] = new IsHCons1[L, FH, FT] {
+    override type H[Z] = H0[Z]
+    override type T[Z] = T0[Z]
+
+    override def pack[Z](u: (H[Z], T[Z])): L[Z] =
+      (u._1 :: u._2).asInstanceOf[L[Z]]
+
+    override def unpack[Z](p: L[Z]): (H[Z], T[Z]) = {
+      val c = p.asInstanceOf[H[Z] :: T[Z]]
+      (c.head, c.tail)
     }
-
-    override def unpack[Z](p: L[Z]): (H[Z], T[Z]) =
-      //This is safe as the ftt won't be typed correctly if L produces an empty tuple
-      (scala.Tuple.fromProduct(p): @unchecked) match {
-        case h *: t => (h.asInstanceOf[H[Z]], HList.tupleToHList(t).asInstanceOf[T[Z]])
-      }
 
     override def mkFhh: FH[H] = fhh
     override def mkFtt: FT[T] = ftt
   }
 }
 
-type TailElemTypesCCons[ElemTypes[_] <: scala.Tuple] = [Z] =>> Coproduct.TupleToCoproduct[Tail[ElemTypes[Z]]]
-
 trait IsCCons1ScalaCompat extends IsCCons10 {
 
-  implicit def mkIsCCons10[L[_], FH[_[_], _[_]], U[_], FT[_[_]]](
-    using m: MirrorOf1Sum[L],
-    fhh: => ApplyF[Apply10[FH, U], HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesCCons[m.MirroredElemTypes]],
-  ): IsCCons1.Aux[L, Apply10[FH, U], FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesCCons[m.MirroredElemTypes]] =
-    IsCCons1.fromSum[L, Apply10[FH, U], FT]
+  implicit def mkIsCCons10[L[_], H[_], T[_] <: Coproduct, FH[_[_], _[_]], U[_], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[Apply10[FH, U], H],
+    ftt: => ApplyF[FT, T],
+  ): IsCCons1.Aux[L, Apply10[FH, U], FT, H, T] =
+    IsCCons1.fromSum[L, H, T, Apply10[FH, U], FT]
 
-  implicit def mkIsCCons11[L[_], FH[_[_], _[_]], U[_], FT[_[_]]](
-    using m: MirrorOf1Sum[L],
-    fhh: => ApplyF[Apply11[FH, U], HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesCCons[m.MirroredElemTypes]],
-  ): IsCCons1.Aux[L, Apply11[FH, U], FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesCCons[m.MirroredElemTypes]] =
-    IsCCons1.fromSum[L, Apply11[FH, U], FT]
+  implicit def mkIsCCons11[L[_], H[_], T[_] <: Coproduct, FH[_[_], _[_]], U[_], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[Apply11[FH, U], H],
+    ftt: => ApplyF[FT, T],
+  ): IsCCons1.Aux[L, Apply11[FH, U], FT, H, T] =
+    IsCCons1.fromSum[L, H, T, Apply11[FH, U], FT]
 
-  implicit def mkIsCCons12[L[_], FH[_[_]], FT[_[_], _[_]], U[_]](
-    using m: MirrorOf1Sum[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[Apply10[FT, U], TailElemTypesCCons[m.MirroredElemTypes]],
-  ): IsCCons1.Aux[L, FH, Apply10[FT, U], HeadElemTypes[m.MirroredElemTypes], TailElemTypesCCons[m.MirroredElemTypes]] =
-    IsCCons1.fromSum[L, FH, Apply10[FT, U]]
+  implicit def mkIsCCons12[L[_], H[_], T[_] <: Coproduct, FH[_[_]], FT[_[_], _[_]], U[_]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[FH, H],
+    ftt: => ApplyF[Apply10[FT, U], T],
+  ): IsCCons1.Aux[L, FH, Apply10[FT, U], H, T] =
+    IsCCons1.fromSum[L, H, T, FH, Apply10[FT, U]]
 
-  implicit def mkIsCCons13[L[_], FH[_[_]], FT[_[_], _[_]], U[_]](
-    using m: MirrorOf1Sum[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[Apply11[FT, U], TailElemTypesCCons[m.MirroredElemTypes]],
-  ): IsCCons1.Aux[L, FH, Apply11[FT, U], HeadElemTypes[m.MirroredElemTypes], TailElemTypesCCons[m.MirroredElemTypes]] =
-    IsCCons1.fromSum[L, FH, Apply11[FT, U]]
+  implicit def mkIsCCons13[L[_], H[_], T[_] <: Coproduct, FH[_[_]], FT[_[_], _[_]], U[_]](
+    using splitCons: SplitCons.Aux[L, H, T],
+    fhh: => ApplyF[FH, H],
+    ftt: => ApplyF[Apply11[FT, U], T],
+  ): IsCCons1.Aux[L, FH, Apply11[FT, U], H, T] =
+    IsCCons1.fromSum[L, H, T, FH, Apply11[FT, U]]
 }
 
 trait IsCCons10ScalaCompat {
 
-  given fromSum[L[_], FH[_[_]], FT[_[_]]](
-    using m: MirrorOf1Sum[L],
-    fhh: => ApplyF[FH, HeadElemTypes[m.MirroredElemTypes]],
-    ftt: => ApplyF[FT, TailElemTypesCCons[m.MirroredElemTypes]],
-  ): IsCCons1.Aux[L, FH, FT, HeadElemTypes[m.MirroredElemTypes], TailElemTypesCCons[m.MirroredElemTypes]] = new IsCCons1[L, FH, FT] {
-    override type H[Z] = Head[m.MirroredElemTypes[Z]]
-    override type T[Z] = Coproduct.TupleToCoproduct[Tail[m.MirroredElemTypes[Z]]]
+  def apply[L[_], FH[_[_]], FT[_[_]]](using ev: IsCCons1[L, FH, FT]): IsCCons1.Aux[L, FH, FT, ev.H, ev.T] =
+    ev
 
-    override def pack[Z](u: Either[H[Z], T[Z]]): L[Z] = ??? /*u match {
-      case Left(hz) => ??? //hz.asInstanceOf[L[Z]]
-      case Right(tz) => ??? //Coproduct.extractCoproduct(tz).asInstanceOf[L[Z]]
-    }*/
+  given fromSum[L[_], H0[_], T0[_] <: Coproduct, FH[_[_]], FT[_[_]]](
+    using splitCons: SplitCons.Aux[L, H0, T0],
+    fhh: => ApplyF[FH, H0],
+    ftt: => ApplyF[FT, T0],
+  ): IsCCons1.Aux[L, FH, FT, H0, T0] = new IsCCons1[L, FH, FT] {
+    override type H[Z] = H0[Z]
+    override type T[Z] = T0[Z]
+
+    override def pack[Z](u: Either[H[Z], T[Z]]): L[Z] = u match {
+      case Left(h) => Inl(h).asInstanceOf[L[Z]]
+      case Right(t) => Inr(t).asInstanceOf[L[Z]]
+    }
 
     override def unpack[Z](p: L[Z]): Either[H[Z], T[Z]] = {
-      //TODO: Make sure this is correct
-      val ordinal = m.ordinal(p.asInstanceOf[m.MirroredMonoType])
-      if ordinal == 0 then Left(p.asInstanceOf[H[Z]])
-      else Right(Coproduct.coproductFromOrdinal(p.asInstanceOf[scala.Tuple.Union[m.MirroredElemTypes[Z]]], ordinal - 1).asInstanceOf[T[Z]])
+      val c = p.asInstanceOf[H[Z] :+: T[Z]]
+      c match {
+        case Inl(head) => Left(head)
+        case Inr(tail) => Right(tail)
+      }
     }
 
     override def mkFhh: FH[H] = fhh
@@ -240,4 +257,48 @@ trait Split1ScalaCompat extends Split10 {
 
 trait Split10ScalaCompat {
   implicit def apply[L[_], FO[_[_]], FI[_[_]]]: Split1[L, FO, FI] = ???
+}
+
+trait SplitCons[L[_]] {
+  type H[_]
+  type T[_]
+}
+object SplitCons {
+  type Aux[L[_], H0[_], T0[_]] = SplitCons[L] { type H[A] = H0[A]; type T[A] = T0[A] }
+
+  /*
+  given [H0[_], T0[_] <: HList]: SplitCons.Aux[[A] =>> H0[A] :: T0[A], H0, T0] = new SplitCons.Aux[[A] =>> H0[A] :: T0[A]] {
+    type H[A] = H0[A]
+    type T[A] = T0[A]
+  }
+  */
+
+  /*
+  import scala.quoted.*
+
+  transparent inline given[L[_]]: SplitCons[L] = ${splitConsImpl[L]}
+
+  private def splitConsImpl[L[_]: Type](using quotes: Quotes): Expr[SplitCons[L]] = {
+    import quotes.reflect.*
+
+    Type.of[L] match {
+      case '[h :: t] =>
+        '{
+          new SplitCons[L] {
+            type H[X] = h[X]
+            type T[Y] = t[Y]
+          }
+        }
+      case '[h :+: t] =>
+        '{
+          new SplitCons[L] {
+            type H[X] = h[X]
+            type T[Y] = t[Y]
+          }
+        }
+      case _ =>
+        report.throwError("Can't split higher kinded cons")
+    }
+  }
+  */
 }

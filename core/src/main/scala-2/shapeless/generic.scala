@@ -182,20 +182,24 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         }
       val baseArgs = baseTpe.dealias.typeArgs
 
+      /*
       def isLess(sym1: Symbol, sym2: Symbol): Boolean = {
         val global = c.universe.asInstanceOf[scala.tools.nsc.Global]
         val gSym1 = sym1.asInstanceOf[global.Symbol]
         val gSym2 = sym2.asInstanceOf[global.Symbol]
         gSym1.isLess(gSym2)
       }
+      */
 
+      /*
       def orderSyms(s1: Symbol, s2: Symbol): Boolean = {
         val fn1 = s1.fullName
         val fn2 = s2.fullName
         fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
       }
+      */
 
-      val ctors = collectCtors(baseSym).sortWith(orderSyms).flatMap { sym =>
+      val ctors = collectCtors(baseSym).flatMap { sym =>
         import c.internal._
 
         val owner = sym.owner

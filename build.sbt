@@ -95,6 +95,10 @@ lazy val commonSettings = Seq(
     case Some((3, _)) => scalacOptions3
     case _ => Nil
   }),
+  Test / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((3, _)) => Seq("-Yretain-trees")
+    case _ => Nil
+  }),
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => scalaMacroDependencies.value
     case _ => Nil

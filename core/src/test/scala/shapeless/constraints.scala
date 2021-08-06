@@ -390,15 +390,19 @@ class NotContainsConstraintTests {
 
   @Test
   def testGeneric: Unit ={
-    notContains(Box2(1, 1), "1")
-    notContains(Box3(Pear, Pear, 1), Apple)
+    val b1 = Box2(1, 1)
+    notContains(b1, "1")
+    val b2 = Box3(Pear, Pear, 1)
+    notContains(b2, Apple)
 
     illTyped("""
-    notContains(Box2(1, 1), 1)
+    val b3 = Box2(1, 1)
+    notContains(b3, 1)
     """)
 
     illTyped("""
-    notContains(Box3(2, 1, Pear), Pear)
+    val b3 = Box3(2, 1, Pear)
+    notContains(b4, Pear)
     """)
   }
 }
@@ -467,19 +471,24 @@ class IsDistinctConstraintTests {
 
   @Test
   def testGeneric: Unit ={
-    isDistinct(Diff(1, 4.0))
-    isDistinct(Diff(Pear, Apple))
+    val d1 = Diff(1, 4.0)
+    isDistinct(d1)
+    val d2 = Diff(Pear, Apple)
+    isDistinct(d2)
 
     illTyped("""
-    isDistinct(Same(1, 1))
+    val d3 = Same(1, 1)
+    isDistinct(d3)
     """)
 
     illTyped("""
-    isDistinct(Same(Apple, Pear))
+    val d4 = Same(Apple, Pear)
+    isDistinct(d4)
     """)
 
     illTyped("""
-    isDistinct(Diff("1", "2"))
+    val d5 = Diff("1", "2")
+    isDistinct(d5)
     """)
   }
 } 
