@@ -92,6 +92,10 @@ package object shapeless extends ScalaVersionSpecifics {
   /** The SYB everywhere combinator */
   type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
+  /**
+   * WARNING: Exponential compile times. Using anything with depth of over 5 
+   * will cause compile times to go down the drain, and potentially OOM errors. 
+   */
   def everywhere[T, R](f: Poly)(t: T)(
     implicit cse: => Case1.Aux[EverywhereAux[f.type], T, R]
   ): R = cse(t)

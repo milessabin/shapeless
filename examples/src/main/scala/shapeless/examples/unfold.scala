@@ -84,7 +84,7 @@ object UnfoldExamples extends App {
   println(l1)
 
   object unfoldFibs extends Poly1 {
-    implicit def case0: Case.Aux[_0, (_0, _1)] = at[_0](_ => (_0, _1))
+    implicit def case0: Case.Aux[_0, (_0, _1)] = at[_0](_ => (shapeless.nat._0, _1))
     implicit def case1: Case.Aux[_1, (_1, _2)] = at[_1](_ => (_1, _2))
     implicit def caseN[N <: Nat, FN <: Nat, FSN <: Nat, FSSN <: Nat]
       (implicit

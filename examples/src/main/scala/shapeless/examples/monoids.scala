@@ -33,7 +33,7 @@ object MonoidExamples extends App {
 
   // Precompute and cache instance for Bar ...
   {
-    implicit val barInstance = Monoid[Bar]
+    implicit val barInstance: Monoid[Bar] = Monoid.deriveInstance[Bar, Boolean :: String :: Double :: HNil]
 
     val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
     assert(b == Bar(true, "foobar", 4.0))

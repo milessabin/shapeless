@@ -78,7 +78,7 @@ object Sorting {
   typed[_1](l1)
   typed[_2 :: _3 :: HNil](r1)
   
-  val (l2, r2) = selectLeast(_3 :: _1 :: _4 :: _0 :: _2 :: HNil)
+  val (l2, r2) = selectLeast(_3 :: _1 :: _4 :: shapeless.nat._0 :: _2 :: HNil)
   typed[_0](l2)
   typed[_3 :: _1 :: _4 :: _2 :: HNil](r2)
   
@@ -110,7 +110,7 @@ object Sorting {
   /**
    * The punchline ... 
    */
-  val unsorted = _3 :: _1 :: _4 :: _0 :: _2 :: HNil
+  val unsorted = _3 :: _1 :: _4 :: shapeless.nat._0 :: _2 :: HNil
   typed[_3 :: _1 :: _4 :: _0 :: _2 :: HNil](unsorted)
   //acceptNonDecreasing(unsorted)  // Does not compile!
   

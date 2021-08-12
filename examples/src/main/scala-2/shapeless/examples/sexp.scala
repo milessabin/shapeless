@@ -102,11 +102,11 @@ package sexp.ast {
   case class DatabaseField(column: String)
   case class FieldTerm(text: String, field: DatabaseField, value: String) extends Term
   case class BoundedTerm(
-    text: String,
-    field: DatabaseField,
-    low: Option[String] = None,
-    high: Option[String] = None,
-    inclusive: Boolean = false) extends Term
+                          text: String,
+                          field: DatabaseField,
+                          low: Option[String] = None,
+                          high: Option[String] = None,
+                          inclusive: Boolean = false) extends Term
   case class LikeTerm(term: FieldTerm, like: Option[Like]) extends Term {
     val text = like.map(_.text).getOrElse("")
     val field = term.field
@@ -293,8 +293,8 @@ object SexpConvert {
   }
 
   implicit def deriveHCons[K <: String with Singleton, V, T <: HList](
-    implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
-  ): SexpConvert[FieldType[K, V] :: T] = new SexpConvert[FieldType[K, V] :: T] {
+                                                                       implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
+                                                                     ): SexpConvert[FieldType[K, V] :: T] = new SexpConvert[FieldType[K, V] :: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :: T] = s match {
       case SexpProp((label, car), cdr) if label == key.value =>
         for {
@@ -322,8 +322,8 @@ object SexpConvert {
   }
 
   implicit def deriveCCons[K <: String with Singleton, V, T <: Coproduct](
-    implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
-  ): SexpConvert[FieldType[K, V] :+: T] = new SexpConvert[FieldType[K, V] :+: T] {
+                                                                           implicit key: ValueOf[K], scv: => SexpConvert[V], sct: SexpConvert[T]
+                                                                         ): SexpConvert[FieldType[K, V] :+: T] = new SexpConvert[FieldType[K, V] :+: T] {
     def deser(s: Sexp): Option[FieldType[K, V] :+: T] = s match {
       case SexpCons(SexpAtom(impl), cdr) if impl == key.value =>
         scv.deser(cdr).map(v => Inl(field[K](v)))
@@ -341,8 +341,8 @@ object SexpConvert {
   }
 
   implicit def deriveInstance[F, G](
-    implicit gen: LabelledGeneric.Aux[F, G], sg: => SexpConvert[G]
-  ): SexpConvert[F] = new SexpConvert[F] {
+                                     implicit gen: LabelledGeneric.Aux[F, G], sg: => SexpConvert[G]
+                                   ): SexpConvert[F] = new SexpConvert[F] {
     def deser(s: Sexp): Option[F] = sg.deser(s).map(gen.from)
     def ser(t: F): Sexp = sg.ser(gen.to(t))
   }

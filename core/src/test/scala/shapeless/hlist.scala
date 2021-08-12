@@ -22,7 +22,7 @@ import org.junit.Assert._
 import test._
 import testutil._
 
-class HListTests extends HListsTestScalaCompat {
+class HListTests extends HListTestsScalaCompat {
   import nat._
   import poly._
   import syntax.std.traversable._
@@ -575,7 +575,7 @@ class HListTests extends HListsTestScalaCompat {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
-    assertTypedEquals[List[M2[IntStringDoubleBound, _]]](
+    assertTypedEquals[List[M2IntStringDoubleBound[_]]](
       m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
   }
 
@@ -630,7 +630,7 @@ class HListTests extends HListsTestScalaCompat {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[Array]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, sizedM2eim2esm2eim2eem2ed.unsized)
-    typed[Array[M2[IntStringDoubleBound, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[Array[M2IntStringDoubleBound[_]]](sizedM2eim2esm2eim2eem2ed.unsized)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x: Any), sizedM2eim2esm2eim2eem2ed.unsized.map(x => x: Any))
   }
 
@@ -981,7 +981,7 @@ class HListTests extends HListsTestScalaCompat {
 
     val m = mimsmimimd.to[Array]
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[IntStringDoubleBound]]](m)
+    typed[Array[MIntStringDoubleBound]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.to[Array]
@@ -991,12 +991,12 @@ class HListTests extends HListsTestScalaCompat {
 
     val m2 = m2im2sm2im2im2d.to[Array]
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[IntStringDoubleBound, Unit]]](m2)
+    typed[Array[M2IntStringDoubleBound[Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[IntStringDoubleBound, _]]](m2e)
+    typed[Array[M2IntStringDoubleBound[_]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
@@ -1070,7 +1070,7 @@ class HListTests extends HListsTestScalaCompat {
 
     val m = mimsmimimd.toArray
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[IntStringDoubleBound]]](m)
+    typed[Array[MIntStringDoubleBound]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.toArray[M[_]]
@@ -1080,12 +1080,12 @@ class HListTests extends HListsTestScalaCompat {
 
     val m2 = m2im2sm2im2im2d.toArray
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[IntStringDoubleBound]]](m2)
+    typed[Array[M2IntStringDoubleBound[Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.toArray
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[IntStringDoubleBound, _]]](m2e)
+    typed[Array[M2IntStringDoubleBound[_]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 

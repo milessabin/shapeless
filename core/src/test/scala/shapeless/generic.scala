@@ -119,6 +119,7 @@ package GenericTestsAux {
 
 class GenericTests {
   import GenericTestsAux._
+  import GenericTestsAuxScalaCompat._
   import scala.collection.immutable.{ :: => Cons }
   import test._
 

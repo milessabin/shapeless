@@ -30,8 +30,6 @@ trait Generic1[F[_], +FR[_[_]]] extends Serializable {
 object Generic1 extends Generic1ScalaCompat {
   type Aux[F[_], +FR[_[_]], R0[_]] = Generic1[F, FR] { type R[t] = R0[t] }
 
-  def apply[T[_], FR[_[_]]](implicit gen: Generic1[T, FR]): Generic1.Aux[T, FR, gen.R] = gen
-
   def unsafeInstance[F[_], FR[_[_]], R0[_]](f: F[Any] => R0[Any], g: R0[Any] => F[Any])(implicit lazyFr: => FR[R0]): Aux[F, FR, R0] = {
     new Generic1[F, FR] {
       type R[t] = R0[t]

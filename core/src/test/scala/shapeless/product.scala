@@ -285,13 +285,6 @@ class ProductTests {
   def testToMap: Unit = {
     import syntax.singleton._
     
-    {
-      // FIXME: should work (needs changes in GenericMacros?)
-      // val m = Empty.toMap
-      // assertTypedEquals(Map.empty[Any, Nothing], m)
-    }
-
-
     val e = EmptyCC()
 
     {

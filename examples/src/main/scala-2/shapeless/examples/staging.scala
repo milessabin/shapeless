@@ -46,7 +46,7 @@ object StagedTypeClassExample extends App {
           shapeless.examples.StagedTypeClassExample.consumeTuple(t.asInstanceOf[($tpt1, $tpt2)])
        """
 
-       val fn = evalTree[((Any, Any)) => String](fnTree)
+      val fn = evalTree[((Any, Any)) => String](fnTree)
 
     fn(rawTuple)
   }

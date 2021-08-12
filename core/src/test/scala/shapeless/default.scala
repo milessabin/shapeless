@@ -132,7 +132,6 @@ class DefaultTests {
   def simpleAsOptions: Unit = {
     illTyped(
       " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[CC].apply() ",
-      "type mismatch.*"
     )
 
     val default = Default.AsOptions[CC].apply()
@@ -146,7 +145,6 @@ class DefaultTests {
   def simpleFromPathAsOptions: Unit = {
     illTyped(
       " val default0: None.type :: Some[String] :: Some[Option[Boolean]] :: HNil = Default.AsOptions[definitions.CC].apply() ",
-      "type mismatch.*"
     )
 
     val default = Default.AsOptions[definitions.CC].apply()

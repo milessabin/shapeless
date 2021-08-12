@@ -5,6 +5,8 @@ import org.junit.Assert._
 
 import lens._, nat._, record._, syntax.singleton._, tag.@@, test._, testutil._
 
+import lensTestDataTypes._
+
 class OpticTestsScala2 {
 
   @Test

@@ -68,6 +68,8 @@ trait Generic1ScalaCompat extends Generic10{
 
 trait Generic10ScalaCompat extends Generic10ScalaCompatLowPriority {
 
+  def apply[T[_], FR[_[_]]](implicit gen: Generic1[T, FR]): Generic1.Aux[T, FR, gen.R] = gen
+
   given[FR[_[_]]](using frr: => FR[Const[HNil]#λ]): Generic1.Aux[Const[Unit]#λ, FR, Const[HNil]#λ] =
     new Generic1[Const[Unit]#λ, FR] {
       override type R[Z] = HNil
