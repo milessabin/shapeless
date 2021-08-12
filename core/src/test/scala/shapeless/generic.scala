@@ -843,14 +843,18 @@ object PrivateCtorDefns {
   sealed trait PublicFamily
   case class PublicChild() extends PublicFamily
   private case class PrivateChild() extends PublicFamily
+
+  case class WrongApplySignature private(value: String)
+  object WrongApplySignature {
+    def apply(v: String): Either[String, WrongApplySignature] = Left("No ways")
+  }
 }
 
 object PrivateCtor {
   import PrivateCtorDefns._
 
-  illTyped("""
-  Generic[Access.PublicFamily]
-  """)
+  illTyped("Generic[Access.PublicFamily]")
+  illTyped("Generic[WrongApplySignature]")
 }
 
 object HigherKinded {
@@ -867,4 +871,17 @@ object HigherKinded {
   case class Lino() extends Pipo[Id]
 
   Generic[Pipo[Id]]
+}
+
+object CaseClassWithImplicits {
+  // https://github.com/milessabin/shapeless/issues/1189
+  trait ATypeClass[T]
+
+  case class AnUnrelatedCaseClass[T](v: T)
+
+  case class ACaseClassWithContextBound[T: ATypeClass]()
+  implicit def instance[T: ATypeClass]: ATypeClass[AnUnrelatedCaseClass[T]] = new ATypeClass[AnUnrelatedCaseClass[T]] {}
+
+  def shouldCompile[T: ATypeClass]
+  : Generic.Aux[ACaseClassWithContextBound[T], HNil] = Generic[ACaseClassWithContextBound[T]]
 }

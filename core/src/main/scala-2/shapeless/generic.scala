@@ -197,7 +197,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         val fn2 = s2.fullName
         fn1 < fn2 || (fn1 == fn2 && isLess(s1, s2))
       }
-      */
+       */
 
       val ctors = collectCtors(baseSym).flatMap { sym =>
         import c.internal._
@@ -668,7 +668,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           }
         val nonCaseParamLists: List[List[Tree]] = List.fill(numNonCaseParamLists(tpe))(Nil)
         new CtorDtor {
-          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}(...${args :: nonCaseParamLists})"
+          def construct(args: List[Tree]): Tree = q"${companionRef(tpe)}[..${tpe.typeArgs}](...${args :: nonCaseParamLists})"
           def binding: (Tree, List[Tree]) = (pattern, elems.map { case (binder, tpe) => narrow(q"$binder", tpe) })
           def reprBinding: (Tree, List[Tree]) = (reprPattern, elems.map { case (binder, tpe) => narrow1(q"$binder", tpe) })
         }
@@ -763,7 +763,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
     val (p, ts) = ctorDtor.binding
     val to = cq"$p => ${mkHListValue(ts)}.asInstanceOf[$repr]"
     val (rp, rts) = ctorDtor.reprBinding
-    val from = cq"$rp => ${ctorDtor.construct(rts)}.asInstanceOf[$tpe]"
+    val from = cq"$rp => ${ctorDtor.construct(rts)}"
     q"$generic.instance[$tpe, $repr]({ case $to }, { case $from })"
   }
 
