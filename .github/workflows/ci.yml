@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v12
+        uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
 
@@ -54,19 +54,19 @@ jobs:
       - run: sudo apt install clang libunwind-dev libgc-dev libre2-dev
 
       - name: Check that workflows are up to date
-        run: sbt --client '++${{ matrix.scala }}; githubWorkflowCheck'
+        run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
       - name: Validate JVM
         if: matrix.platform == 'jvm'
-        run: sbt --client '++${{ matrix.scala }}; validateJVM'
+        run: sbt ++${{ matrix.scala }} validateJVM
 
       - name: Validate JavaScript
         if: matrix.platform == 'js'
-        run: sbt --client '++${{ matrix.scala }}; validateJS'
+        run: sbt ++${{ matrix.scala }} validateJS
 
       - name: Validate Scala Native
         if: matrix.platform == 'native'
-        run: sbt --client '++${{ matrix.scala }}; validateNative'
+        run: sbt ++${{ matrix.scala }} validateNative
 
   publish:
     name: Publish Artifacts
@@ -85,7 +85,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v12
+        uses: olafurpg/setup-scala@v13
         with:
           java-version: ${{ matrix.java }}
 
@@ -108,4 +108,4 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt --client '++${{ matrix.scala }}; ci-release'
+        run: sbt ++${{ matrix.scala }} ci-release
