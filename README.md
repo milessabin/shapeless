@@ -31,7 +31,7 @@ shapeless is part of the [Typelevel][typelevel] family of projects. It is an Ope
 License v2, hosted on [github][source]. Binary artefacts are published to the
 [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
-Most discussion of shapeless and generic programming in Scala happens on the shapeless [Discord][discord]. There
+Most discussion of shapeless and generic programming in Scala happens on the [Typelevel Discord][discord]. There
 is also a [mailing list][group] and [Gitter][gitter], but these are largely dormant now that most activity has moved
 to Discord. Questions about shapeless are often asked and answered under the [shapeless tag on StackOverflow][so]. Some
 articles on the implementation techniques can be found on [Miles's blog][blog], and Olivera, Moors and Odersky, [Type
