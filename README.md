@@ -31,11 +31,11 @@ shapeless is part of the [Typelevel][typelevel] family of projects. It is an Ope
 License v2, hosted on [github][source]. Binary artefacts are published to the
 [Sonatype OSS Repository Hosting service][sonatype] and synced to Maven Central.
 
-Most discussion of shapeless and generic programming in Scala happens on the shapeless [Gitter channel][gitter]. There
-is also a [mailing list][group] and [IRC channel][irc], but these are largely dormant now that most activity has moved
-to Gitter. Questions about shapeless are often asked and answered under the [shapeless tag on StackOverflow][so]. Some
-articles on the implementation techniques can be found on [Miles's blog][blog], and Olivera, Moors and Odersky, [Type
-Classes as Object and Implicits][tcoi] is useful background material.
+Most discussion of shapeless and generic programming in Scala happens on the #shapless channel of the [Typelevel 
+Discord][discord]. There is also a [mailing list][group] and [Gitter][gitter], but these are largely dormant now that 
+most activity has moved to Discord. Questions about shapeless are often asked and answered under the [shapeless tag on 
+StackOverflow][so]. Some articles on the implementation techniques can be found on [Miles's blog][blog], and Olivera, 
+Moors and Odersky, [Type Classes as Object and Implicits][tcoi] is useful background material.
 
 [features200]: https://github.com/milessabin/shapeless/wiki/Feature-overview:-shapeless-2.0.0
 [relnotes]: https://github.com/milessabin/shapeless/wiki/Release-notes:-shapeless-2.0.0
@@ -55,6 +55,7 @@ Classes as Object and Implicits][tcoi] is useful background material.
 [group]: https://groups.google.com/group/typelevel
 [so]: http://stackoverflow.com/questions/tagged/shapeless
 [gitter]: https://gitter.im/milessabin/shapeless
+[discord]: https://discord.gg/bSQBZA3Ced
 [irc]: http://webchat.freenode.net?channels=%23shapeless
 [blog]: http://milessabin.com/blog
 
@@ -64,7 +65,7 @@ The shapeless project supports the [Scala Code of Conduct][codeofconduct] and wa
 channels (mailing list, Gitter, IRC, github, etc.) to be welcoming environments for everyone.
 
 Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
-Contributors are usually available to field questions, give advice and discuss ideas on the [Gitter channel][gitter],
+Contributors are usually available to field questions, give advice and discuss ideas on the #shapeless [Discord channel][discord],
 and for people wanting to take their first steps at contributing we have a selection of open issues flagged up as
 being [good candidates to take on][goodfirstissue]. No contribution is too small, and guidance is always available.
 
@@ -102,8 +103,8 @@ res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
 ```
 
 [try-shapeless]: https://github.com/milessabin/shapeless/blob/main/scripts/try-shapeless.sh
-[coursier]: https://github.com/alexarchambault/coursier
-[ammonite]: https://github.com/lihaoyi/Ammonite
+[coursier]: https://github.com/coursier/coursier
+[ammonite]: https://github.com/com-lihaoyi/Ammonite
 
 ### shapeless-2.3.3 with SBT
 
