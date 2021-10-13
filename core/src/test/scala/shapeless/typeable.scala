@@ -688,7 +688,7 @@ class TypeableTests {
     val witness = Witness("witness")
 
     // `Typeable.genTraversableTypeable` is not a macro.
-    // Appart from that there is a difference in the encoded name between JVM and JS.
+    // Apart from that there is a difference in the encoded name between JVM and JS.
     assert(Typeable[scala.::[Int]].describe.endsWith("colon[Int]"))
     assertEquals("***", Typeable[***].describe)
     assertEquals("***.type", Typeable[***.type].describe)
