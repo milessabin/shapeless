@@ -119,7 +119,7 @@ def configureJUnit(crossProject: CrossProject) = {
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
   .jvmSettings(
     libraryDependencies +=
-      "com.novocode" % "junit-interface" % "0.11" % "test"
+      "com.github.sbt" % "junit-interface" % "0.13.2" % "test"
   )
 }
 
