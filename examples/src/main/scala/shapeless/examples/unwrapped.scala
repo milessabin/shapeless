@@ -53,8 +53,8 @@ object UnwrappedExamples {
     implicit val encodeHNil: Encode[HNil] =
       instance(_ => Map.empty)
 
-    implicit def encodeHCons[K <: String, V, Rest <: HList](
-      implicit key: Witness.Aux[K], encodeV: => EncodeValue[V], encodeRest: Encode[Rest]
+    implicit def encodeHCons[K <: String with Singleton, V, Rest <: HList](
+      implicit key: ValueOf[K], encodeV: => EncodeValue[V], encodeRest: Encode[Rest]
     ): Encode[FieldType[K, V] :: Rest] = instance { case h :: t =>
       encodeRest.fields(t) + (key.value -> encodeV.toJsonFragment(h))
     }
@@ -107,9 +107,9 @@ object UnwrappedExamples {
     implicit val encodeHNil: Encode2[HNil] =
       instance(_ => Map.empty)
 
-    implicit def encodeHCons[K <: String, V, U, Rest <: HList](
+    implicit def encodeHCons[K <: String with Singleton, V, U, Rest <: HList](
       implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       uw: Unwrapped.Aux[V, U],
       encodeV: => EncodeValue[U],
       encodeRest: Encode2[Rest]

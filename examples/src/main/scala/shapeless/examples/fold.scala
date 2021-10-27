@@ -28,8 +28,8 @@ object FoldExamples extends App {
   //  (c : Char, s : String) => s.indexOf(c)
   //  (i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   object combine extends Poly {
-    implicit def caseCharString = use((c : Char, s : String) => s.indexOf(c))
-    implicit def caseIntBoolean = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
+    implicit def caseCharString: ProductCase.Aux[Char :: String :: HNil, Int] = use((c : Char, s : String) => s.indexOf(c))
+    implicit def caseIntBoolean: ProductCase.Aux[Int :: Boolean :: HNil, String] = use((i : Int, b : Boolean) => if ((i >= 0) == b) "pass" else "fail")
   }
 
   // Computation is:

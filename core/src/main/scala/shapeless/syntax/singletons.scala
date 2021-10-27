@@ -23,14 +23,14 @@ trait SingletonOps {
   type T
 
   /**
-   * Returns a Witness of the singleton type of this value.
+   * Returns a value of the singleton type of this value.
    */
-  val witness: Witness.Aux[T]
+  val value: T
 
   /**
    * Narrows this value to its singleton type.
    */
-  def narrow: T {} = witness.value
+  def narrow: T {} = value
 
   /**
    * Returns the provided value tagged with the singleton type of this value as its key in a record-like structure.
@@ -41,9 +41,14 @@ trait SingletonOps {
 object SingletonOps {
   type Aux[A] = SingletonOps { type T = A }
 
-  def instance[A](w: Witness.Aux[A]): Aux[A] =
+  def instance[A <: Singleton](w: A): Aux[A] =
     new SingletonOps {
       type T = A
-      val witness = w
+      val value = w
     }
+}
+
+object singleton {
+  implicit def mkSingletonOps[T <: Singleton](t: T): SingletonOps.Aux[t.type] =
+    SingletonOps.instance[t.type](t)
 }

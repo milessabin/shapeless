@@ -116,8 +116,8 @@ class AnnotationTests {
 
   @Test
   def invalidAnnotation: Unit = {
-    illTyped(" Annotation[Other, Dummy] ", "could not find implicit value for parameter annotation: .*")
-    illTyped(" Annotation[Dummy, CC] ", "could not find implicit value for parameter annotation: .*")
+    illTyped(" Annotation[Other, Dummy] ")
+    illTyped(" Annotation[Dummy, CC] ")
   }
 
   @Test
@@ -159,9 +159,9 @@ class AnnotationTests {
 
   @Test
   def invalidAnnotations: Unit = {
-    illTyped(" Annotations[Dummy, CC] ", "could not find implicit value for parameter annotations: .*")
-    illTyped(" Annotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
-    illTyped(" Annotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
+    illTyped(" Annotations[Dummy, CC] ")
+    illTyped(" Annotations[Dummy, Base] ")
+    illTyped(" Annotations[Second, Dummy] ")
   }
 
   @Test
@@ -191,9 +191,9 @@ class AnnotationTests {
 
   @Test
   def invalidTypeAnnotations: Unit = {
-    illTyped(" TypeAnnotations[Dummy, CC2] ", "could not find implicit value for parameter annotations: .*")
-    illTyped(" TypeAnnotations[Dummy, Base] ", "could not find implicit value for parameter annotations: .*")
-  illTyped(" TypeAnnotations[Second, Dummy] ", "could not find implicit value for parameter annotations: .*")
+    illTyped(" TypeAnnotations[Dummy, CC2] ")
+    illTyped(" TypeAnnotations[Dummy, Base] ")
+    illTyped(" TypeAnnotations[Second, Dummy] ")
   }
 
   @Test
@@ -208,9 +208,6 @@ class AnnotationTests {
   
   @Test
   def allTypeAnnotations: Unit = {
-    val st = AllTypeAnnotations[Base2].apply() // sealed trait
-    typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
-
     val cc = AllTypeAnnotations[CC4].apply() // case class
     typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: HNil](cc)
     assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: HNil)

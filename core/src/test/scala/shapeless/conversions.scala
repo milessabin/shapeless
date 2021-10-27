@@ -86,19 +86,6 @@ class ConversionTests {
     def foo[F, L <: HList, R](f : F, l : L)(implicit fntp: FnToProduct.Aux[F, L => R]) = fntp(f)(l)
     val s2 = foo(sum, 2 :: 3 :: HNil)
     val ab2 = foo(ab, a :: HNil)
-
-    class HListSyntax[A <: HList, F <: AnyRef](a: A) {
-      def applied[U](f: F)(implicit cftp: FnToProduct.Aux[f.type, A => U]): U = cftp(f)(a)
-    }
-
-    implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
-      (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
-      new HListSyntax[A, F](a)
-
-    val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
-
-    assert((res: (String, Double)) == ("aa", 2.6))
-
   }
   
   @Test
@@ -106,9 +93,9 @@ class ConversionTests {
     case class Foo(a : Int, b : String, c : Double)
     
     val f1 = Foo(23, "foo", 2.3)
-    val t1 = Foo.unapply(f1).get
+    val t1 = (23, "foo", 2.3)
     val hf = t1.productElements
-    val f2 = Foo.tupled(hf.tupled)
+    val f2 = (Foo.apply _).tupled(hf.tupled)
     assertEquals(f1, f2)
   }
 }

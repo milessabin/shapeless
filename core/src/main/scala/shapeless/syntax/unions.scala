@@ -31,7 +31,7 @@ final class UnionOps[C <: Coproduct](val c : C) extends AnyVal with Serializable
    * Returns the value associated with the singleton typed key k. Only available if this union has a field with
    * with keyType equal to the singleton type k.T.
    */
-  def get(k: Witness)(implicit selector : Selector[C, k.T]): selector.Out = selector(c)
+  def get[K <: Singleton](k: K)(implicit selector : Selector[C, K]): selector.Out = selector(c)
   
   /**
    * Returns the value associated with the singleton typed key k. Only available if this union has a field with
@@ -41,7 +41,7 @@ final class UnionOps[C <: Coproduct](val c : C) extends AnyVal with Serializable
    * https://issues.scala-lang.org/browse/SI-5142. If this method is accessible the conflict can be worked around by
    * using CoproductOps#at instead of `CoproductOps#apply`.
    */
-  def apply(k: Witness)(implicit selector : Selector[C, k.T]): selector.Out = selector(c)
+  def apply[K <: Singleton](k: K)(implicit selector : Selector[C, K]): selector.Out = selector(c)
 
   /**
    * Returns the keys of this union as an `HList` of singleton typed values.

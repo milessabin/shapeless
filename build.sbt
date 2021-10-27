@@ -1,16 +1,16 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
-val Scala212 = "2.12.14"
 val Scala213 = "2.13.6"
+val Scala3 = "3.0.3-RC1-bin-20210803-010f8de-NIGHTLY"
 
 commonSettings
 noPublishSettings
 crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
-ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
+ThisBuild / scalaVersion := Scala3
+ThisBuild / crossScalaVersions := Seq(Scala213, Scala3)
 ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration
@@ -54,7 +54,7 @@ ThisBuild / githubWorkflowPublish := Seq(
   )
 )
 
-Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
+//TODO Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
 
 addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
@@ -67,19 +67,17 @@ addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;cor
 addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
-def scalacOptionsAll(pluginJar: File) = List(
+val scalacOptionsAll = List(
   "-feature",
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
   "-deprecation",
-  "-unchecked",
-  s"-Xplugin:${pluginJar.getAbsolutePath}",
-  s"-Jdummy=${pluginJar.lastModified}"
+  "-unchecked"
 )
 
-val scalacOptions212 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
-  "-Ywarn-unused:-implicits"
+val scalacOptions3 = Seq(
+  "-language:dynamics",
+  "-Yretain-trees"
 )
 
 val scalacOptions213 = Seq(
@@ -90,11 +88,19 @@ val scalacOptions213 = Seq(
 lazy val commonSettings = Seq(
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
 
-  scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
+  scalacOptions := scalacOptionsAll,
 
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212
     case Some((2, 13)) => scalacOptions213
+    case Some((3, _)) => scalacOptions3
+    case _ => Nil
+  }),
+  Test / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((3, _)) => Seq("-Yretain-trees")
+    case _ => Nil
+  }),
+  libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => scalaMacroDependencies.value
     case _ => Nil
   }),
 
@@ -112,7 +118,7 @@ lazy val commonSettings = Seq(
       url("https://github.com/milessabin/shapeless"),
       "scm:git:git@github.com:milessabin/shapeless.git"
     ))
-) ++ crossVersionSharedSources ++ scalaMacroDependencies
+) ++ crossVersionSharedSources
 
 def configureJUnit(crossProject: CrossProject) = {
   crossProject
@@ -151,18 +157,7 @@ lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossTy
     Some(projectBase.getParentFile / "src" / conf / "scala")
 }
 
-lazy val plugin = project.in(file("plugin"))
-  .settings(crossVersionSharedSources)
-  .settings(publishSettings)
-  .settings(
-    name := "shapeless-plugin",
-    moduleName := "shapeless-plugin",
-    sbtPlugin := true,
-    scalaVersion := Scala213,
-    crossScalaVersions := Seq(Scala213, Scala212)
-  )
-
-lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val core = crossProject(JSPlatform, JVMPlatform/* TODO, NativePlatform*/).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
   .settings(coreSettings:_*)
@@ -173,6 +168,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
   .settings(mimaSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  /* TODO
   .nativeSettings(
     // disable scaladoc generation on native
     // currently getting errors like
@@ -182,12 +178,13 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     Compile / doc / sources := Nil,
     Test / sources := Nil
   )
+   */
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
-lazy val coreNative = core.native
+//TODO lazy val coreNative = core.native
 
-lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val scratch = crossProject(JSPlatform, JVMPlatform/* TODO, NativePlatform*/).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "scratch")
@@ -198,7 +195,7 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossTy
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
-lazy val scratchNative = scratch.native
+//TODO lazy val scratchNative = scratch.native
 
 lazy val runAll = TaskKey[Unit]("runAll")
 
@@ -212,7 +209,7 @@ def runAllIn(config: Configuration): Setting[Task[Unit]] = {
   }
 }
 
-lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val examples = crossProject(JSPlatform, JVMPlatform/* TODO, NativePlatform*/).crossType(CrossTypeMixed)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
@@ -222,15 +219,20 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .settings(noPublishSettings:_*)
   .jsSettings(commonJsSettings:_*)
   .jvmSettings(commonJvmSettings:_*)
+  /*
+  TODO
   .nativeSettings(
     Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")),
     Test / sources := Nil
   )
+   */
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
-lazy val examplesNative = examples.native
+//TODO lazy val examplesNative = examples.native
 
+/*
+TODO
 lazy val nativeTest = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
@@ -259,24 +261,28 @@ lazy val nativeTest = project
   ).dependsOn(
     examplesNative
   )
+*/
 
-lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
-  libraryDependencies ++= Seq(
+lazy val scalaMacroDependencies: Def.Initialize[Seq[ModuleID]] = Def.setting {
+  Seq(
     scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
     scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
   )
-)
+}
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
-    (sc / unmanagedSourceDirectories) ++= {
+    (sc / unmanagedSourceDirectories) := {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
+        //Seems like cross projects don't get this source folder as well TODO: Make an issue for it
+        val scala2Folder = file(dir.getPath + "-2")
+
         if (dir.getName != "scala") Seq(dir)
         else CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, y)) if y >= 13 => Seq(new File(dir.getPath + "_2.13+"))
-          case Some((2, y)) if y <  13 => Seq(new File(dir.getPath + "_2.13-"))
+          case Some((2, _)) => Seq(dir, scala2Folder)
+          case _ => Seq(dir)
         }
-      }
+      }.distinct
     }
   }
 
@@ -308,7 +314,7 @@ def buildInfoSetup(crossProject: CrossProject): CrossProject = {
     buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
     buildInfoOptions += BuildInfoOption.BuildTime
   )
-  crossProject jvmConfigure transform jsConfigure transform nativeConfigure transform
+  crossProject jvmConfigure transform jsConfigure transform /*TODO nativeConfigure transform*/
 }
 
 lazy val coreOsgiSettings = osgiSettings ++ Seq(

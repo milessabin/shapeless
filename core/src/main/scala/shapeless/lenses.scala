@@ -17,11 +17,10 @@
 package shapeless
 
 import scala.language.dynamics
-
-import labelled.{ FieldType, field }
-import ops.coproduct.{ Inject, Selector => CSelector }
-import ops.hlist.{ At, Init, Last, Prepend, Selector, ReplaceAt, Replacer, Tupler }
-import ops.record.{ Selector => RSelector, Updater }
+import labelled.{FieldType, field}
+import ops.coproduct.{Inject, Selector => CSelector}
+import ops.hlist.{At, Init, Last, Prepend, ReplaceAt, Replacer, Selector, Tupler}
+import ops.record.{Updater, Selector => RSelector}
 
 trait Lens[S, A] extends LPLens[S, A] { outer =>
   def get(s: S): A
@@ -40,7 +39,7 @@ trait Lens[S, A] extends LPLens[S, A] { outer =>
 
   def >>(n: Nat)(implicit mkLens: MkNthFieldLens[A, n.N]): Lens[S, mkLens.Elem] = mkLens() compose this
 
-  def >>(k: Witness)(implicit mkLens: MkFieldLens[A, k.T]): Lens[S, mkLens.Elem] = mkLens() compose this
+  def >>[K <: String with Singleton](k: K)(implicit mkLens: MkFieldLens[A, K]): Lens[S, mkLens.Elem] = mkLens() compose this
 
   def selectDynamic(k: String)(
     implicit mkLens: MkSelectDynamicOptic[Lens[S, A], A, k.type, Nothing]
@@ -162,7 +161,7 @@ object OpticDefns {
   def apply[C] = id[C]
 
   object compose extends Poly2 {
-    implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
+    implicit def default[A, B, C]: Case.Aux[Lens[B, C], Lens[A, B], Lens[A, C]] = at[Lens[B, C], Lens[A, B]](_ compose _)
   }
 
   class RootLens[C] extends Lens[C, C] {
@@ -201,7 +200,7 @@ object OpticDefns {
 
   def hlistNthLens[L <: HList, N <: Nat](implicit mkLens: MkHListNthLens[L, N]) = mkLens()
 
-  def recordLens[R <: HList](k: Witness)(implicit mkLens: MkRecordSelectLens[R, k.T]) = mkLens()
+  def recordLens[R <: HList, K <: Singleton](k: K)(implicit mkLens: MkRecordSelectLens[R, K]) = mkLens()
 }
 
 trait OpticComposer[L, R] extends Serializable {
@@ -459,7 +458,7 @@ trait MkRecordSelectLens[R <: HList, K] extends Serializable {
 object MkRecordSelectLens {
   type Aux[R <: HList, K, Elem0] = MkRecordSelectLens[R, K] { type Elem = Elem0 }
 
-  implicit def mkRecordSelectLens[R <: HList, K, E]
+  implicit def mkRecordSelectLens[R <: HList, K <: Singleton, E]
     (implicit selector: RSelector.Aux[R, K, E], updater: Updater.Aux[R, FieldType[K, E], R]): Aux[R, K, E] =
       new MkRecordSelectLens[R, K] {
         type Elem = E

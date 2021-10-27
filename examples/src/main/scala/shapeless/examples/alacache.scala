@@ -37,7 +37,7 @@ import java.util.WeakHashMap
  *
  * This uses JUL, but it should be obvious how to use other backends.
  */
-trait LogFacet extends ProductISOFacet {
+trait LogFacet extends ProductISOFacet { outer =>
   trait LogOps extends ProductISOOps {
     val logger: Logger
   }
@@ -45,7 +45,7 @@ trait LogFacet extends ProductISOFacet {
   val ops: LogOps
 
   trait LogMethods { self: C =>
-    protected def log: Logger = ops.logger
+    protected def log: Logger = outer.ops.logger
   }
 }
 
@@ -128,32 +128,25 @@ trait CachedFacet extends ProductISOFacet {
   }
 }
 
-trait CachedCaseClassDefns extends
-  LogFacet with
-  CachedFacet with
-  ProductFacet with
-  PolymorphicEqualityFacet with
-  CopyFacet with
-  ToStringFacet {
+trait CachedCaseClassDefns extends LogFacet
+  with CachedFacet
+  with ProductFacet
+  with PolymorphicEqualityFacet
+  with ToStringFacet {
 
-  trait CaseClassOps extends
-    LogOps with
-    CachedOps with
-    ProductOps with
-    PolymorphicEqualityOps with
-    CopyOps with
-    ToStringOps
+  trait CaseClassOps extends LogOps
+    with CachedOps
+    with ProductOps
+    with PolymorphicEqualityOps
+    with ToStringOps
 
-  trait CaseClassCompanion extends
-    CachedCompanion
+  trait CaseClassCompanion extends CachedCompanion
 
-  trait CaseClass extends
-    LogMethods with
-    CachedMethods with
-    ProductMethods with
-    PolymorphicEqualityMethods with
-    CopyMethods with
-    ToStringMethods { self: C => }
+  trait CaseClass extends LogMethods
+    with CachedMethods
+    with ProductMethods
+    with PolymorphicEqualityMethods
+    with ToStringMethods { self: C => }
 
   val ops: CaseClassOps
 
@@ -251,18 +244,6 @@ object ALaCacheDemo extends App {
   assert(foo == foo2)
   assert(foo.hashCode == foo2.hashCode)
   assert(foo != foo3)
-
-  // copy
-  val fooCopy = foo.copy()
-  assert(fooCopy ne foo)
-  assert(foo == fooCopy)
-  assert(foo.hashCode == fooCopy.hashCode)
-
-  val mod = Foo(13, "foo")
-  val fooMod = foo.copy(i = 13)
-  assert(fooMod ne foo)
-  assert(mod == fooMod)
-  assert(mod.hashCode == fooMod.hashCode)
 
   // toString
   val fooStr = foo.toString

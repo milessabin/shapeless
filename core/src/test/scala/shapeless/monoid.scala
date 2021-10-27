@@ -89,8 +89,8 @@ class MonoidTests {
 
   @Test
   def testBasics: Unit = {
-    implicit val fooInstance = Monoid[Foo]
-    implicit val barInstance = Monoid[Bar]
+    implicit val fooInstance: Monoid[Foo] = Monoid.deriveInstance
+    implicit val barInstance: Monoid[Bar] = Monoid.deriveInstance
 
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)

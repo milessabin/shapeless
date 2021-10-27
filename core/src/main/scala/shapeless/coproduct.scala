@@ -16,8 +16,7 @@
 
 package shapeless
 
-import scala.language.dynamics
-import scala.language.experimental.macros
+import shapeless.labelled.{FieldType, field}
 
 import scala.annotation.tailrec
 
@@ -119,7 +118,7 @@ sealed trait CNil extends Coproduct {
   def impossible: Nothing
 }
 
-object Coproduct extends Dynamic {
+object Coproduct extends CoproductScalaCompat {
   import ops.coproduct.Inject
   import ops.coproduct.RuntimeInject
   import syntax.CoproductOps
@@ -127,36 +126,25 @@ object Coproduct extends Dynamic {
   class MkCoproduct[C <: Coproduct] {
     def apply[T](t: T)(implicit inj: Inject[C, T]): C = inj(t) 
   }
+
+  class MkUnionCoproduct[C <: Coproduct] {
+    def apply[K <: Singleton, T](k: K, t: T)(implicit inj: Inject[C, FieldType[K, T]]): C = inj(field[K](t))
+  }
   
   def apply[C <: Coproduct] = new MkCoproduct[C]
 
-  implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
+  def fromUnion[C <: Coproduct] = new MkUnionCoproduct[C]
+
+  implicit def cpOps[C <: Coproduct](c: C): CoproductOps[C] = new CoproductOps(c)
 
   def unsafeMkCoproduct(length: Int, value: Any) =
     (0 until length).foldLeft[Coproduct](Inl(value))((accum, _) => Inr(accum))
 
   @tailrec
-  def unsafeGet(c: Coproduct): Any = c match {
+  def unsafeGet(c: Coproduct): Any = (c: @unchecked) match {
     case Inl(h) => h
     case Inr(c) => unsafeGet(c)
   }
-
-
-  /**
-   * Allows to specify a `Coproduct` type with a syntax similar to `Record` and `Union`, as follows,
-   *
-   * {{{
-   * type ISB = Coproduct.`Int, String, Boolean`.T
-   * }}}
-   *
-   * Literal types are allowed, so that the following is valid,
-   *
-   * {{{
-   * type ABC = Coproduct.`'a, 'b, 'c`.T
-   * type TwoTrueStr = Coproduct.`2, true, "str"`.T
-   * }}}
-   */
-  def selectDynamic(tpeSelector: String): Any = macro LabelledMacros.coproductType
 
   /** Allows to inject a runtime value of type `Any` in a `Coproduct` */
   def runtimeInject[C <: Coproduct](x: Any)(implicit rinj: RuntimeInject[C]): Option[C] = rinj(x)

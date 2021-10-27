@@ -17,9 +17,6 @@
 package shapeless
 package ops
 
-import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
-
 import poly._
 
 //object record {
@@ -37,35 +34,14 @@ package record {
   @annotation.implicitNotFound(msg = "No field ${K} in record ${R}")
   sealed abstract class Selector[R <: HList, K] extends DepFn1[R] with Serializable
 
-  object Selector {
+  object Selector extends SelectorScalaCompat {
     type Aux[R <: HList, K, O] = Selector[R, K] { type Out = O }
     def apply[R <: HList, K](implicit selector: Selector[R, K]): Aux[R, K, selector.Out] = selector
-
-    implicit def materialize[R <: HList, K, O]: Aux[R, K, O] =
-      macro SelectorMacros.materialize[R, K]
   }
 
   final class UnsafeSelector(i: Int) extends Selector[HList, Any] {
     type Out = Any
     def apply(record: HList): Any = HList.unsafeGet(record, i)
-  }
-
-  class SelectorMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
-      val record = weakTypeOf[R].dealias
-      val key = weakTypeOf[K].dealias
-      if (!(record <:< hlistTpe))
-        abort(s"$record is not a record type")
-
-      findField(record, key) match {
-        case Some((k, v, i)) =>
-          q"new ${typeOf[UnsafeSelector]}($i).asInstanceOf[${reify(Selector)}.Aux[$record, $k, $v]]"
-        case _ =>
-          abort(s"No field $key in record type $record")
-      }
-    }
   }
 
   /**
@@ -108,37 +84,14 @@ package record {
     type Out <: HList
   }
 
-  object Updater {
+  object Updater extends UpdaterScalaCompat {
     type Aux[L <: HList, E, O <: HList] = Updater[L, E] { type Out = O }
     def apply[L <: HList, E](implicit updater: Updater[L, E]): Aux[L, E, updater.Out] = updater
-
-    implicit def meterialize[L <: HList, F, O]: Aux[L, F, O] =
-      macro UpdaterMacros.materialize[L, F]
   }
 
   final class UnsafeUpdater(i: Int) extends Updater[HList, Any] {
     type Out = HList
     def apply(l: HList, e: Any): HList = HList.unsafeUpdateAppend(l, i, e)
-  }
-
-  class UpdaterMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def materialize[L <: HList: WeakTypeTag, E: WeakTypeTag]: Tree = {
-      val list = weakTypeOf[L].dealias
-      val element = weakTypeOf[E].dealias
-      if (!(list <:< hlistTpe))
-        abort(s"$list is not a record type")
-
-      val (updated, i) = {
-        val elements = unpackHList(list)
-        val i = elements.indexWhere(_ =:= element)
-        if (i < 0) (elements :+ element, elements.length)
-        else (elements.updated(i, element), i)
-      }
-
-      q"new ${typeOf[UnsafeUpdater]}($i).asInstanceOf[${reify(Updater)}.Aux[$list, $element, ${mkHListTpe(updated)}]]"
-    }
   }
 
   /**
@@ -351,39 +304,14 @@ package record {
     type Out <: HList
   }
 
-  object Modifier {
+  object Modifier extends ModifierScalaCompat {
     type Aux[R <: HList, K, A, B, O <: HList] = Modifier[R, K, A, B] { type Out = O }
     def apply[R <: HList, K, A, B](implicit modifier: Modifier[R, K, A, B]): Aux[R, K, A, B, modifier.Out] = modifier
-
-    implicit def materialize[R <: HList, K, A, B, O <: HList]: Aux[R, K, A, B, O] =
-      macro ModifierMacros.materialize[R, K, A, B]
   }
 
   final class UnsafeModifier(i: Int) extends Modifier[HList, Any, Any, Any] {
     type Out = HList
     def apply(record: HList, f: Any => Any): HList = HList.unsafeUpdateWith(record, i, f)
-  }
-
-  class ModifierMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag, A: WeakTypeTag, B: WeakTypeTag]: Tree = {
-      val record = weakTypeOf[R].dealias
-      val key = weakTypeOf[K].dealias
-      if (!(record <:< hlistTpe))
-        abort(s"$record is not a record type")
-
-      val a = weakTypeOf[A]
-      val b = weakTypeOf[B]
-      val fields = unpackHList(record)
-      findField(fields, key) match {
-        case Some((k, v, i)) if v <:< a =>
-          val out = mkHListTpe(fields.updated(i, FieldType(k, b)))
-          q"new ${typeOf[UnsafeModifier]}($i).asInstanceOf[${reify(Modifier)}.Aux[$record, $k, $a, $b, $out]]"
-        case _ =>
-          abort(s"No field $key in record type $record")
-      }
-    }
   }
 
   /**
@@ -396,38 +324,14 @@ package record {
     type Out <: (Any, HList)
   }
 
-  object Remover {
+  object Remover extends RemoverScalaCompat {
     type Aux[R <: HList, K, O] = Remover[R, K] { type Out = O }
     def apply[R <: HList, K](implicit remover: Remover[R, K]): Aux[R, K, remover.Out] = remover
-
-    implicit def materialize[R <: HList, K, V, O <: HList]: Aux[R, K, (V, O)] =
-      macro RemoverMacros.materialize[R, K]
   }
 
   final class UnsafeRemover(i: Int) extends Remover[HList, Any] {
     type Out = (Any, HList)
     def apply(record: HList): (Any, HList) = HList.unsafeRemove(record, i)
-  }
-
-  class RemoverMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
-      val record = weakTypeOf[R].dealias
-      val key = weakTypeOf[K].dealias
-      if (!(record <:< hlistTpe))
-        abort(s"$record is not a record type")
-
-      val fields = unpackHList(record)
-      findField(fields, key) match {
-        case Some((k, v, i)) =>
-          val (prefix, suffix) = fields.splitAt(i)
-          val out = mkHListTpe(prefix ++ suffix.tail)
-          q"new ${typeOf[UnsafeRemover]}($i).asInstanceOf[${reify(Remover)}.Aux[$record, $k, ($v, $out)]]"
-        case _ =>
-          abort(s"No field $key in record type $record")
-      }
-    }
   }
 
   /**
@@ -547,27 +451,8 @@ package record {
 
   @annotation.implicitNotFound(msg = "Record ${R} contains field ${K}")
   final class LacksKey[R <: HList, K]
-  object LacksKey {
+  object LacksKey extends LacksKeyScalaCompat {
     def apply[R <: HList, K](implicit ev: LacksKey[R, K]): LacksKey[R, K] = ev
-
-    implicit def materialize[R <: HList, K]: LacksKey[R, K] =
-      macro LacksKeyMacros.materialize[R, K]
-  }
-
-  class LacksKeyMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    def materialize[R <: HList: WeakTypeTag, K: WeakTypeTag]: Tree = {
-      val record = weakTypeOf[R].dealias
-      val key = weakTypeOf[K].dealias
-      if (!(record <:< hlistTpe))
-        abort(s"$record is not a record type")
-
-      findField(record, key) match {
-        case None => q"new ${weakTypeOf[LacksKey[R, K]]}"
-        case _ => abort(s"Record type $record contains field $key")
-      }
-    }
   }
 
   /**
@@ -588,7 +473,7 @@ package record {
     }
 
     implicit def hlistKeys[K, V, T <: HList](
-      implicit wk: Witness.Aux[K], kt: Keys[T]
+      implicit wk: ValueOf[K], kt: Keys[T]
     ): Aux[FieldType[K, V] :: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :: T] {
         type Out = K :: kt.Out
@@ -639,7 +524,7 @@ package record {
         def apply(): Out = HNil
       }
 
-    implicit def hlistSwapRecord[K, V, T <: HList](implicit wk: Witness.Aux[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
+    implicit def hlistSwapRecord[K <: Singleton, V, T <: HList](implicit wk: ValueOf[K], kt: SwapRecord[T]): Aux[FieldType[K, V] :: T, FieldType[V, K] :: kt.Out] =
       new SwapRecord[FieldType[K, V] :: T] {
         type Out = FieldType[V, K] :: kt.Out
         def apply(): Out = field[V](wk.value) :: kt()
@@ -667,7 +552,7 @@ package record {
       }
 
     implicit def hconsFields[K, V, T <: HList](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailFields: Fields[T]
     ): Aux[FieldType[K, V] :: T, (K, V) :: tailFields.Out] =
       new Fields[FieldType[K, V] :: T] {
@@ -704,7 +589,7 @@ package record {
       }
 
     implicit def hconsUnzipFields[K, V, T <: HList](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailUF: UnzipFields[T]
     ): Aux[FieldType[K, V] :: T, K :: tailUF.Keys, V :: tailUF.Values] =
       new UnzipFields[FieldType[K, V] :: T] {
@@ -743,7 +628,7 @@ package record {
     implicit def hnilToMapAnyNothing[L <: HNil]: Aux[L, Any, Nothing] = hnilToMap[Any, Nothing, L]
 
     implicit def hsingleToMap[K, V](implicit
-      wk: Witness.Aux[K]
+      wk: ValueOf[K]
     ): Aux[FieldType[K, V] :: HNil, K, V] =
       new ToMap[FieldType[K, V] :: HNil] {
         type Key = K
@@ -755,7 +640,7 @@ package record {
       tailToMap: ToMap.Aux[TH :: TT, TK, TV],
       keyLub: Lub[HK, TK, K],
       valueLub: Lub[HV, TV, V],
-      wk: Witness.Aux[HK]
+      wk: ValueOf[HK]
     ): Aux[FieldType[HK, HV] :: TH :: TT, K, V] =
       new ToMap[FieldType[HK, HV] :: TH :: TT] {
         type Key = K

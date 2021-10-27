@@ -32,13 +32,4 @@ class RefuteTests {
   def testInductivePresent: Unit = {
     the[InductiveEvidence]
   }
-
-  @Test
-  def increaseCodeCoverage: Unit = {
-    // Increases the code coverage, as the above tests cannot
-    Refute.Impl.amb1[PresentEvidence](presentEvidence)
-    Refute.Impl.amb2[PresentEvidence]
-    Refute.refute(new Refute.Impl[PresentEvidence]{})
-  }
-
 }

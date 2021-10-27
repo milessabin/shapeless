@@ -74,7 +74,7 @@ package recursionschemes {
         for (a <- oa; f <- of) yield f(a)
     }
 
-    implicit def constApp[T](implicit T: Monoid[T]) =
+    implicit def constApp[T](implicit T: Monoid[T]): Applicative[({ type F[x] = ConstF[T, x] })#F] =
       new Applicative[({ type F[x] = ConstF[T, x] })#F] {
         def pure[A](a: A): ConstF[T, A] = ConstF(T.empty)
         def app[A, B](ca: ConstF[T, A])(cf: ConstF[T, A => B]): ConstF[T, B] =
@@ -310,38 +310,38 @@ package recursionschemes {
       }
 
       implicit def hcons[U, H, T <: HList](
-        implicit H: Strict[Rec[U, H]], T: RecHList[U, T]
+        implicit H: Rec[U, H], T: RecHList[U, T]
       ): RecHList[U, H :: T] {
-        type F[x] = H.value.F[x] :: T.F[x]
+        type F[x] = H.F[x] :: T.F[x]
       } = new RecHList[U, H :: T] {
-        type F[x] = H.value.F[x] :: T.F[x]
-        def tie(fu: F[U]): H :: T = H.value.tie(fu.head) :: T.tie(fu.tail)
-        def untie(l: H :: T): F[U] = H.value.untie(l.head) :: T.untie(l.tail)
+        type F[x] = H.F[x] :: T.F[x]
+        def tie(fu: F[U]): H :: T = H.tie(fu.head) :: T.tie(fu.tail)
+        def untie(l: H :: T): F[U] = H.untie(l.head) :: T.untie(l.tail)
         def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
-          G.map2(H.value.traverse(fa.head)(f), T.traverse(fa.tail)(f))(_ :: _)
+          G.map2(H.traverse(fa.head)(f), T.traverse(fa.tail)(f))(_ :: _)
       }
 
       implicit def ccons[T, L, R <: Coproduct](
-        implicit L: Strict[Rec[T, L]], R: RecCoproduct[T, R]
+        implicit L: Rec[T, L], R: RecCoproduct[T, R]
       ): RecCoproduct[T, L :+: R] {
-        type F[t] = L.value.F[t] :+: R.F[t]
+        type F[t] = L.F[t] :+: R.F[t]
       } = new RecCoproduct[T, L :+: R] {
-        type F[t] = L.value.F[t] :+: R.F[t]
+        type F[t] = L.F[t] :+: R.F[t]
 
         def tie(ft: F[T]): L :+: R = ft match {
-          case Inl(fl) => Inl(L.value.tie(fl))
+          case Inl(fl) => Inl(L.tie(fl))
           case Inr(fr) => Inr(R.tie(fr))
         }
 
         def untie(c: L :+: R): F[T] = c match {
-          case Inl(l) => Inl(L.value.untie(l))
+          case Inl(l) => Inl(L.untie(l))
           case Inr(r) => Inr(R.untie(r))
         }
 
         def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(
           implicit G: Applicative[G]
         ): G[F[B]] = fa match {
-          case Inl(fl) => G.map(L.value.traverse(fl)(f))(Inl.apply)
+          case Inl(fl) => G.map(L.traverse(fl)(f))(Inl.apply)
           case Inr(fr) => G.map(R.traverse(fr)(f))(Inr.apply)
         }
       }

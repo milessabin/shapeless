@@ -41,14 +41,14 @@ object CartesianProductExample extends App {
   }
 
   object ApplyMapper {
-    implicit def hnil[HF, A] = new ApplyMapper[HF, A, HNil, HNil] {
+    implicit def hnil[HF, A]: ApplyMapper[HF, A, HNil, HNil] = new ApplyMapper[HF, A, HNil, HNil] {
       def apply(a: A, x: HNil) = HNil
     }
 
     implicit def hlist[HF, A, XH, XT <: HList, OutH, OutT <: HList](implicit
       applied: Case2.Aux[HF, A, XH, OutH],
       mapper: ApplyMapper[HF, A, XT, OutT]
-    ) = new ApplyMapper[HF, A, XH :: XT, OutH :: OutT] {
+    ): ApplyMapper[HF, A, XH :: XT, OutH :: OutT] = new ApplyMapper[HF, A, XH :: XT, OutH :: OutT] {
       def apply(a: A, x: XH :: XT) = applied(a, x.head) :: mapper(a, x.tail)
     }
   }
@@ -62,7 +62,7 @@ object CartesianProductExample extends App {
   }
 
   object LiftA2 {
-    implicit def hnil[HF, Y <: HList] = new LiftA2[HF, HNil, Y, HNil] {
+    implicit def hnil[HF, Y <: HList]: LiftA2[HF, HNil, Y, HNil] = new LiftA2[HF, HNil, Y, HNil] {
       def apply(x: HNil, y: Y) = HNil
     }
 
@@ -73,7 +73,7 @@ object CartesianProductExample extends App {
       mapper: ApplyMapper[HF, XH, Y, Out1],
       lift: LiftA2[HF, XT, Y, Out2],
       prepend : Prepend[Out1, Out2]
-    ) = new LiftA2[HF, XH :: XT, Y, prepend.Out] {
+    ): CartesianProductExample.LiftA2[HF, XH :: XT, Y, prepend.Out] = new LiftA2[HF, XH :: XT, Y, prepend.Out] {
       def apply(x: XH :: XT, y: Y) = prepend(mapper(x.head, y), lift(x.tail, y))
     }
   }
@@ -90,7 +90,7 @@ object CartesianProductExample extends App {
    * A polymorphic binary function that pairs its arguments.
    */
   object tuple extends Poly {
-    implicit def whatever[A, B] = use((a : A, b : B) => (a, b))
+    implicit def whatever[A, B]: ProductCase.Aux[A :: B :: HNil, (A, B)] = use((a : A, b : B) => (a, b))
   }
 
   // Two example lists.

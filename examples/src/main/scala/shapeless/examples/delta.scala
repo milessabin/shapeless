@@ -94,12 +94,12 @@ object Delta extends Delta0 {
   }
 
   implicit def deriveHCons[H, T <: HList, HO](
-    implicit deltaH: => Delta.Aux[H, HO], deltaT: Strict[Delta[T] { type Out <: HList }]
-  ): Delta.Aux[H :: T, HO :: deltaT.value.Out] = new Delta[H :: T] {
-    type Out = HO :: deltaT.value.Out
+    implicit deltaH: => Delta.Aux[H, HO], deltaT: Delta[T] { type Out <: HList }
+  ): Delta.Aux[H :: T, HO :: deltaT.Out] = new Delta[H :: T] {
+    type Out = HO :: deltaT.Out
 
     def apply(before: H :: T, after: H :: T): Out =
-      deltaH(before.head, after.head) :: deltaT.value(before.tail, after.tail)
+      deltaH(before.head, after.head) :: deltaT(before.tail, after.tail)
   }
 }
 

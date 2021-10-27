@@ -110,42 +110,42 @@ object SerializationTestDefns {
   }
 
   object combineL extends Poly2 {
-    implicit def ci = at[Int, Int]((acc, i) => acc+i)
-    implicit def cs = at[Int, String]((acc, s) => acc+s.length)
-    implicit def cb = at[Int, Boolean]((acc, b) => acc+(if(b) 1 else 0))
+    implicit def ci: Case.Aux[Int, Int, Int] = at[Int, Int]((acc, i) => acc+i)
+    implicit def cs: Case.Aux[Int, String, Int] = at[Int, String]((acc, s) => acc+s.length)
+    implicit def cb: Case.Aux[Int, Boolean, Int] = at[Int, Boolean]((acc, b) => acc+(if(b) 1 else 0))
   }
 
   object combineR extends Poly2 {
-    implicit def ci = at[Int, Int]((i, acc) => acc+i)
-    implicit def cs = at[String, Int]((s, acc) => acc+s.length)
-    implicit def cb = at[Boolean, Int]((b, acc) => acc+(if(b) 1 else 0))
+    implicit def ci: Case.Aux[Int, Int, Int] = at[Int, Int]((i, acc) => acc+i)
+    implicit def cs: Case.Aux[String, Int, Int] = at[String, Int]((s, acc) => acc+s.length)
+    implicit def cb: Case.Aux[Boolean, Int, Int] = at[Boolean, Int]((b, acc) => acc+(if(b) 1 else 0))
   }
 
   object selInt extends Poly1 {
-    implicit def ci = at[Int] { x => x }
+    implicit def ci: Case.Aux[Int, Int] = at[Int] { x => x }
   }
 
   object smear extends Poly {
-    implicit val caseIntInt    = use((x: Int, y: Int) => x + y)
-    implicit val caseStringInt = use((x: String, y: Int) => x.toInt + y)
-    implicit val caseIntString = use((x: Int, y: String) => x + y.toInt)
+    implicit val caseIntInt: ProductCase.Aux[Int :: Int :: HNil, Int] = use((x: Int, y: Int) => x + y)
+    implicit val caseStringInt: ProductCase.Aux[String :: Int :: HNil, Int] = use((x: String, y: Int) => x.toInt + y)
+    implicit val caseIntString: ProductCase.Aux[Int :: String :: HNil, Int] = use((x: Int, y: String) => x + y.toInt)
   }
 
   object coIdentity extends Poly1 {
-    implicit def default[A] = at[A](a => Coproduct[A :+: CNil](a))
+    implicit def default[A]: Case.Aux[A, A :+: CNil] = at[A](a => Coproduct[A :+: CNil](a))
   }
 
   object gsize extends Poly1 {
-    implicit def caseInt = at[Int](_ => 1)
-    implicit def caseString = at[String](_.length)
-    implicit def default[T] = at[T](_ => 1)
+    implicit def caseInt: Case.Aux[Int, Int] = at[Int](_ => 1)
+    implicit def caseString: Case.Aux[String, Int] = at[String](_.length)
+    implicit def default[T]: Case.Aux[T, Int] = at[T](_ => 1)
   }
 
   object plus extends Poly2 {
-    implicit val caseInt = at[Int, Int](_ + _)
-    implicit val caseDouble = at[Double, Double](_ + _)
-    implicit val caseString = at[String, String](_ + _)
-    implicit def caseList[T] = at[List[T], List[T]](_ ::: _)
+    implicit val caseInt: Case.Aux[Int, Int, Int] = at[Int, Int](_ + _)
+    implicit val caseDouble: Case.Aux[Double, Double, Double] = at[Double, Double](_ + _)
+    implicit val caseString: Case.Aux[String, String, String] = at[String, String](_ + _)
+    implicit def caseList[T]: Case.Aux[List[T], List[T], List[T]] = at[List[T], List[T]](_ ::: _)
   }
 
   trait Quux
@@ -170,15 +170,15 @@ object SerializationTestDefns {
 
   case class Box[T](t: T)
 
-  type K = HList.`"a", "b", "c"`.T
-  type R = Record.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
-  type U = Union.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
-  type RM = Record.`"c" -> Boolean, "d" -> Double`.T
-  type RM1 = Record.`"c" -> Boolean, "b" -> String`.T
-  type RM2 = Record.`"b" -> String, "c" -> Boolean`.T
-  type KA = Witness.`"a"`.T
-  type KB = Witness.`"b"`.T
-  type KC = Witness.`"c"`.T
+  type K = "a" :: "b" :: "c" :: HNil
+  type R = ("a" ->> Int) :: ("b" ->> String) :: ("c" ->> Boolean) :: HNil
+  type U =  ("a" ->> Int) :+: ("b" ->> String) :+: ("c" ->> Boolean) :+: CNil
+  type RM = ("c" ->> Boolean) :: ("d" ->> Double) :: HNil
+  type RM1 = ("c" ->> Boolean) :: ("b" ->> String) :: HNil
+  type RM2 = ("b" ->> String) :: ("c" ->> Boolean) :: HNil
+  type KA = "a"
+  type KB = "b"
+  type KC = "c"
 
   sealed trait Tree[T]
   case class Leaf[T](t: T) extends Tree[T]
@@ -314,7 +314,7 @@ class SerializationTests {
 
     val r = "foo" ->> 23 :: "bar" ->> "foo" :: "baz" ->> true :: HNil
 
-    type U = Union.`"foo" -> Int, "bar" -> String, "baz" -> Boolean`.T
+    type U = ("foo" ->> Int) :+: ("bar" ->> String) :+: ("baz" ->> Boolean) :+: CNil
     val u = Union[U](bar = "quux")
 
     val t = (23, "foo", true)
@@ -355,8 +355,7 @@ class SerializationTests {
     type LT = (Int, String) :: (Boolean, Double) :: (Char, Float) :: HNil
     type AL = (Int => Double) :: (String => Char) :: (Boolean => Float) :: HNil
     type I3 = Int :: Int :: Int :: HNil
-    val s = HList.`"a", "boo", 23, true`
-    type S = s.T
+    type S = "a" :: "boo" :: 23 :: true :: HNil
 
     assertSerializable(IsHCons[L])
 
@@ -616,8 +615,7 @@ class SerializationTests {
     type L = Int :+: String :+: Boolean :+: CNil
     type LP = String :+: Boolean :+: Int :+: CNil
     type BS = Boolean :+: String :+: CNil
-    val s = Coproduct.`"a", "boo", 23, true`
-    type S = s.T
+    type S = "a" :+: "boo" :+: 23 :+: true :+: CNil
 
     assertSerializable(Inject[L, Int])
     assertSerializable(Inject[L, String])
@@ -978,8 +976,8 @@ class SerializationTests {
     assertSerializable(Typeable[Double])
     assertSerializable(Typeable[String])
     assertSerializable(Typeable[Foo])
-    assertSerializable(Typeable[Witness.`3`.T])
-    assertSerializable(Typeable[Witness.`"foo"`.T])
+    assertSerializable(Typeable[3])
+    assertSerializable(Typeable["foo"])
 
     // in general, referenceSingletonTypeables
     // shouldn't be serializable, since they
@@ -990,13 +988,13 @@ class SerializationTests {
     // special cases of referenceSingletonTypeable,
     // because symbols and objects preserve their
     // identity during serialization/deserialization:
-    assertSerializable(Typeable[Witness.`"foo"`.T])
+    assertSerializable(Typeable["foo"])
     assertSerializable(Typeable[Sing.type])
     assertSerializable(Typeable[CaseObj.type])
 
     // check that they indeed work
     // correctly after deserialization:
-    val symInst = roundtrip(Typeable[Witness.`"foo"`.T])
+    val symInst = roundtrip(Typeable["foo"])
     assertTrue(symInst.cast("foo": Any).isDefined)
     val objInst = roundtrip(Typeable[Sing.type])
     assertTrue(objInst.cast(Sing: Any).isDefined)
@@ -1103,8 +1101,8 @@ class SerializationTests {
     type OL = Option[Int] :: Option[String] :: Option[Boolean] :: HNil
     type I3 = Int :: Int :: Int :: HNil
     type IS = Int :: String :: HNil
-    type R = Record.`"a" -> Int, "b" -> String, "c" -> Boolean`.T
-    type K = HList.`"a", "b", "c"`.T
+    type R = ("a" ->> Int) :: ("b" ->> String) :: ("c" ->> Boolean) :: HNil
+    type K = "a" :: "b" :: "c" :: HNil
 
     assertSerializable(UnaryTCConstraint[HNil, Option])
     assertSerializable(UnaryTCConstraint[OL, Option])
@@ -1148,14 +1146,6 @@ class SerializationTests {
   }
 
   @Test
-  def testFunctor: Unit = {
-    assertSerializableBeforeAfter(Functor[Some])(_.map(Some(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[Option])(_.map(Option(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[Tree])(_.map(Leaf(2))(_.toString))
-    assertSerializableBeforeAfter(Functor[List])(_.map(List(2))(_.toString))
-  }
-
-  @Test
   def testShow: Unit = {
     // I had to disable the first two during https://github.com/milessabin/shapeless/pull/435, with scala 2.12.0-M2.
     // Don't know why they keep capturing their outer class, and the next two don't.
@@ -1181,7 +1171,7 @@ class SerializationTests {
     val l8 = optic.hlistSelectLens[Int :: String :: Boolean :: HNil, String]
     val l9 = optic.coproductSelectPrism[Int :+: String :+: Boolean :+: CNil, String]
     val l10 = optic.hlistNthLens[Int :: String :: Boolean :: HNil, _1]
-    val l11 = optic.recordLens[Record.`"foo" -> Int, "bar" -> String, "baz" -> Boolean`.T]("bar")
+    val l11 = optic.recordLens[("foo" ->> Int) :: ("bar" ->> String) :: ("baz" ->> Boolean) :: HNil, "bar"]("bar")
     val l12 = optic[Tree[Int]].l.r.l.t
     val l13 = optic[Node[Int]] >> "r"
     val l14 = optic[Node[Int]] >> _1

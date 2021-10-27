@@ -28,14 +28,14 @@ package std
  * @author Rob Norris
  */
 object traversable {
-  implicit def traversableOps[T](t : T)(implicit ev: T => Iterable[_]) = new TraversableOps(t)
-  implicit def traversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) = new TraversableOps2(as)
+  implicit def traversableOps[T](t : T)(implicit ev: T => Iterable[_]): TraversableOps[T] = new TraversableOps(t)
+  implicit def traversableOps2[CC[T] <: Iterable[T], A](as: CC[A]): TraversableOps2[CC, A] = new TraversableOps2(as)
 }
 
 final class TraversableOps[T](t : T)(implicit ev: T => Iterable[_]) {
   import ops.traversable._
 
-  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(ev(t))
 }
 
 final class TraversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) {

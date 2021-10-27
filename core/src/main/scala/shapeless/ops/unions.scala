@@ -80,7 +80,7 @@ object union {
         def apply(): Out = HNil
       }
 
-    implicit def coproductKeys[K, V, T <: Coproduct](implicit wk: Witness.Aux[K], kt: Keys[T]): Aux[FieldType[K, V] :+: T, K :: kt.Out] =
+    implicit def coproductKeys[K, V, T <: Coproduct](implicit wk: ValueOf[K], kt: Keys[T]): Aux[FieldType[K, V] :+: T, K :: kt.Out] =
       new Keys[FieldType[K, V] :+: T] {
         type Out = K :: kt.Out
         def apply(): Out = wk.value :: kt()
@@ -136,7 +136,7 @@ object union {
       }
 
     implicit def cconsFields[K, V, T <: Coproduct](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailFields: Fields[T]
     ): Aux[FieldType[K, V] :+: T, (K, V) :+: tailFields.Out] =
       new Fields[FieldType[K, V] :+: T] {
@@ -178,7 +178,7 @@ object union {
       }
 
     implicit def cconsUnzipFields[K, V, T <: Coproduct](implicit
-      key: Witness.Aux[K],
+      key: ValueOf[K],
       tailUF: UnzipFields[T]
     ): Aux[FieldType[K, V] :+: T, K :: tailUF.Keys, V :+: tailUF.Values] =
       new UnzipFields[FieldType[K, V] :+: T] {
@@ -221,7 +221,7 @@ object union {
     implicit val cnilToMapAnyNothing: Aux[CNil, Any, Nothing] = cnilToMap[Any, Nothing]
 
     implicit def csingleToMap[K, V](implicit
-      wk: Witness.Aux[K]
+      wk: ValueOf[K]
     ): Aux[FieldType[K, V] :+: CNil, K, V] =
       new ToMap[FieldType[K, V] :+: CNil] {
         type Key = K
@@ -235,7 +235,7 @@ object union {
       tailToMap: ToMap.Aux[TH :+: TT, TK, TV],
       keyLub: Lub[HK, TK, K],
       valueLub: Lub[HV, TV, V],
-      wk: Witness.Aux[HK]
+      wk: ValueOf[HK]
     ): Aux[FieldType[HK, HV] :+: TH :+: TT, K, V] =
       new ToMap[FieldType[HK, HV] :+: TH :+: TT] {
         type Key = K

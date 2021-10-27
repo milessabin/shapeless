@@ -6,6 +6,7 @@ import testutil._
 
 import syntax.std.product._
 import record._
+import labelled.->>
 
 class ProductTests {
 
@@ -144,14 +145,14 @@ class ProductTests {
     // With explicit type arguments, >: or =:= to the inferred ones respectively
 
     {
-      val fooL = foo.toRecord[Record.`"i" -> AnyVal, "s" -> String`.T]
+      val fooL = foo.toRecord[("i" ->> AnyVal) :: ("s" ->> String) :: HNil]
       val expectedFooL = Record(i=1: AnyVal, s="b")
       equalInferredTypes(expectedFooL, fooL)
       assertTypedEquals(expectedFooL, fooL)
     }
 
     {
-      val barL = bar.toRecord[Record.`"b" -> Boolean, "f" -> Foo`.T]
+      val barL = bar.toRecord[("b" ->> Boolean) :: ("f" ->> Foo) :: HNil]
       val expectedBarL = Record(b=true, f=foo)
       equalInferredTypes(expectedBarL, barL)
       assertTypedEquals(expectedBarL, barL)
@@ -284,13 +285,6 @@ class ProductTests {
   def testToMap: Unit = {
     import syntax.singleton._
     
-    {
-      // FIXME: should work (needs changes in GenericMacros?)
-      // val m = Empty.toMap
-      // assertTypedEquals(Map.empty[Any, Nothing], m)
-    }
-
-
     val e = EmptyCC()
 
     {

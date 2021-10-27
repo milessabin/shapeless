@@ -117,17 +117,7 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    */
   def select[U](implicit selector : Selector[L, U]) : U = selector(l)
 
-  /**
-   * Returns the elements of this `HList` specified by `Ids`. Available only if there is
-   * evidence that this `HList` contains all elements specified in `Ids`.
-   */
-  case class SelectManyAux[L <: HList](l: L) extends NatProductArgs {
-    def applyNatProduct[Ids <: HList](implicit sel: SelectMany[L,Ids]): sel.Out = sel(l)
-  }
-
   def selectManyType[Ids <: HList](implicit sel: SelectMany[L, Ids]): sel.Out = sel(l)
-
-  def selectMany = SelectManyAux(l)
 
   /**
    * Returns the elements of this `HList` specified by the range of ids in [A,B[
@@ -257,8 +247,8 @@ final class HListOps[L <: HList](l : L) extends Serializable {
    *
    * @author Andreas Koestler
    */
-  def updateAtWith[V](n: NatWith[({ type λ[n <: Nat] = At[L, n]})#λ])(f: n.instance.Out => V)
-    (implicit upd: ModifierAt[L, n.N, n.instance.Out, V]): upd.Out = upd(l, f)
+  def updateAtWith[N <: Nat, AtOut, V](n: NatWithTypeAtPos.Aux[L, N, AtOut])(f: AtOut => V)(implicit upd: ModifierAt[L, N, AtOut, V]): upd.Out =
+    upd(l, f)
 
   class UpdatedTypeAux[U] {
     def apply[V, Out <: HList](v : V)

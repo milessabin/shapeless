@@ -19,7 +19,7 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import labelled.FieldType
+import labelled.{FieldType, ->>}
 import union._
 import syntax.singleton._
 import test._
@@ -30,16 +30,11 @@ import ops.union.UnzipFields
 
 class UnionTests {
 
-  val wI = Witness("i")
-  type i = wI.T
+  type i = "i"
+  type s = "s"
+  type b = "b"
 
-  val wS = Witness("s")
-  type s = wS.T
-
-  val sB = Witness("b")
-  type b = sB.T
-
-  type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
+  type U = ("i" ->> Int) :+: ("s" ->> String) :+: ("b" ->> Boolean) :+: CNil
 
   @Test
   def testGetLiterals: Unit = {
@@ -94,28 +89,22 @@ class UnionTests {
   @Test
   def testUnionTypeSelector: Unit = {
     type ii = FieldType[i, Int] :+: CNil
-    typed[ii](Coproduct[Union.`"i" -> Int`.T]("i" ->> 23))
+    typed[ii](Coproduct[("i" ->> Int) :+: CNil]("i" ->> 23))
 
     type iiss = FieldType[i, Int] :+: FieldType[s, String] :+: CNil
-    typed[iiss](Coproduct[Union.`"i" -> Int, "s" -> String`.T]("s" ->> "foo"))
+    typed[iiss](Coproduct[("i" ->> Int) :+: ("s" ->> String) :+: CNil]("s" ->> "foo"))
 
     type iissbb = FieldType[i, Int] :+: FieldType[s, String] :+: FieldType[b, Boolean] :+: CNil
-    typed[iissbb](Coproduct[Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T]("b" ->> true))
+    typed[iissbb](Coproduct[("i" ->> Int) :+: ("s" ->> String) :+: ("b" ->> Boolean) :+: CNil]("b" ->> true))
 
     // Curiously, lines like
-    //   typed[Union.`'i -> Int, 's -> String`.T](Inl('i ->> 23))
+    //   typed[('i ->> Int) :: ('s ->> String) :: HNil](Inl('i ->> 23))
     // or
-    //   val u: Union.`'i -> Int, 's -> String`.T = Inl('i ->> 23)
+    //   val u: ('i ->> Int) :: ('s ->> String) :: HNil = Inl('i ->> 23)
     // don't compile as is. One has to tear apart the type and the value made of fields and Inl/Inr.
 
     {
-      type U = Union.` `.T
-
-      implicitly[U =:= CNil]
-    }
-
-    {
-      type U = Union.`"i" -> Int`.T
+      type U = ("i" ->> Int) :+: CNil
 
       val u = Inl("i" ->> 23)
 
@@ -123,7 +112,7 @@ class UnionTests {
     }
 
     {
-      type U = Union.`"i" -> Int, "s" -> String`.T
+      type U = ("i" ->> Int) :+: ("s" ->> String) :+: CNil
 
       val u0 = Inl("i" ->> 23)
       val u1 = Inr(Inl("s" ->> "foo"))
@@ -133,7 +122,7 @@ class UnionTests {
     }
 
     {
-      type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
+      type U = ("i" ->> Int) :+: ("s" ->> String) :+: ("b" ->> Boolean) :+: CNil
 
       val u0 = Inl("i" ->> 23)
       val u1 = Inr(Inl("s" ->> "foo"))
@@ -147,7 +136,7 @@ class UnionTests {
     // Literal types
 
     {
-      type U = Union.`"i" -> 2`.T
+      type U = ("i" ->> 2) :+: CNil
 
       val u = Inl("i" ->> 2.narrow)
 
@@ -155,7 +144,7 @@ class UnionTests {
     }
 
     {
-      type U = Union.`"i" -> 2, "s" -> "a", "b" -> true`.T
+      type U = ("i" ->> 2) :+: ("s" ->> "a") :+: ("b" ->> true) :+: CNil
 
       val u0 = Inl("i" ->> 2.narrow)
       val u1 = Inr(Inl("s" ->> "a".narrow))
@@ -167,7 +156,7 @@ class UnionTests {
     }
 
     {
-      type U = Union.`"i" -> 2`.T
+      type U = ("i" ->> 2) :+: CNil
 
       val u = Inl("i" ->> 3.narrow)
 
@@ -177,7 +166,7 @@ class UnionTests {
     // Mix of standard and literal types
 
     {
-      type U = Union.`"i" -> 2, "s" -> String, "b" -> true`.T
+      type U = ("i" ->> 2) :+: ("s" ->> String) :+: ("b" ->> true) :+: CNil
 
       val u0 = Inl("i" ->> 2.narrow)
       val u1 = Inr(Inl("s" ->> "a"))
@@ -216,7 +205,7 @@ class UnionTests {
     val u2 = Union[U](s = "foo")
     val u3 = Union[U](b = true)
 
-    type UF = (Witness.`"i"`.T, Int) :+: (Witness.`"s"`.T, String) :+: (Witness.`"b"`.T, Boolean) :+: CNil
+    type UF = ("i", Int) :+: ("s", String) :+: ("b", Boolean) :+: CNil
 
     {
       val f1 = u1.fields
@@ -228,12 +217,12 @@ class UnionTests {
       assertTypedEquals(Coproduct[UF]("b".narrow -> true), f3)
     }
 
-    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    type US = ("first" ->> Option[Int]) :+: ("second" ->> Option[Boolean]) :+: ("third" ->> Option[String]) :+: CNil
     val us1 = Coproduct[US]("first" ->> Option(2))
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
 
-    type USF = (Witness.`"first"`.T, Option[Int]) :+: (Witness.`"second"`.T, Option[Boolean]) :+: (Witness.`"third"`.T, Option[String]) :+: CNil
+    type USF = ("first", Option[Int]) :+: ("second", Option[Boolean]) :+: ("third", Option[String]) :+: CNil
 
     {
       val f1 = us1.fields
@@ -256,7 +245,7 @@ class UnionTests {
     {
       val uf = UnzipFields[U]
 
-      type UV = Coproduct.`Int, String, Boolean`.T
+      type UV = Int :+: String :+: Boolean :+: CNil
 
       assertTypedEquals("i".narrow :: "s".narrow :: "b".narrow :: HNil, uf.keys)
       assertTypedEquals(Coproduct[UV](23), uf.values(u1))
@@ -264,7 +253,7 @@ class UnionTests {
       assertTypedEquals(Coproduct[UV](true), uf.values(u3))
     }
 
-    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    type US = ("first" ->> Option[Int]) :+: ("second" ->> Option[Boolean]) :+: ("third" ->> Option[String]) :+: CNil
     val us1 = Coproduct[US]("first" ->> Option(2))
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
@@ -272,7 +261,7 @@ class UnionTests {
     {
       val uf = UnzipFields[US]
 
-      type USV = Coproduct.`Option[Int], Option[Boolean], Option[String]`.T
+      type USV = Option[Int] :+: Option[Boolean] :+: Option[String] :+: CNil
 
       assertTypedEquals("first".narrow :: "second".narrow :: "third".narrow :: HNil, uf.keys)
       assertTypedEquals(Coproduct[USV](Option(2)), uf.values(us1))
@@ -307,7 +296,7 @@ class UnionTests {
       assertTypedEquals(Map[String, Any]("b" -> true), m3)
     }
 
-    type US = Union.`"first" -> Option[Int], "second" -> Option[Boolean], "third" -> Option[String]`.T
+    type US = ("first" ->> Option[Int]) :+: ("second" ->> Option[Boolean]) :+: ("third" ->> Option[String]) :+: CNil
     val us1 = Coproduct[US]("first" ->> Option(2))
     val us2 = Coproduct[US]("second" ->> Option(true))
     val us3 = Coproduct[US]("third" ->> Option.empty[String])
@@ -336,9 +325,9 @@ class UnionTests {
   @Test
   def testMapValues: Unit = {
     object f extends Poly1 {
-      implicit def int = at[Int](i => i > 0)
-      implicit def string = at[String](s => s"s: $s")
-      implicit def boolean = at[Boolean](v => if (v) "Yup" else "Nope")
+      implicit def int: Case.Aux[Int, Boolean] = at[Int](i => i > 0)
+      implicit def string: Case.Aux[String, String] = at[String](s => s"s: $s")
+      implicit def boolean: Case.Aux[Boolean, String] = at[Boolean](v => if (v) "Yup" else "Nope")
     }
 
     {
@@ -346,7 +335,7 @@ class UnionTests {
       val u2 = Union[U](s = "foo")
       val u3 = Union[U](b = true)
 
-      type R = Union.`"i" -> Boolean, "s" -> String, "b" -> String`.T
+      type R = ("i" ->> Boolean) :+: ("s" ->> String) :+: ("b" ->> String) :+: CNil
 
       val res1 = u1.mapValues(f)
       val res2 = u2.mapValues(f)
@@ -359,11 +348,11 @@ class UnionTests {
 
     {
       object toUpper extends Poly1 {
-        implicit def stringToUpper = at[String](_.toUpperCase)
-        implicit def otherTypes[X] = at[X](identity)
+        implicit def stringToUpper: Case.Aux[String, String] = at[String](_.toUpperCase)
+        implicit def otherTypes[X]: Case.Aux[X, X] = at[X](identity)
       }
 
-      type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
+      type U = ("foo" ->> String) :+: ("bar" ->> Boolean) :+: ("baz" ->> Double) :+: CNil
       val u1 = Coproduct[U]("foo" ->> "joe")
       val u2 = Coproduct[U]("bar" ->> true)
       val u3 = Coproduct[U]("baz" ->> 2.0)
@@ -376,19 +365,5 @@ class UnionTests {
       assertTypedEquals[U](Coproduct[U]("bar" ->> true), r2)
       assertTypedEquals[U](Coproduct[U]("baz" ->> 2.0), r3)
     }
-  }
-
-  @Test
-  def testAltSyntax: Unit = {
-    type U0 =
-    Witness.`"foo"`.->>[String] :+:
-      Witness.`"bar"`.->>[Boolean] :+:
-      Witness.`"baz"`.->>[Double] :+:
-      CNil
-
-    type U = Union.`"foo" -> String, "bar" -> Boolean, "baz" -> Double`.T
-
-    implicitly[U =:= U0]
-
   }
 }

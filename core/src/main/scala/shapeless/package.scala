@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-import scala.language.experimental.macros
-
-import scala.reflect.macros.whitebox
-
 package object shapeless extends ScalaVersionSpecifics {
   def unexpected : Nothing = sys.error("Unexpected invocation")
 
@@ -40,16 +36,8 @@ package object shapeless extends ScalaVersionSpecifics {
   // Type inequalities
   trait =:!=[A, B] extends Serializable
 
-  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
-  implicit def neqAmbig1[A] : A =:!= A = unexpected
-  implicit def neqAmbig2[A] : A =:!= A = unexpected
-
   @scala.annotation.implicitNotFound("${A} must not be a subtype of ${B}")
   trait <:!<[A, B] extends Serializable
-
-  implicit def nsub[A, B] : A <:!< B = new <:!<[A, B] {}
-  implicit def nsubAmbig1[A, B >: A] : A <:!< B = unexpected
-  implicit def nsubAmbig2[A, B >: A] : A <:!< B = unexpected
 
   // Type-lambda for context bound
   type |¬|[T] = {
@@ -57,8 +45,8 @@ package object shapeless extends ScalaVersionSpecifics {
   }
 
   // Quantifiers
-  type ∃[P[_]] = P[T] forSome { type T }
-  type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
+  // TODO type ∃[P[_]] = P[_]
+  // TODO type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]]})#λ]]
 
   /** `Optic` definitions */
   val optic = OpticDefns
@@ -104,66 +92,13 @@ package object shapeless extends ScalaVersionSpecifics {
   /** The SYB everywhere combinator */
   type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
 
+  /**
+   * WARNING: Exponential compile times. Using anything with depth of over 5 
+   * will cause compile times to go down the drain, and potentially OOM errors. 
+   */
   def everywhere[T, R](f: Poly)(t: T)(
     implicit cse: => Case1.Aux[EverywhereAux[f.type], T, R]
   ): R = cse(t)
 
-  def cachedImplicit[T]: T = macro CachedImplicitMacros.cachedImplicitImpl[T]
-}
-
-package shapeless {
-  class CachedImplicitMacros(val c: whitebox.Context) {
-    import c.universe._
-
-    def cachedImplicitImpl[T](implicit tTag: WeakTypeTag[T]): Tree = {
-      val casted = c.asInstanceOf[reflect.macros.runtime.Context]
-      val typer = casted.callsiteTyper
-      val global: casted.universe.type = casted.universe
-      val analyzer: global.analyzer.type = global.analyzer
-      val tCtx = typer.context
-      val owner = tCtx.owner
-      if(!owner.isVal && !owner.isLazy)
-        c.abort(c.enclosingPosition, "cachedImplicit should only be used to initialize vals and lazy vals")
-      val tTpe = weakTypeOf[T]
-      val application = casted.macroApplication
-      val tpe = {
-        val tpe0 =
-          if (tTpe.typeSymbol.isParameter) owner.tpe.asInstanceOf[Type]
-          else tTpe
-        tpe0.finalResultType
-      }
-      val gTpe = tpe.asInstanceOf[global.Type]
-
-      // Run our own custom implicit search that isn't allowed to find
-      // the thing we are enclosed in
-      val sCtx = tCtx.makeImplicit(false)
-      val is = new analyzer.ImplicitSearch(
-        tree = application,
-        pt = gTpe,
-        isView = false,
-        context0 = sCtx,
-        pos0 = c.enclosingPosition.asInstanceOf[global.Position]
-      ) {
-        override def searchImplicit(
-          implicitInfoss: List[List[analyzer.ImplicitInfo]],
-          isLocalToCallsite: Boolean
-        ): analyzer.SearchResult = {
-          val filteredInput = implicitInfoss.map { infos =>
-            infos.filter { info =>
-              val sym = if(info.sym.isLazy) info.sym else info.sym.accessedOrSelf
-              sym.owner != owner.owner || (!sym.isVal && !sym.isLazy)
-            }
-          }
-          super.searchImplicit(filteredInput, isLocalToCallsite)
-        }
-      }
-      val best = is.bestImplicit
-      if (best.isFailure) {
-        val errorMsg = implicitNotFoundMessage(c)(tpe)
-        c.abort(c.enclosingPosition, errorMsg)
-      } else {
-        best.tree.asInstanceOf[Tree]
-      }
-    }
-  }
+  private[shapeless] type IsRegularIterable[Repr] = collection.generic.IsIterable[Repr] { type C = Repr }
 }

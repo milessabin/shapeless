@@ -25,6 +25,7 @@ import syntax.singleton._
 import test._
 import testutil._
 import union._
+import labelled.->>
 
 object LabelledGenericTestsAux {
   case class Book(author: String, title: String, id: Int, price: Double)
@@ -57,11 +58,11 @@ object LabelledGenericTestsAux {
     ("authors" ->> Seq("Erich Gamma", "Richard Helm", "Ralph Johnson", "John Vlissides")) ::
     HNil
 
-  type BookRec = Record.`"author" -> String, "title" -> String, "id" -> Int, "price" -> Double`.T
+  type BookRec = ("author" ->> String) :: ("title" ->> String) :: ("id" ->> Int) :: ("price" ->> Double) :: HNil
   type BookKeys = Keys[BookRec]
   type BookValues = Values[BookRec]
 
-  type BookWithMultipleAuthorsRec = Record.`"title" -> String, "id" -> Int, "authors" -> Seq[String]`.T
+  type BookWithMultipleAuthorsRec = ("title" ->> String) :: ("id" ->> Int) :: ("authors" ->> Seq[String]) :: HNil
 
 
   sealed trait Tree
@@ -112,7 +113,7 @@ object ScalazTaggedAux {
     implicit val hnilTC: TC[HNil] = instance("HNil")
 
     implicit def hconsTC[K <: String, H, T <: HList](
-      implicit key: Witness.Aux[K], headTC: => TC[H], tailTC: TC[T]
+      implicit key: ValueOf[K], headTC: => TC[H], tailTC: TC[T]
     ): TC[FieldType[K, H] :: T] = instance {
       s"${key.value}: ${headTC()} :: ${tailTC()}"
     }
@@ -130,7 +131,7 @@ object ScalazTaggedAux {
 
     // FIXME: Workaround #309
     implicit def hconsTCTagged[K <: String, H, HT, T <: HList](
-      implicit key: Witness.Aux[K], headTC: => TC[H @@ HT], tailTC: TC[T]
+      implicit key: ValueOf[K], headTC: => TC[H @@ HT], tailTC: TC[T]
     ): TC[FieldType[K, H @@ HT] :: T] = instance {
       s"${key.value}: ${headTC()} :: ${tailTC()}"
     }
@@ -320,101 +321,13 @@ class LabelledGenericTests {
 
   @Test
   def testCoproductBasics: Unit = {
-    type TreeUnion = Union.`"Leaf" -> Leaf, "Node" -> Node`.T
+    type TreeUnion = ("Node" ->> Node) :+: ("Leaf" ->> Leaf) :+: CNil
 
     val gen = LabelledGeneric[Tree]
 
     val t = Node(Node(Leaf(1), Leaf(2)), Leaf(3))
     val gt = gen.to(t)
     typed[TreeUnion](gt)
-  }
-
-  @Test
-  def testAbstractNonCC: Unit = {
-    val ncca = new NonCCA(23, "foo")
-    val nccb = new NonCCB(true, 2.0)
-    val ancc: AbstractNonCC = ncca
-
-    type NonCCARec = Record.`"i" -> Int, "s" -> String`.T
-    type NonCCBRec = Record.`"b" -> Boolean, "d" -> Double`.T
-    type AbsUnion = Union.`"NonCCA" -> NonCCA, "NonCCB" -> NonCCB`.T
-
-    val genA = LabelledGeneric[NonCCA]
-    val genB = LabelledGeneric[NonCCB]
-    val genAbs = LabelledGeneric[AbstractNonCC]
-
-    val rA = genA.to(ncca)
-    assertTypedEquals[NonCCARec]("i" ->> 23 :: "s" ->> "foo" :: HNil, rA)
-
-    val rB = genB.to(nccb)
-    assertTypedEquals[NonCCBRec]("b" ->> true :: "d" ->> 2.0 :: HNil, rB)
-
-    val rAbs = genAbs.to(ancc)
-    val injA = Coproduct[AbsUnion]("NonCCA" ->> ncca)
-    assertTypedEquals[AbsUnion](injA, rAbs)
-
-    val fA = genA.from("i" ->> 13 :: "s" ->> "bar" :: HNil)
-    typed[NonCCA](fA)
-    assertEquals(13, fA.i)
-    assertEquals("bar", fA.s)
-
-    val fB = genB.from("b" ->> false :: "d" ->> 3.0 :: HNil)
-    typed[NonCCB](fB)
-    assertEquals(false, fB.b)
-    assertEquals(3.0, fB.d, Double.MinPositiveValue)
-
-    val injB = Coproduct[AbsUnion]("NonCCB" ->> nccb)
-    val fAbs = genAbs.from(injB)
-    typed[AbstractNonCC](fAbs)
-    assertTrue(fAbs.isInstanceOf[NonCCB])
-    assertEquals(true, fAbs.asInstanceOf[NonCCB].b)
-    assertEquals(2.0, fAbs.asInstanceOf[NonCCB].d, Double.MinPositiveValue)
-  }
-
-  @Test
-  def testNonCCWithCompanion: Unit = {
-    val nccc = NonCCWithCompanion(23, "foo")
-
-    val rec = ("i" ->> 23) :: ("s" ->> "foo") :: HNil
-    type NonCCRec = Record.`"i" -> Int, "s" -> String`.T
-
-    val gen = LabelledGeneric[NonCCWithCompanion]
-
-    val r = gen.to(nccc)
-    assertTypedEquals[NonCCRec](rec, r)
-
-    val f = gen.from("i" ->> 13 :: "s" ->> "bar" :: HNil)
-    typed[NonCCWithCompanion](f)
-    assertEquals(13, f.i)
-    assertEquals("bar", f.s)
-  }
-
-  @Test
-  def testNonCCLazy: Unit = {
-    lazy val (a: NonCCLazy, b: NonCCLazy, c: NonCCLazy) =
-      (new NonCCLazy(c, b), new NonCCLazy(a, c), new NonCCLazy(b, a))
-
-    val rec = "prev" ->> a :: "next" ->> c :: HNil
-    type LazyRec = Record.`"prev" -> NonCCLazy, "next" -> NonCCLazy`.T
-
-    val gen = LabelledGeneric[NonCCLazy]
-
-    val rB = gen.to(b)
-    assertTypedEquals[LazyRec](rec, rB)
-
-    val fD = gen.from("prev" ->> a :: "next" ->> c :: HNil)
-    typed[NonCCLazy](fD)
-    assertEquals(a, fD.prev)
-    assertEquals(c, fD.next)
-  }
-
-  @Test
-  def testShapelessTagged: Unit = {
-    import ShapelessTaggedAux._
-
-    val lgen = LabelledGeneric[Dummy]
-    val s = s"${lgen from Record(i=tag[CustomTag](0))}"
-    assertEquals(s, "Dummy(0)")
   }
 
 
@@ -432,12 +345,12 @@ class LabelledGenericTests {
 
     implicitly[TC[DummyTagged]]
 
-    type R = Record.`"i" -> Int @@ CustomTag`.T
+    type R = ("i" ->> (Int @@ CustomTag)) :: HNil
     val lgen = LabelledGeneric[Dummy]
     implicitly[lgen.Repr =:= R]
     implicitly[TC[R]]
 
-    type RT = Record.`"b" -> Boolean, "i" -> Int @@ CustomTag`.T
+    type RT = ("b" ->> Boolean) :: ("i" ->> (Int @@ CustomTag)) :: HNil
     val lgent = LabelledGeneric[DummyTagged]
     implicitly[lgent.Repr =:= RT]
     implicitly[TC[RT]]

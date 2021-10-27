@@ -56,7 +56,7 @@ class TypeOperatorTests {
     case class MyStringOps(s : String) {
       def mySize = s.size
     }
-    implicit val mkOps = MyStringOps
+    implicit val mkOps: MyStringOps.type = MyStringOps
 
     val ms = MyString("foo")
 
@@ -124,40 +124,14 @@ class TypeOperatorTests {
   }
 
   @Test
-  def testTheTypes: Unit = {
-    val t: the.Foo.T = 23
-    typed[Int](t)
-
-    val tu1: Either[Boolean, the.`Bar[Boolean]`.U] = Right(23)
-    typed[Either[Boolean, Int]](tu1)
-
-    val tu2: Either[String, the.`Bar[String]`.U] = Right(23)
-    typed[Either[String, Double]](tu2)
-  }
-
-  @Test
-  def testTheErrors: Unit = {
-    illTyped("the.`Ordering[Set[Int]]`.Ops", "No implicit Ordering defined for Set\\[Int].")
-  }
-
-  @Test
   def testTheQuantifiers: Unit = {
     def bar0[T, U0](implicit b: Bar[T] { type U = U0 }): Bar[T] { type U = U0 } = {
       val res = the[Bar[T]]
       res
     }
 
-    // Note: Slightly different method signature in testTheQuantifiers2
-    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[U0] = {
-      val res: Option[the.`Bar[T]`.U] = None
-      res
-    }
-
     val b0 = bar0[Boolean, Int]
     typed[Bar[Boolean] { type U = Int }](b0)
-
-    val b1 = bar1[Boolean, Int]
-    typed[Option[Int]](b1)
   }
 
   @Test
@@ -167,68 +141,8 @@ class TypeOperatorTests {
       res
     }
 
-    def bar1[T, U0](implicit b: Bar[T] { type U = U0 }): Option[b.U] = {
-      val res: Option[the.`Bar[T]`.U] = None
-      res
-    }
-
     val b0 = bar0[Boolean, Int]
     typed[Bar[Boolean] { type U = Int }](b0)
-
-    val b1 = bar1[Boolean, Int]
-    typed[Option[Int]](b1)
-  }
-
-  @Test
-  def testTypeOf: Unit = {
-
-    val t1: TypeOf.`Foo.mkFoo`.T = 23
-    typed[Int](t1)
-
-    val t2: TypeOf.`Foo.mkFoo: Foo`.T = 23
-    typed[Int](t2)
-
-    val tu1: Either[Boolean, TypeOf.`Bar.mkBar1: Bar[Boolean]`.U] = Right(23)
-    typed[Either[Boolean, Int]](tu1)
-
-    val tu2: Either[String, TypeOf.`the.apply: Bar[String]`.U] = Right(23)
-    typed[Either[String, Double]](tu2)
-
-    val tu3: Either[String, TypeOf.`the[Bar[String]]`.U] = Right(23)
-    typed[Either[String, Double]](tu3)
-
-    val indexedHList: TypeOf.`Generic[(String, Boolean)].to(("foo", true)).zipWithIndex`.type = {
-      Generic[(String, Boolean)].to(("foo", true)).zipWithIndex
-    }
-    typed[(String, _0) :: (Boolean, Succ[_0]) :: HNil](indexedHList)
-
-    implicit val genBaz: TypeOf.`Generic[Baz]`.type = cachedImplicit
-    val reprBaz = genBaz.to(Baz(23, "foo"))
-    typed[Int :: String :: HNil](reprBaz)
-  }
-
-  @Test
-  def testRejectBogus: Unit = {
-    try {
-      the.Foo
-      assert(false)
-    } catch {
-      case _: Throwable => // OK
-    }
-
-    //the.Unit  // illTyped fails for this expression
-
-    implicit val u2: Unit = ()
-    //the.Unit  // illTyped fails for this expression
-
-    //the.Int   // illTyped fails for this expression
-
-    implicit val i2: Int = 23
-    //the.Int   // illTyped fails for this expression
-
-    illTyped("""
-    val blah = the.`package wibble`
-    """)
   }
 
   @Test

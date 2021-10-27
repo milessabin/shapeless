@@ -16,10 +16,6 @@
 
 package shapeless
 
-import language.experimental.macros
-
-import reflect.macros.whitebox
-
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
   import shapeless.ops.{ hlist => hl }
@@ -47,12 +43,6 @@ object PolyDefns extends Cases {
       type Result = R
       val value = v
     }
-
-    implicit def materializeFromValue1[P, F[_], T]: Case[P, F[T] :: HNil] =
-      macro PolyMacros.materializeFromValueImpl[P, F[T], T]
-
-    implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] =
-      macro PolyMacros.materializeFromValueImpl[P, T, T]
   }
 
   type Case0[P] = Case[P, HNil]
@@ -73,10 +63,11 @@ object PolyDefns extends Cases {
 
   object Compose {
     implicit def composeCase[C, F <: Poly, G <: Poly, T, U, V]
-      (implicit unpack: Unpack2[C, Compose, F, G], cG : Case1.Aux[G, T, U], cF : Case1.Aux[F, U, V]) = new Case[C, T :: HNil] {
-      type Result = V
-      val value = (t : T :: HNil) => cF(cG.value(t))
-    }
+      (implicit unpack: Unpack2[C, Compose, F, G], cG : Case1.Aux[G, T, U], cF : Case1.Aux[F, U, V]): Case.Aux[C, T :: HNil, V] =
+      new Case[C, T :: HNil] {
+        type Result = V
+        val value = (t : T :: HNil) => cF(cG.value(t))
+      }
   }
 
   /**
@@ -119,11 +110,11 @@ object PolyDefns extends Cases {
     implicit def bindFirstCase[BF, F, Head, Tail <: HList, Result0](
         implicit
         unpack2: BF <:< BindFirst[F, Head],
-        witnessBF: Witness.Aux[BF],
+        witnessBF: ValueOf[BF],
         finalCall: Case.Aux[F, Head :: Tail, Result0]
     ): Case.Aux[BF, Tail, Result0] = new Case[BF, Tail] {
       type Result = Result0
-      val value: Tail => Result = { tail: Tail =>
+      val value: Tail => Result = { (tail: Tail) =>
         finalCall.value(witnessBF.value.head :: tail)
       }
     }
@@ -142,13 +133,13 @@ object PolyDefns extends Cases {
       CurrentLength <: Nat
     ](implicit
       constraint: Self <:< Curried[F, ParameterAccumulator],
-      witnessSelf: Witness.Aux[Self],
+      witnessSelf: ValueOf[Self],
       finalCall: Case[F, AllParameters],
       length: ops.hlist.Length.Aux[CurrentParameter :: ParameterAccumulator, CurrentLength],
       reverseSplit: ops.hlist.ReverseSplit.Aux[AllParameters, CurrentLength, CurrentParameter :: ParameterAccumulator, RestParameters],
       hasRestParameters: RestParameters <:< (_ :: _)
     ): Case1.Aux[Self, CurrentParameter, Curried[F, CurrentParameter :: ParameterAccumulator]] = Case1 {
-      nextParameter: CurrentParameter =>
+      (nextParameter: CurrentParameter) =>
         Curried[F, CurrentParameter :: ParameterAccumulator](nextParameter :: witnessSelf.value.parameters)
     }
   }
@@ -157,11 +148,11 @@ object PolyDefns extends Cases {
     implicit def lastParameter[Self, F, LastParameter, ParameterAccumulator <: HList, AllParameters <: HList, Result0](
         implicit
         constraint: Self <:< Curried[F, ParameterAccumulator],
-        witnessSelf: Witness.Aux[Self],
+        witnessSelf: ValueOf[Self],
         reverse: ops.hlist.Reverse.Aux[LastParameter :: ParameterAccumulator, AllParameters],
         finalCall: Case.Aux[F, AllParameters, Result0]
     ): Case1.Aux[Self, LastParameter, Result0] = Case1 {
-      lastParameter: LastParameter =>
+      (lastParameter: LastParameter) =>
         finalCall(reverse(lastParameter :: witnessSelf.value.parameters))
     }
   }
@@ -170,11 +161,11 @@ object PolyDefns extends Cases {
    * Base class for lifting a `Function1` to a `Poly1`
    */
   class ->[T, R](f : T => R) extends Poly1 {
-    implicit def subT[U <: T] = at[U](f)
+    implicit def subT[U <: T]: this.Case.Aux[U, R] = at[U](f)
   }
 
   trait LowPriorityLiftFunction1 extends Poly1 {
-    implicit def default[T] = at[T](_ => HNil : HNil)
+    implicit def default[T]: this.Case.Aux[T, HNil] = at[T](_ => HNil : HNil)
   }
 
   /**
@@ -182,11 +173,11 @@ object PolyDefns extends Cases {
    * its only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
-    implicit def subT[U <: T] = at[U](f(_) :: HNil)
+    implicit def subT[U <: T]: this.Case.Aux[U, R :: HNil] = at[U](f(_) :: HNil)
   }
 
   trait LowPriorityLiftU extends Poly {
-    implicit def default[L <: HList] = new ProductCase[L] {
+    implicit def default[L <: HList]: Case.Aux[LowPriorityLiftU.this.type, L, HNil] = new ProductCase[L] {
       type Result = HNil
       val value = (l : L) => HNil
     }
@@ -197,7 +188,7 @@ object PolyDefns extends Cases {
    * only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class LiftU[P <: Poly](p : P)  extends LowPriorityLiftU {
-    implicit def defined[L <: HList](implicit caseT : Case[P, L]) = new ProductCase[L] {
+    implicit def defined[L <: HList](implicit caseT : Case[P, L]): Case.Aux[LiftU.this.type, L, caseT.Result :: HNil] = new ProductCase[L] {
       type Result = caseT.Result :: HNil
       val value = (l : L) => caseT(l) :: HNil
     }
@@ -210,7 +201,7 @@ object PolyDefns extends Cases {
    */
   trait ~>[F[_], G[_]] extends Poly1 {
     def apply[T](f : F[T]) : G[T]
-    implicit def caseUniv[T]: Case.Aux[F[T], G[T]] = at[F[T]](apply(_))
+    implicit def caseUniv[T]: this.Case.Aux[F[T], G[T]] = at[F[T]](apply(_))
   }
 
   object ~> {
@@ -314,28 +305,5 @@ trait Poly0 extends Poly {
   def at[T](t: T) = new ProductCase[HNil] {
     type Result = T
     val value = (l : HNil) => t
-  }
-}
-
-class PolyMacros(val c: whitebox.Context) {
-  import c.universe._
-
-  import PolyDefns.Case
-
-  def materializeFromValueImpl[P: WeakTypeTag, FT: WeakTypeTag, T: WeakTypeTag]: Tree = {
-    val pTpe = weakTypeOf[P]
-    val ftTpe = weakTypeOf[FT]
-    val tTpe = weakTypeOf[T]
-
-    val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-    if(c.openImplicits.tail.exists(_.pt =:= recTpe))
-      c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
-
-    val value = pTpe match {
-      case SingleType(_, f) => f
-      case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
-    }
-
-    q""" $value.caseUniv[$tTpe] """
   }
 }

@@ -17,6 +17,7 @@
 package shapeless
 
 import newtype._
+import shapeless.Unwrapped.Aux
 
 trait Unwrapped[W] extends Serializable {
   type U
@@ -33,11 +34,11 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
   implicit def unwrapAnyVal[W <: AnyVal, Repr, UI, UF](implicit
     gen: Generic.Aux[W, Repr],
     avh: AnyValHelper.Aux[Repr, UI],
-    chain: Strict[Unwrapped.Aux[UI, UF]]
-  ) = new Unwrapped[W] {
+    chain: Unwrapped.Aux[UI, UF]
+  ): Unwrapped.Aux[W, UF] = new Unwrapped[W] {
     type U = UF
-    def unwrap(w: W): U = chain.value.unwrap(avh.unwrap(gen.to(w)))
-    def wrap(u: U): W = gen.from(avh.wrap(chain.value.wrap(u)))
+    def unwrap(w: W): U = chain.unwrap(avh.unwrap(gen.to(w)))
+    def wrap(u: U): W = gen.from(avh.wrap(chain.wrap(u)))
   }
 
   sealed trait AnyValHelper[Repr] extends Serializable {
@@ -47,7 +48,7 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
   }
   object AnyValHelper {
     type Aux[Repr, U0] = AnyValHelper[Repr] { type U = U0 }
-    implicit def sizeOneHListHelper[T] =
+    implicit def sizeOneHListHelper[T]: AnyValHelper.Aux[T :: HNil, T] =
       SizeOneHListHelper.asInstanceOf[AnyValHelper.Aux[T :: HNil, T]]
     val SizeOneHListHelper = new AnyValHelper[Any :: HNil] {
       type U = Any
@@ -57,12 +58,12 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
   }
 
   implicit def newtypeUnwrapped[UI, Ops, UF](implicit
-    chain: Strict[Unwrapped.Aux[UI, UF]]
-  ) = chain.value.asInstanceOf[Unwrapped.Aux[Newtype[UI, Ops], UF]]
+    chain: Unwrapped.Aux[UI, UF]
+  ): Aux[Newtype[UI, Ops], UF] = chain.asInstanceOf[Unwrapped.Aux[Newtype[UI, Ops], UF]]
 
   implicit def tagUnwrapped[T[UI, TT] <: tag.@@[UI, TT], UI, TT, UF](implicit
-    chain: Strict[Unwrapped.Aux[UI, UF]]
-  ) = chain.value.asInstanceOf[Unwrapped.Aux[T[UI, TT], UF]]
+    chain: Unwrapped.Aux[UI, UF]
+  ): Aux[T[UI, TT], UF] = chain.asInstanceOf[Unwrapped.Aux[T[UI, TT], UF]]
 
 }
 
@@ -73,6 +74,6 @@ trait LowPriorityUnwrappedInstances {
       def unwrap(t: Any) = t
       def wrap(t: Any) = t
     }
-  implicit def selfUnwrapped[T] =
+  implicit def selfUnwrapped[T]: Aux[T, T] =
     theSelfUnwrapped.asInstanceOf[Unwrapped.Aux[T, T]]
 }

@@ -25,6 +25,7 @@ import testutil._
 import ops.coproduct._
 import ops.union._
 import union._
+import labelled.->>
 
 class CoproductTests {
   type ISB = Int :+: String :+: Boolean :+: CNil
@@ -42,9 +43,9 @@ class CoproductTests {
   type APB = Apple :+: Pear :+: Banana :+: CNil
 
   object size extends Poly1 {
-    implicit val caseInt     = at[Int](_ => 1)
-    implicit val caseString  = at[String](_.length)
-    implicit val caseBoolean = at[Boolean](_ => 1)
+    implicit val caseInt: Case.Aux[Int, Int]         = at[Int](_ => 1)
+    implicit val caseString: Case.Aux[String, Int]   = at[String](_.length)
+    implicit val caseBoolean: Case.Aux[Boolean, Int] = at[Boolean](_ => 1)
   }
 
   trait Dog
@@ -172,7 +173,7 @@ class CoproductTests {
     val isd = Coproduct[I :+: S :+: D :+: CNil](1)
 
     object coIdentity extends Poly1 {
-      implicit def default[A] = at[A](a => Coproduct[A :+: CNil](a))
+      implicit def default[A]: Case.Aux[A, A :+: CNil] = at[A](a => Coproduct[A :+: CNil](a))
     }
 
     val r1 = in1.flatMap(coIdentity)
@@ -181,7 +182,7 @@ class CoproductTests {
     assertTypedEquals[I :+: S :+: CNil](is, r2)
 
     object coSquare extends Poly1 {
-      implicit def default[A] = at[A](a => Coproduct[A :+: A :+: CNil](a))
+      implicit def default[A]: Case.Aux[A, A :+: A :+: CNil] = at[A](a => Coproduct[A :+: A :+: CNil](a))
     }
 
     val r3 = in1.flatMap(coSquare)
@@ -192,9 +193,9 @@ class CoproductTests {
       Coproduct[I :+: I :+: S :+: S :+: CNil](1), r4)
 
     object complex extends Poly1 {
-      implicit def caseInt    = at[Int](i => Coproduct[S :+: CNil](i.toString))
-      implicit def caseString = at[String](s => Coproduct[C :+: D :+: CNil](s(0)))
-      implicit def caseDouble = at[Double](d => Coproduct[I :+: S :+: CNil](d.toInt))
+      implicit def caseInt: Case.Aux[Int, S :+: CNil]       = at[Int](i => Coproduct[S :+: CNil](i.toString))
+      implicit def caseString: Case.Aux[String, C :+: D :+: CNil] = at[String](s => Coproduct[C :+: D :+: CNil](s(0)))
+      implicit def caseDouble: Case.Aux[Double, I :+: S :+: CNil] = at[Double](d => Coproduct[I :+: S :+: CNil](d.toInt))
     }
 
     val r5 = isd.flatMap(complex)
@@ -270,7 +271,7 @@ class CoproductTests {
     import poly.identity
 
     object addSize extends Poly2 {
-      implicit def default[T](implicit st: size.Case.Aux[T, Int]) =
+      implicit def default[T](implicit st: size.Case.Aux[T, Int]): Case.Aux[Int, T, Int] =
         at[Int, T] { (acc, t) => acc + size(t) }
     }
 
@@ -417,7 +418,7 @@ class CoproductTests {
 
   @Test
   def testWithKeys: Unit = {
-    type U = Union.`"i" -> Int, "s" -> String, "b" -> Boolean`.T
+    type U = ("i" ->> Int) :+: ("s" ->> String) :+: ("b" ->> Boolean) :+: CNil
     val cKeys = Keys[U].apply()
 
     val u1 = Coproduct[ISB](23).zipWithKeys(cKeys)
@@ -446,7 +447,7 @@ class CoproductTests {
     // Explicit type argument
 
     {
-      val u1 = Coproduct[ISB](23).zipWithKeys[HList.`"i", "s", "b"`.T]
+      val u1 = Coproduct[ISB](23).zipWithKeys["i" :: "s" :: "b" :: HNil]
       val v1 = u1.get("i")
       typed[Option[Int]](v1)
       assertEquals(Some(23), v1)
@@ -454,7 +455,7 @@ class CoproductTests {
     }
 
     {
-      val u2 = Coproduct[ISB]("foo").zipWithKeys[HList.`"i", "s", "b"`.T]
+      val u2 = Coproduct[ISB]("foo").zipWithKeys["i" :: "s" :: "b" :: HNil]
       val v2 = u2.get("s")
       typed[Option[String]](v2)
       assertEquals(Some("foo"), v2)
@@ -462,7 +463,7 @@ class CoproductTests {
     }
 
     {
-      val u3 = Coproduct[ISB](true).zipWithKeys[HList.`"i", "s", "b"`.T]
+      val u3 = Coproduct[ISB](true).zipWithKeys["i" :: "s" :: "b" :: HNil]
       val v3 = u3.get("b")
       typed[Option[Boolean]](v3)
       assertEquals(Some(true), v3)
@@ -1768,7 +1769,8 @@ class CoproductTests {
   def testToHList: Unit = {
     type CISB = Int :+: String :+: Boolean :+: CNil
     type PISBa = Int :: String :: Boolean :: HNil
-    type PISBb = the.`ToHList[CISB]`.Out
+    val toHlist = ToHList[CISB]
+    type PISBb = toHlist.Out
     implicitly[PISBa =:= PISBb]
   }
 
@@ -1821,26 +1823,20 @@ class CoproductTests {
     import syntax.singleton._
 
     {
-      type C = Coproduct.` `.T
-
-      implicitly[C =:= CNil]
-    }
-
-    {
-      type C = Coproduct.`Int`.T
+      type C = Int :+: CNil
 
       typed[C](Inl(23))
     }
 
     {
-      type C = Coproduct.`Int, String`.T
+      type C = Int :+: String :+: CNil
 
       typed[C](Inl(23))
       typed[C](Inr(Inl("foo")))
     }
 
     {
-      type C = Coproduct.`Int, String, Boolean`.T
+      type C = Int :+: String :+: Boolean :+: CNil
 
       typed[C](Inl(23))
       typed[C](Inr(Inl("foo")))
@@ -1850,13 +1846,13 @@ class CoproductTests {
     // Literal types
 
     {
-      type C = Coproduct.`2`.T
+      type C = 2 :+: CNil
 
       typed[C](Inl(2.narrow))
     }
 
     {
-      type C = Coproduct.`2, "a", true`.T
+      type C = 2 :+: "a" :+: true :+: CNil
 
       typed[C](Inl(2.narrow))
       typed[C](Inr(Inl("a".narrow)))
@@ -1864,7 +1860,7 @@ class CoproductTests {
     }
 
     {
-      type C = Coproduct.`2`.T
+      type C = 2 :+: CNil
 
       illTyped(""" typed[C](Inl(3.narrow)) """)
       ()
@@ -1873,7 +1869,7 @@ class CoproductTests {
     // Mix of standard and literal types
 
     {
-      type C = Coproduct.`2, String, true`.T
+      type C = 2 :+: String :+: true :+: CNil
 
       typed[C](Inl(2.narrow))
       typed[C](Inr(Inl("a")))
@@ -1888,11 +1884,9 @@ class CoproductTests {
 
     assertTypedEquals(HNil, Reify[CNil].apply())
 
-    val s1 = Coproduct.`"a"`
-    assertTypedEquals("a".narrow :: HNil, Reify[s1.T].apply())
+    assertTypedEquals("a".narrow :: HNil, Reify["a" :+: CNil].apply())
 
-    val s2 = Coproduct.`"a", 1, "b", true`
-    assertEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify[s2.T].apply())
+    assertEquals("a".narrow :: 1.narrow :: "b".narrow :: true.narrow :: HNil, Reify["a" :+: 1 :+: "b" :+: true :+: CNil].apply())
 
     val gen = Generic[Enum]
     assertEquals(A :: B :: C :: HNil, Reify[gen.Repr].apply())
