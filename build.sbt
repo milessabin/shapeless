@@ -1,8 +1,8 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
-val Scala212 = "2.12.15"
-val Scala213 = "2.13.6"
+val Scala212 = "2.12.14"
+val Scala213 = "2.13.7"
 
 commonSettings
 noPublishSettings
@@ -119,7 +119,7 @@ def configureJUnit(crossProject: CrossProject) = {
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
   .jvmSettings(
     libraryDependencies +=
-      "com.novocode" % "junit-interface" % "0.11" % "test"
+      "com.github.sbt" % "junit-interface" % "0.13.2" % "test"
   )
 }
 
@@ -216,7 +216,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.0.0")
+  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.0")
   .settings(runAllIn(Compile))
   .settings(coreSettings:_*)
   .settings(noPublishSettings:_*)
