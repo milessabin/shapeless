@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.14, 2.13.7]
+        scala: [2.12.15, 2.13.7]
         java: [adopt@1.8]
         platform: [jvm, js, native]
     runs-on: ${{ matrix.os }}
