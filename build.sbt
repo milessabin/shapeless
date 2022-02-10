@@ -64,7 +64,7 @@ addCommandAlias("examples", ";project examplesJVM")
 addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
 addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
 addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
-addCommandAlias("validateNative", ";coreNative/compile;nativeTest/run;examplesNative/compile")
+addCommandAlias("validateNative", ";coreNative/compile;coreNative/test;nativeTest/run;examplesNative/compile;examplesNative/test;coreNative/doc")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
 def scalacOptionsAll(pluginJar: File) = List(
@@ -120,6 +120,21 @@ def configureJUnit(crossProject: CrossProject) = {
   .jvmSettings(
     libraryDependencies +=
       "com.github.sbt" % "junit-interface" % "0.13.3" % "test"
+  )
+  .nativeSettings(
+    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion,
+    addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
+    pomPostProcess := { node =>
+      import scala.xml._
+      import scala.xml.transform._
+      new RuleTransformer(new RewriteRule{
+        override def transform(n: Node) =
+          if (n.label == "dependency" && (n \ "artifactId").text.startsWith("junit-runtime_native"))
+            NodeSeq.Empty
+          else
+            n
+      }).transform(node)(0)
+    },
   )
 }
 
@@ -180,7 +195,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Nil,
-    Test / sources := Nil
   )
 
 lazy val coreJVM = core.jvm
@@ -224,7 +238,6 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .jvmSettings(commonJvmSettings:_*)
   .nativeSettings(
     Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")),
-    Test / sources := Nil
   )
 
 lazy val examplesJVM = examples.jvm
