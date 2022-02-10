@@ -4,8 +4,8 @@ import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
-val Scala212 = "2.12.13"
-val Scala213 = "2.13.6"
+val Scala212 = "2.12.15"
+val Scala213 = "2.13.8"
 
 commonSettings
 noPublishSettings
@@ -216,7 +216,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "2.0.0")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.0")
         case _ =>
           Nil
       }
