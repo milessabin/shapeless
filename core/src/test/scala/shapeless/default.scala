@@ -224,4 +224,14 @@ class DefaultTests {
     assertTypedEquals[None.type :: HNil](None :: HNil, default2())
     assertTypedEquals[HNil](HNil, default3())
   }
+
+  @Test
+  def testInCompanion: Unit =
+    assertEquals(InCompanion.default, Some(9) :: HNil)
+
+  // Note: this has to be inside a class, not an object
+  case class InCompanion(a: Int = 9)
+  object InCompanion {
+    val default = Default[InCompanion].apply()
+  }
 }
