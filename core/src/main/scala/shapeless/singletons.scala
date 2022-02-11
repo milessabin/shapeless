@@ -31,7 +31,7 @@ import scala.util.Try
  */
 trait Witness extends Serializable {
   type T
-  val value: T {}
+  val value: T
 }
 
 object Witness extends Dynamic {
