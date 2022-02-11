@@ -28,7 +28,7 @@ import scala.reflect.macros.whitebox
  *     }
  *
  *     def print() = println(implicitly[TC[Int]].msg)
- *     def printCached() = println(cached[TC[Int]].msg)
+ *     def printCached() = println(Cached.implicitly[TC[Int]].msg)
  *   }
  *
  *   object Second {
@@ -37,7 +37,7 @@ import scala.reflect.macros.whitebox
  *     }
  *
  *     def print() = println(implicitly[TC[Int]].msg)
- *     def printCached() = println(cached[TC[Int]].msg)
+ *     def printCached() = println(Cached.implicitly[TC[Int]].msg)
  *   }
  *
  *   First.print()
