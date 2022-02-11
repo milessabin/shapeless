@@ -240,15 +240,18 @@ class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
         alt => alt.isMethod && hasDefaultParams(alt.asMethod)
       }
 
-    def defaultsFor(fields: List[(TermName, Type)]) = for {
-      ((_, argTpe), i) <- fields.zipWithIndex
-      default = tpe.companion.member(TermName(s"apply$$default$$${i + 1}")) orElse
-        altCompanion.member(TermName(s"$$lessinit$$greater$$default$$${i + 1}"))
-    } yield if (default.isTerm) {
-      val defaultTpe = appliedType(someTpe, devarargify(argTpe))
-      val defaultVal = some(q"$companion.$default")
-      (defaultTpe, defaultVal)
-    } else (noneTpe, none)
+    def defaultsFor(fields: List[(TermName, Type)]) = {
+      lazy val enclosing = ownerChain(c.internal.enclosingOwner)
+      for (((_, argTpe), i) <- fields.zipWithIndex) yield {
+        val default = tpe.companion.member(TermName(s"apply$$default$$${i + 1}")) orElse
+          altCompanion.member(TermName(s"$$lessinit$$greater$$default$$${i + 1}"))
+        if (default.isTerm) {
+          val owner = default.owner
+          val qualifier = if (!owner.isStatic && enclosing.contains(owner)) This(owner) else companion
+          (appliedType(someTpe, devarargify(argTpe)), some(q"$qualifier.$default"))
+        } else (noneTpe, none)
+      }
+    }
 
     def mkDefault(defaults: List[(Type, Tree)]) = {
       val (types, values) = defaults.unzip
