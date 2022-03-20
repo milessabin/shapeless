@@ -1367,3 +1367,19 @@ object CaseClassWithImplicits {
   def shouldCompile[T: ATypeClass]
   : Generic.Aux[ACaseClassWithContextBound[T], HNil] = Generic[ACaseClassWithContextBound[T]]
 }
+
+object AliasMaterialization {
+  // https://github.com/milessabin/shapeless/issues/1248
+  case class TX2[A, B](a: A, b: B)
+  case class TX3[A, B, C](a: A, b: B, c: C)
+
+  def shouldCompile1[A, B](data: TX2[A, B])(implicit g: Generic[TX2[A, B]]): Unit = {}
+
+  shouldCompile1(TX2[Int, Boolean](1, true))
+
+  type TTX3[A, B] = TX3[Long, Int, TX2[A, B]]
+
+  def shouldCompile2[A, B](data: TTX3[A, B])(implicit g: Generic[TTX3[A, B]]): Unit = {}
+
+  shouldCompile2(TX3(1L, 1, TX2(1, true)))
+}
