@@ -937,7 +937,7 @@ class GenericMacros(val c: whitebox.Context) extends CaseClassMacros {
   def materialize[T: WeakTypeTag, R]: Tree = mkGeneric[T]
 
   def mkGeneric[T: WeakTypeTag]: Tree = {
-    val tpe = weakTypeOf[T]
+    val tpe = weakTypeOf[T].dealias
     if (isReprType(tpe))
       abort("No Generic instance available for HList or Coproduct")
 
