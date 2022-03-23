@@ -219,17 +219,12 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   }
 
   def mkProductGeneric1(tpe: Type, frTpe: Type): Tree = {
-    val ctorDtor = CtorDtor(tpe)
-    val (p, ts) = ctorDtor.binding
-    val to = cq"$p => ${mkHListValue(ts)}"
-    val (rp, rts) = ctorDtor.reprBinding
-    val from = cq"$rp => ${ctorDtor.construct(rts)}"
-    val name = c.freshName(TypeName("P"))
-    val reprTpt = reprTypTree1(tpe, name)
+    val tparam = c.freshName(TypeName("P"))
     val reprName = c.freshName(TypeName("R"))
-
+    val reprTpt = reprTypTree1(tpe, tparam)
+    val (from, to) = CtorDtor.fromTo(tpe, tq"$reprName[$AnyTpe]")
     q"""
-      type $reprName[$name] = $reprTpt
+      type $reprName[$tparam] = $reprTpt
       $generic1.unsafeInstance[$tpe, $frTpe, $reprName]({ case $to }, { case $from })
     """
   }
