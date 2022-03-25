@@ -336,10 +336,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
     val clazz = tpe.typeSymbol.asClass
     val isCaseClass = clazz.isCaseClass
+    // Case class field names have an extra space at the end.
+    val nameOf: TermSymbol => TermName =
+      if (!isCaseClass) _.name
+      else field => TermName(field.name.toString.dropRight(1))
     if (isCaseObjectLike(clazz) || isAnonOrRefinement(clazz)) Nil
     else tpe.decls.sorted.collect {
-      case sym: TermSymbol if isCaseAccessorLike(sym, isCaseClass) =>
-        (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+      case field: TermSymbol if isCaseAccessorLike(field, isCaseClass) =>
+        nameOf(field) -> field.typeSignatureIn(tpe).finalResultType
     }
   }
 
@@ -465,7 +469,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def nameAsString(name: Name): String =
-    name.decodedName.toString.trim
+    name.decodedName.toString
 
   def nameAsValue(name: Name): Constant =
     Constant(nameAsString(name))
@@ -911,8 +915,10 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           FromTo(const(singleton), const(objectRef[HNil.type]))
         // case 3: case class
         case tpe if tpe.typeSymbol.asClass.isCaseClass =>
+          val companion = patchedCompanionSymbolOf(tpe.typeSymbol)
+          val unapply = companion.typeSignature.member(TermName("unapply"))
           val fields = fieldsOf(tpe)
-          FromTo(fromApply(fields), toUnapply(fields))
+          FromTo(fromApply(fields), if (unapply.isSynthetic) toUnapply(fields) else toGetters(fields))
         // case 4: exactly one matching public apply/unapply
         case HasApplyUnapply(args) =>
           FromTo(fromApply(args), toUnapply(args))
