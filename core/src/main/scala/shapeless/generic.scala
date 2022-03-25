@@ -368,10 +368,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
    * */
   def fieldsOf(tpe: Type): List[(TermName, Type)] = {
     val clazz = tpe.typeSymbol.asClass
+    // Case class field names have an extra space at the end.
+    val nameOf: TermSymbol => TermName =
+      if (!clazz.isCaseClass) _.name
+      else field => TermName(field.name.toString.dropRight(1))
     if (isCaseObjectLike(clazz) || isAnonOrRefinement(clazz)) Nil
     else tpe.decls.sorted.collect {
-      case sym: TermSymbol if isCaseAccessorLike(sym) =>
-        (sym.name, sym.typeSignatureIn(tpe).finalResultType)
+      case field: TermSymbol if isCaseAccessorLike(field) =>
+        nameOf(field) -> field.typeSignatureIn(tpe).finalResultType
     }
   }
 
@@ -496,11 +500,14 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     }
   }
 
-  def nameAsString(name: Name): String = name.decodedName.toString.trim
+  def nameAsString(name: Name): String =
+    name.decodedName.toString
 
-  def nameAsValue(name: Name): Constant = Constant(nameAsString(name))
+  def nameAsValue(name: Name): Constant =
+    Constant(nameAsString(name))
 
-  def nameOf(tpe: Type) = tpe.typeSymbol.name
+  def nameOf(tpe: Type): Name =
+    tpe.typeSymbol.name
 
   def mkHListValue(elems: List[Tree]): Tree = {
     val cons = objectRef[::.type]
@@ -1030,8 +1037,10 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
           (const(singleton), const(objectRef[HNil.type]))
         // case 3: case class
         case tpe if tpe.typeSymbol.asClass.isCaseClass =>
+          val companion = patchedCompanionSymbolOf(tpe.typeSymbol)
+          val unapply = companion.typeSignature.member(TermName("unapply"))
           val fields = fieldsOf(tpe)
-          (fromApply(fields), toUnapply(fields))
+          (fromApply(fields), if (unapply.isSynthetic) toUnapply(fields) else toGetters(fields))
         // case 4: exactly one matching public apply/unapply
         case HasApplyUnapply(args) =>
           (fromApply(args), toUnapply(args))
