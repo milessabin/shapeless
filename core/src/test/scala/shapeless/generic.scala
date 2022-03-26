@@ -108,6 +108,11 @@ package GenericTestsAux {
     def unapply(s: NonCCWithCompanion): Option[(Int, String)] = Some((s.i, s.s))
   }
 
+  case class CCWithCustomUnapply(x: Int, y: String)
+  object CCWithCustomUnapply {
+    def unapply(cc: CCWithCustomUnapply): Option[(Int, String, String)] = None
+  }
+
   class NonCCLazy(prev0: => NonCCLazy, next0: => NonCCLazy) {
     lazy val prev = prev0
     lazy val next = next0
@@ -526,6 +531,18 @@ class GenericTests {
     typed[NonCCWithCompanion](f)
     assertEquals(13, f.i)
     assertEquals("bar", f.s)
+  }
+
+  @Test
+  def testCCWithCustomUnapply: Unit = {
+    val cc = CCWithCustomUnapply(23, "foo")
+    val gen = Generic[CCWithCustomUnapply]
+    val r = gen.to(cc)
+    val f = gen.from(13 :: "bar" :: HNil)
+    assertTypedEquals[Int :: String :: HNil](23 :: "foo" :: HNil, r)
+    typed[CCWithCustomUnapply](f)
+    assertEquals(13, f.x)
+    assertEquals("bar", f.y)
   }
 
   @Test
