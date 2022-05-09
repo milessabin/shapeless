@@ -108,6 +108,11 @@ package GenericTestsAux {
     def unapply(s: NonCCWithCompanion): Option[(Int, String)] = Some((s.i, s.s))
   }
 
+  case class CCWithCustomUnapply(x: Int, y: String)
+  object CCWithCustomUnapply {
+    def unapply(cc: CCWithCustomUnapply): Option[(Int, String, String)] = None
+  }
+
   class NonCCLazy(prev0: => NonCCLazy, next0: => NonCCLazy) {
     lazy val prev = prev0
     lazy val next = next0
@@ -526,6 +531,18 @@ class GenericTests {
     typed[NonCCWithCompanion](f)
     assertEquals(13, f.i)
     assertEquals("bar", f.s)
+  }
+
+  @Test
+  def testCCWithCustomUnapply: Unit = {
+    val cc = CCWithCustomUnapply(23, "foo")
+    val gen = Generic[CCWithCustomUnapply]
+    val r = gen.to(cc)
+    val f = gen.from(13 :: "bar" :: HNil)
+    assertTypedEquals[Int :: String :: HNil](23 :: "foo" :: HNil, r)
+    typed[CCWithCustomUnapply](f)
+    assertEquals(13, f.x)
+    assertEquals("bar", f.y)
   }
 
   @Test
@@ -1370,4 +1387,20 @@ object CaseClassWithImplicits {
 
   def shouldCompile[T: ATypeClass]
   : Generic.Aux[ACaseClassWithContextBound[T], HNil] = Generic[ACaseClassWithContextBound[T]]
+}
+
+object AliasMaterialization {
+  // https://github.com/milessabin/shapeless/issues/1248
+  case class TX2[A, B](a: A, b: B)
+  case class TX3[A, B, C](a: A, b: B, c: C)
+
+  def shouldCompile1[A, B](data: TX2[A, B])(implicit g: Generic[TX2[A, B]]): Unit = {}
+
+  shouldCompile1(TX2[Int, Boolean](1, true))
+
+  type TTX3[A, B] = TX3[Long, Int, TX2[A, B]]
+
+  def shouldCompile2[A, B](data: TTX3[A, B])(implicit g: Generic[TTX3[A, B]]): Unit = {}
+
+  shouldCompile2(TX3(1L, 1, TX2(1, true)))
 }
