@@ -124,21 +124,7 @@ def configureJUnit(crossProject: CrossProject) = {
     libraryDependencies +=
       "com.novocode" % "junit-interface" % "0.11" % "test"
   )
-  .nativeSettings(
-    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion,
-    addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
-    pomPostProcess := { node =>
-      import scala.xml._
-      import scala.xml.transform._
-      new RuleTransformer(new RewriteRule{
-        override def transform(n: Node) =
-          if (n.label == "dependency" && (n \ "artifactId").text.startsWith("junit-runtime_native"))
-            NodeSeq.Empty
-          else
-            n
-      }).transform(node)(0)
-    },
-  )
+  .nativeConfigure(_.enablePlugins(ScalaNativeJUnitPlugin))
 }
 
 lazy val commonJsSettings = Seq(
