@@ -25,17 +25,17 @@ object DefaultScalaCompat {
           }
         }
         else if (classSymbol.flags.is(Flags.Abstract) || classSymbol.flags.is(Flags.Trait)) {
-          report.throwError(s"${tpe.show} is abstract")
+          report.errorAndAbort(s"${tpe.show} is abstract")
         }
         else {
           val constructorParams = classSymbol.primaryConstructor.paramSymss
           if(constructorParams.sizeIs > 1) {
-            report.throwError(s"Found more than one parameter list for ${tpe.show}")
+            report.errorAndAbort(s"Found more than one parameter list for ${tpe.show}")
           }
 
           val constructorParamsSize = constructorParams.head.size
           if(constructorParamsSize == 0) {
-            report.throwError(s"${tpe.show} has an empty constructor")
+            report.errorAndAbort(s"${tpe.show} has an empty constructor")
           }
 
           val moduleClass = classSymbol.companionModule.moduleClass
@@ -45,15 +45,17 @@ object DefaultScalaCompat {
 
           val defaultExprs = defaultMethods.map {
             case Some(method) =>
-              val DefDef(_, _, tpeTree, optDefault) = method.tree
-              val default = optDefault.getOrElse(
-                report.throwError("Found empty tree for default. Make sure that the compiler option -Yretain-trees is enabled")
-              )
+              method.tree match {
+                case DefDef(_, _, tpeTree, optDefault) =>
+                  val default = optDefault.getOrElse(
+                    report.errorAndAbort("Found empty tree for default. Make sure that the compiler option -Yretain-trees is enabled")
+                  )
 
-              tpeTree.tpe.asType match {
-                case '[t2] => '{Some(${default.asExpr}.asInstanceOf[t2])}
+                  tpeTree.tpe.asType match {
+                    case '[t2] => '{Some(${default.asExpr}.asInstanceOf[t2])}
+                  }
+                case _ => '{None}
               }
-
             case None => '{None}
           }
 
@@ -73,7 +75,7 @@ object DefaultScalaCompat {
         }
 
       case _ =>
-        report.throwError(s"Invalid type ${tpe.show}. Expected a class.")
+        report.errorAndAbort(s"Invalid type ${tpe.show}. Expected a class.")
     }
   }
 }

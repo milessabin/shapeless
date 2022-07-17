@@ -42,25 +42,25 @@ object illTyped {
       case Inlined(_, _, Apply(_, List(errorsVararg))) =>
         errorsVararg.asExprOf[Seq[Error]] match {
           case Varargs(Exprs(es)) => es
-          case _ => report.throwError("Unexpected errors structure")
+          case _ => report.errorAndAbort("Unexpected errors structure")
         }
-      case _ => report.throwError("Unexpected errors structure")
+      case _ => report.errorAndAbort("Unexpected errors structure")
     }
-    val expectedOpt = expectedE.valueOrError
+    val expectedOpt = expectedE.valueOrAbort
 
     errors.find(_.kind == ErrorKind.Parser).foreach { e =>
-      report.throwError("Parsing failed.\n" + e.message)
+      report.errorAndAbort("Parsing failed.\n" + e.message)
     }
 
     if (errors.isEmpty) {
-      report.throwError("Type-checking succeeded unexpectedly.\nExpected some error.")
+      report.errorAndAbort("Type-checking succeeded unexpectedly.\nExpected some error.")
     }
 
     expectedOpt.foreach { expected =>
       val expectedPattern: Pattern = Pattern.compile(expected, Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
       if (!errors.exists(e => expectedPattern.matcher(e.message).matches)) {
-        report.throwError("Type-checking failed in an unexpected way.\n" + expected + "\nActual error: "+ errors.head.message)
+        report.errorAndAbort("Type-checking failed in an unexpected way.\n" + expected + "\nActual error: "+ errors.head.message)
       }
     }
 

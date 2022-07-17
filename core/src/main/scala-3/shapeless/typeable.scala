@@ -156,12 +156,12 @@ object LowPriorityTypeableScalaCompat {
         case tree: ValDef => tree.tpt.tpe
       }
       if (!fields.forall(f => caseFields.contains(f) || !isAbstract(fieldTpe(f)))) {
-        report.throwError(s"No Typeable for case class ${target.show} with non-case fields")
+        report.errorAndAbort(s"No Typeable for case class ${target.show} with non-case fields")
       } else {
         val fieldTps = caseFields.map(f => target.memberType(f))
         summonAllTypeables(fieldTps) match {
           case None =>
-            report.throwError(s"Missing Typeable for field of case class ${target.show}")
+            report.errorAndAbort(s"Missing Typeable for field of case class ${target.show}")
           case Some(ftps) =>
             val clazz = Ref(defn.Predef_classOf).appliedToType(target).asExprOf[Class[T]]
             val name = Expr(simpleName(target))
@@ -180,7 +180,7 @@ object LowPriorityTypeableScalaCompat {
           val elemTps = rm.MirroredElemTypes
           summonAllTypeables(elemTps) match {
             case None =>
-              report.throwError(s"Missing Typeable for child of sum type ${target.show}")
+              report.errorAndAbort(s"Missing Typeable for child of sum type ${target.show}")
             case Some(etps) =>
               val name = Expr(simpleName(target))
 
@@ -188,7 +188,7 @@ object LowPriorityTypeableScalaCompat {
           }
 
         case None =>
-          report.throwError(s"Typeable for sum type ${target.show} with no Mirror")
+          report.errorAndAbort(s"Typeable for sum type ${target.show} with no Mirror")
       }
     }
 
@@ -235,7 +235,7 @@ object LowPriorityTypeableScalaCompat {
             mkNamedSimpleTypeable
           case Some(_) if sym.flags.is(Flags.Sealed) => mkSumTypeable
           case _ =>
-            report.throwError(s"No Typeable for type ${target.show} with a dependent prefix")
+            report.errorAndAbort(s"No Typeable for type ${target.show} with a dependent prefix")
         }
 
       case tp: AppliedType =>
@@ -244,7 +244,7 @@ object LowPriorityTypeableScalaCompat {
 
         if (tp.typeSymbol.flags.is(Flags.Case)) mkCaseClassTypeable
         else if (tp.typeSymbol.flags.is(Flags.Sealed)) mkSumTypeable
-        else report.throwError(s"No Typeable for parametrized type ${target.show}")
+        else report.errorAndAbort(s"No Typeable for parametrized type ${target.show}")
 
 
       case tp: AndType =>
@@ -253,7 +253,7 @@ object LowPriorityTypeableScalaCompat {
           case Some(ctps) =>
             '{ intersectionTypeable($ctps.toArray) }
           case None =>
-            report.throwError(s"No Typeable for & type ${target.show} with missing conjunct(s)")
+            report.errorAndAbort(s"No Typeable for & type ${target.show} with missing conjunct(s)")
         }
 
       case tp: OrType =>
@@ -262,11 +262,11 @@ object LowPriorityTypeableScalaCompat {
           case Some(dtps) =>
             '{ unionTypeable($dtps) }
           case None =>
-            report.throwError(s"No Typeable for | type ${target.show} with missing disjunct(s)")
+            report.errorAndAbort(s"No Typeable for | type ${target.show} with missing disjunct(s)")
         }
 
       case other =>
-        report.throwError(s"No Typeable for type ${target.show}")
+        report.errorAndAbort(s"No Typeable for type ${target.show}")
     }
   }
 }
@@ -290,11 +290,10 @@ class ReflectionUtils[Q <: Quotes & Singleton](val q: Q) {
         mt   <- findMemberType(mirrorTpe, "MirroredType")
         mmt  <- findMemberType(mirrorTpe, "MirroredMonoType")
         mets <- findMemberType(mirrorTpe, "MirroredElemTypes")
-        ml   <- findMemberType(mirrorTpe, "MirroredLabel")
+        case ConstantType(StringConstant(ml0)) <- findMemberType(mirrorTpe, "MirroredLabel")
         mels <- findMemberType(mirrorTpe, "MirroredElemLabels")
       } yield {
         val mets0 = tupleTypeElements(mets)
-        val ConstantType(StringConstant(ml0)) = ml
         val mels0 = tupleTypeElements(mels).map { case ConstantType(StringConstant(l)) => l }
         Mirror(mt, mmt, mets0, ml0, mels0)
       }

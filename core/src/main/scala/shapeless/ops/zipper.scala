@@ -92,7 +92,7 @@ object zipper {
         new RightBy[Zipper[C, L, R, P], N] {
           type Out = Zipper[C, reverse.Out, RS, P]
           def apply(z: Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.suffix.splitP[N]
+            val p :: s :: HNil = z.suffix.splitP[N] : @unchecked
             Zipper(p reverse_::: z.prefix, s, z.parent)
           }
         }
@@ -112,7 +112,7 @@ object zipper {
         new LeftBy[Zipper[C, L, R, P], N] {
           type Out = Zipper[C, LS, reverse.Out, P]
           def apply(z: Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.prefix.splitP[N]
+            val p :: s :: HNil = z.prefix.splitP[N] : @unchecked
             Zipper(s, p reverse_::: z.suffix, z.parent)
           }
         }
@@ -132,7 +132,7 @@ object zipper {
         new RightTo[Zipper[C, L, R, P], T] {
           type Out = Zipper[C, reverse.Out, RS, P]
           def apply(z: Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.suffix.splitLeftP[T]
+            val p :: s :: HNil = z.suffix.splitLeftP[T] : @unchecked
             Zipper(p reverse_::: z.prefix, s, z.parent)
           }
         }
@@ -153,7 +153,7 @@ object zipper {
         new LeftTo[Zipper[C, L, R, P], T] {
           type Out = Zipper[C, cons.T, cons.H :: reverse.Out, P]
           def apply(z: Zipper[C, L, R, P]) = {
-            val p :: s :: HNil = z.prefix.splitLeftP[T]
+            val p :: s :: HNil = z.prefix.splitLeftP[T] : @unchecked
             Zipper(s.tail, s.head :: (p reverse_::: z.suffix), z.parent)
           }
         }

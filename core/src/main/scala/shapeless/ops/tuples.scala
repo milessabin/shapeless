@@ -408,7 +408,7 @@ object tuple {
       ): Aux[T, N, (tpp.Out, tps.Out)] =
         new Split[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 
@@ -434,7 +434,7 @@ object tuple {
       ): Aux[T, N, (tpp.Out, tps.Out)] =
         new ReverseSplit[T, N] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 
@@ -460,7 +460,7 @@ object tuple {
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 
@@ -486,7 +486,7 @@ object tuple {
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitLeft[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 
@@ -512,7 +512,7 @@ object tuple {
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new SplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 
@@ -538,7 +538,7 @@ object tuple {
       ): Aux[T, U, (tpp.Out, tps.Out)] =
         new ReverseSplitRight[T, U] {
           type Out = (tpp.Out, tps.Out)
-          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) ; (tpp(p), tps(s)) }
+          def apply(t: T): Out = { val p :: s :: HNil = split.product(gen.to(t)) : @unchecked ; (tpp(p), tps(s)) }
         }
   }
 

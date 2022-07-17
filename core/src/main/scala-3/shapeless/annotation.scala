@@ -49,7 +49,7 @@ object AnnotationMacros {
     val tpe = TypeRepr.of[A]
     val flags = tpe.typeSymbol.flags
     if (flags.is(Flags.Abstract) || flags.is(Flags.Trait)) {
-      report.throwError(s"Bad annotation type ${tpe.show} is abstract")
+      report.errorAndAbort(s"Bad annotation type ${tpe.show} is abstract")
     }
   }
 
@@ -88,7 +88,7 @@ object AnnotationMacros {
     import quotes.reflect.*
     singleAnnotationForTypeCommon[A, T] match {
       case Some(expr) => '{Annotation.mkAnnotation($expr)}
-      case None => report.throwError(s"No ${Type.show[A]} annotation found on ${Type.show[T]}")
+      case None => report.errorAndAbort(s"No ${Type.show[A]} annotation found on ${Type.show[T]}")
     }
   }
 

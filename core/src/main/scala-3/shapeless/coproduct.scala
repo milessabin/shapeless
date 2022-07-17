@@ -19,7 +19,6 @@ trait CoproductScalaCompat {
   def extractCoproduct[C <: Coproduct](coproduct: C): scala.Tuple.Union[CoproductToTuple[C]] = coproduct match {
     case Inl(head) => head.asInstanceOf[scala.Tuple.Union[CoproductToTuple[C]]]
     case Inr(tail) => extractCoproduct(tail.asInstanceOf[C])
-    case err: CNil => err.impossible
   }
 
   def coproductFromOrdinal[T <: scala.Tuple](a: scala.Tuple.Union[T], ordinal: Int): TupleToCoproduct[T] =

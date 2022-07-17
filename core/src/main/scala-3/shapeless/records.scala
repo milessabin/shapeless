@@ -33,9 +33,9 @@ trait RecordScalaCompat {
 object RecordScalaCompat {
   def applyDynamicNamedImpl(method: Expr[String])(rec: Expr[Seq[(String, Any)]])(using Quotes): Expr[HList] = {
     import quotes.reflect.report
-    val methodString = method.valueOrError
+    val methodString = method.valueOrAbort
     if methodString != "apply" then
-      report.throwError(s"this method must be called as 'apply' not '$methodString'")
+      report.errorAndAbort(s"this method must be called as 'apply' not '$methodString'")
 
     rec match {
       case Varargs(values) =>
@@ -51,13 +51,13 @@ object RecordScalaCompat {
               }
 
             case _ =>
-              report.throwError("Got invalid arguments in varargs")
+              report.errorAndAbort("Got invalid arguments in varargs")
           }
 
         transform('{HNil}, values.reverse)
 
       case _ =>
-        report.throwError("this method must be called with vararg arguments")
+        report.errorAndAbort("this method must be called with vararg arguments")
     }
   }
 }

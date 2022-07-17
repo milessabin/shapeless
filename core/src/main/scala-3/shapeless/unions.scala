@@ -27,9 +27,9 @@ trait UnionScalaCompat {
 object UnionScalaCompat {
   def applyDynamicNamedImpl[U <: Coproduct: Type](method: Expr[String])(rec: Expr[Seq[(String, Any)]])(using Quotes): Expr[U] = {
     import quotes.reflect.report
-    val methodString = method.valueOrError
+    val methodString = method.valueOrAbort
     if methodString != "apply" then
-      report.throwError(s"this method must be called as 'apply' not '$methodString'")
+      report.errorAndAbort(s"this method must be called as 'apply' not '$methodString'")
 
     rec match {
       case Varargs(Seq('{($keyExpr: String, $value: tp)})) =>
@@ -42,15 +42,15 @@ object UnionScalaCompat {
             Expr.summon[ops.coproduct.Inject[U, FieldType[keyTpe, tp]]] match {
               case Some(injectExpr) => '{$injectExpr($value.asInstanceOf[FieldType[keyTpe, tp]])}
               case None =>
-                report.throwError("Can not inject into coproduct")
+                report.errorAndAbort("Can not inject into coproduct")
             }
         }
 
       case Varargs(_) =>
-        report.throwError("only one branch of a union may be inhabited")
+        report.errorAndAbort("only one branch of a union may be inhabited")
 
       case _ =>
-        report.throwError("this method must be called with vararg arguments")
+        report.errorAndAbort("this method must be called with vararg arguments")
     }
   }
 }
