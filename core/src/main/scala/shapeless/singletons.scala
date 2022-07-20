@@ -28,7 +28,7 @@ import scala.reflect.macros.whitebox
  */
 trait Witness extends Serializable {
   type T
-  val value: T {}
+  val value: T
 }
 
 object Witness extends Dynamic with WitnessInstances {

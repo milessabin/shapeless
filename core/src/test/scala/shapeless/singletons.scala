@@ -518,6 +518,15 @@ class SingletonTypesTests {
     assertTypedEquals[A.type](A1().getT, A)
   }
 
+  @Test
+  def testTypeInference: Unit = {
+    val singletonW = Witness(3)
+    def s3[T](v: T)(implicit ev: Witness.Aux[T]) = v
+    val v = singletonW.value
+    val s = s3(v)
+    assertEquals(s, v)
+  }
+
   class NestingBug {
     val o: AnyRef = new Object {}
 
