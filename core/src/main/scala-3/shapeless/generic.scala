@@ -75,6 +75,14 @@ trait LabelledGenericScalaCompat {
     case (tpe *: types, label *: labels) => labelled.FieldType[label, tpe] :+: MakeFieldsCoproduct[types, labels]
   }
 
+  given LabelledGeneric.Aux[Unit, HNil] = new LabelledGeneric[Unit] {
+    override type Repr = HNil
+
+    override def to(t: Unit): Repr = HNil
+
+    override def from(r: Repr): Unit = ()
+  }
+
   transparent inline given materializeProduct[T <: Product](
     using m: scala.deriving.Mirror.ProductOf[T]
   ): LabelledGeneric.Aux[T, MakeFieldsProduct[m.MirroredElemTypes, m.MirroredElemLabels]] =

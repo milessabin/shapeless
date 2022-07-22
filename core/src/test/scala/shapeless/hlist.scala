@@ -1674,22 +1674,22 @@ class HListTests extends HListTestsScalaCompat {
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2: SL2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
-    val sp1 :: sp2 :: HNil = sl.splitLeftP[String]
+    val sp1 :: sp2 :: HNil = sl.splitLeftP[String] : @unchecked
     typed[String :: Double :: HNil](sp2)
     typed[Int :: Boolean :: HNil](sp1)
     assertTypedEquals[SL]((sp1 ::: sp2), sl)
 
-    val sli1 :: sli2 :: HNil = sl2.splitLeftP[String]
+    val sli1 :: sli2 :: HNil = sl2.splitLeftP[String] : @unchecked
     typed[Int :: Double :: HNil](sli1)
     typed[String :: Unit :: String :: Boolean :: Long :: HNil](sli2)
     assertTypedEquals[SL2]((sli1 ::: sli2), sl2)
 
-    val rsp1 :: rsp2 :: HNil = sl.reverse_splitLeftP[String]
+    val rsp1 :: rsp2 :: HNil = sl.reverse_splitLeftP[String] : @unchecked
     typed[Boolean :: Int :: HNil](rsp1)
     typed[String :: Double :: HNil](rsp2)
     assertTypedEquals[SL]((rsp1 reverse_::: rsp2), sl)
 
-    val rsli1 :: rsli2 :: HNil = sl2.reverse_splitLeftP[String]
+    val rsli1 :: rsli2 :: HNil = sl2.reverse_splitLeftP[String] : @unchecked
     typed[Double :: Int :: HNil](rsli1)
     typed[String :: Unit :: String :: Boolean :: Long :: HNil](rsli2)
     assertTypedEquals[SL2]((rsli1 reverse_::: rsli2), sl2)
@@ -1730,22 +1730,22 @@ class HListTests extends HListTestsScalaCompat {
     val sl: SL   = 1 :: true :: "foo" :: 2.0 :: HNil
     val sl2: SL2 = 23 :: 3.0 :: "foo" :: () :: "bar" :: true :: 5L :: HNil
 
-    val srp1 :: srp2 :: HNil = sl.splitRightP[String]
+    val srp1 :: srp2 :: HNil = sl.splitRightP[String] : @unchecked
     typed[Int :: Boolean :: String :: HNil](srp1)
     typed[Double :: HNil](srp2)
     assertTypedEquals[SL]((srp1 ::: srp2), sl)
 
-    val srli1 :: srli2 :: HNil = sl2.splitRightP[String]
+    val srli1 :: srli2 :: HNil = sl2.splitRightP[String] : @unchecked
     typed[Int :: Double :: String :: Unit :: String :: HNil](srli1)
     typed[Boolean :: Long :: HNil](srli2)
     assertTypedEquals[SL2](sl2, srli1 ::: srli2)
 
-    val rsrp1 :: rsrp2 :: HNil = sl.reverse_splitRightP[String]
+    val rsrp1 :: rsrp2 :: HNil = sl.reverse_splitRightP[String] : @unchecked
     typed[String :: Boolean :: Int :: HNil](rsrp1)
     typed[Double :: HNil](rsrp2)
     assertTypedEquals[SL]((rsrp1 reverse_::: rsrp2), sl)
 
-    val rsrli1 :: rsrli2 :: HNil = sl2.reverse_splitRightP[String]
+    val rsrli1 :: rsrli2 :: HNil = sl2.reverse_splitRightP[String] : @unchecked
     typed[String :: Unit :: String :: Double :: Int :: HNil](rsrli1)
     typed[Boolean :: Long :: HNil](rsrli2)
     assertTypedEquals[SL2]((rsrli1 reverse_::: rsrli2), sl2)

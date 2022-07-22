@@ -8,7 +8,7 @@ trait HListTestsScalaCompat { this: HListTests =>
 
   given ClassTag[Nothing] = ClassTag.Nothing
 
-  type MIntStringDoubleBound[A] = M[_ >: String & (Int & Double) <: String | (Int | Double), A] 
+  type MIntStringDoubleBound = M[_ >: String & (Int & Double) <: String | (Int | Double)] 
   type M2IntStringDoubleBound[A] = M2[_ >: String & (Int & Double) <: String | (Int | Double), A] 
   type AnyOrMatchable = Matchable
 }
