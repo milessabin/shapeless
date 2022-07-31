@@ -367,7 +367,7 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     val tpe = weakTypeOf[T]
 
     val annTreeOpts = getAnnotationTreeOptions(tpe, typeAnnotation).map { list =>
-      list.find(_._1 =:= annTpe).map(_._2)
+      list.find(_._1.erasure =:= annTpe.erasure).map(_._2)
     }
     
     val wrapTpeTrees = annTreeOpts.map {
