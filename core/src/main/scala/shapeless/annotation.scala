@@ -53,8 +53,11 @@ object Annotation {
       def apply(): A = annotation
     }
 
-  implicit def materialize[A, T]: Annotation[A, T] = macro AnnotationMacros.materializeAnnotationRequired[A, T]
-  implicit def materializeOption[A, T]: Annotation[Option[A], T] = macro AnnotationMacros.materializeAnnotationOptional[A, T]
+  implicit def materialize[A, T]: Annotation[A, T] =
+    macro AnnotationMacros.materializeAnnotationRequired[A, T]
+
+  implicit def materializeOption[A, T]: Annotation[Option[A], T] =
+    macro AnnotationMacros.materializeAnnotationOptional[A, T]
 }
 
 /**
@@ -115,7 +118,8 @@ object Annotations {
       def apply(): Out = annotations
     }
 
-  implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeVariableAnnotations[A, T, Out]
+  implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] =
+    macro AnnotationMacros.materializeVariableAnnotations[A, T, Out]
 }
 
 /**
@@ -169,7 +173,8 @@ object TypeAnnotations {
       def apply(): Out = annotations
     }
 
-  implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] = macro AnnotationMacros.materializeTypeAnnotations[A, T, Out]
+  implicit def materialize[A, T, Out <: HList]: Aux[A, T, Out] =
+    macro AnnotationMacros.materializeTypeAnnotations[A, T, Out]
 }
 
 /**
@@ -223,7 +228,8 @@ object AllAnnotations {
       def apply(): Out = annotations
     }
 
-  implicit def materialize[T, Out <: HList]: Aux[T, Out] = macro AnnotationMacros.materializeAllVariableAnnotations[T, Out]
+  implicit def materialize[T, Out <: HList]: Aux[T, Out] =
+    macro AnnotationMacros.materializeAllVariableAnnotations[T, Out]
 }
 
 /**
@@ -277,7 +283,8 @@ object AllTypeAnnotations {
       def apply(): Out = annotations
     }
 
-  implicit def materialize[T, Out <: HList]: Aux[T, Out] = macro AnnotationMacros.materializeAllTypeAnnotations[T, Out]
+  implicit def materialize[T, Out <: HList]: Aux[T, Out] =
+    macro AnnotationMacros.materializeAllTypeAnnotations[T, Out]
 }
 
 class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
@@ -287,62 +294,51 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
   def someTpe: Type = typeOf[Some[_]].typeConstructor
   def noneTpe: Type = typeOf[None.type]
 
+  private def someVal = objectRef[Some.type]
+  private def noneVal = objectRef[None.type]
+  private def annotationVal = objectRef[shapeless.Annotation.type]
+
   /**
    * FIXME Most of the content of this method is cut-n-pasted from generic.scala
    *
    * @return The AST of the `tpe` constructor.
    */
   def construct(tpe: Type): List[Tree] => Tree = {
-    // FIXME Cut-n-pasted from generic.scala
     val sym = tpe.typeSymbol
-    val isCaseClass = sym.asClass.isCaseClass
-    def hasNonGenericCompanionMember(name: String): Boolean = {
-      val mSym = sym.companion.typeSignature.member(TermName(name))
-      mSym != NoSymbol && !isNonGeneric(mSym)
+    def hasCompanionMember(name: String) = {
+      val member = sym.companion.typeSignature.member(TermName(name))
+      member != NoSymbol && !isNonGeneric(member)
     }
 
-    if(isCaseClass || hasNonGenericCompanionMember("apply"))
-      args => q"${companionRef(tpe)}(..$args)"
-    else
-      args => q"new $tpe(..$args)"
+    val useCompanion = sym.asClass.isCaseClass || hasCompanionMember("apply")
+    if (useCompanion) args => q"${companionRef(tpe)}(..$args)" else args => q"new $tpe(..$args)"
   }
 
   def materializeAnnotation[A: WeakTypeTag, T: WeakTypeTag]: Option[Tree] = {
     val annTpe = weakTypeOf[A]
-
-    if (!isProduct(annTpe))
-      abort(s"$annTpe is not a case class-like type")
-
-    val construct0 = construct(annTpe)
-
     val tpe = weakTypeOf[T]
-
+    if (!isProduct(annTpe)) abort(s"$annTpe is not a case class-like type")
+    val constructor = construct(annTpe)
     tpe.typeSymbol.annotations.collectFirst {
-      case ann if ann.tree.tpe =:= annTpe => construct0(ann.tree.children.tail)
+      case ann if ann.tree.tpe =:= annTpe => constructor(ann.tree.children.tail)
     }
   }
 
   def materializeAnnotationRequired[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
     val annTpe = weakTypeOf[A]
     val tpe = weakTypeOf[T]
-
     materializeAnnotation[A, T] match {
-      case Some(annTree) =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$annTpe, $tpe]($annTree)"
-      case None =>
-        abort(s"No $annTpe annotation found on $tpe")
+      case Some(annTree) => q"$annotationVal.mkAnnotation[$annTpe, $tpe]($annTree)"
+      case None => abort(s"No $annTpe annotation found on $tpe")
     }
   }
 
   def materializeAnnotationOptional[A: WeakTypeTag, T: WeakTypeTag]: Tree = {
     val optAnnTpe = appliedType(optionTpe, weakTypeOf[A])
     val tpe = weakTypeOf[T]
-
     materializeAnnotation[A, T] match {
-      case Some(annTree) =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.Some($annTree))"
-      case None =>
-        q"_root_.shapeless.Annotation.mkAnnotation[$optAnnTpe, $tpe](_root_.scala.None)"
+      case Some(annTree) => q"$annotationVal.mkAnnotation[$optAnnTpe, $tpe]($someVal($annTree))"
+      case None => q"$annotationVal.mkAnnotation[$optAnnTpe, $tpe]($noneVal)"
     }
   }
 
@@ -360,51 +356,24 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
     
   def materializeAnnotations[A: WeakTypeTag, T: WeakTypeTag, Out: WeakTypeTag](typeAnnotation: Boolean): Tree = {
     val annTpe = weakTypeOf[A]
-
-    if (!isProduct(annTpe))
-      abort(s"$annTpe is not a case class-like type")
-      
     val tpe = weakTypeOf[T]
-
-    val annTreeOpts = getAnnotationTreeOptions(tpe, typeAnnotation).map { list =>
-      list.find(_._1.erasure =:= annTpe.erasure).map(_._2)
-    }
-    
-    val wrapTpeTrees = annTreeOpts.map {
-      case Some(annTree) => appliedType(someTpe, annTpe) -> q"_root_.scala.Some($annTree)"
-      case None => noneTpe -> q"_root_.scala.None"
-    }
-
-    val outTpe = mkHListTpe(wrapTpeTrees.map { case (aTpe, _) => aTpe })
-    val outTree = wrapTpeTrees.foldRight(q"_root_.shapeless.HNil": Tree) {
-      case ((_, bound), acc) => pq"_root_.shapeless.::($bound, $acc)"
-    }
-
-    if (typeAnnotation) q"_root_.shapeless.TypeAnnotations.mkAnnotations[$annTpe, $tpe, $outTpe]($outTree)"
-    else q"_root_.shapeless.Annotations.mkAnnotations[$annTpe, $tpe, $outTpe]($outTree)"
+    if (!isProduct(annTpe)) abort(s"$annTpe is not a case class-like type")
+    val (annTypes, annTrees) = getAnnotationTreeOptions(tpe, typeAnnotation).map(_.find(_._1 <:< annTpe) match {
+      case Some((annTpe, annTree)) => appliedType(someTpe, annTpe) -> q"$someVal($annTree)"
+      case None => noneTpe -> noneVal
+    }).unzip
+    val tc = if (typeAnnotation) objectRef[TypeAnnotations.type] else objectRef[Annotations.type]
+    q"$tc.mkAnnotations[$annTpe, $tpe, ${mkHListTpe(annTypes)}](${mkHListValue(annTrees)})"
   }
 
   def materializeAllAnnotations[T: WeakTypeTag, Out: WeakTypeTag](typeAnnotation: Boolean): Tree = {
     val tpe = weakTypeOf[T]
-    val annTreeOpts = getAnnotationTreeOptions(tpe, typeAnnotation)
-    
-    val wrapTpeTrees = annTreeOpts.map {
-      case Nil =>
-        mkHListTpe(Nil) -> q"(_root_.shapeless.HNil)"
-      case list =>
-        mkHListTpe(list.map(_._1)) -> list.foldRight(q"_root_.shapeless.HNil": Tree) {
-          case ((_, bound), acc) => pq"_root_.shapeless.::($bound, $acc)"
-        }
-    }
-
-    val outTpe = mkHListTpe(wrapTpeTrees.map { case (aTpe, _) => aTpe })
-    val outTree = wrapTpeTrees.foldRight(q"_root_.shapeless.HNil": Tree) {
-      case ((_, bound), acc) =>
-        pq"_root_.shapeless.::($bound, $acc)"
-    }
-
-    if (typeAnnotation) q"_root_.shapeless.AllTypeAnnotations.mkAnnotations[$tpe, $outTpe]($outTree)"
-    else q"_root_.shapeless.AllAnnotations.mkAnnotations[$tpe, $outTpe]($outTree)"
+    val (annTypes, annTrees) = getAnnotationTreeOptions(tpe, typeAnnotation).map { annotations =>
+      val (types, trees) = annotations.unzip
+      mkHListTpe(types) -> mkHListValue(trees)
+    }.unzip
+    val tc = if (typeAnnotation) objectRef[AllTypeAnnotations.type] else objectRef[AllAnnotations.type]
+    q"$tc.mkAnnotations[$tpe, ${mkHListTpe(annTypes)}](${mkHListValue(annTrees)})"
   }
 
   def getAnnotationTreeOptions(tpe: Type, typeAnnotation: Boolean): List[List[(Type, Tree)]] = {

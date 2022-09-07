@@ -132,6 +132,9 @@ class AnnotationTests {
       val second: None.type :: None.type :: Some[Second] :: HNil = Annotations[Second, CC].apply()
       assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
 
+      val fourth: None.type :: None.type :: None.type :: Some[Fourth[Int]] :: HNil = Annotations[Fourth[_], CC3].apply()
+      assert(fourth == None :: None :: None :: Some(Fourth(4)) :: HNil)
+
       val unused: None.type :: None.type :: None.type :: HNil = Annotations[Unused, CC].apply()
       assert(unused == None :: None :: None :: HNil)
 
@@ -148,6 +151,9 @@ class AnnotationTests {
 
       val second = Annotations[Second, CC].apply()
       assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+
+      val fourth = Annotations[Fourth[_], CC3].apply()
+      assert(fourth == None :: None :: None :: Some(Fourth(4)) :: HNil)
 
       val unused = Annotations[Unused, CC].apply()
       assert(unused == None :: None :: None :: HNil)
@@ -176,6 +182,9 @@ class AnnotationTests {
       val second: None.type :: None.type :: Some[Second] :: HNil = TypeAnnotations[Second, CC2].apply()
       assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
 
+      val fourth: None.type :: None.type :: None.type :: Some[Fourth[Int]] :: HNil = TypeAnnotations[Fourth[_], CC4].apply()
+      assert(fourth == None :: None :: None :: Some(Fourth(4)) :: HNil)
+
       val unused: None.type :: None.type :: None.type :: HNil = TypeAnnotations[Unused, CC2].apply()
       assert(unused == None :: None :: None :: HNil)
     }
@@ -186,6 +195,9 @@ class AnnotationTests {
 
       val second = TypeAnnotations[Second, CC2].apply()
       assert(second == None :: None :: Some(Second(2, "b")) :: HNil)
+
+      val fourth = TypeAnnotations[Fourth[_], CC4].apply()
+      assert(fourth == None :: None :: None :: Some(Fourth(4)) :: HNil)
 
       val unused = TypeAnnotations[Unused, CC2].apply()
       assert(unused == None :: None :: None :: HNil)
@@ -202,7 +214,7 @@ class AnnotationTests {
   @Test
   def allAnnotations: Unit = {
     val cc = AllAnnotations[CC3].apply()
-    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: (Fourth[_] :: HNil) :: HNil](cc)
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: (Fourth[Int] :: HNil) :: HNil](cc)
     assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: (Fourth(4) :: HNil) :: HNil)
 
     val st = AllAnnotations[Base].apply()
@@ -215,12 +227,11 @@ class AnnotationTests {
     typed[(First :: HNil) :: (Second :: Third :: HNil) :: HNil](st)
 
     val cc = AllTypeAnnotations[CC4].apply() // case class
-    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: (Fourth[_] :: HNil) :: HNil](cc)
+    typed[(First :: HNil) :: HNil :: (Second :: Third :: HNil) :: (Fourth[Int] :: HNil) :: HNil](cc)
     assert(cc == (First() :: HNil) :: HNil :: (Second(2, "b") :: Third('c') :: HNil) :: (Fourth(4) :: HNil) :: HNil)
 
     val user = AllTypeAnnotations[User].apply() // type refs
     typed[(First :: HNil) :: (Third :: HNil) :: HNil](user)
     assert(user == (First() :: HNil) :: (Third('c') :: HNil) :: HNil)
   }
-  
 }
