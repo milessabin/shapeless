@@ -114,15 +114,11 @@ lazy val commonSettings = Seq(
     ))
 ) ++ crossVersionSharedSources ++ scalaMacroDependencies
 
-def configureJUnit(crossProject: CrossProject) = {
+def configureJUnit(crossProject: CrossProject) =
   crossProject
-  .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
-  .jvmSettings(
-    libraryDependencies +=
-      "com.github.sbt" % "junit-interface" % "0.13.3" % "test"
-  )
-  .nativeConfigure(_.enablePlugins(ScalaNativeJUnitPlugin))
-}
+    .jvmSettings(libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test")
+    .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
+    .nativeConfigure(_.enablePlugins(ScalaNativeJUnitPlugin))
 
 lazy val commonJsSettings = Seq(
   Compile / doc / scalacOptions -= "-Xfatal-warnings",
