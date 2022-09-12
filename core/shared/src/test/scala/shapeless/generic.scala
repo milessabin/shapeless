@@ -143,7 +143,12 @@ package GenericTestsAux {
   }
 
   case class CCOrdered[A: Ordering](value: A)
-  class CCLikeOrdered[A: Ordering](val value: A)
+  class CCLikeOrdered[A: Ordering](val value: A) {
+    override def equals(that: Any): Boolean = that match {
+      case that: CCLikeOrdered[_] => this.value == that.value
+      case _ => false
+    }
+  }
 
   case class CCDegen(i: Int)()
   class CCLikeDegen(val i: Int)()
@@ -841,13 +846,15 @@ class GenericTests {
   @Test
   def testGenericImplicitParams: Unit = {
     type Repr = Int :: HNil
-    val gen = Generic[CCOrdered[Int]]
-    val cc = CCOrdered(42)
+    val gen1 = Generic[CCOrdered[Int]]
+    val gen2 = Generic[CCLikeOrdered[Int]]
+    val cc1 = CCOrdered(42)
+    val cc2 = new CCLikeOrdered(42)
     val rep = 42 :: HNil
-
-    assertTypedEquals[CCOrdered[Int]](gen.from(rep), cc)
-    assertTypedEquals[Repr](gen.to(cc), rep)
-    illTyped("Generic[CCLikeOrdered[Int]]")
+    assertTypedEquals[CCOrdered[Int]](gen1.from(rep), cc1)
+    assertTypedEquals[CCLikeOrdered[Int]](gen2.from(rep), cc2)
+    assertTypedEquals[Repr](gen1.to(cc1), rep)
+    assertTypedEquals[Repr](gen2.to(cc2), rep)
   }
 
   @Test
