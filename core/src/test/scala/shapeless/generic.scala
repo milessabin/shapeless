@@ -152,6 +152,20 @@ package GenericTestsAux {
   final case class InTap[A, -B](in: B => A) extends Tap[A]
   final case class OutTap[A, +B](out: A => B) extends Tap[A]
   final case class PipeTap[A, B](in: B => A, out: A => B) extends Tap[A]
+
+  sealed trait PubOrPriv
+  final case class Pub(x: Int) extends PubOrPriv
+  final class Priv private(val y: String) extends PubOrPriv {
+    override def equals(that: Any): Boolean = that match {
+      case that: Priv => this.y == that.y
+      case _ => false
+    }
+  }
+
+  object Priv {
+    def apply(y: String): Priv = new Priv(y)
+    def unapply(p: Priv): Some[String] = Some(p.y)
+  }
 }
 
 class GenericTests {
@@ -829,6 +843,7 @@ class GenericTests {
     illTyped("Generic[Squared]")
   }
 
+  @Test
   def testCoproductWithFreeTypeParams: Unit = {
     type Repr[A] = ConstTap[A] :+: InTap[A, _] :+: OutTap[A, _] :+: PipeTap[A, _] :+: CNil
     val gen = Generic[Tap[String]]
@@ -849,6 +864,15 @@ class GenericTests {
       assertEquals(expected, gen.from(actual))
       assertEquals(gen.to(expected), actual)
     }
+  }
+
+  @Test
+  def testPublicAndPrivateCoproductChildren: Unit = {
+    val gen = Generic[PubOrPriv]
+    assertEquals(Pub(123), gen.from(Inr(Inl(Pub(123)))))
+    assertEquals(Inr(Inl(Pub(123))), gen.to(Pub(123)))
+    assertEquals(Priv("secret"), gen.from(Inl(Priv("secret"))))
+    assertEquals(Inl(Priv("secret")), gen.to(Priv("secret")))
   }
 }
 
