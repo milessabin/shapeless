@@ -321,7 +321,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isProductAux(tpe: Type): Boolean =
     tpe.typeSymbol.isClass && {
-      val cls = classSym(tpe)
+      val cls = tpe.typeSymbol.asClass
       isCaseObjectLike(cls) || isCaseClassLike(cls) || HasApplyUnapply(tpe) || HasCtorUnapply(tpe)
     }
 
@@ -333,7 +333,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isCoproduct(tpe: Type): Boolean =
     tpe.typeSymbol.isClass && {
-      val cls = classSym(tpe)
+      val cls = tpe.typeSymbol.asClass
       (cls.isTrait || cls.isAbstract) && cls.isSealed
     }
 
@@ -400,18 +400,13 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def ctorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
-    def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
-      classSym.knownDirectSubclasses.toList flatMap { child0 =>
-        val child = child0.asClass
-        child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-        if (isCaseClassLike(child) || isCaseObjectLike(child))
-          List(child)
-        else if (child.isSealed)
-          collectCtors(child)
-        else
-          abort(s"$child is not case class like or a sealed trait")
+    def collectCtors(classSym: ClassSymbol): List[ClassSymbol] =
+      classSym.knownDirectSubclasses.toList.flatMap { child =>
+        val cls = child.asClass
+        if (isProductAux(cls.typeSignature)) List(cls)
+        else if (cls.isSealed) collectCtors(cls)
+        else abort(s"$cls is not case class like or a sealed trait")
       }
-    }
 
     if(isProduct(tpe))
       List(tpe)
@@ -699,27 +694,19 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def isSealedHierarchyClassSymbol(symbol: ClassSymbol): Boolean = {
-    def helper(classSym: ClassSymbol): Boolean = {
-      classSym.knownDirectSubclasses.toList forall { child0 =>
-        val child = child0.asClass
-        child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-
-        isCaseClassLike(child) || (child.isSealed && helper(child))
+    def helper(classSym: ClassSymbol): Boolean =
+      classSym.knownDirectSubclasses.toList.forall { child =>
+        val cls = child.asClass
+        isCaseClassLike(cls) || (cls.isSealed && helper(cls))
       }
-    }
 
     symbol.isSealed && helper(symbol)
   }
 
   def classSym(tpe: Type): ClassSymbol = {
     val sym = tpe.typeSymbol
-    if (!sym.isClass)
-      abort(s"$sym is not a class or trait")
-
-    val classSym = sym.asClass
-    classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-
-    classSym
+    if (!sym.isClass) abort(s"$sym is not a class or trait")
+    sym.asClass
   }
 
   // See https://github.com/milessabin/shapeless/issues/212
