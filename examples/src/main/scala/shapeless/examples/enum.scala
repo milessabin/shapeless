@@ -49,9 +49,12 @@ object ScalaEnumDemo /*extends App*/ {
 //
 object ShapelessEnumDemo extends App {
   // ADT as an enumeration. Barely any more boilerplate ...
-  sealed trait WeekDay
+  sealed abstract class WeekDay(val ordinal: Int) extends Serializable
   object WeekDay {
-    val Mon, Tue, Wed, Thu, Fri, Sat, Sun = new WeekDay {}
+    private var ordinal = 0
+    val Mon, Tue, Wed, Thu, Fri, Sat, Sun =
+      try new WeekDay(ordinal) {}
+      finally ordinal += 1
     val values: Set[WeekDay] = Values
   }
 
@@ -68,7 +71,8 @@ object ShapelessEnumDemo extends App {
     case _ => false // compile time non-exhaustive match warning/error without this case
   }
 
-  assert(!isWeekend(Mon)) // 
+  assert(!isWeekend(Mon))
+  assert(values.size == values.map(_.ordinal).size)
 }
 
 // Infrastructure for the above. Original version due to Travis Brown,
