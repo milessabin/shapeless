@@ -673,18 +673,23 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     else mkCoproductTypTree1(ctorsOf1(tpe), param, arg)
   }
 
+  /** Returns the parameter lists of `tpe`, removing any implicit parameters. */
+  private def nonImplicitParamLists(tpe: Type): List[List[Symbol]] =
+    tpe.paramLists.takeWhile(params => params.isEmpty || !params.head.isImplicit)
+
   def isCaseClassLike(sym: ClassSymbol): Boolean = {
     def isConcrete = !(sym.isAbstract || sym.isTrait || sym == symbolOf[Object])
     def isFinalLike = sym.isFinal || sym.knownDirectSubclasses.isEmpty
-    def ctor = for {
-      ctor <- accessiblePrimaryCtorOf(sym.typeSignature)
-      Seq(params) <- Option(ctor.typeSignature.paramLists)
-      if params.size == fieldsOf(sym.typeSignature).size
-    } yield ctor
-    sym.isCaseClass || (isConcrete && isFinalLike && ctor.isDefined)
+    def constructor = for {
+      constructor <- accessiblePrimaryCtorOf(sym.typeSignature)
+      Seq(params) <- Option(nonImplicitParamLists(constructor.typeSignature))
+      if params.length == fieldsOf(sym.typeSignature).length
+    } yield constructor
+    sym.isCaseClass || (isConcrete && isFinalLike && constructor.isDefined)
   }
 
-  def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
+  def isCaseObjectLike(sym: ClassSymbol): Boolean =
+    sym.isModuleClass
 
   def isCaseAccessorLike(sym: TermSymbol): Boolean = {
     val isGetter =
@@ -867,27 +872,18 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def numNonCaseParamLists(tpe: Type): Int = {
     val companion = patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature
     val apply = companion.member(TermName("apply"))
-    if (apply.isMethod && !isNonGeneric(apply) && isAccessible(companion, apply)) {
-      val paramLists = apply.typeSignatureIn(companion).paramLists
-      val numParamLists = paramLists.length
-      if (numParamLists <= 1) 0
-      else {
-        if (paramLists.last.headOption.map(_.isImplicit).getOrElse(false))
-          numParamLists-2
-        else
-          numParamLists-1
-      }
-    } else 0
+    if (!apply.isMethod || isNonGeneric(apply) || !isAccessible(companion, apply)) 0
+    else nonImplicitParamLists(apply.typeSignatureIn(companion)).length.max(1) - 1
   }
 
   object HasApply {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
-      apply = companion.member(TermName("apply"))
+      apply <- Option(companion.member(TermName("apply")))
       if apply.isTerm && !apply.asTerm.isOverloaded
       if apply.isMethod && !isNonGeneric(apply)
       if isAccessible(companion, apply)
-      Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
+      Seq(params) <- Option(nonImplicitParamLists(apply.typeSignatureIn(companion)))
       aligned <- alignFields(tpe, for (param <- params)
         yield param.name.toTermName -> param.typeSignature)
     } yield aligned
@@ -896,20 +892,20 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   object HasUnapply {
     def unapply(tpe: Type): Option[List[Type]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
-      unapply = companion.member(TermName("unapply"))
+      unapply <- Option(companion.member(TermName("unapply")))
       if unapply.isTerm && !unapply.asTerm.isOverloaded
       if unapply.isMethod && !isNonGeneric(unapply)
       if isAccessible(companion, unapply)
-      returnTpe <- unapply.asMethod.typeSignatureIn(companion).finalResultType
+      returnTpe <- unapply.typeSignatureIn(companion).finalResultType
         .baseType(symbolOf[Option[_]]).typeArgs.headOption
     } yield if (returnTpe <:< typeOf[Product]) returnTpe.typeArgs else List(returnTpe)
   }
 
   object HasUniqueCtor {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
-      ctor <- accessiblePrimaryCtorOf(tpe)
-      if !isNonGeneric(ctor)
-      Seq(params) <- Option(ctor.typeSignatureIn(tpe).paramLists)
+      constructor <- accessiblePrimaryCtorOf(tpe)
+      if !isNonGeneric(constructor)
+      Seq(params) <- Option(nonImplicitParamLists(constructor.typeSignatureIn(tpe)))
       aligned <- alignFields(tpe, for (param <- params)
         yield param.name.toTermName -> param.typeSignature)
     } yield aligned
