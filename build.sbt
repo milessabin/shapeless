@@ -15,13 +15,9 @@ ThisBuild / mimaFailOnNoPrevious := false
 
 // GHA configuration
 
-ThisBuild / githubWorkflowBuildPreamble := Seq(
-  WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev"))
-)
+ThisBuild / githubWorkflowBuildPreamble := Seq(WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev")))
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
-ThisBuild / githubWorkflowBuildMatrixAdditions +=
-  "platform" -> List("jvm", "js", "native")
-
+ThisBuild / githubWorkflowBuildMatrixAdditions += "platform" -> List("jvm", "js", "native")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
 
@@ -36,12 +32,8 @@ ThisBuild / githubWorkflowBuild := Seq(
 )
 
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
-ThisBuild / githubWorkflowPublishTargetBranches +=
-  RefPredicate.StartsWith(Ref.Tag("v"))
-
-ThisBuild / githubWorkflowPublishPreamble +=
-  WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
-
+ThisBuild / githubWorkflowPublishTargetBranches += RefPredicate.StartsWith(Ref.Tag("v"))
+ThisBuild / githubWorkflowPublishPreamble += WorkflowStep.Use(UseRef.Public("olafurpg", "setup-gpg", "v3"))
 ThisBuild / githubWorkflowPublish := Seq(
   WorkflowStep.Sbt(
     List("ci-release"),
@@ -54,17 +46,15 @@ ThisBuild / githubWorkflowPublish := Seq(
   )
 )
 
-Global / excludeLintKeys += coreNative / packageDoc / publishArtifact
-
 addCommandAlias("root", ";project shapeless")
 addCommandAlias("core", ";project coreJVM")
 addCommandAlias("scratch", ";project scratchJVM")
 addCommandAlias("examples", ";project examplesJVM")
 
 addCommandAlias("validate", ";root;validateJVM;validateJS;validateNative")
-addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;coreJVM/doc")
-addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;coreJS/doc")
-addCommandAlias("validateNative", ";coreNative/compile;coreNative/test;nativeTest/run;examplesNative/compile;examplesNative/test;coreNative/doc")
+addCommandAlias("validateJVM", ";coreJVM/compile;coreJVM/mimaReportBinaryIssues;coreJVM/test;examplesJVM/compile;examplesJVM/test;examplesJVM/runAll;coreJVM/doc")
+addCommandAlias("validateJS", ";coreJS/compile;coreJS/mimaReportBinaryIssues;coreJS/test;examplesJS/compile;examplesJS/test;examplesJS/runAll;coreJS/doc")
+addCommandAlias("validateNative", ";coreNative/compile;coreNative/test;examplesNative/compile;examplesNative/test;examplesNative/runAll;coreNative/doc")
 addCommandAlias("runAll", ";examplesJVM/runAll")
 
 def scalacOptionsAll(pluginJar: File) = List(
@@ -87,84 +77,30 @@ val scalacOptions213 = Seq(
   "-Ywarn-unused:-implicits"
 )
 
-lazy val commonSettings = Seq(
+lazy val commonSettings = crossVersionSharedSources ++ Seq(
+  resolvers ++= Resolver.sonatypeOssRepos("releases"),
+  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
-
   scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
-
   Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, 12)) => scalacOptions212
     case Some((2, 13)) => scalacOptions213
     case _ => Nil
   }),
-
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("releases"),
-    Resolver.sonatypeRepo("snapshots")
-  ),
-
   Compile / console / scalacOptions -= "-Xfatal-warnings",
   Test / console / scalacOptions -= "-Xfatal-warnings",
   console / initialCommands := """import shapeless._""",
+  Test / parallelExecution := false,
+  libraryDependencies ++= Seq(
+    scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
+  )
+)
 
-  scmInfo :=
-    Some(ScmInfo(
-      url("https://github.com/milessabin/shapeless"),
-      "scm:git:git@github.com:milessabin/shapeless.git"
-    ))
-) ++ crossVersionSharedSources ++ scalaMacroDependencies
-
-def configureJUnit(crossProject: CrossProject) = {
-  crossProject
+def configureJUnit(crossProject: CrossProject) = crossProject
+  .jvmSettings(libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test")
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
-  .jvmSettings(
-    libraryDependencies +=
-      "com.github.sbt" % "junit-interface" % "0.13.3" % "test"
-  )
-  .nativeSettings(
-    libraryDependencies += "org.scala-native" %%% "junit-runtime" % nativeVersion,
-    addCompilerPlugin("org.scala-native" % "junit-plugin" % nativeVersion cross CrossVersion.full),
-    pomPostProcess := { node =>
-      import scala.xml._
-      import scala.xml.transform._
-      new RuleTransformer(new RewriteRule{
-        override def transform(n: Node) =
-          if (n.label == "dependency" && (n \ "artifactId").text.startsWith("junit-runtime_native"))
-            NodeSeq.Empty
-          else
-            n
-      }).transform(node)(0)
-    },
-  )
-}
-
-lazy val commonJsSettings = Seq(
-  Compile / doc / scalacOptions -= "-Xfatal-warnings",
-  Test / parallelExecution := false
-)
-
-lazy val commonJvmSettings = Seq(
-  Test / parallelExecution := false
-)
-
-lazy val coreSettings = commonSettings ++ publishSettings
-
-lazy val CrossTypeMixed: sbtcrossproject.CrossType = new sbtcrossproject.CrossType {
-  def projectDir(crossBase: File, projectType: String): File =
-    crossBase / projectType
-
-  override def projectDir(crossBase: File, projectType: sbtcrossproject.Platform) = {
-    val dir = projectType match {
-      case JVMPlatform => "jvm"
-      case JSPlatform => "js"
-      case NativePlatform => "native"
-    }
-    crossBase / dir
-  }
-
-  def sharedSrcDir(projectBase: File, conf: String): Option[File] =
-    Some(projectBase.getParentFile / "src" / conf / "scala")
-}
+  .nativeConfigure(_.enablePlugins(ScalaNativeJUnitPlugin))
 
 lazy val plugin = project.in(file("plugin"))
   .settings(crossVersionSharedSources)
@@ -177,45 +113,36 @@ lazy val plugin = project.in(file("plugin"))
     crossScalaVersions := Seq(Scala213, Scala212)
   )
 
-lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .crossType(CrossType.Full)
   .configureCross(configureJUnit)
   .settings(moduleName := "shapeless")
-  .settings(coreSettings:_*)
+  .settings(commonSettings)
+  .settings(publishSettings)
   .configureCross(buildInfoSetup)
   .enablePlugins(SbtOsgi)
-  .settings(coreOsgiSettings:_*)
+  .settings(coreOsgiSettings)
+  .settings(Compile / sourceManaged := baseDirectory.value.getParentFile / "shared" / "src" / "main" / "managed")
   .settings(Compile / sourceGenerators += (Compile / sourceManaged).map(Boilerplate.gen).taskValue)
-  .settings(mimaSettings:_*)
-  .jsSettings(commonJsSettings:_*)
-  .jvmSettings(commonJvmSettings:_*)
-  .nativeSettings(
-    // disable scaladoc generation on native
-    // currently getting errors like
-    //   [error] bnd: Invalid syntax for version: ${@}, for cmd: range, arguments; [range, [==,=+), ${@}]
-    Compile / packageDoc / publishArtifact := false,
-    packageDoc / publishArtifact := false,
-    Compile / doc / sources := Nil,
-  )
+  .settings(mimaSettings)
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
 lazy val coreNative = core.native
 
-lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "scratch")
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings:_*)
-  .jsSettings(commonJsSettings:_*)
-  .jvmSettings(commonJvmSettings:_*)
+  .settings(commonSettings)
+  .settings(noPublishSettings)
 
 lazy val scratchJVM = scratch.jvm
 lazy val scratchJS = scratch.js
 lazy val scratchNative = scratch.native
 
 lazy val runAll = TaskKey[Unit]("runAll")
-
 def runAllIn(config: Configuration): Setting[Task[Unit]] = {
   config / runAll := {
     val classes = (config / discoveredMainClasses).value
@@ -226,59 +153,20 @@ def runAllIn(config: Configuration): Setting[Task[Unit]] = {
   }
 }
 
-lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossTypeMixed)
+lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.1")
+  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.1.1")
   .settings(runAllIn(Compile))
-  .settings(coreSettings:_*)
-  .settings(noPublishSettings:_*)
-  .jsSettings(commonJsSettings:_*)
-  .jvmSettings(commonJvmSettings:_*)
-  .nativeSettings(
-    Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")),
-  )
+  .settings(commonSettings)
+  .settings(noPublishSettings)
+  .nativeSettings(Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")))
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 lazy val examplesNative = examples.native
-
-lazy val nativeTest = project
-  .enablePlugins(ScalaNativePlugin)
-  .settings(
-    noPublishSettings,
-    Compile / sourceGenerators += Def.task {
-      val exclude = List(
-        "StagedTypeClassExample", // scala-reflect
-        "CombinatorTesting", // scala-parser-combinators
-        "ALaCacheDemo" // java.util.WeakHashMap, java.util.logging.Logger
-      )
-      val classNames = (examplesNative / Compile / discoveredMainClasses).value.filterNot{
-        c => exclude.exists(c.contains)
-      }.sorted
-      val src = s"""package shapeless
-      |
-      |object NativeMain {
-      |  def main(args: Array[String]): Unit = {
-      |${classNames.flatMap(cn => List(s"""println("Running $cn")""", s"$cn.main(args)")).map("    " + _).mkString("\n")}
-      |  }
-      |}
-      |""".stripMargin
-      val f = (Compile / sourceManaged).value / "shapeless" / "NativeMain.scala"
-      IO.write(f, src)
-      f :: Nil
-    }.taskValue
-  ).dependsOn(
-    examplesNative
-  )
-
-lazy val scalaMacroDependencies: Seq[Setting[_]] = Seq(
-  libraryDependencies ++= Seq(
-    scalaOrganization.value % "scala-reflect" % scalaVersion.value % "provided",
-    scalaOrganization.value % "scala-compiler" % scalaVersion.value % "provided"
-  )
-)
 
 lazy val crossVersionSharedSources: Seq[Setting[_]] =
   Seq(Compile, Test).map { sc =>
