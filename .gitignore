@@ -4,6 +4,7 @@ scripts/travis-config.sh
 
 scratch/
 target/
+**/src/*/managed/
 
 .metals
 .bloop
