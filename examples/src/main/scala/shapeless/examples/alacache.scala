@@ -20,10 +20,8 @@ package examples
 import java.lang.ref.WeakReference
 import java.util.logging.Logger
 import scala.reflect.ClassTag
-
-import ops.hlist.{ Length, Tupler }
+import ops.hlist.{Length, Tupler}
 import ops.nat.ToInt
-
 import test._
 
 import java.util.WeakHashMap
@@ -186,11 +184,7 @@ trait CachedCaseClassDefns extends
 }
 
 
-/**
- * Demo of a Shapeless a la carte case class with interning.
- *
- * shapeless-examples/runMain shapeless.examples.ALaCacheDemo
- */
+
 object ALaCacheDemo extends App {
   object FooDefns extends CachedCaseClassDefns {
     type C = Foo
@@ -237,7 +231,7 @@ object ALaCacheDemo extends App {
   assert("foo" == foo_2)
 
   val fooIterator = foo.productIterator
-  assert(List(23, "foo") == fooIterator.toList)
+  assert((List(23, "foo"): List[Any]) == fooIterator.toList)
 
   val fooPrefix = foo.productPrefix
   assert("Foo" == fooPrefix)
