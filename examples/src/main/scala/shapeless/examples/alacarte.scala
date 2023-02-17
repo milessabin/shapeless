@@ -29,7 +29,6 @@ import test._
 // productElements and related methods (or replace with typed alternatives).
 //
 // Note that no new macros were required for the creation of this library.
-
 object ALaCarteDemo extends App {
   // Minimal boilerplate required for Foo to emulate a standard
   // Scala case class ...
@@ -65,7 +64,7 @@ object ALaCarteDemo extends App {
   assert("foo" == foo_2)
 
   val fooIterator = foo.productIterator
-  assert(List(23, "foo") == fooIterator.toList)
+  assert((List(23, "foo"): List[Any]) == fooIterator.toList)
 
   val fooPrefix = foo.productPrefix
   assert("Foo" == fooPrefix)
