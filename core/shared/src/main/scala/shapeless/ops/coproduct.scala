@@ -43,7 +43,7 @@ object coproduct {
   }
 
   /**
-    * Type class for attempting to get a value of type T out of an instance of corpdocut C.
+    * Type class for attempting to get a value of type T out of an instance of coproduct C.
     * If the coproduct instance is not of the specified type, None is returned
     */
   trait Selector[C <: Coproduct, T] extends Serializable {

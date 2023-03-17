@@ -1,8 +1,8 @@
-import com.typesafe.sbt.SbtGit.GitKeys._
+import com.github.sbt.git.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.17"
-val Scala213 = "2.13.7"
+val Scala213 = "2.13.10"
 
 commonSettings
 noPublishSettings
@@ -158,7 +158,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.1.1")
+  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.2.0")
   .settings(runAllIn(Compile))
   .settings(commonSettings)
   .settings(noPublishSettings)
