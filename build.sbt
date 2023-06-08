@@ -1,8 +1,8 @@
-import com.github.sbt.git.SbtGit.GitKeys._
+import com.github.sbt.git.SbtGit.GitKeys.*
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.18"
-val Scala213 = "2.13.10"
+val Scala213 = "2.13.11"
 
 commonSettings
 noPublishSettings
@@ -168,7 +168,7 @@ lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 lazy val examplesNative = examples.native
 
-lazy val crossVersionSharedSources: Seq[Setting[_]] =
+lazy val crossVersionSharedSources: Seq[Setting[?]] =
   Seq(Compile, Test).map { sc =>
     (sc / unmanagedSourceDirectories) ++= {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
@@ -185,10 +185,10 @@ lazy val publishSettings = Seq(
   Test / publishArtifact := false,
   pomIncludeRepository := (_ => false),
   homepage := Some(url("https://github.com/milessabin/shapeless")),
-  licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  licenses := Seq("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   scmInfo := Some(ScmInfo(url("https://github.com/milessabin/shapeless"), "scm:git:git@github.com:milessabin/shapeless.git")),
   developers := List(
-    Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
+    Developer("milessabin", "Miles Sabin", "", url("https://milessabin.com/blog")),
     Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
   )
 )
