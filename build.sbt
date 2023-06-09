@@ -59,22 +59,13 @@ addCommandAlias("runAll", ";examplesJVM/runAll")
 
 def scalacOptionsAll(pluginJar: File) = List(
   "-feature",
-  "-language:higherKinds,implicitConversions",
-  "-Xfatal-warnings",
   "-deprecation",
   "-unchecked",
+  "-language:higherKinds,implicitConversions",
+  "-Xfatal-warnings",
+  "-Wconf:cat=other-implicit-type:s",
   s"-Xplugin:${pluginJar.getAbsolutePath}",
   s"-Jdummy=${pluginJar.lastModified}"
-)
-
-val scalacOptions212 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
-  "-Ywarn-unused:-implicits"
-)
-
-val scalacOptions213 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
-  "-Ywarn-unused:-implicits"
 )
 
 lazy val commonSettings = crossVersionSharedSources ++ Seq(
@@ -82,9 +73,12 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
   scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
-  Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212
-    case Some((2, 13)) => scalacOptions213
+  Compile / compile / scalacOptions ++= Seq(
+    "-Ywarn-unused:-implicits",
+    "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_"
+  ),
+  Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
+    case "2.13" => Seq("-Xlint:-byname-implicit")
     case _ => Nil
   }),
   Compile / console / scalacOptions -= "-Xfatal-warnings",
