@@ -1,8 +1,8 @@
-import com.github.sbt.git.SbtGit.GitKeys._
+import com.github.sbt.git.SbtGit.GitKeys.*
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.18"
-val Scala213 = "2.13.10"
+val Scala213 = "2.13.11"
 
 commonSettings
 noPublishSettings
@@ -59,22 +59,13 @@ addCommandAlias("runAll", ";examplesJVM/runAll")
 
 def scalacOptionsAll(pluginJar: File) = List(
   "-feature",
-  "-language:higherKinds,implicitConversions",
-  "-Xfatal-warnings",
   "-deprecation",
   "-unchecked",
+  "-language:higherKinds,implicitConversions",
+  "-Xfatal-warnings",
+  "-Wconf:cat=other-implicit-type:s",
   s"-Xplugin:${pluginJar.getAbsolutePath}",
   s"-Jdummy=${pluginJar.lastModified}"
-)
-
-val scalacOptions212 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
-  "-Ywarn-unused:-implicits"
-)
-
-val scalacOptions213 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
-  "-Ywarn-unused:-implicits"
 )
 
 lazy val commonSettings = crossVersionSharedSources ++ Seq(
@@ -82,9 +73,12 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
   scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
-  Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212
-    case Some((2, 13)) => scalacOptions213
+  Compile / compile / scalacOptions ++= Seq(
+    "-Ywarn-unused:-implicits",
+    "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_"
+  ),
+  Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
+    case "2.13" => Seq("-Xlint:-byname-implicit")
     case _ => Nil
   }),
   Compile / console / scalacOptions -= "-Xfatal-warnings",
@@ -168,7 +162,7 @@ lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 lazy val examplesNative = examples.native
 
-lazy val crossVersionSharedSources: Seq[Setting[_]] =
+lazy val crossVersionSharedSources: Seq[Setting[?]] =
   Seq(Compile, Test).map { sc =>
     (sc / unmanagedSourceDirectories) ++= {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
@@ -185,10 +179,10 @@ lazy val publishSettings = Seq(
   Test / publishArtifact := false,
   pomIncludeRepository := (_ => false),
   homepage := Some(url("https://github.com/milessabin/shapeless")),
-  licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  licenses := Seq("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   scmInfo := Some(ScmInfo(url("https://github.com/milessabin/shapeless"), "scm:git:git@github.com:milessabin/shapeless.git")),
   developers := List(
-    Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
+    Developer("milessabin", "Miles Sabin", "", url("https://milessabin.com/blog")),
     Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
   )
 )

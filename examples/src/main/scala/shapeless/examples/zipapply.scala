@@ -65,12 +65,13 @@ object ZipApplyExamples extends App {
 
   // A different type of HList of functions (it's specially planned - wait for the big twist!)
   val functions2 = (stringFunction _) :: (booleanFunction _) :: (intFunction _) :: (longFunction _) :: HNil
+  println(ZipApplyExample.inferenceResults)
 
   /**
-    * [[ZipApply]] allows application of an [[HList]] of functions to an [[HList]] of their corresponding arguments,
-    * resulting in an [[HList]] of the results of the applications. Here's an example.
+    * [[shapeless.ops.hlist.ZipApply]] allows application of an [[HList]] of functions to an [[HList]] of their
+    * corresponding arguments, resulting in an [[HList]] of the results of the applications. Here's an example.
     */
-  def zipApplyExample() = {
+  object ZipApplyExample {
 
     // At a minimum, ZipApply requires the argument types to be known
     val zipApply = ZipApply[Functions, Args]
@@ -96,13 +97,13 @@ object ZipApplyExamples extends App {
       * @param a  An HList of arguments — each element must be of the input type of the corresponding function from f1
       *
       * The implicits used:
-      * @param zip        A [[Zip]] instance which allows us to zip f1 and f2, giving an HList with the corresponding
-      *                   elements from each f1 and f2 as a [[Tuple2]] - i.e.
+      * @param zip        A [[shapeless.ops.hlist.Zip]] instance which allows us to zip f1 and f2, giving an HList with
+      *                   the corresponding elements from each f1 and f2 as a [[scala.Tuple2]] - i.e.
       *                        (f1.head, f2.head) :: (f1.drop(1).head, f2.drop(1).head) ... :: HNil
-      * @param mapCompose A [[Mapper]] instance which allows us to map the output of `zip` with the [[compose]] poly
-      *                   function (defined at the bottom of this file)
-      * @param zipApply   A [[ZipApply]] instance which will perform the application of the composed functions. Note the
-      *                   use of `Aux` to infer the result type.
+      * @param mapCompose A [[shapeless.ops.hlist.Mapper]] instance which allows us to map the output of `zip` with the
+      *                   [[compose]] poly function (defined at the bottom of this file)
+      * @param zipApply   A [[shapeless.ops.hlist.ZipApply]] instance which will perform the application of the composed
+      *                   functions. Note the use of `Aux` to infer the result type.
       *
       * And the type parameters:
       * @tparam Functions1 The type of the first [[HList]] of functions. This can be inferred because `inferenceExample`
@@ -110,12 +111,12 @@ object ZipApplyExamples extends App {
       * @tparam Functions2 The type of the second [[HList]] of functions. This can be inferred for the same reason.
       * @tparam Arguments  The type of the [[HList]] of arguments. Again, this can be inferred since it must be concrete
       *                    at the call site.
-      * @tparam FCombined  The type of the [[HList]] of pairs zipped from [[Functions1]] and [[Functions2]]. This gets
-      *                    inferred thanks to the use of [[Zip.Aux]].
-      * @tparam FComposed  The type of the [[HList]] of composed functions from [[Functions1]] and [[Functions2]]. This
-      *                    gets inferred thanks to the use of [[Mapper.Aux]].
-      * @tparam Output     The type of the [[HList]] of results from applying [[FComposed]] to [[Arguments]]. This gets
-      *                    inferred thanks to the use of [[ZipApply.Aux]].
+      * @tparam FCombined  The type of the [[HList]] of pairs zipped from `Functions1` and `Functions2`. This gets
+      *                    inferred thanks to the use of [[shapeless.ops.hlist.Zip.Aux]].
+      * @tparam FComposed  The type of the [[HList]] of composed functions from `Functions1` and `Functions2`. This
+      *                    gets inferred thanks to the use of [[shapeless.ops.hlist.Mapper.Aux]].
+      * @tparam Output     The type of the [[HList]] of results from applying `FComposed` to `Arguments`. This gets
+      *                    inferred thanks to the use of [[shapeless.ops.hlist.ZipApply.Aux]].
       *
       * @return The results of applying the composed functions to the corresponding arguments, as an HList.
       */
