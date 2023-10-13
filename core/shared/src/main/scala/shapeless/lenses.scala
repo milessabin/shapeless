@@ -159,7 +159,7 @@ object OpticDefns {
   def apply[C] = id[C]
 
   object compose extends Poly2 {
-    implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
+    implicit def default[A, B, C]: Case.Aux[Lens[B, C], Lens[A, B], Lens[A, C]] = at[Lens[B, C], Lens[A, B]](_ compose _)
   }
 
   class RootLens[C] extends Lens[C, C] {
