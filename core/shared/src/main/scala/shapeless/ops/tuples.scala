@@ -1243,7 +1243,7 @@ object tuple {
       (implicit gen: Generic.Aux[T, L],
         genIn: Generic.Aux[InT, InL],
         patch: hl.Patcher.Aux[N, M, L, InL, OutL],
-        tp: hl.Tupler[OutL]) =
+        tp: hl.Tupler[OutL]): Patcher[N, M, T, InT] { type Out = tp.Out } =
         new Patcher[N, M, T, InT]{
           type Out = tp.Out
 

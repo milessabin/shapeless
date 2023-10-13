@@ -73,7 +73,7 @@ object PolyDefns extends Cases {
 
   object Compose {
     implicit def composeCase[C, F <: Poly, G <: Poly, T, U, V]
-      (implicit unpack: Unpack2[C, Compose, F, G], cG : Case1.Aux[G, T, U], cF : Case1.Aux[F, U, V]) = new Case[C, T :: HNil] {
+      (implicit unpack: Unpack2[C, Compose, F, G], cG : Case1.Aux[G, T, U], cF : Case1.Aux[F, U, V]): Case.Aux[C, T :: HNil, V] = new Case[C, T :: HNil] {
       type Result = V
       val value = (t : T :: HNil) => cF(cG.value(t))
     }
@@ -170,11 +170,11 @@ object PolyDefns extends Cases {
    * Base class for lifting a `Function1` to a `Poly1`
    */
   class ->[T, R](f : T => R) extends Poly1 {
-    implicit def subT[U <: T] = at[U](f)
+    implicit def subT[U <: T]: Case.Aux[U, R] = at[U](f)
   }
 
   trait LowPriorityLiftFunction1 extends Poly1 {
-    implicit def default[T] = at[T](_ => HNil : HNil)
+    implicit def default[T]: Case.Aux[T, HNil] = at[T](_ => HNil : HNil)
   }
 
   /**
@@ -182,11 +182,11 @@ object PolyDefns extends Cases {
    * its only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
-    implicit def subT[U <: T] = at[U](f(_) :: HNil)
+    implicit def subT[U <: T]: Case.Aux[U, R :: HNil] = at[U](f(_) :: HNil)
   }
 
   trait LowPriorityLiftU extends Poly {
-    implicit def default[L <: HList] = new ProductCase[L] {
+    implicit def default[L <: HList]: ProductCase.Aux[L, HNil] = new ProductCase[L] {
       type Result = HNil
       val value = (l : L) => HNil
     }
@@ -197,7 +197,7 @@ object PolyDefns extends Cases {
    * only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class LiftU[P <: Poly](p : P)  extends LowPriorityLiftU {
-    implicit def defined[L <: HList](implicit caseT : Case[P, L]) = new ProductCase[L] {
+    implicit def defined[L <: HList](implicit caseT : Case[P, L]): ProductCase.Aux[L, caseT.Result :: HNil] = new ProductCase[L] {
       type Result = caseT.Result :: HNil
       val value = (l : L) => caseT(l) :: HNil
     }
