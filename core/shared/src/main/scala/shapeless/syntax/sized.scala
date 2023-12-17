@@ -19,10 +19,10 @@ package syntax
 
 object sized {
   implicit def genTraversableSizedConv[Repr](cc : Repr)
-    (implicit iil: IsRegularIterable[Repr], ev : AdditiveCollection[Repr]) =
+    (implicit iil: IsRegularIterable[Repr], ev : AdditiveCollection[Repr]): SizedConv[Repr] =
       new SizedConv[Repr](cc)
   
-  implicit def stringSizedConv(s : String) = new SizedConv[String](s)
+  implicit def stringSizedConv(s : String): SizedConv[String] = new SizedConv[String](s)
 }
 
 final class SizedConv[Repr](r : Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr]) {

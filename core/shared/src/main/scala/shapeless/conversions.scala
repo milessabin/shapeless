@@ -22,12 +22,12 @@ import ops.hlist.Tupler
  * Higher ranked function which converts `HLists` to tuples.
  */
 object tupled extends Poly1 {
-  implicit def caseHList[L <: HList](implicit tupler: Tupler[L]) = at[L](tupler(_))
+  implicit def caseHList[L <: HList](implicit tupler: Tupler[L]): Case.Aux[L, tupler.Out] = at[L](tupler(_))
 }
 
 /**
  * Higher ranked function which converts products to `HLists`. 
  */
 object productElements extends Poly1 {
-  implicit def caseProduct[P](implicit gen: Generic[P]) = at[P](p => gen.to(p))
+  implicit def caseProduct[P](implicit gen: Generic[P]): Case.Aux[P, gen.Repr] = at[P](p => gen.to(p))
 }

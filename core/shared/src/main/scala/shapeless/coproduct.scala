@@ -130,7 +130,7 @@ object Coproduct extends Dynamic {
   
   def apply[C <: Coproduct] = new MkCoproduct[C]
 
-  implicit def cpOps[C <: Coproduct](c: C) = new CoproductOps(c) 
+  implicit def cpOps[C <: Coproduct](c: C): CoproductOps[C] = new CoproductOps(c) 
 
   def unsafeMkCoproduct(length: Int, value: Any) =
     (0 until length).foldLeft[Coproduct](Inl(value))((accum, _) => Inr(accum))

@@ -26,10 +26,10 @@ object TypeLevelBacktrack extends App {
   // Given a genealogical tree, compute family relationship on the type level.
   // -------------------------------------------------------------------------
 
-  /** [[Parent]] / [[Child]] relationship, father side. */
+  /** `Parent` / `Child` relationship, father side. */
   trait FatherOf[Parent, Child]
 
-  /** [[Parent]] / [[Child]] relationship, mother side. */
+  /** `Parent` / `Child` relationship, mother side. */
   trait MotherOf[Parent, Child]
 
   def fact[P, C](): FatherOf[P, C] = new FatherOf[P, C] {}
@@ -56,7 +56,7 @@ object TypeLevelBacktrack extends App {
   // Translated to scala, it looks like the `IsAncestor` typeclass below.
   // -------------------------------------------------------------------------
 
-  /** Typeclass witnessing that all [[Ancestor]] is an ancestor of [[Descendant]]. */
+  /** Typeclass witnessing that all `Ancestor` is an ancestor of `Descendant`. */
   trait IsAncestor[Ancestor, Descendant]
 
   object IsAncestor {
@@ -100,7 +100,7 @@ object TypeLevelBacktrack extends App {
   // containment in in the list of all ancestors.
   // -------------------------------------------------------------------------
 
-  /** Typeclass computing all the [[Ancestors]] of a [[Person]]. */
+  /** Typeclass computing all the `Ancestors` of a `Person`. */
   trait AllAncestors[Person, Ancestors <: HList]
 
   // This is used to lower the priority of the *base case*.
@@ -125,7 +125,7 @@ object TypeLevelBacktrack extends App {
       ) = new AllAncestors[P, F :: M :: CA] {}
   }
 
-  /** Typeclass witnessing family relationship between [[P2]] and [[P1]]. */
+  /** Typeclass witnessing family relationship between `P2` and `P1`. */
   class Relationship[P1, P2]
 
   object Relationship {

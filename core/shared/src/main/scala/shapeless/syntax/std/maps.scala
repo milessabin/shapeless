@@ -23,7 +23,7 @@ import shapeless.ops.maps.FromMap
  * Conversions between `Map` and `Records`.
  */
 object maps {
-  implicit def mapOps[K, V](m: Map[K, V]) = new MapOps[K, V](m)
+  implicit def mapOps[K, V](m: Map[K, V]): MapOps[K, V] = new MapOps[K, V](m)
 }
 
 final class MapOps[K, V](m: Map[K, V]) {
