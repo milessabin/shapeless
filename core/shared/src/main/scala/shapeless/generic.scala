@@ -299,7 +299,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isProductAux(tpe: Type): Boolean =
     tpe.typeSymbol.isClass && {
-      val cls = classSym(tpe)
+      val cls = tpe.typeSymbol.asClass
       isCaseObjectLike(cls) || isCaseClassLike(cls) || HasApplyUnapply(tpe) || HasCtorUnapply(tpe)
     }
 
@@ -311,7 +311,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def isCoproduct(tpe: Type): Boolean =
     tpe.typeSymbol.isClass && {
-      val cls = classSym(tpe)
+      val cls = tpe.typeSymbol.asClass
       (cls.isTrait || cls.isAbstract) && cls.isSealed
     }
 
@@ -368,18 +368,13 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   }
 
   def ctorsOfAux(tpe: Type, hk: Boolean): List[Type] = {
-    def collectCtors(classSym: ClassSymbol): List[ClassSymbol] = {
-      classSym.knownDirectSubclasses.toList flatMap { child0 =>
-        val child = child0.asClass
-        child.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-        if (isCaseClassLike(child) || isCaseObjectLike(child))
-          List(child)
-        else if (child.isSealed)
-          collectCtors(child)
-        else
-          abort(s"$child is not case class like or a sealed trait")
+    def collectCtors(classSym: ClassSymbol): List[ClassSymbol] =
+      classSym.knownDirectSubclasses.toList.flatMap { child =>
+        val cls = child.asClass
+        if (isProductAux(cls.typeSignature)) List(cls)
+        else if (cls.isSealed) collectCtors(cls)
+        else abort(s"$cls is not case class like or a sealed trait")
       }
-    }
 
     if(isProduct(tpe))
       List(tpe)
@@ -598,18 +593,23 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
     else mkCoproductTypTree1(ctorsOf1(tpe), param, arg)
   }
 
+  /** Returns the parameter lists of `tpe`, removing any implicit parameters. */
+  private def nonImplicitParamLists(tpe: Type): List[List[Symbol]] =
+    tpe.paramLists.takeWhile(params => params.isEmpty || !params.head.isImplicit)
+
   def isCaseClassLike(sym: ClassSymbol): Boolean = {
     def isConcrete = !(sym.isAbstract || sym.isTrait || sym == symbolOf[Object])
     def isFinalLike = sym.isFinal || sym.knownDirectSubclasses.isEmpty
-    def ctor = for {
-      ctor <- accessiblePrimaryCtorOf(sym.typeSignature)
-      Seq(params) <- Option(ctor.typeSignature.paramLists)
-      if params.size == fieldsOf(sym.typeSignature).size
-    } yield ctor
-    sym.isCaseClass || (isConcrete && isFinalLike && ctor.isDefined)
+    def constructor = for {
+      constructor <- accessiblePrimaryCtorOf(sym.typeSignature)
+      Seq(params) <- Option(nonImplicitParamLists(constructor.typeSignature))
+      if params.length == fieldsOf(sym.typeSignature).length
+    } yield constructor
+    sym.isCaseClass || (isConcrete && isFinalLike && constructor.isDefined)
   }
 
-  def isCaseObjectLike(sym: ClassSymbol): Boolean = sym.isModuleClass
+  def isCaseObjectLike(sym: ClassSymbol): Boolean =
+    sym.isModuleClass
 
   def isCaseAccessorLike(sym: TermSymbol, inCaseClass: Boolean): Boolean = {
     val isGetter =
@@ -620,13 +620,8 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
 
   def classSym(tpe: Type): ClassSymbol = {
     val sym = tpe.typeSymbol
-    if (!sym.isClass)
-      abort(s"$sym is not a class or trait")
-
-    val classSym = sym.asClass
-    classSym.typeSignature // Workaround for <https://issues.scala-lang.org/browse/SI-7755>
-
-    classSym
+    if (!sym.isClass) abort(s"$sym is not a class or trait")
+    sym.asClass
   }
 
   // See https://github.com/milessabin/shapeless/issues/212
@@ -787,26 +782,17 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   def numNonCaseParamLists(tpe: Type): Int = {
     val companion = patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature
     val apply = companion.member(TermName("apply"))
-    if (apply.isMethod && !isNonGeneric(apply) && isAccessible(companion, apply)) {
-      val paramLists = apply.typeSignatureIn(companion).paramLists
-      val numParamLists = paramLists.length
-      if (numParamLists <= 1) 0
-      else {
-        if (paramLists.last.headOption.exists(_.isImplicit))
-          numParamLists-2
-        else
-          numParamLists-1
-      }
-    } else 0
+    if (!apply.isMethod || isNonGeneric(apply) || !isAccessible(companion, apply)) 0
+    else nonImplicitParamLists(apply.typeSignatureIn(companion)).length.max(1) - 1
   }
 
   object HasApply {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
-      apply = companion.member(TermName("apply"))
+      apply <- Option(companion.member(TermName("apply")))
       if apply.isMethod && !isNonGeneric(apply)
       if isAccessible(companion, apply)
-      Seq(params) <- Option(apply.typeSignatureIn(companion).paramLists)
+      Seq(params) <- Option(nonImplicitParamLists(apply.typeSignatureIn(companion)))
       aligned <- alignFields(tpe, for (param <- params)
         yield param.name.toTermName -> param.typeSignature)
     } yield aligned
@@ -815,19 +801,19 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
   object HasUnapply {
     def unapply(tpe: Type): Option[List[Type]] = for {
       companion <- Option(patchedCompanionSymbolOf(tpe.typeSymbol).typeSignature)
-      unapply = companion.member(TermName("unapply"))
+      unapply <- Option(companion.member(TermName("unapply")))
       if unapply.isMethod && !isNonGeneric(unapply)
       if isAccessible(companion, unapply)
-      returnTpe <- unapply.asMethod.typeSignatureIn(companion).finalResultType
+      returnTpe <- unapply.typeSignatureIn(companion).finalResultType
         .baseType(symbolOf[Option[_]]).typeArgs.headOption
     } yield if (returnTpe <:< typeOf[Product]) returnTpe.typeArgs else List(returnTpe)
   }
 
   object HasUniqueCtor {
     def unapply(tpe: Type): Option[List[(TermName, Type)]] = for {
-      ctor <- accessiblePrimaryCtorOf(tpe)
-      if !isNonGeneric(ctor)
-      Seq(params) <- Option(ctor.typeSignatureIn(tpe).paramLists)
+      constructor <- accessiblePrimaryCtorOf(tpe)
+      if !isNonGeneric(constructor)
+      Seq(params) <- Option(nonImplicitParamLists(constructor.typeSignatureIn(tpe)))
       aligned <- alignFields(tpe, for (param <- params)
         yield param.name.toTermName -> param.typeSignature)
     } yield aligned
