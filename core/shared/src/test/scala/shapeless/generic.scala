@@ -157,6 +157,13 @@ package GenericTestsAux {
   final case class InTap[A, -B](in: B => A) extends Tap[A]
   final case class OutTap[A, +B](out: A => B) extends Tap[A]
   final case class PipeTap[A, B](in: B => A, out: A => B) extends Tap[A]
+
+  object macroAnnotations {
+    case class A(i: Int, s: String)
+
+    @generateGeneric
+    object A
+  }
 }
 
 class GenericTests {
