@@ -162,7 +162,7 @@ object OpticDefns {
   def apply[C] = id[C]
 
   object compose extends Poly2 {
-    implicit def default[A, B, C] = at[Lens[B, C], Lens[A, B]](_ compose _)
+    implicit def default[A, B, C]: Case.Aux[Lens[B, C], Lens[A, B], Lens[A, C]] = at[Lens[B, C], Lens[A, B]](_ compose _)
   }
 
   class RootLens[C] extends Lens[C, C] {
@@ -248,10 +248,10 @@ object MkFieldLens {
   implicit def mkFieldLens[A, K, R <: HList, B]
     (implicit
       mkGen: MkLabelledGenericLens.Aux[A, R],
-      mkLens: MkRecordSelectLens[R, K]): Aux[A, K, mkLens.Elem] =
+      mkLens: MkRecordSelectLens.Aux[R, K, B]): Aux[A, K, B] =
         new MkFieldLens[A, K] {
-          type Elem = mkLens.Elem
-          def apply(): Lens[A, mkLens.Elem] = mkLens() compose mkGen()
+          type Elem = B
+          def apply(): Lens[A, B] = mkLens() compose mkGen()
         }
 }
 
