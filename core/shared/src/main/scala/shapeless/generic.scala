@@ -1021,9 +1021,12 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
         // case 3: case class
         case tpe if tpe.typeSymbol.asClass.isCaseClass =>
           val companion = patchedCompanionSymbolOf(tpe.typeSymbol)
+          val apply   = companion.typeSignature.member(TermName("apply"))
           val unapply = companion.typeSignature.member(TermName("unapply"))
           val fields = fieldsOf(tpe)
-          (fromApply(fields), if (unapply.isSynthetic) toUnapply(fields) else toGetters(fields))
+          val ctor = if (apply == NoSymbol) fromConstructor(fields) else fromApply(fields)
+          val dtor = if (unapply.isSynthetic) toUnapply(fields) else toGetters(fields)
+          (ctor, dtor)
         // case 4: exactly one matching public apply/unapply
         case HasApplyUnapply(args) =>
           (fromApply(args), toUnapply(args))

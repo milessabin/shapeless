@@ -171,6 +171,13 @@ package GenericTestsAux {
     def apply(y: String): Priv = new Priv(y)
     def unapply(p: Priv): Some[String] = Some(p.y)
   }
+
+  object macroAnnotations {
+    case class A(i: Int, s: String)
+
+    @generateGeneric
+    object A
+  }
 }
 
 class GenericTests {
