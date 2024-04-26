@@ -111,6 +111,30 @@ val boilerplate = Def.taskDyn {
   (Compile / sourceManaged).map(Boilerplate.gen(scalaBinaryVersion.value))
 }
 
+lazy val macroAnnotationSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, v)) if v >= 13 => Seq("-Ymacro-annotations")
+      case _ => Nil
+    }
+  },
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, v)) if v <= 12 =>
+        Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+      case _ => Nil
+    }
+  },
+)
+
+lazy val coreTestMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .crossType(CrossType.Full)
+  .settings(moduleName := "core-test-macros")
+  .settings(commonSettings)
+  .settings(noPublishSettings)
+  .configureCross(buildInfoSetup)
+  .settings(macroAnnotationSettings)
+
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .configureCross(configureJUnit)
@@ -123,6 +147,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(Compile / sourceManaged := baseDirectory.value.getParentFile / "shared" / "src" / "main" / "managed")
   .settings(Compile / sourceGenerators += boilerplate.taskValue)
   .settings(mimaSettings)
+  .dependsOn(coreTestMacros % "test->compile")
+  .settings(macroAnnotationSettings)
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
