@@ -207,7 +207,7 @@ class Generic1Macros(val c: whitebox.Context) extends CaseClassMacros {
   def mkGeneric1Impl[T[_], FR[_[_]]](implicit tTag: WeakTypeTag[T[_]], frTag: WeakTypeTag[FR[Any]]): Tree = {
     val tpe = tTag.tpe.etaExpand
     val frTpe = c.openImplicits.headOption match {
-      case Some(ImplicitCandidate(_, _, TypeRef(_, _, List(_, tpe)), _)) => tpe
+      case Some(ImplicitCandidate(_, _, TypeRef(_, _, List(_, frTpe)), _)) => frTpe
       case _ => frTag.tpe.typeConstructor
     }
 

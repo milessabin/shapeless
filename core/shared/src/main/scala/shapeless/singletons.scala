@@ -308,17 +308,11 @@ class SingletonTypeMacros(val c: whitebox.Context) extends SingletonTypeUtils wi
   def extractSingletonValue(tpe: Type): Tree =
     tpe match {
       case ConstantType(Constant(s: scala.Symbol)) => mkSingletonSymbol(s.name)
-
-      case ConstantType(c: Constant) => Literal(c)
-
+      case ConstantType(const: Constant) => Literal(const)
       case SingleType(p, v) => mkAttributedRef(p, v)
-
-      case SingletonSymbolType(c) => mkSingletonSymbol(c)
-
+      case SingletonSymbolType(sym) => mkSingletonSymbol(sym)
       case ThisType(sym) => This(sym)
-
-      case _ =>
-        c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
+      case _ => c.abort(c.enclosingPosition, s"Type argument $tpe is not a singleton type")
     }
 
   def materializeImpl[T: WeakTypeTag]: Tree = {

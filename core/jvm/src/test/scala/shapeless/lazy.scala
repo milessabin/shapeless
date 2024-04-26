@@ -16,10 +16,9 @@
 
 package shapeless
 
-import scala.language.reflectiveCalls
-
 import org.junit.Test
-import org.junit.Assert._
+
+import scala.language.reflectiveCalls
 
 class LazyStrictTestsJVM {
 

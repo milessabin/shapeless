@@ -16,25 +16,23 @@
 
 package shapeless
 
-import java.io._
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+import shapeless.labelled._
+import shapeless.nat._
+import shapeless.ops.function._
+import shapeless.ops.nat._
+import shapeless.ops.traversable._
+import shapeless.poly.~>>
+import shapeless.record._
+import shapeless.serializationtestutils._
+import shapeless.syntax.singleton._
+import shapeless.syntax.std.TupleOps
+import shapeless.syntax.zipper._
+import shapeless.syntax._
+import shapeless.union._
 
-import labelled._
-import nat._
-import ops.function._
-import ops.nat._
-import ops.traversable._
-import poly.{ ~>> }
-import record._
-import syntax.{ CoproductOps, GenericZipperOps, HListOps, HListZipperOps, NatOps, RecordOps, TypeableOps, UnionOps }
-import syntax.std.TupleOps
-import syntax.singleton._
-import syntax.zipper._
-import test._
-import serializationtestutils._
-import union._
+import java.io._
 
 object SerializationTestDefns {
 

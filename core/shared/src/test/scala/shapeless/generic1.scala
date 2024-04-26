@@ -16,10 +16,9 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
-
-import test._
+import org.junit.Test
+import shapeless.test._
 
 package Generic1TestsAux {
   trait TC1[F[_]]
@@ -413,7 +412,6 @@ class Generic1Tests {
 
   @Test
   def testPointed: Unit = {
-    import pointedSyntax._
 
     type R0[t] = None.type :: HNil
     IsHCons1[R0, Pointed, Pointed]

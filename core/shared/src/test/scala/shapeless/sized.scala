@@ -138,10 +138,10 @@ class SizedTests {
     val evens = cl.get.filter(_ % 2 == 0)
     
     val p = cl.get match {
-      case Sized(a, b, _*) => {
-        typed[Int](a)
-        typed[Int](b)
-        (a-b, a+b)
+      case Sized(x, y, _*) => {
+        typed[Int](x)
+        typed[Int](y)
+        (x-y, x+y)
       }
       case _ => (9, 10)
     }

@@ -329,8 +329,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
           c.abort(c.enclosingPosition, s"No default Typeable for parametrized type $tpe")
         normalizedTypeable
 
-      case SingletonSymbolType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe](${mkSingletonSymbol(c)}, "Symbol")"""
+      case SingletonSymbolType(const) =>
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe](${mkSingletonSymbol(const)}, "Symbol")"""
 
       case RefinedType(parents, decls) =>
         if (decls.nonEmpty)
@@ -367,8 +367,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
            $v.asInstanceOf[$tpe], ${nameOf(v)}, serializable = ${v.isModule}
         )"""
 
-      case ConstantType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], ${nameOf(c.tpe)})"""
+      case ConstantType(const) =>
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($const.asInstanceOf[$tpe], ${nameOf(const.tpe)})"""
 
       // Outer#Inner is unsound in general since Inner can capture type members of Outer.
       case TypeRef(TypeRef(_, outer, args), inner, _) if !outer.isFinal || args.nonEmpty =>

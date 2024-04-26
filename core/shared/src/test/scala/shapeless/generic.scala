@@ -16,12 +16,11 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
-
-import ops.{ hlist => hl, coproduct => cp }
-import testutil.assertTypedEquals
-import test.illTyped
+import org.junit.Test
+import shapeless.ops.{coproduct => cp, hlist => hl}
+import shapeless.test.illTyped
+import shapeless.testutil.assertTypedEquals
 
 package GenericTestsAux {
   sealed trait Fruit
@@ -105,7 +104,7 @@ package GenericTestsAux {
   class NonCCWithCompanion private (val i: Int, val s: String)
   object NonCCWithCompanion {
     def apply(i: Int, s: String) = new NonCCWithCompanion(i, s)
-    def unapply(s: NonCCWithCompanion): Option[(Int, String)] = Some((s.i, s.s))
+    def unapply(s: NonCCWithCompanion): Some[(Int, String)] = Some((s.i, s.s))
   }
 
   class NonCCLazy(prev0: => NonCCLazy, next0: => NonCCLazy) {
@@ -182,7 +181,6 @@ package GenericTestsAux {
 
 class GenericTests {
   import GenericTestsAux._
-  import scala.collection.immutable.{ :: => Cons }
   import test._
 
   type ABP = Apple :+: Banana :+: Pear :+: CNil
@@ -444,7 +442,7 @@ class GenericTests {
 
   @Test
   def testParametrizedWithVarianceList: Unit = {
-    import scala.collection.immutable.{ :: => Cons }
+    import scala.collection.immutable.{:: => Cons}
 
     val l: List[Int] = List(1, 2, 3)
     type CN = Cons[Int] :+: Nil.type :+: CNil
@@ -611,8 +609,6 @@ class GenericTests {
 
   @Test
   def testIsTuple: Unit = {
-    import record._
-    import union._
 
     IsTuple[Unit]
     IsTuple[(Int, String)]
@@ -634,8 +630,6 @@ class GenericTests {
 
   @Test
   def testHasProductGeneric: Unit = {
-    import record._
-    import union._
 
     HasProductGeneric[Single]
     HasProductGeneric[Person]
@@ -659,8 +653,6 @@ class GenericTests {
 
   @Test
   def testHasCoproductGeneric: Unit = {
-    import record._
-    import union._
 
     HasCoproductGeneric[Fruit]
 
@@ -682,8 +674,6 @@ class GenericTests {
 
   @Test
   def testNonGeneric: Unit = {
-    import record._
-    import union._
 
     illTyped(" Generic[Int] ")
     illTyped(" Generic[Array[Int]] ")
@@ -1331,7 +1321,6 @@ object PrivateCtorDefns {
 }
 
 object PrivateCtor {
-  import PrivateCtorDefns._
 
   illTyped("""
   Generic[Access.PublicFamily]

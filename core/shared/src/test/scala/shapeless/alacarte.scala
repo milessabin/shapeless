@@ -39,7 +39,7 @@ class ALaCarteTests {
     val foo = Foo(23, "foo")
     typed[Foo](foo)
 
-    val Foo(i, s) = foo
+    val Foo(i, s) = foo: @unchecked
     typed[Int](i)
     typed[String](s)
   }

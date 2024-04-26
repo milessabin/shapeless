@@ -48,12 +48,13 @@ object coproduct {
     implicit def hdSelector[H, T <: Coproduct]: Selector[H :+: T, H] = new Selector[H :+: T, H] {
       def apply(c: H :+: T): Option[H] = c match {
         case Inl(h) => Some(h)
-        case Inr(t) => None
+        case Inr(_) => None
       }
     }
+
     implicit def tlSelector[H, T <: Coproduct, S](implicit st: Selector[T, S]): Selector[H :+: T, S] = new Selector[H :+: T, S] {
       def apply(c: H :+: T): Option[S] = c match {
-        case Inl(h) => None
+        case Inl(_) => None
         case Inr(t) => st(t)
       }
     }
@@ -141,9 +142,9 @@ object coproduct {
       def coproduct(c: H :+: T): Prefix :+: Suffix :+: CNil = c match {
         case Inl(h) => Inr(Inl(Inl(h)))
         case Inr(t) => partition.coproduct(t) match {
-          case Inl(h)      => Inl(h)
+          case Inl(h) => Inl(h)
           case Inr(Inl(t)) => Inr(Inl(Inr(t)))
-          case Inr(Inr(c)) => Inr(Inr(c))
+          case Inr(Inr(nil)) => Inr(Inr(nil))
         }
       }
     }

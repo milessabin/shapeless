@@ -17,16 +17,12 @@
 package shapeless
 
 import org.junit.Test
-import org.junit.Assert._
-
-import test._
-import testutil._
+import shapeless.test._
+import shapeless.testutil._
 
 
 class FinTests {
   import nat._
-  import fin._
-  import ops.fin._
 
   @Test
   def testFromNats: Unit = {

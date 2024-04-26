@@ -959,7 +959,7 @@ trait CaseClassMacros extends ReprTypes with CaseClassMacrosVersionSpecifics {
       val repWCard = Star(wildcard)
 
       def narrow(tree: Tree, tpe: Type): Tree = tpe match {
-        case ConstantType(c) => q"$c.asInstanceOf[$tpe]"
+        case ConstantType(const) => q"$const.asInstanceOf[$tpe]"
         case _ => tree
       }
 

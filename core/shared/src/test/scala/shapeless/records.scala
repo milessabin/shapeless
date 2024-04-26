@@ -16,8 +16,8 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import shapeless.ops.record.AlignByKeys
 
 class RecordTests {
@@ -30,7 +30,7 @@ class RecordTests {
   import testutil._
 
   // making it method local causes weird compile error in Scala 2.10
-  import ops.record.{ RemoveAll, UnzipFields }
+  import ops.record.{RemoveAll, UnzipFields}
 
   object intField1 extends FieldOf[Int]
   object intField2 extends FieldOf[Int]
@@ -742,7 +742,6 @@ class RecordTests {
 
   @Test
   def testFieldPoly: Unit = {
-    import poly._
 
     object f extends FieldPoly {
       implicit def atFoo = atField[Int]("foo")(_ + 1)
@@ -761,7 +760,6 @@ class RecordTests {
 
   @Test
   def testFieldPolyOnRecord: Unit = {
-    import poly._
 
     object f extends FieldPoly {
       implicit def atFoo = atField[Int]("foo")(_ + 1)
@@ -782,7 +780,6 @@ class RecordTests {
 
   @Test
   def testFieldPolyNested: Unit = {
-    import poly._
 
     object f extends FieldPoly {
       implicit def atFoo = atField[Int]("foo")(_ + 1)
@@ -790,7 +787,7 @@ class RecordTests {
 
     val r = List(List(List(("foo" ->> 23) :: ("bar" ->> true) :: HNil)))
 
-    val List(List(List(r1))) = everywhere(f)(r)
+    val List(List(List(r1))) = everywhere(f)(r): @unchecked
 
     val v1 = r1("foo")
     typed[Int](v1)
@@ -1145,7 +1142,7 @@ class RecordTests {
 
   @Test
   def testSelectorForSwappedRecord: Unit = {
-    import ops.record.{ Selector, SwapRecord }
+    import ops.record.{Selector, SwapRecord}
 
     val gen = LabelledGeneric[Bar]
     val swap = SwapRecord[gen.Repr]

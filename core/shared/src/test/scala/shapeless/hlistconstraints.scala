@@ -17,8 +17,6 @@
 package shapeless
 
 import org.junit.Test
-import org.junit.Assert._
-
 import shapeless.test.illTyped
 
 class HListConstraintsTests {
