@@ -118,8 +118,8 @@ object HList extends Dynamic {
   @tailrec
   def unsafeGet(l: HList, i: Int): Any =
     (l: @unchecked) match {
-      case hd :: tl if i == 0 => hd
-      case hd :: tl => unsafeGet(tl, i-1)
+      case hd :: _ if i == 0 => hd
+      case _ :: tl => unsafeGet(tl, i-1)
     }
 
   def unsafeReversePrepend(l: HList, m: HList): HList = {
@@ -142,7 +142,7 @@ object HList extends Dynamic {
     @tailrec
     def loop(l: HList, i: Int, revPrefix: HList): HList =
       (l: @unchecked) match {
-        case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
+        case _ :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
     loop(l, i, HNil)
@@ -153,7 +153,7 @@ object HList extends Dynamic {
     def loop(l: HList, i: Int, revPrefix: HList): HList =
       l match {
         case HNil => unsafeReversePrepend(revPrefix, e :: HNil)
-        case hd :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
+        case _ :: tl if i == 0 => unsafeReversePrepend(revPrefix, e :: tl)
         case hd :: tl => loop(tl, i-1, hd :: revPrefix)
       }
     loop(l, i, HNil)
@@ -284,17 +284,20 @@ trait SingletonProductArgs extends Dynamic {
 class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with NatMacroDefns {
   import c.universe._
 
-  def forwardImpl(method: Tree)(args: Tree*): Tree = forward(method, args, false)
+  def forwardImpl(method: Tree)(args: Tree*): Tree =
+    forward(method, args, narrow = false)
 
-  def forwardNatImpl(method: Tree)(args: Tree*): Tree = forwardNat(method, args)
+  def forwardNatImpl(method: Tree)(args: Tree*): Tree =
+    forwardNat(method, args)
 
-  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree = forward(method, args, true)
+  def forwardSingletonImpl(method: Tree)(args: Tree*): Tree =
+    forward(method, args, narrow = true)
 
   def forwardNat(method: Tree, args: Seq[Tree]): Tree = {
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = (method: @unchecked)
+    val q"${methodString: String}" = method: @unchecked
     val methodName = TermName(methodString+"NatProduct")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -302,12 +305,12 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
 
     val meth = lhsTpe.member(methodName).asMethod
 
-    if (!meth.paramLists.isEmpty && (meth.paramLists(0) forall (_.isImplicit))) {
+    if (meth.paramLists.nonEmpty && meth.paramLists.head.forall(_.isImplicit)) {
       val typeParamsTree = mkProductNatTypeParamsImpl(args)
-      q""" $lhs.$methodName[${typeParamsTree}] """
+      q"$lhs.$methodName[$typeParamsTree]"
     } else {
       val argsTree = mkProductNatImpl(args)
-      q""" $lhs.$methodName($argsTree) """
+      q"$lhs.$methodName($argsTree)"
     }
   }
 
@@ -315,7 +318,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree 
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = (method: @unchecked)
+    val q"${methodString: String}" = method: @unchecked
     val methodName = TermName(methodString+"Product")
 
     if(lhsTpe.member(methodName) == NoSymbol)
@@ -330,7 +333,7 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
     val lhs = c.prefix.tree
     val lhsTpe = lhs.tpe
 
-    val q"${methodString: String}" = (method: @unchecked)
+    val q"${methodString: String}" = method: @unchecked
 
     if (!methodString.matches(".*Product$"))
       c.abort(c.enclosingPosition, s"missing method '$methodString'")
@@ -378,6 +381,6 @@ class ProductMacros(val c: whitebox.Context) extends SingletonTypeUtils with Nat
       .foldLeft((List[List[Int]](), 0))((acc, e) =>
         (acc._1 :+ (acc._2 to (acc._2 + (e.size - 1))).toList, acc._2 + e.size))._1
 
-    slices.map(_.map(i => q"${product}.apply(${i})"))
+    slices.map(_.map(i => q"$product.apply($i)"))
   }
 }

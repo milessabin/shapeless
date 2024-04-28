@@ -16,10 +16,12 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
-
-import lens._, nat._, record._, syntax.singleton._, tag.@@, test._, testutil._
+import org.junit.Test
+import shapeless.lens._
+import shapeless.nat._
+import shapeless.test._
+import shapeless.testutil._
 
 package lensTestDataTypes {
   sealed trait Sum1
@@ -49,7 +51,7 @@ package lensTestDataTypes {
   }
 }
 
-import lensTestDataTypes._
+import shapeless.lensTestDataTypes._
 
 trait LensTests {
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
@@ -208,7 +210,8 @@ trait LensTests {
 
   @Test
   def testRecords: Unit = {
-    import labelled.FieldType, syntax.singleton._
+    import labelled.FieldType
+    import syntax.singleton._
 
     val (fooT, barT) = (Witness("foo"), Witness("bar"))
     type LT = (fooT.T FieldType Int) :: (barT.T FieldType String) :: HNil
@@ -716,13 +719,13 @@ class OpticTests {
     val lrv = tOptic.left.right.value
     val rv = tOptic.right.value
 
-    val llv(x) = t1
+    val llv(x) = t1: @unchecked
     assertTypedEquals[Int](1, x)
 
-    val lrv(y) = t1
+    val lrv(y) = t1: @unchecked
     assertTypedEquals[Int](2, y)
 
-    val rv(z) = t1
+    val rv(z) = t1: @unchecked
     assertTypedEquals[Int](3, z)
 
     val x2 = t2 match {
@@ -744,7 +747,7 @@ class OpticTests {
     assertTypedEquals[Option[Int]](None, z2)
 
     val llvrv = llv ~ lrv ~ rv
-    val llvrv(x3, y3, z3) = t1
+    val llvrv(x3, y3, z3) = t1: @unchecked
     assertTypedEquals[Int](1, x3)
     assertTypedEquals[Int](2, y3)
     assertTypedEquals[Int](3, z3)
@@ -764,18 +767,18 @@ class OpticTests {
     val rrrrlv = g.right.right.right.right.left.value
     val looped = rrrlv ~ rrrrlv
 
-    val rll(a, b) = new BNode(BTerm(1), new BNode(BTerm(2), BTerm(3)))
+    val rll(a, b) = new BNode(BTerm(1), new BNode(BTerm(2), BTerm(3))): @unchecked
     assertEquals(BTerm(2), a)
     assertEquals(BTerm(1), b)
 
-    lazy val g0 @ rll(x: BTerm[Int], y: BTerm[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(x, y)))
-    val rrlvrrrv(x1, y1) = g0
+    lazy val g0 @ rll(x: BTerm[Int], y: BTerm[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(x, y))): @unchecked
+    val rrlvrrrv(x1, y1) = g0: @unchecked
     assertEquals(2, x1)
     assertEquals(1, y1)
 
-    lazy val rlg(z: BTerm[Int], g1: BGraph[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(z, g1)))
+    lazy val rlg(z: BTerm[Int], g1: BGraph[Int]) = new BNode(BTerm(1), new BNode(BTerm(2), new BNode(z, g1))): @unchecked
 
-    val looped(x2, y2) = g1
+    val looped(x2, y2) = g1: @unchecked
     assertEquals(1, x2)
     assertEquals(2, y2)
   }

@@ -75,7 +75,7 @@ object LabelledGenericTestsAux {
   class NonCCWithCompanion private (val i: Int, val s: String)
   object NonCCWithCompanion {
     def apply(i: Int, s: String) = new NonCCWithCompanion(i, s)
-    def unapply(s: NonCCWithCompanion): Option[(Int, String)] = Some((s.i, s.s))
+    def unapply(s: NonCCWithCompanion): Some[(Int, String)] = Some((s.i, s.s))
   }
 
   class NonCCLazy(prev0: => NonCCLazy, next0: => NonCCLazy) {

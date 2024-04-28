@@ -16,12 +16,11 @@
 
 package shapeless
 
-import scala.util.Try
-
-import org.junit.Test
 import org.junit.Assert._
-
-import newtype._, tag._, test._, testutil._
+import org.junit.Test
+import shapeless.newtype._
+import shapeless.tag._
+import shapeless.test._
 
 class TypeOperatorTests {
   import TypeOperatorTests._

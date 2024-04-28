@@ -16,19 +16,18 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
-import test._
-import testutil._
+import org.junit.Test
+import shapeless.test._
+import shapeless.testutil._
 
 class HListTests {
   import nat._
-  import poly._
-  import syntax.std.traversable._
-  import syntax.singleton._
-  import syntax.typeable._
   import ops.hlist._
   import ops.record.SelectAll
+  import poly._
+  import syntax.std.traversable._
+  import syntax.typeable._
 
   type SI = Set[Int] :: HNil
   type OI = Option[Int] :: HNil
@@ -1891,7 +1890,7 @@ class HListTests {
 
     val mixed = 23 :: "foo" :: (1 :: 2 :: 3 :: 4 :: 5 :: Nil) :: false :: () :: HNil
     val tmixed = mixed match {
-      case _ #: _ #: (_ :: 2 :: x :: tl1) #: tl2 => (x, tl1, tl2)
+      case _ #: _ #: (_ :: 2 :: x :: tail1) #: tail2 => (x, tail1, tail2)
       case _ => sys.error("Not matched")
     }
     assertTypedEquals[Int](3, tmixed._1)
@@ -2194,7 +2193,6 @@ class HListTests {
 
   @Test
   def testZipWith: Unit = {
-    import poly._
 
     object empty extends Poly2
 
@@ -3116,7 +3114,8 @@ class HListTests {
 
   @Test
   def selectAllTest: Unit ={
-    import shapeless._, record._ , ops.hlist.SelectAll
+    import ops.hlist.SelectAll
+    import record._
 
     //is there any way to do it without runtime overhead?
     class TypeCaptured[T](val value: T) {
@@ -3230,42 +3229,42 @@ class HListTests {
       ) = mapper(range())
 
     // group HNil
-    assertEquals(HNil: HNil, (HNil: HNil) group(2, 1))
+    assertEquals(HNil: HNil, (HNil: HNil).group(2, 1))
     // group a HList of 4 items into 2 (4/2) tuples of 2 items
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 2)
+      range(0, 4).group(2, 2)
     )
 
     // group a HList of 5 items into 2 (5/2) tuples of 2 items
     // the last item does not make a complete partition and is dropped.
     assertEquals(
       (0, 1) ::(2, 3) :: HNil,
-      range(0, 5) group(2, 2)
+      range(0, 5).group(2, 2)
     )
 
     // uses the step to select the starting point for each partition
     assertEquals(
       (0, 1) ::(4, 5) :: HNil,
-      range(0, 6) group(2, 4)
+      range(0, 6).group(2, 4)
     )
 
     // if the step is smaller than the partition size, items will be reused
     assertEquals(
       (0, 1) ::(1, 2) ::(2, 3) :: HNil,
-      range(0, 4) group(2, 1)
+      range(0, 4).group(2, 1)
     )
 
     // when there are not enough items to fill the last partition, a pad can be supplied.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: HNil)
     )
 
     // but only as many pad elements are used as necessary to fill the final partition.
     assertEquals(
       (0, 1) ::(2, 3) ::(4, 'a') :: HNil,
-      range(0, 5) group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
+      range(0, 5).group(2, 2, 'a' :: 'b' :: 'c' :: HNil)
     )
 
   }

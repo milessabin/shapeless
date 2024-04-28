@@ -395,10 +395,10 @@ object Boilerplate {
         -   def build = new Poly$arity {
         -     val functions = self.functions
         -
-        -     implicit def allCases[${`A..N`}, Out](implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]) = {
-        -       val func: (${`A..N`}) => Out = tL(functions)
-        -       at(func)
-        -     }
+        -     implicit def allCases[${`A..N`}, Out](
+        -       implicit tL: Function${arity}TypeAt[${`A..N`}, Out, HL]
+        -     ): this.Case.Aux[${`A..N`}, Out] =
+        -       this.at(tL(functions))
         -   }
         - }
         -

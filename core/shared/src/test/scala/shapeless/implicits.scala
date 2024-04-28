@@ -16,11 +16,10 @@
 
 package shapeless
 
-import org.junit.Test
 import org.junit.Assert._
-
-import labelled.FieldType
-import test.illTyped
+import org.junit.Test
+import shapeless.labelled.FieldType
+import shapeless.test.illTyped
 
 object CachedTestDefns {
   trait CachedTC[T]
@@ -84,7 +83,6 @@ object CachedTestDefns {
 
 class CachedTest {
   import CachedTestDefns._
-  import CachedTest._
 
   @Test
   def testBasics: Unit = {

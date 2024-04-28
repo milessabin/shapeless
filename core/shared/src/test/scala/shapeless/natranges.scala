@@ -16,7 +16,6 @@
 
 package shapeless
 
-import org.junit.Assert._
 import org.junit.Test
 
 class natranges {
@@ -41,7 +40,7 @@ class natranges {
   @Test
   def smallest_closed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Inclusive
     assertTypedEquals[
       _1 :: HNil
     ](
@@ -64,7 +63,7 @@ class natranges {
     @Test
   def smallest_open_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Exclusive
     assertTypedEquals[
       HNil
     ](
@@ -87,7 +86,7 @@ class natranges {
   @Test
   def smallest_leftOpenRightClosed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _1 :: HNil
     ](
@@ -110,7 +109,7 @@ class natranges {
   @Test
   def smallest_leftClosedRightOpen_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _1 :: HNil
     ](
@@ -136,7 +135,7 @@ class natranges {
   @Test
   def larger_closed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Inclusive
     assertTypedEquals[
       _1 :: _2 :: _3 :: _4 :: HNil
     ](
@@ -159,7 +158,7 @@ class natranges {
   @Test
   def larger_open_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Exclusive
     assertTypedEquals[
       _2 :: _3 :: HNil
     ](
@@ -182,7 +181,7 @@ class natranges {
   @Test
   def larger_leftClosedRightOpen_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _1 :: _2 :: _3 :: HNil
     ](
@@ -205,7 +204,7 @@ class natranges {
   @Test
   def larger_leftOpenRightClosed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _2 :: _3 :: _4 :: HNil
     ](
@@ -231,7 +230,7 @@ class natranges {
   @Test
   def reversed_closed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Inclusive
     assertTypedEquals[
       _4 :: _3 :: _2 :: _1 :: HNil
     ](
@@ -254,7 +253,7 @@ class natranges {
   @Test
   def reversed_open_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.Exclusive
     assertTypedEquals[
       _3 :: _2 :: HNil
     ](
@@ -277,7 +276,7 @@ class natranges {
   @Test
   def reversed_leftClosedRightOpen_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _4 :: _3 :: _2 :: HNil
     ](
@@ -300,7 +299,7 @@ class natranges {
   @Test
   def reversed_leftOpenRightClosed_range_word_syntax = {
     import ops.nat.BoundedRange
-    import BoundedRange.{Inclusive, Exclusive}
+    import BoundedRange.{Exclusive, Inclusive}
     assertTypedEquals[
       _3 :: _2 :: _1 :: HNil
     ](

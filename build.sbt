@@ -1,11 +1,11 @@
-import com.typesafe.sbt.SbtGit.GitKeys._
-import com.typesafe.tools.mima.core._
+import com.typesafe.sbt.SbtGit.GitKeys.*
+import com.typesafe.tools.mima.core.*
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
 val Scala211 = "2.11.12"
-val Scala212 = "2.12.15"
-val Scala213 = "2.13.8"
+val Scala212 = "2.12.17"
+val Scala213 = "2.13.11"
 
 commonSettings
 noPublishSettings
@@ -20,7 +20,7 @@ ThisBuild / versionScheme := Some("pvp")
 // GHA configuration
 
 ThisBuild / githubWorkflowBuildPreamble := Seq(WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev")))
-ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuildMatrixAdditions += "platform" -> List("jvm", "js", "native")
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
@@ -71,15 +71,29 @@ val scalacOptionsAll = Seq(
   "-unchecked",
 )
 
-val scalacOptions212 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
-  "-Ywarn-unused:-implicits"
+val scalacCompileOptions = Map(
+  "2.12" -> Seq(
+    "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_",
+    "-Ywarn-unused:-implicits",
+  ),
+  "2.13" -> Seq(
+    "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
+    "-Wunused:-implicits",
+    "-Wconf:msg=shadowing a nested class of a parent is deprecated:s",
+  ),
 )
 
-val scalacOptions213 = Seq(
-  "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,-byname-implicit,_",
-  "-Ywarn-unused:-implicits",
-  "-Wconf:msg=shadowing a nested class of a parent is deprecated:s"
+val scalacTestOptions = Map(
+  "2.12" -> Seq(
+    "-Xlint:-infer-any",
+    "-Ywarn-unused:-locals,-privates",
+  ),
+  "2.13" -> Seq(
+    "-Xlint:-infer-any",
+    "-Wunused:-locals,-privates",
+    // Symbol.unapply returns Option
+    "-Wconf:cat=other-implicit-type:s,cat=other-match-analysis&src=*/lazy.scala:s",
+  ),
 )
 
 lazy val commonSettings = crossVersionSharedSources ++ Seq(
@@ -87,11 +101,8 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
   scalacOptions := scalacOptionsAll,
-  Compile / compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, 12)) => scalacOptions212
-    case Some((2, 13)) => scalacOptions213
-    case _ => Nil
-  }),
+  Compile / scalacOptions ++= scalacCompileOptions.getOrElse(scalaBinaryVersion.value, Nil),
+  Test / scalacOptions ++= scalacTestOptions.getOrElse(scalaBinaryVersion.value, Nil),
   Compile / console / scalacOptions -= "-Xfatal-warnings",
   Test / console / scalacOptions -= "-Xfatal-warnings",
   console / initialCommands := """import shapeless._""",
@@ -182,17 +193,18 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.1.1")
+  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.2.0")
   .settings(runAllIn(Compile))
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .settings(scalacOptions ++= scalacTestOptions.getOrElse(scalaBinaryVersion.value, Nil))
   .nativeSettings(Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")))
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
 lazy val examplesNative = examples.native
 
-lazy val crossVersionSharedSources: Seq[Setting[_]] =
+lazy val crossVersionSharedSources: Seq[Setting[?]] =
   Seq(Compile, Test).map { sc =>
     (sc / unmanagedSourceDirectories) ++= {
       (sc / unmanagedSourceDirectories).value.flatMap { dir: File =>
