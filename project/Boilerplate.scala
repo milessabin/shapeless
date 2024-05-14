@@ -490,7 +490,7 @@ object Boilerplate {
       val `a:T..n:T` = synVals.map(_ + ":T").mkString(", ")
       val commonImplicits = "factory: Factory[T, CC[T]], ev: AdditiveCollection[CC[T]]"
       val implicits = scalaBinaryVersion match {
-        case "2.11" | "2.12" => commonImplicits
+        case "2.12" => commonImplicits
         case _ => s"dis: DefaultToIndexedSeq[CC], $commonImplicits"
       }
 

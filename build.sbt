@@ -3,9 +3,8 @@ import com.typesafe.tools.mima.core.*
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
-val Scala211 = "2.11.12"
-val Scala212 = "2.12.17"
-val Scala213 = "2.13.11"
+val Scala212 = "2.12.19"
+val Scala213 = "2.13.14"
 
 commonSettings
 noPublishSettings
@@ -13,7 +12,7 @@ crossScalaVersions := Nil
 
 ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala213
-ThisBuild / crossScalaVersions := Seq(Scala211, Scala212, Scala213)
+ThisBuild / crossScalaVersions := Seq(Scala212, Scala213)
 ThisBuild / mimaFailOnNoPrevious := false
 ThisBuild / versionScheme := Some("pvp")
 
@@ -193,7 +192,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .configureCross(configureJUnit)
   .dependsOn(core)
   .settings(moduleName := "examples")
-  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.2.0")
+  .settings(libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.4.0")
   .settings(runAllIn(Compile))
   .settings(commonSettings)
   .settings(noPublishSettings)
@@ -248,17 +247,6 @@ lazy val mimaSettings = Seq(
     ProblemFilters.exclude[DirectMissingMethodProblem]("shapeless.package.macrocompat"),
     // inaccessible interface change
     ProblemFilters.exclude[MissingClassProblem]("shapeless.CaseClassMacros$PatchedContext$2$PatchedLookupResult"),
-    // methods added to traits (not binary compatible on Scala 2.11)
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.LowPriorityUnaryTCConstraint.hnilUnaryTC"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.SingletonTypeUtils.isSymbolLiteral"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.CaseClassMacros.mkAttributedRef"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.CaseClassMacros.numNonCaseParamLists"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.ReprTypes.objectRef"),
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("shapeless.IsCons1Macros.mkPackUnpack"),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTpt"),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.CaseClassMacros.varargTC"),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTpt"),
-    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("shapeless.IsCons1Macros.varargTC")
   )
 )
 
