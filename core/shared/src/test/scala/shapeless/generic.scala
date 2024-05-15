@@ -177,6 +177,16 @@ package GenericTestsAux {
     @generateGeneric
     object A
   }
+
+  case class WrongApplySignature private(value: String)
+  object WrongApplySignature {
+    def apply(v: String): Either[String, WrongApplySignature] = scala.Left("No ways")
+  }
+
+  case class CCWithCustomUnapply(x: Int, y: String)
+  object CCWithCustomUnapply {
+    def unapply(cc: CCWithCustomUnapply): Option[(Int, String, String)] = None
+  }
 }
 
 class GenericTests {
@@ -877,6 +887,19 @@ class GenericTests {
     assertEquals(Inr(Inl(Pub(123))), gen.to(Pub(123)))
     assertEquals(Priv("secret"), gen.from(Inl(Priv("secret"))))
     assertEquals(Inl(Priv("secret")), gen.to(Priv("secret")))
+  }
+
+  @Test
+  def testCCWithCustomUnapply(): Unit = {
+    illTyped("Generic[WrongApplySignature]")
+    val cc = CCWithCustomUnapply(23, "foo")
+    val gen = Generic[CCWithCustomUnapply]
+    val r = gen.to(cc)
+    val f = gen.from(13 :: "bar" :: HNil)
+    assertTypedEquals[Int :: String :: HNil](23 :: "foo" :: HNil, r)
+    typed[CCWithCustomUnapply](f)
+    assertEquals(13, f.x)
+    assertEquals("bar", f.y)
   }
 }
 
