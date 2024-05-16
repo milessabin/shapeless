@@ -60,7 +60,7 @@ Moors and Odersky, [Type Classes as Object and Implicits][tcoi] is useful backgr
 
 ## Participation
 
-The shapeless project supports the [Scala Code of Conduct][codeofconduct] and wants all of its
+The shapeless project supports the [Typelevel Code of Conduct][codeofconduct] and wants all of its
 channels (mailing list, Gitter, IRC, github, etc.) to be welcoming environments for everyone.
 
 Whilst shapeless is a somewhat "advanced" Scala library, it is a lot more approachable than many people think.
@@ -68,7 +68,7 @@ Contributors are usually available to field questions, give advice and discuss i
 and for people wanting to take their first steps at contributing we have a selection of open issues flagged up as
 being [good candidates to take on][goodfirstissue]. No contribution is too small, and guidance is always available.
 
-[codeofconduct]: https://www.scala-lang.org/conduct/
+[codeofconduct]: https://typelevel.org/code-of-conduct.html
 [goodfirstissue]: https://github.com/milessabin/shapeless/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 ## Using shapeless
