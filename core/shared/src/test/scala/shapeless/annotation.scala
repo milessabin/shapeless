@@ -16,9 +16,11 @@
 
 package shapeless
 
-import scala.annotation.{ Annotation => saAnnotation }
+import org.junit.Assert._
 import org.junit.Test
 import shapeless.test.{illTyped, typed}
+
+import scala.annotation.{Annotation => saAnnotation}
 
 object AnnotationTestsDefinitions {
 
@@ -73,6 +75,10 @@ object AnnotationTestsDefinitions {
   type PosInt = Int @First
   type Email = String @Third('c')
   case class User(age: PosInt, email: Email)
+
+  case class WithSecondaryCtor(i: Int) {
+    def this() = this(0)
+  }
 }
 
 class AnnotationTests {
@@ -233,5 +239,11 @@ class AnnotationTests {
     val user = AllTypeAnnotations[User].apply() // type refs
     typed[(First :: HNil) :: (Third :: HNil) :: HNil](user)
     assert(user == (First() :: HNil) :: (Third('c') :: HNil) :: HNil)
+  }
+
+  @Test
+  def annotationsWithSecondaryConstructor(): Unit = {
+    val annotations = Annotations[First, WithSecondaryCtor].apply()
+    assertEquals(annotations, None :: HNil)
   }
 }

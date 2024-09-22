@@ -378,11 +378,10 @@ class AnnotationMacros(val c: whitebox.Context) extends CaseClassMacros {
 
   def getAnnotationTreeOptions(tpe: Type, typeAnnotation: Boolean): List[List[(Type, Tree)]] = {
     if (isProduct(tpe)) {
-      val constructorSyms = tpe
-        .member(termNames.CONSTRUCTOR)
-        .asMethod
-        .paramLists
-        .flatten
+      lazy val constructorSyms = tpe
+        .typeSymbol.asClass
+        .primaryConstructor.asMethod
+        .paramLists.iterator.flatten
         .map(sym => nameAsString(sym.name) -> sym)
         .toMap
 
