@@ -91,6 +91,8 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   )
 )
 
+lazy val javaModuleName = settingKey[String]("Java module name")
+
 def configureJUnit(crossProject: CrossProject) = crossProject
   .jvmSettings(libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test")
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
@@ -102,6 +104,7 @@ lazy val plugin = project.in(file("plugin"))
   .settings(
     name := "shapeless-plugin",
     moduleName := "shapeless-plugin",
+    javaModuleName := "shapeless.plugin",
     sbtPlugin := true,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala213, Scala212)
@@ -134,7 +137,10 @@ lazy val coreTestMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .configureCross(configureJUnit)
-  .settings(moduleName := "shapeless")
+  .settings(
+    moduleName := "shapeless",
+    javaModuleName := "shapeless.core"
+  )
   .settings(commonSettings)
   .settings(publishSettings)
   .configureCross(buildInfoSetup)
@@ -154,7 +160,10 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
-  .settings(moduleName := "scratch")
+  .settings(
+    moduleName := "scratch",
+    javaModuleName := "shapeless.scratch"
+  )
   .settings(commonSettings)
   .settings(noPublishSettings)
 
@@ -210,7 +219,8 @@ lazy val publishSettings = Seq(
   developers := List(
     Developer("milessabin", "Miles Sabin", "", url("https://milessabin.com/blog")),
     Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
-  )
+  ),
+  packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> javaModuleName.value),
 )
 
 lazy val noPublishSettings =
