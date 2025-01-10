@@ -112,6 +112,18 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   )
 )
 
+lazy val jsSourceMapSettings = Def.settings(
+  scalacOptions += {
+    val tagOrHash =
+      if (!isSnapshot.value) s"v${version.value}"
+      else git.gitHeadCommit.value.getOrElse("main")
+    val local = (LocalRootProject / baseDirectory).value.toURI.toString
+    val remote = s"https://raw.githubusercontent.com/milessabin/shapeless/$tagOrHash/"
+    val opt = "-P:scalajs:mapSourceURI"
+    s"$opt:$local->$remote"
+  }
+)
+
 def configureJUnit(crossProject: CrossProject) = crossProject
   .jvmSettings(libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test")
   .jsConfigure(_.enablePlugins(ScalaJSJUnitPlugin))
@@ -161,7 +173,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(macroAnnotationSettings)
 
 lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
+lazy val coreJS = core.js.settings(jsSourceMapSettings)
 lazy val coreNative = core.native
 
 lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
