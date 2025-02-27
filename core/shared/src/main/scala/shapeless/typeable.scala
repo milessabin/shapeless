@@ -364,8 +364,8 @@ class TypeableMacros(val c: blackbox.Context) extends SingletonTypeUtils {
            $v.asInstanceOf[$tpe], ${nameOf(v)}, serializable = ${v.isModule}
         )"""
 
-      case ConstantType(c) =>
-        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c.asInstanceOf[$tpe], ${nameOf(c.tpe)})"""
+      case ConstantType(c0) =>
+        q"""_root_.shapeless.Typeable.valueSingletonTypeable[$tpe]($c0.asInstanceOf[$tpe], ${nameOf(c0.tpe)})"""
 
       // Outer#Inner is unsound in general since Inner can capture type members of Outer.
       case TypeRef(TypeRef(_, outer, args), inner, _) if !outer.isFinal || args.nonEmpty =>
