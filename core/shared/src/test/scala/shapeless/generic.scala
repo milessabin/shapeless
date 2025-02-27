@@ -143,7 +143,12 @@ package GenericTestsAux {
   }
 
   case class CCOrdered[A: Ordering](value: A)
-  class CCLikeOrdered[A: Ordering](val value: A)
+  class CCLikeOrdered[A: Ordering](val value: A) {
+    override def equals(that: Any): Boolean = that match {
+      case that: CCLikeOrdered[_] => this.value == that.value
+      case _ => false
+    }
+  }
 
   case class CCDegen(i: Int)()
   class CCLikeDegen(val i: Int)()
@@ -163,6 +168,20 @@ package GenericTestsAux {
 
     @generateGeneric
     object A
+  }
+
+  sealed trait PubOrPriv
+  final case class Pub(x: Int) extends PubOrPriv
+  final class Priv private(val y: String) extends PubOrPriv {
+    override def equals(that: Any): Boolean = that match {
+      case that: Priv => this.y == that.y
+      case _ => false
+    }
+  }
+
+  object Priv {
+    def apply(y: String): Priv = new Priv(y)
+    def unapply(p: Priv): Some[String] = Some(p.y)
   }
 }
 
@@ -827,13 +846,15 @@ class GenericTests {
   @Test
   def testGenericImplicitParams: Unit = {
     type Repr = Int :: HNil
-    val gen = Generic[CCOrdered[Int]]
-    val cc = CCOrdered(42)
+    val gen1 = Generic[CCOrdered[Int]]
+    val gen2 = Generic[CCLikeOrdered[Int]]
+    val cc1 = CCOrdered(42)
+    val cc2 = new CCLikeOrdered(42)
     val rep = 42 :: HNil
-
-    assertTypedEquals[CCOrdered[Int]](gen.from(rep), cc)
-    assertTypedEquals[Repr](gen.to(cc), rep)
-    illTyped("Generic[CCLikeOrdered[Int]]")
+    assertTypedEquals[CCOrdered[Int]](gen1.from(rep), cc1)
+    assertTypedEquals[CCLikeOrdered[Int]](gen2.from(rep), cc2)
+    assertTypedEquals[Repr](gen1.to(cc1), rep)
+    assertTypedEquals[Repr](gen2.to(cc2), rep)
   }
 
   @Test
@@ -853,6 +874,7 @@ class GenericTests {
     illTyped("Generic[Squared]")
   }
 
+  @Test
   def testCoproductWithFreeTypeParams: Unit = {
     type Repr[A] = ConstTap[A] :+: InTap[A, _] :+: OutTap[A, _] :+: PipeTap[A, _] :+: CNil
     val gen = Generic[Tap[String]]
@@ -873,6 +895,15 @@ class GenericTests {
       assertEquals(expected, gen.from(actual))
       assertEquals(gen.to(expected), actual)
     }
+  }
+
+  @Test
+  def testPublicAndPrivateCoproductChildren: Unit = {
+    val gen = Generic[PubOrPriv]
+    assertEquals(Pub(123), gen.from(Inr(Inl(Pub(123)))))
+    assertEquals(Inr(Inl(Pub(123))), gen.to(Pub(123)))
+    assertEquals(Priv("secret"), gen.from(Inl(Priv("secret"))))
+    assertEquals(Inl(Priv("secret")), gen.to(Priv("secret")))
   }
 }
 

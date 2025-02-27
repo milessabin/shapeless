@@ -25,48 +25,42 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.20, 2.13.12]
-        java: [adopt@1.8]
+        java: [temurin@8]
         platform: [jvm, js, native]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v13
+      - name: Setup Java (temurin@8)
+        if: matrix.java == 'temurin@8'
+        uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
+          distribution: temurin
+          java-version: 8
+          cache: sbt
 
-      - name: Cache sbt
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.coursier/cache/v1
-            ~/.cache/coursier/v1
-            ~/AppData/Local/Coursier/Cache/v1
-            ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
 
       - run: sudo apt install clang libunwind-dev libgc-dev libre2-dev
 
       - name: Check that workflows are up to date
-        run: sbt ++${{ matrix.scala }} githubWorkflowCheck
+        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
       - name: Validate JVM
         if: matrix.platform == 'jvm'
-        run: sbt ++${{ matrix.scala }} validateJVM
+        run: sbt '++ ${{ matrix.scala }}' validateJVM
 
       - name: Validate JavaScript
         if: matrix.platform == 'js'
-        run: sbt ++${{ matrix.scala }} validateJS
+        run: sbt '++ ${{ matrix.scala }}' validateJS
 
       - name: Validate Scala Native
         if: matrix.platform == 'native'
-        run: sbt ++${{ matrix.scala }} validateNative
+        run: sbt '++ ${{ matrix.scala }}' validateNative
 
   publish:
     name: Publish Artifacts
@@ -76,30 +70,24 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.12]
-        java: [adopt@1.8]
+        java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java and Scala
-        uses: olafurpg/setup-scala@v13
+      - name: Setup Java (temurin@8)
+        if: matrix.java == 'temurin@8'
+        uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
+          distribution: temurin
+          java-version: 8
+          cache: sbt
 
-      - name: Cache sbt
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.coursier/cache/v1
-            ~/.cache/coursier/v1
-            ~/AppData/Local/Coursier/Cache/v1
-            ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
 
       - uses: olafurpg/setup-gpg@v3
 
@@ -108,4 +96,4 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        run: sbt ++${{ matrix.scala }} ci-release
+        run: sbt ci-release
