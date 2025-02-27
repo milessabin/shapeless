@@ -16,7 +16,7 @@ ThisBuild / mimaFailOnNoPrevious := false
 // GHA configuration
 
 ThisBuild / githubWorkflowBuildPreamble := Seq(WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev")))
-ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "platform" -> List("jvm", "js", "native")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)

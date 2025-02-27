@@ -17,6 +17,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Delete artifacts
+        shell: bash {0}
         run: |
           # Customize those three lines with your repository and credentials:
           REPO=${GITHUB_API_URL}/repos/${{ github.repository }}
@@ -25,7 +26,7 @@ jobs:
           ghapi() { curl --silent --location --user _:$GITHUB_TOKEN "$@"; }
 
           # A temporary file which receives HTTP response headers.
-          TMPFILE=/tmp/tmp.$$
+          TMPFILE=$(mktemp)
 
           # An associative array, key: artifact name, value: number of artifacts of that name.
           declare -A ARTCOUNT
