@@ -3,8 +3,8 @@ import com.typesafe.tools.mima.core.*
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 import sbtcrossproject.CrossProject
 
-val Scala212 = "2.12.19"
-val Scala213 = "2.13.14"
+val Scala212 = "2.12.20"
+val Scala213 = "2.13.16"
 
 commonSettings
 noPublishSettings
