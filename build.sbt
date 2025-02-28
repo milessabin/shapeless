@@ -116,7 +116,7 @@ lazy val plugin = project.in(file("plugin"))
     name := "shapeless-plugin",
     moduleName := "shapeless-plugin",
     javaModuleName := "shapeless.plugin",
-    sbtPlugin := true,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala213, Scala212)
   )
