@@ -136,7 +136,7 @@ class TypeOperatorTests {
 
   @Test
   def testTheErrors: Unit = {
-    illTyped("the.`Ordering[Set[Int]]`.Ops", "No implicit Ordering defined for Set\\[Int].")
+    illTyped("the.`PartialOrdering[Set[Int]]`.Ops", "could not find implicit value for parameter t: PartialOrdering\\[Set\\[Int]]")
   }
 
   @Test
