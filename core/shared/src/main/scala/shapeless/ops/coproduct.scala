@@ -186,7 +186,7 @@ object coproduct {
         case Inr(t) => partition.coproduct(t) match {
           case Inl(h)      => Inl(h)
           case Inr(Inl(t)) => Inr(Inl(Inr(t)))
-          case Inr(Inr(c)) => Inr(Inr(c))
+          case Inr(Inr(c0)) => Inr(Inr(c0))
         }
       }
     }

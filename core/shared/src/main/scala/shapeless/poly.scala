@@ -170,11 +170,11 @@ object PolyDefns extends Cases {
    * Base class for lifting a `Function1` to a `Poly1`
    */
   class ->[T, R](f : T => R) extends Poly1 {
-    implicit def subT[U <: T]: Case.Aux[U, R] = at[U](f)
+    implicit def subT[U <: T]: this.Case.Aux[U, R] = at[U](f)
   }
 
   trait LowPriorityLiftFunction1 extends Poly1 {
-    implicit def default[T]: Case.Aux[T, HNil] = at[T](_ => HNil : HNil)
+    implicit def default[T]: this.Case.Aux[T, HNil] = at[T](_ => HNil : HNil)
   }
 
   /**
@@ -182,7 +182,7 @@ object PolyDefns extends Cases {
    * its only element if the argument is in the original functions domain, `HNil` otherwise.
    */
   class >->[T, R](f : T => R) extends LowPriorityLiftFunction1 {
-    implicit def subT[U <: T]: Case.Aux[U, R :: HNil] = at[U](f(_) :: HNil)
+    implicit def subT[U <: T]: this.Case.Aux[U, R :: HNil] = at[U](f(_) :: HNil)
   }
 
   trait LowPriorityLiftU extends Poly {
@@ -210,7 +210,7 @@ object PolyDefns extends Cases {
    */
   trait ~>[F[_], G[_]] extends Poly1 {
     def apply[T](f : F[T]) : G[T]
-    implicit def caseUniv[T]: Case.Aux[F[T], G[T]] = at[F[T]](apply(_))
+    implicit def caseUniv[T]: this.Case.Aux[F[T], G[T]] = at[F[T]](apply(_))
   }
 
   object ~> {

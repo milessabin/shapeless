@@ -2,7 +2,7 @@ import com.github.sbt.git.SbtGit.GitKeys.*
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.20"
-val Scala213 = "2.13.11"
+val Scala213 = "2.13.16"
 
 commonSettings
 noPublishSettings
@@ -16,7 +16,7 @@ ThisBuild / mimaFailOnNoPrevious := false
 // GHA configuration
 
 ThisBuild / githubWorkflowBuildPreamble := Seq(WorkflowStep.Run(List("sudo apt install clang libunwind-dev libgc-dev libre2-dev")))
-ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "platform" -> List("jvm", "js", "native")
 ThisBuild / githubWorkflowArtifactUpload := false
 ThisBuild / githubWorkflowBuildMatrixFailFast := Some(false)
@@ -92,6 +92,17 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
 )
 
 lazy val javaModuleName = settingKey[String]("Java module name")
+lazy val jsSourceMapSettings = Def.settings(
+  scalacOptions += {
+    val tagOrHash =
+      if (!isSnapshot.value) s"v${version.value}"
+      else git.gitHeadCommit.value.getOrElse("main")
+    val local = (LocalRootProject / baseDirectory).value.toURI.toString
+    val remote = s"https://raw.githubusercontent.com/milessabin/shapeless/$tagOrHash/"
+    val opt = "-P:scalajs:mapSourceURI"
+    s"$opt:$local->$remote"
+  }
+)
 
 def configureJUnit(crossProject: CrossProject) = crossProject
   .jvmSettings(libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.3" % "test")
@@ -150,7 +161,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(macroAnnotationSettings)
 
 lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
+lazy val coreJS = core.js.settings(jsSourceMapSettings)
 lazy val coreNative = core.native
 
 lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
