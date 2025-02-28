@@ -112,6 +112,7 @@ lazy val commonSettings = crossVersionSharedSources ++ Seq(
   )
 )
 
+lazy val javaModuleName = settingKey[String]("Java module name")
 lazy val jsSourceMapSettings = Def.settings(
   scalacOptions += {
     val tagOrHash =
@@ -160,7 +161,7 @@ lazy val coreTestMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .configureCross(configureJUnit)
-  .settings(moduleName := "shapeless")
+  .settings(moduleName := "shapeless", javaModuleName := "shapeless")
   .settings(commonSettings)
   .settings(publishSettings)
   .configureCross(buildInfoSetup)
@@ -180,7 +181,7 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
-  .settings(moduleName := "scratch")
+  .settings(moduleName := "scratch", javaModuleName := "shapeless.scratch")
   .settings(commonSettings)
   .settings(noPublishSettings)
 
@@ -238,7 +239,8 @@ lazy val publishSettings = Seq(
   developers := List(
     Developer("milessabin", "Miles Sabin", "", url("http://milessabin.com/blog")),
     Developer("joroKr21", "Georgi Krastev", "joro.kr.21@gmail.com", url("https://twitter.com/Joro_Kr"))
-  )
+  ),
+  packageOptions += Package.ManifestAttributes("Automatic-Module-Name" -> javaModuleName.value),
 )
 
 lazy val noPublishSettings =
