@@ -137,10 +137,7 @@ lazy val coreTestMacros = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Full)
   .configureCross(configureJUnit)
-  .settings(
-    moduleName := "shapeless",
-    javaModuleName := "shapeless.core"
-  )
+  .settings(moduleName := "shapeless", javaModuleName := "shapeless")
   .settings(commonSettings)
   .settings(publishSettings)
   .configureCross(buildInfoSetup)
@@ -160,10 +157,7 @@ lazy val scratch = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .configureCross(configureJUnit)
   .dependsOn(core)
-  .settings(
-    moduleName := "scratch",
-    javaModuleName := "shapeless.scratch"
-  )
+  .settings(moduleName := "scratch", javaModuleName := "shapeless.scratch")
   .settings(commonSettings)
   .settings(noPublishSettings)
 
