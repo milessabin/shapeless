@@ -69,8 +69,7 @@ def scalacOptionsAll(pluginJar: File) = List(
 )
 
 lazy val commonSettings = crossVersionSharedSources ++ Seq(
-  resolvers ++= Resolver.sonatypeOssRepos("releases"),
-  resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
+  resolvers += Resolver.sonatypeCentralSnapshots,
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
   scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
   Compile / compile / scalacOptions ++= Seq(
