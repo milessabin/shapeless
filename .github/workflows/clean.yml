@@ -9,6 +9,9 @@ name: Clean
 
 on: push
 
+permissions:
+  actions: write
+
 jobs:
   delete-artifacts:
     name: Delete Artifacts
