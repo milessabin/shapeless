@@ -20,9 +20,9 @@ import scala.quoted.*
 import scala.util.NotGiven
 
 trait ScalaVersionSpecifics {
-  given [A, B](using NotGiven[A =:= B]): =:!=[A, B] = new =:!=[A, B] {}
+  implicit def notEq[A, B](using NotGiven[A =:= B]): =:!=[A, B] = new =:!=[A, B] {}
 
-  given [A, B](using NotGiven[A <:< B]): <:!<[A, B] = new <:!<[A, B] {}
+  implicit def notSubtype[A, B](using NotGiven[A <:< B]): <:!<[A, B] = new <:!<[A, B] {}
 
   def cachedImplicit[T]: T = ???
 }

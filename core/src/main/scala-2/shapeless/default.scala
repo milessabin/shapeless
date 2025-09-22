@@ -7,6 +7,18 @@ trait DefaultScalaCompat {
   implicit def materialize[T, L <: HList]: Default.Aux[T, L] = macro DefaultMacros.materialize[T, L]
 }
 
+trait DefaultAsRecordScalaCompat {
+  implicit def asRecord[T, Labels <: HList, Options <: HList](
+    implicit
+    default: Default.Aux[T, Options],
+    labelling: Labelling.Aux[T, Labels],
+    helper: Default.AsRecord.Helper[Options, Labels]
+  ): Default.AsRecord.Aux[T, helper.Out] = new Default.AsRecord[T] {
+    type Out = helper.Out
+    def apply(): Out = helper(default())
+  }
+}
+
 class DefaultMacros(val c: whitebox.Context) extends CaseClassMacros {
   import c.universe._
 

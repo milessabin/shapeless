@@ -6,6 +6,19 @@ trait DefaultScalaCompat {
   transparent inline given materialize[T]: Default[T] =  ${DefaultScalaCompat.defaultImpl[T]}
 }
 
+trait DefaultAsRecordScalaCompat {
+  implicit def asRecord[T](
+    implicit
+    default: Default[T],
+    labelling: Labelling[T],
+    helper: Default.AsRecord.Helper[default.Out, labelling.Out]
+  ): Default.AsRecord.Aux[T, helper.Out] = new Default.AsRecord[T] {
+    type Out = helper.Out
+
+    def apply(): Out = helper(default())
+  }
+}
+
 object DefaultScalaCompat {
   def defaultImpl[T: Type](using quotes: Quotes): Expr[Default[T]] = {
     import quotes.reflect.*

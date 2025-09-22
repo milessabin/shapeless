@@ -30,7 +30,7 @@ trait NatScalaCompat {
   }
 
   //Transparent gives better types here
-  transparent inline implicit def apply(inline i: Int): Nat =
+  transparent inline implicit def apply[I <: Int](i: I): Nat =
     if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
     else if i == 0 then (new _0).asInstanceOf[IntToNat[i.type]]
     else (new Succ).asInstanceOf[IntToNat[i.type]]
@@ -39,7 +39,7 @@ trait NatScalaCompat {
 trait NatWithTypeAtPosScalaCompat {
 
   //Transparent gives better types here
-  transparent inline implicit def fromIntList[L <: HList, I <: Int with Singleton, Out](inline i: I)(implicit at: ops.hlist.At.Aux[L, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[L] =
+  transparent inline implicit def fromIntList[L <: HList, I <: Int with Singleton, Out](i: I)(implicit at: ops.hlist.At.Aux[L, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[L] =
     if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
     else {
       type N0 = Nat.IntToNat[I]
@@ -53,7 +53,7 @@ trait NatWithTypeAtPosScalaCompat {
     }
 
   //Transparent gives better types here
-  transparent inline implicit def fromIntTuple[T <: scala.Tuple, I <: Int with Singleton, Out](inline i: I)(implicit at: ops.tuple.At.Aux[T, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[T] =
+  transparent inline implicit def fromIntTuple[T <: scala.Tuple, I <: Int with Singleton, Out](i: I)(implicit at: ops.tuple.At.Aux[T, Nat.IntToNat[i.type], Out]): NatWithTypeAtPos[T] =
     if i < 0 then compiletime.error("Can't convert value less than 0 to nat")
     else {
       type N0 = Nat.IntToNat[I]

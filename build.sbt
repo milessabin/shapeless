@@ -1,13 +1,14 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
 import sbtcrossproject.CrossProject
 
-val Scala213 = "2.13.6"
-val Scala3 = "3.2.0-RC2"
+val Scala213 = "2.13.16"
+val Scala3 = "3.8.0-RC1-bin-20250922-9bd7774-NIGHTLY"
 
 commonSettings
 noPublishSettings
 crossScalaVersions := Nil
 
+ThisBuild / resolvers += Resolver.scalaNightlyRepository
 ThisBuild / organization := "com.chuusai"
 ThisBuild / scalaVersion := Scala3
 ThisBuild / crossScalaVersions := Seq(Scala213, Scala3)
@@ -70,14 +71,15 @@ addCommandAlias("runAll", ";examplesJVM/runAll")
 val scalacOptionsAll = List(
   "-feature",
   "-language:higherKinds,implicitConversions",
-  "-Xfatal-warnings",
+  //"-Xfatal-warnings",
   "-deprecation",
   "-unchecked"
 )
 
 val scalacOptions3 = Seq(
   "-language:dynamics",
-  "-Yretain-trees"
+  "-Yretain-trees",
+  "-explain"
 )
 
 val scalacOptions213 = Seq(

@@ -33,10 +33,10 @@ object SizedExamples extends App {
     row(hdrs) :: rows.map(row(_))
   
   def fullyStatic: Unit = {
-    val hdrs = Sized("Title", "Author")                     // Sized[IndexedSeq[String], _2]
+    val hdrs = Sized[IndexedSeq]("Title", "Author")                     // Sized[IndexedSeq[String], _2]
     val rows = List(                                        // List[Sized[IndexedSeq[String], _2]]
-      Sized("Types and Programming Languages", "Benjamin Pierce"),
-      Sized("The Implementation of Functional Programming Languages", "Simon Peyton-Jones")
+      Sized[IndexedSeq]("Types and Programming Languages", "Benjamin Pierce"),
+      Sized[IndexedSeq]("The Implementation of Functional Programming Languages", "Simon Peyton-Jones")
     )
   
     // hdrs and rows statically known to have the same number of columns
@@ -46,7 +46,7 @@ object SizedExamples extends App {
     println()
     
     // extendedHdrs has the wrong number of columns for rows
-    val extendedHdrs = Sized("Title", "Author", "ISBN")     // Sized[IndexedSeq[Int], _3]
+    val extendedHdrs = Sized[IndexedSeq]("Title", "Author", "ISBN")     // Sized[IndexedSeq[Int], _3]
     //val badFormatted = csv(threeHdrs, rows)               // Does not compile
 
     // Extend the rows to match ...

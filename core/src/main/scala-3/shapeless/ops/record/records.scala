@@ -21,84 +21,189 @@ package record
 import shapeless.labelled.FieldType
 
 import scala.compiletime.ops.int.S
-
-type FindField[R <: HList, K] = FindField0[R, K, 0]
-type FindField0[R <: HList, K, I <: Int] <: (Any, Int) = R match {
-  case FieldType[K, f] :: t => (f, I)
-  case _ :: t => FindField0[t, K, S[I]]
-}
+import scala.util.NotGiven
 
 trait SelectorScalaCompat {
+  trait FindField[R <: HList, K] {
+    type Type
+    type Idx <: Int
 
-  transparent inline given[R <: HList, K](
-    using idx: ValueOf[scala.Tuple.Elem[FindField[R, K], 1]]
-  ): Selector.Aux[R, K, scala.Tuple.Head[FindField[R, K]]] =
-    new UnsafeSelector(idx.value).asInstanceOf[Selector.Aux[R, K, scala.Tuple.Head[FindField[R, K]]]]
-}
+    def idx: Idx
+  }
 
-type IndexOf[L <: HList, E] = IndexOf0[L, E, 0]
-type IndexOf0[L <: HList, E, I <: Int] <: Int = L match {
-  case E :: _ => I
-  case _ :: t => IndexOf0[t, E, S[I]]
-  case HNil => -1
-}
+  object FindField {
+    type Aux[R <: HList, K, T, I] = FindField[R, K] {type Type = T; type Idx = I}
 
-type Append[L <: HList, E] <: HList = L match {
-  case h :: t => h :: Append[t, E]
-  case HNil => E :: HNil
-}
+    given [T <: HList, K, F]: FindField.Aux[FieldType[K, F] :: T, K, F, 0] = new FindField[FieldType[K, F] :: T, K] {
+      type Type = F
+      type Idx = 0
 
-type IfEq[A, B, IfTrue, IfFalse] <: IfTrue | IfFalse = A match {
-  case B => IfTrue
-  case _ => IfFalse
+      def idx: Idx = 0
+    }
+
+    given [T <: HList, F, K, K2](using ev: NotGiven[K =:= K2], rec: FindField[T, K]): FindField.Aux[FieldType[K2, F] :: T, K, rec.Type, S[rec.Idx]] = new FindField[FieldType[K2, F] :: T, K] {
+      type Type = rec.Type
+      type Idx = S[rec.Idx]
+
+      def idx: S[rec.Idx] = (1 + rec.idx).asInstanceOf[S[rec.Idx]]
+    }
+  }
+
+  given[R <: HList, K, T, I <: Int](
+    using find: FindField.Aux[R, K, T, I]
+  ): Selector.Aux[R, K, T] =
+    new UnsafeSelector(find.idx).asInstanceOf[Selector.Aux[R, K, T]]
 }
 
 trait UpdaterScalaCompat {
+  type Append[L <: HList, E] <: HList = L match {
+    case h :: t => h :: Append[t, E]
+    case HNil => E :: HNil
+  }
 
-  transparent inline given [L <: HList, F](
-    using idx: ValueOf[IndexOf[L, F]]
-  ): Updater.Aux[L, F, IfEq[IndexOf[L, F], -1, Append[L, F], L]] =
-    new UnsafeUpdater(idx.value).asInstanceOf[Updater.Aux[L, F, IfEq[IndexOf[L, F], -1, Append[L, F], L]]]
-}
+  type IfEq[A, B, IfTrue, IfFalse] <: IfTrue | IfFalse = A match {
+    case B => IfTrue
+    case _ => IfFalse
+  }
+  
+  trait IndexOf[L <: HList, E] {
+    type Idx <: Int
+    type Found <: Boolean
+    def idx: Idx
+    def found: Found
+  }
+  object IndexOf {
+    type Aux[L <: HList, E, I <: Int, F <: Boolean] = IndexOf[L, E] {type Idx = I; type Found = F}
 
-type ReplaceField[R <: HList, K, B] <: HList = R match {
-  case FieldType[K, _] :: t => FieldType[K, B] :: t
-  case h :: t => h :: ReplaceField[t, K, B]
-  case HNil => HNil
+    given [T <: HList, E]: IndexOf.Aux[E :: T, E, 0, true] = new IndexOf[E :: T, E] {
+      type Idx = 0
+      type Found = true
+      def idx: Idx = 0
+      def found: true = true
+    }
+    
+    given [T <: HList, E, E2](
+      using ev: NotGiven[E =:= E2],
+      rec: IndexOf[T, E]
+    ): IndexOf.Aux[E2 :: T, E, S[rec.Idx], rec.Found] = new IndexOf[E2 :: T, E] {
+      type Idx = S[rec.Idx]
+      type Found = rec.Found
+      def idx: Idx = (rec.idx + 1).asInstanceOf[S[rec.Idx]]
+      def found: rec.Found = rec.found
+    }
+
+    given [E]: IndexOf.Aux[HNil, E, 0, false] = new IndexOf[HNil, E] {
+      type Idx = 0
+      type Found = false
+
+      def idx: Idx = 0
+      def found: false = false
+    }
+  }
+  
+  type IfBool[B <: Boolean, T, F] <: T | F = B match {
+    case true => T
+    case false => F
+  }
+
+  given derive[L <: HList, F, I <: Int, Found <: Boolean](
+    using idx: IndexOf.Aux[L, F, I, Found]
+  ): Updater.Aux[L, F, IfBool[Found, Append[L, F], L]] =
+    new UnsafeUpdater(if idx.found then idx.idx else -1).asInstanceOf[Updater.Aux[L, F, IfBool[Found, Append[L, F], L]]]
 }
 
 trait ModifierScalaCompat {
-  transparent inline given [R <: HList, K, A, B](
-    using ev: scala.Tuple.Head[FindField[R, K]] <:< A,
-    idx: ValueOf[scala.Tuple.Elem[FindField[R, K], 1]]
-  ): Modifier.Aux[R, K, A, B, ReplaceField[R, K, B]] =
-    new UnsafeModifier(idx.value).asInstanceOf[Modifier.Aux[R, K, A, B, ReplaceField[R, K, B]]]
-}
+  trait ReplaceField[R <: HList, K, B] {
+    type Out <: HList
+    type Type
+    type Idx <: Int
 
-type ReversePrependHList[L <: HList, M <: HList] <: HList = L match {
-  case HNil => M
-  case h :: t => ReversePrependHList[t, h :: M]
-}
+    def idx: Idx
+  }
 
-type RemoveField[R <: HList, K] = RemoveField0[R, K, 0, HNil]
-type RemoveField0[R <: HList, K, I <: Int, Acc <: HList] <: (Int, Any, HList) = R match {
-  case FieldType[K, f] :: t => (I, f, ReversePrependHList[Acc, t])
-  case h :: t => RemoveField0[t, K, S[I], h :: Acc]
+  object ReplaceField {
+    type Aux[R <: HList, K, B, O, T, I] = ReplaceField[R, K, B] {type Out = O; type Type = T; type Idx = I}
+
+    given [T <: HList, K, F, B]: ReplaceField.Aux[FieldType[K, F] :: T, K, B, FieldType[K, B] :: T, F, 0] = new ReplaceField[FieldType[K, F] :: T, K, B] {
+      type Out = FieldType[K, B] :: T
+      type Type = F
+      type Idx = 0
+
+      def idx: Idx = 0
+    }
+
+    given [T <: HList, K, F, K2, B](
+      using ev: NotGiven[K =:= K2],
+      rec: ReplaceField[T, K, B]
+    ): ReplaceField.Aux[FieldType[K2, F] :: T, K, B, rec.Out, rec.Type, S[rec.Idx]] = new ReplaceField[FieldType[K2, F] :: T, K, B] {
+      type Out = rec.Out
+      type Type = rec.Type
+      type Idx = S[rec.Idx]
+
+      def idx: S[rec.Idx] = (1 + rec.idx).asInstanceOf[S[rec.Idx]]
+    }
+  }
+
+  given [R <: HList, K, A, B](
+    using replace: ReplaceField[R, K, B],
+    ev: replace.Type <:< A,
+  ): Modifier.Aux[R, K, A, B, replace.Out] =
+    new UnsafeModifier(replace.idx).asInstanceOf[Modifier.Aux[R, K, A, B, replace.Out]]
 }
 
 trait RemoverScalaCompat {
-  transparent inline given [R <: HList, K](
-    using idx: ValueOf[scala.Tuple.Head[RemoveField[R, K]]]
-  ): Remover.Aux[R, K, scala.Tuple.Tail[RemoveField[R, K]]] =
-    new UnsafeRemover(idx.value).asInstanceOf[Remover.Aux[R, K, scala.Tuple.Tail[RemoveField[R, K]]]]
-}
+  trait RemoveField[R <: HList, K] {
+    type Out <: HList
+    type Idx <: Int
 
-type HasNoKey[R <: HList, K] <: Boolean = R match {
-  case FieldType[K, _] :: _ => false
-  case _ :: t => HasNoKey[t, K]
-  case HNil => true
+    def idx: Idx
+  }
+  object RemoveField {
+    type Aux[R <: HList, K, O, I] = RemoveField[R, K] {type Out = O; type Idx = I}
+    given [T <: HList, K, F]: RemoveField.Aux[FieldType[K, F] :: T, K, T, 0] = new RemoveField[FieldType[K, F] :: T, K] {
+      type Out = T
+      type Idx = 0
+
+      def idx: Idx = 0
+    }
+    given [T <: HList, K, F, K2](
+      using ev: NotGiven[K =:= K2],
+      rec: RemoveField[T, K]
+    ): RemoveField.Aux[FieldType[K2, F] :: T, K, FieldType[K2, F] :: rec.Out, S[rec.Idx]] = new RemoveField[FieldType[K2, F] :: T, K] {
+      type Out = FieldType[K2, F] :: rec.Out
+      type Idx = S[rec.Idx]
+
+      def idx: S[rec.Idx] = (1 + rec.idx).asInstanceOf[S[rec.Idx]]
+    }
+  }
+
+  given [R <: HList, K](
+      using remove: RemoveField[R, K]
+  ): Remover.Aux[R, K, remove.Out] =
+    new UnsafeRemover(remove.idx).asInstanceOf[Remover.Aux[R, K, remove.Out]]
 }
 
 trait LacksKeyScalaCompat {
-  transparent inline given [R <: HList, K](using HasNoKey[R, K] =:= true): LacksKey[R, K] = new LacksKey[R, K]
+  trait HasNoKey[R <: HList, K] {
+    type Out <: Boolean
+  }
+  object HasNoKey {
+    type Aux[R <: HList, K, O] = HasNoKey[R, K] {type Out = O}
+    given HasNoKey.Aux[HNil, _, true] = new HasNoKey[HNil, _] {
+      type Out = true
+    }
+
+    given [T <: HList, K, F]: HasNoKey.Aux[FieldType[K, F] :: T, K, false] = new HasNoKey[FieldType[K, F] :: T, K] {
+      type Out = false
+    }
+
+    given [T <: HList, K, F, K2](
+      using ev: NotGiven[K =:= K2],
+      rec: HasNoKey[T, K]
+    ): HasNoKey.Aux[FieldType[K2, F] :: T, K, rec.Out] = new HasNoKey[FieldType[K2, F] :: T, K] {
+      type Out = rec.Out
+    }
+  }
+
+  given [R <: HList, K](using ev1: HasNoKey[R, K], ev2: ev1.Out =:= true): LacksKey[R, K] = new LacksKey[R, K]
 }

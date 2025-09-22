@@ -70,7 +70,7 @@ object Default extends DefaultScalaCompat {
     type Out <: HList
   }
 
-  object AsRecord {
+  object AsRecord extends DefaultAsRecordScalaCompat {
     def apply[T](implicit default: AsRecord[T]): Aux[T, default.Out] = default
 
     type Aux[T, Out0 <: HList] = AsRecord[T] { type Out = Out0 }
@@ -105,16 +105,6 @@ object Default extends DefaultScalaCompat {
           type Out = tailHelper.Out
           def apply(l: None.type :: T): Out = tailHelper(l.tail)
         }
-    }
-
-    implicit def asRecord[T, Labels <: HList, Options <: HList](
-      implicit
-      default: Default.Aux[T, Options],
-      labelling: Labelling.Aux[T, Labels],
-      helper: Helper[Options, Labels]
-    ): Aux[T, helper.Out] = new AsRecord[T] {
-      type Out = helper.Out
-      def apply(): Out = helper(default())
     }
   }
 
