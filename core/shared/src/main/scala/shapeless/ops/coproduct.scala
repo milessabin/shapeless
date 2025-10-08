@@ -19,7 +19,7 @@ package ops
 
 import poly._
 
-import annotation.implicitNotFound
+import annotation.{implicitNotFound, nowarn}
 
 object coproduct {
 
@@ -1281,6 +1281,7 @@ object coproduct {
       def apply[In <: Coproduct](in: In)(implicit ev: LiftAll[F, In]): Aux[F, In, ev.Out] = ev
     }
 
+    @nowarn
     def apply[F[_]]: Curried[F] = new Curried[F]
     def apply[F[_], In <: Coproduct](implicit ev: LiftAll[F, In]): Aux[F, In, ev.Out] = ev
 

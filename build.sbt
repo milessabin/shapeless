@@ -2,7 +2,7 @@ import com.github.sbt.git.SbtGit.GitKeys.*
 import sbtcrossproject.CrossProject
 
 val Scala212 = "2.12.20"
-val Scala213 = "2.13.16"
+val Scala213 = "2.13.17"
 
 commonSettings
 noPublishSettings
@@ -64,22 +64,25 @@ def scalacOptionsAll(pluginJar: File) = List(
   "-language:higherKinds,implicitConversions",
   "-Xfatal-warnings",
   "-Wconf:cat=other-implicit-type:s",
+  "-Ywarn-unused:-implicits,-nowarn",
   s"-Xplugin:${pluginJar.getAbsolutePath}",
   s"-Jdummy=${pluginJar.lastModified}"
+)
+
+val disableLints = List(
+  "adapted-args",
+  "delayedinit-select",
+  "nullary-unit",
+  "package-object-classes",
+  "type-parameter-shadow",
+  "infer-any"
 )
 
 lazy val commonSettings = crossVersionSharedSources ++ Seq(
   resolvers += Resolver.sonatypeCentralSnapshots,
   incOptions := incOptions.value.withLogRecompileOnMacro(false),
   scalacOptions := scalacOptionsAll((plugin / Compile / packageBin).value),
-  Compile / compile / scalacOptions ++= Seq(
-    "-Ywarn-unused:-implicits",
-    "-Xlint:-adapted-args,-delayedinit-select,-nullary-unit,-package-object-classes,-type-parameter-shadow,_"
-  ),
-  Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-    case "2.13" => Seq("-Xlint:-byname-implicit")
-    case _ => Nil
-  }),
+  Compile / compile / scalacOptions += disableLints.iterator.map("-" + _).mkString("-Xlint:", ",", ",_"),
   Compile / console / scalacOptions -= "-Xfatal-warnings",
   Test / console / scalacOptions -= "-Xfatal-warnings",
   console / initialCommands := """import shapeless._""",
