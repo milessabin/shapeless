@@ -17,10 +17,9 @@
 package shapeless
 package ops
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, nowarn}
 import scala.collection._
 import scala.collection.mutable
-
 import poly._
 
 object hlist {
@@ -715,9 +714,11 @@ object hlist {
   /**
    * Type aliases and constructors provided for backward compatibility
    **/
+  @nowarn
   type ToArray[L <: HList, Lub] = ToTraversable.Aux[L, Array, Lub]
   def ToArray[L <: HList, Lub](implicit toArray: ToArray[L, Lub]) = toArray
 
+  @nowarn
   type ToList[L <: HList, Lub] = ToTraversable.Aux[L, List, Lub]
   def ToList[L <: HList, Lub](implicit toList: ToList[L, Lub]) = toList
 
@@ -2914,6 +2915,7 @@ object hlist {
       def apply[In <: HList](in: In)(implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
     }
 
+    @nowarn
     def apply[F[_]]: Curried[F] = new Curried[F]
     def apply[F[_], In <: HList](implicit lift: LiftAll[F, In]): Aux[F, In, lift.Out] = lift
 

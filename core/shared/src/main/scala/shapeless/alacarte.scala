@@ -169,17 +169,19 @@ trait DefaultCaseClassDefns extends
       pgen0: Generic.Aux[P0, Repr0],
       typ0: Typeable[C],
       tag0: ClassTag[C]
-    ) =
-      new CaseClassOps {
-        type Repr = Repr0
-        type LRepr = LRepr0
-        type P = P0
-        val gen = gen0
-        val lgen = lgen0
-        val pgen = pgen0
-        val typ = typ0
-        val tag = tag0
-        val productPrefix = tag0.runtimeClass.getName.split("(\\.|\\$)").last
-        val productArity = toInt()
-      }
+    ): CaseClassOps {
+      type Repr = Repr0
+      type LRepr = LRepr0
+      type P = P0
+    } = new CaseClassOps {
+      type Repr = Repr0
+      type LRepr = LRepr0
+      type P = P0
+      val gen = gen0
+      val lgen = lgen0
+      val pgen = pgen0
+      val typ = typ0
+      val productPrefix = tag0.runtimeClass.getName.split("([.$])").last
+      val productArity = toInt()
+    }
 }

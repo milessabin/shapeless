@@ -165,7 +165,11 @@ trait CachedCaseClassDefns extends
       pgen0: Generic.Aux[P0, Repr0],
       typ0: Typeable[C],
       tag0: ClassTag[C]
-    ) = {
+    ): CaseClassOps {
+      type Repr = Repr0
+      type LRepr = LRepr0
+      type P = P0
+    } = {
       val fqn = tag0.runtimeClass.getName
       new CaseClassOps {
         type Repr = Repr0
@@ -175,9 +179,8 @@ trait CachedCaseClassDefns extends
         val lgen = lgen0
         val pgen = pgen0
         val typ = typ0
-        val tag = tag0
         val logger = Logger.getLogger(fqn)
-        val productPrefix = fqn.split("(\\.|\\$)").last
+        val productPrefix = fqn.split("([.$])").last
         val productArity = toInt()
       }
   }
