@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -48,19 +48,19 @@ jobs:
       - run: sudo apt install clang libunwind-dev libgc-dev libre2-dev
 
       - name: Check that workflows are up to date
-        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
+        run: sbt '++ ${{ matrix.scala }}; githubWorkflowCheck'
 
       - name: Validate JVM
         if: matrix.platform == 'jvm'
-        run: sbt '++ ${{ matrix.scala }}' validateJVM
+        run: sbt '++ ${{ matrix.scala }}; validateJVM'
 
       - name: Validate JavaScript
         if: matrix.platform == 'js'
-        run: sbt '++ ${{ matrix.scala }}' validateJS
+        run: sbt '++ ${{ matrix.scala }}; validateJS'
 
       - name: Validate Scala Native
         if: matrix.platform == 'native'
-        run: sbt '++ ${{ matrix.scala }}' validateNative
+        run: sbt '++ ${{ matrix.scala }}; validateNative'
 
   publish:
     name: Publish Artifacts
@@ -74,7 +74,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
