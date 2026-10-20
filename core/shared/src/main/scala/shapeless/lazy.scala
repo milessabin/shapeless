@@ -106,18 +106,13 @@ import scala.annotation.implicitNotFound
  *
  */
 @implicitNotFound("could not find Lazy implicit value of type ${T}")
-trait Lazy[+T] extends Serializable {
-  val value: T
-
+trait Lazy[+T] extends LazyValue[T] with Serializable {
   def map[U](f: T => U): Lazy[U] = Lazy { f(value) }
   def flatMap[U](f: T => Lazy[U]): Lazy[U] = Lazy { f(value).value }
 }
 
 object Lazy extends LazyInstances {
-  implicit def apply[T](t: => T): Lazy[T] =
-    new Lazy[T] {
-      lazy val value: T = t
-    }
+  implicit def apply[T](t: => T): Lazy[T] = LazyValue.mkLazy(t)
 
   def unapply[T](lt: Lazy[T]): Option[T] = Some(lt.value)
 

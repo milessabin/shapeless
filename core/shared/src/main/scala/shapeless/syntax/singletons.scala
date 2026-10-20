@@ -17,9 +17,7 @@
 package shapeless
 package syntax
 
-trait SingletonOps {
-  import labelled._
-
+trait SingletonOps extends SingletonOpsScalaCompat {
   type T
 
   /**
@@ -31,11 +29,6 @@ trait SingletonOps {
    * Narrows this value to its singleton type.
    */
   def narrow: T {} = witness.value
-
-  /**
-   * Returns the provided value tagged with the singleton type of this value as its key in a record-like structure.
-   */
-  def ->>[V](v: V): FieldType[T, V] = field[T](v)
 }
 
 object SingletonOps {

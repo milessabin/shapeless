@@ -186,6 +186,23 @@ class CachedTest {
     val lth: FieldType[Witness.`"s"`.T, String] = lgen.to(q).tail.head
   }
 
+  // Searched for before the definitions in Quux3 are typed
+  object Quux3Use {
+    val gen = Generic[Quux3]
+  }
+
+  case class Quux3(i: Int, s: String)
+  object Quux3 {
+    val gen0 = cachedImplicit[Generic[Quux3]]
+    implicit val gen: Generic.Aux[Quux3, gen0.Repr] = gen0
+  }
+
+  @Test
+  def testRefinedUsedEarlier: Unit = {
+    assert(Quux3Use.gen eq Quux3.gen0)
+    assert(Generic[Quux3] eq Quux3.gen0)
+  }
+
   @Test
   def testLazyRecursion: Unit = {
     assert(Wibble.eqw != null)

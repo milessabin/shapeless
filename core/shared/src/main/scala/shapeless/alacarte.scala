@@ -134,28 +134,24 @@ trait ToStringFacet extends ProductFacet {
   }
 }
 
-trait DefaultCaseClassDefns extends
-  ApplyUnapplyFacet with
-  ProductFacet with
-  PolymorphicEqualityFacet with
-  CopyFacet with
-  ToStringFacet {
+trait DefaultCaseClassDefns extends ApplyUnapplyFacet
+  with ProductFacet
+  with PolymorphicEqualityFacet
+  with CopyFacet
+  with ToStringFacet {
 
-  trait CaseClassOps extends
-    ApplyUnapplyOps with
-    ProductOps with
-    PolymorphicEqualityOps with
-    CopyOps with
-    ToStringOps
+  trait CaseClassOps extends ApplyUnapplyOps
+    with ProductOps
+    with PolymorphicEqualityOps
+    with CopyOps
+    with ToStringOps
 
-  trait CaseClassCompanion extends
-    ApplyUnapplyCompanion
+  trait CaseClassCompanion extends ApplyUnapplyCompanion
 
-  trait CaseClass extends
-    ProductMethods with
-    PolymorphicEqualityMethods with
-    CopyMethods with
-    ToStringMethods { self: C => }
+  trait CaseClass extends ProductMethods
+    with PolymorphicEqualityMethods
+    with CopyMethods
+    with ToStringMethods { self: C => }
 
   val ops: CaseClassOps
 

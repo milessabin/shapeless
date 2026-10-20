@@ -594,7 +594,7 @@ object hlist {
     }
   }
 
-  object ToTraversable {
+  object ToTraversable extends ToTraversableScalaCompat {
     def apply[L <: HList, M[_]]
       (implicit toTraversable: ToTraversable[L, M]): Aux[L, M, toTraversable.Lub] = toTraversable
 
@@ -737,7 +737,7 @@ object hlist {
     def apply(l: L): Out
   }
 
-  object ToSized {
+  object ToSized extends ToSizedScalaCompat {
     def apply[L <: HList, M[_]](implicit toSized: ToSized[L, M]): Aux[L, M, toSized.Lub, toSized.N] = toSized
 
     type Aux[L <: HList, M[_], Lub0, N0 <: Nat] = ToSized[L, M] { type Lub = Lub0; type N = N0 }
@@ -1056,13 +1056,13 @@ object hlist {
   }
 
 
- /**
-  * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
-  * apart. If `Step` equals `N` then the groups do not overlap.
-  *
-  * @author Andreas Koestler
-  */
- trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
+  /**
+   * Typeclass supporting grouping this `HList` into tuples of `N` items each, at `Step`
+   * apart. If `Step` equals `N` then the groups do not overlap.
+   *
+   * @author Andreas Koestler
+   */
+  trait Grouper[L <: HList, N <: Nat, Step <: Nat] extends DepFn1[L] with Serializable {
     type Out <: HList
   }
 

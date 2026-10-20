@@ -1,0 +1,1 @@
+Scala 2 only: these tests use Scala 2 runtime reflection (WeakTypeTag).

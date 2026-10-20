@@ -1,0 +1,1 @@
+Scala 2 only: Scala 3 loses the refinements of the recursively derived instances (via Strict) which this example relies on.

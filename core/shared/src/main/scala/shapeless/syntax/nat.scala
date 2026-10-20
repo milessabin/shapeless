@@ -43,5 +43,5 @@ final class NatOps[N <: Nat](val n: N) extends AnyVal with Serializable {
   /**
    * Returns the int value of this `Nat`.
    */
-  def toInt(implicit toIntN: ToInt[n.N]): Int = Nat.toInt(n)
+  def toInt(implicit toIntN: ToInt[N]): Int = toIntN()
 }

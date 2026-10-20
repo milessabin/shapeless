@@ -35,7 +35,7 @@ object traversable {
 final class TraversableOps[T](t : T)(implicit ev: T => Iterable[_]) {
   import ops.traversable._
 
-  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(t)
+  def toHList[L <: HList](implicit fl : FromTraversable[L]) : Option[L] = fl(ev(t))
 }
 
 final class TraversableOps2[CC[T] <: Iterable[T], A](as: CC[A]) {

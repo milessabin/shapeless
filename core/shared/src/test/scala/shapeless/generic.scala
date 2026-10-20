@@ -210,6 +210,16 @@ class GenericTests {
     assertEquals(p, p1)
   }
 
+  // An instance is found where its output type is expected (see https://github.com/scala/scala3/issues/24114)
+  @Test
+  def testAuxExpected: Unit = {
+    val gen = implicitly[Generic.Aux[Person, String :: String :: Int :: HNil]]
+    assertEquals("Joe Soap" :: "Brighton" :: 23 :: HNil, gen.to(Person("Joe Soap", "Brighton", 23)))
+
+    val fruitGen = implicitly[Generic.Aux[Fruit, APBO]]
+    assertEquals(Inr(Inl(Banana())), fruitGen.to(Banana()))
+  }
+
   @Test
   def testProductVarargs: Unit = {
     val p = PersonWithPseudonims("Joe Soap", "X", "M", "Z")

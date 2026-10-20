@@ -16,10 +16,6 @@
 
 package shapeless
 
-import language.experimental.macros
-
-import reflect.macros.whitebox
-
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
   import shapeless.ops.{ hlist => hl }
@@ -39,7 +35,7 @@ object PolyDefns extends Cases {
     def apply[T, U](t: T, u: U)(implicit ev: (T :: U :: HNil) =:= L) = value(t :: u :: HNil)
   }
 
-  object Case extends CaseInst {
+  object Case extends CaseScalaCompat {
     type Aux[P, L <: HList, Result0] = Case[P, L] { type Result = Result0 }
     type Hom[P, T] = Aux[P, T :: HNil, T]
 
@@ -47,12 +43,6 @@ object PolyDefns extends Cases {
       type Result = R
       val value = v
     }
-
-    implicit def materializeFromValue1[P, F[_], T]: Case[P, F[T] :: HNil] =
-      macro PolyMacros.materializeFromValueImpl[P, F[T], T]
-
-    implicit def materializeFromValue2[P, T]: Case[P, T :: HNil] =
-      macro PolyMacros.materializeFromValueImpl[P, T, T]
   }
 
   type Case0[P] = Case[P, HNil]
@@ -123,7 +113,7 @@ object PolyDefns extends Cases {
         finalCall: Case.Aux[F, Head :: Tail, Result0]
     ): Case.Aux[BF, Tail, Result0] = new Case[BF, Tail] {
       type Result = Result0
-      val value: Tail => Result = { tail: Tail =>
+      val value: Tail => Result = { (tail: Tail) =>
         finalCall.value(witnessBF.value.head :: tail)
       }
     }
@@ -148,7 +138,7 @@ object PolyDefns extends Cases {
       reverseSplit: ops.hlist.ReverseSplit.Aux[AllParameters, CurrentLength, CurrentParameter :: ParameterAccumulator, RestParameters],
       hasRestParameters: RestParameters <:< (_ :: _)
     ): Case1.Aux[Self, CurrentParameter, Curried[F, CurrentParameter :: ParameterAccumulator]] = Case1 {
-      nextParameter: CurrentParameter =>
+      (nextParameter: CurrentParameter) =>
         Curried[F, CurrentParameter :: ParameterAccumulator](nextParameter :: witnessSelf.value.parameters)
     }
   }
@@ -161,7 +151,7 @@ object PolyDefns extends Cases {
         reverse: ops.hlist.Reverse.Aux[LastParameter :: ParameterAccumulator, AllParameters],
         finalCall: Case.Aux[F, AllParameters, Result0]
     ): Case1.Aux[Self, LastParameter, Result0] = Case1 {
-      lastParameter: LastParameter =>
+      (lastParameter: LastParameter) =>
         finalCall(reverse(lastParameter :: witnessSelf.value.parameters))
     }
   }
@@ -302,7 +292,6 @@ object Poly extends PolyInst {
   final def bindFirst[Head](p: Poly, head: Head): BindFirst[p.type, Head] = new BindFirst[p.type, Head](head)
 
   final def curried(p: Poly): Curried[p.type, HNil] = new Curried[p.type, HNil](HNil)
-
 }
 
 /**
@@ -314,28 +303,5 @@ trait Poly0 extends Poly {
   def at[T](t: T) = new ProductCase[HNil] {
     type Result = T
     val value = (l : HNil) => t
-  }
-}
-
-class PolyMacros(val c: whitebox.Context) {
-  import c.universe._
-
-  import PolyDefns.Case
-
-  def materializeFromValueImpl[P: WeakTypeTag, FT: WeakTypeTag, T: WeakTypeTag]: Tree = {
-    val pTpe = weakTypeOf[P]
-    val ftTpe = weakTypeOf[FT]
-    val tTpe = weakTypeOf[T]
-
-    val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-    if(c.openImplicits.tail.exists(_.pt =:= recTpe))
-      c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
-
-    val value = pTpe match {
-      case SingleType(_, f) => f
-      case other            => c.abort(c.enclosingPosition, "Can only materialize cases from singleton values")
-    }
-
-    q""" $value.caseUniv[$tTpe] """
   }
 }

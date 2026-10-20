@@ -217,15 +217,8 @@ object Sized extends LowPrioritySized {
  */
 trait AdditiveCollection[Repr] extends Serializable
 
-object AdditiveCollection {
+object AdditiveCollection extends LowPriorityAdditiveCollection {
   import scala.collection.immutable.Queue
-  import scala.collection.LinearSeq
-
-  private[this] val instance =
-    new AdditiveCollection[Any] {}
-
-  implicit def linearSeqAdditiveCollection[T]: AdditiveCollection[LinearSeq[T]] =
-    instance.asInstanceOf[AdditiveCollection[LinearSeq[T]]]
 
   implicit def vectorAdditiveCollection[T]: AdditiveCollection[Vector[T]] =
     instance.asInstanceOf[AdditiveCollection[Vector[T]]]
@@ -244,9 +237,22 @@ object AdditiveCollection {
 
   implicit def queueAdditiveCollection[T]: AdditiveCollection[Queue[T]] =
     instance.asInstanceOf[AdditiveCollection[Queue[T]]]
+}
+
+// Instances for supertypes of the concrete collections above have lower priority, so that the most specific instance is
+// chosen where the collection type is only bounded below (as it may be on Scala 3, eg. by a covariant `BuildFrom`).
+trait LowPriorityAdditiveCollection extends LowPriorityAdditiveCollection0 {
+  import scala.collection.LinearSeq
+
+  implicit def linearSeqAdditiveCollection[T]: AdditiveCollection[LinearSeq[T]] =
+    instance.asInstanceOf[AdditiveCollection[LinearSeq[T]]]
 
   implicit def defaultAdditiveCollection[T]: AdditiveCollection[collection.immutable.IndexedSeq[T]] =
     instance.asInstanceOf[AdditiveCollection[collection.immutable.IndexedSeq[T]]]
+}
+
+trait LowPriorityAdditiveCollection0 {
+  val instance: AdditiveCollection[Any] = new AdditiveCollection[Any] {}
 
   implicit def seqAdditiveCollection[T]: AdditiveCollection[Seq[T]] =
     instance.asInstanceOf[AdditiveCollection[Seq[T]]]

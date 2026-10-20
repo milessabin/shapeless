@@ -25,18 +25,16 @@ object sized {
   implicit def stringSizedConv(s : String): SizedConv[String] = new SizedConv[String](s)
 }
 
-final class SizedConv[Repr](r : Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr]) {
+final class SizedConv[Repr](r : Repr)(implicit iil: IsRegularIterable[Repr], ev2: AdditiveCollection[Repr])
+  extends SizedConvScalaCompat[Repr] {
   import ops.nat._
   import Sized._
 
   def checkSize[L <: Nat](implicit toInt: ToInt[L]): Boolean =
     iil(r).size == toInt()
 
-  def sized[L <: Nat](implicit toInt : ToInt[L]) =
+  def sized[L <: Nat](implicit toInt : ToInt[L]): Option[Sized[Repr, L]] =
     if(checkSize) Some(wrap[Repr, L](r)) else None
-    
-  def sized(l: Nat)(implicit toInt : ToInt[l.N]) =
-    if(checkSize) Some(wrap[Repr, l.N](r)) else None
     
   def ensureSized[L <: Nat](implicit toInt : ToInt[L]) = {
     assert(checkSize)

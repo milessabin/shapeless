@@ -17,9 +17,6 @@
 package shapeless
 package ops
 
-import scala.annotation.tailrec
-import scala.reflect.macros.whitebox
-import scala.language.experimental.macros
 
 object nat {
 
@@ -51,8 +48,10 @@ object nat {
     type Aux[A <: Nat, B <: Nat, C <: Nat] = Sum[A, B] { type Out = C }
 
     implicit def sum1[B <: Nat]: Aux[_0, B, B] = new Sum[_0, B] { type Out = B }
+    // Recurses on a strictly smaller goal: Scala 3.4–3.7 undercount the size of types with shared structure, and
+    // so report divergence for a size-preserving recursion such as `Sum.Aux[A, Succ[B], C]`.
     implicit def sum2[A <: Nat, B <: Nat, C <: Nat]
-      (implicit sum : Sum.Aux[A, Succ[B], C]): Aux[Succ[A], B, C] = new Sum[Succ[A], B] { type Out = C }
+      (implicit sum : Sum.Aux[A, B, C]): Aux[Succ[A], B, Succ[C]] = new Sum[Succ[A], B] { type Out = Succ[C] }
   }
 
   /**
@@ -263,7 +262,6 @@ object nat {
 
     type Aux[A <: Nat, B <: Nat, Out0 <: HList] = Range[A, B] {type Out = Out0}
 
-
     import shapeless.ops.hlist._
 
     implicit def range1[A <: Nat]: Aux[A, A, HNil] = new Range[A, A] {
@@ -379,7 +377,6 @@ object nat {
       * @author Jeff Wilde
       */
     trait Exclusive[A] extends Bound
-
 
     import shapeless.ops.hlist._
 
@@ -581,7 +578,6 @@ object nat {
 
           def apply(): Out = w.value
         }
-
     }
 
   }
@@ -595,7 +591,7 @@ object nat {
     def apply(): Int
   }
 
-  object ToInt {
+  object ToInt extends ToIntScalaCompat {
     def apply[N <: Nat](implicit toInt: ToInt[N]): ToInt[N] = toInt
 
     final class Inst[N <: Nat](i: Int) extends ToInt[N] {
@@ -603,35 +599,5 @@ object nat {
     }
 
     implicit val toInt0: ToInt[_0] = new Inst[_0](0)
-    implicit def toIntSuccM[N <: Nat]: ToInt[N] = macro ToIntMacros.applyImpl[N]
   }
-
-  class ToIntMacros(val c: whitebox.Context) extends CaseClassMacros {
-    import c.universe._
-
-    val _0Tpe = typeOf[_0]
-    val succTpe = typeOf[Succ[_]].typeConstructor
-    val succSym = succTpe.typeSymbol
-    val succPre = prefix(succTpe)
-
-
-    def applyImpl[N <: Nat](implicit nTag: WeakTypeTag[N]): Tree = {
-      val tpe = nTag.tpe.dealias
-
-      @tailrec
-      def count(u: Type, acc: Int): Int = {
-        if(u <:< _0Tpe) acc
-        else (u baseType succSym) match {
-          case TypeRef(pre, _, List(n)) if pre =:= succPre => count(n, acc + 1)
-          case _ => abort(s"$tpe is not a Nat type")
-        }
-      }
-
-      q"""
-            new _root_.shapeless.ops.nat.ToInt.Inst(${count(tpe, 0)}).
-              asInstanceOf[ _root_.shapeless.ops.nat.ToInt[$tpe]]
-          """
-    }
-  }
-
 }

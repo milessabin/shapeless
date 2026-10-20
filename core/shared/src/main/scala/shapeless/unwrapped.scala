@@ -29,7 +29,7 @@ object Unwrapped extends UnwrappedInstances {
   def apply[W](implicit w: Unwrapped[W]): Aux[W, w.U] = w
 }
 
-trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
+trait UnwrappedInstances extends TagUnwrappedInstances {
   implicit def unwrapAnyVal[W <: AnyVal, Repr, UI, UF](implicit
     gen: Generic.Aux[W, Repr],
     avh: AnyValHelper.Aux[Repr, UI],
@@ -60,19 +60,13 @@ trait UnwrappedInstances extends LowPriorityUnwrappedInstances {
     chain: Strict[Unwrapped.Aux[UI, UF]]
   ): Unwrapped.Aux[Newtype[UI, Ops], UF] = chain.value.asInstanceOf[Unwrapped.Aux[Newtype[UI, Ops], UF]]
 
-  implicit def tagUnwrapped[T[UI, TT] <: tag.@@[UI, TT], UI, TT, UF](implicit
-    chain: Strict[Unwrapped.Aux[UI, UF]]
-  ): Unwrapped.Aux[T[UI, TT], UF] = chain.value.asInstanceOf[Unwrapped.Aux[T[UI, TT], UF]]
-
 }
 
-trait LowPriorityUnwrappedInstances {
+trait LowPriorityUnwrappedInstances extends SelfUnwrappedScalaCompat {
   val theSelfUnwrapped =
     new Unwrapped[Any] {
       type U = Any
       def unwrap(t: Any) = t
       def wrap(t: Any) = t
     }
-  implicit def selfUnwrapped[T]: Unwrapped.Aux[T,T] =
-    theSelfUnwrapped.asInstanceOf[Unwrapped.Aux[T, T]]
 }

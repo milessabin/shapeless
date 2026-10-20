@@ -134,12 +134,15 @@ libraryDependencies ++= Seq(
 
 For using snapshots of Shapeless you should add,
 ```scala
-scalaVersion := "2.13.5"
+scalaVersion := "2.13.18"
 
 libraryDependencies ++= Seq(
   "com.chuusai" %% "shapeless" % "2.4.0-SNAPSHOT"
 )
 ```
+
+shapeless 2.4 is built for Scala 2.13 and is tested with Scala 2.13.18. Scala 2.11 and 2.12 are no longer supported.
+It is also built for Scala 3: see [shapeless on Scala 3](SCALA3.md).
 
 
 
@@ -164,8 +167,8 @@ releases][olderusage] on the shapeless wiki.
 
 ## Building shapeless
 
-shapeless is built with SBT 1.3.10 or later, and its main branch is built with Scala 2.13.2 by default but also
-cross-builds for 2.11.12 and 2.12.12.
+shapeless is built with SBT 1.13 or later, and its main branch is built with Scala 2.13.18 by default (see
+[shapeless on Scala 3](SCALA3.md) for building with Scala 3).
 
 [namehashing]: https://github.com/sbt/sbt/issues/1640
 
