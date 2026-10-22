@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-16 Miles Sabin
  *
@@ -1904,15 +1905,17 @@ class CoproductTests {
   @Test
    def testLiftAll: Unit = {
      trait F[A]
-     implicit object FInt extends F[Int]
-     implicit object FString extends F[String]
+     locally {
+       implicit object FInt extends F[Int]
+       implicit object FString extends F[String]
 
-     assertEquals(HNil, implicitly[LiftAll[F, CNil]].instances)
-     assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :+: CNil]].instances)
-     assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :+: Int :+: CNil]].instances)
-     illTyped("implicitly[LiftAll[F, Long :+: String :+: Int :+: CNil]]")
+       assertEquals(HNil, implicitly[LiftAll[F, CNil]].instances)
+       assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :+: CNil]].instances)
+       assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :+: Int :+: CNil]].instances)
+       illTyped("implicitly[LiftAll[F, Long :+: String :+: Int :+: CNil]]")
 
-     assertEquals(FInt :: HNil, LiftAll[F](Coproduct[Int :+: CNil](1)).instances)
+       assertEquals(FInt :: HNil, LiftAll[F](Coproduct[Int :+: CNil](1)).instances)
+     }
    }
 
   @Test

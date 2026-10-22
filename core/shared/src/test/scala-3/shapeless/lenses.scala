@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2012-14 Miles Sabin
  *
@@ -283,30 +284,30 @@ trait LensTests {
 }
 
 class LensTestsNat extends LensTests {
-  val nameLens     = lens[Person] >> 0
-  val ageLens      = lens[Person] >> 1
-  val addressLens  = lens[Person] >> 2
-  val streetLens   = lens[Person] >> 2 >> 0
-  val cityLens     = lens[Person] >> 2 >> 1
-  val postcodeLens = lens[Person] >> 2 >> 2
+  val nameLens: Lens[Person, String] = lens[Person] >> 0
+  val ageLens: Lens[Person, Int] = lens[Person] >> 1
+  val addressLens: Lens[Person, Address] = lens[Person] >> 2
+  val streetLens: Lens[Person, String] = lens[Person] >> 2 >> 0
+  val cityLens: Lens[Person, String] = lens[Person] >> 2 >> 1
+  val postcodeLens: Lens[Person, String] = lens[Person] >> 2 >> 2
 }
 
 class LensTestsKey extends LensTests {
-  val nameLens     = lens[Person] >> "name"
-  val ageLens      = lens[Person] >> "age"
-  val addressLens  = lens[Person] >> "address"
-  val streetLens   = lens[Person] >> "address" >> "street"
-  val cityLens     = lens[Person] >> "address" >> "city"
-  val postcodeLens = lens[Person] >> "address" >> "postcode"
+  val nameLens: Lens[Person, String] = lens[Person] >> "name"
+  val ageLens: Lens[Person, Int] = lens[Person] >> "age"
+  val addressLens: Lens[Person, Address] = lens[Person] >> "address"
+  val streetLens: Lens[Person, String] = lens[Person] >> "address" >> "street"
+  val cityLens: Lens[Person, String] = lens[Person] >> "address" >> "city"
+  val postcodeLens: Lens[Person, String] = lens[Person] >> "address" >> "postcode"
 }
 
 class OpticTestsDynamic extends LensTests {
-  val nameLens     = lens[Person].name
-  val ageLens      = lens[Person].age
-  val addressLens  = lens[Person].address
-  val streetLens   = lens[Person].address.street
-  val cityLens     = lens[Person].address.city
-  val postcodeLens = lens[Person].address.postcode
+  val nameLens: Lens[Person, String] = lens[Person].name
+  val ageLens: Lens[Person, Int] = lens[Person].age
+  val addressLens: Lens[Person, Address] = lens[Person].address
+  val streetLens: Lens[Person, String] = lens[Person].address.street
+  val cityLens: Lens[Person, String] = lens[Person].address.city
+  val postcodeLens: Lens[Person, String] = lens[Person].address.postcode
 }
 
 class AscribedOpticTestsDynamic extends LensTests {

@@ -1,0 +1,52 @@
+--- generated/unions.scala
++++ scala-3/unions.scala
+@@ -145,49 +145,6 @@
+       typed[U](u2)
+     }
+ 
+-    // Literal types
+-
+-    {
+-      type U = Union.`"i" -> 2`.T
+-
+-      val u = Inl("i" ->> 2.narrow)
+-
+-      typed[U](u)
+-    }
+-
+-    {
+-      type U = Union.`"i" -> 2, "s" -> "a", "b" -> true`.T
+-
+-      val u0 = Inl("i" ->> 2.narrow)
+-      val u1 = Inr(Inl("s" ->> "a".narrow))
+-      val u2 = Inr(Inr(Inl("b" ->> true.narrow)))
+-
+-      typed[U](u0)
+-      typed[U](u1)
+-      typed[U](u2)
+-    }
+-
+-    {
+-      type U = Union.`"i" -> 2`.T
+-
+-      val u = Inl("i" ->> 3.narrow)
+-
+-      illTyped("typed[U](u)")
+-    }
+-
+-    // Mix of standard and literal types
+-
+-    {
+-      type U = Union.`"i" -> 2, "s" -> String, "b" -> true`.T
+-
+-      val u0 = Inl("i" ->> 2.narrow)
+-      val u1 = Inr(Inl("s" ->> "a"))
+-      val u2 = Inr(Inr(Inl("b" ->> true.narrow)))
+-
+-      typed[U](u0)
+-      typed[U](u1)
+-      typed[U](u2)
+-    }
+   }
+ 
+   @Test

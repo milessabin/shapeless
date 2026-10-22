@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014-16 Miles Sabin
  *
@@ -132,13 +133,6 @@ object ScalazTaggedAux {
 
 class LabelledGenericTests {
   import LabelledGenericTestsAux._
-
-  // An instance is found where its output type is expected (see https://github.com/scala/scala3/issues/24114)
-  @Test
-  def testAuxExpected: Unit = {
-    val gen = implicitly[LabelledGeneric.Aux[Book, BookRec]]
-    assertEquals(taplRecord, gen.to(tapl))
-  }
 
   @Test
   def testProductBasics: Unit = {

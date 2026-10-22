@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 package shapeless
 
 import org.junit.Test

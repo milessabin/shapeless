@@ -1,0 +1,16 @@
+--- generated/labelledgeneric.scala
++++ scala-3/labelledgeneric.scala
+@@ -128,13 +128,6 @@
+   abstract class TCLowPriority {
+     def instance[T](display: String): TC[T] =
+       () => display
+-
+-    // FIXME: Workaround #309
+-    implicit def hconsTCTagged[K <: String, H, HT, T <: HList](
+-      implicit key: Witness.Aux[K], headTC: => TC[H @@ HT], tailTC: TC[T]
+-    ): TC[FieldType[K, H @@ HT] :: T] = instance {
+-      s"${key.value}: ${headTC()} :: ${tailTC()}"
+-    }
+   }
+ }
+ 

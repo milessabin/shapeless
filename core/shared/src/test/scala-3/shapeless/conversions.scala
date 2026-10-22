@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin 
  *
@@ -91,14 +92,16 @@ class ConversionTests {
       def applied[U](f: F)(implicit cftp: FnToProduct.Aux[f.type, A => U]): U = cftp(f)(a)
     }
 
-    implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
-      (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
-      new HListSyntax[A, F](a)
+    locally {
+      implicit def mkSyntax[A <: HList, F <: AnyRef](a: A)
+        (implicit ffp: FnFromProduct.Aux[A => Any, F]): HListSyntax[A, F] =
+        new HListSyntax[A, F](a)
 
-    val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
+      val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
 
-    // On Scala 3 the result type of the function literal is that expected (Any) rather than inferred from its body
-    assert((res: Any) == (("aa", 2.6)))
+      // On Scala 3 the result type of the function literal is that expected (Any) rather than inferred from its body
+      assert((res: Any) == (("aa", 2.6)))
+    }
 
   }
   
@@ -107,7 +110,7 @@ class ConversionTests {
     case class Foo(a : Int, b : String, c : Double)
     
     val f1 = Foo(23, "foo", 2.3)
-    val t1 = (f1.a, f1.b, f1.c)
+    val t1 = Some((f1.a, f1.b, f1.c)).get
     val hf = t1.productElements
     val f2 = (Foo.apply _).tupled(hf.tupled)
     assertEquals(f1, f2)

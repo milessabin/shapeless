@@ -1,6 +1,5 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 package shapeless
-
-import scala.reflect.ClassTag
 
 import org.junit.Test
 import org.junit.Assert.assertArrayEquals
@@ -179,6 +178,13 @@ class ProductTests {
       val expected = List.empty[Nothing]
       equalInferredTypes(expected, l)
       assertTypedEquals(expected, l)
+    }
+
+    {
+      val a = e.to[Array]
+      val expected = Array.empty[Nothing](using shapeless.ops.ArrayOfNothing.classTag)
+      equalInferredTypes(expected, a)
+      assertArrayEquals0(expected, a)
     }
 
     val foo = Foo(1, "b")

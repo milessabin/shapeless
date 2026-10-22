@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Mario Pastorelli (pastorelli.mario@gmail.com)
  *

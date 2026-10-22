@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2012-16 Miles Sabin
  *
@@ -73,7 +74,7 @@ object UnfoldExamples extends App {
   import Unfold.unfold
 
   object unfoldMisc extends Poly1 {
-    implicit def case0: Case.Aux[nat._0, (Int, nat._1)] = at[_0](_ => (23, _1))
+    implicit def case0: Case.Aux[Nat._0, (Int, nat._1)] = at[_0](_ => (23, _1))
     implicit def case1: Case.Aux[nat._1, (String, nat._2)] = at[_1](_ => ("foo", _2))
     implicit def case2: Case.Aux[nat._2, (Boolean, nat._3)] = at[_2](_ => (true, _3))
     implicit def case3: Case.Aux[nat._3, (Double, nat._4)] = at[_3](_ => (1.0, _4))
@@ -84,7 +85,7 @@ object UnfoldExamples extends App {
   println(l1)
 
   object unfoldFibs extends Poly1 {
-    implicit def case0: Case.Aux[nat._0, (nat._0, nat._1)] = at[_0](_ => (_0, _1))
+    implicit def case0: Case.Aux[Nat._0, (Nat._0, nat._1)] = at[_0](_ => (_0, _1))
     implicit def case1: Case.Aux[nat._1, (nat._1, nat._2)] = at[_1](_ => (_1, _2))
     implicit def caseN[N <: Nat, FN <: Nat, FSN <: Nat, FSSN <: Nat]
       (implicit

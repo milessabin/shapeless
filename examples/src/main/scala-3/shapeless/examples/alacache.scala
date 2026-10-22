@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Sam Halliday
  *
@@ -126,23 +127,27 @@ trait CachedFacet extends ProductISOFacet {
   }
 }
 
-trait CachedCaseClassDefns extends LogFacet
+trait CachedCaseClassDefns extends
+  LogFacet
   with CachedFacet
   with ProductFacet
   with PolymorphicEqualityFacet
   with CopyFacet
   with ToStringFacet {
 
-  trait CaseClassOps extends LogOps
+  trait CaseClassOps extends
+    LogOps
     with CachedOps
     with ProductOps
     with PolymorphicEqualityOps
     with CopyOps
     with ToStringOps
 
-  trait CaseClassCompanion extends CachedCompanion
+  trait CaseClassCompanion extends
+    CachedCompanion
 
-  trait CaseClass extends LogMethods
+  trait CaseClass extends
+    LogMethods
     with CachedMethods
     with ProductMethods
     with PolymorphicEqualityMethods
@@ -171,13 +176,13 @@ trait CachedCaseClassDefns extends LogFacet
         type Repr = Repr0
         type LRepr = LRepr0
         type P = P0
-        val gen = gen0
-        val lgen = lgen0
-        val pgen = pgen0
-        val typ = typ0
-        val logger = Logger.getLogger(fqn)
-        val productPrefix = fqn.split("([.$])").last
-        val productArity = toInt()
+        val gen: Generic.Aux[C, Repr0] = gen0
+        val lgen: LabelledGeneric.Aux[C, LRepr0] = lgen0
+        val pgen: Generic.Aux[P0, Repr0] = pgen0
+        val typ: Typeable[C] = typ0
+        val logger: Logger = Logger.getLogger(fqn)
+        val productPrefix: String = fqn.split("([.$])").last
+        val productArity: Int = toInt()
       }
   }
 }
@@ -187,12 +192,7 @@ trait CachedCaseClassDefns extends LogFacet
 object ALaCacheDemo extends App {
   object FooDefns extends CachedCaseClassDefns {
     type C = Foo
-    // The refinement must be explicit on Scala 3, where an overriding val takes the type of the overridden val
-    val ops: CaseClassOps {
-      type Repr = Int :: String :: HNil
-      type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil
-      type P = (Int, String)
-    } = Ops
+    val ops: CaseClassOps { type Repr = Int :: String :: HNil; type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil; type P = (Int, String) } = Ops
     object Foo extends CaseClassCompanion
     // keep the constructor private so everybody has to go through .apply
     class Foo private[FooDefns] (val i: Int, val s: String) extends CaseClass {
@@ -213,10 +213,10 @@ object ALaCacheDemo extends App {
   assert(Foo.alive() == 1)
 
   // Companion unapply
-  val Foo(i, s) = foo
+  val Foo(i, s) = (foo: @unchecked)
   typed[Int](i)
   typed[String](s)
-  val Foo(i2, s2) = foo
+  val Foo(i2, s2) = (foo: @unchecked)
 
   assert(s eq s2)
   assert(Foo.aliveExtracted() == 1)

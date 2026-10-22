@@ -1,0 +1,149 @@
+--- generated/tuples.scala
++++ scala-3/tuples.scala
+@@ -54,9 +54,9 @@
+   case class Banana() extends Fruit
+ 
+   case class Foo(i: Int, s: String)
+-  type PWS = Product with Serializable with Fruit
++  type PWS = Fruit
+ 
+-  type YYYY = (Any, Any, Any, Any)
++  type YYYY = (Int | String, Int | String, Int | String, Int | String)
+   type FF = (Fruit, Fruit)
+   type AP = (Apple, Pear)
+   type BP = (Banana, Pear)
+@@ -157,8 +157,10 @@
+       ().tail
+     """)
+ 
++    // The conversions are explicit as on Scala 3 the selections would otherwise be of scala.Tuple's members, which the
++    // scalafix rules generating the Scala 3 version of this test can't make explicit within a string
+     illTyped("""
+-      t.tail.tail.tail.head
++      productTupleOps(productTupleOps(productTupleOps(t).tail).tail).tail.head
+     """)
+   }
+ 
+@@ -330,7 +332,7 @@
+     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]
+     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
+     // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+-    typed[List[M2[_ >: Double with Int with String, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
++    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+     assertEquals(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
+   }
+ 
+@@ -509,7 +511,7 @@
+ 
+     val m = mimsmimimd.to[List]
+     equalInferredTypes(mimsmimimdList, m)
+-    typed[List[M[_ >: Int with String with Double]]](m)
++    typed[List[M[_ >: Int with String with Double <: Int | String | Double]]](m)
+     assertEquals(mimsmimimdList, m)
+ 
+     val mWithEx = mimsmimemd.to[List]
+@@ -519,12 +521,12 @@
+ 
+     val m2 = m2im2sm2im2im2d.to[List]
+     equalInferredTypes(m2im2sm2im2im2dList, m2)
+-    typed[List[M2[_ >: Int with String with Double, Unit]]](m2)
++    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
+     assertEquals(m2im2sm2im2im2dList, m2)
+ 
+     val m2e = m2eim2esm2eim2eem2ed.to[List]
+     // equalType(m2eim2esm2eim2eem2edList, m2e)
+-    typed[List[M2[_ >: Int with String with Double, _]]](m2e)
++    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
+     assertEquals(m2eim2esm2eim2eem2edList, m2e)
+   }
+ 
+@@ -607,7 +609,7 @@
+ 
+     val m = productTupleOps(mimsmimimd).toList
+     equalInferredTypes(mimsmimimdList, m)
+-    typed[List[M[_ >: Int with String with Double]]](m)
++    typed[List[M[_ >: Int with String with Double <: Int | String | Double]]](m)
+     assertEquals(mimsmimimdList, m)
+ 
+     val mWithEx = productTupleOps(mimsmimemd).toList
+@@ -617,12 +619,12 @@
+ 
+     val m2 = productTupleOps(m2im2sm2im2im2d).toList
+     equalInferredTypes(m2im2sm2im2im2dList, m2)
+-    typed[List[M2[_ >: Int with String with Double, Unit]]](m2)
++    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
+     assertEquals(m2im2sm2im2im2dList, m2)
+ 
+     val m2e = productTupleOps(m2eim2esm2eim2eem2ed).toList
+     // equalType(m2eim2esm2eim2eem2edList, m2e)
+-    typed[List[M2[_ >: Int with String with Double, _]]](m2e)
++    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
+     assertEquals(m2eim2esm2eim2eem2edList, m2e)
+   }
+ 
+@@ -646,7 +648,7 @@
+     val l1 = (1, "foo", 2, 3)
+ 
+     val stuff = l1.to[Array]
+-    typed[Array[Any]](stuff)
++    typed[Array[Int | String]](stuff)
+     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
+ 
+     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
+@@ -671,7 +673,7 @@
+ 
+     val m = mimsmimimd.to[Array]
+     equalInferredTypes(mimsmimimdArray, m)
+-    typed[Array[M[_ >: Int with String with Double]]](m)
++    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
+     assertArrayEquals2(mimsmimimdArray, m)
+ 
+     val mWithEx = mimsmimemd.to[Array]
+@@ -682,12 +684,12 @@
+ 
+     val m2 = m2im2sm2im2im2d.to[Array]
+     equalInferredTypes(m2im2sm2im2im2dArray, m2)
+-    typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
++    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
+     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
+ 
+     val m2e = m2eim2esm2eim2eem2ed.to[Array]
+     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
+-    // typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
++    // typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
+     // Same remark as above
+     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
+   }
+@@ -718,7 +720,7 @@
+     val l1 = (1, "foo", 2, 3)
+ 
+     val stuff = productTupleOps(l1).toArray
+-    typed[Array[Any]](stuff)
++    typed[Array[Int | String]](stuff)
+     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
+ 
+     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
+@@ -743,7 +745,7 @@
+ 
+     val m = productTupleOps(mimsmimimd).toArray
+     equalInferredTypes(mimsmimimdArray, m)
+-    typed[Array[M[_ >: Int with String with Double]]](m)
++    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
+     assertArrayEquals2(mimsmimimdArray, m)
+ 
+     val mWithEx = productTupleOps(mimsmimemd).toArray[M[_]]
+@@ -753,12 +755,12 @@
+ 
+     val m2 = productTupleOps(m2im2sm2im2im2d).toArray
+     equalInferredTypes(m2im2sm2im2im2dArray, m2)
+-    typed[Array[M2[_ >: Int with String with Double, Unit]]](m2)
++    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
+     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
+ 
+     val m2e = productTupleOps(m2eim2esm2eim2eem2ed).toArray
+     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
+-    // typed[Array[M2[_ >: Int with String with Double, _]]](m2e)
++    // typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
+     // The line above compiles when mimsmimemd is an HList, not when it is a tuple...
+     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
+   }

@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-14 Lars Hupel
  *
@@ -27,7 +28,7 @@ object ShowExamples extends App {
   case class BarRec(i: Int, rec: Super) extends Super
 
   object Super {
-    implicit lazy val instance: Show[Super] = Show.deriveInstance
+    implicit val instance: Show[Super] = cachedImplicit
   }
 
   sealed trait MutualA
@@ -39,11 +40,11 @@ object ShowExamples extends App {
   case class MutualB2(b: MutualA) extends MutualB
 
   object MutualA {
-    implicit lazy val aInstance: Show[MutualA] = Show.deriveInstance
+    implicit val aInstance: Show[MutualA] = cachedImplicit
   }
 
   object MutualB {
-    implicit lazy val bInstance: Show[MutualB] = Show.deriveInstance
+    implicit val bInstance: Show[MutualB] = cachedImplicit
   }
 
   val bar: Super = Bar(0)

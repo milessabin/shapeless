@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin
  *
@@ -677,7 +678,7 @@ class RecordTests {
   @Test
   def testMappingOverRecordFields: Unit = {
     object toUpper extends Poly1 {
-      implicit def stringToUpper[F]: Case.Aux[labelled.FieldType[F, String], labelled.FieldType[F, String]] = at[FieldType[F, String]] {
+      implicit def stringToUpper[F]: Case.Aux[FieldType[F, String], FieldType[F, String]] = at[FieldType[F, String]] {
         f => field[F](f.toUpperCase)
       }
 
@@ -775,7 +776,7 @@ class RecordTests {
     import poly._
 
     object f extends FieldPoly {
-      implicit def atFoo: Case.Aux[labelled.FieldType["foo", Int], labelled.FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
+      implicit def atFoo: Case.Aux[FieldType["foo", Int], FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
     }
 
     val r = "foo" ->> 23
@@ -794,7 +795,7 @@ class RecordTests {
     import poly._
 
     object f extends FieldPoly {
-      implicit def atFoo: Case.Aux[labelled.FieldType["foo", Int], labelled.FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
+      implicit def atFoo: Case.Aux[FieldType["foo", Int], FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
     }
 
     val r = ("foo" ->> 23) :: ("bar" ->> true) :: HNil
@@ -815,12 +816,12 @@ class RecordTests {
     import poly._
 
     object f extends FieldPoly {
-      implicit def atFoo: Case.Aux[labelled.FieldType["foo", Int], labelled.FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
+      implicit def atFoo: Case.Aux[FieldType["foo", Int], FieldType["foo", Int]] = atField[Int]("foo")(_ + 1)
     }
 
     val r = List(List(List(("foo" ->> 23) :: ("bar" ->> true) :: HNil)))
 
-    val List(List(List(r1))) = everywhere(f)(r)
+    val List(List(List(r1))) = (everywhere(f)(r): @unchecked)
 
     val v1 = r1("foo")
     typed[Int](v1)
@@ -939,10 +940,10 @@ class RecordTests {
       val v3 = Bar.sumImplicitRecord(r)
       typed[Int](v3)
       assertEquals(8, v3)
-    }
 
-    illTyped("""Bar.sumRecord(("i1" ->> 1) :: ("i3" ->> 3) :: HNil)""")
-    illTyped("""Bar.sumMultipleParamListRecord(("i1" ->> 1) :: ("i3" ->> 3) :: HNil)""")
+      illTyped("""Bar.sumRecord(("i1" ->> 1) :: ("i3" ->> 3) :: HNil)""")
+      illTyped("""Bar.sumMultipleParamListRecord(("i1" ->> 1) :: ("i3" ->> 3) :: HNil)""")
+    }
   }
 
   @Test

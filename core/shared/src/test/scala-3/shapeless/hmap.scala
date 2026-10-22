@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin 
  *
@@ -67,7 +68,7 @@ class HMapTests {
   
   @Test
   def testNatTrans: Unit = {
-    val nt: HMap[(Set ~?> Option)#λ] = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
+    val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     
     illTyped("""
       val nt2 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option(13), Set(23) -> Option(13))
@@ -76,16 +77,15 @@ class HMapTests {
       val nt3 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), "foo" -> 23)
     """)
 
-    // Scoped so that it isn't visible to the definition of nt (Scala 3 implicits are visible throughout their block)
+    // Needed to allow V to be inferred in get
     locally {
-      // Needed to allow V to be inferred in get
       implicit object SO extends (Set ~?> Option)
-    
+      
       val o1 = nt.get(Set("foo"))
       assertTrue(isDefined(o1))
       typed[Option[Option[String]]](o1)
       assertEquals(Some(Some("bar")), o1)
-    
+      
       val o2 = nt.get(Set(23))
       assertTrue(isDefined(o2))
       typed[Option[Option[Int]]](o2)
@@ -95,14 +95,13 @@ class HMapTests {
   
   @Test
   def testPolyNatTrans: Unit = {
-    val nt: HMap[(Set ~?> Option)#λ] = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
+    val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
     import nt._
     
-    // Scoped so that it isn't visible to the definition of nt (Scala 3 implicits are visible throughout their block)
+    // Needed to allow V to be inferred in Case1 resolution (ie. map and pairApply)
     locally {
-      // Needed to allow V to be inferred in Case1 resolution (ie. map and pairApply)
       implicit object SO extends (Set ~?> Option)
-    
+      
       // Map over an HList
       val l1 = Set("foo") :: Set(23) :: HNil
       val l2 = l1 map nt
@@ -111,7 +110,7 @@ class HMapTests {
 
       // Use as an argument to a HoF
       def pairApply(f: Poly1)(implicit cs : f.Case[Set[String]], ci : f.Case[Set[Int]]) = (f(Set("foo")), f(Set(23)))
-    
+      
       val a1 = pairApply(nt)
       typed[(Option[String], Option[Int])](a1)
       assertEquals((Option("bar"), Option(13)), a1)
@@ -129,27 +128,26 @@ class HMapTests {
       val nt3 = HMap[(Id ~?> Option)#λ]("foo" -> Option("bar"), Set(23) -> Option(13))
     """)
     
-    // Scoped so that it isn't visible to the definition of nt (Scala 3 implicits are visible throughout their block)
+    // Needed to allow V to be inferred in get
     locally {
-      // Needed to allow V to be inferred in get
       implicit object IO extends (Id ~?> Option)
-    
+      
       val o1 = nt.get("foo")
       assertTrue(isDefined(o1))
       typed[Option[Option[String]]](o1)
       assertEquals(Some(Some("bar")), o1)
-    
+      
       val o2 = nt.get(23)
       assertTrue(isDefined(o2))
       typed[Option[Option[Int]]](o2)
       assertEquals(Some(Some(13)), o2)
     }
-  }
+  }  
   
   @Test
   def testIdValueNatTrans: Unit = {
     val nt = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> 13)
-  
+    
     illTyped("""
       val nt2 = HMap[(Option ~?> Id)#λ](Option("foo") -> 13, Option(23) -> 13)
     """)
@@ -157,19 +155,21 @@ class HMapTests {
       val nt3 = HMap[(Option ~?> Id)#λ](Option("foo") -> "bar", Option(23) -> Set(13))
     """)
 
-  
+    
     // Needed to allow V to be inferred in get
-    implicit object IO extends (Id ~?> Option)
-  
-    val o1 = nt.get(Option("foo"))
-    assertTrue(isDefined(o1))
-    typed[Option[String]](o1)
-    assertEquals(Some("bar"), o1)
-  
-    val o2 = nt.get(Option(23))
-    assertTrue(isDefined(o2))
-    typed[Option[Int]](o2)
-    assertEquals(Some(13), o2)
+    locally {
+      implicit object IO extends (Id ~?> Option)
+      
+      val o1 = nt.get(Option("foo"))
+      assertTrue(isDefined(o1))
+      typed[Option[String]](o1)
+      assertEquals(Some("bar"), o1)
+      
+      val o2 = nt.get(Option(23))
+      assertTrue(isDefined(o2))
+      typed[Option[Int]](o2)
+      assertEquals(Some(13), o2)
+    }
   }
 
   trait M[A]

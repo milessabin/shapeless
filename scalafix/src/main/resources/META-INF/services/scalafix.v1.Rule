@@ -1,0 +1,11 @@
+shapeless.migration.ExplicitImplicitTypes
+shapeless.migration.ExplicitSingletonTypes
+shapeless.migration.ExplicitTupleOps
+shapeless.migration.UncheckedPatterns
+shapeless.migration.UncheckedTypeArguments
+shapeless.migration.CachedImplicits
+shapeless.migration.ExplicitSizedCollection
+shapeless.migration.LocalImplicitScopes
+shapeless.migration.CaseClassCompanions
+shapeless.migration.NothingClassTags
+shapeless.migration.LeadingWiths

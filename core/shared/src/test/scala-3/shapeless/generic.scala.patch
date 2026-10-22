@@ -1,0 +1,16 @@
+--- generated/generic.scala
++++ scala-3/generic.scala
+@@ -164,13 +164,6 @@
+   final case class OutTap[A, +B](out: A => B) extends Tap[A]
+   final case class PipeTap[A, B](in: B => A, out: A => B) extends Tap[A]
+ 
+-  object macroAnnotations {
+-    case class A(i: Int, s: String)
+-
+-    @generateGeneric
+-    object A
+-  }
+-
+   sealed trait PubOrPriv
+   final case class Pub(x: Int) extends PubOrPriv
+   final class Priv private(val y: String) extends PubOrPriv {

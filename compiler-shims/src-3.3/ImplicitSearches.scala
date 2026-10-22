@@ -42,7 +42,12 @@ object ImplicitSearches {
       case found: SearchSuccess =>
         if (found.tstate ne ctx.typerState) found.tstate.commit()
         if (found.gstate ne ctx.gadt) ctx.gadtState.restore(found.gstate)
-        found.tree
+        // As `Typer.inferImplicit`: at the outermost implicit search, define the recursive by-name implicits the value
+        // found refers to (eg. `$_lazy_implicit_$1`), which would otherwise be undefined
+        ctx.searchHistory.emitDictionary(span, found) match {
+          case success: SearchSuccess => success.tree
+          case failure: SearchFailure => failure.tree
+        }
       case failed: SearchFailure if failed.isAmbiguous => failed.tree
       case failed: SearchFailure =>
         val reported =

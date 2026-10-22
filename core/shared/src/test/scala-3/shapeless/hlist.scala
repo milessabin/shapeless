@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin
  *
@@ -15,8 +16,6 @@
  */
 
 package shapeless
-
-import scala.reflect.ClassTag
 
 import org.junit.Test
 import org.junit.Assert._
@@ -60,7 +59,7 @@ class HListTests {
   case class Pear() extends Fruit
   case class Banana() extends Fruit
 
-  type PWS = TestVersionSpecifics.CaseClassLub[Fruit]
+  type PWS = Fruit
 
   type YYYY = Any :: Any :: Any :: Any :: HNil
   type FF = Fruit :: Fruit :: HNil
@@ -97,8 +96,8 @@ class HListTests {
   val ci: Ctv[Int] = new Ctv[Int] {}
   val cs: Ctv[String] = new Ctv[String] {}
   val cd: Ctv[Double] = new Ctv[Double] {}
-  val cicscicicdList: List[Ctv[Int with String with Double]] = ci :: cs :: ci :: ci :: cd :: Nil
-  val cicscicicdArray: Array[Ctv[Int with String with Double]] = Array(ci, cs, ci, ci, cd)
+  val cicscicicdList = ci :: cs :: ci :: ci :: cd :: Nil
+  val cicscicicdArray = Array(ci, cs, ci, ci, cd)
   val cicscicicd: CICSCICICD = ci :: cs :: ci :: ci :: cd :: HNil
 
   trait M[T]
@@ -107,8 +106,8 @@ class HListTests {
   val mi: M[Int] = new M[Int] {}
   val ms: M[String] = new M[String] {}
   val md: M[Double] = new M[Double] {}
-  val mimsmimimdList: List[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]] = mi :: ms :: mi :: mi :: md :: Nil
-  val mimsmimimdArray: Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]] = Array(mi, ms, mi, mi, md)
+  val mimsmimimdList = mi :: ms :: mi :: mi :: md :: Nil
+  val mimsmimimdArray = Array(mi, ms, mi, mi, md)
   val mimsmimimd: MIMSMIMIMD = mi :: ms :: mi :: mi :: md :: HNil
 
   import language.existentials
@@ -124,16 +123,16 @@ class HListTests {
   val m2i: M2[Int, Unit] = new M2[Int, Unit] {}
   val m2s: M2[String, Unit] = new M2[String, Unit] {}
   val m2d: M2[Double, Unit] = new M2[Double, Unit] {}
-  val m2im2sm2im2im2dList: List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]] = m2i :: m2s :: m2i :: m2i :: m2d :: Nil
-  val m2im2sm2im2im2dArray: Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]] = Array(m2i, m2s, m2i, m2i, m2d)
+  val m2im2sm2im2im2dList = m2i :: m2s :: m2i :: m2i :: m2d :: Nil
+  val m2im2sm2im2im2dArray = Array(m2i, m2s, m2i, m2i, m2d)
   val m2im2sm2im2im2d: M2IM2SM2IM2IM2D = m2i :: m2s :: m2i :: m2i :: m2d :: HNil
 
   val m2iExist: M2[Int, _] = new M2[Int, Unit] {}
   val m2sExist: M2[String, _] = new M2[String, Unit] {}
   val m2dExist: M2[Double, _] = new M2[Double, Unit] {}
   type M2EIM2ESM2EIM2EEM2ED = M2[Int, _] :: M2[String, _] :: M2[Int, _] :: M2[Int, _] :: M2[Double, _] :: HNil
-  val m2eim2esm2eim2eem2edList: List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]] = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: Nil
-  val m2eim2esm2eim2eem2edArray: Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]] = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
+  val m2eim2esm2eim2eem2edList = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: Nil
+  val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed: M2EIM2ESM2EIM2EEM2ED = m2iExist :: m2sExist :: m2iExist :: m2iExist :: m2dExist :: HNil
 
 
@@ -593,7 +592,7 @@ class HListTests {
     val hnil = HNil
     val snil = hnil.toSized[Array]
     assertEquals(Nat toInt hnil.length, snil.length)
-    val expectedUnsized = Array.empty[Nothing](using TestVersionSpecifics.NothingClassTag.classTag)
+    val expectedUnsized = Array.empty[Nothing](using shapeless.ops.ArrayOfNothing.classTag)
     equalInferredTypes(expectedUnsized, snil.unsized)
     assertArrayEquals2(expectedUnsized, snil.unsized)
 
@@ -634,7 +633,7 @@ class HListTests {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[Array]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, sizedM2eim2esm2eim2eem2ed.unsized)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x: Any), sizedM2eim2esm2eim2eem2ed.unsized.map(x => x: Any))
   }
 
@@ -931,7 +930,7 @@ class HListTests {
 
     val empty = HNil.to[Array]
     typed[Array[Nothing]](empty)
-    assertArrayEquals2(Array.empty[Nothing](using TestVersionSpecifics.NothingClassTag.classTag), empty)
+    assertArrayEquals2(Array[Nothing]()(using shapeless.ops.ArrayOfNothing.classTag), empty)
 
     implicitly[ToTraversable.Aux[HNil, Array, Nothing]]
     implicitly[ToTraversable.Aux[HNil, Array, Int]]
@@ -957,7 +956,7 @@ class HListTests {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
 
     val stuff = l1.to[Array]
-    typed[Array[TestVersionSpecifics.Lub2[Int, String]]](stuff)
+    typed[Array[Int | String]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
     val stuff2 = stuff.toHList[ISII]
@@ -985,7 +984,7 @@ class HListTests {
 
     val m = mimsmimimd.to[Array]
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.to[Array]
@@ -995,12 +994,12 @@ class HListTests {
 
     val m2 = m2im2sm2im2im2d.to[Array]
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
@@ -1011,7 +1010,7 @@ class HListTests {
 
     val empty = HNil.toArray
     typed[Array[Nothing]](empty)
-    assertArrayEquals2(Array.empty[Nothing](using TestVersionSpecifics.NothingClassTag.classTag), empty)
+    assertArrayEquals2(Array[Nothing]()(using shapeless.ops.ArrayOfNothing.classTag), empty)
 
     ToArray[HNil, Nothing]
     ToArray[HNil, Int]
@@ -1041,12 +1040,12 @@ class HListTests {
     val l1 = 1 :: "foo" :: 2 :: 3 :: HNil
 
     val stuff = l1.toArray
-    typed[Array[TestVersionSpecifics.Lub2[Int, String]]](stuff)
+    typed[Array[Int | String]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
     val ssl = "foo" :: "bar" :: 1L :: HNil
     val ssla = ssl.toArray
-    typed[Array[TestVersionSpecifics.Lub2[String, Long]]](ssla)
+    typed[Array[String | Long]](ssla)
     assertArrayEquals2(Array("foo", "bar", 1L), ssla)
 
     val stuff2 = stuff.toHList[ISII]
@@ -1074,7 +1073,7 @@ class HListTests {
 
     val m = mimsmimimd.toArray
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.toArray[M[_]]
@@ -1084,12 +1083,12 @@ class HListTests {
 
     val m2 = m2im2sm2im2im2d.toArray
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.toArray
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
 
@@ -2562,7 +2561,7 @@ class HListTests {
     type S = String; type I = Int; type D = Double; type C = Char
 
     { // rotateLeft(0)
-      val r1 = in0.rotateLeft(0)
+      val r1: in0.type = in0.rotateLeft(0)
       assertTypedSame[HNil](HNil, r1)
       val r2 = in1.rotateLeft(0)
       assertTypedSame[I :: HNil](in1, r2)
@@ -2575,7 +2574,7 @@ class HListTests {
     }
 
     { // rotateLeft[_0]
-      val r1 = in0.rotateLeft[_0]
+      val r1: in0.type = in0.rotateLeft[_0]
       assertTypedSame[HNil](HNil, r1)
       val r2 = in1.rotateLeft[_0]
       assertTypedSame[I :: HNil](in1, r2)
@@ -2682,7 +2681,7 @@ class HListTests {
     type S = String; type I = Int; type D = Double; type C = Char
 
     { // rotateRight(0)
-      val r1 = in0.rotateRight(0)
+      val r1: in0.type = in0.rotateRight(0)
       assertTypedSame[HNil](HNil, r1)
       val r2 = in1.rotateRight(0)
       assertTypedSame[I :: HNil](in1, r2)
@@ -2695,7 +2694,7 @@ class HListTests {
     }
 
     { // rotateRight[_0]
-      val r1 = in0.rotateRight[_0]
+      val r1: in0.type = in0.rotateRight[_0]
       assertTypedSame[HNil](HNil, r1)
       val r2 = in1.rotateRight[_0]
       assertTypedSame[I :: HNil](in1, r2)
@@ -2963,10 +2962,12 @@ class HListTests {
       implicit val zeroInt: ProductCase[HNil] { type Result = Int } = at[Int](0)
     }
 
-    implicit val emptyString = zero.at[String]("")
+    locally {
+      implicit val emptyString: zero.ProductCase[HNil] { type Result = String } = zero.at[String]("")
 
-    val out = HList.fillWith[Int :: String :: Int :: HNil](zero)
-    assertEquals(out, 0 :: "" :: 0 :: HNil)
+      val out = HList.fillWith[Int :: String :: Int :: HNil](zero)
+      assertEquals(out, 0 :: "" :: 0 :: HNil)
+    }
   }
 
   @Test
@@ -3190,15 +3191,15 @@ class HListTests {
       val v3 = Bar.sumImplicitLabelProduct("foo" :: 1 :: HNil)
       typed[(String, Int)](v3)
       assertEquals(("foo", 8), v3)
-    }
 
-    illTyped("""
+      illTyped("""
       Bar.sumLabelProduct("foo" :: "bar" :: 1 :: 2 :: HNil)
     """)
 
-    illTyped("""
+      illTyped("""
       Bar.sumMultipleParamListLabelProduct("foo" :: "1" :: 2 :: 3 :: HNil)
     """)
+    }
   }
 
   @Test
@@ -3360,15 +3361,17 @@ class HListTests {
   @Test
   def testLiftAll: Unit = {
     trait F[A]
-    implicit object FInt extends F[Int]
-    implicit object FString extends F[String]
+    locally {
+      implicit object FInt extends F[Int]
+      implicit object FString extends F[String]
 
-    assertEquals(HNil, implicitly[LiftAll[F, HNil]].instances)
-    assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :: HNil]].instances)
-    assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :: Int :: HNil]].instances)
-    illTyped("implicitly[LiftAll[F, Long :: String :: Int :: HNil]]")
+      assertEquals(HNil, implicitly[LiftAll[F, HNil]].instances)
+      assertEquals(FInt :: HNil, implicitly[LiftAll[F, Int :: HNil]].instances)
+      assertEquals(FString :: FInt :: HNil, implicitly[LiftAll[F, String :: Int :: HNil]].instances)
+      illTyped("implicitly[LiftAll[F, Long :: String :: Int :: HNil]]")
 
-    assertEquals(FInt :: HNil, LiftAll[F](1 :: HNil).instances)
+      assertEquals(FInt :: HNil, LiftAll[F](1 :: HNil).instances)
+    }
   }
 
   @Test

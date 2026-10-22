@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2012 Miles Sabin 
  *
@@ -51,7 +52,7 @@ object CombinatorTesting extends App {
   /**
    * Flatten instance for `A ~ B`. Requires Flatten instances for `A` and `B`. 
    */
-  implicit def flattenPattern[A, B](implicit flattenA : Flatten[A], flattenB : Flatten[B]): Flatten[A ~ B] = new Flatten[A ~ B] {
+  implicit def flattenPattern[A, B](implicit flattenA : Flatten[A], flattenB : Flatten[B]): Flatten[CombinatorParser.~[A, B]] = new Flatten[A ~ B] {
     def apply(m : A ~ B) = m match { case a ~ b => flattenA(a) ::: flattenB(b) } 
   }
   

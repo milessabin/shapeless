@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin 
  *
@@ -35,7 +36,7 @@ object FibonacciExamples {
   object Fibonacci {
     def apply(i: Nat, j: Nat) = new Fibonacci[i.N, j.N]
 
-    implicit val fib0: Fibonacci[_0, _0] = Fibonacci(0, 0)
+    implicit val fib0: Fibonacci[Nat._0.N, Nat._0.N] = Fibonacci(0, 0)
     implicit val fib1: Fibonacci[Succ[_0], Succ[_0]] = Fibonacci(1, 1)
   
     implicit def fibN[I <: Nat, L <: Nat, M <: Nat]
@@ -76,7 +77,7 @@ object FibonacciExamples {
   }
 
   object Fibs {
-    implicit def fibs0: Fibs[nat._0, HNil] = new Fibs[_0, HNil] {
+    implicit def fibs0: Fibs[Nat._0, HNil] = new Fibs[_0, HNil] {
       def apply() = HNil
     }
     

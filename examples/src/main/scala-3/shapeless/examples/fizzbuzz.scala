@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin
  *
@@ -114,10 +115,10 @@ object FizzBuzzExample {
 
   /** Converts subtypes of FizzBuzz into string representations */
   object FizzBuzzToString extends Poly1 {
-    implicit val fizz: Case.Aux[FizzBuzz.Fizz.type, String] = at[Fizz.type](_ => "fizz")
-    implicit val buzz: Case.Aux[FizzBuzz.Buzz.type, String] = at[Buzz.type](_ => "buzz")
-    implicit val fizzAndBuzz: Case.Aux[FizzBuzz.FizzAndBuzz.type, String] = at[FizzAndBuzz.type](_ => "fizzbuzz")
-    implicit def other[N <: Nat](implicit t: ToInt[N]): Case.Aux[FizzBuzz.Other[N], String] = at[Other[N]](n => t().toString)
+    implicit val fizz: Case.Aux[Fizz.type, String] = at[Fizz.type](_ => "fizz")
+    implicit val buzz: Case.Aux[Buzz.type, String] = at[Buzz.type](_ => "buzz")
+    implicit val fizzAndBuzz: Case.Aux[FizzAndBuzz.type, String] = at[FizzAndBuzz.type](_ => "fizzbuzz")
+    implicit def other[N <: Nat](implicit t: ToInt[N]): Case.Aux[Other[N], String] = at[Other[N]](n => t().toString)
   }
 
   /**

@@ -266,6 +266,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .dependsOn(coreTestMacros % "test->compile")
   .settings(macroAnnotationSettings)
   .settings(compilerShimSettings)
+  .jvmSettings(scala3GeneratedSettings(Test))
 
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js.settings(jsSourceMapSettings)
@@ -304,6 +305,7 @@ lazy val examples = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .nativeSettings(Compile / sources ~= (_.filterNot(_.getName == "sexp.scala")))
+  .jvmSettings(scala3GeneratedSettings(Compile, Test))
 
 lazy val examplesJVM = examples.jvm
 lazy val examplesJS = examples.js
@@ -351,6 +353,108 @@ lazy val versionSpecificSources: Seq[Setting[?]] =
       }
     )
   }
+
+/**
+ * Scala 3 versions of tests and examples generated from their Scala 2 versions by the scalafix rules in `scalafix`.
+ *
+ * A generated `scala-3/X.scala` starts with the line `Scala3Generate.header`, and is compiled with Scala 3 in place of
+ * `scala/X.scala` as described for `versionSpecificSources` above. It's what the rules generate from `scala/X.scala`,
+ * with the patch `scala-3/X.scala.patch`, if any, applied, which makes the changes the rules can't. The rules use the
+ * SemanticDB of the Scala 2 versions, so these are run with Scala 2,
+ *
+ * - `scala3Generate` regenerates the generated sources, and `scala3Generate <path of scala/X.scala> ...` also
+ *   generates the Scala 3 versions of the sources given.
+ * - `scala3RecordPatches` records the differences between the generated sources, as edited, and what the rules
+ *   generate as their patches.
+ * - `scala3GenerateCheck` fails if any generated source differs from what `scala3Generate` would generate.
+ */
+lazy val scala3Generate = inputKey[Unit]("Generate the Scala 3 versions of sources from their Scala 2 versions")
+lazy val scala3GenerateCheck = taskKey[Unit]("Check that the generated Scala 3 versions of sources are up to date")
+lazy val scala3RecordPatches = taskKey[Unit]("Record the edits of generated Scala 3 versions of sources as patches")
+lazy val scala3GenerateInputs = taskKey[Scala3Generate.Inputs]("The inputs to scalafix for a configuration")
+lazy val scala3GenerateSources = inputKey[Seq[Scala3Generate.Generated]]("The Scala 3 versions the rules generate")
+
+def scala3GeneratedSettings(configs: Configuration*): Seq[Setting[?]] = {
+  val filter = ScopeFilter(configurations = inConfigurations(configs: _*))
+  configs.map { sc =>
+    sc / scala3GenerateInputs := {
+      if (!isScala2(scalaVersion.value)) sys.error(s"Scala 3 versions are generated with Scala 2 (eg. ++$Scala213)")
+      val _ = (sc / compile).value
+      Scala3Generate.Inputs(
+        (sc / unmanagedSourceDirectories).value,
+        (sc / fullClasspath).value.files,
+        (sc / semanticdbTargetRoot).value,
+        (sc / scalacOptions).value
+      )
+    }
+  } ++ Seq(
+    semanticdbEnabled := isScala2(scalaVersion.value),
+    semanticdbVersion := "4.15.2",
+    // The rules use the implicit conversions which the SemanticDB records as synthetics
+    semanticdbOptions ++= (if (isScala2(scalaVersion.value)) Seq("-P:semanticdb:synthetics:on") else Nil),
+    scala3GenerateSources := {
+      val requested = Def.spaceDelimited("<path of scala/X.scala>").parsed.map(file(_).getAbsoluteFile)
+      val rulesClasspath = (scalafixRules / Compile / exportedProductJars).value.files
+      val sourceroot = (LocalRootProject / baseDirectory).value
+      val log = streams.value.log
+      scala3GenerateInputs.all(filter).value.flatMap { inputs =>
+        Scala3Generate.generate(Scala3Generate.sources(inputs, requested), inputs, rulesClasspath, sourceroot, scalaVersion.value, log)
+      }
+    },
+    scala3Generate := {
+      val log = streams.value.log
+      val generated = scala3GenerateSources.evaluated
+      val failures = generated.flatMap(g => g.patched.left.toOption)
+      if (failures.nonEmpty) sys.error(failures.mkString("\n"))
+      generated.foreach { g =>
+        g.patched.foreach { content =>
+          if (!g.target.exists || IO.read(g.target) != content) {
+            IO.write(g.target, content)
+            log.info(s"Generated ${g.target}")
+          }
+        }
+      }
+    },
+    scala3RecordPatches := {
+      val log = streams.value.log
+      scala3GenerateSources.toTask("").value.foreach { g =>
+        g.patchFor(IO.read(g.target)) match {
+          case Some(patch) =>
+            if (!g.patchFile.exists || IO.read(g.patchFile) != patch) {
+              IO.write(g.patchFile, patch)
+              log.info(s"Recorded ${g.patchFile}")
+            }
+          case None =>
+            if (g.patchFile.exists) {
+              IO.delete(g.patchFile)
+              log.info(s"Deleted ${g.patchFile}")
+            }
+        }
+      }
+    },
+    scala3GenerateCheck := {
+      val problems = scala3GenerateSources.toTask("").value.flatMap { g =>
+        g.patched match {
+          case Left(failure) => Some(failure)
+          case Right(content) if !g.target.exists || IO.read(g.target) != content =>
+            Some(s"${g.target} is out of date (run scala3Generate, or scala3RecordPatches if it was edited)")
+          case Right(_) => None
+        }
+      }
+      if (problems.nonEmpty) sys.error(problems.mkString("\n"))
+    }
+  )
+}
+
+/** The scalafix rules which generate Scala 3 versions of sources from their Scala 2 versions */
+lazy val scalafixRules = project.in(file("scalafix"))
+  .settings(noPublishSettings)
+  .settings(
+    moduleName := "shapeless-scalafix",
+    scalaVersion := Scala213,
+    crossScalaVersions := Seq(Scala213),
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % "0.14.6"
+  )
 
 lazy val publishSettings = Seq(
   // See the CI_RELEASE command above: only the Scala 3.3 build of the `_3` artifacts is published

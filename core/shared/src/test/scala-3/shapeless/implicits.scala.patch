@@ -1,0 +1,23 @@
+--- generated/implicits.scala
++++ scala-3/implicits.scala
+@@ -85,16 +85,17 @@
+ 
+ class CachedTest {
+   import CachedTestDefns._
+-  import CachedTest._
++  // Qualified, as Scala 3 deems the class CachedTest and CachedTestDefns.CachedTest ambiguous
++  import CachedTestDefns.CachedTest._
+ 
+   @Test
+   def testBasics: Unit = {
+-    assertTrue(CachedTest.i != null)
++    assertTrue(CachedTestDefns.CachedTest.i != null)
+   }
+ 
+   @Test
+   def testLazy: Unit = {
+-    assertTrue(CachedTest.il != null)
++    assertTrue(CachedTestDefns.CachedTest.il != null)
+   }
+ 
+   trait Foo[A]

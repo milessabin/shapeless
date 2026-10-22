@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-16 Miles Sabin
  *
@@ -29,32 +30,34 @@ class LazyStrictTests {
   def testEffectOrder: Unit = {
     val effects = ListBuffer[Int]()
 
-    implicit def int: Int = { effects += 3; 23 }
-    implicit def long: Long = { effects += 6; 23 }
+    locally {
+      implicit def int: Int = { effects += 3; 23 }
+      implicit def long: Long = { effects += 6; 23 }
 
-    def summonLazyInt(implicit li: => Int): Int = {
-      effects += 2
-      val i = li
-      effects += 4
-      i
+      def summonLazyInt(implicit li: => Int): Int = {
+        effects += 2
+        val i = li
+        effects += 4
+        i
+      }
+
+      def summonStrictLong(implicit sl: Strict[Long]): Long = {
+        effects += 7
+        val i = sl.value
+        effects += 8
+        i
+      }
+
+      effects += 1
+      val li = summonLazyInt
+      effects += 5
+      val sl = summonStrictLong
+      effects += 9
+
+      assertEquals(23, li)
+      assertEquals(23, sl)
+      assertEquals(1 to 9, effects.toList)
     }
-
-    def summonStrictLong(implicit sl: Strict[Long]): Long = {
-      effects += 7
-      val i = sl.value
-      effects += 8
-      i
-    }
-
-    effects += 1
-    val li = summonLazyInt
-    effects += 5
-    val sl = summonStrictLong
-    effects += 9
-
-    assertEquals(23, li)
-    assertEquals(23, sl)
-    assertEquals(1 to 9, effects.toList)
   }
 
   @Test
@@ -319,12 +322,14 @@ class LazyStrictTests {
     trait IdTag
     type Id = String @@ IdTag
 
-    implicit def taggedStringReadable[T, M[_, _]](
-      implicit ev: String @@ T =:= M[String, T]
-    ): Readable[M[String, T]] = new Readable
+    locally {
+      implicit def taggedStringReadable[T, M[_, _]](
+        implicit ev: String @@ T =:= M[String, T]
+      ): Readable[M[String, T]] = new Readable
 
-    implicitly[Readable[Id]]
-    implicitly[Lazy[Readable[Id]]]
-    implicitly[Strict[Readable[Id]]]
+      implicitly[Readable[Id]]
+      implicitly[Lazy[Readable[Id]]]
+      implicitly[Strict[Readable[Id]]]
+    }
   }
 }

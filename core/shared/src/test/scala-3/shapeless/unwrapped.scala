@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 
 /*
  * Copyright (c) 2016 Miles Sabin
@@ -65,17 +66,19 @@ class UnwrappedTests {
     }
     type MyString = Newtype[String, MyStringOps]
     def MyString(s : String) : MyString = newtype(s)
-    implicit val mkOps: MyStringOps.type = MyStringOps
+    locally {
+      implicit val mkOps: MyStringOps.type = MyStringOps
 
-    val pass = the[Pass[MyString]]
-    the[pass.U =:= String]
-    val ms = MyString("testing")
-    val actual = pass.actual(ms)
-    val wrapped = pass.wrapped(ms.stringValue)
-    val unwrapped = pass.unwrapped(ms)
-    assert((actual: MyString) == ms)
-    assert((wrapped: MyString) == ms)
-    assert((unwrapped: String) == ms.stringValue)
+      val pass = the[Pass[MyString]]
+      the[pass.U =:= String]
+      val ms = MyString("testing")
+      val actual = pass.actual(ms)
+      val wrapped = pass.wrapped(ms.stringValue)
+      val unwrapped = pass.unwrapped(ms)
+      assert((actual: MyString) == ms)
+      assert((wrapped: MyString) == ms)
+      assert((unwrapped: String) == ms.stringValue)
+    }
   }
 
   @Test
@@ -107,23 +110,25 @@ class UnwrappedTests {
     }
     def value[T](t: Tagged[T, _]): T = t.asInstanceOf[T]
 
-    implicit def taggedUnwrapped[UI, T, UF](implicit chain: => Unwrapped.Aux[UI, UF]): Unwrapped.Aux[UI @@ T, UF] =
-      new Unwrapped[UI @@ T] {
-        type U = UF
-        def unwrap(w: UI @@ T) = chain.unwrap(value(w))
-        def wrap(u: UF) = tag[T](chain.wrap(u))
-      }
+    locally {
+      implicit def taggedUnwrapped[UI, T, UF](implicit chain: => Unwrapped.Aux[UI, UF]): Unwrapped[UI @@ T] { type U = UF } =
+        new Unwrapped[UI @@ T] {
+          type U = UF
+          def unwrap(w: UI @@ T) = chain.unwrap(value(w))
+          def wrap(u: UF) = tag[T](chain.wrap(u))
+        }
 
-    val pass = the[Pass[String @@ TestTag]]
-    the[pass.U =:= String]
-    val tagged = tag[TestTag]("testing")
-    val actual = pass.actual(tagged)
-    val wrapped = pass.wrapped(value(tagged))
-    val unwrapped = pass.unwrapped(tagged)
-    assert((actual: String @@ TestTag) == tagged)
-    assert((wrapped: String @@ TestTag) == tagged)
-    assert((unwrapped: String) == value(tagged))
-    test.illTyped("unwrapped: String @@ TestTag")
+      val pass = the[Pass[String @@ TestTag]]
+      the[pass.U =:= String]
+      val tagged = tag[TestTag]("testing")
+      val actual = pass.actual(tagged)
+      val wrapped = pass.wrapped(value(tagged))
+      val unwrapped = pass.unwrapped(tagged)
+      assert((actual: String @@ TestTag) == tagged)
+      assert((wrapped: String @@ TestTag) == tagged)
+      assert((unwrapped: String) == value(tagged))
+      test.illTyped("unwrapped: String @@ TestTag")
+    }
   }
 
   @Test
@@ -149,19 +154,21 @@ class UnwrappedTests {
     }
     type MyString = Newtype[AvWrapper, MyStringOps]
     def MyString(a: AvWrapper): MyString = newtype(a)
-    implicit val mkOps: MyStringOps.type = MyStringOps
+    locally {
+      implicit val mkOps: MyStringOps.type = MyStringOps
 
 
-    val ms = MyString(AvWrapper("testing"))
+      val ms = MyString(AvWrapper("testing"))
 
-    val pass = the[Pass[MyString]]
-    the[pass.U =:= String]
-    val actual = pass.actual(ms)
-    val wrapped = pass.wrapped(ms.stringValue)
-    val unwrapped = pass.unwrapped(ms)
-    assert((actual: MyString) == ms)
-    assert((wrapped: MyString) == ms)
-    assert((unwrapped: String) == ms.stringValue)
+      val pass = the[Pass[MyString]]
+      the[pass.U =:= String]
+      val actual = pass.actual(ms)
+      val wrapped = pass.wrapped(ms.stringValue)
+      val unwrapped = pass.unwrapped(ms)
+      assert((actual: MyString) == ms)
+      assert((wrapped: MyString) == ms)
+      assert((unwrapped: String) == ms.stringValue)
+    }
   }
 
   @Test

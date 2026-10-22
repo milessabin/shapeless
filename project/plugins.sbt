@@ -12,3 +12,5 @@ addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0")
 addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "1.4.0")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.32.1")
 addSbtPlugin("com.github.sbt" % "sbt-git" % "2.2.0")
+libraryDependencies += "ch.epfl.scala" % "scalafix-interfaces" % "0.14.6"
+libraryDependencies += "io.github.java-diff-utils" % "java-diff-utils" % "4.12"

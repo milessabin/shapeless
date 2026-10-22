@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin 
  *
@@ -179,6 +180,10 @@ class SizedTests {
 
     val is0 = Sized()
     typed[Sized[IndexedSeq[Nothing], _0]](is0)
+    val is1 = Sized[IndexedSeq]("foo")
+    typed[Sized[IndexedSeq[String], _1]](is1)
+    val is2 = Sized[IndexedSeq]("foo", "bar")
+    typed[Sized[IndexedSeq[String], _2]](is2)
     
     val isl0 = Sized[List]()
     typed[Sized[List[Nothing], _0]](isl0)

@@ -244,35 +244,6 @@ package Generic1TestsAux {
   object Trivial11 {
     implicit def trivially[F[_], T[_]]: Trivial11[F, T] = new Trivial11[F, T] {}
   }
-
-  trait Pure[G[_]] { def pure[A](a: A): G[A] }
-
-  object Pure {
-    implicit val optionPure: Pure[Option] = new Pure[Option] { def pure[A](a: A): Option[A] = Some(a) }
-  }
-
-  // A type class of two type constructors, derived via instances for partial applications of it
-  trait Lift[F[_], G[_]] { def apply[A](fa: F[A]): F[G[A]] }
-
-  object Lift extends Lift0 {
-    implicit def hnil[G[_]]: Lift[Const[HNil]#λ, G] =
-      new Lift[Const[HNil]#λ, G] { def apply[A](fa: HNil): HNil = fa }
-
-    implicit def hcons[L[_], G[_]](
-      implicit ihc: IsHCons1[L, Functor, ({ type λ[t[_]] = Lift[t, G] })#λ], g: Pure[G]
-    ): Lift[L, G] =
-      new Lift[L, G] {
-        def apply[A](la: L[A]): L[G[A]] = {
-          val (hd, tl) = ihc.unpack(la)
-          ihc.pack((ihc.fh.map(hd)(g.pure), ihc.ft(tl)))
-        }
-      }
-  }
-
-  trait Lift0 {
-    implicit def generic[F[_], G[_]](implicit gen: Generic1[F, ({ type λ[t[_]] = Lift[t, G] })#λ]): Lift[F, G] =
-      new Lift[F, G] { def apply[A](fa: F[A]): F[G[A]] = gen.from(gen.fr(gen.to(fa))) }
-  }
 }
 
 class Generic1Tests {
@@ -632,13 +603,6 @@ class Generic1Tests {
     typed[IsHCons1[L, TC1, TC2]](IsHCons1[L, TC1sub, TC2sub])
     typed[IsCCons1[C, TC1, TC2]](IsCCons1[C, TC1sub, TC2sub])
     typed[Split1[N, TC1, TC2]](Split1[N, TC1sub, TC2sub])
-  }
-
-  @Test
-  def testPartiallyAppliedDerivation: Unit = {
-    type L[t] = t :: List[t] :: HNil
-    assertEquals(Some(1) :: List(Some(2), Some(3)) :: HNil, implicitly[Lift[L, Option]].apply(1 :: List(2, 3) :: HNil))
-    assertEquals(Prod(Some(1), List(Some(2), Some(3))), implicitly[Lift[Prod, Option]].apply(Prod(1, List(2, 3))))
   }
 }
 

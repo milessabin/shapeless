@@ -1,0 +1,25 @@
+--- generated/delta.scala
++++ scala-3/delta.scala
+@@ -20,9 +20,9 @@
+ import shapeless._
+ 
+ object DeltaExamples extends App {
+-  // A pair of arbitrary case classes
++  // An arbitrary case class. The Scala 2 version of this example also derives Delta for a recursive case class, which
++  // crashes Scala 3 (3.3.8 to at least 3.10.0) when it pickles the knot tying the recursive by-name implicits together
+   case class Foo(i : Int, s : String)
+-  case class Bar(b : Boolean, s : String, of: Option[Bar])
+ 
+   import DeltaSyntax._
+ 
+@@ -30,10 +30,6 @@
+   assert(("foo", "bar") == "foo".delta("bar"))
+   assert(6 :: ("foo", "bar") :: HNil == (2 :: "foo" :: HNil).delta(8 :: "bar" :: HNil))
+   assert(6 :: ("foo", "bar") :: HNil == Foo(2, "foo").delta(Foo(8, "bar")))
+-  assert(
+-    Bar(true,  "foo",  Some(Bar(true, "bar",  None))).delta(Bar(false, "food", Some(Bar(true, "barf", None)))) ==
+-    false :: ("foo", "food") :: Inl(Some(true :: ("bar", "barf") :: Inl(None) :: HNil)) :: HNil
+-  )
+ }
+ 
+ trait Delta[In] {

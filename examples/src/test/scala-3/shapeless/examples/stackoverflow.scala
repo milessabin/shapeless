@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-14 Miles Sabin 
  *
@@ -43,7 +44,7 @@ class StackOverflow1 {
   @Test
   def testFoldCurry: Unit = {
     val f1 = (i : Int, j : Int, k : Int, l : Int) => i+j+k+l
-    val f1c = f1.curried
+    val f1c = (f1.apply _).curried
     
     val l1 = 1 :: 2 :: 3 :: 4 :: HNil
 
@@ -52,7 +53,7 @@ class StackOverflow1 {
     assertEquals(10, r1)
     
     val f2 = (i : Int, s : String, d : Double) => (i+1, s.length, d*2)
-    val f2c = f2.curried
+    val f2c = (f2.apply _).curried
     
     val l2 = 23 :: "foo" :: 2.0 :: HNil
     

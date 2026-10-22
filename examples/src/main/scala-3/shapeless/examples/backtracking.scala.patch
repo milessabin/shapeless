@@ -1,0 +1,61 @@
+--- generated/backtracking.scala
++++ scala-3/backtracking.scala
+@@ -48,54 +48,11 @@
+   implicit val fact6:    Ben FatherOf Sarah = fact()
+ 
+   // -------------------------------------------------------------------------
+-  // A Prolog style, direct encoding of this problem would use 4 rules:
+-  // - A FatherOf D => A IsAncestor D
+-  // - A MotherOf D => A IsAncestor D
+-  // - A FatherOf Z & Z IsAncestor D => A IsAncestor D
+-  // - A MotherOf Z & Z IsAncestor D => A IsAncestor D
++  // A Prolog style, direct encoding of this problem (see the Scala 2 version of
++  // this example) doesn't work, because implicit search does not
++  // backtrack: on Scala 2 some ancestors aren't found, and on Scala 3 the
++  // ambiguities encountered along the way are errors.
+   //
+-  // Translated to scala, it looks like the `IsAncestor` typeclass below.
+-  // -------------------------------------------------------------------------
+-
+-  /** Typeclass witnessing that all `Ancestor` is an ancestor of `Descendant`. */
+-  trait IsAncestor[Ancestor, Descendant]
+-
+-  object IsAncestor {
+-    def apply[A, D](implicit i: IsAncestor[A, D]): IsAncestor[A, D] = i
+-
+-    implicit def directFather[A, D]
+-      (implicit e: FatherOf[A, D]): IsAncestor[A, D] = new IsAncestor[A, D] {}
+-
+-    implicit def directMother[A, D]
+-      (implicit e: MotherOf[A, D]): IsAncestor[A, D] = new IsAncestor[A, D] {}
+-
+-    implicit def fatherSideRelation[A, D, Z]
+-      (implicit e: FatherOf[A, Z], i: IsAncestor[Z, D]): IsAncestor[A, D] = new IsAncestor[A, D] {}
+-
+-    implicit def motherSideRelation[A, D, Z]
+-      (implicit e: MotherOf[A, Z], i: IsAncestor[Z, D]): IsAncestor[A, D] = new IsAncestor[A, D] {}
+-  }
+-
+-  // -------------------------------------------------------------------------
+-  // This approach kind of works, but it quickly hits an important limitation
+-  // of scala implicit search: it does not do backtracking. In this example
+-  // IsAncestor[Stacy, Buffy] is indeed true, but the complier gets confused.
+-  // -------------------------------------------------------------------------
+-
+-  // Stacy   Philip
+-  //      \ /
+-  //      Bob    Julie
+-  //      / \   /
+-  //  Bill   Ben
+-  //    |     \
+-  //  Buffy  Sarah
+-
+-  IsAncestor[Stacy, Bob]
+-  IsAncestor[Stacy, Bill]
+-  illTyped("IsAncestor[Stacy, Buffy]") // hmmm... why doesn't this compile?
+-  illTyped("IsAncestor[Ben, Bill]")
+-
+-  // -------------------------------------------------------------------------
+   // A possible workaround consists in computing *all* the ancestors or a
+   // person in a `HList`, and define the family relationship in term of
+   // containment in in the list of all ancestors.

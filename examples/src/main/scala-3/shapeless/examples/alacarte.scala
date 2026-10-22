@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Miles Sabin
  *
@@ -34,12 +35,7 @@ object ALaCarteDemo extends App {
   // Scala case class ...
   object FooDefns extends DefaultCaseClassDefns {
     type C = Foo
-    // The refinement must be explicit on Scala 3, where an overriding val takes the type of the overridden val
-    val ops: CaseClassOps {
-      type Repr = Int :: String :: HNil
-      type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil
-      type P = (Int, String)
-    } = Ops
+    val ops: CaseClassOps { type Repr = Int :: String :: HNil; type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil; type P = (Int, String) } = Ops
   }
 
   // Definitions of Foo and its companion in terms of the prior
@@ -55,7 +51,7 @@ object ALaCarteDemo extends App {
   typed[Foo](foo)
 
   // Companion unapply
-  val Foo(i, s) = foo
+  val Foo(i, s) = (foo: @unchecked)
   typed[Int](i)
   typed[String](s)
 

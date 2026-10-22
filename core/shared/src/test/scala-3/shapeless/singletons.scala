@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-16 Miles Sabin
  *
@@ -52,8 +53,8 @@ class SingletonTypesTests {
 
   @Test
   def testRefine: Unit = {
-    val sTrue: true = true.narrow
-    val sFalse: false = false.narrow
+    val sTrue = true.narrow
+    val sFalse = false.narrow
 
     sameTyped(sTrue)(sTrue)
     sameTyped(sTrue)(true)
@@ -63,8 +64,8 @@ class SingletonTypesTests {
       sameTyped[true](sTrue)(false)
     """)
 
-    val s13: 13 = 13.narrow
-    val s23: 23 = 23.narrow
+    val s13 = 13.narrow
+    val s23 = 23.narrow
 
     sameTyped(s13)(s13)
     sameTyped(s13)(13)
@@ -74,8 +75,8 @@ class SingletonTypesTests {
       sameTyped[13](s13)(23)
     """)
 
-    val sFoo: "foo" = "foo".narrow
-    val sBar: "bar" = "bar".narrow
+    val sFoo = "foo".narrow
+    val sBar = "bar".narrow
 
     sameTyped(sFoo)(sFoo)
     sameTyped(sFoo)("foo")

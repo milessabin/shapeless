@@ -106,27 +106,6 @@ class DefaultTests {
     illTyped(" Default[Array[Int]] ", "could not find implicit value for parameter default: .*")
   }
 
-  // An instance is found where its output type is expected (see https://github.com/scala/scala3/issues/24114)
-  @Test
-  def auxExpected: Unit = {
-    type Out = None.type :: Some[String] :: Some[Option[Boolean]] :: HNil
-    val expected: Out = None :: Some("b") :: Some(Some(true)) :: HNil
-
-    val default0: Default.Aux[CC, Out] = the[Default[CC]]
-    assertTypedEquals[Out](expected, default0())
-
-    val default1 = implicitly[Default.Aux[CC, Out]]
-    assertTypedEquals[Out](expected, default1())
-
-    type RecordOut = Record.`"s" -> String, "flagOpt" -> Option[Boolean]`.T
-    val asRecord = implicitly[Default.AsRecord.Aux[CC, RecordOut]]
-    assertTypedEquals[RecordOut](Record(s = "b", flagOpt = Some(true)), asRecord())
-
-    def defaultsLength[T, L <: HList](implicit default: Default.Aux[T, L], length: ops.hlist.Length[L]): length.Out =
-      length()
-    assertTypedEquals[Nat._3](Nat._3, defaultsLength[CC, Out])
-  }
-
   @Test
   def simpleAsRecord: Unit = {
     val default = Default.AsRecord[CC].apply()

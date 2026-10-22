@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-14 Miles Sabin
  *
@@ -89,8 +90,8 @@ class MonoidTests {
 
   @Test
   def testBasics: Unit = {
-    implicit val fooInstance: Monoid[Foo] = Monoid.deriveInstance
-    implicit val barInstance: Monoid[Bar] = Monoid.deriveInstance
+    implicit val fooInstance: Monoid[Foo] = cachedImplicit
+    implicit val barInstance: Monoid[Bar] = cachedImplicit
 
     val f = Foo(13, "foo") |+| Foo(23, "bar")
     assertEquals(Foo(36, "foobar"), f)

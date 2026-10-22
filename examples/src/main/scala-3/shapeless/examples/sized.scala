@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-13 Miles Sabin 
  *
@@ -33,7 +34,7 @@ object SizedExamples extends App {
     row(hdrs) :: rows.map(row(_))
   
   def fullyStatic: Unit = {
-    val hdrs = Sized[IndexedSeq]("Title", "Author")         // Sized[IndexedSeq[String], _2]
+    val hdrs = Sized[IndexedSeq]("Title", "Author")                     // Sized[IndexedSeq[String], _2]
     val rows = List(                                        // List[Sized[IndexedSeq[String], _2]]
       Sized[IndexedSeq]("Types and Programming Languages", "Benjamin Pierce"),
       Sized[IndexedSeq]("The Implementation of Functional Programming Languages", "Simon Peyton-Jones")
@@ -46,7 +47,7 @@ object SizedExamples extends App {
     println()
     
     // extendedHdrs has the wrong number of columns for rows
-    val extendedHdrs = Sized[IndexedSeq]("Title", "Author", "ISBN") // Sized[IndexedSeq[Int], _3]
+    val extendedHdrs = Sized[IndexedSeq]("Title", "Author", "ISBN")     // Sized[IndexedSeq[Int], _3]
     //val badFormatted = csv(threeHdrs, rows)               // Does not compile
 
     // Extend the rows to match ...

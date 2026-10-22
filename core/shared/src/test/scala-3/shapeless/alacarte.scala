@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Miles Sabin
  *
@@ -24,12 +25,7 @@ import test._
 package ALaCarteTestsAux {
   object FooDefns extends DefaultCaseClassDefns {
     type C = Foo
-    // The refinement must be explicit on Scala 3, where an overriding val takes the type of the overridden val
-    val ops: CaseClassOps {
-      type Repr = Int :: String :: HNil
-      type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil
-      type P = (Int, String)
-    } = Ops
+    val ops: CaseClassOps { type Repr = Int :: String :: HNil; type LRepr = labelled.FieldType["i", Int] :: labelled.FieldType["s", String] :: HNil; type P = (Int, String) } = Ops
   }
 
   object Foo extends FooDefns.CaseClassCompanion
@@ -44,7 +40,7 @@ class ALaCarteTests {
     val foo = Foo(23, "foo")
     typed[Foo](foo)
 
-    val Foo(i, s) = foo
+    val Foo(i, s) = (foo: @unchecked)
     typed[Int](i)
     typed[String](s)
   }

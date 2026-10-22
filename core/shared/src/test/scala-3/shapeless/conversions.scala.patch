@@ -1,0 +1,12 @@
+--- generated/conversions.scala
++++ scala-3/conversions.scala
+@@ -99,7 +99,8 @@
+ 
+       val res = (2 :: "a" :: 1.3 :: HNil) applied ((i, s, d) => (s * i, d * i)) // Function argument types inferred
+ 
+-      assert((res: (String, Double)) == ("aa", 2.6))
++      // On Scala 3 the result type of the function literal is that expected (Any) rather than inferred from its body
++      assert((res: Any) == (("aa", 2.6)))
+     }
+ 
+   }

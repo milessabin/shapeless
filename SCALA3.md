@@ -119,3 +119,21 @@ eg. `scala-3.3`) directories alongside the shared `scala` directories,
   one. The tests and examples use this to keep the sources compiled with Scala 2 unchanged: where a test or example
   must differ on Scala 3, its Scala 3 version is `scala-3/<same path>`, and `diff scala/X.scala scala-3/X.scala` shows
   exactly what differs. A marker file `scala-3/<same path>.omit` omits a Scala 2 only test or example on Scala 3.
+
+Most of the Scala 3 versions of tests and examples are generated from their Scala 2 versions. The scalafix rules in
+`scalafix` make the changes Scala 3 requires which can be derived from the types Scala 2 infers (eg. giving implicit
+definitions their inferred result types, and making explicit the conversions to shapeless' tuple operations where
+`scala.Tuple` has members of the same names), and then a patch, `scala-3/X.scala.patch`, makes those they can't (eg.
+expecting the types Scala 3 infers where they differ, or omitting tests of what is only available on Scala 2). A
+generated source starts with a line saying so. The Scala 2 versions are unchanged, so,
+
+* after changing the Scala 2 version of a test or example, regenerate its Scala 3 version with
+  `sbt ++2.13.18 scala3Generate` (`scala3Generate <path of scala/X.scala> ...` generates the Scala 3 versions of
+  further sources). If its patch no longer applies, edit the Scala 3 version as it should be.
+* after editing the Scala 3 version of a test or example, record the edits as its patch with
+  `sbt ++2.13.18 scala3RecordPatches`, before regenerating it, which would otherwise discard them.
+
+`scala3GenerateCheck` fails if any generated source is out of date. The rules use the SemanticDB of the Scala 2
+compilation, and scalafix can't read the class files of recent JDKs (eg. JDK 27), so run these with JDK 17 or 21. Types
+which Scala 3 infers and which tests expect, but which Scala 2 code can't express (eg. union types), are defined in
+`TestVersionSpecifics` (eg. `Lub2[A, B]` for the least upper bound of unrelated `A` and `B`).

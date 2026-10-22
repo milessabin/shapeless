@@ -1,0 +1,11 @@
+--- generated/scalding.scala
++++ scala-3/scalding.scala
+@@ -62,7 +62,7 @@
+       "text" ->> "No, no, I can't tell you everything" :: HNil
+     )
+ 
+-  val lines = books.flatMap(book => for(word <- book("text").split("\\s+")) yield book + ("word" ->> word))
++  val lines = books.flatMap(book => for(word <- book("text").split("\\s+").toList) yield book + ("word" ->> word))
+   lines foreach println
+ }  
+ 

@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2012-14 Miles Sabin 
  *
@@ -37,7 +38,7 @@ object FlattenExample {
 
   val t1 = (1, ((2, 3), 4))
   val f1 = flatten(t1)     // Inferred type is (Int, Int, Int, Int)
-  val l1 = f1.toList       // Inferred type is List[Int]
+  val l1 = productTupleOps(f1).toList       // Inferred type is List[Int]
   typed[List[Int]](l1)
   
   object toDouble extends Poly1 {
@@ -47,8 +48,8 @@ object FlattenExample {
   
   val t2 = (1, ((2, 3.0), 4))
   val f2 = flatten(t2)     // Inferred type is (Int, Int, Double, Int)
-  val ds = f2 map toDouble // Inferred type is (Double, Double, Double, Double)
-  val l2 = ds.toList       // Inferred type is List[Double]
+  val ds = productTupleOps(f2) map toDouble // Inferred type is (Double, Double, Double, Double)
+  val l2 = productTupleOps(ds).toList       // Inferred type is List[Double]
   typed[List[Double]](l2)
   
   val t3 = (23, ((true, 2.0, "foo"), "bar"), (13, false))

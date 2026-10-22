@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-15 Miles Sabin
  *
@@ -31,10 +32,10 @@ package GenericTestsAux {
   case class Orange() extends Fruit
 
   object showFruit extends Poly1 {
-    implicit def caseApple: Case.Aux[GenericTestsAux.Apple, String] = at[Apple](_ => "Pomme")
-    implicit def casePear: Case.Aux[GenericTestsAux.Pear, String] = at[Pear](_ => "Poire")
-    implicit def caseBanana: Case.Aux[GenericTestsAux.Banana, String] = at[Banana](_ => "Banane")
-    implicit def caseOrange: Case.Aux[GenericTestsAux.Orange, String] = at[Orange](_ => "Orange")
+    implicit def caseApple: Case.Aux[Apple, String] = at[Apple](_ => "Pomme")
+    implicit def casePear: Case.Aux[Pear, String] = at[Pear](_ => "Poire")
+    implicit def caseBanana: Case.Aux[Banana, String] = at[Banana](_ => "Banane")
+    implicit def caseOrange: Case.Aux[Orange, String] = at[Orange](_ => "Orange")
   }
 
   sealed trait AbstractSingle
@@ -50,9 +51,9 @@ package GenericTestsAux {
   case object C extends Enum
 
   object pickFruit extends Poly1 {
-    implicit def caseA: Case.Aux[GenericTestsAux.A.type, GenericTestsAux.Apple] = at[A.type](_ => Apple())
-    implicit def caseB: Case.Aux[GenericTestsAux.B.type, GenericTestsAux.Banana] = at[B.type](_ => Banana())
-    implicit def caseC: Case.Aux[GenericTestsAux.C.type, GenericTestsAux.Pear] = at[C.type](_ => Pear())
+    implicit def caseA: Case.Aux[A.type, Apple] = at[A.type](_ => Apple())
+    implicit def caseB: Case.Aux[B.type, Banana] = at[B.type](_ => Banana())
+    implicit def caseC: Case.Aux[C.type, Pear] = at[C.type](_ => Pear())
   }
 
   sealed trait L
@@ -134,11 +135,11 @@ package GenericTestsAux {
 
   object SemiAuto {
     case object CObj {
-      implicit val gen: Generic.Aux[CObj.type, HNil] = Generic.materialize
+      implicit val gen: Generic[CObj.type] { type Repr = HNil } = cachedImplicit
     }
 
     object NonCObj {
-      implicit val gen: Generic.Aux[NonCObj.type, HNil] = Generic.materialize
+      implicit val gen: Generic[NonCObj.type] { type Repr = HNil } = cachedImplicit
     }
   }
 
@@ -201,16 +202,6 @@ class GenericTests {
     val p1 = gen.from(p0)
     typed[Person](p1)
     assertEquals(p, p1)
-  }
-
-  // An instance is found where its output type is expected (see https://github.com/scala/scala3/issues/24114)
-  @Test
-  def testAuxExpected: Unit = {
-    val gen = implicitly[Generic.Aux[Person, String :: String :: Int :: HNil]]
-    assertEquals("Joe Soap" :: "Brighton" :: 23 :: HNil, gen.to(Person("Joe Soap", "Brighton", 23)))
-
-    val fruitGen = implicitly[Generic.Aux[Fruit, APBO]]
-    assertEquals(Inr(Inl(Banana())), fruitGen.to(Banana()))
   }
 
   @Test

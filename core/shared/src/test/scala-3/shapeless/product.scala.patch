@@ -1,0 +1,10 @@
+--- generated/product.scala
++++ scala-3/product.scala
+@@ -242,6 +242,7 @@
+     }
+ 
+     {
++      import TestVersionSpecifics.NothingClassTag._
+       val a = e.toSized[Array]
+       val expected = Sized[Array]()
+       equalInferredTypes(expected, a)

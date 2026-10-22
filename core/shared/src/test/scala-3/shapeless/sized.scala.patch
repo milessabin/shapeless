@@ -1,0 +1,19 @@
+--- generated/sized.scala
++++ scala-3/sized.scala
+@@ -195,6 +195,7 @@
+     // Checking that Sized constructor is private
+     illTyped(""" new Sized[List[String], _2](List("1", "2")) """)
+ 
++    import TestVersionSpecifics.NothingClassTag._
+     val isa0 = Sized[Array]()
+     typed[Sized[Array[Nothing], _0]](isa0)
+     val isa1 = Sized[Array]("foo")
+@@ -419,7 +420,7 @@
+     val s3 = Sized[List](1, 2, 4)
+     assert(s1 == s2)
+     assertFalse(s1 == s3)
+-    assertFalse(s1 == List(1, 2, 3))
++    assertFalse((s1: Any) == List(1, 2, 3))
+   }
+ 
+   @Test

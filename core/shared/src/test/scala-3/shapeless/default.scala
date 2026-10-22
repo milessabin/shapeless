@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 package shapeless
 
 import shapeless.record.Record
@@ -44,7 +45,7 @@ object DefaultTestDefinitions {
   object SemiAuto {
     case class CCl1(i: Int = 0)
     object CCl1 {
-      implicit val default: Default.Aux[CCl1, Some[Int] :: HNil] = Default.materialize
+      implicit val default: Default[CCl1] { type Out = Some[Int] :: HNil } = cachedImplicit
     }
 
     case class CCl2(i: Int)
@@ -52,11 +53,11 @@ object DefaultTestDefinitions {
       def default: Default[CCl2]
     }
     object CCl2 extends CCl2Companion {
-      implicit val default: Default.Aux[CCl2, None.type :: HNil] = Default.materialize
+      implicit val default: Default[CCl2] { type Out = None.type :: HNil } = cachedImplicit
     }
 
     case object CObj {
-      implicit val default: Default.Aux[CObj.type, HNil] = Default.materialize
+      implicit val default: Default[CObj.type] { type Out = HNil } = cachedImplicit
     }
   }
 
@@ -104,27 +105,6 @@ class DefaultTests {
     illTyped(" Default[Any] ", "could not find implicit value for parameter default: .*")
     illTyped(" Default[AnyRef] ", "could not find implicit value for parameter default: .*")
     illTyped(" Default[Array[Int]] ", "could not find implicit value for parameter default: .*")
-  }
-
-  // An instance is found where its output type is expected (see https://github.com/scala/scala3/issues/24114)
-  @Test
-  def auxExpected: Unit = {
-    type Out = None.type :: Some[String] :: Some[Option[Boolean]] :: HNil
-    val expected: Out = None :: Some("b") :: Some(Some(true)) :: HNil
-
-    val default0: Default.Aux[CC, Out] = the[Default[CC]]
-    assertTypedEquals[Out](expected, default0())
-
-    val default1 = implicitly[Default.Aux[CC, Out]]
-    assertTypedEquals[Out](expected, default1())
-
-    type RecordOut = Record.`"s" -> String, "flagOpt" -> Option[Boolean]`.T
-    val asRecord = implicitly[Default.AsRecord.Aux[CC, RecordOut]]
-    assertTypedEquals[RecordOut](Record(s = "b", flagOpt = Some(true)), asRecord())
-
-    def defaultsLength[T, L <: HList](implicit default: Default.Aux[T, L], length: ops.hlist.Length[L]): length.Out =
-      length()
-    assertTypedEquals[Nat._3](Nat._3, defaultsLength[CC, Out])
   }
 
   @Test

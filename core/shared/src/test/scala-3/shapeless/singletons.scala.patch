@@ -1,0 +1,72 @@
+--- generated/singletons.scala
++++ scala-3/singletons.scala
+@@ -60,8 +60,8 @@
+     sameTyped(sTrue)(true)
+ 
+     illTyped("""
+-      sameTyped(sTrue)(sFalse)
+-      sameTyped(sTrue)(false)
++      sameTyped[true](sTrue)(sFalse)
++      sameTyped[true](sTrue)(false)
+     """)
+ 
+     val s13 = 13.narrow
+@@ -71,8 +71,8 @@
+     sameTyped(s13)(13)
+ 
+     illTyped("""
+-      sameTyped(s13)(s23)
+-      sameTyped(s13)(23)
++      sameTyped[13](s13)(s23)
++      sameTyped[13](s13)(23)
+     """)
+ 
+     val sFoo = "foo".narrow
+@@ -82,8 +82,8 @@
+     sameTyped(sFoo)("foo")
+ 
+     illTyped("""
+-      sameTyped(sFoo)(sBar)
+-      sameTyped(sFoo)("bar")
++      sameTyped["foo"](sFoo)(sBar)
++      sameTyped["foo"](sFoo)("bar")
+     """)
+   }
+ 
+@@ -519,14 +519,6 @@
+     assertTypedEquals[A.type](A1().getT, A)
+   }
+ 
+-  @Test
+-  def testTypeInference: Unit = {
+-    val singletonW = Witness(3)
+-    def s3[T](v: T)(implicit ev: Witness.Aux[T]) = v
+-    val v = singletonW.value
+-    val s = s3(v)
+-    assertEquals(s, v)
+-  }
+ 
+   class NestingBug {
+     val o: AnyRef = new Object {}
+@@ -550,10 +542,6 @@
+ 
+     val x0: OT = wO.value
+     val x1: o.type = wO.value
+-
+-    val x2 = wO.value
+-    typed[o.type](x2)
+-    typed[OT](x2)
+   }
+ 
+   object PathDependentSingleton2 {
+@@ -564,10 +552,6 @@
+ 
+     val x0: OT = wO.value
+     val x1: o.type = wO.value
+-
+-    val x2 = wO.value
+-    typed[o.type](x2)
+-    typed[OT](x2)
+   }
+ }
+ 

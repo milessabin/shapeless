@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Miles Sabin
  *
@@ -47,9 +48,10 @@ object TypeLevelBacktrack extends App {
   implicit val fact6:    Ben FatherOf Sarah = fact()
 
   // -------------------------------------------------------------------------
-  // A Prolog style, direct encoding of this problem (see the Scala 2 version of this example) doesn't work, because
-  // implicit search does not backtrack: on Scala 2 some ancestors aren't found, and on Scala 3 the ambiguities
-  // encountered along the way are errors.
+  // A Prolog style, direct encoding of this problem (see the Scala 2 version of
+  // this example) doesn't work, because implicit search does not
+  // backtrack: on Scala 2 some ancestors aren't found, and on Scala 3 the
+  // ambiguities encountered along the way are errors.
   //
   // A possible workaround consists in computing *all* the ancestors or a
   // person in a `HList`, and define the family relationship in term of

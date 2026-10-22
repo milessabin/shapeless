@@ -1,0 +1,37 @@
+--- generated/lazy.scala
++++ scala-3/lazy.scala
+@@ -218,21 +218,22 @@
+   @Test
+   def testMultiple: Unit = {
+     val foos = Lazy.values[Foo[Int] :: Foo[String] :: Foo[Boolean] :: HNil]
+-    locally {
+-      implicit val x :: y :: z :: HNil = (foos: @unchecked)
++    val x :: y :: z :: HNil = (foos: @unchecked)
+ 
+-      typed[Foo[Int]](x)
+-      typed[Foo[String]](y)
+-      typed[Foo[Boolean]](z)
++    typed[Foo[Int]](x)
++    typed[Foo[String]](y)
++    typed[Foo[Boolean]](z)
+ 
+-      val x1 = implicitly[Foo[Int]]
+-      val y1 = implicitly[Foo[String]]
+-      val z1 = implicitly[Foo[Boolean]]
+-
+-      assertTrue(x1 eq x)
+-      assertTrue(y1 eq y)
+-      assertTrue(z1 eq z)
++    val (x1, y1, z1) = {
++      implicit val ix: Foo[Int] = x
++      implicit val iy: Foo[String] = y
++      implicit val iz: Foo[Boolean] = z
++      (implicitly[Foo[Int]], implicitly[Foo[String]], implicitly[Foo[Boolean]])
+     }
++
++    assertTrue(x1 eq x)
++    assertTrue(y1 eq y)
++    assertTrue(z1 eq z)
+   }
+ 
+   trait Bar[A] { def foo(a: A): Unit }

@@ -1,0 +1,47 @@
+--- generated/records.scala
++++ scala-3/records.scala
+@@ -857,18 +857,6 @@
+     typed[Record.`"i" -> Int, "s" -> String`.T]("i" ->> 23 :: "s" ->> "foo" :: HNil)
+ 
+     typed[Record.`"i" -> Int, "s" -> String, "b" -> Boolean`.T]("i" ->> 23 :: "s" ->> "foo" :: "b" ->> true :: HNil)
+-
+-    // Literal types
+-
+-    typed[Record.`"i" -> 2`.T]("i" ->> 2.narrow :: HNil)
+-
+-    typed[Record.`"i" -> 2, "s" -> "a", "b" -> true`.T]("i" ->> 2.narrow :: "s" ->> "a".narrow :: "b" ->> true.narrow :: HNil)
+-
+-    illTyped("""typed[Record.`"i" -> 2`.T]("i" ->> 3.narrow :: HNil)""")
+-
+-    // Mix of standard and literal types
+-
+-    typed[Record.`"i" -> 2, "s" -> String, "b" -> true`.T]("i" ->> 2.narrow :: "s" ->> "a" :: "b" ->> true.narrow :: HNil)
+   }
+ 
+   @Test
+@@ -947,9 +935,10 @@
+     illTyped("""Bar.sumImplicitRecord(("i1" ->> 1) :: ("i2" ->> 3) :: HNil)""")
+ 
+     locally {
++      // Scoped so that it isn't visible to the illTyped above (Scala 3 implicits are visible throughout their block)
+       implicit val i2: Int = 7
+       val v3 = Bar.sumImplicitRecord(r)
+-      typed[Int](v2)
++      typed[Int](v3)
+       assertEquals(8, v3)
+ 
+       illTyped("""Bar.sumRecord(("i1" ->> 1) :: ("i3" ->> 3) :: HNil)""")
+@@ -1175,7 +1164,12 @@
+   def testFieldTypeOfValueClass: Unit = {
+     import RecordTests._
+     val x = aValueClassField ->> AValueClass(1L)
+-    assertEquals(x.l, Array(x).apply(0))
++    // Scala 2 erases the tagged value class to its underlying Long, Scala 3 doesn't
++    val elem: Any = Array(x).apply(0)
++    assertEquals(x.l, elem match {
++      case v: AValueClass => v.l
++      case l => l
++    })
+   }
+ }
+ 

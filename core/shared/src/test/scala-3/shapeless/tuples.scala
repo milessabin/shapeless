@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2013-16 Miles Sabin
  *
@@ -15,8 +16,6 @@
  */
 
 package shapeless
-
-import scala.reflect.ClassTag
 
 import org.junit.Test
 import org.junit.Assert._
@@ -55,9 +54,9 @@ class TupleTests {
   case class Banana() extends Fruit
 
   case class Foo(i: Int, s: String)
-  type PWS = TestVersionSpecifics.CaseClassLub[Fruit]
+  type PWS = Fruit
 
-  type YYYY = (TestVersionSpecifics.Lub2[Int, String], TestVersionSpecifics.Lub2[Int, String], TestVersionSpecifics.Lub2[Int, String], TestVersionSpecifics.Lub2[Int, String])
+  type YYYY = (Int | String, Int | String, Int | String, Int | String)
   type FF = (Fruit, Fruit)
   type AP = (Apple, Pear)
   type BP = (Banana, Pear)
@@ -88,8 +87,8 @@ class TupleTests {
   val ci: Ctv[Int] = new Ctv[Int] {}
   val cs: Ctv[String] = new Ctv[String] {}
   val cd: Ctv[Double] = new Ctv[Double] {}
-  val cicscicicdList: List[Ctv[Int with String with Double]] = List(ci, cs, ci, ci, cd)
-  val cicscicicdArray: Array[Ctv[Int with String with Double]] = Array(ci, cs, ci, ci, cd)
+  val cicscicicdList = List(ci, cs, ci, ci, cd)
+  val cicscicicdArray = Array(ci, cs, ci, ci, cd)
   val cicscicicd = (ci, cs, ci, ci, cd)
 
   trait M[T]
@@ -97,8 +96,8 @@ class TupleTests {
   val mi: M[Int] = new M[Int] {}
   val ms: M[String] = new M[String] {}
   val md: M[Double] = new M[Double] {}
-  val mimsmimimdList: List[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]] = List(mi, ms, mi, mi, md)
-  val mimsmimimdArray: Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]] = Array(mi, ms, mi, mi, md)
+  val mimsmimimdList = List(mi, ms, mi, mi, md)
+  val mimsmimimdArray = Array(mi, ms, mi, mi, md)
   val mimsmimimd = (mi, ms, mi, mi, md)
 
   import language.existentials
@@ -112,15 +111,15 @@ class TupleTests {
   val m2i: M2[Int, Unit] = new M2[Int, Unit] {}
   val m2s: M2[String, Unit] = new M2[String, Unit] {}
   val m2d: M2[Double, Unit] = new M2[Double, Unit] {}
-  val m2im2sm2im2im2dList: List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]] = List(m2i, m2s, m2i, m2i, m2d)
-  val m2im2sm2im2im2dArray: Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]] = Array(m2i, m2s, m2i, m2i, m2d)
+  val m2im2sm2im2im2dList = List(m2i, m2s, m2i, m2i, m2d)
+  val m2im2sm2im2im2dArray = Array(m2i, m2s, m2i, m2i, m2d)
   val m2im2sm2im2im2d = (m2i, m2s, m2i, m2i, m2d)
 
   val m2iExist: M2[Int, _] = new M2[Int, Unit] {}
   val m2sExist: M2[String, _] = new M2[String, Unit] {}
   val m2dExist: M2[Double, _] = new M2[Double, Unit] {}
-  val m2eim2esm2eim2eem2edList: List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]] = List(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
-  val m2eim2esm2eim2eem2edArray: Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]] = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
+  val m2eim2esm2eim2eem2edList = List(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
+  val m2eim2esm2eim2eem2edArray = Array(m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
   val m2eim2esm2eim2eem2ed = (m2iExist, m2sExist, m2iExist, m2iExist, m2dExist)
 
   trait incInt0 extends Poly1 {
@@ -141,7 +140,6 @@ class TupleTests {
   def testBasics: Unit = {
     val t = (1, "foo", 2.0)
 
-    // Scala 3 tuples have their own head and tail members, so use shapeless' explicitly
     typed[Int](productTupleOps(t).head)
     assertEquals(1, productTupleOps(t).head)
 
@@ -159,62 +157,64 @@ class TupleTests {
       ().tail
     """)
 
+    // The conversions are explicit as on Scala 3 the selections would otherwise be of scala.Tuple's members, which the
+    // scalafix rules generating the Scala 3 version of this test can't make explicit within a string
     illTyped("""
-      productTupleOps(productTupleOps(productTupleOps(productTupleOps(t).tail).tail).tail).head
+      productTupleOps(productTupleOps(productTupleOps(t).tail).tail).tail.head
     """)
   }
 
   @Test
   def testMap: Unit = {
     val s1 = Tuple1(Set(1))
-    val o1 = s1 map choose
+    val o1 = productTupleOps(s1) map choose
     typed[OI](o1)
     assertEquals(Tuple1(Option(1)), o1)
 
     val s2 = (Set(1), Set("foo"))
-    val o2 = s2 map choose
+    val o2 = productTupleOps(s2) map choose
     typed[OIOS](o2)
     assertEquals((Option(1), Option("foo")), o2)
 
     val l1 = (1, "foo", 2, 3)
 
-    val l2 = l1 map singleton
+    val l2 = productTupleOps(l1) map singleton
     typed[SISSSISI](l2)
     assertEquals((Set(1), Set("foo"), Set(2), Set(3)), l2)
 
-    val l3 = l1 map option
+    val l3 = productTupleOps(l1) map option
     typed[OIOSOIOI](l3)
     assertEquals((Option(1), Option("foo"), Option(2), Option(3)), l3)
 
     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
 
-    val l5 = l4 map get
+    val l5 = productTupleOps(l4) map get
     typed[ISII](l5)
     assertEquals((1, "foo", 2, 3), l5)
 
-    typed[Int](l5.head)
-    typed[String](l5.tail.head)
-    typed[Int](l5.tail.tail.head)
-    typed[Int](l5.tail.tail.tail.head)
+    typed[Int](productTupleOps(l5).head)
+    typed[String](productTupleOps(productTupleOps(l5).tail).head)
+    typed[Int](productTupleOps(productTupleOps(productTupleOps(l5).tail).tail).head)
+    typed[Int](productTupleOps(productTupleOps(productTupleOps(productTupleOps(l5).tail).tail).tail).head)
 
-    val l6 = l1 map identity
+    val l6 = productTupleOps(l1) map identity
     typed[ISII](l6)
     assertEquals((1, "foo", 2, 3), l6)
 
-    val l7 = l4 map isDefined
+    val l7 = productTupleOps(l4) map isDefined
     typed[BBBB](l7)
     assertEquals((true, true, true, true), l7)
 
     val l8 = (23, "foo", true)
-    val l9 = l8 map mkString
+    val l9 = productTupleOps(l8) map mkString
     typed[(String, String, String)](l9)
     assertEquals(("23", "foo", "true"), l9)
 
-    val l10 = apbp map fruit
+    val l10 = productTupleOps(apbp) map fruit
     typed[(Fruit, Fruit, Fruit, Fruit)](l10)
     assertEquals(apbp, l10)
 
-    val l11 = apbp map mkString
+    val l11 = productTupleOps(apbp) map mkString
     typed[(String, String, String, String)](l11)
     assertEquals(("Apple()", "Pear()", "Banana()", "Pear()"), l11)
   }
@@ -250,23 +250,23 @@ class TupleTests {
 
   @Test
   def testInitLast: Unit = {
-    val lp = apbp.last
+    val lp = productTupleOps(apbp).last
     typed[Pear](lp)
     assertEquals(p, lp)
 
-    val iapb = apbp.init
+    val iapb = productTupleOps(apbp).init
     typed[APB](iapb)
     assertEquals((a, p, b), iapb)
   }
 
   @Test
   def testReverse: Unit = {
-    val pbpa = apbp.reverse
+    val pbpa = productTupleOps(apbp).reverse
     typed[PBPA](pbpa)
     assertEquals((p, b, p, a), pbpa)
 
     val al = Tuple1(a)
-    val ral = al.reverse
+    val ral = productTupleOps(al).reverse
     typed[Tuple1[Apple]](ral)
     assertEquals(Tuple1(a), ral)
   }
@@ -277,10 +277,10 @@ class TupleTests {
     typed[APBP](apbp2)
     assertEquals((a, p, b, p), apbp2)
 
-    typed[Apple](apbp2.head)
-    typed[Pear](apbp2.tail.head)
-    typed[Banana](apbp2.tail.tail.head)
-    typed[Pear](apbp2.tail.tail.tail.head)
+    typed[Apple](productTupleOps(apbp2).head)
+    typed[Pear](productTupleOps(productTupleOps(apbp2).tail).head)
+    typed[Banana](productTupleOps(productTupleOps(productTupleOps(apbp2).tail).tail).head)
+    typed[Pear](productTupleOps(productTupleOps(productTupleOps(productTupleOps(apbp2).tail).tail).tail).head)
 
     val pabp = ap reverse_::: bp
     typed[PABP](pabp)
@@ -332,7 +332,7 @@ class TupleTests {
     val sizedM2eim2esm2eim2eem2ed = m2eim2esm2eim2eem2ed.toSized[List]
     assertEquals(Nat toInt m2eim2esm2eim2eem2ed.length, sizedM2eim2esm2eim2eem2ed.length)
     // equalInferredTypes(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
-    typed[List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](sizedM2eim2esm2eim2eem2ed.unsized)
+    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](sizedM2eim2esm2eim2eem2ed.unsized)
     assertEquals(m2eim2esm2eim2eem2edList, sizedM2eim2esm2eim2eem2ed.unsized)
   }
 
@@ -342,6 +342,13 @@ class TupleTests {
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
     def equalInferredTypes[A,B](a: A, b: B)(implicit eq: A =:= B): Unit = {}
+
+    val unit = ()
+    val snil = unit.toSized[Array]
+    assertEquals(Nat toInt unit.length, snil.length)
+    val expectedUnsized = Array.empty[Nothing](using shapeless.ops.ArrayOfNothing.classTag)
+    equalInferredTypes(expectedUnsized, snil.unsized)
+    assertArrayEquals2(expectedUnsized, snil.unsized)
 
     val sizedApap = apap.toSized[Array]
     assertEquals(Nat toInt apap.length, sizedApap.length)
@@ -484,7 +491,7 @@ class TupleTests {
     assertEquals(List(1, "foo", 2, 3), stuff)
 
     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
-    val l7 = l4 map isDefined
+    val l7 = productTupleOps(l4) map isDefined
     typed[BBBB](l7)
     assertEquals((true, true, true, true), l7)
 
@@ -504,7 +511,7 @@ class TupleTests {
 
     val m = mimsmimimd.to[List]
     equalInferredTypes(mimsmimimdList, m)
-    typed[List[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[List[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertEquals(mimsmimimdList, m)
 
     val mWithEx = mimsmimemd.to[List]
@@ -514,12 +521,12 @@ class TupleTests {
 
     val m2 = m2im2sm2im2im2d.to[List]
     equalInferredTypes(m2im2sm2im2im2dList, m2)
-    typed[List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertEquals(m2im2sm2im2im2dList, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[List]
     // equalType(m2eim2esm2eim2eem2edList, m2e)
-    typed[List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     assertEquals(m2eim2esm2eim2eem2edList, m2e)
   }
 
@@ -564,32 +571,32 @@ class TupleTests {
     ToList[Unit, Int]
     ToList[APAP, Fruit]
 
-    val empty = ().toList
+    val empty = productTupleOps(()).toList
     assertTypedEquals[List[Nothing]](Nil, empty)
 
-    val fruits1 = apap.toList
+    val fruits1 = productTupleOps(apap).toList
     typed[List[Fruit]](fruits1)
     assertEquals(List(a, p, a, p), fruits1)
 
-    val fruits2 = apbp.toList
+    val fruits2 = productTupleOps(apbp).toList
     typed[List[Fruit]](fruits2)
     assertEquals(List(a, p, b, p), fruits2)
 
     val l1 = (1, "foo", 2, 3)
 
-    val stuff = l1.toList
+    val stuff = productTupleOps(l1).toList
     typed[List[Any]](stuff)
     assertEquals(List(1, "foo", 2, 3), stuff)
 
     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
-    val l7 = l4 map isDefined
+    val l7 = productTupleOps(l4) map isDefined
     typed[BBBB](l7)
     assertEquals((true, true, true, true), l7)
 
     val ll2 = productTupleOps(l7).toList
     typed[Boolean](ll2.head)
 
-    val moreStuff = (a, "foo", p).toList
+    val moreStuff = productTupleOps((a, "foo", p)).toList
     typed[List[Any]](moreStuff)
 
 
@@ -602,7 +609,7 @@ class TupleTests {
 
     val m = productTupleOps(mimsmimimd).toList
     equalInferredTypes(mimsmimimdList, m)
-    typed[List[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[List[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertEquals(mimsmimimdList, m)
 
     val mWithEx = productTupleOps(mimsmimemd).toList
@@ -612,12 +619,12 @@ class TupleTests {
 
     val m2 = productTupleOps(m2im2sm2im2im2d).toList
     equalInferredTypes(m2im2sm2im2im2dList, m2)
-    typed[List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertEquals(m2im2sm2im2im2dList, m2)
 
     val m2e = productTupleOps(m2eim2esm2eim2eem2ed).toList
     // equalType(m2eim2esm2eim2eem2edList, m2e)
-    typed[List[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    typed[List[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     assertEquals(m2eim2esm2eim2eem2edList, m2e)
   }
 
@@ -625,6 +632,10 @@ class TupleTests {
   def testToTraversableArray: Unit = {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
+
+    val empty = ().to[Array]
+    typed[Array[Nothing]](empty)
+    assertArrayEquals2(Array.empty(using shapeless.ops.ArrayOfNothing.classTag), empty)
 
     val fruits1 = apap.to[Array].map(x => x : Fruit)
     typed[Array[Fruit]](fruits1)
@@ -637,11 +648,11 @@ class TupleTests {
     val l1 = (1, "foo", 2, 3)
 
     val stuff = l1.to[Array]
-    typed[Array[TestVersionSpecifics.Lub2[Int, String]]](stuff)
+    typed[Array[Int | String]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
-    val l7 = l4 map isDefined
+    val l7 = productTupleOps(l4) map isDefined
     typed[BBBB](l7)
     assertEquals((true, true, true, true), l7)
 
@@ -662,7 +673,7 @@ class TupleTests {
 
     val m = mimsmimimd.to[Array]
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = mimsmimemd.to[Array]
@@ -673,12 +684,12 @@ class TupleTests {
 
     val m2 = m2im2sm2im2im2d.to[Array]
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = m2eim2esm2eim2eem2ed.to[Array]
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    // typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    // typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     // Same remark as above
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
@@ -694,6 +705,10 @@ class TupleTests {
     def assertArrayEquals2[T](arr1 : Array[T], arr2 : Array[T]) =
       assertArrayEquals(arr1.asInstanceOf[Array[Object]], arr2.asInstanceOf[Array[Object]])
 
+    val empty = productTupleOps(()).toArray
+    typed[Array[Nothing]](empty)
+    assertArrayEquals2(Array.empty(using shapeless.ops.ArrayOfNothing.classTag), empty)
+
     val fruits1 = productTupleOps(apap).toArray[Fruit]
     typed[Array[Fruit]](fruits1)
     assertArrayEquals2(Array[Fruit](a, p, a, p), fruits1)
@@ -705,11 +720,11 @@ class TupleTests {
     val l1 = (1, "foo", 2, 3)
 
     val stuff = productTupleOps(l1).toArray
-    typed[Array[TestVersionSpecifics.Lub2[Int, String]]](stuff)
+    typed[Array[Int | String]](stuff)
     assertArrayEquals2(Array(1, "foo", 2, 3), stuff)
 
     val l4 = (Option(1), Option("foo"), Option(2), Option(3))
-    val l7 = l4 map isDefined
+    val l7 = productTupleOps(l4) map isDefined
     typed[BBBB](l7)
     assertEquals((true, true, true, true), l7)
 
@@ -730,7 +745,7 @@ class TupleTests {
 
     val m = productTupleOps(mimsmimimd).toArray
     equalInferredTypes(mimsmimimdArray, m)
-    typed[Array[M[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double]]]](m)
+    typed[Array[M[_ >: Int with String with Double <: Int | String | Double]]](m)
     assertArrayEquals2(mimsmimimdArray, m)
 
     val mWithEx = productTupleOps(mimsmimemd).toArray[M[_]]
@@ -740,12 +755,12 @@ class TupleTests {
 
     val m2 = productTupleOps(m2im2sm2im2im2d).toArray
     equalInferredTypes(m2im2sm2im2im2dArray, m2)
-    typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], Unit]]](m2)
+    typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, Unit]]](m2)
     assertArrayEquals2(m2im2sm2im2im2dArray, m2)
 
     val m2e = productTupleOps(m2eim2esm2eim2eem2ed).toArray
     // equalInferredTypes(m2eim2esm2eim2eem2edArray, m2e)
-    // typed[Array[M2[_ >: Int with String with Double <: TestVersionSpecifics.Lub3[Int, String, Double], _]]](m2e)
+    // typed[Array[M2[_ >: Int with String with Double <: Int | String | Double, _]]](m2e)
     // The line above compiles when mimsmimemd is an HList, not when it is a tuple...
     assertArrayEquals2(m2eim2esm2eim2eem2edArray.map(x => x : Any), m2e.map(x => x : Any))
   }
@@ -755,9 +770,9 @@ class TupleTests {
     val tl1 = (Option(1), Option("foo"), Option(2), Option(3))
     val tl2 = (Option(1), Option("foo"), (None : Option[Int]), Option(3))
 
-    val mlfl1 = (tl1 map isDefined).toList.foldLeft(true)(_ && _)
+    val mlfl1 = (productTupleOps(productTupleOps(tl1) map isDefined)).toList.foldLeft(true)(_ && _)
     assertTrue(mlfl1)
-    val mlfl2 = (tl2 map isDefined).toList.foldLeft(true)(_ && _)
+    val mlfl2 = (productTupleOps(productTupleOps(tl2) map isDefined)).toList.foldLeft(true)(_ && _)
     assertFalse(mlfl2)
 
     val fl1 = tl1.foldMap(true)(isDefined)(_ && _)
@@ -856,27 +871,27 @@ class TupleTests {
   def testTakeDrop: Unit = {
     val sn1 = (23, 3.0, "foo", (), "bar", true, 5L)
 
-    val t0 = sn1.take(_0)
+    val t0 = productTupleOps(sn1).take(_0)
     typed[Unit](t0)
     assertEquals((), t0)
 
-    val d0 = sn1.drop(_0)
+    val d0 = productTupleOps(sn1).drop(_0)
     typed[(Int, Double, String, Unit, String, Boolean, Long)](d0)
     assertEquals((23, 3.0, "foo", (), "bar", true, 5L), d0)
 
-    val t2 = sn1.take(_2)
+    val t2 = productTupleOps(sn1).take(_2)
     typed[(Int, Double)](t2)
     assertEquals((23, 3.0), t2)
 
-    val d2 = sn1.drop(_2)
+    val d2 = productTupleOps(sn1).drop(_2)
     typed[(String, Unit, String, Boolean, Long)](d2)
     assertEquals(("foo", (), "bar", true, 5L), d2)
 
-    val t7 = sn1.take(_7)
+    val t7 = productTupleOps(sn1).take(_7)
     typed[(Int, Double, String, Unit, String, Boolean, Long)](t7)
     assertEquals((23, 3.0, "foo", (), "bar", true, 5L), t7)
 
-    val d7 = sn1.drop(_7)
+    val d7 = productTupleOps(sn1).drop(_7)
     typed[Unit](d7)
     assertEquals((), d7)
   }
@@ -1279,7 +1294,7 @@ class TupleTests {
     typed[((Int, Int), (String, String), (Double, Double))](z1)
     assertEquals(((1, 2), ("a", "b"), (1.0, 2.0)), z1)
 
-    val z2 = l1 zip l2
+    val z2 = productTupleOps(l1) zip l2
     typed[((Int, Int), (String, String), (Double, Double))](z2)
     assertEquals(((1, 2), ("a", "b"), (1.0, 2.0)), z2)
 
@@ -1451,7 +1466,7 @@ class TupleTests {
 
   @Test
   def testPropagation: Unit = {
-    def useHead[P: IsTuple: IsComposite](p: P) = p.head
+    def useHead[P: IsTuple: IsComposite](p: P) = productTupleOps(p).head
     val h = useHead((23, "foo", true))
     typed[Int](h)
   }

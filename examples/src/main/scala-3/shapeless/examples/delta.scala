@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2014 Stacy Curl
  *
@@ -20,7 +21,7 @@ import shapeless._
 
 object DeltaExamples extends App {
   // An arbitrary case class. The Scala 2 version of this example also derives Delta for a recursive case class, which
-  // crashes Scala 3 (3.3.8 to at least 3.7.3) when it pickles the knot tying the recursive by-name implicits together
+  // crashes Scala 3 (3.3.8 to at least 3.10.0) when it pickles the knot tying the recursive by-name implicits together
   case class Foo(i : Int, s : String)
 
   import DeltaSyntax._

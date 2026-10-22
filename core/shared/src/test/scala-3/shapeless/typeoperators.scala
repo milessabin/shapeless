@@ -1,3 +1,4 @@
+// Generated from the Scala 2 version by `sbt scala3Generate`: see "Building shapeless with Scala 3" in SCALA3.md
 /*
  * Copyright (c) 2011-16 Miles Sabin
  *
@@ -61,26 +62,28 @@ class TypeOperatorTests {
     case class MyStringOps(s : String) {
       def mySize = s.size
     }
-    implicit val mkOps: MyStringOps.type = MyStringOps
+    locally {
+      implicit val mkOps: MyStringOps.type = MyStringOps
 
-    val ms = MyString("foo")
+      val ms = MyString("foo")
 
-    illTyped("""
+      illTyped("""
       val s : String = ms
     """)
-    illTyped("""
+      illTyped("""
       val ms2 : MyString = "foo"
     """)
-    illTyped("""
+      illTyped("""
       ms.size
     """)
 
-    assertEquals(3, ms.mySize)
+      assertEquals(3, ms.mySize)
 
-    val s2 = "bar"
-    val ms2 = MyString(s2)
+      val s2 = "bar"
+      val ms2 = MyString(s2)
 
-    assertTrue(ms2 eq (s2 : AnyRef))
+      assertTrue(ms2 eq (s2 : AnyRef))
+    }
   }
 
   trait Foo {
@@ -89,7 +92,7 @@ class TypeOperatorTests {
   }
 
   object Foo {
-    implicit def mkFoo: Foo { type T = Int } = new Foo { type T = Int ; val t = 23 }
+    implicit def mkFoo: Foo { type T = Int } = new Foo { type T = Int ; val t: Int = 23 }
   }
 
   trait Foo2[U] {
@@ -98,7 +101,7 @@ class TypeOperatorTests {
   }
 
   object Foo2 {
-    implicit def mkFoo2: Foo2[Char] { type T = Int } = new Foo2[Char] { type T = Int ; val t = 23 }
+    implicit def mkFoo2: Foo2[Char] { type T = Int } = new Foo2[Char] { type T = Int ; val t: Int = 23 }
   }
 
   trait Bar[T] {
@@ -107,8 +110,8 @@ class TypeOperatorTests {
   }
 
   object Bar {
-    implicit def mkBar1: Bar[Boolean] { type U = Int } = new Bar[Boolean] { type U = Int ; val tu = Right(23) }
-    implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu = Right(13.0) }
+    implicit def mkBar1: Bar[Boolean] { type U = Int } = new Bar[Boolean] { type U = Int ; val tu: Right[Nothing, Int] = Right(23) }
+    implicit def mkBar2: Bar[String] { type U = Double } = new Bar[String] { type U = Double ; val tu: Right[Nothing, Double] = Right(13.0) }
   }
 
   case class Baz(i: Int, s: String)
@@ -214,17 +217,19 @@ class TypeOperatorTests {
 
     //the.Unit  // illTyped fails for this expression
 
-    implicit val u2: Unit = ()
-    //the.Unit  // illTyped fails for this expression
+    locally {
+      implicit val u2: Unit = ()
+      //the.Unit  // illTyped fails for this expression
 
-    //the.Int   // illTyped fails for this expression
+      //the.Int   // illTyped fails for this expression
 
-    implicit val i2: Int = 23
-    //the.Int   // illTyped fails for this expression
+      implicit val i2: Int = 23
+      //the.Int   // illTyped fails for this expression
 
-    illTyped("""
+      illTyped("""
     val blah = the.`package wibble`
     """)
+    }
   }
 
   @Test
